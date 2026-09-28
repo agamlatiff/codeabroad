@@ -1,0 +1,16 @@
+{
+  "version": "2.19",
+  "children": [
+    {
+      "type": "frame",
+      "id": "Bsy4U",
+      "x": 0,
+      "y": 0,
+      "name": "Hero",
+      "width": 1440,
+      "height": 900,
+      "fill": "#0F172A"
+    }
+  ],
+  "fileToken": "0992efc6-0ec0-48e9-8ada-ee3f28c89ccf"
+}
