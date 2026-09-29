@@ -66,3 +66,10 @@ type AuthUsecase interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error)
 	GetProfile(ctx context.Context, userID string) (*User, error)
 }
+
+// SessionRepository specifies the caching contract for active user sessions
+type SessionRepository interface {
+	SetSession(ctx context.Context, userID string, token string, ttl time.Duration) error
+	GetSession(ctx context.Context, userID string) (string, error)
+	DeleteSession(ctx context.Context, userID string) error
+}
