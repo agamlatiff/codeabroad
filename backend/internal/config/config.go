@@ -7,21 +7,21 @@ import (
 )
 
 type Config struct {
-	Port                     string
-	Env                      string
-	DBHost                   string
-	DBPort                   string
-	DBUser                   string
-	DBPassword               string
-	DBName                   string
-	DBSSLMode                string
-	RedisHost                string
-	RedisPort                string
-	RedisPassword            string
-	KafkaBrokers             string
-	JWTSecret                string
-	JWTExpirationMinutes     int
-	JWTRefreshExpirationDays int
+	Port                       string
+	Env                        string
+	DBHost                     string
+	DBPort                     string
+	DBUser                     string
+	DBPassword                 string
+	DBName                     string
+	DBSSLMode                  string
+	RedisHost                  string
+	RedisPort                  string
+	RedisPassword              string
+	KafkaBrokers               string
+	JWTSecret                  string
+	JWTAccessExpirationMinutes int
+	JWTRefreshExpirationDays   int
 }
 
 func getEnv(key, fallback string) string {
@@ -60,7 +60,7 @@ func LoadConfig() (*Config, error) {
 		RedisPassword:            getEnv("REDIS_PASSWORD", ""),
 		KafkaBrokers:             getEnv("KAFKA_BROKERS", "localhost:9092"),
 		JWTSecret:                getEnv("JWT_SECRET", "super-secret-jwt-key-must-be-at-least-32-chars-long"),
-		JWTExpirationMinutes:     jwtExpMin,
+		JWTAccessExpirationMinutes:     jwtExpMin,
 		JWTRefreshExpirationDays: jwtRefreshExpDays,
 	}, nil
 }
