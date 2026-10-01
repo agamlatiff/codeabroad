@@ -5,7 +5,6 @@ import (
 	"codeabroad/backend/internal/domain"
 
 	"context"
-	"errors"
 	"fmt"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
@@ -47,7 +46,7 @@ func (u *authUsecase) Register(ctx context.Context, req *domain.RegisterRequest)
 		return nil, fmt.Errorf("failed to check existing email: %w", err)
 	}
 	if existingEmail != nil {
-		return nil, errors.New("email is already registered")
+		return nil, domain.ErrEmailAlreadyExists
 	}
 
 	// 2. Check if username already exists
@@ -56,7 +55,7 @@ func (u *authUsecase) Register(ctx context.Context, req *domain.RegisterRequest)
 		return nil, fmt.Errorf("failed to check existing username: %w", err)
 	}
 	if existingUsername != nil {
-		return nil, errors.New("username is already taken")
+		return nil, domain.ErrUsernameTaken
 	}
 
 	// 3. Hash the password using Bcrypt
@@ -110,12 +109,12 @@ func (u *authUsecase) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		return nil, fmt.Errorf("failed to lookup user: %w", err)
 	}
 	if user == nil {
-		return nil, errors.New("invalid email or password")
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	// 2. Verify password with Bcrypt hash
 	if err := bcrypt.CompareHashAndPassword([]byte(user.PasswordHash), []byte(req.Password)); err != nil {
-		return nil, errors.New("invalid email or password")
+		return nil, domain.ErrInvalidCredentials
 	}
 
 	// 3. Generate new JWT token pair
@@ -148,17 +147,17 @@ func (u *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (*d
 	})
 
 	if err != nil || !token.Valid {
-		return nil, errors.New("invalid or expired refresh token")
+		return nil, domain.ErrTokenExpired
 	}
 	claims, ok := token.Claims.(*JWTClaims)
 	if !ok {
-		return nil, errors.New("invalid token claims")
+		return nil, domain.ErrTokenExpired
 	}
 
 	// 2. Verify if the refresh token matches the active session
 	storedToken, err := u.sessionRepo.GetSession(ctx, claims.UserID)
 	if err != nil || storedToken != refreshToken {
-		return nil, errors.New("refresh token has been revoked or expired")
+		return nil, domain.ErrTokenExpired
 	}
 
 	// 3. Retrieve user details
@@ -168,7 +167,7 @@ func (u *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, domain.ErrUserNotFound
 	}
 
 	// 4. Generate new token pair (Token Rotation)
@@ -197,7 +196,7 @@ func (u *authUsecase) GetProfile(ctx context.Context, userID string) (*domain.Us
 		return nil, fmt.Errorf("failed to get user profile: %w", err)
 	}
 	if user == nil {
-		return nil, errors.New("user not found")
+		return nil, domain.ErrUserNotFound
 	}
 	return user, nil
 }

@@ -3,6 +3,17 @@ package domain
 import (
 	"context"
 	"time"
+	"fmt"
+)
+
+
+// Specific User & Auth Errors
+var (
+	ErrEmailAlreadyExists = fmt.Errorf("%w: email is already registered", ErrConflict)
+	ErrUsernameTaken      = fmt.Errorf("%w: username is already taken", ErrConflict)
+	ErrInvalidCredentials = fmt.Errorf("%w: invalid email or password", ErrUnauthorized)
+	ErrUserNotFound       = fmt.Errorf("%w: user not found", ErrNotFound)
+	ErrTokenExpired       = fmt.Errorf("%w: token has expired or revoked", ErrUnauthorized)
 )
 
 
@@ -31,16 +42,21 @@ type User struct {
 
 // RegisterRequest defines the input payload for registering a new user
 type RegisterRequest struct {
-	Name     string `json:"name"`
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Name     string `json:"name" binding:"required"`
+	Username string `json:"username" binding:"required,min=3,max=30"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required,min=8"`
 }
 
 // LoginRequest defines the input payload for authenticating a user
 type LoginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
+}
+
+// RefreshTokenRequest defines the input payload for refreshing tokens
+type RefreshTokenRequest struct {
+	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
 // AuthResponse defines the payload returned upon successful authentication

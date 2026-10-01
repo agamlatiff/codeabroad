@@ -162,7 +162,18 @@ Examples:
 ## 🤝 Collaboration Rules (AI Agent)
 
 - **Do not modify, create, or delete any file without explicit user permission.**
+- **Never implement or write code directly into files**: Always provide code snippets in chat so the user can type/implement them manually for learning.
+- **Do not run `go build`, compile, or test commands automatically**: Let the user build, run, and verify code themselves.
 - Always explain what you plan to do before doing it.
 - When suggesting changes, show the diff or new content first and wait for approval.
 - If unsure about intent, ask — don't assume.
 - Prefer small, focused changes over large sweeping edits.
+- **Proactive Technical Debt & Best Practice Warnings**: Always prioritize production-grade best practices. If a quick, simplified, or "dirty" approach is ever suggested, **explicitly warn the user** that it incurs technical debt, explain why, and present the industry best practice alongside it.
+
+---
+
+## 🎯 Feature Development Flow (End-to-End Vertical Slice)
+
+- **Strict Single-Feature Focus:** Work on **ONE feature at a time from start to finish** across the full stack (Backend ➔ Frontend ➔ DevOps/Testing/Integration) before moving to another feature.
+- **No Premature Context Switching:** Never jump to a new domain or separate feature until the current feature's complete lifecycle is implemented, wired, and verified.
+- **Full Lifecycle Visibility:** The goal is to see each feature fully alive — from database migration, backend domain/usecase/delivery, frontend UI/UX and state management, to Docker/reverse proxy configuration.
