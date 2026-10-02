@@ -1,4 +1,4 @@
-package database
+package postgres
 
 import (
 	"codeabroad/backend/internal/config"

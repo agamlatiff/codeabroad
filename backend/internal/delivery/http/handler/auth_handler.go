@@ -79,3 +79,20 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 
 	response.Success(c, http.StatusOK, "user profile retrieved successfully", user)
 }
+
+
+func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+	// Public routes
+	auth := rg.Group("/auth")
+	{
+		auth.POST("/register", h.Register)
+		auth.POST("/login", h.Login)
+		auth.POST("/refresh", h.RefreshToken)
+	}
+	// Protected routes
+	users := rg.Group("/users")
+	users.Use(authMiddleware)
+	{
+		users.GET("/me", h.GetProfile)
+	}
+}

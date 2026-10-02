@@ -1,8 +1,8 @@
-package postgres
+package database
 
 import (
 	"codeabroad/backend/internal/domain"
-	"codeabroad/backend/internal/infrastructure/database"
+	"codeabroad/backend/internal/infrastructure/postgres"
 	"context"
 	"errors"
 	"fmt"
@@ -11,15 +11,15 @@ import (
 
 // UserRepository implements domain.UserRepository using PostgreSQL
 type UserRepository struct {
-	db *database.PostgresDB
+	db *postgres.PostgresDB
 }
 
 // NewUserRepository creates a new PostgreSQL user repository instance
-func NewUserRepository(db *database.PostgresDB) domain.UserRepository {
+func NewUserRepository(db *postgres.PostgresDB) domain.UserRepository {
 	return &UserRepository{db: db}
 }
 
-// Create inserts a new user record into the database
+// Create inserts a new user record into the postgres
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
 		INSERT INTO users (

@@ -162,7 +162,8 @@ Examples:
 ## 🤝 Collaboration Rules (AI Agent)
 
 - **Do not modify, create, or delete any file without explicit user permission.**
-- **Never implement or write code directly into files**: Always provide code snippets in chat so the user can type/implement them manually for learning.
+- **Never implement or write feature code directly into files**: Always provide implementation code snippets in chat so the user can type/implement them manually for learning.
+- **Automated Test Suite Generation by AI**: After a feature slice is implemented, the AI agent is responsible for authoring automated test files (`*_test.go`) directly, covering happy paths, edge cases, and error handling.
 - **Do not run `go build`, compile, or test commands automatically**: Let the user build, run, and verify code themselves.
 - Always explain what you plan to do before doing it.
 - When suggesting changes, show the diff or new content first and wait for approval.

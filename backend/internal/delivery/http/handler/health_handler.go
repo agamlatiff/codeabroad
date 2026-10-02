@@ -1,22 +1,23 @@
 package handler
 
 import (
-	"codeabroad/backend/internal/infrastructure/database"
+	"codeabroad/backend/internal/infrastructure/postgres"
 	"codeabroad/backend/internal/infrastructure/redis"
 	"context"
-	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 // HealthHandler manages system health inspection endpoints
 type HealthHandler struct {
-	pg  *database.PostgresDB
+	pg  *postgres.PostgresDB
 	rdb *redis.RedisClient
 }
 
 // NewHealthHandler creates a new HealthHandler instance
-func NewHealthHandler(pg *database.PostgresDB, rdb *redis.RedisClient) *HealthHandler {
+func NewHealthHandler(pg *postgres.PostgresDB, rdb *redis.RedisClient) *HealthHandler {
 	return &HealthHandler{
 		pg:  pg,
 		rdb: rdb,
@@ -62,4 +63,9 @@ func (h *HealthHandler) CheckHealth(c *gin.Context) {
 		},
 		"message": message,
 	})
+}
+
+// RegisterRoutes registers health check endpoints to the router group
+func (h *HealthHandler) RegisterRoutes(rg *gin.RouterGroup) {
+	rg.GET("/health", h.CheckHealth)
 }
