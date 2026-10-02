@@ -5,7 +5,10 @@ import { isAxiosError } from 'axios'
 import { api } from '../services/api'
 import { useAuthStore } from '../store/authStore'
 import type { ApiResponse, AuthResponse } from '../types/auth'
-import { Terminal, Lock, Mail, Sparkles, ArrowRight, AlertCircle, Loader2 } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
+import { Card } from '../components/ui/Card'
+import { Terminal, Lock, Mail, Sparkles, ArrowRight, AlertCircle } from 'lucide-react'
 
 export const LoginPage = () => {
   const navigate = useNavigate()
@@ -52,7 +55,7 @@ export const LoginPage = () => {
       <div className="w-full max-w-md">
         {/* Logo & Header */}
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-4 glow-cyan">
+          <div className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 mb-4 glow-cyan">
             <Terminal className="w-6 h-6" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white flex items-center justify-center gap-2">
@@ -63,63 +66,46 @@ export const LoginPage = () => {
           </p>
         </div>
 
-        {/* Card Form */}
-        <div className="glass-panel p-8 rounded-2xl shadow-2xl relative overflow-hidden">
+        {/* Card Form using UI components */}
+        <Card glow="cyan" className="shadow-2xl">
           {error && (
-            <div className="mb-6 p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-3">
+            <div className="mb-6 p-4 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm flex items-center gap-3">
               <AlertCircle className="w-5 h-5 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5 uppercase tracking-wider">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="email"
-                  required
-                  placeholder="budi@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full bg-[#12131A] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition"
-                />
-              </div>
-            </div>
+            <Input
+              label="Email Address"
+              type="email"
+              required
+              placeholder="budi@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              icon={<Mail className="w-4 h-4" />}
+            />
 
-            <div>
-              <label className="block text-xs font-medium text-slate-300 mb-1.5 uppercase tracking-wider">
-                Password
-              </label>
-              <div className="relative">
-                <Lock className="w-4 h-4 text-slate-500 absolute left-3.5 top-3.5" />
-                <input
-                  type="password"
-                  required
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-[#12131A] border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-cyan-500/60 focus:ring-1 focus:ring-cyan-500/60 transition"
-                />
-              </div>
-            </div>
+            <Input
+              label="Password"
+              type="password"
+              required
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              icon={<Lock className="w-4 h-4" />}
+            />
 
-            <button
+            <Button
               type="submit"
-              disabled={loading}
-              className="w-full mt-6 py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-semibold text-sm flex items-center justify-center gap-2 hover:opacity-95 transition disabled:opacity-50 cursor-pointer shadow-lg shadow-cyan-500/20"
+              loading={loading}
+              fullWidth
+              size="lg"
+              className="mt-6"
+              icon={<ArrowRight className="w-4 h-4" />}
             >
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <>
-                  Sign In <ArrowRight className="w-4 h-4" />
-                </>
-              )}
-            </button>
+              Sign In
+            </Button>
           </form>
 
           <div className="mt-6 text-center text-xs text-slate-400">
@@ -128,7 +114,7 @@ export const LoginPage = () => {
               Create an Account
             </Link>
           </div>
-        </div>
+        </Card>
       </div>
     </div>
   )
