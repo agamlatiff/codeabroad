@@ -48,16 +48,19 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*domain.Us
 // mockSessionRepository implements an in-memory domain.SessionRepository for unit testing
 type mockSessionRepository struct {
 	sessions map[string]string
+	ttls     map[string]time.Duration
 }
 
 func newMockSessionRepository() *mockSessionRepository {
 	return &mockSessionRepository{
 		sessions: make(map[string]string),
+		ttls:     make(map[string]time.Duration),
 	}
 }
 
 func (m *mockSessionRepository) SetSession(ctx context.Context, userID, token string, ttl time.Duration) error {
 	m.sessions[userID] = token
+	m.ttls[userID] = ttl
 	return nil
 }
 
@@ -80,7 +83,7 @@ func setupTestUsecase() (domain.AuthUsecase, *mockUserRepository, *mockSessionRe
 	cfg := &config.Config{
 		JWTSecret:                  "super-secret-jwt-key-must-be-at-least-32-chars-long",
 		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   7,
+		JWTRefreshExpirationDays:   30,
 	}
 
 	authUc := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
@@ -220,6 +223,84 @@ func TestLogin_Success(t *testing.T) {
 
 	if res.AccessToken == "" || res.RefreshToken == "" {
 		t.Fatal("expected access and refresh tokens")
+	}
+}
+
+func TestLogin_RememberMe_True(t *testing.T) {
+	authUc, userRepo, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	password := "Password123!"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	user := &domain.User{
+		ID:           "usr_remember_true",
+		Name:         "Persistent User",
+		Username:     "persistent_user",
+		Email:        "persistent@example.com",
+		PasswordHash: string(hashedPassword),
+	}
+	_ = userRepo.Create(ctx, user)
+
+	loginReq := &domain.LoginRequest{
+		Email:      "persistent@example.com",
+		Password:   password,
+		RememberMe: true,
+	}
+
+	res, err := authUc.Login(ctx, loginReq)
+	if err != nil {
+		t.Fatalf("expected successful login, got: %v", err)
+	}
+
+	if res.AccessToken == "" || res.RefreshToken == "" {
+		t.Fatal("expected access and refresh tokens")
+	}
+
+	// Verify session TTL is 30 days (30 * 24 hours as defined in setupTestUsecase config)
+	expectedTTL := 30 * 24 * time.Hour
+	actualTTL := sessionRepo.ttls[user.ID]
+	if actualTTL != expectedTTL {
+		t.Fatalf("expected session TTL to be %v for RememberMe=true, got: %v", expectedTTL, actualTTL)
+	}
+}
+
+func TestLogin_RememberMe_False(t *testing.T) {
+	authUc, userRepo, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	password := "Password123!"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	user := &domain.User{
+		ID:           "usr_remember_false",
+		Name:         "Temporary User",
+		Username:     "temporary_user",
+		Email:        "temporary@example.com",
+		PasswordHash: string(hashedPassword),
+	}
+	_ = userRepo.Create(ctx, user)
+
+	loginReq := &domain.LoginRequest{
+		Email:      "temporary@example.com",
+		Password:   password,
+		RememberMe: false,
+	}
+
+	res, err := authUc.Login(ctx, loginReq)
+	if err != nil {
+		t.Fatalf("expected successful login, got: %v", err)
+	}
+
+	if res.AccessToken == "" || res.RefreshToken == "" {
+		t.Fatal("expected access and refresh tokens")
+	}
+
+	// Verify session TTL is 24 hours for temporary session
+	expectedTTL := 24 * time.Hour
+	actualTTL := sessionRepo.ttls[user.ID]
+	if actualTTL != expectedTTL {
+		t.Fatalf("expected session TTL to be %v for RememberMe=false, got: %v", expectedTTL, actualTTL)
 	}
 }
 

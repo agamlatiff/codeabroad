@@ -7,14 +7,15 @@ interface AuthState {
     accessToken: string | null
     refreshToken: string | null
     isAuthenticated: boolean
-    setAuth: (user: User, accessToken: string, refreshToken: string) => void
+    setAuth: (user: User, accessToken: string, refreshToken: string, rememberMe?: boolean) => void
     setTokens: (accessToken: string, refreshToken: string) => void
     logout: () => void
 }
 
 export const useAuthStore = create<AuthState>((set) => {
-    const savedUser = localStorage.getItem('user')
-    const savedRefreshToken = localStorage.getItem('refresh_token')
+    // Check localStorage (Remember Me) first, then fallback to sessionStorage
+    const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user')
+    const savedRefreshToken = localStorage.getItem('refresh_token') || sessionStorage.getItem('refresh_token')
 
     return {
         user: savedUser ? JSON.parse(savedUser) : null,
@@ -22,9 +23,15 @@ export const useAuthStore = create<AuthState>((set) => {
         refreshToken: savedRefreshToken,
         isAuthenticated: !!savedRefreshToken,
 
-        setAuth: (user, accessToken, refreshToken) => {
-            localStorage.setItem('user', JSON.stringify(user))
-            localStorage.setItem('refresh_token', refreshToken)
+        setAuth: (user, accessToken, refreshToken, rememberMe = false) => {
+            const primaryStorage = rememberMe ? localStorage : sessionStorage
+            const secondaryStorage = rememberMe ? sessionStorage : localStorage
+
+            primaryStorage.setItem('user', JSON.stringify(user))
+            primaryStorage.setItem('refresh_token', refreshToken)
+            secondaryStorage.removeItem('user')
+            secondaryStorage.removeItem('refresh_token')
+
             set({
                 user,
                 accessToken,
@@ -34,7 +41,12 @@ export const useAuthStore = create<AuthState>((set) => {
         },
 
         setTokens: (accessToken, refreshToken) => {
-            localStorage.setItem('refresh_token', refreshToken)
+            if (localStorage.getItem('refresh_token')) {
+                localStorage.setItem('refresh_token', refreshToken)
+            } else if (sessionStorage.getItem('refresh_token')) {
+                sessionStorage.setItem('refresh_token', refreshToken)
+            }
+
             set({
                 accessToken,
                 refreshToken,
@@ -45,6 +57,8 @@ export const useAuthStore = create<AuthState>((set) => {
         logout: () => {
             localStorage.removeItem('user')
             localStorage.removeItem('refresh_token')
+            sessionStorage.removeItem('user')
+            sessionStorage.removeItem('refresh_token')
             set({
                 user: null,
                 accessToken: null,

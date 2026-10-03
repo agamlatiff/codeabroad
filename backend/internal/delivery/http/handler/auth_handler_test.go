@@ -65,7 +65,7 @@ func setupTestRouter() (*gin.Engine, domain.AuthUsecase, *config.Config) {
 	cfg := &config.Config{
 		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
 		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   7,
+		JWTRefreshExpirationDays:   30,
 	}
 
 	userRepo := &testUserRepo{users: make(map[string]*domain.User)}

@@ -1,100 +1,123 @@
 import type { FC, ReactNode } from 'react'
 import { Logo } from '../ui/Logo'
 import doodleWelcome from '../../assets/kodi/doodle-welcome.png'
-import { DoodleStar, DoodleCodeBracket, DoodleFire } from '../ui/DoodleIcons'
 
 export interface AuthLayoutProps {
   title: string
   subtitle?: string
+  heroTitle?: string
+  heroSubtitle?: string
+  heroImage?: string
+  speechBubble?: string
   children: ReactNode
 }
 
 export const AuthLayout: FC<AuthLayoutProps> = ({
   title,
   subtitle,
+  heroTitle,
+  heroSubtitle,
+  heroImage,
+  speechBubble,
   children,
 }) => {
   return (
-    <div className="min-h-screen w-full bg-[#FAFAF9] flex flex-col lg:flex-row overflow-x-hidden font-sans">
-      {/* ── LEFT PANEL: BRAND HERO WITH KODI STUDIO STAGE ── */}
-      <div className="lg:w-[48%] xl:w-[46%] bg-gradient-to-br from-[#4F46E5] via-[#4338CA] to-[#312E81] text-white p-8 lg:p-14 flex flex-col justify-between relative overflow-hidden lg:[clip-path:polygon(0_0,100%_0,93%_100%,0%_100%)] shadow-2xl">
+    <div className="min-h-screen min-h-dvh lg:h-screen lg:h-dvh w-full bg-[#FAFAF9] flex flex-col lg:flex-row lg:overflow-hidden font-sans">
+      {/* ── 1. DESKTOP ONLY (>= 1024px): EXPANSIVE 50/50 SPLIT-SCREEN WITH 3D GLASS PODIUM ── */}
+      <div className="hidden lg:flex lg:w-[50%] xl:w-[48%] h-full bg-gradient-to-br from-[#4F46E5] via-[#4338CA] to-[#312E81] text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden [clip-path:polygon(0_0,100%_0,85%_100%,0%_100%)] shadow-2xl shrink-0 select-none">
         {/* Top: CodeAbroad Logo */}
         <div className="flex items-center justify-between z-10">
           <Logo variant="white" size="md" />
         </div>
 
-        {/* Center: Kodi Mascot on Studio Stage */}
-        <div className="my-auto py-12 flex flex-col items-center justify-center relative z-10">
-          <div className="relative flex items-center justify-center">
-            
-            {/* 1. Subtle Ambient Backlight */}
-            <div className="w-80 h-80 lg:w-96 lg:h-96 rounded-full bg-white/[0.12] blur-3xl absolute -z-0 pointer-events-none" />
-
-            {/* 2. Circular Frosted Studio Stage */}
-            <div className="w-72 lg:w-84 h-24 lg:h-28 bg-white/20 rounded-[50%] border border-white/35 backdrop-blur-md absolute -bottom-8 z-0 shadow-[0_20px_45px_rgba(0,0,0,0.25)]" />
-            
-            {/* Soft Contact Shadow with Synchronized Breathing Animation */}
-            <div className="w-44 lg:w-52 h-7 bg-black/35 rounded-[50%] blur-sm absolute -bottom-3 z-0 animate-shadow origin-center" />
-
-            {/* 3. Cohesive SVG Doodle Ornaments Orbiting Kodi */}
-            {/* Star Doodle (Playfully hovering near top-right shoulder) */}
-            <div className="absolute top-2 -right-2 lg:top-3 lg:-right-4 z-20 animate-float-slow transition-transform duration-300 hover:scale-125 rotate-12 select-none">
-              <DoodleStar className="w-8 h-8 lg:w-10 lg:h-10 drop-shadow-lg opacity-95" />
-            </div>
-
-            {/* Fire / Streak Doodle (Hovering near top-left) */}
-            <div className="absolute top-4 -left-2 lg:top-5 lg:-left-4 z-20 animate-float-slow [animation-delay:1.5s] transition-transform duration-300 hover:scale-125 -rotate-12 select-none">
-              <DoodleFire className="w-7 h-7 lg:w-9 lg:h-9 drop-shadow-lg opacity-95" />
-            </div>
-
-            {/* Code Bracket { } Doodle (Resting near bottom-left stage edge) */}
-            <div className="absolute bottom-8 -left-3 lg:bottom-10 lg:-left-5 z-20 transition-transform duration-300 hover:scale-125 rotate-6 select-none">
-              <DoodleCodeBracket className="w-7 h-7 lg:w-8 lg:h-8 drop-shadow-md opacity-85" />
-            </div>
-
-            {/* Sparkle Accent (Hovering off the right arm) */}
-            <div className="absolute bottom-16 -right-3 lg:bottom-20 lg:-right-5 z-20 text-white/90 text-xl lg:text-2xl select-none pointer-events-none animate-pulse">
-              ✦
-            </div>
-
-            {/* Subtle Ambient Sparkle at the Top */}
-            <div className="absolute -top-3 left-1/3 text-white/60 text-sm select-none pointer-events-none animate-pulse [animation-delay:1s]">
-              ✧
-            </div>
-
-            {/* 4. Primary Mascot Character (Idle Floating Animation) */}
-            <img
-              src={doodleWelcome}
-              alt="Kodi Mascot CodeAbroad"
-              className="w-64 h-64 lg:w-72 lg:h-72 object-contain select-none drop-shadow-2xl relative z-10 animate-float transition-transform duration-300 hover:scale-105"
-            />
+        {/* Upper/Middle: Headline & Subhead with Plus Jakarta Sans */}
+        <div className="my-auto pt-4 pb-2 z-10 max-w-md">
+          <div className="mb-8 text-left">
+            <h2 className="text-3xl lg:text-[38px] font-extrabold text-white tracking-tight leading-[1.18] font-['Plus_Jakarta_Sans',sans-serif]">
+              {heroTitle || 'Buka Peluang Karir Duniamu'}
+            </h2>
+            <p className="text-white/80 text-sm font-normal mt-3 leading-relaxed font-['Plus_Jakarta_Sans',sans-serif] max-w-sm">
+              {heroSubtitle || 'Persiapan coding interview global lebih terarah bersama Kodi.'}
+            </p>
           </div>
 
-          {/* Inspirational Tagline (Option 1) */}
-          <div className="mt-12 lg:mt-14 text-center max-w-sm px-4">
-            <h2 className="text-xl lg:text-2xl font-bold text-white tracking-tight leading-snug">
-              Buka Peluang Karir Duniamu
-            </h2>
-            <p className="text-white/75 text-xs lg:text-sm font-normal mt-2 leading-relaxed">
-              Persiapan coding interview global lebih terarah bersama Kodi.
-            </p>
+          {/* Bottom: Kodi Mascot on Stepped 3D Glass Podium */}
+          <div className="flex flex-col items-center justify-center relative pt-4 pb-6">
+            <div className="relative flex items-center justify-center group cursor-pointer">
+              {/* Subtle Ambient Backlight */}
+              <div className="w-80 xl:w-[420px] h-80 xl:h-[420px] rounded-full bg-white/[0.12] blur-3xl absolute -z-0 pointer-events-none transition-opacity duration-500 group-hover:opacity-100" />
+
+              {/* ── MANGA / COMIC SPEECH BUBBLE (DESKTOP) ── */}
+              <div className="absolute -top-10 -right-8 z-30 select-none transition-all duration-300 ease-out group-hover:scale-105 group-hover:-rotate-2 group-hover:-translate-y-1">
+                <div className="relative bg-white text-slate-900 px-4 py-2.5 rounded-[22px] border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0F172A] max-w-[220px] text-center">
+                  <p className="text-[13px] font-bold tracking-tight leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
+                    {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
+                  </p>
+                  {/* Manga Tail pointing towards Kodi */}
+                  <div className="absolute -bottom-2.5 left-6 w-3.5 h-3.5 bg-white border-b-2 border-l-2 border-slate-900 -rotate-45" />
+                </div>
+              </div>
+
+              {/* ── STEPPED 3D GLASS PODIUM (3 TIERS) ── */}
+              {/* Tier 1 (Base / Widest Step) */}
+              <div className="w-92 xl:w-[400px] h-24 xl:h-26 bg-white/[0.08] rounded-[50%] border border-white/20 backdrop-blur-sm absolute -bottom-12 z-0 shadow-[0_25px_45px_rgba(0,0,0,0.3)] transition-transform duration-500 group-hover:scale-[1.01]" />
+
+              {/* Tier 2 (Middle Step) */}
+              <div className="w-82 xl:w-[350px] h-22 xl:h-24 bg-white/[0.16] rounded-[50%] border border-white/30 backdrop-blur-md absolute -bottom-8 z-0 shadow-[0_15px_30px_rgba(0,0,0,0.2)] transition-transform duration-500 group-hover:scale-[1.015]" />
+
+              {/* Tier 3 (Crown Pedestal - Top Step) */}
+              <div className="w-74 xl:w-[310px] h-20 xl:h-22 bg-white/[0.28] rounded-[50%] border-2 border-white/45 backdrop-blur-lg absolute -bottom-4 z-0 shadow-[inset_0_2px_8px_rgba(255,255,255,0.4),0_10px_25px_rgba(0,0,0,0.15)] transition-transform duration-500 group-hover:scale-[1.02]" />
+              
+              {/* Soft Contact Shadow on Top Pedestal */}
+              <div className="w-52 xl:w-56 h-6 bg-black/40 rounded-[50%] blur-sm absolute -bottom-0.5 z-0 origin-center transition-all duration-300 group-hover:scale-90 group-hover:opacity-60" />
+
+              {/* Primary Mascot Character (Confident Grounded Stance + Tactile Hover) */}
+              <img
+                src={heroImage || doodleWelcome}
+                alt="Kodi Mascot CodeAbroad"
+                className="w-72 xl:w-80 h-72 xl:h-80 object-contain select-none drop-shadow-2xl relative z-10 transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-[1.03]"
+              />
+            </div>
           </div>
         </div>
 
         {/* Bottom Spacer for Visual Balance */}
-        <div className="hidden lg:block h-6" />
+        <div className="h-4" />
       </div>
 
-      {/* ── RIGHT PANEL: CLEAN AUTH FORM ── */}
-      <div className="flex-1 flex items-center justify-center p-6 md:p-12 lg:p-16">
-        <div className="w-full max-w-sm">
+      {/* ── 2. MOBILE & TABLET ADAPTIVE CONTAINER (ERGONOMIC & COHESIVE) ── */}
+      <div className="flex-1 h-full flex flex-col justify-center items-center px-4 py-6 sm:px-8 md:py-10 lg:py-4 lg:px-8 xl:py-6 xl:px-12 w-full lg:overflow-y-auto">
+        {/* Mobile / Tablet Top Header: Logo + Kodi Companion Greeting */}
+        <div className="w-full max-w-sm md:max-w-md lg:hidden mb-6">
+          {/* Logo Bar */}
+          <div className="flex items-center justify-between mb-4">
+            <Logo variant="slate" size="sm" />
+          </div>
+
+          {/* Integrated Kodi Companion Card (Mobile & Tablet) */}
+          <div className="relative bg-gradient-to-r from-indigo-50/90 via-white to-indigo-50/60 border border-indigo-100 rounded-2xl p-3 sm:p-3.5 shadow-sm flex items-center gap-3">
+            <img
+              src={heroImage || doodleWelcome}
+              alt="Kodi Mascot"
+              className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0 drop-shadow-sm select-none"
+            />
+            <div className="flex-1 min-w-0 pr-1">
+              <div className="inline-block bg-white text-slate-800 text-[11px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-indigo-100 shadow-sm leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
+                {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Auth Form Container (Responsive: Ergonomic Flow on Mobile, Sleek Card on Tablet, Clean Split on Desktop) */}
+        <div className="w-full max-w-sm md:max-w-md lg:max-w-sm md:bg-white md:p-8 md:rounded-3xl md:border md:border-slate-200/80 md:shadow-xl lg:bg-transparent lg:p-0 lg:border-none lg:shadow-none">
           {/* Form Header */}
-          <div className="mb-7 text-left">
-            <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">
+          <div className="mb-3.5 sm:mb-4 lg:mb-3 text-left">
+            <h1 className="text-2xl md:text-3xl lg:text-[26px] font-extrabold text-slate-900 tracking-tight font-['Plus_Jakarta_Sans',sans-serif]">
               {title}
             </h1>
             {subtitle && (
-              <p className="text-xs md:text-sm text-slate-500 mt-1.5 leading-relaxed font-normal">
+              <p className="text-xs sm:text-sm text-slate-500 mt-1 leading-relaxed font-normal font-['Plus_Jakarta_Sans',sans-serif]">
                 {subtitle}
               </p>
             )}

@@ -71,6 +71,14 @@ The following stack is locked. Do not introduce new libraries or tools without e
 - Types/Interfaces: `PascalCase`, prefix interfaces with `I` only if needed for clarity
 - Always define explicit TypeScript types — avoid `any`
 
+### 📱 Responsive Design & UX Philosophy
+- **Holistic Responsiveness over Lazy Grid Stacking:** Never treat responsive design as merely collapsing a 2-column desktop grid into a vertically stacked column (`flex-col lg:flex-row`). Lazy stacking pushes essential interaction elements (forms, buttons, CTAs) far below the fold and breaks mobile/tablet UX.
+- **Device-Context Adaptation:**
+  - **Desktop (>=1024px):** Rich dual-panel/split-screen layouts, expansive brand visual storytelling, decorative depth.
+  - **Tablet (768px - 1023px):** Streamlined layout where the user's task remains primary. Visual branding is condensed or elegantly framed so forms are front and center without awkward vertical scrolling.
+  - **Mobile (<768px):** Task-first UX. Primary interaction elements (login/register form, inputs, primary action) must be immediately visible and ergonomic without tedious scrolling. Heavy decorative hero sections must either adapt into sleek, compact companion banners or yield priority to the primary form.
+- **Beauty & UX Harmony:** Responsiveness must be both comfortable from a UX standpoint (accessible, ergonomic touch targets min 44px, fast flow) and beautiful in UI (intentional whitespace, harmonious typography scale, no awkward overflow or clipped decorative stages).
+
 ---
 
 ## 🔌 API Design

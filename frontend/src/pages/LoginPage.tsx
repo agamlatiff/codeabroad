@@ -32,11 +32,12 @@ export const LoginPage = () => {
       const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', {
         email,
         password,
+        remember_me: rememberMe,
       })
 
       const res = response.data
       if (res.success && res.data) {
-        setAuth(res.data.user, res.data.access_token, res.data.refresh_token)
+        setAuth(res.data.user, res.data.access_token, res.data.refresh_token, rememberMe)
         navigate('/dashboard')
       } else {
         setError(res.error || 'Gagal masuk. Silakan coba beberapa saat lagi.')
@@ -62,6 +63,7 @@ export const LoginPage = () => {
     <AuthLayout
       title="Selamat Datang"
       subtitle="Masuk ke akunmu untuk melanjutkan persiapan karir tech."
+      speechBubble="Halo! Siap lanjut push code hari ini? 🚀"
     >
       {/* Error Alert */}
       {error && (
@@ -115,14 +117,14 @@ export const LoginPage = () => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full h-11.5 rounded-xl bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] active:scale-[0.99] text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 disabled:opacity-50 mt-2"
+          className="w-full h-11 rounded-xl bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] active:scale-[0.99] text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 disabled:opacity-50 mt-2"
         >
           {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Masuk Sekarang'}
         </button>
       </form>
 
       {/* ── 2. DIVIDER ── */}
-      <AuthDivider text="atau lanjutkan dengan" />
+      <AuthDivider text="atau lanjutkan dengan" className="my-3.5 sm:my-4" />
 
       {/* ── 3. GOOGLE OAUTH BUTTON (SECOND) ── */}
       <div className="space-y-3">
@@ -132,7 +134,7 @@ export const LoginPage = () => {
       </div>
 
       {/* ── 4. REGISTRATION FOOTER ── */}
-      <div className="mt-8 text-center text-xs text-slate-500 font-normal">
+      <div className="mt-4 sm:mt-5 text-center text-xs text-slate-500 font-normal">
         Belum punya akun?{' '}
         <Link to="/register" className="text-[#4F46E5] font-semibold hover:underline">
           Daftar sekarang

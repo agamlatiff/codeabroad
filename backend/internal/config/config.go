@@ -41,9 +41,9 @@ func LoadConfig() (*Config, error) {
 		jwtExpMin = 15
 	}
 
-	jwtRefreshExpDays, err := strconv.Atoi(getEnv("JWT_REFRESH_EXPIRATION_DAYS", "7"))
+	jwtRefreshExpDays, err := strconv.Atoi(getEnv("JWT_REFRESH_EXPIRATION_DAYS", "30"))
 	if err != nil {
-		jwtRefreshExpDays = 7
+		jwtRefreshExpDays = 30
 	}
 
 	return &Config{

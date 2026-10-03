@@ -25,3 +25,9 @@ export type ApiResponse<T> =
   | { success: true; message?: string; data: T; error?: never }
   | { success: false; error: string; code: string; data?: never }
 
+export interface LoginPayload {
+    email: string
+    password: string
+    remember_me?: boolean
+}
+

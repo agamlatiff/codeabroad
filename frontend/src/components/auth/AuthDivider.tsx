@@ -1,5 +1,5 @@
-export const AuthDivider = ({ text = 'OR' }: { text?: string }) => (
-  <div className="relative my-6">
+export const AuthDivider = ({ text = 'OR', className = 'my-4' }: { text?: string; className?: string }) => (
+  <div className={`relative ${className}`}>
     <div className="absolute inset-0 flex items-center">
       <div className="w-full border-t border-slate-200" />
     </div>
