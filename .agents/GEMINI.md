@@ -7,8 +7,9 @@
 
 ## 🌐 Language
 
-- All code, comments, commit messages, documentation, and variable names must be written in **English**.
-- No Indonesian or mixed-language text anywhere in the codebase.
+- **Code Comments:** **All code comments MUST be written in English at all times.** Never write Indonesian in code comments (JSX comments, inline comments, docstrings).
+- **Code & Commits:** All code, commit messages, technical documentation, variable names, and function names must be written in **English**.
+- **User-Facing UI Copy:** Labels, placeholders, and notification messages displayed to the end-user are in **Indonesian** (since the target audience is Indonesian software engineers).
 
 ---
 
@@ -69,6 +70,14 @@ The following stack is locked. Do not introduce new libraries or tools without e
 - Hooks: prefix with `use` (e.g., `useQuests`)
 - Types/Interfaces: `PascalCase`, prefix interfaces with `I` only if needed for clarity
 - Always define explicit TypeScript types — avoid `any`
+
+### 📱 Responsive Design & UX Philosophy
+- **Holistic Responsiveness over Lazy Grid Stacking:** Never treat responsive design as merely collapsing a 2-column desktop grid into a vertically stacked column (`flex-col lg:flex-row`). Lazy stacking pushes essential interaction elements (forms, buttons, CTAs) far below the fold and breaks mobile/tablet UX.
+- **Device-Context Adaptation:**
+  - **Desktop (>=1024px):** Rich dual-panel/split-screen layouts, expansive brand visual storytelling, decorative depth.
+  - **Tablet (768px - 1023px):** Streamlined layout where the user's task remains primary. Visual branding is condensed or elegantly framed so forms are front and center without awkward vertical scrolling.
+  - **Mobile (<768px):** Task-first UX. Primary interaction elements (login/register form, inputs, primary action) must be immediately visible and ergonomic without tedious scrolling. Heavy decorative hero sections must either adapt into sleek, compact companion banners or yield priority to the primary form.
+- **Beauty & UX Harmony:** Responsiveness must be both comfortable from a UX standpoint (accessible, ergonomic touch targets min 44px, fast flow) and beautiful in UI (intentional whitespace, harmonious typography scale, no awkward overflow or clipped decorative stages).
 
 ---
 
@@ -162,7 +171,19 @@ Examples:
 ## 🤝 Collaboration Rules (AI Agent)
 
 - **Do not modify, create, or delete any file without explicit user permission.**
+- **Never implement or write feature code directly into files**: Always provide implementation code snippets in chat so the user can type/implement them manually for learning.
+- **Automated Test Suite Generation by AI**: After a feature slice is implemented, the AI agent is responsible for authoring automated test files (`*_test.go`) directly, covering happy paths, edge cases, and error handling.
+- **Do not run `go build`, compile, or test commands automatically**: Let the user build, run, and verify code themselves.
 - Always explain what you plan to do before doing it.
 - When suggesting changes, show the diff or new content first and wait for approval.
 - If unsure about intent, ask — don't assume.
 - Prefer small, focused changes over large sweeping edits.
+- **Proactive Technical Debt & Best Practice Warnings**: Always prioritize production-grade best practices. If a quick, simplified, or "dirty" approach is ever suggested, **explicitly warn the user** that it incurs technical debt, explain why, and present the industry best practice alongside it.
+
+---
+
+## 🎯 Feature Development Flow (End-to-End Vertical Slice)
+
+- **Strict Single-Feature Focus:** Work on **ONE feature at a time from start to finish** across the full stack (Backend ➔ Frontend ➔ DevOps/Testing/Integration) before moving to another feature.
+- **No Premature Context Switching:** Never jump to a new domain or separate feature until the current feature's complete lifecycle is implemented, wired, and verified.
+- **Full Lifecycle Visibility:** The goal is to see each feature fully alive — from database migration, backend domain/usecase/delivery, frontend UI/UX and state management, to Docker/reverse proxy configuration.

@@ -1,6 +1,10 @@
 package main
 
 import (
+	"codeabroad/backend/internal/config"
+	"codeabroad/backend/internal/repository/database"
+	"codeabroad/backend/internal/repository/session"
+	"codeabroad/backend/internal/usecase"
 	"context"
 	"errors"
 	"log"
@@ -9,11 +13,11 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
-	"codeabroad/backend/internal/config"
 
 	deliveryHttp "codeabroad/backend/internal/delivery/http"
 	"codeabroad/backend/internal/delivery/http/handler"
-	"codeabroad/backend/internal/infrastructure/database"
+	"codeabroad/backend/internal/delivery/http/middleware"
+	"codeabroad/backend/internal/infrastructure/postgres"
 	"codeabroad/backend/internal/infrastructure/redis"
 )
 
@@ -27,7 +31,7 @@ func main() {
 	defer cancel()
 
 	// 2. Initialize PostgreSQL connection pool
-	pg, err := database.NewPostgresDB(ctx, cfg)
+	pg, err := postgres.NewPostgresDB(ctx, cfg)
 	if err != nil {
 		log.Fatalf("failed to connect to postgres: %v", err)
 	}
@@ -46,15 +50,27 @@ func main() {
 	}()
 	log.Println("connected to Redis successfully")
 
-	// 4. Initialize HTTP delivery handlers
-	healthHandler := handler.NewHealthHandler(pg, rdb)
+	// 4. Initialize Repositories (Data Layer)
+	userRepo := database.NewUserRepository(pg)
+	sessionRepo := session.NewSessionRepository(rdb)
 
-	// 5. Setup Gin router with registered routes
+	// 5. Initialize Usecases (Business Logic Layer)
+	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
+
+
+	// 6. Initialize Handlers & Middlewares (Delivery Layer)
+	healthHandler := handler.NewHealthHandler(pg, rdb)
+	authHandler := handler.NewAuthHandler(authUsecase)
+	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
+
+	// 7. Setup Gin router with registered routes
 	router := deliveryHttp.SetupRouter(&deliveryHttp.RouterConfig{
-		HealthHandler: healthHandler,
+		HealthHandler:  healthHandler,
+		AuthHandler:    authHandler,
+		AuthMiddleware: authMiddleware,
 	})
 
-	// 6. Configure HTTP server
+	// 8. Configure HTTP server
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
 		Handler:      router,
@@ -63,7 +79,7 @@ func main() {
 		IdleTimeout:  60 * time.Second,
 	}
 
-	// 7. Start server in a background goroutine
+	// 9. Start server in a background goroutine
 	go func() {
 		log.Printf("CodeAbroad API server listening on port %s (%s environment)", cfg.Port, cfg.Env)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
@@ -71,7 +87,7 @@ func main() {
 		}
 	}()
 
-	// 8. Graceful shutdown listening for OS signals (Ctrl+C, SIGTERM)
+	// 10. Graceful shutdown listening for OS signals (Ctrl+C, SIGTERM)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit

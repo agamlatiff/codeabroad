@@ -1,19 +1,21 @@
 package http
 
 import (
-	"time"
 	"codeabroad/backend/internal/delivery/http/handler"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"time"
 )
 
 // RouterConfig holds all handler dependencies required by the router
 type RouterConfig struct {
-	HealthHandler *handler.HealthHandler
+	HealthHandler  *handler.HealthHandler
+	AuthHandler    *handler.AuthHandler
+	AuthMiddleware gin.HandlerFunc
 }
 
 // SetupRouter initializes the Gin engine and configures API v1 routes
-func SetupRouter(cfg *RouterConfig) *gin.Engine  {
+func SetupRouter(cfg *RouterConfig) *gin.Engine {
 	r := gin.Default()
 
 	// CORS configuration for frontend integration
@@ -29,7 +31,8 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine  {
 	// API version 1 route group
 	v1 := r.Group("/api/v1")
 	{
-		v1.GET("/health", cfg.HealthHandler.CheckHealth)
+		cfg.HealthHandler.RegisterRoutes(v1)
+		cfg.AuthHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 	}
 	return r
 }
