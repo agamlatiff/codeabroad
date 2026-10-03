@@ -50,8 +50,9 @@ type RegisterRequest struct {
 
 // LoginRequest defines the input payload for authenticating a user
 type LoginRequest struct {
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required"`
+	Email      string `json:"email" binding:"required,email"`
+	Password   string `json:"password" binding:"required"`
+	RememberMe bool   `json:"remember_me"`
 }
 
 // RefreshTokenRequest defines the input payload for refreshing tokens

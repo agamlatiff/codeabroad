@@ -83,13 +83,13 @@ func (u *authUsecase) Register(ctx context.Context, req *domain.RegisterRequest)
 	}
 
 	// 6. Generate JWT token pair
-	accessToken, refreshToken, err := u.generateTokenPair(newUser)
+	sessionTTL := time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
+	accessToken, refreshToken, err := u.generateTokenPair(newUser, sessionTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
 	// 7. Store refresh token session via session repository
-	sessionTTL := time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
 	if err := u.sessionRepo.SetSession(ctx, newUser.ID, refreshToken, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
@@ -117,14 +117,23 @@ func (u *authUsecase) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		return nil, domain.ErrInvalidCredentials
 	}
 
-	// 3. Generate new JWT token pair
-	accessToken, refreshToken, err := u.generateTokenPair(user)
+	// 3. Determine session TTL based on RememberMe flag
+	var sessionTTL time.Duration
+	if req.RememberMe {
+		// Persistent session (configured days, default 30 days)
+		sessionTTL = time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
+	} else {
+		// Temporary session (24 hours)
+		sessionTTL = 24 * time.Hour
+	}
+
+	// 4. Generate new JWT token pair with dynamic TTL
+	accessToken, refreshToken, err := u.generateTokenPair(user, sessionTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	// 4. Update session in session repository
-	sessionTTL := time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
+	// 5. Update session in session repository with dynamic TTL
 	if err := u.sessionRepo.SetSession(ctx, user.ID, refreshToken, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
@@ -171,13 +180,13 @@ func (u *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (*d
 	}
 
 	// 4. Generate new token pair (Token Rotation)
-	newAccessToken, newRefreshToken, err := u.generateTokenPair(user)
+	sessionTTL := time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
+	newAccessToken, newRefreshToken, err := u.generateTokenPair(user, sessionTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
 	// 5. Update session in Redis with the new refresh token
-	sessionTTL := time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
 	if err := u.sessionRepo.SetSession(ctx, user.ID, newRefreshToken, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to update session: %w", err)
 	}
@@ -201,8 +210,8 @@ func (u *authUsecase) GetProfile(ctx context.Context, userID string) (*domain.Us
 	return user, nil
 }
 
-// generateTokenPair produces a signed access token and refresh token
-func (u *authUsecase) generateTokenPair(user *domain.User) (string, string, error) {
+// generateTokenPair produces a signed access token and dynamic duration refresh token
+func (u *authUsecase) generateTokenPair(user *domain.User, refreshDuration time.Duration) (string, string, error) {
 	now := time.Now()
 
 	// 1. Create Access Token (short-lived)
@@ -224,13 +233,13 @@ func (u *authUsecase) generateTokenPair(user *domain.User) (string, string, erro
 		return "", "", fmt.Errorf("failed to sign access token: %w", err)
 	}
 
-	// 2. Create Refresh Token (long-lived)
+	// 2. Create Refresh Token with dynamic duration
 	refreshClaims := &JWTClaims{
 		UserID:   user.ID,
 		Email:    user.Email,
 		Username: user.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(u.cfg.JWTRefreshExpirationDays) * 24 * time.Hour)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(refreshDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Subject:   user.ID,
