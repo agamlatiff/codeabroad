@@ -2,26 +2,90 @@
 
 @layer base {
   body {
-    background-color: #090a0f;
-    color: #e2e8f0;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background-color: #FAFAF9;
+    color: #0F172A;
+    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
     margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 }
 
-/* Custom Utilities for Raycast Obsidian Aesthetic */
-.glass-panel {
-  background: rgba(18, 19, 28, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Duolingo-style Brand Font Utility */
+.font-brand {
+  font-family: 'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-.glow-emerald {
-  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+/* Custom Utilities for Japanese Tech Doodle Aesthetic */
+.card-doodle {
+  background-color: #FFFFFF;
+  border: 2px solid #0F172A;
+  border-radius: 1.5rem;
+  box-shadow: 4px 4px 0px 0px #0F172A;
 }
 
-.glow-cyan {
-  box-shadow: 0 0 25px -5px rgba(6, 182, 212, 0.3);
+.card-soft {
+  background-color: #FFFFFF;
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 1.5rem;
+  box-shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.05);
+}
+
+.btn-tactile {
+  border: 2px solid #0F172A;
+  box-shadow: 0 4px 0 0 #0F172A;
+  transition: all 0.15s ease;
+}
+
+.btn-tactile:hover {
+  transform: translateY(2px);
+  box-shadow: 0 2px 0 0 #0F172A;
+}
+
+.btn-tactile:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+/* Micro-animations for Mascot and Interactive Doodles */
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes shadow-breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(0.85);
+    opacity: 0.15;
+  }
+}
+
+@keyframes float-slow {
+  0%, 100% {
+    transform: translateY(0px) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(4deg);
+  }
+}
+
+.animate-float {
+  animation: float 4s ease-in-out infinite;
+}
+
+.animate-shadow {
+  animation: shadow-breathe 4s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: float-slow 5s ease-in-out infinite;
 }

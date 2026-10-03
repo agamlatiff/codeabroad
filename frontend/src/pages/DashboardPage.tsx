@@ -56,22 +56,22 @@ export const DashboardPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-[#0B0D14] text-slate-200 p-4 md:p-10">
+    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 p-4 md:p-10">
       <div className="max-w-5xl mx-auto space-y-8">
         {/* Top Navbar */}
-        <header className="flex items-center justify-between pb-6 border-b border-white/10">
+        <header className="flex items-center justify-between pb-6 border-b border-slate-200/80 bg-transparent">
           <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-2xl bg-cyan-500/10 border-2 border-cyan-400 text-cyan-400 flex items-center justify-center shadow-[2px_2px_0px_0px_#06b6d4]">
+            <div className="w-11 h-11 rounded-2xl bg-slate-950 text-white flex items-center justify-center font-bold shadow-sm">
               <Terminal className="w-6 h-6" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-xl font-black text-white tracking-tight">CodeAbroad</h1>
-                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-400/10 border border-cyan-400/30 text-cyan-300 font-bold">
+                <h1 className="text-xl font-black text-slate-900 tracking-tight">CodeAbroad</h1>
+                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold border border-slate-200">
                   コード海外
                 </span>
               </div>
-              <p className="text-xs text-slate-400">Indonesian Devs to Japan, Germany & Singapore</p>
+              <p className="text-xs text-slate-500 font-medium">Indonesian Devs to Japan, Germany & Singapore</p>
             </div>
           </div>
 
@@ -87,25 +87,26 @@ export const DashboardPage = () => {
 
         {/* 2-Column Hero & Mascot Section */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Mascot Card (Kodi in Japanese Doodle Style) */}
+          {/* Left Column: Mascot Card in Soft Mint Panel */}
           <div className="lg:col-span-5 space-y-3">
             <MascotCard
               name="Kodi"
               pose={currentPose}
+              variant="mint"
               streak={user?.streak ?? 1}
               xp={user?.xp ?? 0}
               message={poseMessages[currentPose]}
             />
 
             {/* Interactive Pose Switcher Stickers */}
-            <div className="flex items-center justify-center gap-2 p-2 rounded-2xl bg-[#131622] border-2 border-slate-800">
-              <span className="text-[11px] font-medium text-slate-400 mr-1">Pose:</span>
+            <div className="flex items-center justify-center gap-2 p-2 rounded-2xl bg-white border-2 border-slate-200 shadow-sm">
+              <span className="text-[11px] font-bold text-slate-400 mr-1">Pose:</span>
               <button
                 onClick={() => setCurrentPose('welcome')}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   currentPose === 'welcome'
-                    ? 'bg-cyan-400 text-slate-950 border border-slate-900 shadow-[2px_2px_0px_0px_#000]'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-slate-950 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 👋 Hello
@@ -114,8 +115,8 @@ export const DashboardPage = () => {
                 onClick={() => setCurrentPose('coding')}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   currentPose === 'coding'
-                    ? 'bg-cyan-400 text-slate-950 border border-slate-900 shadow-[2px_2px_0px_0px_#000]'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-slate-950 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 💻 Coding
@@ -124,8 +125,8 @@ export const DashboardPage = () => {
                 onClick={() => setCurrentPose('celebrate')}
                 className={`px-3 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                   currentPose === 'celebrate'
-                    ? 'bg-cyan-400 text-slate-950 border border-slate-900 shadow-[2px_2px_0px_0px_#000]'
-                    : 'text-slate-400 hover:text-white'
+                    ? 'bg-slate-950 text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-900'
                 }`}
               >
                 🎉 Victory
@@ -136,49 +137,49 @@ export const DashboardPage = () => {
           {/* Right Column: Career Track & Quick Focus Actions */}
           <div className="lg:col-span-7 space-y-6">
             {/* Welcome & Career Track Card */}
-            <Card glow="cyan">
+            <Card variant="white">
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase tracking-wider text-cyan-400 font-bold flex items-center gap-1.5">
+                <span className="text-xs uppercase tracking-wider text-slate-500 font-bold flex items-center gap-1.5">
                   <Compass className="w-3.5 h-3.5" /> ターゲット市場 • Target Market
                 </span>
                 
                 {/* Traditional Japanese Hanko Stamp */}
                 <div className="flex items-center gap-2">
-                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 border-2 border-emerald-500/30 text-emerald-400 font-bold">
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-bold">
                     ● Active Member
                   </span>
                   <DoodleHanko text="合格" className="w-8 h-8" />
                 </div>
               </div>
 
-              <h2 className="text-2xl font-black text-white mt-3 tracking-tight">
+              <h2 className="text-2xl md:text-3xl font-black text-slate-900 mt-3 tracking-tight">
                 Welcome back, {user?.name || 'Developer'}! 👋
               </h2>
-              <p className="text-sm text-slate-400 mt-1">
+              <p className="text-sm text-slate-500 mt-1">
                 @{user?.username || 'user'} • {user?.email}
               </p>
 
               {/* Target Countries Pills */}
-              <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-white/10 text-xs">
-                <span className="px-3.5 py-1.5 rounded-xl bg-[#1A1D2E] border-2 border-slate-800 text-slate-200 font-semibold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)]">
+              <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-slate-100 text-xs">
+                <span className="px-3.5 py-1.5 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 font-bold flex items-center gap-1.5 shadow-sm">
                   🇯🇵 Tokyo, Japan
                 </span>
-                <span className="px-3.5 py-1.5 rounded-xl bg-[#1A1D2E] border-2 border-slate-800 text-slate-200 font-semibold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)]">
+                <span className="px-3.5 py-1.5 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 font-bold flex items-center gap-1.5 shadow-sm">
                   🇩🇪 Berlin, Germany
                 </span>
-                <span className="px-3.5 py-1.5 rounded-xl bg-[#1A1D2E] border-2 border-slate-800 text-slate-200 font-semibold flex items-center gap-1.5 shadow-[2px_2px_0px_0px_rgba(0,0,0,0.4)]">
+                <span className="px-3.5 py-1.5 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 font-bold flex items-center gap-1.5 shadow-sm">
                   🇸🇬 Singapore
                 </span>
               </div>
 
-              {/* Primary Tactile Focus Button */}
+              {/* Primary Focus Button like the reference */}
               <div className="mt-6 flex flex-col sm:flex-row gap-3">
                 <Button
                   variant="primary"
                   size="lg"
                   fullWidth
                   onClick={() => setCurrentPose('coding')}
-                  icon={<DoodleCodeBracket className="w-5 h-5 text-slate-950" />}
+                  icon={<DoodleCodeBracket className="w-5 h-5 text-white" />}
                 >
                   Start Coding Quest 🚀
                 </Button>
@@ -195,16 +196,16 @@ export const DashboardPage = () => {
             </Card>
 
             {/* Live Token & Auth Verification Test */}
-            <Card>
+            <Card variant="white">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 flex items-center justify-center shrink-0">
+                <div className="w-10 h-10 rounded-2xl bg-slate-100 text-slate-900 border border-slate-200 flex items-center justify-center shrink-0">
                   <ShieldCheck className="w-5 h-5" />
                 </div>
                 <div>
-                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                    JWT Session Verification <Sparkles className="w-3.5 h-3.5 text-cyan-400" />
+                  <h3 className="text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                    JWT Session Verification <Sparkles className="w-3.5 h-3.5 text-cyan-600" />
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Verify that Axios Bearer Interceptor attaches your access token to protected routes.
                   </p>
                 </div>
@@ -216,13 +217,13 @@ export const DashboardPage = () => {
                   size="sm"
                   onClick={handleTestToken}
                   loading={verifying}
-                  icon={<CheckCircle2 className="w-4 h-4" />}
+                  icon={<CheckCircle2 className="w-4 h-4 text-emerald-600" />}
                 >
                   Test GET /api/v1/users/me
                 </Button>
 
                 {verifyResult && (
-                  <div className="p-2.5 rounded-xl bg-emerald-500/10 border-2 border-emerald-500/30 text-xs font-mono text-emerald-300 flex-1">
+                  <div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-200 text-xs font-mono text-emerald-800 flex-1">
                     {verifyResult}
                   </div>
                 )}

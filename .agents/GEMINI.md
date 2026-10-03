@@ -7,8 +7,9 @@
 
 ## 🌐 Language
 
-- All code, comments, commit messages, documentation, and variable names must be written in **English**.
-- No Indonesian or mixed-language text anywhere in the codebase.
+- **Code Comments:** **All code comments MUST be written in English at all times.** Never write Indonesian in code comments (JSX comments, inline comments, docstrings).
+- **Code & Commits:** All code, commit messages, technical documentation, variable names, and function names must be written in **English**.
+- **User-Facing UI Copy:** Labels, placeholders, and notification messages displayed to the end-user are in **Indonesian** (since the target audience is Indonesian software engineers).
 
 ---
 

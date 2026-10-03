@@ -21,20 +21,20 @@ export const Button = ({
   ...props
 }: ButtonProps) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-semibold rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none'
+    'inline-flex items-center justify-center font-bold rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none'
 
   const variants = {
-    // Tactile Japanese Pop Button with physical press feedback
+    // High-contrast solid black button inspired by Tuga's App
     primary:
-      'bg-cyan-400 text-slate-950 font-bold border-2 border-slate-950 shadow-[0_4px_0_0_#020617] hover:shadow-[0_2px_0_0_#020617] hover:translate-y-[2px] active:shadow-none active:translate-y-[4px]',
+      'bg-slate-950 text-white hover:bg-slate-800 border-2 border-slate-950 shadow-[0_4px_12px_rgba(15,23,42,0.15)] active:translate-y-0.5 active:shadow-sm',
     secondary:
-      'bg-[#191C2B] text-cyan-400 font-semibold border-2 border-slate-800 shadow-[0_3px_0_0_#0B0D14] hover:border-cyan-500/40 hover:translate-y-[1px] active:shadow-none active:translate-y-[3px]',
+      'bg-white text-slate-900 border-2 border-slate-900 shadow-[0_3px_0_0_#0F172A] hover:translate-y-0.5 hover:shadow-[0_1px_0_0_#0F172A] active:translate-y-1 active:shadow-none',
     outline:
-      'bg-transparent text-slate-300 border-2 border-slate-700 hover:bg-white/5 hover:text-white',
+      'bg-transparent text-slate-700 border-2 border-slate-200 hover:bg-slate-100 hover:text-slate-900',
     ghost:
-      'bg-transparent text-slate-400 hover:text-white hover:bg-white/5',
+      'bg-transparent text-slate-600 hover:text-slate-900 hover:bg-slate-100',
     danger:
-      'bg-rose-500/10 text-rose-400 border border-rose-500/20 hover:bg-rose-500/20',
+      'bg-rose-50 text-rose-600 border border-rose-200 hover:bg-rose-100',
   }
 
   const sizes = {
