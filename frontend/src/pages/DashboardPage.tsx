@@ -6,6 +6,7 @@ import type { ApiResponse, User } from '../types/auth'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
 import { UserAvatar } from '../components/ui/UserAvatar'
+import type { AvatarStyle } from '../utils/avatar'
 import { MascotCard, type KodiPose } from '../components/ui/MascotCard'
 import { 
   DoodleHanko, 
@@ -26,12 +27,26 @@ export const DashboardPage = () => {
   const { user, logout } = useAuthStore()
 
   const [currentPose, setCurrentPose] = useState<KodiPose>('welcome')
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(() => {
+    return (localStorage.getItem('codeabroad_avatar_style') as AvatarStyle) || 'adventurer'
+  })
   const [verifying, setVerifying] = useState(false)
   const [verifyResult, setVerifyResult] = useState<string | null>(null)
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  const handleAvatarStyleChange = (style: AvatarStyle) => {
+    setAvatarStyle(style)
+    localStorage.setItem('codeabroad_avatar_style', style)
+  }
+
+  const handleLogout = async () => {
+    try {
+      await api.post('/auth/logout')
+    } catch {
+      // In case server is unreachable, gracefully proceed to clear client session
+    } finally {
+      logout()
+      navigate('/login')
+    }
   }
 
   const handleTestToken = async () => {
@@ -79,7 +94,7 @@ export const DashboardPage = () => {
           <div className="flex items-center gap-3">
             {/* User Profile Pill with Generated Developer Avatar */}
             <div className="flex items-center gap-2.5 bg-white border border-slate-200/90 rounded-2xl py-1 px-2.5 shadow-xs">
-              <UserAvatar user={user} size="sm" showBadge badgeColor="streak" />
+              <UserAvatar user={user} size="sm" style={avatarStyle} showBadge badgeColor="streak" />
               <div className="text-left hidden sm:block">
                 <span className="text-xs font-bold text-slate-900 block leading-tight">
                   {user?.name?.split(' ')[0] || user?.username || 'Developer'}
@@ -169,7 +184,7 @@ export const DashboardPage = () => {
               </div>
 
               <div className="flex items-center gap-4 mt-3">
-                <UserAvatar user={user} size="xl" showBadge badgeColor="online" />
+                <UserAvatar user={user} size="xl" style={avatarStyle} showBadge badgeColor="online" />
                 <div>
                   <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
                     Welcome back, {user?.name || 'Developer'}! 👋
@@ -178,6 +193,52 @@ export const DashboardPage = () => {
                     @{user?.username || 'user'} • {user?.email}
                   </p>
                 </div>
+              </div>
+
+              {/* Interactive Avatar Style Switcher */}
+              <div className="mt-5 p-3.5 rounded-2xl bg-slate-50 border-2 border-slate-200/80 shadow-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-slate-600">Gaya Avatar:</span>
+                  <div className="flex items-center gap-1.5 bg-white p-1 rounded-xl border border-slate-200 shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => handleAvatarStyleChange('adventurer')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        avatarStyle === 'adventurer'
+                          ? 'bg-slate-950 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      🧑‍💻 Adventurer
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAvatarStyleChange('bottts')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        avatarStyle === 'bottts'
+                          ? 'bg-slate-950 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      🤖 Bottts
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleAvatarStyleChange('lorelei')}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                        avatarStyle === 'lorelei'
+                          ? 'bg-slate-950 text-white shadow-xs'
+                          : 'text-slate-600 hover:text-slate-900'
+                      }`}
+                    >
+                      🎨 Anime
+                    </button>
+                  </div>
+                </div>
+
+                <span className="text-[11px] text-slate-400 font-mono">
+                  Seed: @{user?.username || 'coder'}
+                </span>
               </div>
 
               {/* Target Countries Pills */}

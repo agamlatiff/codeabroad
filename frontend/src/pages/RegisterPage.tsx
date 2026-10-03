@@ -48,18 +48,24 @@ export const RegisterPage = () => {
       errors.name = 'Nama lengkap wajib diisi'
     } else if (name.trim().length < 2) {
       errors.name = 'Nama terlalu pendek (minimal 2 karakter)'
+    } else if (name.trim().length > 100) {
+      errors.name = 'Nama terlalu panjang (maksimal 100 karakter)'
     }
 
     if (!username.trim()) {
       errors.username = 'Username wajib diisi'
     } else if (username.length < 3) {
       errors.username = 'Username minimal 3 karakter'
+    } else if (username.length > 30) {
+      errors.username = 'Username maksimal 30 karakter'
     } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
       errors.username = 'Username hanya boleh huruf, angka, dan garis bawah (_)'
     }
 
     if (!email.trim()) {
       errors.email = 'Alamat email wajib diisi'
+    } else if (email.length > 255) {
+      errors.email = 'Alamat email maksimal 255 karakter'
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       errors.email = 'Format email tidak valid (contoh: nama@domain.com)'
     }
@@ -68,6 +74,8 @@ export const RegisterPage = () => {
       errors.password = 'Kata sandi wajib diisi'
     } else if (password.length < 8) {
       errors.password = 'Kata sandi minimal 8 karakter'
+    } else if (password.length > 72) {
+      errors.password = 'Kata sandi maksimal 72 karakter'
     }
 
     if (Object.keys(errors).length > 0) {

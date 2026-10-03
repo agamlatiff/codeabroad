@@ -145,3 +145,53 @@ func TestHTTP_ProtectedProfile_WithoutToken(t *testing.T) {
 		t.Fatalf("expected 401 Unauthorized for route without Bearer token, got: %d", w.Code)
 	}
 }
+
+func TestHTTP_Logout_WithoutToken(t *testing.T) {
+	router, _, _ := setupTestRouter()
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/logout", nil)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 Unauthorized for logout without Bearer token, got: %d", w.Code)
+	}
+}
+
+func TestHTTP_Logout_Success(t *testing.T) {
+	router, _, _ := setupTestRouter()
+
+	// 1. Register a user first to get a valid token
+	payload := domain.RegisterRequest{
+		Name:     "Logout User",
+		Username: "logoutuser",
+		Email:    "logout@example.com",
+		Password: "Password123!",
+	}
+	body, _ := json.Marshal(payload)
+	regReq, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewBuffer(body))
+	regReq.Header.Set("Content-Type", "application/json")
+
+	wReg := httptest.NewRecorder()
+	router.ServeHTTP(wReg, regReq)
+
+	var regRes struct {
+		Data struct {
+			AccessToken string `json:"access_token"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(wReg.Body.Bytes(), &regRes)
+	token := regRes.Data.AccessToken
+
+	// 2. Call logout with valid token
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/logout", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for logout, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}

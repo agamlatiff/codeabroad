@@ -210,6 +210,14 @@ func (u *authUsecase) GetProfile(ctx context.Context, userID string) (*domain.Us
 	return user, nil
 }
 
+// Logout invalidates the active user session in the cache
+func (u *authUsecase) Logout(ctx context.Context, userID string) error {
+	if userID == "" {
+		return domain.ErrUnauthorized
+	}
+	return u.sessionRepo.DeleteSession(ctx, userID)
+}
+
 // generateTokenPair produces a signed access token and dynamic duration refresh token
 func (u *authUsecase) generateTokenPair(user *domain.User, refreshDuration time.Duration) (string, string, error) {
 	now := time.Now()

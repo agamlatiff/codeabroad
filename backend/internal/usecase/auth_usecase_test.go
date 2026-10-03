@@ -384,3 +384,38 @@ func TestGetProfile_NotFound(t *testing.T) {
 		t.Fatalf("expected domain.ErrUserNotFound, got: %v", err)
 	}
 }
+
+func TestAuthUsecase_Logout_Success(t *testing.T) {
+	authUc, _, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	userID := "usr_test_logout"
+	_ = sessionRepo.SetSession(ctx, userID, "valid_refresh_token", 24*time.Hour)
+
+	// Ensure session exists
+	token, err := sessionRepo.GetSession(ctx, userID)
+	if err != nil || token == "" {
+		t.Fatalf("expected active session, got error: %v", err)
+	}
+
+	// Perform logout
+	if err := authUc.Logout(ctx, userID); err != nil {
+		t.Fatalf("expected successful logout, got: %v", err)
+	}
+
+	// Verify session has been deleted
+	_, err = sessionRepo.GetSession(ctx, userID)
+	if err != domain.ErrTokenExpired {
+		t.Fatalf("expected session to be deleted/expired, got: %v", err)
+	}
+}
+
+func TestAuthUsecase_Logout_EmptyUserID(t *testing.T) {
+	authUc, _, _ := setupTestUsecase()
+	ctx := context.Background()
+
+	err := authUc.Logout(ctx, "")
+	if err != domain.ErrUnauthorized {
+		t.Fatalf("expected ErrUnauthorized, got: %v", err)
+	}
+}

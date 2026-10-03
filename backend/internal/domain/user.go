@@ -42,16 +42,16 @@ type User struct {
 
 // RegisterRequest defines the input payload for registering a new user
 type RegisterRequest struct {
-	Name     string `json:"name" binding:"required"`
+	Name     string `json:"name" binding:"required,min=2,max=100"`
 	Username string `json:"username" binding:"required,min=3,max=30"`
-	Email    string `json:"email" binding:"required,email"`
-	Password string `json:"password" binding:"required,min=8"`
+	Email    string `json:"email" binding:"required,email,max=255"`
+	Password string `json:"password" binding:"required,min=8,max=72"`
 }
 
 // LoginRequest defines the input payload for authenticating a user
 type LoginRequest struct {
-	Email      string `json:"email" binding:"required,email"`
-	Password   string `json:"password" binding:"required"`
+	Email      string `json:"email" binding:"required,email,max=255"`
+	Password   string `json:"password" binding:"required,min=8,max=72"`
 	RememberMe bool   `json:"remember_me"`
 }
 
@@ -82,6 +82,7 @@ type AuthUsecase interface {
 	Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error)
 	GetProfile(ctx context.Context, userID string) (*User, error)
+	Logout(ctx context.Context, userID string) error
 }
 
 // SessionRepository specifies the caching contract for active user sessions

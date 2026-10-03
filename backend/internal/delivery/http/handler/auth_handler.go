@@ -80,6 +80,20 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	response.Success(c, http.StatusOK, "user profile retrieved successfully", user)
 }
 
+func (h *AuthHandler) Logout(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, domain.ErrUnauthorized)
+		return
+	}
+
+	if err := h.authUsecase.Logout(c.Request.Context(), userID); err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "user logged out successfully", nil)
+}
 
 func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	// Public routes
@@ -89,7 +103,15 @@ func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Han
 		auth.POST("/login", h.Login)
 		auth.POST("/refresh", h.RefreshToken)
 	}
-	// Protected routes
+
+	// Protected auth routes
+	authProtected := rg.Group("/auth")
+	authProtected.Use(authMiddleware)
+	{
+		authProtected.POST("/logout", h.Logout)
+	}
+
+	// Protected user routes
 	users := rg.Group("/users")
 	users.Use(authMiddleware)
 	{
