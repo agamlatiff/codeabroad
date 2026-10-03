@@ -5,6 +5,7 @@ import { api } from '../services/api'
 import type { ApiResponse, User } from '../types/auth'
 import { Button } from '../components/ui/Button'
 import { Card } from '../components/ui/Card'
+import { UserAvatar } from '../components/ui/UserAvatar'
 import { MascotCard, type KodiPose } from '../components/ui/MascotCard'
 import { 
   DoodleHanko, 
@@ -75,14 +76,29 @@ export const DashboardPage = () => {
             </div>
           </div>
 
-          <Button
-            variant="danger"
-            size="sm"
-            onClick={handleLogout}
-            icon={<LogOut className="w-4 h-4" />}
-          >
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-3">
+            {/* User Profile Pill with Generated Developer Avatar */}
+            <div className="flex items-center gap-2.5 bg-white border border-slate-200/90 rounded-2xl py-1 px-2.5 shadow-xs">
+              <UserAvatar user={user} size="sm" showBadge badgeColor="streak" />
+              <div className="text-left hidden sm:block">
+                <span className="text-xs font-bold text-slate-900 block leading-tight">
+                  {user?.name?.split(' ')[0] || user?.username || 'Developer'}
+                </span>
+                <span className="text-[10px] text-slate-400 font-semibold block leading-none mt-0.5">
+                  @{user?.username || 'coder'}
+                </span>
+              </div>
+            </div>
+
+            <Button
+              variant="danger"
+              size="sm"
+              onClick={handleLogout}
+              icon={<LogOut className="w-4 h-4" />}
+            >
+              Sign Out
+            </Button>
+          </div>
         </header>
 
         {/* 2-Column Hero & Mascot Section */}
@@ -152,12 +168,17 @@ export const DashboardPage = () => {
                 </div>
               </div>
 
-              <h2 className="text-2xl md:text-3xl font-black text-slate-900 mt-3 tracking-tight">
-                Welcome back, {user?.name || 'Developer'}! 👋
-              </h2>
-              <p className="text-sm text-slate-500 mt-1">
-                @{user?.username || 'user'} • {user?.email}
-              </p>
+              <div className="flex items-center gap-4 mt-3">
+                <UserAvatar user={user} size="xl" showBadge badgeColor="online" />
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
+                    Welcome back, {user?.name || 'Developer'}! 👋
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-0.5">
+                    @{user?.username || 'user'} • {user?.email}
+                  </p>
+                </div>
+              </div>
 
               {/* Target Countries Pills */}
               <div className="flex flex-wrap gap-2 mt-5 pt-4 border-t border-slate-100 text-xs">

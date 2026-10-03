@@ -101,9 +101,12 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               alt="Kodi Mascot"
               className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0 drop-shadow-sm select-none"
             />
-            <div className="flex-1 min-w-0 pr-1">
-              <div className="inline-block bg-white text-slate-800 text-[11px] sm:text-xs font-semibold px-2.5 py-1.5 rounded-xl border border-indigo-100 shadow-sm leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
+            <div className="flex-1 min-w-0 pl-1 pr-1">
+              <div className="relative inline-block bg-white text-slate-800 text-[11px] sm:text-xs font-semibold px-3 py-2 rounded-2xl border border-indigo-100 shadow-sm leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
                 {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
+
+                {/* Speech Bubble Arrow pointing left towards Kodi */}
+                <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 bg-white border-l border-b border-indigo-100 rotate-45" />
               </div>
             </div>
           </div>

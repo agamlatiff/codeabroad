@@ -19,13 +19,43 @@ export const LoginPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
+
+  // Clear specific field error when user interacts
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
 
   // 1. Submit email & password authentication
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Pre-flight client-side validation
+    const errors: Record<string, string> = {}
+    if (!email.trim()) {
+      errors.email = 'Alamat email wajib diisi'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Format email tidak valid (contoh: nama@domain.com)'
+    }
+
+    if (!password) {
+      errors.password = 'Kata sandi wajib diisi'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -43,10 +73,23 @@ export const LoginPage = () => {
         setError(res.error || 'Gagal masuk. Silakan coba beberapa saat lagi.')
       }
     } catch (err: unknown) {
-      if (isAxiosError<{ error?: string }>(err)) {
-        setError(err.response?.data?.error || 'Email atau kata sandi tidak sesuai.')
+      if (isAxiosError<{ error?: string; message?: string }>(err)) {
+        const rawError = (err.response?.data?.error || err.response?.data?.message || '').toLowerCase()
+        if (
+          err.response?.status === 401 ||
+          rawError.includes('unauthorized') ||
+          rawError.includes('invalid') ||
+          rawError.includes('password') ||
+          rawError.includes('credential')
+        ) {
+          setError('Email atau kata sandi yang kamu masukkan salah. Silakan coba lagi.')
+        } else if (err.response?.status === 404 || rawError.includes('not found')) {
+          setError('Akun dengan email ini belum terdaftar. Silakan buat akun baru.')
+        } else {
+          setError(err.response?.data?.error || 'Gagal masuk. Periksa kembali email dan kata sandi kamu.')
+        }
       } else {
-        setError('Gagal terhubung ke server. Periksa koneksi internet kamu.')
+        setError('Gagal terhubung ke server backend. Periksa koneksi internet kamu.')
       }
     } finally {
       setLoading(false)
@@ -74,15 +117,18 @@ export const LoginPage = () => {
       )}
 
       {/* ── 1. EMAIL & PASSWORD FORM (FIRST) ── */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} noValidate className="space-y-3.5">
         <AuthField
           id="email"
           label="Alamat Email"
           type="email"
-          required
           placeholder="nama@email.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          error={fieldErrors.email}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            clearFieldError('email')
+          }}
           icon={<Mail className="w-4 h-4" />}
         />
 
@@ -90,10 +136,13 @@ export const LoginPage = () => {
           id="password"
           label="Kata Sandi"
           isPassword
-          required
           placeholder="Masukkan kata sandi kamu"
           value={password}
-          onChange={(e) => setPassword(e.target.value)}
+          error={fieldErrors.password}
+          onChange={(e) => {
+            setPassword(e.target.value)
+            clearFieldError('password')
+          }}
           icon={<Lock className="w-4 h-4" />}
         />
 

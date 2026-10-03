@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
-import { Eye, EyeOff } from 'lucide-react'
+import { Eye, EyeOff, AlertCircle } from 'lucide-react'
 
 export interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -67,7 +67,12 @@ export const AuthField = ({
         )}
       </div>
 
-      {error && <p className="text-xs text-rose-500 font-medium">{error}</p>}
+      {error && (
+        <p className="text-xs text-rose-500 font-medium flex items-center gap-1.5 mt-1 animate-in fade-in duration-150">
+          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <span>{error}</span>
+        </p>
+      )}
     </div>
   )
 }

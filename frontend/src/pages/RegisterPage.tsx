@@ -7,6 +7,7 @@ import { useAuthStore } from '../store/authStore'
 import type { ApiResponse, AuthResponse } from '../types/auth'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { AuthField } from '../components/auth/AuthField'
+import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthDivider } from '../components/auth/AuthDivider'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
@@ -21,13 +22,59 @@ export const RegisterPage = () => {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
 
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
 
-  // 1. Submit registration form
+  // Clear specific field error when user interacts
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
+
+  // 1. Submit registration form with client-side & backend error mapping
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    // Pre-flight client-side validation
+    const errors: Record<string, string> = {}
+    if (!name.trim()) {
+      errors.name = 'Nama lengkap wajib diisi'
+    } else if (name.trim().length < 2) {
+      errors.name = 'Nama terlalu pendek (minimal 2 karakter)'
+    }
+
+    if (!username.trim()) {
+      errors.username = 'Username wajib diisi'
+    } else if (username.length < 3) {
+      errors.username = 'Username minimal 3 karakter'
+    } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      errors.username = 'Username hanya boleh huruf, angka, dan garis bawah (_)'
+    }
+
+    if (!email.trim()) {
+      errors.email = 'Alamat email wajib diisi'
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      errors.email = 'Format email tidak valid (contoh: nama@domain.com)'
+    }
+
+    if (!password) {
+      errors.password = 'Kata sandi wajib diisi'
+    } else if (password.length < 8) {
+      errors.password = 'Kata sandi minimal 8 karakter'
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
     setLoading(true)
 
     try {
@@ -47,10 +94,31 @@ export const RegisterPage = () => {
         setError(res.error || 'Pendaftaran gagal. Silakan coba beberapa saat lagi.')
       }
     } catch (err: unknown) {
-      if (isAxiosError<{ error?: string }>(err)) {
-        setError(err.response?.data?.error || 'Gagal mendaftar. Periksa kembali data kamu.')
+      if (isAxiosError<{ error?: string; message?: string }>(err)) {
+        const rawError = (err.response?.data?.error || err.response?.data?.message || '').toLowerCase()
+
+        if (rawError.includes('email') && (rawError.includes('already') || rawError.includes('exists') || rawError.includes('registered'))) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            email: 'Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.',
+          }))
+        } else if (rawError.includes('username') && (rawError.includes('taken') || rawError.includes('already') || rawError.includes('exists'))) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            username: 'Username ini sudah digunakan. Coba username yang lain.',
+          }))
+        } else if (rawError.includes('password')) {
+          setFieldErrors((prev) => ({
+            ...prev,
+            password: 'Kata sandi tidak memenuhi kriteria keamanan minimal.',
+          }))
+        } else if (err.response?.status === 409) {
+          setError('Data akun sudah terdaftar. Silakan periksa email atau username kamu.')
+        } else {
+          setError(err.response?.data?.error || 'Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.')
+        }
       } else {
-        setError('Gagal terhubung ke server. Periksa koneksi internet kamu.')
+        setError('Gagal terhubung ke server backend. Periksa koneksi internet kamu.')
       }
     } finally {
       setLoading(false)
@@ -74,22 +142,25 @@ export const RegisterPage = () => {
     >
       {/* Error Alert */}
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2">
+        <div className="mb-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {/* ── 1. REGISTRATION FORM (FIRST) ── */}
-      <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-2.5">
+      <form onSubmit={handleSubmit} noValidate className="space-y-2 sm:space-y-2.5">
         <AuthField
           id="name"
           label="Nama Lengkap"
           type="text"
-          required
           placeholder="Contoh: Budi Pratama"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          error={fieldErrors.name}
+          onChange={(e) => {
+            setName(e.target.value)
+            clearFieldError('name')
+          }}
           icon={<User className="w-4 h-4" />}
         />
 
@@ -97,10 +168,13 @@ export const RegisterPage = () => {
           id="username"
           label="Username"
           type="text"
-          required
           placeholder="nama_kamu"
           value={username}
-          onChange={(e) => setUsername(e.target.value.toLowerCase().trim())}
+          error={fieldErrors.username}
+          onChange={(e) => {
+            setUsername(e.target.value.toLowerCase().trim())
+            clearFieldError('username')
+          }}
           icon={<AtSign className="w-4 h-4" />}
         />
 
@@ -108,23 +182,33 @@ export const RegisterPage = () => {
           id="email"
           label="Alamat Email"
           type="email"
-          required
           placeholder="nama@email.com"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          error={fieldErrors.email}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            clearFieldError('email')
+          }}
           icon={<Mail className="w-4 h-4" />}
         />
 
-        <AuthField
-          id="password"
-          label="Kata Sandi"
-          isPassword
-          required
-          placeholder="Minimal 8 karakter"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          icon={<Lock className="w-4 h-4" />}
-        />
+        <div>
+          <AuthField
+            id="password"
+            label="Kata Sandi"
+            isPassword
+            placeholder="Minimal 8 karakter"
+            value={password}
+            error={fieldErrors.password}
+            onChange={(e) => {
+              setPassword(e.target.value)
+              clearFieldError('password')
+            }}
+            icon={<Lock className="w-4 h-4" />}
+          />
+          {/* Real-time Password Strength Meter */}
+          <PasswordStrengthMeter password={password} />
+        </div>
 
         {/* Submit Button */}
         <button

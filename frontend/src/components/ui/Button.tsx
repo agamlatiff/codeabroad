@@ -38,9 +38,9 @@ export const Button = ({
   }
 
   const sizes = {
-    sm: 'text-xs px-3.5 py-2 gap-1.5',
-    md: 'text-sm px-5 py-3 gap-2',
-    lg: 'text-base px-6 py-3.5 gap-2.5',
+    sm: 'text-xs px-3.5 py-2 sm:py-1.5 min-h-[40px] sm:min-h-[36px] gap-1.5',
+    md: 'text-sm px-4.5 py-2.5 sm:px-5 sm:py-3 min-h-[44px] gap-2',
+    lg: 'text-base px-5.5 py-3 sm:px-6 sm:py-3.5 min-h-[48px] gap-2.5',
   }
 
   const widthStyle = fullWidth ? 'w-full' : ''

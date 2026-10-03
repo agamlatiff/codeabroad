@@ -20,7 +20,7 @@ export const Card = ({
 
   return (
     <div
-      className={`rounded-3xl p-6 relative overflow-hidden transition-all duration-200 ${variantStyles} ${className}`}
+      className={`rounded-2xl sm:rounded-3xl p-4 sm:p-6 md:p-7 relative overflow-hidden transition-all duration-200 ${variantStyles} ${className}`}
       {...props}
     >
       {children}
