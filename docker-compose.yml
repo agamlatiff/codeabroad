@@ -92,8 +92,8 @@ services:
       - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-must-be-at-least-32-chars-long}
       - JWT_EXPIRATION_MINUTES=15
       - JWT_REFRESH_EXPIRATION_DAYS=30
-    ports:
-      - "8080:8080"
+    expose:
+      - "8080"
     depends_on:
       postgres:
         condition: service_healthy
