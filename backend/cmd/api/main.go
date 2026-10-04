@@ -53,21 +53,25 @@ func main() {
 	// 4. Initialize Repositories (Data Layer)
 	userRepo := database.NewUserRepository(pg)
 	sessionRepo := session.NewSessionRepository(rdb)
+	countryRepo := database.NewCountryRepository(pg)
+	careerPathRepo := database.NewCareerPathRepository(pg)
 
 	// 5. Initialize Usecases (Business Logic Layer)
 	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
-
+	onboardingUsecase := usecase.NewOnboardingUsecase(countryRepo, careerPathRepo, userRepo)
 
 	// 6. Initialize Handlers & Middlewares (Delivery Layer)
 	healthHandler := handler.NewHealthHandler(pg, rdb)
 	authHandler := handler.NewAuthHandler(authUsecase)
+	onboardingHandler := handler.NewOnboardingHandler(onboardingUsecase)
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 
 	// 7. Setup Gin router with registered routes
 	router := deliveryHttp.SetupRouter(&deliveryHttp.RouterConfig{
-		HealthHandler:  healthHandler,
-		AuthHandler:    authHandler,
-		AuthMiddleware: authMiddleware,
+		HealthHandler:     healthHandler,
+		AuthHandler:       authHandler,
+		OnboardingHandler: onboardingHandler,
+		AuthMiddleware:    authMiddleware,
 	})
 
 	// 8. Configure HTTP server

@@ -9,9 +9,10 @@ import (
 
 // RouterConfig holds all handler dependencies required by the router
 type RouterConfig struct {
-	HealthHandler  *handler.HealthHandler
-	AuthHandler    *handler.AuthHandler
-	AuthMiddleware gin.HandlerFunc
+	HealthHandler     *handler.HealthHandler
+	AuthHandler       *handler.AuthHandler
+	OnboardingHandler *handler.OnboardingHandler
+	AuthMiddleware    gin.HandlerFunc
 }
 
 // SetupRouter initializes the Gin engine and configures API v1 routes
@@ -31,8 +32,15 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine {
 	// API version 1 route group
 	v1 := r.Group("/api/v1")
 	{
-		cfg.HealthHandler.RegisterRoutes(v1)
-		cfg.AuthHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		if cfg.HealthHandler != nil {
+			cfg.HealthHandler.RegisterRoutes(v1)
+		}
+		if cfg.AuthHandler != nil {
+			cfg.AuthHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
+		if cfg.OnboardingHandler != nil {
+			cfg.OnboardingHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
 	}
 	return r
 }

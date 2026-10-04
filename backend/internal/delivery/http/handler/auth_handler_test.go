@@ -41,6 +41,15 @@ func (r *testUserRepo) GetByID(ctx context.Context, id string) (*domain.User, er
 	return r.users[id], nil
 }
 
+func (r *testUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error {
+	return nil
+}
+
+func (r *testUserRepo) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
+	return nil, nil
+}
+
+
 type testSessionRepo struct {
 	sessions map[string]string
 }

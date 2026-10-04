@@ -45,6 +45,14 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*domain.Us
 	return m.usersByID[id], nil
 }
 
+func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error {
+	return nil
+}
+
+func (m *mockUserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
+	return nil, nil
+}
+
 // mockSessionRepository implements an in-memory domain.SessionRepository for unit testing
 type mockSessionRepository struct {
 	sessions map[string]string

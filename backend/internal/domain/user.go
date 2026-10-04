@@ -2,10 +2,9 @@ package domain
 
 import (
 	"context"
-	"time"
 	"fmt"
+	"time"
 )
-
 
 // Specific User & Auth Errors
 var (
@@ -15,7 +14,6 @@ var (
 	ErrUserNotFound       = fmt.Errorf("%w: user not found", ErrNotFound)
 	ErrTokenExpired       = fmt.Errorf("%w: token has expired or revoked", ErrUnauthorized)
 )
-
 
 // User represents the core account and gamification profile entity
 type User struct {
@@ -30,6 +28,7 @@ type User struct {
 	LinkedinURL  *string    `json:"linkedin_url"`
 	CareerPathID *string    `json:"career_path_id"`
 	CountryID    *string    `json:"country_id"`
+	PrimaryStack *string    `json:"primary_stack"`
 	Level        string     `json:"level"`
 	XP           int        `json:"xp"`
 	CurrentLevel int        `json:"current_level"`
@@ -73,8 +72,9 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
+	UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error
+	GetProfileWithDetails(ctx context.Context, userID string) (*OnboardingProfileResponse, error)
 }
-
 
 // AuthUsecase specifies the business logic contract for authentication
 type AuthUsecase interface {

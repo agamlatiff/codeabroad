@@ -53,7 +53,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
 		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, level, xp, current_level, streak, last_active_at, is_onboarded,
+		       career_path_id, country_id, primary_stack, level, xp, current_level, streak, last_active_at, is_onboarded,
 		       created_at, updated_at
 		FROM users
 		WHERE email = $1
@@ -72,6 +72,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 		&user.LinkedinURL,
 		&user.CareerPathID,
 		&user.CountryID,
+		&user.PrimaryStack,
 		&user.Level,
 		&user.XP,
 		&user.CurrentLevel,
@@ -94,10 +95,9 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 
 // GetByUsername retrieves a user by their unique username handle
 func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
-
 	query := `
 		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, level, xp, current_level, streak, last_active_at, is_onboarded,
+		       career_path_id, country_id, primary_stack, level, xp, current_level, streak, last_active_at, is_onboarded,
 		       created_at, updated_at
 		FROM users
 		WHERE username = $1
@@ -117,6 +117,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 		&user.LinkedinURL,
 		&user.CareerPathID,
 		&user.CountryID,
+		&user.PrimaryStack,
 		&user.Level,
 		&user.XP,
 		&user.CurrentLevel,
@@ -140,7 +141,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, error) {
 	query := `
 		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, level, xp, current_level, streak, last_active_at, is_onboarded,
+		       career_path_id, country_id, primary_stack, level, xp, current_level, streak, last_active_at, is_onboarded,
 		       created_at, updated_at
 		FROM users
 		WHERE id = $1
@@ -159,6 +160,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		&user.LinkedinURL,
 		&user.CareerPathID,
 		&user.CountryID,
+		&user.PrimaryStack,
 		&user.Level,
 		&user.XP,
 		&user.CurrentLevel,
@@ -177,3 +179,94 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 	}
 	return &user, nil
 }
+
+// UpdateOnboarding sets the user's destination, career path, tech stack, and awards starting XP
+func (r *UserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error {
+	query := `
+		UPDATE users
+		SET country_id = $1,
+		    career_path_id = $2,
+		    primary_stack = $3,
+		    level = $4,
+		    xp = xp + $5,
+		    streak = CASE WHEN streak = 0 THEN 1 ELSE streak END,
+		    is_onboarded = TRUE,
+		    last_active_at = CURRENT_TIMESTAMP,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = $6
+	`
+	tag, err := r.db.Pool.Exec(ctx, query, countryID, careerPathID, primaryStack, level, bonusXP, userID)
+	if err != nil {
+		return fmt.Errorf("failed to update user onboarding: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
+
+// GetProfileWithDetails retrieves a user profile joined with Country and CareerPath details
+func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
+	query := `
+		SELECT 
+			u.id, u.name, u.username, u.email, u.level, u.xp, u.current_level, u.streak, u.is_onboarded, u.primary_stack, u.created_at,
+			c.id, c.code, c.name, c.flag_emoji,
+			cp.id, cp.slug, cp.label
+		FROM users u
+		LEFT JOIN countries c ON u.country_id = c.id
+		LEFT JOIN career_paths cp ON u.career_path_id = cp.id
+		WHERE u.id = $1
+	`
+
+	var profile domain.OnboardingProfileResponse
+	var countryID, countryCode, countryName, countryFlag *string
+	var cpID, cpSlug, cpLabel *string
+
+	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(
+		&profile.ID,
+		&profile.Name,
+		&profile.Username,
+		&profile.Email,
+		&profile.Level,
+		&profile.XP,
+		&profile.CurrentLevel,
+		&profile.Streak,
+		&profile.IsOnboarded,
+		&profile.PrimaryStack,
+		&profile.CreatedAt,
+		&countryID,
+		&countryCode,
+		&countryName,
+		&countryFlag,
+		&cpID,
+		&cpSlug,
+		&cpLabel,
+	)
+
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to get user profile with details: %w", err)
+	}
+
+	if countryID != nil && countryCode != nil && countryName != nil && countryFlag != nil {
+		profile.Country = &domain.CountrySummary{
+			ID:        *countryID,
+			Code:      *countryCode,
+			Name:      *countryName,
+			FlagEmoji: *countryFlag,
+		}
+	}
+
+	if cpID != nil && cpSlug != nil && cpLabel != nil {
+		profile.CareerPath = &domain.CareerPathSummary{
+			ID:    *cpID,
+			Slug:  *cpSlug,
+			Label: *cpLabel,
+		}
+	}
+
+	return &profile, nil
+}
+
