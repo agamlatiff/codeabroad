@@ -1,133 +1,38 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import {
-  Check,
-  Lock,
-  ArrowRight,
-  ArrowLeft,
-  Server,
-  Code2,
-  Layers,
-  Cloud,
-  ShieldCheck,
-  Plane
-} from 'lucide-react'
+import { ArrowRight, ArrowLeft, Plane, ShieldCheck, Sparkles, Check, Lock, Clock, Languages } from 'lucide-react'
 import { onboardingService } from '../services/onboardingService'
 import { useAuthStore } from '../store/authStore'
 import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, LanguageLevel } from '../types/onboarding'
 import { Logo } from '../components/ui/Logo'
-
-// ── 1. VECTOR SVG FLAGS (Compact, Crisp & Consistent on all OS) ──
-const CountryFlag = ({ code, className = 'w-10 sm:w-11 h-6.5 sm:h-7' }: { code?: string; className?: string }) => {
-  switch (code?.toUpperCase()) {
-    case 'JP':
-      // Japan: Crisp white field with vermilion crimson sun disc
-      return (
-        <div className={`${className} rounded-md overflow-hidden border border-slate-200/90 shrink-0 bg-white relative flex items-center justify-center shadow-2xs`}>
-          <svg viewBox="0 0 900 600" className="w-full h-full object-cover">
-            <rect width="900" height="600" fill="#FFFFFF" />
-            <circle cx="450" cy="300" r="180" fill="#BC002D" />
-          </svg>
-        </div>
-      )
-    case 'DE':
-      // Germany: Black, Red, Gold tricolor
-      return (
-        <div className={`${className} rounded-md overflow-hidden border border-slate-200/90 shrink-0 bg-white relative shadow-2xs`}>
-          <svg viewBox="0 0 5 3" className="w-full h-full object-cover">
-            <rect width="5" height="1" y="0" fill="#000000" />
-            <rect width="5" height="1" y="1" fill="#DD0000" />
-            <rect width="5" height="1" y="2" fill="#FFCE00" />
-          </svg>
-        </div>
-      )
-    case 'SG':
-      // Singapore: Red & white with crescent moon and stars
-      return (
-        <div className={`${className} rounded-md overflow-hidden border border-slate-200/90 shrink-0 bg-white relative shadow-2xs`}>
-          <svg viewBox="0 0 720 480" className="w-full h-full object-cover">
-            <rect width="720" height="240" fill="#ED2939" />
-            <rect y="240" width="720" height="240" fill="#FFFFFF" />
-            <circle cx="160" cy="120" r="75" fill="#FFFFFF" />
-            <circle cx="185" cy="120" r="70" fill="#ED2939" />
-            <circle cx="195" cy="85" r="8" fill="#FFFFFF" />
-            <circle cx="218" cy="105" r="8" fill="#FFFFFF" />
-            <circle cx="218" cy="135" r="8" fill="#FFFFFF" />
-            <circle cx="195" cy="155" r="8" fill="#FFFFFF" />
-            <circle cx="178" cy="120" r="8" fill="#FFFFFF" />
-          </svg>
-        </div>
-      )
-    default:
-      return (
-        <div className={`${className} rounded-md bg-slate-100 flex items-center justify-center font-bold text-xs text-slate-500`}>
-          🌐
-        </div>
-      )
-  }
-}
-
-// Localized country display name
-const getCountryName = (code?: string, fallbackName?: string): string => {
-  switch (code?.toUpperCase()) {
-    case 'JP':
-      return 'Jepang'
-    case 'DE':
-      return 'Jerman'
-    case 'SG':
-      return 'Singapura'
-    default:
-      return fallbackName || 'Destinasi Global'
-  }
-}
-
-// Localized helpers for boarding pass
-const getTargetTimelineLabel = (timeline?: string) => {
-  switch (timeline) {
-    case '6_months':
-      return '3 - 6 Bulan (Sprint)'
-    case '1_year':
-      return '1 Tahun (Ideal)'
-    case 'exploring':
-      return 'Eksplorasi Santai'
-    default:
-      return '1 Tahun'
-  }
-}
-
-const getLanguageTrackLabel = (lang?: string) => {
-  switch (lang) {
-    case 'none':
-      return 'English-First Track'
-    case 'basic':
-      return 'JLPT N5 Prep Track'
-    case 'conversational':
-      return 'JLPT N3+ Bilingual'
-    case 'fluent':
-      return 'Business Fluent'
-    default:
-      return 'Bilingual Track'
-  }
-}
-
-// Lightweight Stepper Stages
-const ONBOARDING_STEPS = [
-  { id: 1, label: 'Tujuan Karier', shortLabel: 'Destinasi' },
-  { id: 2, label: 'Track & Stack', shortLabel: 'Spesialisasi' },
-  { id: 3, label: 'Kesiapan & Target', shortLabel: 'Kesiapan' },
-  { id: 4, label: 'Paspor Karier', shortLabel: 'Paspor' },
-]
+import {
+  JapanFlagIllustration,
+  SingaporeFlagIllustration,
+  GermanyFlagIllustration,
+  BackendIllustration,
+  FrontendIllustration,
+  FullstackIllustration,
+  DevOpsIllustration,
+  BeginnerIllustration,
+  ExperiencedIllustration,
+  FundamentalGuideIllustration,
+  AcceleratedSystemIllustration,
+  TechIcon,
+} from '../components/illustrations/OnboardingIllustrations'
 
 export const OnboardingPage = () => {
   const navigate = useNavigate()
   const { user, updateUser } = useAuthStore()
 
-  // Wizard state (1 to 4)
+  // Wizard state: 1 (Destinasi), 2 (Spesialisasi & Stack), 3 (Kesiapan), 4 (Tiket)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
+  // Sub-step for Step 2: 'track' (choose role) -> 'stack' (choose tech)
+  const [trackSubStep, setTrackSubStep] = useState<'track' | 'stack'>('track')
+
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Master data
+  // Master data from backend
   const [countries, setCountries] = useState<Country[]>([])
   const [careerPaths, setCareerPaths] = useState<CareerPath[]>([])
 
@@ -136,13 +41,13 @@ export const OnboardingPage = () => {
   const [selectedCareerPathId, setSelectedCareerPathId] = useState<string>('')
   const [selectedStackSlug, setSelectedStackSlug] = useState<string>('')
   const [selectedLevel, setSelectedLevel] = useState<'beginner' | 'intermediate'>('beginner')
-  const [selectedTimeline, setSelectedTimeline] = useState<TargetTimeline>('1_year')
-  const [selectedLanguageLevel, setSelectedLanguageLevel] = useState<LanguageLevel>('basic')
+  const [selectedTimeline] = useState<TargetTimeline>('1_year')
+  const [selectedLanguageLevel] = useState<LanguageLevel>('basic')
 
   // Submission result
   const [completionResult, setCompletionResult] = useState<OnboardingProfileResponse | null>(null)
 
-  // Fetch countries & paths on mount
+  // Fetch master data on mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -160,17 +65,17 @@ export const OnboardingPage = () => {
           setSelectedCountryId(activeCountry.id)
         }
 
-        // Preselect first career path and its active stack
+        // Preselect Backend as default major track and its active stack (Go)
         if (pathsData.length > 0) {
-          const firstPath = pathsData[0]
-          setSelectedCareerPathId(firstPath.id)
-          const firstActiveStack = firstPath.stacks.find((s) => s.is_active)
+          const defaultPath = pathsData.find((p) => p.slug === 'backend') || pathsData[0]
+          setSelectedCareerPathId(defaultPath.id)
+          const firstActiveStack = defaultPath.stacks.find((s) => s.is_active) || defaultPath.stacks[0]
           if (firstActiveStack) {
             setSelectedStackSlug(firstActiveStack.slug)
           }
         }
       } catch (err: any) {
-        setErrorMsg(err.message || 'Gagal memuat data onboarding. Silakan coba lagi.')
+        setErrorMsg(err.message || 'Gagal memuat data onboarding. Silakan muat ulang halaman.')
       } finally {
         setLoading(false)
       }
@@ -179,21 +84,19 @@ export const OnboardingPage = () => {
     fetchData()
   }, [])
 
-  // Handle path change
+  // Handle path selection
   const handleSelectCareerPath = (path: CareerPath) => {
     setSelectedCareerPathId(path.id)
-    const activeStack = path.stacks.find((s) => s.is_active)
+    const activeStack = path.stacks.find((s) => s.is_active) || path.stacks[0]
     if (activeStack) {
       setSelectedStackSlug(activeStack.slug)
-    } else {
-      setSelectedStackSlug('')
     }
   }
 
   // Handle final submission
   const handleSubmitOnboarding = async () => {
     if (!selectedCountryId || !selectedCareerPathId || !selectedStackSlug) {
-      setErrorMsg('Mohon lengkapi seluruh preferensi kariermu terlebih dahulu.')
+      setErrorMsg('Mohon lengkapi preferensi pilihanmu terlebih dahulu.')
       return
     }
 
@@ -210,21 +113,8 @@ export const OnboardingPage = () => {
         language_level: selectedLanguageLevel,
       })
 
+      updateUser({ is_onboarded: true })
       setCompletionResult(result)
-
-      updateUser({
-        is_onboarded: true,
-        xp: result.xp,
-        current_level: result.current_level,
-        streak: result.streak,
-        level: result.level,
-        primary_stack: result.primary_stack,
-        target_timeline: result.target_timeline,
-        language_level: result.language_level,
-        country: result.country,
-        career_path: result.career_path,
-      })
-
       setCurrentStep(4)
     } catch (err: any) {
       setErrorMsg(err.message || 'Gagal menyelesaikan onboarding. Silakan coba lagi.')
@@ -233,147 +123,210 @@ export const OnboardingPage = () => {
     }
   }
 
-  const selectedCareerPath = careerPaths.find((c) => c.id === selectedCareerPathId)
-  const selectedStack = selectedCareerPath?.stacks.find((s) => s.slug === selectedStackSlug)
-
-  // Track icons helper
-  const getTrackIcon = (slug: string) => {
-    switch (slug) {
-      case 'backend':
-        return <Server className="w-5 h-5 text-indigo-600" />
-      case 'frontend':
-        return <Code2 className="w-5 h-5 text-indigo-600" />
-      case 'fullstack':
-        return <Layers className="w-5 h-5 text-indigo-600" />
-      case 'devops':
-        return <Cloud className="w-5 h-5 text-indigo-600" />
-      default:
-        return <Server className="w-5 h-5 text-indigo-600" />
-    }
-  }
-
   // Step Validation
   const isStepValid = useCallback(() => {
     if (currentStep === 1) return !!selectedCountryId
-    if (currentStep === 2) return !!selectedCareerPathId && !!selectedStackSlug
-    if (currentStep === 3) return !!selectedLevel && !!selectedTimeline && !!selectedLanguageLevel
-    return true
-  }, [currentStep, selectedCountryId, selectedCareerPathId, selectedStackSlug, selectedLevel, selectedTimeline, selectedLanguageLevel])
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return
-
-      if (e.key === 'Enter') {
-        e.preventDefault()
-        if (currentStep === 4) {
-          navigate('/dashboard', { replace: true })
-        } else if (currentStep === 3 && isStepValid() && !loading) {
-          handleSubmitOnboarding()
-        } else if (isStepValid() && !loading) {
-          setCurrentStep((prev) => (prev + 1) as any)
-        }
-      } else if (e.key === 'Backspace' || e.key === 'Escape') {
-        if (currentStep > 1 && currentStep < 4) {
-          setCurrentStep((prev) => (prev - 1) as any)
-        }
-      } else if (currentStep === 1) {
-        if (e.key === '1') {
-          const jp = countries.find((c) => c.code === 'JP')
-          if (jp) setSelectedCountryId(jp.id)
-        }
-      }
+    if (currentStep === 2) {
+      if (trackSubStep === 'track') return !!selectedCareerPathId
+      return !!selectedCareerPathId && !!selectedStackSlug
     }
+    if (currentStep === 3) return !!selectedLevel
+    return true
+  }, [currentStep, trackSubStep, selectedCountryId, selectedCareerPathId, selectedStackSlug, selectedLevel])
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [currentStep, isStepValid, loading, countries, navigate])
+  // Handle Next button click
+  const handleNext = () => {
+    if (!isStepValid() || loading) return
+
+    if (currentStep === 1) {
+      setCurrentStep(2)
+      setTrackSubStep('track')
+    } else if (currentStep === 2) {
+      if (trackSubStep === 'track') {
+        setTrackSubStep('stack')
+      } else {
+        setCurrentStep(3)
+      }
+    } else if (currentStep === 3) {
+      handleSubmitOnboarding()
+    } else if (currentStep === 4) {
+      navigate('/dashboard', { replace: true })
+    }
+  }
+
+  // Handle Back button click
+  const handleBack = () => {
+    if (currentStep === 2) {
+      if (trackSubStep === 'stack') {
+        setTrackSubStep('track')
+      } else {
+        setCurrentStep(1)
+      }
+    } else if (currentStep === 3) {
+      setCurrentStep(2)
+      setTrackSubStep('stack')
+    }
+  }
+
+  // Active entities
+  const selectedCountry = countries.find((c) => c.id === selectedCountryId)
+  const selectedCareerPath = careerPaths.find((c) => c.id === selectedCareerPathId) || careerPaths[0]
+
+  // Step Prompt for Stepper Pill
+  const getStepPrompt = (step: number) => {
+    switch (step) {
+      case 1:
+        return 'Destinasi Impian'
+      case 2:
+        return trackSubStep === 'track' ? 'Pilih Spesialisasi' : 'Pilih Teknologi Stack'
+      case 3:
+        return 'Kesiapan & Ritme'
+      default:
+        return ''
+    }
+  }
+
+  // Step Header Content
+  const getStepTitle = (step: number) => {
+    switch (step) {
+      case 1:
+        return 'Pilih Destinasi Karier Impianmu'
+      case 2:
+        return trackSubStep === 'track'
+          ? 'Spesialisasi apa yang ingin kamu tekuni?'
+          : `Pilih Teknologi Utama ${selectedCareerPath?.label || ''}`
+      case 3:
+        return 'Bagaimana Pengalaman Codingmu?'
+      case 4:
+        return 'Tiket Karier Internasionalmu Terbit!'
+      default:
+        return ''
+    }
+  }
+
+  const getStepSubtitle = (step: number) => {
+    switch (step) {
+      case 1:
+        return 'Tentukan negara tujuan untuk menyesuaikan standar visa, budaya kerja, dan kurikulum belajarmu ✈️'
+      case 2:
+        return trackSubStep === 'track'
+          ? 'Semua 4 jalur rekayasa software dengan permintaan visa kerja aktif di pasar global 🚀'
+          : 'Daily quest, kurikulum belajar, dan simulasi interview akan diselaraskan dengan stack ini ⚡'
+      case 3:
+        return 'Kurikulum belajar dan intensitas daily quest akan disesuaikan dengan titik awalmu saat ini 🌱'
+      case 4:
+        return 'Paspor karier resmi terverifikasi. Selamat bergabung dalam ekosistem CodeAbroad!'
+      default:
+        return ''
+    }
+  }
+
+  // Helper to render track illustration by slug
+  const renderTrackIllustration = (slug: string) => {
+    switch (slug) {
+      case 'frontend':
+        return <FrontendIllustration />
+      case 'backend':
+        return <BackendIllustration />
+      case 'fullstack':
+        return <FullstackIllustration />
+      case 'devops':
+        return <DevOpsIllustration />
+      default:
+        return <BackendIllustration />
+    }
+  }
+
+  // Helper to render country flag by code
+  const renderCountryFlag = (code: string) => {
+    switch (code?.toUpperCase()) {
+      case 'JP':
+        return <JapanFlagIllustration />
+      case 'SG':
+        return <SingaporeFlagIllustration />
+      case 'DE':
+        return <GermanyFlagIllustration />
+      default:
+        return <JapanFlagIllustration />
+    }
+  }
+
+  // Track Badges
+  const getTrackBadge = (slug: string) => {
+    switch (slug) {
+      case 'backend':
+        return { text: 'High Demand Tokyo', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' }
+      case 'frontend':
+        return { text: 'Tokyo Standard', color: 'bg-sky-100 text-sky-700 border-sky-200' }
+      case 'fullstack':
+        return { text: 'Startup Demand', color: 'bg-amber-100 text-amber-700 border-amber-200' }
+      case 'devops':
+        return { text: 'Highest Salary Tokyo', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
+      default:
+        return { text: 'Active Track', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' }
+    }
+  }
+
+  // Helper to describe stack details
+  const getStackDescription = (slug: string) => {
+    switch (slug) {
+      case 'golang':
+        return 'Bahasa performa tinggi untuk microservices & sistem konkurensi di Tokyo.'
+      case 'java':
+        return 'Paling banyak digunakan di enterprise dan institusi finansial Tokyo.'
+      case 'node':
+        return 'Pengembangan cepat arsitektur API berbasis Node.js & TypeScript.'
+      case 'react':
+        return 'Standar industri utama untuk aplikasi web interaktif skala global di Tokyo.'
+      case 'vue':
+        return 'Framework reaktif yang populer di banyak startup dan tech agency Jepang.'
+      case 'svelte':
+        return 'Teknologi frontend generasi baru dengan performa ultra-ringan.'
+      case 'react_golang':
+        return 'Kombinasi paling dicari untuk full product delivery frontend & cloud API.'
+      case 'react_node':
+        return 'Full JavaScript/TypeScript stack dari UI hingga serverless cloud.'
+      case 'devops_cloud':
+        return 'Otomatisasi infrastruktur cloud menggunakan Docker, K8s, dan AWS/GCP.'
+      default:
+        return 'Standar rekayasa teknologi berstandar industri global.'
+    }
+  }
+
+  // Helper to format stack badge (removes corrupted ???? and Rakuten mention)
+  const formatStackBadge = (badge?: string, isActive?: boolean) => {
+    if (!badge) return isActive ? 'Tersedia' : 'Coming Soon'
+    const cleaned = badge
+      .replace(/\s*\(Rakuten\)/gi, '')
+      .replace(/^[\?\s\uFFFD]+/, '')
+      .trim()
+    return cleaned || (isActive ? 'Tersedia' : 'Coming Soon')
+  }
 
   return (
-    <div className="min-h-screen min-h-dvh bg-[#FAFBFC] text-slate-900 flex flex-col justify-between font-sans selection:bg-indigo-500/20 antialiased relative">
-      
-      {/* ── SUBTLE AMBIENT RADIAL LIGHT ── */}
-      <div 
-        className="absolute inset-0 pointer-events-none bg-[radial-gradient(circle_at_50%_0%,rgba(91,69,255,0.035),transparent_45%)]" 
-        aria-hidden="true" 
-      />
+    <div className="min-h-screen min-h-dvh bg-[#FAFAF9] text-slate-900 flex flex-col justify-between font-['Plus_Jakarta_Sans',sans-serif] selection:bg-indigo-500/20 antialiased relative">
+      {/* ── TOP HEADER (COMPACT & BALANCED) ── */}
+      <header className="w-full max-w-6xl mx-auto px-6 py-3 sm:py-4 flex items-center justify-between relative z-10 shrink-0">
+        <Logo variant="slate" size="md" linkTo={null} />
 
-      {/* ── 1. HEADER & ONBOARDING PROGRESS ── */}
-      <header className="sticky top-0 z-30 bg-[#FAFBFC]/90 backdrop-blur-md border-b border-slate-200/60 px-4 sm:px-6 lg:px-8 py-3.5">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 sm:gap-6">
-          
-          {/* Logo & Back Button */}
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-            {currentStep > 1 && currentStep < 4 ? (
-              <button
-                type="button"
-                onClick={() => setCurrentStep((prev) => (prev - 1) as any)}
-                className="w-8 h-8 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-600 hover:text-slate-900 transition-colors cursor-pointer active:scale-95 shrink-0 shadow-2xs"
-                title="Kembali"
-              >
-                <ArrowLeft className="w-4 h-4" />
-              </button>
-            ) : null}
-            <Logo variant="slate" size="sm" linkTo={null} />
-          </div>
-
-          {/* Stepper Navigation (Desktop & Tablet) */}
-          <div className="hidden md:flex items-center gap-1.5 lg:gap-2 text-[11px] lg:text-xs font-medium text-slate-400">
-            {ONBOARDING_STEPS.map((step, idx) => {
-              const isPast = currentStep > step.id
-              const isCurrent = currentStep === step.id
-
-              return (
-                <div key={step.id} className="flex items-center gap-1.5 lg:gap-2">
-                  <span
-                    className={`transition-colors whitespace-nowrap ${
-                      isCurrent
-                        ? 'text-indigo-600 font-semibold'
-                        : isPast
-                        ? 'text-slate-700 font-medium'
-                        : 'text-slate-400 font-normal'
-                    }`}
-                  >
-                    0{step.id} <span className="hidden lg:inline">{step.label}</span>
-                    <span className="lg:hidden">{step.shortLabel}</span>
-                  </span>
-                  {idx < ONBOARDING_STEPS.length - 1 && (
-                    <span className="text-slate-300">→</span>
-                  )}
-                </div>
-              )
-            })}
-          </div>
-
-          {/* Compact Progress Indicator */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="text-right">
-              <div className="text-[9px] sm:text-[10px] uppercase font-bold tracking-wider text-slate-400 leading-none">
-                STEP {currentStep} OF 4
-              </div>
-              <div className="text-[10px] sm:text-[11px] font-semibold text-slate-700 leading-none mt-1">
-                {currentStep * 25}% COMPLETE
-              </div>
+        {/* User Profile Pill */}
+        {user && (
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-indigo-100 text-[#4F46E5] font-bold text-xs flex items-center justify-center border border-indigo-200/90 shadow-2xs">
+              {user.name ? user.name.charAt(0).toUpperCase() : user.username ? user.username.charAt(0).toUpperCase() : 'U'}
             </div>
-
-            {/* Subtle Progress Bar */}
-            <div className="w-12 sm:w-16 lg:w-20 h-1.5 bg-slate-200/80 rounded-full overflow-hidden shrink-0">
-              <div
-                className="h-full bg-indigo-600 rounded-full transition-all duration-300 ease-out"
-                style={{ width: `${(currentStep / 4) * 100}%` }}
-              />
-            </div>
+            <span className="text-xs sm:text-sm font-semibold text-slate-800 hidden sm:inline">
+              {user.name || user.username}
+            </span>
           </div>
-        </div>
+        )}
       </header>
 
-      {/* ── 2. MAIN STAGE (EDITORIAL TYPOGRAPHY & SURFACE SEPARATION) ── */}
-      <main className="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 flex flex-col justify-center relative z-10">
-        
+      {/* ── MAIN STAGE ── */}
+      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-2 sm:py-4 flex flex-col justify-center items-center relative z-10">
         {/* Error Notification Banner */}
         {errorMsg && (
-          <div className="mb-4 sm:mb-6 p-3.5 sm:p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs sm:text-sm font-medium flex items-center justify-between shadow-2xs">
+          <div className="w-full max-w-xl mb-3.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs sm:text-sm font-medium flex items-center justify-between shadow-2xs">
             <span>{errorMsg}</span>
             <button
               onClick={() => setErrorMsg(null)}
@@ -384,700 +337,531 @@ export const OnboardingPage = () => {
           </div>
         )}
 
-        {/* ── STEP 1: PILIHAN TUJUAN KARIER ── */}
-        {currentStep === 1 && (
-          <div className="space-y-8 sm:space-y-10 animate-fadeIn">
-            
-            {/* Editorial Main Heading */}
-            <div className="max-w-2xl">
-              <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-600 block mb-2">
-                ONBOARDING · TAHAP 1
-              </span>
-              <h1 className="text-[28px] sm:text-[36px] lg:text-[42px] font-bold text-slate-900 tracking-[-0.035em] leading-[1.1]">
-                Mau membangun karier di mana?
-              </h1>
-              <p className="text-base sm:text-lg text-slate-500 mt-2.5 sm:mt-3 leading-relaxed font-normal">
-                Pilih destinasi yang ingin kamu tuju. Kami akan menyesuaikan roadmap belajar dan persiapan kariermu.
-              </p>
-            </div>
+        {/* Hero Area: Mini Stepper Pill + Compact Title & Subtitle */}
+        <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-6 flex flex-col items-center">
+          {/* ── CONNECTED MINI STEPPER PILL ── */}
+          {currentStep <= 3 && (
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-slate-200/90 shadow-2xs mb-2 transition-all">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3].map((stepNum) => {
+                  const isPast = currentStep > stepNum
+                  const isCurrent = currentStep === stepNum
+                  return (
+                    <div key={stepNum} className="flex items-center">
+                      <div
+                        className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 ${
+                          isPast
+                            ? 'bg-[#4F46E5] text-white'
+                            : isCurrent
+                            ? 'bg-[#4F46E5] text-white ring-2 ring-indigo-200 shadow-2xs'
+                            : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {isPast ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : stepNum}
+                      </div>
+                      {stepNum < 3 && (
+                        <div
+                          className={`w-3 sm:w-4 h-0.5 mx-1 rounded-full transition-all duration-300 ${
+                            currentStep > stepNum ? 'bg-[#4F46E5]' : 'bg-slate-200'
+                          }`}
+                        />
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
 
-            {/* Destination Selection Cards (Pure White #FFFFFF Surfaces with Aligned Rhythm) */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 lg:gap-6 items-stretch">
-              
-              {/* Japan Card (Currently Selected & Available) */}
-              {countries.filter((c) => c.is_active).map((country) => {
+              <div className="w-px h-3 bg-slate-200" />
+
+              <span className="text-[11px] sm:text-xs font-semibold text-slate-600">
+                Tahap {currentStep} dari 3: <strong className="text-[#4F46E5] font-bold">{getStepPrompt(currentStep)}</strong>
+              </span>
+            </div>
+          )}
+
+          <h1 className="text-xl sm:text-2.5xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">
+            {getStepTitle(currentStep)}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed max-w-lg">
+            {getStepSubtitle(currentStep)}
+          </p>
+        </div>
+
+        {/* ── ANIMATED STEP CONTENT CONTAINER ── */}
+        <div key={`${currentStep}-${trackSubStep}`} className="animate-stepTransition w-full flex flex-col items-center">
+          
+          {/* ── TAHAP 1: DESTINASI NEGARA (ENLARGED CARDS) ── */}
+          {currentStep === 1 && (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
+              {countries.map((country) => {
                 const isSelected = selectedCountryId === country.id
-                const countryDisplayName = getCountryName(country.code, country.name)
+                const isActive = country.is_active
 
                 return (
                   <div
                     key={country.id}
-                    onClick={() => setSelectedCountryId(country.id)}
-                    className={`p-6 sm:p-7 rounded-2xl border transition-all duration-200 ease-out cursor-pointer select-none flex flex-col justify-between relative group active:scale-[0.99] ${
-                      isSelected
-                        ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_8px_30px_rgba(91,69,255,0.08)] md:-translate-y-0.5'
-                        : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs md:hover:-translate-y-0.5'
+                    onClick={() => {
+                      if (isActive) {
+                        setSelectedCountryId(country.id)
+                      }
+                    }}
+                    className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] sm:max-w-[350px] w-full relative ${
+                      isActive
+                        ? isSelected
+                          ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
+                          : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                        : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
                     }`}
                   >
-                    <div className="flex-1 flex flex-col">
-                      {/* Flag & Status Checkmark */}
-                      <div className="flex items-start justify-between mb-5">
-                        <CountryFlag code={country.code} />
-                        
-                        <div
-                          className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all shrink-0 ${
-                            isSelected
-                              ? 'bg-indigo-600 border-indigo-600 text-white'
-                              : 'border-slate-300 bg-white'
-                          }`}
-                        >
-                          {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
-                        </div>
-                      </div>
+                    {/* Top Flag Frame (Enlarged Height) */}
+                    <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isActive ? 'bg-[#F8FAFC]' : 'bg-slate-100/70'}`}>
+                      {renderCountryFlag(country.code)}
 
-                      {/* Country Title & Available Status */}
-                      <div className="flex items-center gap-2">
-                        <h2 className="text-lg font-bold text-slate-900 tracking-tight">
-                          {countryDisplayName}
-                        </h2>
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200/80">
-                          AVAILABLE
-                        </span>
-                      </div>
-
-                      {/* Track Subtitle */}
-                      <span className="text-xs font-semibold text-indigo-600 block mt-1">
-                        Tokyo Tech Track
+                      {/* Status Badge */}
+                      <span
+                        className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                          isActive
+                            ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                            : 'bg-slate-200/80 text-slate-600 border-slate-300'
+                        }`}
+                      >
+                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {isActive ? 'Active Track' : 'Coming Soon'}
                       </span>
-
-                      {/* Opportunity Description */}
-                      <p className="text-xs sm:text-sm text-slate-500 mt-3 leading-relaxed font-normal min-h-[46px] lg:min-h-[50px]">
-                        Permintaan tinggi software engineer internasional dengan sponsor visa kerja cepat.
-                      </p>
                     </div>
 
-                    {/* Aligned Career & Compensation Information */}
-                    <div className="pt-4 mt-6 border-t border-slate-100 space-y-1">
-                      <div className="flex items-baseline gap-1.5">
-                        <span className="text-base sm:text-lg font-bold text-slate-900 tracking-tight">
-                          ¥4M – ¥6M
-                        </span>
-                        <span className="text-xs text-slate-500 font-normal">
-                          / tahun
-                        </span>
-                      </div>
-                      <div className="text-xs text-slate-500 font-medium">
-                        Engineer / Specialist in Humanities
-                      </div>
-                    </div>
-                  </div>
-                )
-              })}
-
-              {/* Germany & Singapore Cards (Inactive / Coming-Soon) */}
-              {countries.filter((c) => !c.is_active).map((country) => {
-                const countryDisplayName = getCountryName(country.code, country.name)
-                const isGermany = country.code === 'DE'
-
-                return (
-                  <div
-                    key={country.id}
-                    className="p-6 sm:p-7 rounded-2xl border border-slate-200/80 bg-white hover:border-slate-300 hover:shadow-2xs transition-all duration-200 cursor-not-allowed select-none flex flex-col justify-between group"
-                  >
-                    <div className="flex-1 flex flex-col">
-                      {/* Flag & Lock Status */}
-                      <div className="flex items-start justify-between mb-5">
-                        <CountryFlag code={country.code} className="w-10 sm:w-11 h-6.5 sm:h-7 opacity-90" />
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-medium text-slate-500 bg-slate-100 border border-slate-200 flex items-center gap-1 shrink-0">
-                          <Lock className="w-2.5 sm:w-3 h-2.5 sm:h-3 text-slate-400" /> Coming soon
-                        </span>
-                      </div>
-
-                      {/* Country Title & Subtitle */}
-                      <h2 className="text-lg font-semibold text-slate-800 tracking-tight">
-                        {countryDisplayName}
-                      </h2>
-                      <span className="text-xs font-medium text-slate-400 block mt-1">
-                        {isGermany ? 'Berlin & Munich Track' : 'APAC Regional Hub'}
-                      </span>
-
-                      {/* Description */}
-                      <p className="text-xs sm:text-sm text-slate-400 mt-3 leading-relaxed font-normal min-h-[46px] lg:min-h-[50px]">
-                        {isGermany
-                          ? 'Kultur kerja terstruktur dengan standar rekayasa industri teknologi Eropa.'
-                          : 'Hub startup unicorn dan institusi finansial global terdepan Asia Pasifik.'}
-                      </p>
-                    </div>
-
-                    {/* Aligned Footer Information */}
-                    <div className="pt-4 mt-6 border-t border-slate-100">
-                      <div className="text-xs font-medium text-slate-400 py-0.5">
-                        Daftar tunggu segera dibuka
-                      </div>
-                    </div>
+                    {/* Title & Description */}
+                    <h2 className={`text-lg sm:text-xl font-bold mb-1.5 ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
+                      {country.name}
+                    </h2>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+                      {country.code === 'JP' && 'Peluang visa sponsor langsung untuk software engineer Indonesia dengan gaji kompetitif.'}
+                      {country.code === 'SG' && 'Hub teknologi Asia Tenggara dengan pajak kompetitif dan kedekatan jarak penerbangan.'}
+                      {country.code === 'DE' && 'Pusat teknologi Eropa dengan EU Blue Card dan perlindungan work-life balance tinggi.'}
+                    </p>
                   </div>
                 )
               })}
             </div>
+          )}
 
-          </div>
-        )}
-
-        {/* ── STEP 2: TRACK & TECH STACK ── */}
-        {currentStep === 2 && (
-          <div className="space-y-8 animate-fadeIn">
-            <div className="max-w-2xl">
-              <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-600 block mb-2">
-                ONBOARDING · TAHAP 2
-              </span>
-              <h1 className="text-[28px] sm:text-[36px] lg:text-[42px] font-bold text-slate-900 tracking-[-0.035em] leading-[1.1]">
-                Pilih jalur dan keahlian teknismu
-              </h1>
-              <p className="text-base sm:text-lg text-slate-500 mt-2.5 sm:mt-3 leading-relaxed font-normal">
-                Fokus kurikulum dan studi kasus akan diselaraskan dengan spesialisasi pilihanmu di Tokyo.
-              </p>
-            </div>
-
-            {/* 4 Career Tracks in 4-Column Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* ── TAHAP 2A: GRID 2X2 BESAR & GAGAH (ENLARGED TO ~460px) ── */}
+          {currentStep === 2 && trackSubStep === 'track' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
               {careerPaths.map((path) => {
-                const isPathSelected = selectedCareerPathId === path.id
+                const isSelected = selectedCareerPathId === path.id
+                const badge = getTrackBadge(path.slug)
 
                 return (
                   <div
                     key={path.id}
                     onClick={() => handleSelectCareerPath(path)}
-                    className={`p-5 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                      isPathSelected
-                        ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                        : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
+                    className={`cursor-pointer rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[430px] sm:max-w-[460px] w-full ${
+                      isSelected
+                        ? 'bg-indigo-50/70 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10'
+                        : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-xs'
                     }`}
                   >
-                    <div>
-                      <div className="flex items-center justify-between mb-3.5">
-                        <div className="p-2 sm:p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                          {getTrackIcon(path.slug)}
-                        </div>
-                        {isPathSelected && (
-                          <span className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center">
-                            <Check className="w-3 h-3 stroke-[3]" />
-                          </span>
-                        )}
-                      </div>
+                    {/* Top Vector Frame (Enlarged to h-44 / h-48) */}
+                    <div className="w-full h-44 sm:h-48 rounded-2xl bg-[#F8FAFC] flex items-center justify-center mb-4 overflow-hidden relative">
+                      {renderTrackIllustration(path.slug)}
+                      <span className={`absolute top-2.5 right-2.5 text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${badge.color}`}>
+                        {badge.text}
+                      </span>
+                    </div>
 
-                      <h2 className="text-sm sm:text-base font-bold text-slate-900">
-                        {path.label}
-                      </h2>
-                      <p className="text-xs text-slate-500 mt-1.5 line-clamp-2 leading-relaxed">
-                        {path.description}
-                      </p>
+                    {/* Title & Description */}
+                    <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5">
+                      {path.label}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed line-clamp-2 mb-3.5">
+                      {path.description || 'Standar kurikulum teknologi global.'}
+                    </p>
+
+                    {/* Selection Indicator */}
+                    <div className="mt-auto pt-2 flex items-center justify-center text-xs sm:text-sm font-semibold">
+                      {isSelected ? (
+                        <span className="text-[#4F46E5] font-bold flex items-center gap-1.5">
+                          <Check className="w-4 h-4 stroke-[2.5]" /> Jalur Terpilih
+                        </span>
+                      ) : (
+                        <span className="text-slate-400">
+                          Klik untuk memilih
+                        </span>
+                      )}
                     </div>
                   </div>
                 )
               })}
             </div>
+          )}
 
-            {/* Tech Stack Selector */}
-            {selectedCareerPath && (
-              <div className="p-5 sm:p-6 rounded-2xl bg-white border border-slate-200/90 shadow-2xs space-y-3.5">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                    Tech Stack Utama ({selectedCareerPath.label}):
-                  </span>
-                  <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Pilih 1 stack</span>
-                </div>
+          {/* ── TAHAP 2B: PILIH TEKNOLOGI UTAMA (ENLARGED PORTRAIT CARDS) ── */}
+          {currentStep === 2 && trackSubStep === 'stack' && selectedCareerPath && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
+              {selectedCareerPath.stacks.map((stack) => {
+                const isSelected = selectedStackSlug === stack.slug
+                const isActive = stack.is_active
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  {selectedCareerPath.stacks.map((stack) => {
-                    const isStackSelected = selectedStackSlug === stack.slug
-                    const isUnlocked = stack.is_active
+                return (
+                  <div
+                    key={stack.slug}
+                    onClick={() => {
+                      if (isActive) {
+                        setSelectedStackSlug(stack.slug)
+                      }
+                    }}
+                    className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative ${
+                      isActive
+                        ? isSelected
+                          ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
+                          : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                        : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
+                    }`}
+                  >
+                    {/* Top Tech Logo Frame */}
+                    <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isActive ? 'bg-[#F8FAFC]' : 'bg-slate-100/70'}`}>
+                      <TechIcon slug={stack.slug} className="w-16 h-16" />
 
-                    return (
-                      <div
-                        key={stack.slug}
-                        onClick={() => {
-                          if (isUnlocked) setSelectedStackSlug(stack.slug)
-                        }}
-                        className={`p-3.5 rounded-xl border transition-all select-none min-h-[44px] flex items-center justify-between ${
-                          isUnlocked
-                            ? isStackSelected
-                              ? 'border-indigo-600 bg-indigo-50/40 font-semibold text-indigo-950 cursor-pointer shadow-2xs'
-                              : 'border-slate-200 bg-white hover:bg-slate-50 font-medium text-slate-800 cursor-pointer'
-                            : 'border-slate-100 bg-slate-50 text-slate-400 opacity-60 cursor-not-allowed'
+                      {/* Stack Badge */}
+                      <span
+                        className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
+                          isActive
+                            ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
+                            : 'bg-slate-200/80 text-slate-600 border-slate-300'
                         }`}
                       >
-                        <span className="text-xs sm:text-sm">{stack.label}</span>
-                        {isUnlocked ? (
-                          isStackSelected ? (
-                            <Check className="w-3.5 h-3.5 text-indigo-600 stroke-[3]" />
-                          ) : (
-                            <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 font-medium border border-emerald-200">
-                              Aktif
-                            </span>
-                          )
-                        ) : (
-                          <Lock className="w-3 h-3 text-slate-400" />
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
+                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {formatStackBadge(stack.badge, isActive)}
+                      </span>
+                    </div>
 
-        {/* ── STEP 3: EXPERIENCE LEVEL & PERSONALIZATION ── */}
-        {currentStep === 3 && (
-          <div className="space-y-8 animate-fadeIn">
-            <div className="max-w-2xl">
-              <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-600 block mb-2">
-                ONBOARDING · TAHAP 3
-              </span>
-              <h1 className="text-[28px] sm:text-[36px] lg:text-[42px] font-bold text-slate-900 tracking-[-0.035em] leading-[1.1]">
-                Kesiapan & Target Kariermu
-              </h1>
-              <p className="text-base sm:text-lg text-slate-500 mt-2.5 sm:mt-3 leading-relaxed font-normal">
-                Kami menyesuaikan kurikulum belajar, intensitas daily quest, dan persiapan bahasa sesuai ritmemu.
-              </p>
+                    {/* Title & Description */}
+                    <h3 className={`text-lg sm:text-xl font-bold mb-1.5 ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
+                      {stack.label}
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+                      {getStackDescription(stack.slug)}
+                    </p>
+                  </div>
+                )
+              })}
             </div>
+          )}
 
-            {/* 1. Pengalaman Teknis */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                  1. Tingkat Pengalaman Coding:
-                </span>
-                <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Pilih 1 level</span>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Beginner */}
+          {/* ── TAHAP 3: TINGKAT PENGALAMAN & DETAIL BREAKDOWN (ENLARGED) ── */}
+          {currentStep === 3 && (
+            <div className="w-full max-w-4xl flex flex-col items-center">
+              {/* 2 Main Cards */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 sm:gap-7 w-full justify-items-center mb-5">
+                {/* Card 1: Mulai dari Dasar */}
                 <div
                   onClick={() => setSelectedLevel('beginner')}
-                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
+                  className={`cursor-pointer rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[380px] sm:max-w-[400px] w-full ${
                     selectedLevel === 'beginner'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
+                      ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10'
+                      : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-start justify-between mb-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-xl shadow-2xs">
-                        🌱
-                      </div>
-                      <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                          selectedLevel === 'beginner'
-                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                            : 'border-slate-300 bg-white'
-                        }`}
-                      >
-                        {selectedLevel === 'beginner' && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                    </div>
-
-                    <h2 className="text-base font-bold text-slate-900">
-                      Pemula / Entry-Level
-                    </h2>
-                    <span className="text-xs text-emerald-700 font-semibold block mt-0.5">
-                      &lt; 1 - 2 Tahun Pengalaman
+                  <div className="w-full h-44 sm:h-48 rounded-2xl bg-[#F8FAFC] flex items-center justify-center mb-4 overflow-hidden relative">
+                    <BeginnerIllustration />
+                    <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
+                      Step by Step
                     </span>
-                    <p className="text-xs text-slate-500 mt-2 leading-relaxed font-normal">
-                      Fokus membangun fondasi clean architecture, algoritma terstruktur, dan portofolio GitHub berstandar Tokyo.
-                    </p>
                   </div>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-1.5">
+                    Mulai dari Dasar
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+                    Baru belajar coding atau pindah karier. Bimbingan fundamental dari nol hingga siap kerja global.
+                  </p>
                 </div>
 
-                {/* Intermediate */}
+                {/* Card 2: Sudah Berpengalaman */}
                 <div
                   onClick={() => setSelectedLevel('intermediate')}
-                  className={`p-5 sm:p-6 rounded-2xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
+                  className={`cursor-pointer rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[380px] sm:max-w-[400px] w-full ${
                     selectedLevel === 'intermediate'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
+                      ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10'
+                      : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm'
                   }`}
                 >
-                  <div>
-                    <div className="flex items-start justify-between mb-3.5">
-                      <div className="w-10 h-10 rounded-xl bg-cyan-50 border border-cyan-200 flex items-center justify-center text-xl shadow-2xs">
-                        🚀
-                      </div>
-                      <div
-                        className={`w-5 h-5 rounded-full border flex items-center justify-center ${
-                          selectedLevel === 'intermediate'
-                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                            : 'border-slate-300 bg-white'
-                        }`}
-                      >
-                        {selectedLevel === 'intermediate' && <Check className="w-3 h-3 stroke-[3]" />}
-                      </div>
-                    </div>
-
-                    <h2 className="text-base font-bold text-slate-900">
-                      Berpengalaman / Mid-Level
-                    </h2>
-                    <span className="text-xs text-cyan-700 font-semibold block mt-0.5">
-                      2+ Tahun Pengalaman Kerja
+                  <div className="w-full h-44 sm:h-48 rounded-2xl bg-[#F8FAFC] flex items-center justify-center mb-4 overflow-hidden relative">
+                    <ExperiencedIllustration />
+                    <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
+                      Akselerasi
                     </span>
-                    <p className="text-xs text-slate-500 mt-2 leading-relaxed font-normal">
-                      Akselerasi ke distributed systems, concurrency, technical mock interview, dan fast-track visa sponsorship.
-                    </p>
+                  </div>
+                  <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-1.5">
+                    Sudah Berpengalaman
+                  </h2>
+                  <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
+                    Sudah terbiasa ngoding dan ingin langsung akselerasi ke standar arsitektur dan interview Tokyo.
+                  </p>
+                </div>
+              </div>
+
+              {/* Detail Breakdown Box */}
+              <div className="w-full max-w-2xl bg-white border border-slate-200/90 rounded-2xl p-4.5 sm:p-5 shadow-xs animate-in fade-in duration-200">
+                {selectedLevel === 'beginner' ? (
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="shrink-0">
+                      <FundamentalGuideIllustration className="w-14 h-14" />
+                    </div>
+                    <div className="text-left space-y-1">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-emerald-600" />
+                        Fokus Jalur: Fundamental &amp; Habit Belajar
+                      </h4>
+                      <ul className="text-xs text-slate-600 space-y-0.5 list-disc list-inside">
+                        <li>Daily quest ringan 15 menit/hari membangun konsistensi coding.</li>
+                        <li>Struktur data, algoritma dasar, dan best practice clean code.</li>
+                        <li>Pengenalan kosakata teknis bahasa kerja negara tujuan.</li>
+                      </ul>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col sm:flex-row items-center gap-4">
+                    <div className="shrink-0">
+                      <AcceleratedSystemIllustration className="w-14 h-14" />
+                    </div>
+                    <div className="text-left space-y-1">
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-1.5">
+                        <Check className="w-3.5 h-3.5 text-[#4F46E5]" />
+                        Fokus Jalur: Arsitektur &amp; Interview Global
+                      </h4>
+                      <ul className="text-xs text-slate-600 space-y-0.5 list-disc list-inside">
+                        <li>System design, concurrency, dan high-scale distributed systems.</li>
+                        <li>Simulasi coding interview teknis berstandar perusahaan global.</li>
+                        <li>Penyusunan CV internasional dan bimbingan visa Highly Skilled Professional.</li>
+                      </ul>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Preferences: Target Timeline & Language Level */}
+              <div className="w-full max-w-2xl grid grid-cols-1 sm:grid-cols-2 gap-3.5 mt-3.5">
+                {/* Timeline Selector */}
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs text-left">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Clock className="w-4 h-4 text-[#4F46E5]" />
+                    <span className="text-xs font-bold text-slate-800">Target Durasi Berangkat</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 bg-slate-100/70 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTimeline('6_months')}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedTimeline === '6_months'
+                          ? 'bg-white text-[#4F46E5] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      6 Bulan
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTimeline('1_year')}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedTimeline === '1_year'
+                          ? 'bg-white text-[#4F46E5] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      1 Tahun
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTimeline('exploring')}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedTimeline === 'exploring'
+                          ? 'bg-white text-[#4F46E5] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Santai
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                    {selectedTimeline === '6_months' && '⚡ Ritme intensif (Sprint target wawancara).'}
+                    {selectedTimeline === '1_year' && '🎯 Ritme ideal & terstruktur (Paling direkomendasikan).'}
+                    {selectedTimeline === 'exploring' && '🧭 Eksplorasi sambil membangun fondasi skill.'}
+                  </p>
+                </div>
+
+                {/* Language Level Selector */}
+                <div className="bg-white border border-slate-200/90 rounded-2xl p-3.5 sm:p-4 shadow-2xs text-left">
+                  <div className="flex items-center gap-1.5 mb-2.5">
+                    <Languages className="w-4 h-4 text-[#4F46E5]" />
+                    <span className="text-xs font-bold text-slate-800">Kemampuan Bahasa Jepang</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-1.5 bg-slate-100/70 p-1 rounded-xl">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLanguageLevel('none')}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedLanguageLevel === 'none'
+                          ? 'bg-white text-[#4F46E5] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Nol
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLanguageLevel('basic')}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedLanguageLevel === 'basic'
+                          ? 'bg-white text-[#4F46E5] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Dasar
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedLanguageLevel('conversational')}
+                      className={`py-1.5 px-2 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                        selectedLanguageLevel === 'conversational'
+                          ? 'bg-white text-[#4F46E5] shadow-xs'
+                          : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                    >
+                      Lancar
+                    </button>
+                  </div>
+                  <p className="text-[10px] text-slate-400 mt-2 font-medium">
+                    {selectedLanguageLevel === 'none' && '🌱 Modul kosakata teknis harian dari nol.'}
+                    {selectedLanguageLevel === 'basic' && '📖 Paham Hiragana/Katakana atau level N5.'}
+                    {selectedLanguageLevel === 'conversational' && '🗣️ Siap simulasi interview bahasa Jepang.'}
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ── TAHAP 4: TIKET PENERBANGAN RESMI ── */}
+          {currentStep === 4 && (
+            <div className="max-w-md w-full mx-auto">
+              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden text-left relative">
+                {/* Ticket Top Banner */}
+                <div className="bg-gradient-to-r from-[#4F46E5] via-[#4338CA] to-[#312E81] px-6 py-4.5 text-white flex items-center justify-between">
+                  <div>
+                    <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-200">
+                      Official Boarding Pass
+                    </span>
+                    <h3 className="text-base font-black tracking-tight mt-0.5">
+                      CodeAbroad Global Journey
+                    </h3>
+                  </div>
+                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
+                    <Plane className="w-4.5 h-4.5 text-white" />
+                  </div>
+                </div>
+
+                {/* Ticket Body Details */}
+                <div className="p-5 sm:p-6 space-y-3 text-xs sm:text-sm">
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Nama Rekayasa</span>
+                    <span className="font-bold text-slate-800">{completionResult?.name || user?.name || user?.username}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Rute Destinasi</span>
+                    <span className="font-bold text-[#4F46E5] flex items-center gap-1.5">
+                      Jakarta (CGK) <ArrowRight className="w-3.5 h-3.5" /> {selectedCountry?.name || 'Japan'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Spesialisasi</span>
+                    <span className="font-bold text-slate-800">{selectedCareerPath?.label || 'Backend Engineer'}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Teknologi Utama</span>
+                    <span className="font-bold text-[#4F46E5] uppercase">{selectedStackSlug}</span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Tingkat Awal</span>
+                    <span className="font-bold text-slate-800 capitalize">
+                      {selectedLevel === 'beginner' ? 'Mulai dari Dasar' : 'Sudah Berpengalaman'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Target Waktu</span>
+                    <span className="font-bold text-slate-800">
+                      {selectedTimeline === '6_months'
+                        ? '6 Bulan (Sprint)'
+                        : selectedTimeline === '1_year'
+                        ? '1 Tahun (Ideal)'
+                        : 'Eksplorasi Mandiri'}
+                    </span>
+                  </div>
+                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
+                    <span className="text-slate-500">Bahasa Kerja</span>
+                    <span className="font-bold text-slate-800">
+                      {selectedLanguageLevel === 'none'
+                        ? 'Belum Ada (Nol)'
+                        : selectedLanguageLevel === 'basic'
+                        ? 'Dasar (N5/N4)'
+                        : 'Percakapan (N3+)'}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2 pt-1 text-[#4F46E5] font-medium text-xs">
+                    <ShieldCheck className="w-4 h-4 text-[#4F46E5]" />
+                    <span>Paspor aktif &amp; kurikulum siap diakses</span>
                   </div>
                 </div>
               </div>
             </div>
+          )}
+        </div>
 
-            {/* 2. Target Waktu Keberangkatan (Timeline) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                  2. Target Waktu Keberangkatan ke Tokyo:
-                </span>
-                <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Bisa diubah nanti</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* 6_months */}
-                <div
-                  onClick={() => setSelectedTimeline('6_months')}
-                  className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                    selectedTimeline === '6_months'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg">⚡</span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTimeline === '6_months' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'}`}>
-                      {selectedTimeline === '6_months' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">3 – 6 Bulan</h3>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">Sprint cepat & intensif untuk persiapan interview segera.</p>
-                  </div>
-                </div>
-
-                {/* 1_year */}
-                <div
-                  onClick={() => setSelectedTimeline('1_year')}
-                  className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                    selectedTimeline === '1_year'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg">🎯</span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTimeline === '1_year' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'}`}>
-                      {selectedTimeline === '1_year' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <h3 className="text-sm font-bold text-slate-900">1 Tahun ke Depan</h3>
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-semibold border border-indigo-200 leading-none">Ideal</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">Kurikulum bertahap, mantap bangun portofolio & sertifikasi.</p>
-                  </div>
-                </div>
-
-                {/* exploring */}
-                <div
-                  onClick={() => setSelectedTimeline('exploring')}
-                  className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                    selectedTimeline === 'exploring'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-lg">🌱</span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedTimeline === 'exploring' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'}`}>
-                      {selectedTimeline === 'exploring' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Eksplorasi Santai</h3>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">Belajar fleksibel sesuai waktu luang tanpa tekanan tenggat waktu.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* 3. Kemampuan Bahasa Jepang (Tokyo Track) */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs sm:text-sm font-semibold text-slate-800">
-                  3. Kemampuan Bahasa Jepang Saat Ini:
-                </span>
-                <span className="text-[10px] sm:text-[11px] text-slate-400 font-medium">Bukan syarat mutlak</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
-                {/* none */}
-                <div
-                  onClick={() => setSelectedLanguageLevel('none')}
-                  className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                    selectedLanguageLevel === 'none'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-slate-500 font-mono">TRACK EN</span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedLanguageLevel === 'none' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'}`}>
-                      {selectedLanguageLevel === 'none' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Mulai dari Nol</h3>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">Fokus ke startup Tokyo berbahasa Inggris + adaptasi dasar.</p>
-                  </div>
-                </div>
-
-                {/* basic */}
-                <div
-                  onClick={() => setSelectedLanguageLevel('basic')}
-                  className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                    selectedLanguageLevel === 'basic'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-indigo-600 font-mono">JLPT N5 – N4</span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedLanguageLevel === 'basic' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'}`}>
-                      {selectedLanguageLevel === 'basic' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Dasar / Sedang Belajar</h3>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">Paham Hiragana/Katakana & percakapan sehari-hari ringan.</p>
-                  </div>
-                </div>
-
-                {/* conversational / fluent */}
-                <div
-                  onClick={() => setSelectedLanguageLevel('conversational')}
-                  className={`p-4 rounded-xl border transition-all duration-200 cursor-pointer select-none flex flex-col justify-between active:scale-[0.99] ${
-                    selectedLanguageLevel === 'conversational'
-                      ? 'border-indigo-600 bg-gradient-to-b from-[#FAF8FF] to-[#FFFFFF] shadow-[0_4px_20px_rgba(91,69,255,0.06)] md:-translate-y-0.5'
-                      : 'border-slate-200/90 bg-white hover:border-slate-300 hover:shadow-2xs'
-                  }`}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold text-emerald-600 font-mono">JLPT N3+</span>
-                    <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${selectedLanguageLevel === 'conversational' ? 'bg-indigo-600 border-indigo-600 text-white' : 'border-slate-300 bg-white'}`}>
-                      {selectedLanguageLevel === 'conversational' && <Check className="w-2.5 h-2.5 stroke-[3]" />}
-                    </div>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Percakapan / Siap Wawancara</h3>
-                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">Siap wawancara teknis bilingual Jepang dan Inggris.</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP 4: BOARDING PASS (RESPONSIVE TICKET) ── */}
-        {currentStep === 4 && (
-          <div className="max-w-xl mx-auto w-full space-y-4 sm:space-y-6 animate-fadeIn">
-            <div className="text-center space-y-1">
-              <span className="text-[11px] sm:text-xs font-semibold uppercase tracking-wider text-indigo-600">
-                ONBOARDING · SELESAI
-              </span>
-              <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold text-slate-900 tracking-tight">
-                Tiket Penerbangan Resmi Terbit
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500">
-                Paspor kariermu telah terverifikasi. Selamat bergabung di CodeAbroad!
-              </p>
-            </div>
-
-            {/* Boarding Pass Ticket */}
-            <div className="rounded-2xl bg-white border border-slate-200 shadow-md overflow-hidden">
-              <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-slate-900 text-white flex items-center justify-between">
-                <div className="flex items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs font-semibold tracking-wider text-slate-200">
-                  <Plane className="w-3.5 sm:w-4 h-3.5 sm:h-4 text-indigo-400" />
-                  <span className="truncate">CODEABROAD • BOARDING PASS (搭乗券)</span>
-                </div>
-                <span className="font-mono text-[10px] sm:text-xs text-slate-400 font-medium shrink-0">
-                  CA-2026
-                </span>
-              </div>
-
-              <div className="p-4 sm:p-6 space-y-4 sm:space-y-5">
-                {/* Flight Route Header */}
-                <div className="flex items-center justify-between border-b border-slate-100 pb-3.5 sm:pb-4">
-                  <div>
-                    <div className="text-2xl sm:text-3xl font-black text-slate-900 font-mono">
-                      JKT
-                    </div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Jakarta, ID</div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col items-center px-2 sm:px-4">
-                    <span className="text-[9px] sm:text-[10px] uppercase font-semibold text-indigo-600 tracking-wider mb-0.5 sm:mb-1">
-                      Tokyo Tech Track
-                    </span>
-                    <div className="w-full flex items-center justify-center relative">
-                      <div className="w-full border-t border-dashed border-slate-300" />
-                      <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-indigo-50 border border-indigo-200 flex items-center justify-center absolute">
-                        <Plane className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-indigo-600 rotate-90" />
-                      </div>
-                    </div>
-                    <span className="text-[8px] sm:text-[9px] text-slate-400 mt-0.5 sm:mt-1 font-mono font-medium">
-                      NON-STOP
-                    </span>
-                  </div>
-
-                  <div className="text-right">
-                    <div className="text-2xl sm:text-3xl font-black text-indigo-600 font-mono flex items-center justify-end gap-1.5 sm:gap-2">
-                      <span>HND</span>
-                      <CountryFlag code="JP" className="w-5 sm:w-6 h-3.5 sm:h-4 inline-block shadow-none" />
-                    </div>
-                    <div className="text-[11px] sm:text-xs text-slate-500 font-medium">Tokyo (Haneda)</div>
-                  </div>
-                </div>
-
-                {/* Details Grid (6 Essential Attributes) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
-                  <div>
-                    <span className="text-slate-400 block text-[9px] sm:text-[10px] uppercase font-semibold">
-                      Passenger
-                    </span>
-                    <span className="font-bold text-slate-900 block truncate mt-0.5 text-xs sm:text-sm">
-                      {user?.name || 'Software Engineer'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] sm:text-[10px] uppercase font-semibold">
-                      Track
-                    </span>
-                    <span className="font-semibold text-indigo-600 block truncate mt-0.5 text-xs sm:text-sm">
-                      {completionResult?.career_path?.label || selectedCareerPath?.label}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] sm:text-[10px] uppercase font-semibold">
-                      Primary Stack
-                    </span>
-                    <span className="font-semibold text-emerald-700 block truncate mt-0.5 text-xs sm:text-sm">
-                      {selectedStack?.label || completionResult?.primary_stack}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] sm:text-[10px] uppercase font-semibold">
-                      Class Level
-                    </span>
-                    <span className="font-bold text-slate-900 block capitalize mt-0.5 text-xs sm:text-sm">
-                      {completionResult?.level === 'intermediate' || selectedLevel === 'intermediate' ? 'Mid-Level' : 'Entry-Level'}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] sm:text-[10px] uppercase font-semibold">
-                      Target Flight
-                    </span>
-                    <span className="font-semibold text-slate-800 block truncate mt-0.5 text-xs sm:text-sm">
-                      {getTargetTimelineLabel(completionResult?.target_timeline || selectedTimeline)}
-                    </span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block text-[9px] sm:text-[10px] uppercase font-semibold">
-                      Language Track
-                    </span>
-                    <span className="font-semibold text-indigo-600 block truncate mt-0.5 text-xs sm:text-sm">
-                      {getLanguageTrackLabel(completionResult?.language_level || selectedLanguageLevel)}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="border-t border-dashed border-slate-200 my-0.5" />
-
-                {/* Seal & Verification */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-center gap-2.5 sm:gap-3">
-                    <div className="w-11 h-11 sm:w-13 sm:h-13 rounded-full border-2 border-red-600 flex items-center justify-center transform -rotate-12 bg-red-50/70 shrink-0">
-                      <div className="text-center font-serif text-red-600">
-                        <div className="text-sm sm:text-base font-black tracking-widest leading-none">
-                          合格
-                        </div>
-                        <div className="text-[6px] sm:text-[7px] uppercase font-sans font-bold mt-0.5">
-                          PASSED
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="text-xs space-y-0.5">
-                      <div className="font-bold text-slate-900 flex items-center gap-1 text-[11px] sm:text-xs">
-                        <ShieldCheck className="w-3 sm:w-3.5 h-3 sm:h-3.5 text-emerald-600" />
-                        <span>Tokyo Fast-Track Verified</span>
-                      </div>
-                      <p className="text-[9px] sm:text-[10px] text-slate-400 font-mono">
-                        Passport: {user?.id.slice(0, 8)}...
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="text-right hidden sm:block">
-                    <div className="font-mono text-[9px] tracking-widest text-slate-400">
-                      ||||| | |||| ||| |||||| | |||||
-                    </div>
-                    <span className="text-[9px] sm:text-[10px] font-mono text-slate-400 font-medium">
-                      GATE TOKYO • SEAT 01A
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </main>
-
-      {/* ── 3. REFINED BOTTOM NAVIGATION ── */}
-      <footer className="sticky bottom-0 z-30 bg-[#FAFBFC]/90 backdrop-blur-md border-t border-slate-200/60 px-4 sm:px-6 lg:px-8 py-3.5 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="max-w-5xl mx-auto flex items-center justify-between gap-3 sm:gap-4">
-          
-          {/* Step indicator */}
-          <div className="text-xs text-slate-500 font-medium shrink-0">
-            {currentStep === 4 ? '🎫 Siap ke Dashboard?' : `Langkah ${currentStep} dari 4`}
-          </div>
-
-          {/* Primary CTA (Compact, Rounded, Indigo Accent) */}
+        {/* ── CENTERED BOTTOM ACTION (COMPACT SPACING) ── */}
+        <div className="flex flex-col items-center justify-center mt-5 sm:mt-6 gap-2">
           <button
-            type="button"
-            onClick={
-              currentStep === 4
-                ? () => navigate('/dashboard', { replace: true })
-                : currentStep === 3
-                ? handleSubmitOnboarding
-                : () => setCurrentStep((prev) => (prev + 1) as any)
-            }
+            onClick={handleNext}
             disabled={loading || !isStepValid()}
-            className={`px-6 py-2.5 rounded-xl font-semibold text-xs sm:text-sm transition-all duration-150 select-none flex items-center justify-center gap-1.5 min-h-[44px] cursor-pointer ${
-              isStepValid()
-                ? 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs hover:shadow active:scale-[0.98]'
-                : 'bg-slate-200/60 text-slate-400 cursor-not-allowed border border-slate-200'
-            }`}
+            className="px-8 sm:px-10 py-3 rounded-full bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] active:scale-95 text-white font-semibold text-xs sm:text-sm shadow-md shadow-indigo-500/25 hover:shadow-lg hover:shadow-indigo-500/35 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {loading ? (
-              <span>Memproses...</span>
+              'Memproses...'
             ) : currentStep === 4 ? (
               <>
-                <span>Masuk ke Dashboard</span>
-                <ArrowRight className="w-4 h-4" />
+                Masuk ke Dashboard <ArrowRight className="w-4 h-4" />
               </>
             ) : currentStep === 3 ? (
-              <span>Terbitkan Boarding Pass</span>
-            ) : (
               <>
-                <span>Lanjutkan</span>
-                <ArrowRight className="w-4 h-4" />
+                Terbitkan Tiket <Sparkles className="w-4 h-4" />
               </>
+            ) : currentStep === 2 && trackSubStep === 'track' ? (
+              <>
+                Pilih Stack Teknologi <ArrowRight className="w-3.5 h-3.5" />
+              </>
+            ) : (
+              "Let's start"
             )}
           </button>
+
+          {/* Contextual Back Navigation */}
+          {((currentStep > 1 && currentStep < 4) || (currentStep === 2 && trackSubStep === 'stack')) && (
+            <button
+              onClick={handleBack}
+              className="text-xs font-semibold text-slate-400 hover:text-[#4F46E5] transition-colors cursor-pointer flex items-center gap-1"
+            >
+              <ArrowLeft className="w-3.5 h-3.5" />
+              {currentStep === 2 && trackSubStep === 'stack'
+                ? 'Ganti Jalur Spesialisasi'
+                : currentStep === 2 && trackSubStep === 'track'
+                ? 'Kembali ke pilihan negara'
+                : 'Kembali ke pilihan teknologi'}
+            </button>
+          )}
         </div>
+      </main>
+
+      {/* ── FOOTER WATERMARK ── */}
+      <footer className="w-full text-center py-2.5 text-[11px] text-slate-400 shrink-0">
+        CodeAbroad &copy; {new Date().getFullYear()} &mdash; Pelopor Karier Global Software Engineer Indonesia
       </footer>
     </div>
   )

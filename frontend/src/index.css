@@ -89,3 +89,93 @@
 .animate-float-slow {
   animation: float-slow 5s ease-in-out infinite;
 }
+
+/* Onboarding Co-Pilot Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bubble-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(6px);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(1.02) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@keyframes xp-float {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  20% {
+    opacity: 1;
+    transform: translateY(0) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(-14px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-24px) scale(0.95);
+  }
+}
+
+@keyframes kodi-hop {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  30% {
+    transform: translateY(-10px) rotate(-3deg);
+  }
+  60% {
+    transform: translateY(0) rotate(2deg);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.35s ease-out both;
+}
+
+.animate-bubble-pop {
+  animation: bubble-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.animate-xp-float {
+  animation: xp-float 1.4s ease-out forwards;
+}
+
+.animate-kodi-hop {
+  animation: kodi-hop 0.6s ease-out;
+}
+
+/* Smooth Stepper Transition */
+@keyframes stepTransition {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-stepTransition {
+  animation: stepTransition 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { api } from '../services/api'
-import type { ApiResponse, User } from '../types/auth'
 import { UserAvatar } from '../components/ui/UserAvatar'
 import type { AvatarStyle } from '../utils/avatar'
 import { MascotCard, type KodiPose } from '../components/ui/MascotCard'
@@ -10,21 +9,14 @@ import { DoodleHanko } from '../components/ui/DoodleIcons'
 import { Logo } from '../components/ui/Logo'
 import { 
   LogOut, 
-  ShieldCheck, 
   Sparkles, 
-  CheckCircle2, 
   Plane, 
   Award, 
   Flame, 
-  Clock, 
   Lock, 
   Check, 
   Zap, 
-  Target, 
-  ChevronRight,
-  Code2,
-  Terminal,
-  ExternalLink
+  Target 
 } from 'lucide-react'
 
 // Helper to format tech stack slug into readable label with icon
