@@ -71,8 +71,17 @@ func (u *onboardingUsecase) CompleteOnboarding(
 	if err != nil {
 		return nil, err
 	}
+	
 	if !country.IsActive {
-		return nil, domain.ErrCountryNotActive
+		return nil, domain.NewBadRequestError(
+			domain.ErrCodeCountryComingSoon,
+			fmt.Sprintf("country %s (%s) is coming soon and not yet active", country.Name, country.Code),
+			map[string]any{
+				"country_code": country.Code,
+				"country_name": country.Name,
+				"active_track": "JP",
+			},
+		)
 	}
 
 	// 3. Verify selected career path exists
@@ -91,10 +100,24 @@ func (u *onboardingUsecase) CompleteOnboarding(
 	}
 
 	if foundStack == nil {
-		return nil, domain.ErrInvalidStack
+		return nil, domain.NewBadRequestError(
+			domain.ErrCodeInvalidStack,
+			"invalid tech stack for the selected career path",
+			map[string]any{
+				"career_path": careerPath.Slug,
+				"stack":       req.PrimaryStack,
+			},
+		)
 	}
 	if !foundStack.IsActive {
-		return nil, domain.ErrStackNotActive
+		return nil, domain.NewBadRequestError(
+			domain.ErrCodeStackComingSoon,
+			fmt.Sprintf("tech stack %s is coming soon and not yet active", foundStack.Label),
+			map[string]any{
+				"stack":       foundStack.Slug,
+				"career_path": careerPath.Slug,
+			},
+		)
 	}
 
 	// 5. Update user onboarding record and grant first XP bonus

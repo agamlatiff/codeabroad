@@ -3,19 +3,29 @@ package domain
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"time"
 )
 
-// Specific Onboarding Errors
-var (
-	ErrCountryNotFound    = fmt.Errorf("%w: country not found", ErrNotFound)
-	ErrCountryNotActive   = fmt.Errorf("%w: country is coming soon and not yet active", ErrBadRequest)
-	ErrCareerPathNotFound = fmt.Errorf("%w: career path not found", ErrNotFound)
-	ErrStackNotActive     = fmt.Errorf("%w: selected tech stack is coming soon and not yet active", ErrBadRequest)
-	ErrInvalidStack       = fmt.Errorf("%w: invalid tech stack for the selected career path", ErrBadRequest)
-	ErrAlreadyOnboarded   = fmt.Errorf("%w: user has already completed onboarding", ErrConflict)
+// Business Error Codes for Onboarding
+const (
+	ErrCodeCountryNotFound    = "COUNTRY_NOT_FOUND"
+	ErrCodeCountryComingSoon  = "COUNTRY_COMING_SOON"
+	ErrCodeCareerPathNotFound = "CAREER_PATH_NOT_FOUND"
+	ErrCodeStackComingSoon    = "STACK_COMING_SOON"
+	ErrCodeInvalidStack       = "INVALID_STACK"
+	ErrCodeAlreadyOnboarded   = "ALREADY_ONBOARDED"
 )
+
+// Specific Onboarding Errors (unified domain error instances)
+var (
+	ErrCountryNotFound    = NewNotFoundError(ErrCodeCountryNotFound, "country not found")
+	ErrCountryNotActive   = NewBadRequestError(ErrCodeCountryComingSoon, "country is coming soon and not yet active", nil)
+	ErrCareerPathNotFound = NewNotFoundError(ErrCodeCareerPathNotFound, "career path not found")
+	ErrStackNotActive     = NewBadRequestError(ErrCodeStackComingSoon, "selected tech stack is coming soon and not yet active", nil)
+	ErrInvalidStack       = NewBadRequestError(ErrCodeInvalidStack, "invalid tech stack for the selected career path", nil)
+	ErrAlreadyOnboarded   = NewConflictError(ErrCodeAlreadyOnboarded, "user has already completed onboarding")
+)
+
 
 // Country represents a destination country entity
 type Country struct {

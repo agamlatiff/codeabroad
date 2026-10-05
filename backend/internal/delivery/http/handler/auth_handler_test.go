@@ -24,6 +24,9 @@ type testUserRepo struct {
 }
 
 func (r *testUserRepo) Create(ctx context.Context, u *domain.User) error {
+	if u.ID == "" {
+		u.ID = "usr-test-123"
+	}
 	r.users[u.Email] = u
 	r.users[u.ID] = u
 	return nil
