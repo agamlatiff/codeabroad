@@ -68,7 +68,8 @@ export const LoginPage = () => {
       const res = response.data
       if (res.success && res.data) {
         setAuth(res.data.user, res.data.access_token, res.data.refresh_token, rememberMe)
-        navigate('/dashboard')
+        const targetPath = res.data.user.is_onboarded ? '/dashboard' : '/onboarding'
+        navigate(targetPath, { replace: true })
       } else {
         setError(res.error || 'Gagal masuk. Silakan coba beberapa saat lagi.')
       }

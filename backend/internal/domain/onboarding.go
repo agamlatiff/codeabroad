@@ -63,10 +63,12 @@ type CareerPath struct {
 
 // OnboardingRequest defines the payload for submitting user onboarding preferences
 type OnboardingRequest struct {
-	CountryID    string `json:"country_id" binding:"required,uuid"`
-	CareerPathID string `json:"career_path_id" binding:"required,uuid"`
-	PrimaryStack string `json:"primary_stack" binding:"required"`
-	Level        string `json:"level" binding:"required,oneof=beginner intermediate"`
+	CountryID      string `json:"country_id" binding:"required,uuid"`
+	CareerPathID   string `json:"career_path_id" binding:"required,uuid"`
+	PrimaryStack   string `json:"primary_stack" binding:"required"`
+	Level          string `json:"level" binding:"required,oneof=beginner intermediate"`
+	TargetTimeline string `json:"target_timeline" binding:"required,oneof=6_months 1_year exploring"`
+	LanguageLevel  string `json:"language_level" binding:"required,oneof=none basic conversational fluent"`
 }
 
 // CountrySummary represents simplified country data embedded in user profile responses
@@ -94,11 +96,13 @@ type OnboardingProfileResponse struct {
 	XP           int                `json:"xp"`
 	CurrentLevel int                `json:"current_level"`
 	Streak       int                `json:"streak"`
-	IsOnboarded  bool               `json:"is_onboarded"`
-	PrimaryStack *string            `json:"primary_stack"`
-	Country      *CountrySummary    `json:"country"`
-	CareerPath   *CareerPathSummary `json:"career_path"`
-	CreatedAt    time.Time          `json:"created_at"`
+	IsOnboarded    bool               `json:"is_onboarded"`
+	PrimaryStack   *string            `json:"primary_stack"`
+	TargetTimeline *string            `json:"target_timeline"`
+	LanguageLevel  *string            `json:"language_level"`
+	Country        *CountrySummary    `json:"country"`
+	CareerPath     *CareerPathSummary `json:"career_path"`
+	CreatedAt      time.Time          `json:"created_at"`
 }
 
 // CountryRepository specifies the database contract for country queries

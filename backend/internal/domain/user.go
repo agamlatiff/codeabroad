@@ -28,9 +28,11 @@ type User struct {
 	LinkedinURL  *string    `json:"linkedin_url"`
 	CareerPathID *string    `json:"career_path_id"`
 	CountryID    *string    `json:"country_id"`
-	PrimaryStack *string    `json:"primary_stack"`
-	Level        string     `json:"level"`
-	XP           int        `json:"xp"`
+	PrimaryStack   *string    `json:"primary_stack"`
+	Level          string     `json:"level"`
+	TargetTimeline *string    `json:"target_timeline"`
+	LanguageLevel  *string    `json:"language_level"`
+	XP             int        `json:"xp"`
 	CurrentLevel int        `json:"current_level"`
 	Streak       int        `json:"streak"`
 	LastActiveAt *time.Time `json:"last_active_at"`
@@ -72,7 +74,7 @@ type UserRepository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
-	UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error
+	UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error
 	GetProfileWithDetails(ctx context.Context, userID string) (*OnboardingProfileResponse, error)
 }
 

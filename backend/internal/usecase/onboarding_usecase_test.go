@@ -86,6 +86,8 @@ type onboardingMockUserRepo struct {
 	updatedCareerPathID   string
 	updatedPrimaryStack   string
 	updatedLevel          string
+	updatedTargetTimeline string
+	updatedLanguageLevel  string
 	updatedBonusXP        int
 	getByIDError          error
 	updateError           error
@@ -121,7 +123,7 @@ func (m *onboardingMockUserRepo) GetByID(ctx context.Context, id string) (*domai
 	return u, nil
 }
 
-func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error {
+func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error {
 	if m.updateError != nil {
 		return m.updateError
 	}
@@ -130,6 +132,8 @@ func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID st
 	m.updatedCareerPathID = careerPathID
 	m.updatedPrimaryStack = primaryStack
 	m.updatedLevel = level
+	m.updatedTargetTimeline = targetTimeline
+	m.updatedLanguageLevel = languageLevel
 	m.updatedBonusXP = bonusXP
 
 	if u, ok := m.users[userID]; ok {
@@ -137,6 +141,8 @@ func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID st
 		u.CareerPathID = &careerPathID
 		u.PrimaryStack = &primaryStack
 		u.Level = level
+		u.TargetTimeline = &targetTimeline
+		u.LanguageLevel = &languageLevel
 		u.XP += bonusXP
 		u.IsOnboarded = true
 	}
@@ -157,8 +163,10 @@ func (m *onboardingMockUserRepo) GetProfileWithDetails(ctx context.Context, user
 		XP:           u.XP,
 		CurrentLevel: u.CurrentLevel,
 		Streak:       1,
-		IsOnboarded:  u.IsOnboarded,
-		PrimaryStack: u.PrimaryStack,
+		IsOnboarded:    u.IsOnboarded,
+		PrimaryStack:   u.PrimaryStack,
+		TargetTimeline: u.TargetTimeline,
+		LanguageLevel:  u.LanguageLevel,
 		Country: &domain.CountrySummary{
 			ID:        *u.CountryID,
 			Code:      "JP",
@@ -302,10 +310,12 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 
 	t.Run("happy path - completes onboarding and awards +50 bonus XP", func(t *testing.T) {
 		req := &domain.OnboardingRequest{
-			CountryID:    "c-jp",
-			CareerPathID: "cp-backend",
-			PrimaryStack: "golang",
-			Level:        "beginner",
+			CountryID:      "c-jp",
+			CareerPathID:   "cp-backend",
+			PrimaryStack:   "golang",
+			Level:          "beginner",
+			TargetTimeline: "1_year",
+			LanguageLevel:  "basic",
 		}
 
 		res, err := uc.CompleteOnboarding(context.Background(), "user-1", req)

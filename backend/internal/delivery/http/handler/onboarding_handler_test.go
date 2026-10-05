@@ -188,7 +188,7 @@ func TestHTTP_CompleteOnboarding(t *testing.T) {
 		mockUc := &mockOnboardingUsecase{}
 		router := setupOnboardingTestRouter(mockUc, secret)
 
-		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner"}`
+		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner","target_timeline":"1_year","language_level":"basic"}`
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/onboarding", bytes.NewBufferString(payload))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()
@@ -222,7 +222,7 @@ func TestHTTP_CompleteOnboarding(t *testing.T) {
 		}
 		router := setupOnboardingTestRouter(mockUc, secret)
 
-		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner"}`
+		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner","target_timeline":"1_year","language_level":"basic"}`
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/onboarding", bytes.NewBufferString(payload))
 		req.Header.Set("Authorization", "Bearer "+validToken)
 		req.Header.Set("Content-Type", "application/json")
@@ -240,7 +240,7 @@ func TestHTTP_CompleteOnboarding(t *testing.T) {
 		}
 		router := setupOnboardingTestRouter(mockUc, secret)
 
-		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner"}`
+		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner","target_timeline":"1_year","language_level":"basic"}`
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/onboarding", bytes.NewBufferString(payload))
 		req.Header.Set("Authorization", "Bearer "+validToken)
 		req.Header.Set("Content-Type", "application/json")
@@ -258,7 +258,7 @@ func TestHTTP_CompleteOnboarding(t *testing.T) {
 		}
 		router := setupOnboardingTestRouter(mockUc, secret)
 
-		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner"}`
+		payload := `{"country_id":"9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d","career_path_id":"8a1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6c","primary_stack":"golang","level":"beginner","target_timeline":"1_year","language_level":"basic"}`
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/onboarding", bytes.NewBufferString(payload))
 		req.Header.Set("Authorization", "Bearer "+validToken)
 		req.Header.Set("Content-Type", "application/json")

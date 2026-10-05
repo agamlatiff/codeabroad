@@ -45,7 +45,7 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*domain.Us
 	return m.usersByID[id], nil
 }
 
-func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error {
+func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error {
 	return nil
 }
 

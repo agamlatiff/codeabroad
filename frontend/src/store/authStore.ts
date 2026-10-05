@@ -9,6 +9,7 @@ interface AuthState {
     isAuthenticated: boolean
     setAuth: (user: User, accessToken: string, refreshToken: string, rememberMe?: boolean) => void
     setTokens: (accessToken: string, refreshToken: string) => void
+    updateUser: (updatedFields: Partial<User>) => void
     logout: () => void
 }
 
@@ -51,6 +52,19 @@ export const useAuthStore = create<AuthState>((set) => {
                 accessToken,
                 refreshToken,
                 isAuthenticated: true,
+            })
+        },
+
+        updateUser: (updatedFields) => {
+            set((state) => {
+                if (!state.user) return state
+                const newUser = { ...state.user, ...updatedFields }
+                if (localStorage.getItem('user')) {
+                    localStorage.setItem('user', JSON.stringify(newUser))
+                } else if (sessionStorage.getItem('user')) {
+                    sessionStorage.setItem('user', JSON.stringify(newUser))
+                }
+                return { user: newUser }
             })
         },
 

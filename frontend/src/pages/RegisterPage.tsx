@@ -97,7 +97,8 @@ export const RegisterPage = () => {
       if (res.success && res.data) {
         // Automatically authenticate on successful registration (default persistent)
         setAuth(res.data.user, res.data.access_token, res.data.refresh_token, true)
-        navigate('/dashboard')
+        const targetPath = res.data.user.is_onboarded ? '/dashboard' : '/onboarding'
+        navigate(targetPath, { replace: true })
       } else {
         setError(res.error || 'Pendaftaran gagal. Silakan coba beberapa saat lagi.')
       }

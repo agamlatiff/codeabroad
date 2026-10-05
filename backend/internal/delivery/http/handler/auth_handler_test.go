@@ -44,7 +44,7 @@ func (r *testUserRepo) GetByID(ctx context.Context, id string) (*domain.User, er
 	return r.users[id], nil
 }
 
-func (r *testUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, bonusXP int) error {
+func (r *testUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error {
 	return nil
 }
 

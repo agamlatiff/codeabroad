@@ -128,6 +128,8 @@ func (u *onboardingUsecase) CompleteOnboarding(
 		req.CareerPathID,
 		req.PrimaryStack,
 		req.Level,
+		req.TargetTimeline,
+		req.LanguageLevel,
 		OnboardingBonusXP,
 	)
 	if err != nil {
