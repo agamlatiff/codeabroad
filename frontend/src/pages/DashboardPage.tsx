@@ -23,23 +23,34 @@ import {
 const formatTechStack = (slug?: string | null): string => {
   switch (slug) {
     case 'golang':
-      return '🐹 Go (Golang)'
-    case 'react-ts':
-      return '⚛️ React + TypeScript'
-    case 'react-golang':
-      return '⚛️🐹 React + Go Fullstack'
-    case 'docker-k8s-aws':
-      return '🐳 Docker + K8s + AWS'
-    case 'nodejs':
-      return '🟩 Node.js'
+      return '🐹 Go (Gin Framework)'
     case 'java':
-      return '☕ Java'
+      return '☕ Java (Spring Boot)'
+    case 'node':
+    case 'nodejs':
+      return '🟩 Node.js (Express)'
+    case 'react':
+    case 'react-ts':
+      return '⚛️ React'
     case 'vue':
       return '🟢 Vue.js'
     case 'svelte':
       return '🧡 Svelte'
+    case 'react_golang':
+    case 'react-golang':
+      return '⚛️🐹 React + Go + AWS'
+    case 'react_node':
+      return '⚛️🟩 React + Node + AWS'
+    case 'devops_aws':
+    case 'devops_cloud':
+    case 'docker-k8s-aws':
+      return '☁️ AWS Cloud Native'
+    case 'devops_gcp':
+      return '☁️ GCP Cloud Native'
+    case 'devops_terraform':
+      return '🟣 Terraform & GitOps'
     default:
-      return slug || 'Go (Golang)'
+      return slug ? slug.replace(/_/g, ' ').toUpperCase() : 'Go (Gin Framework)'
   }
 }
 
@@ -53,12 +64,27 @@ const formatExperienceLevel = (level?: string | null): string => {
 
 export const DashboardPage = () => {
   const navigate = useNavigate()
-  const { user, logout } = useAuthStore()
+  const { user, logout, updateUser } = useAuthStore()
 
   const [currentPose, setCurrentPose] = useState<KodiPose>('welcome')
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(() => {
     return (localStorage.getItem('codeabroad_avatar_style') as AvatarStyle) || 'adventurer'
   })
+
+  // Fetch fresh profile data on mount to ensure synchronization with DB
+  useEffect(() => {
+    const fetchFreshProfile = async () => {
+      try {
+        const res = await api.get('/users/me')
+        if (res.data.success && res.data.data) {
+          updateUser(res.data.data)
+        }
+      } catch {
+        // Fallback to local cached session
+      }
+    }
+    fetchFreshProfile()
+  }, [updateUser])
 
   // Live clocks for Tokyo (JST) and Jakarta (WIB)
   const [currentTime, setCurrentTime] = useState(new Date())

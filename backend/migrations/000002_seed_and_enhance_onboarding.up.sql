@@ -15,7 +15,7 @@ VALUES
     'Japan',
     '🇯🇵',
     TRUE,
-    'Active Track',
+    'Jalur Aktif',
     '{
         "type": "Engineer / Specialist in Humanities",
         "difficulty": "Moderate",
@@ -90,9 +90,9 @@ VALUES
     'Backend Engineer',
     'Master microservices, high-concurrency systems, and cloud architectures for high-scale global applications.',
     '[
-        {"slug": "golang", "label": "Go (Golang)", "is_active": true, "badge": "🔥 High Demand Tokyo"},
-        {"slug": "java", "label": "Java (Spring Boot)", "is_active": false, "badge": "⏳ Coming Soon (Rakuten)"},
-        {"slug": "node", "label": "Node.js (Express / Nest)", "is_active": false, "badge": "⏳ Coming Soon"}
+        {"slug": "golang", "label": "Go (Gin Framework)", "is_active": true, "badge": "High Demand Tokyo"},
+        {"slug": "java", "label": "Java (Spring Boot)", "is_active": false, "badge": "Coming Soon"},
+        {"slug": "node", "label": "Node.js (Express)", "is_active": false, "badge": "Coming Soon"}
     ]'::jsonb
 ),
 (
@@ -100,18 +100,9 @@ VALUES
     'Frontend Engineer',
     'Craft high-performance, responsive web interfaces with modern UI engineering standards.',
     '[
-        {"slug": "react", "label": "React + TypeScript", "is_active": true, "badge": "🏆 Tokyo Standard"},
-        {"slug": "vue", "label": "Vue.js", "is_active": false, "badge": "⏳ Coming Soon"},
-        {"slug": "svelte", "label": "Svelte", "is_active": false, "badge": "⏳ Coming Soon"}
-    ]'::jsonb
-),
-(
-    'fullstack',
-    'Fullstack Engineer',
-    'Bridge end-to-end product delivery combining reactive frontends with robust backend architectures.',
-    '[
-        {"slug": "react_golang", "label": "React + Golang", "is_active": true, "badge": "⭐ High Performance"},
-        {"slug": "react_node", "label": "React + Node.js", "is_active": false, "badge": "⏳ Coming Soon"}
+        {"slug": "react", "label": "React", "is_active": true, "badge": "Tokyo Standard"},
+        {"slug": "vue", "label": "Vue.js", "is_active": false, "badge": "Coming Soon"},
+        {"slug": "svelte", "label": "Svelte", "is_active": false, "badge": "Coming Soon"}
     ]'::jsonb
 ),
 (
@@ -119,7 +110,34 @@ VALUES
     'Cloud & DevOps Engineer',
     'Automate and scale cloud-native infrastructure with Docker, Kubernetes, Terraform, and cloud platforms.',
     '[
-        {"slug": "devops_cloud", "label": "Docker, Kubernetes & AWS", "is_active": true, "badge": "💎 Highest Salary"}
+        {"slug": "devops_aws", "label": "AWS Cloud Native", "is_active": true, "badge": "Highest Salary Tokyo"},
+        {"slug": "devops_gcp", "label": "GCP Cloud Native", "is_active": false, "badge": "Coming Soon"},
+        {"slug": "devops_terraform", "label": "Terraform & GitOps", "is_active": false, "badge": "Coming Soon"}
+    ]'::jsonb
+),
+(
+    'fullstack',
+    'Fullstack & Cloud Engineer',
+    'Bridge end-to-end product delivery combining reactive frontends, robust backend APIs, and cloud infrastructure.',
+    '[
+        {"slug": "react_golang", "label": "React + Go (Gin) + AWS", "is_active": true, "badge": "High Demand Tokyo"},
+        {"slug": "react_node", "label": "React + Node (Express) + AWS", "is_active": false, "badge": "Coming Soon"}
+    ]'::jsonb
+),
+(
+    'product_engineer',
+    'Product Engineer',
+    'Drive product development from UI to data layer with rapid iteration, modern API/AI integration, and product sense.',
+    '[
+        {"slug": "product_fullstack", "label": "Fullstack Product Delivery", "is_active": false, "badge": "Coming Soon"}
+    ]'::jsonb
+),
+(
+    'solutions_architect',
+    'Solutions Architect',
+    'Design enterprise-scale cloud architectures, multi-system integrations, and global technical blueprints.',
+    '[
+        {"slug": "cloud_architecture", "label": "Enterprise Cloud Architecture", "is_active": false, "badge": "Coming Soon"}
     ]'::jsonb
 )
 ON CONFLICT (slug) DO UPDATE SET
