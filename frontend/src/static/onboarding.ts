@@ -153,3 +153,114 @@ export const LEVEL_OPTIONS: Record<'beginner' | 'intermediate', LevelOptionConfi
     chips: ['Clean Arch', 'Simulasi Interview', 'Persiapan Visa'],
   },
 }
+
+export interface StepHeaderContext {
+  currentStep: number
+  trackSubStep: string
+  step3SubStep: string
+  mindsetTab: string
+  careerPathLabel?: string
+  countryName?: string
+}
+
+/**
+ * Derives stepper pill sub-step prompt label.
+ */
+export const getOnboardingStepPrompt = ({
+  currentStep,
+  trackSubStep,
+  step3SubStep,
+  mindsetTab,
+}: StepHeaderContext): string => {
+  switch (currentStep) {
+    case 1:
+      return 'Destinasi Impian'
+    case 2:
+      if (trackSubStep === 'mindset') return 'Pilih Mindset Rekayasa'
+      if (trackSubStep === 'track') return mindsetTab === 'specialist' ? 'Jalur Specialist' : 'Jalur Generalist'
+      if (trackSubStep === 'stack_fe') return 'Fullstack: Pilih Frontend (1/2)'
+      if (trackSubStep === 'stack_be') return 'Fullstack: Pilih Backend (2/2)'
+      return 'Pilih Teknologi Stack'
+    case 3:
+      if (step3SubStep === 'level') return 'Pengalaman Coding'
+      return 'Target Waktu & Bahasa'
+    default:
+      return ''
+  }
+}
+
+/**
+ * Derives dynamic title for the onboarding wizard stage.
+ */
+export const getOnboardingStepTitle = ({
+  currentStep,
+  trackSubStep,
+  step3SubStep,
+  mindsetTab,
+  careerPathLabel = '',
+  countryName = 'Tokyo',
+}: StepHeaderContext): string => {
+  switch (currentStep) {
+    case 1:
+      return 'Pilih Destinasi Karier Impianmu'
+    case 2:
+      if (trackSubStep === 'mindset') return 'Pilih Pendekatan Karier Rekayasamu'
+      if (trackSubStep === 'track') {
+        return mindsetTab === 'specialist'
+          ? 'Spesialisasi apa yang ingin kamu tekuni?'
+          : 'Peran generalist mana yang ingin kamu tekuni?'
+      }
+      if (trackSubStep === 'stack_fe') return 'Langkah 1/2: Pilih Frontend Stack Impianmu'
+      if (trackSubStep === 'stack_be') return 'Langkah 2/2: Pilih Backend Pendamping'
+      return `Pilih Teknologi Utama ${careerPathLabel}`
+    case 3:
+      if (step3SubStep === 'level') return 'Bagaimana Pengalaman Codingmu?'
+      return `Target Durasi & Kemampuan Bahasa ke ${countryName}`
+    case 4:
+      return 'Tiket Karier Internasionalmu Terbit!'
+    default:
+      return ''
+  }
+}
+
+/**
+ * Derives dynamic subtitle description for the onboarding wizard stage.
+ */
+export const getOnboardingStepSubtitle = ({
+  currentStep,
+  trackSubStep,
+  step3SubStep,
+  mindsetTab,
+  careerPathLabel = '',
+}: StepHeaderContext): string => {
+  switch (currentStep) {
+    case 1:
+      return 'Tentukan negara targetmu untuk kurikulum spesifik standar industri lokal dan peluang sponsor visa.'
+    case 2:
+      if (trackSubStep === 'mindset') {
+        return 'Pilih apakah ingin menjadi spesialis mendalam di satu bidang atau generalis berdampak luas pada seluruh lapisan produk.'
+      }
+      if (trackSubStep === 'track') {
+        return mindsetTab === 'specialist'
+          ? 'Fokus pada keahlian mendalam sesuai ekosistem dan kebutuhan perusahaan teknologi global.'
+          : 'Bangun portofolio menyeluruh yang mencakup integrasi frontend, backend, hingga arsitektur cloud.'
+      }
+      if (trackSubStep === 'stack_fe') {
+        return 'Teknologi antarmuka utama yang akan menjadi fondasi visual aplikasi web modernmu.'
+      }
+      if (trackSubStep === 'stack_be') {
+        return 'Bahasa backend yang mendampingi frontend untuk arsitektur API dan pemrosesan data.'
+      }
+      return `Kurikulum akan disesuaikan dengan standar industri global ${careerPathLabel}.`
+    case 3:
+      if (step3SubStep === 'level') {
+        return 'Kami akan menyesuaikan titik awal kurikulum dan rekomendasi quest harian agar sesuai dengan kesiapanmu.'
+      }
+      return 'Tentukan tenggat target serta kesiapan kemampuan bahasa kerjamu menuju keberangkatan global.'
+    case 4:
+      return 'Paspor karier resmi terverifikasi. Selamat bergabung dalam ekosistem CodeAbroad!'
+    default:
+      return ''
+  }
+}
+

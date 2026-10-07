@@ -1,97 +1,39 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAuthStore } from '../store/authStore'
-import { api } from '../services/api'
+import { useDashboard } from '../hooks'
 import { UserAvatar } from '../components/ui/UserAvatar'
-import type { AvatarStyle } from '../utils/avatar'
-import { MascotCard, type KodiPose } from '../components/ui/MascotCard'
+import { MascotCard } from '../components/ui/MascotCard'
 import { DoodleHanko } from '../components/illustrations/doodles'
 import { Logo } from '../components/ui/Logo'
-import { 
-  LogOut, 
-  Sparkles, 
-  Plane, 
-  Award, 
-  Flame, 
-  Lock, 
-  Check, 
-  Zap, 
-  Target 
+import {
+  LogOut,
+  Plane,
+  Award,
+  Flame,
+  Lock,
+  Check,
+  Zap,
+  Target,
+  Sparkles
 } from 'lucide-react'
 import {
   INITIAL_ROADMAP_NODES,
   INITIAL_DAILY_QUESTS,
-  getKodiPoseMessage,
 } from '../static/dashboard'
 import {
   formatTechStack,
   formatExperienceLevel,
 } from '../utils/formatters'
-import { formatTimezoneClock } from '../utils/date'
-
-
 
 export const DashboardPage = () => {
-  const navigate = useNavigate()
-  const { user, logout, updateUser } = useAuthStore()
-
-  const [currentPose, setCurrentPose] = useState<KodiPose>('welcome')
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(() => {
-    return (localStorage.getItem('codeabroad_avatar_style') as AvatarStyle) || 'adventurer'
-  })
-
-  // Fetch fresh profile data on mount to ensure synchronization with DB
-  useEffect(() => {
-    const fetchFreshProfile = async () => {
-      try {
-        const res = await api.get('/users/me')
-        if (res.data.success && res.data.data) {
-          updateUser(res.data.data)
-        }
-      } catch {
-        // Fallback to local cached session
-      }
-    }
-    fetchFreshProfile()
-  }, [updateUser])
-
-  // Live clocks for Tokyo (JST) and Jakarta (WIB)
-  const [currentTime, setCurrentTime] = useState(new Date())
-
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000)
-    return () => clearInterval(timer)
-  }, [])
-
-  const tokyoTime = formatTimezoneClock(currentTime, 'Asia/Tokyo')
-  const jakartaTime = formatTimezoneClock(currentTime, 'Asia/Jakarta')
-
-  const handleAvatarStyleChange = (style: AvatarStyle) => {
-    setAvatarStyle(style)
-    localStorage.setItem('codeabroad_avatar_style', style)
-  }
-
-  const handleLogout = async () => {
-    try {
-      await api.post('/auth/logout')
-    } catch {
-      // Gracefully clear client session if server unreachable
-    } finally {
-      logout()
-      navigate('/login', { replace: true })
-    }
-  }
-
-  const firstName = user?.name?.split(' ')[0] || 'Developer'
-  const destinationName = user?.country?.name || 'Tokyo, Jepang'
+  const { profile, clock, mascot, avatar, actions } = useDashboard()
+  const { user, firstName, destinationName } = profile
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans selection:bg-indigo-500/20">
-      
+
       {/* ── 1. TOP HUD NAVBAR (DUAL CLOCK + GAMIFIED STATS) ── */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b-2 border-[#E5E5E5] px-4 sm:px-8 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-4">
-          
+
           {/* Logo & Platform Title */}
           <div className="flex items-center gap-3">
             <Logo variant="slate" size="sm" linkTo="/dashboard" />
@@ -107,13 +49,13 @@ export const DashboardPage = () => {
             <div className="flex items-center gap-1.5">
               <span>🇯🇵</span>
               <span className="text-slate-400 font-normal">Tokyo:</span>
-              <span className="font-mono text-slate-900 font-black">{tokyoTime} JST</span>
+              <span className="font-mono text-slate-900 font-black">{clock.tokyoTime} JST</span>
             </div>
             <span className="text-slate-300 font-light">|</span>
             <div className="flex items-center gap-1.5">
               <span>🇮🇩</span>
               <span className="text-slate-400 font-normal">Jakarta:</span>
-              <span className="font-mono text-slate-700 font-bold">{jakartaTime} WIB</span>
+              <span className="font-mono text-slate-700 font-bold">{clock.jakartaTime} WIB</span>
             </div>
           </div>
 
@@ -133,10 +75,10 @@ export const DashboardPage = () => {
 
             {/* Profile Dropdown / Sign Out */}
             <div className="flex items-center gap-2 pl-1">
-              <UserAvatar user={user} size="sm" style={avatarStyle} showBadge badgeColor="streak" />
+              <UserAvatar user={user} size="sm" style={avatar.style} showBadge badgeColor="streak" />
               <button
                 type="button"
-                onClick={handleLogout}
+                onClick={actions.logout}
                 className="w-9 h-9 rounded-xl border-2 border-[#E5E5E5] hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600 flex items-center justify-center text-slate-400 transition-colors cursor-pointer"
                 title="Keluar (Sign Out)"
               >
@@ -149,7 +91,7 @@ export const DashboardPage = () => {
 
       {/* ── 2. MAIN CONTAINER ── */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
-        
+
         {/* Welcome Hero Banner */}
         <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl overflow-hidden border border-slate-800">
           {/* Subtle Ambient Light */}
@@ -172,7 +114,7 @@ export const DashboardPage = () => {
               </h1>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
-                Persiapan teknis menuju panggung global di <strong className="text-white font-bold">{destinationName}</strong> telah dimulai. 
+                Persiapan teknis menuju panggung global di <strong className="text-white font-bold">{destinationName}</strong> telah dimulai.
                 Selesaikan quest harian untuk membangun portofolio berstandar internasional dan membuka sponsor visa.
               </p>
             </div>
@@ -203,10 +145,10 @@ export const DashboardPage = () => {
 
         {/* ── 2-COLUMN GRID: ROADMAP & QUESTS (LEFT) + KODI & PASSPORT (RIGHT) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          
+
           {/* ══════ LEFT COLUMN (COL-SPAN-7): GAMIFIED ROADMAP & DAILY QUESTS ══════ */}
           <div className="lg:col-span-7 space-y-6">
-            
+
             {/* 1. Gamified Career Roadmap Card */}
             <div className="bg-white rounded-3xl border-2 border-[#E5E5E5] border-b-4 p-6 shadow-xs space-y-5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -239,23 +181,21 @@ export const DashboardPage = () => {
                   return (
                     <div
                       key={node.id}
-                      className={`relative flex items-start gap-4 p-3.5 sm:p-4 rounded-2xl border-2 transition-all ${
-                        isActive
-                          ? 'border-[#4F46E5] border-b-4 border-b-[#3730A3] bg-indigo-50/50 shadow-xs'
-                          : isCompleted
+                      className={`relative flex items-start gap-4 p-3.5 sm:p-4 rounded-2xl border-2 transition-all ${isActive
+                        ? 'border-[#4F46E5] border-b-4 border-b-[#3730A3] bg-indigo-50/50 shadow-xs'
+                        : isCompleted
                           ? 'border-emerald-200 bg-emerald-50/30'
                           : 'border-slate-200 bg-slate-50/60 opacity-60'
-                      }`}
+                        }`}
                     >
                       {/* Node Icon Indicator */}
                       <div
-                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 font-bold text-xs ${
-                          isCompleted
-                            ? 'bg-emerald-500 text-white shadow-xs'
-                            : isActive
+                        className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 font-bold text-xs ${isCompleted
+                          ? 'bg-emerald-500 text-white shadow-xs'
+                          : isActive
                             ? 'bg-indigo-600 text-white ring-4 ring-indigo-200 animate-pulse'
                             : 'bg-slate-200 text-slate-500'
-                        }`}
+                          }`}
                       >
                         {isCompleted ? (
                           <Check className="w-4 h-4 stroke-[3]" />
@@ -273,13 +213,12 @@ export const DashboardPage = () => {
                             {node.title}
                           </h3>
                           <span
-                            className={`text-[10px] font-black px-2 py-0.5 rounded-md border shrink-0 ${
-                              isCompleted
-                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
-                                : isActive
+                            className={`text-[10px] font-black px-2 py-0.5 rounded-md border shrink-0 ${isCompleted
+                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
+                              : isActive
                                 ? 'bg-indigo-600 text-white border-indigo-700'
                                 : 'bg-slate-100 text-slate-500 border-slate-200'
-                            }`}
+                              }`}
                           >
                             {node.xp}
                           </span>
@@ -326,11 +265,10 @@ export const DashboardPage = () => {
                   >
                     <div className="flex items-start gap-3">
                       <div
-                        className={`w-6 h-6 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${
-                          quest.completed
-                            ? 'bg-emerald-500 border-emerald-500 text-white'
-                            : 'border-slate-300 bg-white'
-                        }`}
+                        className={`w-6 h-6 rounded-full border-2 mt-0.5 flex items-center justify-center shrink-0 ${quest.completed
+                          ? 'bg-emerald-500 border-emerald-500 text-white'
+                          : 'border-slate-300 bg-white'
+                          }`}
                       >
                         {quest.completed && <Check className="w-3.5 h-3.5 stroke-[3]" />}
                       </div>
@@ -353,11 +291,10 @@ export const DashboardPage = () => {
                     <button
                       type="button"
                       disabled={quest.completed}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${
-                        quest.completed
-                          ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                          : 'bg-[#4F46E5] hover:bg-[#4338CA] text-white border-b-2 border-b-[#312E81] shadow-2xs active:translate-y-0.5'
-                      }`}
+                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${quest.completed
+                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                        : 'bg-[#4F46E5] hover:bg-[#4338CA] text-white border-b-2 border-b-[#312E81] shadow-2xs active:translate-y-0.5'
+                        }`}
                     >
                       {quest.completed ? 'Selesai ✓' : 'Mulai'}
                     </button>
@@ -369,16 +306,16 @@ export const DashboardPage = () => {
 
           {/* ══════ RIGHT COLUMN (COL-SPAN-5): KODI MENTOR & CAREER PASSPORT ══════ */}
           <div className="lg:col-span-5 space-y-6">
-            
+
             {/* 1. Kodi Mascot & Dynamic Advice Card */}
             <div className="bg-white rounded-3xl border-2 border-[#E5E5E5] border-b-4 p-5 shadow-xs space-y-3">
               <MascotCard
                 name="Kodi"
-                pose={currentPose}
+                pose={mascot.pose}
                 variant="mint"
                 streak={user?.streak ?? 1}
                 xp={user?.xp ?? 50}
-                message={getKodiPoseMessage(currentPose, firstName, destinationName)}
+                message={mascot.message}
               />
 
               {/* Interactive Pose Switcher */}
@@ -386,32 +323,29 @@ export const DashboardPage = () => {
                 <span className="text-[11px] font-bold text-slate-400 ml-1">Pose Kodi:</span>
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setCurrentPose('welcome')}
-                    className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${
-                      currentPose === 'welcome'
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    onClick={() => mascot.setPose('welcome')}
+                    className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${mascot.pose === 'welcome'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     👋 Sapa
                   </button>
                   <button
-                    onClick={() => setCurrentPose('coding')}
-                    className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${
-                      currentPose === 'coding'
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    onClick={() => mascot.setPose('coding')}
+                    className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${mascot.pose === 'coding'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     💻 Ngoding
                   </button>
                   <button
-                    onClick={() => setCurrentPose('celebrate')}
-                    className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${
-                      currentPose === 'celebrate'
-                        ? 'bg-slate-900 text-white shadow-2xs'
-                        : 'text-slate-600 hover:text-slate-900'
-                    }`}
+                    onClick={() => mascot.setPose('celebrate')}
+                    className={`px-2.5 py-1 rounded-xl font-bold transition-all cursor-pointer ${mascot.pose === 'celebrate'
+                      ? 'bg-slate-900 text-white shadow-2xs'
+                      : 'text-slate-600 hover:text-slate-900'
+                      }`}
                   >
                     🎉 Yatta!
                   </button>
@@ -434,11 +368,11 @@ export const DashboardPage = () => {
 
               {/* Ticket Body */}
               <div className="p-5 space-y-4">
-                
+
                 {/* User details & Hanko Seal */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3">
-                    <UserAvatar user={user} size="lg" style={avatarStyle} />
+                    <UserAvatar user={user} size="lg" style={avatar.style} />
                     <div>
                       <h3 className="text-base font-black text-slate-900">
                         {user?.name || 'Software Engineer'}
@@ -480,26 +414,23 @@ export const DashboardPage = () => {
                   <span className="text-slate-400 text-[11px] font-bold">Gaya Avatar:</span>
                   <div className="flex items-center gap-1 bg-slate-100 p-0.5 rounded-xl border border-slate-200">
                     <button
-                      onClick={() => handleAvatarStyleChange('adventurer')}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
-                        avatarStyle === 'adventurer' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
-                      }`}
+                      onClick={() => avatar.setStyle('adventurer')}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${avatar.style === 'adventurer' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                        }`}
                     >
                       🧑‍💻 Dev
                     </button>
                     <button
-                      onClick={() => handleAvatarStyleChange('bottts')}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
-                        avatarStyle === 'bottts' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
-                      }`}
+                      onClick={() => avatar.setStyle('bottts')}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${avatar.style === 'bottts' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                        }`}
                     >
                       🤖 Bot
                     </button>
                     <button
-                      onClick={() => handleAvatarStyleChange('lorelei')}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
-                        avatarStyle === 'lorelei' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
-                      }`}
+                      onClick={() => avatar.setStyle('lorelei')}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${avatar.style === 'lorelei' ? 'bg-white text-slate-900 shadow-2xs' : 'text-slate-500'
+                        }`}
                     >
                       🎨 Anime
                     </button>

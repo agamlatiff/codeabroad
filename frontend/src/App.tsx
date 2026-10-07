@@ -3,7 +3,7 @@ import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { OnboardingPage } from './pages/OnboardingPage'
-import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/ProtectedRoute'
+import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
 
 function App() {
   return (

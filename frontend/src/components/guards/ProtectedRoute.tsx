@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from 'react-router-dom'
-import { useAuthStore } from '../store/authStore'
+import { useAuthStore } from '../../store/authStore'
 
 // ProtectedRoute ensures the user is authenticated and has completed onboarding
 export const ProtectedRoute = () => {
@@ -48,4 +48,3 @@ export const GuestRoute = () => {
 
   return <Outlet />
 }
-

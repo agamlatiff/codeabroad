@@ -45,3 +45,10 @@ export interface LoginPayload {
     remember_me?: boolean
 }
 
+export interface RegisterPayload {
+    name: string
+    username: string
+    email: string
+    password: string
+}
+
