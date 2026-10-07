@@ -23,6 +23,12 @@ import {
   AcceleratedSystemIllustration,
   FlightRoadmapGraphic,
   TechIcon,
+  SprintPaceIllustration,
+  IdealPaceIllustration,
+  RelaxedPaceIllustration,
+  LanguageZeroIllustration,
+  LanguageBasicIllustration,
+  LanguageFluentIllustration,
 } from '../components/illustrations/OnboardingIllustrations'
 
 export const OnboardingPage = () => {
@@ -129,7 +135,7 @@ export const OnboardingPage = () => {
     }
   }
 
-  // Handle final submission
+  // Handle final submission with flight animation synchronization
   const handleSubmitOnboarding = async () => {
     if (!selectedCountryId || !selectedCareerPathId || !selectedStackSlug) {
       setErrorMsg('Mohon lengkapi preferensi pilihanmu terlebih dahulu.')
@@ -141,7 +147,9 @@ export const OnboardingPage = () => {
       setIsLanding(true)
       setErrorMsg(null)
 
-      const result = await onboardingService.completeOnboarding({
+      // Run 1.5s flight animation simultaneously with network request
+      const flightDurationPromise = new Promise((resolve) => setTimeout(resolve, 1500))
+      const onboardingPromise = onboardingService.completeOnboarding({
         country_id: selectedCountryId,
         career_path_id: selectedCareerPathId,
         primary_stack: selectedStackSlug,
@@ -149,6 +157,8 @@ export const OnboardingPage = () => {
         target_timeline: selectedTimeline,
         language_level: selectedLanguageLevel,
       })
+
+      const [, result] = await Promise.all([flightDurationPromise, onboardingPromise])
 
       // Sync complete profile from database response into global auth store
       updateUser({
@@ -165,11 +175,11 @@ export const OnboardingPage = () => {
       })
       setCompletionResult(result)
 
-      // Cinematic touchdown delay (1.25s) before revealing official Boarding Pass
+      // Brief touchdown celebration delay (350ms) before revealing official Boarding Pass
       setTimeout(() => {
         setIsLanding(false)
         setCurrentStep(4)
-      }, 1250)
+      }, 350)
     } catch (err: any) {
       setIsLanding(false)
       setErrorMsg(err.message || 'Gagal menyelesaikan onboarding. Silakan coba lagi.')
@@ -1125,101 +1135,251 @@ export const OnboardingPage = () => {
                   />
                 </div>
 
-                {/* FLOATING GLASS HUD CONTROLS (OPSI C: Terintegrasi Ramping di Bawah Peta) */}
-                <div className="mt-3 pt-3 border-t border-slate-100/90 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
-                  {/* Glass Capsule 1: Target Waktu */}
-                  <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3 sm:p-3.5 flex flex-col">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
-                        Target Waktu Belajar
+                {/* ── CLEAN BORDERLESS STUDIO LAYOUT (SOLUSI A) ── */}
+                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
+                  {/* Column 1: Target Ritme Belajar */}
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-2.5 px-0.5">
+                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+                        Target Ritme Belajar
                       </span>
-                      <span className="text-[10px] font-medium text-slate-500">
-                        {selectedTimeline === '6_months' ? '2-3 jam/hari' : selectedTimeline === '1_year' ? '1 jam/hari' : 'Mandiri'}
+                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/80">
+                        {selectedTimeline === '6_months' ? 'Sprint 6 Bulan' : selectedTimeline === '1_year' ? 'Ideal 1 Tahun' : 'Santai & Fleksibel'}
                       </span>
                     </div>
-                    {/* 3 Pill Chips */}
-                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-xl border border-slate-200/60 shadow-2xs">
-                      <button
-                        type="button"
+
+                    {/* 3 Landscape Interactive Cards */}
+                    <div className="space-y-2.5">
+                      {/* Card 1: Sprint */}
+                      <div
                         onClick={() => setSelectedTimeline('6_months')}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
                           selectedTimeline === '6_months'
-                            ? 'bg-[#4F46E5] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
+                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                         }`}
                       >
-                        Sprint (6 Bln)
-                      </button>
-                      <button
-                        type="button"
+                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
+                          <SprintPaceIllustration />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
+                              Sprint (6 Bulan)
+                            </span>
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-200/80 shrink-0">
+                              Turbo
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            2-3 jam/hari &bull; Akselerasi cepat ke interview Tokyo
+                          </p>
+                        </div>
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                            selectedTimeline === '6_months'
+                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                            {selectedTimeline === '6_months' && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Ideal (Populer) */}
+                      <div
                         onClick={() => setSelectedTimeline('1_year')}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
                           selectedTimeline === '1_year'
-                            ? 'bg-[#4F46E5] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
+                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                         }`}
                       >
-                        Ideal (1 Thn)
-                      </button>
-                      <button
-                        type="button"
+                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
+                          <IdealPaceIllustration />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
+                              Ideal (1 Tahun)
+                            </span>
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200/80 shrink-0">
+                              Rekomendasi
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            1 jam/hari &bull; Ritme belajar seimbang &amp; sustainable
+                          </p>
+                        </div>
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                            selectedTimeline === '1_year'
+                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                            {selectedTimeline === '1_year' && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Santai */}
+                      <div
                         onClick={() => setSelectedTimeline('exploring')}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
                           selectedTimeline === 'exploring'
-                            ? 'bg-[#4F46E5] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
+                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                         }`}
                       >
-                        Santai
-                      </button>
+                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
+                          <RelaxedPaceIllustration />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
+                              Santai (Fleksibel)
+                            </span>
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
+                              Mandiri
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            Waktu fleksibel &bull; Eksplorasi materi tanpa tenggat waktu
+                          </p>
+                        </div>
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                            selectedTimeline === 'exploring'
+                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                            {selectedTimeline === 'exploring' && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
-                  {/* Glass Capsule 2: Kemampuan Bahasa */}
-                  <div className="bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3 sm:p-3.5 flex flex-col">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-[11px] font-bold text-slate-900 uppercase tracking-wide">
-                        Kemampuan Bahasa {selectedCountry?.code === 'JP' ? 'Jepang' : 'Kerja'}
+                  {/* Column 2: Kesiapan Bahasa */}
+                  <div className="flex flex-col">
+                    <div className="flex items-center justify-between mb-2.5 px-0.5">
+                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
+                        Kesiapan Bahasa {selectedCountry?.code === 'JP' ? 'Jepang' : 'Kerja'}
                       </span>
-                      <span className="text-[10px] font-medium text-slate-500">
-                        {selectedLanguageLevel === 'none' ? 'Dari Awal' : selectedLanguageLevel === 'basic' ? 'Tata Bahasa' : 'Interview Siap'}
+                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/80">
+                        {selectedLanguageLevel === 'none' ? 'Mulai dari Nol' : selectedLanguageLevel === 'basic' ? 'Percakapan Dasar' : 'Siap Interview'}
                       </span>
                     </div>
-                    {/* 3 Pill Chips */}
-                    <div className="grid grid-cols-3 gap-1.5 p-1 bg-white rounded-xl border border-slate-200/60 shadow-2xs">
-                      <button
-                        type="button"
+
+                    {/* 3 Landscape Interactive Cards */}
+                    <div className="space-y-2.5">
+                      {/* Card 1: Mulai Nol */}
+                      <div
                         onClick={() => setSelectedLanguageLevel('none')}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
                           selectedLanguageLevel === 'none'
-                            ? 'bg-[#4F46E5] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
+                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                         }`}
                       >
-                        Mulai Nol
-                      </button>
-                      <button
-                        type="button"
+                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
+                          <LanguageZeroIllustration />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
+                              Mulai dari Nol
+                            </span>
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/80 shrink-0">
+                              Level 0
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            Bimbingan dari abjad Hiragana, Katakana &amp; kosakata harian
+                          </p>
+                        </div>
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                            selectedLanguageLevel === 'none'
+                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                            {selectedLanguageLevel === 'none' && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 2: Dasar */}
+                      <div
                         onClick={() => setSelectedLanguageLevel('basic')}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
                           selectedLanguageLevel === 'basic'
-                            ? 'bg-[#4F46E5] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
+                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                         }`}
                       >
-                        Dasar (N5/N4)
-                      </button>
-                      <button
-                        type="button"
+                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
+                          <LanguageBasicIllustration />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
+                              Dasar (N5 / N4)
+                            </span>
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-sky-100 text-sky-700 border border-sky-200/80 shrink-0">
+                              Percakapan
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            Paham tata bahasa dasar &amp; instruksi teknis kerja tim
+                          </p>
+                        </div>
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                            selectedLanguageLevel === 'basic'
+                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                            {selectedLanguageLevel === 'basic' && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Card 3: Lancar */}
+                      <div
                         onClick={() => setSelectedLanguageLevel('conversational')}
-                        className={`py-2 px-1 text-center rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
                           selectedLanguageLevel === 'conversational'
-                            ? 'bg-[#4F46E5] text-white shadow-xs'
-                            : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50'
+                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
+                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
                         }`}
                       >
-                        Lancar (N3+)
-                      </button>
+                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
+                          <LanguageFluentIllustration />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
+                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
+                              Lancar (N3+)
+                            </span>
+                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 border border-purple-200/80 shrink-0">
+                              Siap Kerja
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
+                            Siap simulasi wawancara teknis di perusahaan Tokyo
+                          </p>
+                        </div>
+                        <div className="shrink-0 pl-1">
+                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
+                            selectedLanguageLevel === 'conversational'
+                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
+                              : 'border-slate-300 bg-white'
+                          }`}>
+                            {selectedLanguageLevel === 'conversational' && <Check className="w-3 h-3 stroke-[3]" />}
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>

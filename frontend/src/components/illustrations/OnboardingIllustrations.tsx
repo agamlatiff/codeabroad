@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from 'react'
+
 // ── CODEABROAD CUSTOM BESPOKE ONBOARDING ILLUSTRATIONS ──
 // Pure SVG React components on a standard 240x160 canvas.
 // Styled to match CodeAbroad brand identity: Royal Indigo (#4F46E5 / #4338CA).
@@ -632,14 +634,13 @@ export const TechIcon = ({ slug, className = 'w-6 h-6' }: { slug: string; classN
 // 5. VISUAL FLIGHT ROADMAP GRAPHIC (JAKARTA ➔ DESTINATION)
 // ─────────────────────────────────────────────────────────────
 interface FlightRoadmapGraphicProps {
-  timeline: '6_months' | '1_year' | 'exploring'
+  timeline?: '6_months' | '1_year' | 'exploring'
   countryCode?: string
   className?: string
   isLanding?: boolean
 }
 
 export const FlightRoadmapGraphic = ({
-  timeline,
   countryCode = 'JP',
   className = 'w-full h-auto',
   isLanding = false,
@@ -650,15 +651,79 @@ export const FlightRoadmapGraphic = ({
   const destCity = isJapan ? 'Tokyo' : isGermany ? 'Berlin' : 'Singapore'
   const destCountry = isJapan ? 'Japan' : isGermany ? 'Germany' : 'Singapore'
 
-  // Scenic S-curve corridor: M 95 160 C 180 50, 240 160, 360 85 C 460 20, 580 55, 705 145
-  // Positions and banking angles along the scenic route
-  const planePos = isLanding
-    ? { x: 705, y: 145, angle: 26, isTouchdown: true }
-    : timeline === '6_months'
-    ? { x: 570, y: 58, angle: 14, isTouchdown: false }
-    : timeline === '1_year'
-    ? { x: 395, y: 65, angle: -14, isTouchdown: false }
-    : { x: 220, y: 110, angle: -8, isTouchdown: false }
+  const flightPathD = 'M 95 160 C 180 50, 240 160, 360 85 C 460 20, 580 55, 705 145'
+
+  const pathRef = useRef<SVGPathElement | null>(null)
+  const planeRef = useRef<SVGGElement | null>(null)
+  const activeTrailRef = useRef<SVGPathElement | null>(null)
+  const [hasLanded, setHasLanded] = useState(false)
+  // Track last transform string so React reconciliation does not snap the plane back
+  const lastTransformRef = useRef<string>('translate(95, 160) rotate(-52)')
+
+  // Seamless Path-Following Flight Engine
+  useEffect(() => {
+    const path = pathRef.current
+    const plane = planeRef.current
+    if (!path || !plane) return
+
+    const totalLength = path.getTotalLength()
+
+    if (activeTrailRef.current) {
+      activeTrailRef.current.style.strokeDasharray = `${totalLength}`
+    }
+
+    const setPlaneAtDistance = (dist: number) => {
+      const p = path.getPointAtLength(dist)
+      // Centered difference avoids tangent collapse and flat snapping at dist = 0 or dist = totalLength
+      const delta = 1.5
+      const pBefore = path.getPointAtLength(Math.max(0, dist - delta))
+      const pAfter = path.getPointAtLength(Math.min(totalLength, dist + delta))
+      const angle = Math.atan2(pAfter.y - pBefore.y, pAfter.x - pBefore.x) * (180 / Math.PI)
+      
+      const transformStr = `translate(${p.x}, ${p.y}) rotate(${angle})`
+      lastTransformRef.current = transformStr
+      plane.setAttribute('transform', transformStr)
+
+      if (activeTrailRef.current) {
+        activeTrailRef.current.style.strokeDashoffset = `${totalLength - dist}`
+      }
+    }
+
+    // While not landing: plane remains 100% grounded at Jakarta runway (dist = 0)
+    if (!isLanding) {
+      setHasLanded(false)
+      setPlaneAtDistance(0)
+      return
+    }
+
+    // While isLanding is active: cinematic 1.45s smooth S-curve flight with easeInOutCubic
+    let animId: number
+    const duration = 1450
+    const startTime = performance.now()
+
+    const animateFlight = (now: number) => {
+      const elapsed = now - startTime
+      const rawProgress = Math.min(elapsed / duration, 1)
+
+      // Cinematic easeInOutCubic easing
+      const ease =
+        rawProgress < 0.5
+          ? 4 * rawProgress * rawProgress * rawProgress
+          : 1 - Math.pow(-2 * rawProgress + 2, 3) / 2
+
+      const currentDist = ease * totalLength
+      setPlaneAtDistance(currentDist)
+
+      if (rawProgress < 1) {
+        animId = requestAnimationFrame(animateFlight)
+      } else {
+        setHasLanded(true)
+      }
+    }
+
+    animId = requestAnimationFrame(animateFlight)
+    return () => cancelAnimationFrame(animId)
+  }, [isLanding])
 
   return (
     <div className="w-full flex items-center justify-center select-none overflow-hidden py-1">
@@ -865,12 +930,12 @@ export const FlightRoadmapGraphic = ({
           <circle
             cx="705"
             cy="145"
-            r={isLanding ? 16 : 10}
+            r={hasLanded ? 18 : 10}
             stroke="#4F46E5"
-            strokeWidth={isLanding ? 2.5 : 1.5}
-            strokeDasharray={isLanding ? 'none' : '3 2'}
+            strokeWidth={hasLanded ? 2.5 : 1.5}
+            strokeDasharray={hasLanded ? 'none' : '3 2'}
             className="transition-all duration-700"
-            opacity={isLanding ? 0.9 : 0.65}
+            opacity={hasLanded ? 0.95 : 0.65}
           />
 
           {/* Typography Label */}
@@ -887,18 +952,32 @@ export const FlightRoadmapGraphic = ({
             ══════════════════════════════════════════════════════════════ */}
         {/* Soft Ambient Airway Guidance Ribbon */}
         <path
-          d="M 95 160 C 180 50, 240 160, 360 85 C 460 20, 580 55, 705 145"
+          d={flightPathD}
           stroke="#EEF2FF"
           strokeWidth="8"
           strokeLinecap="round"
         />
+
         {/* Active Trajectory Dashed Path */}
         <path
-          d="M 95 160 C 180 50, 240 160, 360 85 C 460 20, 580 55, 705 145"
+          ref={pathRef}
+          d={flightPathD}
           stroke="url(#scenicFlightGrad)"
           strokeWidth="2.4"
           strokeLinecap="round"
           strokeDasharray="6 6"
+        />
+
+        {/* Real-time Glowing Flight Progress Trail */}
+        <path
+          ref={activeTrailRef}
+          d={flightPathD}
+          stroke="#4F46E5"
+          strokeWidth="3.2"
+          strokeLinecap="round"
+          strokeDasharray="1000"
+          strokeDashoffset="1000"
+          style={{ transition: 'none' }}
         />
 
         {/* ── INTERMEDIATE SCENIC WAYPOINT MARKERS ── */}
@@ -912,18 +991,12 @@ export const FlightRoadmapGraphic = ({
         </g>
 
         {/* ══════════════════════════════════════════════════════════════
-            AIRLINER VECTOR: DYNAMIC SMOOTH TOUCHDOWN GLIDE
+            AIRLINER VECTOR: LIQUID-SMOOTH S-CURVE FLIGHT ENGINE
             ══════════════════════════════════════════════════════════════ */}
         <g
+          ref={planeRef}
           filter="url(#planeShadow)"
-          transform={`translate(${planePos.x}, ${planePos.y}) rotate(${planePos.angle})`}
-          style={{
-            transformBox: 'view-box',
-            transformOrigin: '0px 0px',
-            transition: isLanding
-              ? 'transform 1200ms cubic-bezier(0.22, 1, 0.36, 1)'
-              : 'transform 800ms cubic-bezier(0.22, 1, 0.36, 1)',
-          }}
+          transform={lastTransformRef.current}
         >
           {/* Aerodynamic Contrail Stream behind Tail */}
           <line x1="-42" y1="0" x2="-18" y2="0" stroke="url(#contrailGrad)" strokeWidth="2.5" strokeLinecap="round" />
@@ -961,3 +1034,243 @@ export const FlightRoadmapGraphic = ({
     </div>
   )
 }
+
+// ─────────────────────────────────────────────────────────────
+// 6. BESPOKE HUD VISUAL SCENE TILES (STEP 3B - RICH EDITION)
+// ─────────────────────────────────────────────────────────────
+
+// Timeline 1: Sprint (Supersonic Jet & Afterburner Flames)
+export const SprintPaceIllustration = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 160 100" className={className} fill="none">
+    <defs>
+      <linearGradient id="sprintJetBody" x1="0%" y1="100%" x2="100%" y2="0%">
+        <stop offset="0%" stopColor="#FFFFFF" />
+        <stop offset="60%" stopColor="#F8FAFC" />
+        <stop offset="100%" stopColor="#EEF2FF" />
+      </linearGradient>
+      <linearGradient id="sprintPlumeGrad" x1="0%" y1="50%" x2="100%" y2="50%">
+        <stop offset="0%" stopColor="#EF4444" stopOpacity="0" />
+        <stop offset="35%" stopColor="#F59E0B" />
+        <stop offset="100%" stopColor="#FEF08A" />
+      </linearGradient>
+    </defs>
+
+    {/* Mach shockwave vapor ellipse */}
+    <ellipse cx="60" cy="72" rx="35" ry="12" fill="#EEF2FF" opacity="0.8" />
+    <ellipse cx="78" cy="68" rx="20" ry="7" fill="#C7D2FE" opacity="0.6" />
+
+    {/* Speed thrust trails */}
+    <line x1="12" y1="68" x2="36" y2="58" stroke="#818CF8" strokeWidth="2.5" strokeLinecap="round" strokeDasharray="3 4" />
+    <line x1="24" y1="80" x2="52" y2="68" stroke="#C7D2FE" strokeWidth="2" strokeLinecap="round" strokeDasharray="4 4" />
+
+    {/* Dual Jet Afterburner Plumes */}
+    <polygon points="50,60 14,76 34,54" fill="url(#sprintPlumeGrad)" />
+    <polygon points="54,64 24,78 38,58" fill="#EF4444" />
+    <polygon points="52,62 30,72 40,59" fill="#FEF08A" />
+
+    {/* Supersonic Jet Fuselage Body */}
+    <path
+      d="M 122 24 C 105 32, 58 52, 44 60 L 58 68 C 78 60, 110 40, 122 24 Z"
+      fill="url(#sprintJetBody)"
+      stroke="#4F46E5"
+      strokeWidth="2.2"
+    />
+
+    {/* Top Delta Wing */}
+    <path d="M 80 44 L 62 24 L 74 27 L 92 40 Z" fill="#4338CA" stroke="#312E81" strokeWidth="1.2" />
+    {/* Bottom Delta Wing */}
+    <path d="M 70 54 L 50 75 L 60 78 L 80 58 Z" fill="#4F46E5" stroke="#312E81" strokeWidth="1.2" />
+
+    {/* Cockpit Canopy */}
+    <ellipse cx="102" cy="32" rx="8" ry="4" transform="rotate(-26 102 32)" fill="#818CF8" stroke="#312E81" strokeWidth="1.2" />
+    <ellipse cx="103" cy="31" rx="4" ry="1.5" transform="rotate(-26 103 31)" fill="#FFFFFF" />
+
+    {/* Supersonic Nose shock streaks */}
+    <line x1="126" y1="21" x2="145" y2="13" stroke="#818CF8" strokeWidth="2" strokeLinecap="round" strokeDasharray="3 3" />
+    <line x1="118" y1="38" x2="136" y2="31" stroke="#C7D2FE" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="3 3" />
+  </svg>
+)
+
+// Timeline 2: Ideal (Golden Ratio Precision Compass & Orbit)
+export const IdealPaceIllustration = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 160 100" className={className} fill="none">
+    <defs>
+      <radialGradient id="compassBgGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#EEF2FF" />
+        <stop offset="100%" stopColor="#E0E7FF" />
+      </radialGradient>
+    </defs>
+
+    {/* Celestial Orbit Ring */}
+    <circle cx="80" cy="50" r="38" stroke="#C7D2FE" strokeWidth="1.5" strokeDasharray="4 3" />
+    <circle cx="80" cy="50" r="32" fill="url(#compassBgGrad)" stroke="#4F46E5" strokeWidth="2.2" />
+    <circle cx="80" cy="50" r="26" stroke="#818CF8" strokeWidth="1" strokeDasharray="2 2" />
+
+    {/* Compass Cardinal Marks */}
+    <line x1="80" y1="22" x2="80" y2="28" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="80" y1="72" x2="80" y2="78" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="52" y1="50" x2="58" y2="50" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" />
+    <line x1="102" y1="50" x2="108" y2="50" stroke="#4F46E5" strokeWidth="2.5" strokeLinecap="round" />
+
+    {/* 3D Beveled North Needle (Ruby Red) */}
+    <polygon points="80,26 87,46 80,43" fill="#EF4444" />
+    <polygon points="80,26 73,46 80,43" fill="#DC2626" />
+    {/* 3D Beveled South Needle (Deep Indigo) */}
+    <polygon points="80,74 87,54 80,57" fill="#6366F1" />
+    <polygon points="80,74 73,54 80,57" fill="#4338CA" />
+
+    {/* Center Pivot Gem */}
+    <circle cx="80" cy="50" r="5.5" fill="#4F46E5" stroke="#FFFFFF" strokeWidth="1.8" />
+    <circle cx="80" cy="50" r="2" fill="#F59E0B" />
+
+    {/* Golden Stars Orbiting */}
+    <polygon points="122,26 124,31 129,31 125,34 127,39 122,36 117,39 119,34 115,31 120,31" fill="#F59E0B" />
+    <circle cx="36" cy="70" r="2.5" fill="#818CF8" />
+    <circle cx="132" cy="65" r="2" fill="#F59E0B" />
+  </svg>
+)
+
+// Timeline 3: Santai (Coffee Mug by Cabin Airplane Window)
+export const RelaxedPaceIllustration = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 160 100" className={className} fill="none">
+    <defs>
+      <linearGradient id="sunsetSky" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FFFBEB" />
+        <stop offset="50%" stopColor="#FED7AA" />
+        <stop offset="100%" stopColor="#E0E7FF" />
+      </linearGradient>
+    </defs>
+
+    {/* Oval Cabin Airplane Window Bevel Frame */}
+    <rect x="36" y="14" width="46" height="72" rx="23" fill="#F1F5F9" stroke="#CBD5E1" strokeWidth="3" />
+    <rect x="42" y="20" width="34" height="60" rx="17" fill="url(#sunsetSky)" stroke="#94A3B8" strokeWidth="1.5" />
+
+    {/* Sunset Cloud Layers in Window */}
+    <ellipse cx="62" cy="56" rx="14" ry="7" fill="#FFFFFF" opacity="0.9" />
+    <ellipse cx="50" cy="62" rx="10" ry="6" fill="#FEF08A" opacity="0.8" />
+    <ellipse cx="68" cy="64" rx="12" ry="6" fill="#FDE68A" opacity="0.8" />
+    <rect x="42" y="66" width="34" height="14" rx="3" fill="#FFFFFF" opacity="0.75" />
+
+    {/* Foreground Table Tray */}
+    <rect x="88" y="78" width="44" height="6" rx="3" fill="#E2E8F0" stroke="#CBD5E1" strokeWidth="1" />
+
+    {/* Ceramic Coffee Mug on Tray */}
+    <rect x="92" y="48" width="30" height="30" rx="6" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2.2" />
+    <path d="M 122 55 C 132 55, 134 67, 122 70" stroke="#4F46E5" strokeWidth="2.2" fill="none" />
+    {/* Coffee liquid rim */}
+    <ellipse cx="107" cy="52" rx="11" ry="3" fill="#4338CA" />
+
+    {/* Rising Warm Steaming Curves */}
+    <path d="M 100 42 Q 104 35 100 28 Q 96 21 100 14" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" />
+    <path d="M 112 40 Q 116 33 112 26 Q 108 19 112 12" stroke="#F59E0B" strokeWidth="2.2" strokeLinecap="round" />
+  </svg>
+)
+
+// Language 1: Mulai Nol (Japanese Hiragana Kana Card & Fresh Sprout)
+export const LanguageZeroIllustration = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 160 100" className={className} fill="none">
+    <defs>
+      <linearGradient id="sproutGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#34D399" />
+        <stop offset="100%" stopColor="#059669" />
+      </linearGradient>
+    </defs>
+
+    {/* Wooden Easel / Desk Podium */}
+    <rect x="30" y="80" width="100" height="8" rx="4" fill="#EEF2FF" stroke="#C7D2FE" strokeWidth="1.5" />
+
+    {/* Japanese Washi Flashcard with Shadow */}
+    <rect x="42" y="22" width="48" height="58" rx="8" fill="#F8FAFC" />
+    <rect x="40" y="20" width="48" height="58" rx="8" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2.4" />
+    {/* Authentic Bold Brush Hiragana 'A' (あ) */}
+    <text x="64" y="58" fill="#0F172A" fontSize="34" fontWeight="bold" fontFamily="'Hiragino Sans', 'Noto Sans JP', sans-serif" textAnchor="middle">
+      あ
+    </text>
+
+    {/* Sprouting Plant Stem */}
+    <path d="M 108 80 Q 106 58 114 46" stroke="#059669" strokeWidth="3.2" strokeLinecap="round" />
+    {/* Left Vibrant Leaf */}
+    <path d="M 110 54 C 98 44, 94 36, 88 36 C 88 46, 96 54, 110 54 Z" fill="url(#sproutGrad)" stroke="#047857" strokeWidth="1.2" />
+    {/* Right Vibrant Leaf */}
+    <path d="M 112 50 C 124 40, 128 32, 134 32 C 134 42, 126 50, 112 50 Z" fill="#10B981" stroke="#047857" strokeWidth="1.2" />
+
+    {/* Floating Sakura Petal */}
+    <path d="M 32 36 C 32 30, 38 28, 42 32 C 40 38, 32 40, 32 36 Z" fill="#FDA4AF" />
+    {/* Learning Sparkle Stars */}
+    <circle cx="120" cy="22" r="3" fill="#F59E0B" />
+    <circle cx="36" cy="62" r="2.5" fill="#818CF8" />
+  </svg>
+)
+
+// Language 2: Dasar (Tokyo Conversation Dialog Bubbles)
+export const LanguageBasicIllustration = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 160 100" className={className} fill="none">
+    {/* Background Conversation Dot Rings */}
+    <circle cx="48" cy="46" r="3" fill="#C7D2FE" />
+    <circle cx="118" cy="68" r="3" fill="#818CF8" />
+
+    {/* Primary Japanese Speech Bubble */}
+    <rect x="24" y="16" width="70" height="40" rx="12" fill="#4F46E5" />
+    <polygon points="46,56 52,66 60,56" fill="#4F46E5" />
+    <text x="59" y="42" fill="#FFFFFF" fontSize="15" fontWeight="bold" fontFamily="'Noto Sans JP', sans-serif" textAnchor="middle">
+      こんにちは！
+    </text>
+
+    {/* Technical Reply Card (Bilingual / API Chat) */}
+    <rect x="68" y="44" width="68" height="38" rx="10" fill="#FFFFFF" stroke="#818CF8" strokeWidth="2" />
+    <polygon points="112,44 116,36 122,44" fill="#FFFFFF" stroke="#818CF8" strokeWidth="1.5" />
+    {/* Terminal Code / Conversation Response */}
+    <circle cx="80" cy="63" r="3.5" fill="#10B981" />
+    <text x="104" y="67" fill="#312E81" fontSize="13" fontWeight="bold" textAnchor="middle">
+      OK / 会話
+    </text>
+
+    {/* Soundwave Accents */}
+    <path d="M 142 34 C 147 40, 147 52, 142 58" stroke="#818CF8" strokeWidth="2.5" strokeLinecap="round" />
+    <path d="M 148 28 C 155 37, 155 55, 148 64" stroke="#C7D2FE" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+)
+
+// Language 3: Lancar (Shibuya Tech ID Lanyard & Gold Badge)
+export const LanguageFluentIllustration = ({ className = 'w-full h-full' }: { className?: string }) => (
+  <svg viewBox="0 0 160 100" className={className} fill="none">
+    <defs>
+      <linearGradient id="goldMedal" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stopColor="#FEF08A" />
+        <stop offset="45%" stopColor="#F59E0B" />
+        <stop offset="100%" stopColor="#D97706" />
+      </linearGradient>
+    </defs>
+
+    {/* Tokyo Skyline Silhouette in Soft Background */}
+    <rect x="22" y="40" width="16" height="48" rx="2" fill="#EEF2FF" />
+    <rect x="42" y="28" width="18" height="60" rx="2" fill="#EEF2FF" />
+    <rect x="108" y="34" width="20" height="54" rx="2" fill="#EEF2FF" />
+    <rect x="132" y="46" width="14" height="42" rx="2" fill="#EEF2FF" />
+
+    {/* Lanyard Ribbon Strap */}
+    <path d="M 64 6 L 80 28 L 96 6" stroke="#4F46E5" strokeWidth="3" strokeLinecap="round" />
+    <rect x="74" y="26" width="12" height="6" rx="2" fill="#94A3B8" />
+
+    {/* Tech Employee Credential ID Card */}
+    <rect x="54" y="30" width="52" height="60" rx="7" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2.4" />
+    {/* Photo Placeholder */}
+    <rect x="62" y="38" width="36" height="20" rx="4" fill="#EEF2FF" />
+    <circle cx="80" cy="46" r="5" fill="#818CF8" />
+    <path d="M 72 56 C 72 52, 76 50, 80 50 C 84 50, 88 52, 88 56 Z" fill="#818CF8" />
+    {/* ID Barcode / Details */}
+    <line x1="62" y1="64" x2="98" y2="64" stroke="#64748B" strokeWidth="2.2" strokeLinecap="round" />
+    <line x1="62" y1="71" x2="88" y2="71" stroke="#CBD5E1" strokeWidth="2" strokeLinecap="round" />
+
+    {/* Radiant 3D Gold Medal (JLPT N3+ PASS) */}
+    <circle cx="112" cy="42" r="15" fill="url(#goldMedal)" stroke="#B45309" strokeWidth="1.5" />
+    <circle cx="112" cy="42" r="12" stroke="#FFFFFF" strokeWidth="1" strokeDasharray="2 2" />
+    <text x="112" y="47" fill="#FFFFFF" fontSize="10" fontWeight="900" textAnchor="middle">
+      N3+
+    </text>
+    {/* Verified Green Ribbon Badge */}
+    <circle cx="112" cy="62" r="5" fill="#10B981" />
+    <path d="M 110 62 L 111.5 63.5 L 114.5 60.5" stroke="#FFFFFF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </svg>
+)
+
