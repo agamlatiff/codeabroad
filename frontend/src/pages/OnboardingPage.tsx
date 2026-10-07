@@ -1,63 +1,35 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowRight, ArrowLeft, Plane, ShieldCheck, Sparkles, Check, Lock } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Check } from 'lucide-react'
 import { onboardingService } from '../services/onboardingService'
 import { useAuthStore } from '../store/authStore'
 import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, LanguageLevel } from '../types/onboarding'
 import { Logo } from '../components/ui/Logo'
-import {
-  JapanFlagIllustration,
-  SingaporeFlagIllustration,
-  GermanyFlagIllustration,
-  BackendIllustration,
-  FrontendIllustration,
-  FullstackIllustration,
-  DevOpsIllustration,
-  ProductEngineerIllustration,
-  SolutionsArchitectIllustration,
-  SpecialistMindsetIllustration,
-  GeneralistMindsetIllustration,
-  BeginnerIllustration,
-  ExperiencedIllustration,
-  FundamentalGuideIllustration,
-  AcceleratedSystemIllustration,
-  FlightRoadmapGraphic,
-  TechIcon,
-  SprintPaceIllustration,
-  IdealPaceIllustration,
-  RelaxedPaceIllustration,
-  LanguageZeroIllustration,
-  LanguageBasicIllustration,
-  LanguageFluentIllustration,
-} from '../components/illustrations/OnboardingIllustrations'
+import { Step1Destination } from '../components/onboarding/Step1Destination'
+import { Step2CareerTracks, type Step2SubStep } from '../components/onboarding/Step2CareerTracks'
+import { Step3Readiness, type Step3SubStep } from '../components/onboarding/Step3Readiness'
+import { Step4BoardingPass } from '../components/onboarding/Step4BoardingPass'
 
 export const OnboardingPage = () => {
   const navigate = useNavigate()
   const { user, updateUser } = useAuthStore()
 
-  // Wizard state: 1 (Destinasi), 2 (Spesialisasi & Stack), 3 (Kesiapan), 4 (Tiket)
+  // Wizard state: 1 (Destination), 2 (Track & Stack), 3 (Readiness), 4 (Ticket)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1)
-  // Sub-step for Step 2:
-  // 'mindset' -> 'track' -> 'stack' (or 'stack_fe' -> 'stack_be')
-  type Step2SubStep = 'mindset' | 'track' | 'stack' | 'stack_fe' | 'stack_be'
   const [trackSubStep, setTrackSubStep] = useState<Step2SubStep>('mindset')
-
-  // Sub-step for Step 3:
-  // 'level' (Pengalaman coding) -> 'readiness' (Target Durasi & Bahasa)
-  type Step3SubStep = 'level' | 'readiness'
   const [step3SubStep, setStep3SubStep] = useState<Step3SubStep>('level')
 
-  // Mindset Filter for Step 2: Specialist vs Generalist
+  // Mindset filter for Step 2: Specialist vs Generalist
   const [mindsetTab, setMindsetTab] = useState<'specialist' | 'generalist'>('specialist')
 
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  // Master data from backend
+  // Master data fetched from backend
   const [countries, setCountries] = useState<Country[]>([])
   const [careerPaths, setCareerPaths] = useState<CareerPath[]>([])
 
-  // User selections
+  // User preference selections
   const [selectedCountryId, setSelectedCountryId] = useState<string>('')
   const [selectedCareerPathId, setSelectedCareerPathId] = useState<string>('')
   const [selectedStackSlug, setSelectedStackSlug] = useState<string>('')
@@ -71,7 +43,7 @@ export const OnboardingPage = () => {
   const [isLanding, setIsLanding] = useState(false)
   const [completionResult, setCompletionResult] = useState<OnboardingProfileResponse | null>(null)
 
-  // Fetch master data on mount
+  // Fetch master data on component mount
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -82,6 +54,29 @@ export const OnboardingPage = () => {
         ])
         setCountries(countriesData)
         setCareerPaths(pathsData)
+
+        // Restore draft from sessionStorage if available
+        const savedDraft = sessionStorage.getItem('codeabroad_onboarding_draft')
+        if (savedDraft) {
+          try {
+            const parsed = JSON.parse(savedDraft)
+            if (parsed.selectedCountryId) setSelectedCountryId(parsed.selectedCountryId)
+            if (parsed.selectedCareerPathId) setSelectedCareerPathId(parsed.selectedCareerPathId)
+            if (parsed.selectedStackSlug) setSelectedStackSlug(parsed.selectedStackSlug)
+            if (parsed.selectedFullstackFe) setSelectedFullstackFe(parsed.selectedFullstackFe)
+            if (parsed.selectedFullstackBe) setSelectedFullstackBe(parsed.selectedFullstackBe)
+            if (parsed.selectedLevel) setSelectedLevel(parsed.selectedLevel)
+            if (parsed.selectedTimeline) setSelectedTimeline(parsed.selectedTimeline)
+            if (parsed.selectedLanguageLevel) setSelectedLanguageLevel(parsed.selectedLanguageLevel)
+            if (parsed.mindsetTab) setMindsetTab(parsed.mindsetTab)
+            if (parsed.currentStep && parsed.currentStep < 4) setCurrentStep(parsed.currentStep)
+            if (parsed.trackSubStep) setTrackSubStep(parsed.trackSubStep)
+            if (parsed.step3SubStep) setStep3SubStep(parsed.step3SubStep)
+            return
+          } catch {
+            // Invalid draft; fallback to defaults
+          }
+        }
 
         // Preselect active country (Japan)
         const activeCountry = countriesData.find((c) => c.is_active)
@@ -108,6 +103,40 @@ export const OnboardingPage = () => {
     fetchData()
   }, [])
 
+  // Persist draft to sessionStorage on state updates
+  useEffect(() => {
+    if (currentStep < 4 && selectedCountryId) {
+      const draft = {
+        currentStep,
+        trackSubStep,
+        step3SubStep,
+        mindsetTab,
+        selectedCountryId,
+        selectedCareerPathId,
+        selectedStackSlug,
+        selectedFullstackFe,
+        selectedFullstackBe,
+        selectedLevel,
+        selectedTimeline,
+        selectedLanguageLevel,
+      }
+      sessionStorage.setItem('codeabroad_onboarding_draft', JSON.stringify(draft))
+    }
+  }, [
+    currentStep,
+    trackSubStep,
+    step3SubStep,
+    mindsetTab,
+    selectedCountryId,
+    selectedCareerPathId,
+    selectedStackSlug,
+    selectedFullstackFe,
+    selectedFullstackBe,
+    selectedLevel,
+    selectedTimeline,
+    selectedLanguageLevel,
+  ])
+
   // Handle path selection
   const handleSelectCareerPath = (path: CareerPath) => {
     setSelectedCareerPathId(path.id)
@@ -121,21 +150,39 @@ export const OnboardingPage = () => {
         setSelectedStackSlug(activeStack.slug)
       }
     }
-  }
-
-  // Switch between Specialist and Generalist track tabs
-  const handleSwitchMindsetTab = (tab: 'specialist' | 'generalist') => {
-    setMindsetTab(tab)
-    if (tab === 'specialist') {
-      const defaultSpecialist = careerPaths.find((p) => p.slug === 'backend')
-      if (defaultSpecialist) handleSelectCareerPath(defaultSpecialist)
+    // Auto-advance to stack sub-step upon selecting career path
+    if (path.slug === 'fullstack') {
+      setTrackSubStep('stack_fe')
     } else {
-      const defaultGeneralist = careerPaths.find((p) => p.slug === 'fullstack')
-      if (defaultGeneralist) handleSelectCareerPath(defaultGeneralist)
+      setTrackSubStep('stack')
     }
   }
 
-  // Handle final submission with flight animation synchronization
+  // Handle mindset tab switch
+  const handleSwitchMindsetTab = (tab: 'specialist' | 'generalist') => {
+    setMindsetTab(tab)
+    setTrackSubStep('track')
+    // Automatically select first path within chosen mindset
+    const candidatePaths =
+      tab === 'specialist'
+        ? careerPaths.filter((p) => ['frontend', 'backend', 'devops'].includes(p.slug))
+        : careerPaths.filter((p) => ['fullstack', 'product_engineer', 'solutions_architect'].includes(p.slug))
+
+    if (candidatePaths.length > 0) {
+      const firstActivePath = candidatePaths.find((p) => p.slug !== 'product_engineer' && p.slug !== 'solutions_architect') || candidatePaths[0]
+      setSelectedCareerPathId(firstActivePath.id)
+      if (firstActivePath.slug === 'fullstack') {
+        setSelectedFullstackFe('react')
+        setSelectedFullstackBe('golang')
+        setSelectedStackSlug('react_golang')
+      } else if (firstActivePath.stacks && firstActivePath.stacks.length > 0) {
+        const activeStack = firstActivePath.stacks.find((s) => s.is_active) || firstActivePath.stacks[0]
+        if (activeStack) setSelectedStackSlug(activeStack.slug)
+      }
+    }
+  }
+
+  // Submit onboarding selections to backend API
   const handleSubmitOnboarding = async () => {
     if (!selectedCountryId || !selectedCareerPathId || !selectedStackSlug) {
       setErrorMsg('Mohon lengkapi preferensi pilihanmu terlebih dahulu.')
@@ -160,19 +207,9 @@ export const OnboardingPage = () => {
 
       const [, result] = await Promise.all([flightDurationPromise, onboardingPromise])
 
-      // Sync complete profile from database response into global auth store
-      updateUser({
-        is_onboarded: true,
-        xp: result.xp,
-        current_level: result.current_level,
-        streak: result.streak,
-        primary_stack: result.primary_stack,
-        target_timeline: result.target_timeline,
-        language_level: result.language_level,
-        country: result.country,
-        career_path: result.career_path,
-        level: result.level,
-      })
+      // Stash complete profile response in local state for Step 4 Boarding Pass rendering
+      // NOTE: We defer updating the global auth store (is_onboarded: true) until the user clicks
+      // "Masuk ke Dashboard" on Step 4, preventing <OnboardingRoute /> from prematurely redirecting away!
       setCompletionResult(result)
 
       // Brief touchdown celebration delay (350ms) before revealing official Boarding Pass
@@ -182,6 +219,17 @@ export const OnboardingPage = () => {
       }, 350)
     } catch (err: any) {
       setIsLanding(false)
+      // Gracefully handle 409 Conflict if user is already onboarded
+      if (
+        err?.response?.status === 409 ||
+        err?.message?.includes('ALREADY_ONBOARDED') ||
+        err?.response?.data?.code === 'ALREADY_ONBOARDED'
+      ) {
+        sessionStorage.removeItem('codeabroad_onboarding_draft')
+        updateUser({ is_onboarded: true })
+        navigate('/dashboard', { replace: true })
+        return
+      }
       setErrorMsg(err.message || 'Gagal menyelesaikan onboarding. Silakan coba lagi.')
     } finally {
       setLoading(false)
@@ -192,7 +240,7 @@ export const OnboardingPage = () => {
   const selectedCountry = countries.find((c) => c.id === selectedCountryId)
   const selectedCareerPath = careerPaths.find((c) => c.id === selectedCareerPathId) || careerPaths[0]
 
-  // Step Validation
+  // Step validation
   const isStepValid = useCallback(() => {
     if (currentStep === 1) return !!selectedCountryId
     if (currentStep === 2) {
@@ -244,6 +292,24 @@ export const OnboardingPage = () => {
         handleSubmitOnboarding()
       }
     } else if (currentStep === 4) {
+      // Sync complete profile from database response into global auth store right as the user departs for the dashboard
+      if (completionResult) {
+        updateUser({
+          is_onboarded: true,
+          xp: completionResult.xp,
+          current_level: completionResult.current_level,
+          streak: completionResult.streak,
+          primary_stack: completionResult.primary_stack,
+          target_timeline: completionResult.target_timeline,
+          language_level: completionResult.language_level,
+          country: completionResult.country,
+          career_path: completionResult.career_path,
+          level: completionResult.level,
+        })
+      } else {
+        updateUser({ is_onboarded: true })
+      }
+      sessionStorage.removeItem('codeabroad_onboarding_draft')
       navigate('/dashboard', { replace: true })
     }
   }
@@ -276,7 +342,7 @@ export const OnboardingPage = () => {
     }
   }
 
-  // Step Prompt for Stepper Pill
+  // Step prompt for Stepper Pill
   const getStepPrompt = (step: number) => {
     switch (step) {
       case 1:
@@ -295,7 +361,7 @@ export const OnboardingPage = () => {
     }
   }
 
-  // Step Header Content
+  // Step title header
   const getStepTitle = (step: number) => {
     switch (step) {
       case 1:
@@ -320,23 +386,32 @@ export const OnboardingPage = () => {
     }
   }
 
+  // Step subtitle description
   const getStepSubtitle = (step: number) => {
     switch (step) {
       case 1:
-        return 'Tentukan negara tujuan untuk menyesuaikan standar visa, budaya kerja, dan kurikulum belajarmu ✈️'
+        return 'Tentukan negara targetmu untuk kurikulum spesifik standar industri lokal dan peluang sponsor visa.'
       case 2:
-        if (trackSubStep === 'mindset') return 'Pilih antara mendalami satu spesialisasi teknis secara vertikal atau memegang spektrum produk dari hulu ke hilir 🚀'
+        if (trackSubStep === 'mindset') {
+          return 'Pilih apakah ingin menjadi spesialis mendalam di satu bidang atau generalis berdampak luas pada seluruh lapisan produk.'
+        }
         if (trackSubStep === 'track') {
           return mindsetTab === 'specialist'
-            ? 'Kuasai satu domain rekayasa dengan standar arsitektur mendalam dan permintaan visa aktif 🎯'
-            : 'Kuasai siklus delivery produk dari hulu ke hilir dengan kemampuan lintas domain 🌐'
+            ? 'Fokus pada keahlian mendalam sesuai ekosistem dan kebutuhan perusahaan teknologi global.'
+            : 'Bangun portofolio menyeluruh yang mencakup integrasi frontend, backend, hingga arsitektur cloud.'
         }
-        if (trackSubStep === 'stack_fe') return 'Tentukan teknologi antarmuka (UI/UX) modern untuk pondasi aplikasi webmu 🎨'
-        if (trackSubStep === 'stack_be') return 'Tentukan arsitektur API dan server yang akan berduet dengan frontend pilihanmu ⚙️'
-        return 'Daily quest, kurikulum belajar, dan simulasi interview akan diselaraskan dengan stack ini ⚡'
+        if (trackSubStep === 'stack_fe') {
+          return 'Teknologi antarmuka utama yang akan menjadi fondasi visual aplikasi web modernmu.'
+        }
+        if (trackSubStep === 'stack_be') {
+          return 'Bahasa backend yang mendampingi frontend untuk arsitektur API dan pemrosesan data.'
+        }
+        return `Kurikulum akan disesuaikan dengan standar industri global ${selectedCareerPath?.label || ''}.`
       case 3:
-        if (step3SubStep === 'level') return 'Kurikulum belajar dan intensitas daily quest akan disesuaikan dengan titik awalmu saat ini 🌱'
-        return 'Sesuaikan ritme belajar harian dan modul bahasa kerja dengan target keberangkatanmu 🎯'
+        if (step3SubStep === 'level') {
+          return 'Kami akan menyesuaikan titik awal kurikulum dan rekomendasi quest harian agar sesuai dengan kesiapanmu.'
+        }
+        return 'Tentukan tenggat target serta kesiapan kemampuan bahasa kerjamu menuju keberangkatan global.'
       case 4:
         return 'Paspor karier resmi terverifikasi. Selamat bergabung dalam ekosistem CodeAbroad!'
       default:
@@ -344,147 +419,27 @@ export const OnboardingPage = () => {
     }
   }
 
-  // Helper to render track illustration by slug
-  const renderTrackIllustration = (slug: string) => {
-    switch (slug) {
-      case 'frontend':
-        return <FrontendIllustration />
-      case 'backend':
-        return <BackendIllustration />
-      case 'fullstack':
-        return <FullstackIllustration />
-      case 'devops':
-        return <DevOpsIllustration />
-      case 'product_engineer':
-        return <ProductEngineerIllustration />
-      case 'solutions_architect':
-        return <SolutionsArchitectIllustration />
-      default:
-        return <BackendIllustration />
-    }
-  }
 
-  // Helper to render country flag by code
-  const renderCountryFlag = (code: string) => {
-    switch (code?.toUpperCase()) {
-      case 'JP':
-        return <JapanFlagIllustration />
-      case 'SG':
-        return <SingaporeFlagIllustration />
-      case 'DE':
-        return <GermanyFlagIllustration />
-      default:
-        return <JapanFlagIllustration />
-    }
-  }
 
-  // Track Badges
-  const getTrackBadge = (slug: string) => {
-    switch (slug) {
-      case 'backend':
-        return { text: 'High Demand Tokyo', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' }
-      case 'frontend':
-        return { text: 'Tokyo Standard', color: 'bg-sky-100 text-sky-700 border-sky-200' }
-      case 'devops':
-        return { text: 'Highest Salary Tokyo', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' }
-      case 'fullstack':
-        return { text: 'High Demand Tokyo', color: 'bg-amber-100 text-amber-700 border-amber-200' }
-      case 'product_engineer':
-        return { text: 'Coming Soon', color: 'bg-purple-100 text-purple-700 border-purple-200' }
-      case 'solutions_architect':
-        return { text: 'Coming Soon', color: 'bg-cyan-100 text-cyan-700 border-cyan-200' }
-      default:
-        return { text: 'Jalur Aktif', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' }
-    }
-  }
+  // Fullstack options derived dynamically from frontend and backend career paths
+  const feCareerPath = careerPaths.find((p) => p.slug === 'frontend')
+  const beCareerPath = careerPaths.find((p) => p.slug === 'backend')
 
-  // Helper to describe stack details
-  const getStackDescription = (slug: string) => {
-    switch (slug) {
-      case 'golang':
-        return 'Bahasa performa tinggi untuk microservices & sistem konkurensi di Tokyo.'
-      case 'java':
-        return 'Paling banyak digunakan di enterprise dan institusi finansial Tokyo.'
-      case 'node':
-        return 'Pengembangan cepat arsitektur API berbasis Node.js Express.'
-      case 'react':
-        return 'Standar industri utama untuk aplikasi web interaktif skala global di Tokyo.'
-      case 'vue':
-        return 'Framework reaktif yang populer di banyak startup dan tech agency Jepang.'
-      case 'svelte':
-        return 'Teknologi frontend generasi baru dengan performa ultra-ringan.'
-      case 'react_golang':
-        return 'Kombinasi React + Go (Gin) + AWS paling dicari untuk full product delivery.'
-      case 'react_node':
-        return 'Full JavaScript stack dari UI, Express API, hingga cloud deployment.'
-      case 'devops_aws':
-      case 'devops_cloud':
-        return 'Otomatisasi kluster Kubernetes, ECS, dan arsitektur cloud serverless di AWS Tokyo.'
-      case 'devops_gcp':
-        return 'Infrastruktur data & Kubernetes Engine (GKE) populer di unicorn Jepang seperti Mercari.'
-      case 'devops_terraform':
-        return 'Infrastructure as Code (IaC) skala besar dengan automasi CI/CD pipelines modern.'
-      default:
-        return 'Standar rekayasa teknologi berstandar industri global.'
-    }
-  }
+  const feOptions = feCareerPath?.stacks?.length
+    ? feCareerPath.stacks
+    : [
+        { slug: 'react', label: 'React', is_active: true, badge: 'Tokyo Standard' },
+        { slug: 'vue', label: 'Vue.js', is_active: false, badge: 'Coming Soon' },
+        { slug: 'svelte', label: 'Svelte', is_active: false, badge: 'Coming Soon' },
+      ]
 
-  // Helper to format stack badge (removes corrupted ???? and Rakuten mention)
-  const formatStackBadge = (badge?: string, isActive?: boolean) => {
-    if (!badge) return isActive ? 'Tersedia' : 'Coming Soon'
-    const cleaned = badge
-      .replace(/\s*\(Rakuten\)/gi, '')
-      .replace(/^[\?\s\uFFFD]+/, '')
-      .trim()
-    return cleaned || (isActive ? 'Tersedia' : 'Coming Soon')
-  }
-
-  // Fullstack options derived from frontend and backend career paths
-  const feOptions = [
-    { slug: 'react', label: 'React', is_active: true, badge: 'Tokyo Standard' },
-    { slug: 'vue', label: 'Vue.js', is_active: false, badge: 'Coming Soon' },
-    { slug: 'svelte', label: 'Svelte', is_active: false, badge: 'Coming Soon' },
-  ]
-
-  const beOptions = [
-    { slug: 'golang', label: 'Go (Gin Framework)', is_active: true, badge: 'High Demand Tokyo' },
-    { slug: 'node', label: 'Node.js (Express)', is_active: false, badge: 'Coming Soon' },
-    { slug: 'java', label: 'Java (Spring Boot)', is_active: false, badge: 'Coming Soon' },
-  ]
-
-  const formatSelectedStackLabel = (slug: string) => {
-    switch (slug) {
-      case 'golang':
-        return 'Go (Gin Framework)'
-      case 'java':
-        return 'Java (Spring Boot)'
-      case 'node':
-        return 'Node.js (Express)'
-      case 'react':
-        return 'React'
-      case 'vue':
-        return 'Vue.js'
-      case 'svelte':
-        return 'Svelte'
-      case 'react_golang':
-        return 'React + Go (Gin) + AWS'
-      case 'react_node':
-        return 'React + Node (Express) + AWS'
-      case 'devops_aws':
-      case 'devops_cloud':
-        return 'AWS Cloud Native'
-      case 'devops_gcp':
-        return 'GCP Cloud Native'
-      case 'devops_terraform':
-        return 'Terraform & GitOps'
-      case 'product_fullstack':
-        return 'Fullstack Product Delivery'
-      case 'cloud_architecture':
-        return 'Enterprise Cloud Architecture'
-      default:
-        return slug.replace(/_/g, ' + ').toUpperCase()
-    }
-  }
+  const beOptions = beCareerPath?.stacks?.length
+    ? beCareerPath.stacks
+    : [
+        { slug: 'golang', label: 'Go (Gin Framework)', is_active: true, badge: 'High Demand Tokyo' },
+        { slug: 'node', label: 'Node.js (Express)', is_active: false, badge: 'Coming Soon' },
+        { slug: 'java', label: 'Java (Spring Boot)', is_active: false, badge: 'Coming Soon' },
+      ]
 
   return (
     <div className="min-h-screen min-h-dvh bg-[#FAFAF9] text-slate-900 flex flex-col justify-between font-['Plus_Jakarta_Sans',sans-serif] selection:bg-indigo-500/20 antialiased relative">
@@ -522,7 +477,7 @@ export const OnboardingPage = () => {
 
         {/* Hero Area: Mini Stepper Pill + Compact Title & Subtitle */}
         <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-6 flex flex-col items-center">
-          {/* ── CONNECTED MINI STEPPER PILL ── */}
+          {/* Connected Mini Stepper Pill */}
           {currentStep <= 3 && (
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-slate-200/90 shadow-2xs mb-2 transition-all">
               <div className="flex items-center gap-1">
@@ -572,899 +527,64 @@ export const OnboardingPage = () => {
 
         {/* ── ANIMATED STEP CONTENT CONTAINER ── */}
         <div key={`${currentStep}-${trackSubStep}-${step3SubStep}`} className="animate-stepTransition w-full flex flex-col items-center">
-          
-          {/* ── TAHAP 1: DESTINASI NEGARA (ENLARGED CARDS) ── */}
+          {/* Step 1: Destination Selection */}
           {currentStep === 1 && (
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
-              {countries.map((country) => {
-                const isSelected = selectedCountryId === country.id
-                const isActive = country.is_active
-
-                return (
-                  <div
-                    key={country.id}
-                    onClick={() => {
-                      if (isActive) {
-                        setSelectedCountryId(country.id)
-                      }
-                    }}
-                    className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] sm:max-w-[350px] w-full relative ${
-                      isActive
-                        ? isSelected
-                          ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                          : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                        : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
-                    }`}
-                  >
-                    {/* Top Flag Frame (Enlarged Height) */}
-                    <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isActive ? 'bg-[#F8FAFC]' : 'bg-slate-100/70'}`}>
-                      {renderCountryFlag(country.code)}
-
-                      {/* Status Badge */}
-                      <span
-                        className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                          isActive
-                            ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                            : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                        }`}
-                      >
-                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                        {isActive ? 'Jalur Aktif' : 'Coming Soon'}
-                      </span>
-                    </div>
-
-                    {/* Title & Description */}
-                    <h2 className={`text-lg sm:text-xl font-bold mb-1.5 ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                      {country.name}
-                    </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
-                      {country.code === 'JP' && 'Peluang visa sponsor langsung untuk software engineer Indonesia dengan gaji kompetitif.'}
-                      {country.code === 'SG' && 'Hub teknologi Asia Tenggara dengan pajak kompetitif dan kedekatan jarak penerbangan.'}
-                      {country.code === 'DE' && 'Pusat teknologi Eropa dengan EU Blue Card dan perlindungan work-life balance tinggi.'}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
+            <Step1Destination
+              countries={countries}
+              selectedCountryId={selectedCountryId}
+              onSelectCountry={(id) => setSelectedCountryId(id)}
+            />
           )}
 
-          {/* ── TAHAP 2A: PILIH MINDSET KARIER (2 HERO CARDS) ── */}
-          {currentStep === 2 && trackSubStep === 'mindset' && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-7 max-w-4xl w-full justify-items-center">
-              {/* Card 1: Specialist Track */}
-              <div
-                onClick={() => handleSwitchMindsetTab('specialist')}
-                className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[380px] w-full relative ${
-                  mindsetTab === 'specialist'
-                    ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                    : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                }`}
-              >
-                {/* Top Illustration Frame */}
-                <div className="w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative bg-[#F8FAFC]">
-                  <SpecialistMindsetIllustration />
-                  <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-indigo-100 text-indigo-700 border-indigo-200">
-                    3 Jalur Tersedia
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <span className="text-base">🎯</span>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                    Specialist Track
-                  </h2>
-                </div>
-                <p className="text-xs font-semibold text-indigo-600 mb-2">Deep Domain Mastery</p>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal mb-4">
-                  Fokus mendalam pada satu ranah rekayasa software spesifik dengan standar arsitektur mendalam.
-                </p>
-
-                {/* Sub-track preview chips */}
-                <div className="mt-auto pt-3 border-t border-slate-100/90 flex flex-wrap gap-1.5 justify-center">
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Backend</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Frontend</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Cloud &amp; DevOps</span>
-                </div>
-
-                <div className="mt-3 text-xs font-semibold">
-                  {mindsetTab === 'specialist' ? (
-                    <span className="text-[#4F46E5] flex items-center justify-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Mindset Terpilih
-                    </span>
-                  ) : (
-                    <span className="text-slate-400">Klik untuk memilih</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Card 2: Generalist Track */}
-              <div
-                onClick={() => handleSwitchMindsetTab('generalist')}
-                className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[380px] w-full relative ${
-                  mindsetTab === 'generalist'
-                    ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                    : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                }`}
-              >
-                {/* Top Illustration Frame */}
-                <div className="w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative bg-[#F8FAFC]">
-                  <GeneralistMindsetIllustration />
-                  <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-amber-100 text-amber-700 border-amber-200">
-                    3 Jalur Tersedia
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-center gap-1.5 mb-1">
-                  <span className="text-base">🌐</span>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-900">
-                    Generalist Track
-                  </h2>
-                </div>
-                <p className="text-xs font-semibold text-amber-600 mb-2">End-to-End Product Impact</p>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal mb-4">
-                  Kuasai delivery produk dari hulu ke hilir dengan perpaduan frontend, backend, cloud, dan pemikiran produk.
-                </p>
-
-                {/* Sub-track preview chips */}
-                <div className="mt-auto pt-3 border-t border-slate-100/90 flex flex-wrap gap-1.5 justify-center">
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Fullstack &amp; Cloud</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Product Engineer</span>
-                  <span className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">Solutions Architect</span>
-                </div>
-
-                <div className="mt-3 text-xs font-semibold">
-                  {mindsetTab === 'generalist' ? (
-                    <span className="text-[#4F46E5] flex items-center justify-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Mindset Terpilih
-                    </span>
-                  ) : (
-                    <span className="text-slate-400">Klik untuk memilih</span>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* Step 2: Mindset, Tracks & Stacks Selection */}
+          {currentStep === 2 && (
+            <Step2CareerTracks
+              trackSubStep={trackSubStep}
+              setTrackSubStep={setTrackSubStep}
+              mindsetTab={mindsetTab}
+              onSwitchMindsetTab={handleSwitchMindsetTab}
+              careerPaths={careerPaths}
+              selectedCareerPathId={selectedCareerPathId}
+              selectedCareerPath={selectedCareerPath}
+              onSelectCareerPath={handleSelectCareerPath}
+              selectedStackSlug={selectedStackSlug}
+              onSelectStackSlug={(slug) => setSelectedStackSlug(slug)}
+              selectedFullstackFe={selectedFullstackFe}
+              onSelectFullstackFe={(fe) => setSelectedFullstackFe(fe)}
+              selectedFullstackBe={selectedFullstackBe}
+              onSelectFullstackBe={(be) => setSelectedFullstackBe(be)}
+              feOptions={feOptions}
+              beOptions={beOptions}
+            />
           )}
 
-          {/* ── TAHAP 2B: PILIH JALUR SPESIFIK SESUAI MINDSET (3 CARDS) ── */}
-          {currentStep === 2 && trackSubStep === 'track' && (
-            <div className="flex flex-col items-center w-full">
-              {/* Subtle Mindset Context Header */}
-              <div className="flex items-center gap-2 mb-6">
-                <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs font-bold shadow-2xs">
-                  <span>{mindsetTab === 'specialist' ? '🎯' : '🌐'}</span>
-                  <span>{mindsetTab === 'specialist' ? 'Specialist Track' : 'Generalist Track'}</span>
-                </span>
-                <button
-                  type="button"
-                  onClick={() => setTrackSubStep('mindset')}
-                  className="text-xs text-slate-400 hover:text-indigo-600 font-semibold cursor-pointer transition-colors"
-                >
-                  (Ubah Mindset)
-                </button>
-              </div>
-
-              {/* 3 Symmetrical Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
-                {(mindsetTab === 'specialist'
-                  ? careerPaths.filter((p) => ['frontend', 'backend', 'devops'].includes(p.slug))
-                  : careerPaths.filter((p) => ['fullstack', 'product_engineer', 'solutions_architect'].includes(p.slug))
-                ).map((path) => {
-                  const isSelected = selectedCareerPathId === path.id
-                  const badge = getTrackBadge(path.slug)
-                  const isComingSoon = path.slug === 'product_engineer' || path.slug === 'solutions_architect'
-
-                  return (
-                    <div
-                      key={path.id}
-                      onClick={() => {
-                        if (!isComingSoon) {
-                          handleSelectCareerPath(path)
-                        }
-                      }}
-                      className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative ${
-                        isComingSoon
-                          ? 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
-                          : isSelected
-                          ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                          : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                      }`}
-                    >
-                      {/* Top Illustration Frame */}
-                      <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isComingSoon ? 'bg-slate-100/70' : 'bg-[#F8FAFC]'}`}>
-                        {renderTrackIllustration(path.slug)}
-                        <span
-                          className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                            isComingSoon
-                              ? 'bg-slate-200/80 text-slate-600 border-slate-300'
-                              : badge.color
-                          }`}
-                        >
-                          {isComingSoon && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                          {badge.text}
-                        </span>
-                      </div>
-
-                      {/* Title & Description */}
-                      <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 mb-1.5">
-                        {path.label}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed line-clamp-2 mb-3.5">
-                        {path.description || 'Standar kurikulum teknologi global.'}
-                      </p>
-
-                      {/* Selection Indicator */}
-                      <div className="mt-auto pt-2 flex items-center justify-center text-xs sm:text-sm font-semibold">
-                        {isComingSoon ? (
-                          <span className="text-slate-400 font-medium">Coming Soon</span>
-                        ) : isSelected ? (
-                          <span className="text-[#4F46E5] font-bold flex items-center gap-1.5">
-                            <Check className="w-4 h-4 stroke-[2.5]" /> Jalur Terpilih
-                          </span>
-                        ) : (
-                          <span className="text-slate-400">Klik untuk memilih</span>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+          {/* Step 3: Coding Experience & Grand Panoramic Journey Theater */}
+          {currentStep === 3 && (
+            <Step3Readiness
+              step3SubStep={step3SubStep}
+              selectedLevel={selectedLevel}
+              onSelectLevel={(lvl) => setSelectedLevel(lvl)}
+              selectedCountry={selectedCountry}
+              selectedTimeline={selectedTimeline}
+              onSelectTimeline={(timeline) => setSelectedTimeline(timeline)}
+              selectedLanguageLevel={selectedLanguageLevel}
+              onSelectLanguageLevel={(lvl) => setSelectedLanguageLevel(lvl)}
+              isLanding={isLanding}
+            />
           )}
 
-          {/* ── TAHAP 2B: PILIH TEKNOLOGI UTAMA (ENLARGED PORTRAIT CARDS) ── */}
-          {currentStep === 2 && trackSubStep === 'stack' && selectedCareerPath && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
-              {selectedCareerPath.stacks.map((stack) => {
-                const isSelected = selectedStackSlug === stack.slug
-                const isActive = stack.is_active
-
-                return (
-                  <div
-                    key={stack.slug}
-                    onClick={() => {
-                      if (isActive) {
-                        setSelectedStackSlug(stack.slug)
-                      }
-                    }}
-                    className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative ${
-                      isActive
-                        ? isSelected
-                          ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                          : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                        : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
-                    }`}
-                  >
-                    {/* Top Tech Logo Frame */}
-                    <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isActive ? 'bg-[#F8FAFC]' : 'bg-slate-100/70'}`}>
-                      <TechIcon slug={stack.slug} className="w-20 h-20" />
-
-                      {/* Stack Badge */}
-                      <span
-                        className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                          isActive
-                            ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                            : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                        }`}
-                      >
-                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                        {formatStackBadge(stack.badge, isActive)}
-                      </span>
-                    </div>
-
-                    {/* Title & Description */}
-                    <h3 className={`text-lg sm:text-xl font-bold mb-1.5 ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                      {stack.label}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
-                      {getStackDescription(stack.slug)}
-                    </p>
-                  </div>
-                )
-              })}
-            </div>
-          )}
-
-          {/* ── TAHAP 2 (FULLSTACK STEP 1/2): PILIH FRONTEND STACK ── */}
-          {currentStep === 2 && trackSubStep === 'stack_fe' && (
-            <div className="flex flex-col items-center w-full">
-              {/* Stepper Progress Pill */}
-              <div className="mb-5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/90 text-xs font-semibold text-[#4F46E5] shadow-2xs">
-                <span className="w-2 h-2 rounded-full bg-[#4F46E5] animate-pulse"></span>
-                <span>Langkah 1 dari 2: Rekayasa Frontend</span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
-                {feOptions.map((stack) => {
-                  const isSelected = selectedFullstackFe === stack.slug
-                  const isActive = stack.is_active
-
-                  return (
-                    <div
-                      key={stack.slug}
-                      onClick={() => {
-                        if (isActive) {
-                          setSelectedFullstackFe(stack.slug)
-                          setSelectedStackSlug(`${stack.slug}_${selectedFullstackBe}`)
-                        }
-                      }}
-                      className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative ${
-                        isActive
-                          ? isSelected
-                            ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                            : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                          : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
-                      }`}
-                    >
-                      {/* Top Tech Logo Frame */}
-                      <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isActive ? 'bg-[#F8FAFC]' : 'bg-slate-100/70'}`}>
-                        <TechIcon slug={stack.slug} className="w-20 h-20" />
-
-                        {/* Stack Badge */}
-                        <span
-                          className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                            isActive
-                              ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                              : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                          }`}
-                        >
-                          {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                          {formatStackBadge(stack.badge, isActive)}
-                        </span>
-                      </div>
-
-                      {/* Title & Description */}
-                      <h3 className={`text-lg sm:text-xl font-bold mb-1.5 ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                        {stack.label}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
-                        {getStackDescription(stack.slug)}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── TAHAP 2 (FULLSTACK STEP 2/2): PILIH BACKEND STACK ── */}
-          {currentStep === 2 && trackSubStep === 'stack_be' && (
-            <div className="flex flex-col items-center w-full">
-              {/* Stepper Progress Pill with Selected FE */}
-              <div className="mb-5 inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/90 text-xs font-semibold text-[#4F46E5] shadow-2xs">
-                <span>Frontend: <strong className="text-indigo-900">{selectedFullstackFe === 'react' ? 'React + TypeScript' : selectedFullstackFe}</strong></span>
-                <span className="text-indigo-300">➔</span>
-                <span className="flex items-center gap-1.5 text-indigo-700">
-                  <span className="w-2 h-2 rounded-full bg-[#4F46E5] animate-pulse"></span>
-                  Langkah 2 dari 2: Pilih Backend Pendamping
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-7 max-w-5xl w-full justify-items-center">
-                {beOptions.map((stack) => {
-                  const isSelected = selectedFullstackBe === stack.slug
-                  const isActive = stack.is_active
-
-                  return (
-                    <div
-                      key={stack.slug}
-                      onClick={() => {
-                        if (isActive) {
-                          setSelectedFullstackBe(stack.slug)
-                          setSelectedStackSlug(`${selectedFullstackFe}_${stack.slug}`)
-                        }
-                      }}
-                      className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative ${
-                        isActive
-                          ? isSelected
-                            ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                            : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
-                          : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
-                      }`}
-                    >
-                      {/* Top Tech Logo Frame */}
-                      <div className={`w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative ${isActive ? 'bg-[#F8FAFC]' : 'bg-slate-100/70'}`}>
-                        <TechIcon slug={stack.slug} className="w-20 h-20" />
-
-                        {/* Stack Badge */}
-                        <span
-                          className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                            isActive
-                              ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                              : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                          }`}
-                        >
-                          {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                          {formatStackBadge(stack.badge, isActive)}
-                        </span>
-                      </div>
-
-                      {/* Title & Description */}
-                      <h3 className={`text-lg sm:text-xl font-bold mb-1.5 ${isActive ? 'text-slate-900' : 'text-slate-600'}`}>
-                        {stack.label}
-                      </h3>
-                      <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal">
-                        {getStackDescription(stack.slug)}
-                      </p>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ── TAHAP 3A: TINGKAT PENGALAMAN CODING (2 HERO CARDS) ── */}
-          {currentStep === 3 && step3SubStep === 'level' && (
-            <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-7 justify-items-center">
-              {/* Card 1: Mulai dari Dasar */}
-              <div
-                onClick={() => setSelectedLevel('beginner')}
-                className={`cursor-pointer rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[390px] w-full relative ${
-                  selectedLevel === 'beginner'
-                    ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10'
-                    : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="w-full h-40 sm:h-44 rounded-2xl bg-[#F8FAFC] flex items-center justify-center mb-4 overflow-hidden relative">
-                  <BeginnerIllustration />
-                  <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">
-                    Step by Step
-                  </span>
-                </div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">
-                  Mulai dari Dasar
-                </h2>
-                <p className="text-xs font-semibold text-indigo-600 mb-2">Fundamental &amp; Habit Builder</p>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal mb-4">
-                  Baru belajar coding atau pindah karier. Bimbingan terstruktur dari nol hingga siap kerja global.
-                </p>
-
-                {/* Checklist Kurikulum */}
-                <div className="mt-auto pt-3 border-t border-slate-100/90 text-left space-y-1.5 mb-4">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Daily quest ringan 15 mnt/hari bangun habit</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Struktur data, algoritma &amp; clean code dasar</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                    <span>Pengenalan kosakata teknis bahasa kerja</span>
-                  </div>
-                </div>
-
-                <div className="text-xs font-semibold">
-                  {selectedLevel === 'beginner' ? (
-                    <span className="text-[#4F46E5] flex items-center justify-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Level Terpilih
-                    </span>
-                  ) : (
-                    <span className="text-slate-400">Klik untuk memilih</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Card 2: Sudah Berpengalaman */}
-              <div
-                onClick={() => setSelectedLevel('intermediate')}
-                className={`cursor-pointer rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[390px] w-full relative ${
-                  selectedLevel === 'intermediate'
-                    ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10'
-                    : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm'
-                }`}
-              >
-                <div className="w-full h-40 sm:h-44 rounded-2xl bg-[#F8FAFC] flex items-center justify-center mb-4 overflow-hidden relative">
-                  <ExperiencedIllustration />
-                  <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-                    Akselerasi
-                  </span>
-                </div>
-                <h2 className="text-lg sm:text-xl font-bold text-slate-900 mb-1">
-                  Sudah Berpengalaman
-                </h2>
-                <p className="text-xs font-semibold text-amber-600 mb-2">Fast-Track &amp; System Design</p>
-                <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal mb-4">
-                  Sudah terbiasa ngoding dan ingin langsung akselerasi ke standar arsitektur dan interview Tokyo.
-                </p>
-
-                {/* Checklist Kurikulum */}
-                <div className="mt-auto pt-3 border-t border-slate-100/90 text-left space-y-1.5 mb-4">
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Check className="w-3.5 h-3.5 text-[#4F46E5] shrink-0" />
-                    <span>System design &amp; high-concurrency systems</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Check className="w-3.5 h-3.5 text-[#4F46E5] shrink-0" />
-                    <span>Simulasi live coding technical interview Tokyo</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-xs text-slate-600">
-                    <Check className="w-3.5 h-3.5 text-[#4F46E5] shrink-0" />
-                    <span>Portofolio global &amp; bimbingan visa sponsor</span>
-                  </div>
-                </div>
-
-                <div className="text-xs font-semibold">
-                  {selectedLevel === 'intermediate' ? (
-                    <span className="text-[#4F46E5] flex items-center justify-center gap-1">
-                      <Check className="w-3.5 h-3.5" /> Level Terpilih
-                    </span>
-                  ) : (
-                    <span className="text-slate-400">Klik untuk memilih</span>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAHAP 3B: GRAND PANORAMIC JOURNEY THEATER (OPSI C) ── */}
-          {currentStep === 3 && step3SubStep === 'readiness' && (
-            <div className="w-full max-w-4xl flex flex-col items-center">
-              {/* Grand Panoramic Canvas Card */}
-              <div className="w-full bg-white border border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-sm text-left relative overflow-hidden">
-                {/* Header route ribbon */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 border-b border-slate-100 pb-3 mb-2">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 block">
-                      Rute Persiapan Karier Internasional
-                    </span>
-                    <h3 className="text-sm sm:text-base font-extrabold text-slate-900">
-                      Jakarta (CGK) → {selectedCountry?.name || 'Tokyo'} ({selectedCountry?.code === 'DE' ? 'BER' : selectedCountry?.code === 'SG' ? 'SIN' : 'NRT'})
-                    </h3>
-                  </div>
-
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-900 text-white text-xs font-semibold self-start sm:self-auto shadow-2xs">
-                    <span>
-                      {isLanding
-                        ? 'Pesawat Mendarat di Narita...'
-                        : selectedTimeline === '6_months'
-                        ? 'Target Landing: April 2027 (Sprint 6 Bulan)'
-                        : selectedTimeline === '1_year'
-                        ? 'Target Landing: Oktober 2027 (Ideal 1 Tahun)'
-                        : 'Target Landing: Fleksibel (Self-Paced)'}
-                    </span>
-                  </div>
-                </div>
-
-                {/* SVG Visual Scenic Trajectory Map */}
-                <div className="w-full py-1">
-                  <FlightRoadmapGraphic
-                    timeline={selectedTimeline}
-                    countryCode={selectedCountry?.code}
-                    isLanding={isLanding}
-                  />
-                </div>
-
-                {/* ── CLEAN BORDERLESS STUDIO LAYOUT (SOLUSI A) ── */}
-                <div className="mt-4 pt-4 border-t border-slate-100 grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6">
-                  {/* Column 1: Target Ritme Belajar */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center justify-between mb-2.5 px-0.5">
-                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
-                        Target Ritme Belajar
-                      </span>
-                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/80">
-                        {selectedTimeline === '6_months' ? 'Sprint 6 Bulan' : selectedTimeline === '1_year' ? 'Ideal 1 Tahun' : 'Santai & Fleksibel'}
-                      </span>
-                    </div>
-
-                    {/* 3 Landscape Interactive Cards */}
-                    <div className="space-y-2.5">
-                      {/* Card 1: Sprint */}
-                      <div
-                        onClick={() => setSelectedTimeline('6_months')}
-                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
-                          selectedTimeline === '6_months'
-                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
-                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
-                          <SprintPaceIllustration />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
-                              Sprint (6 Bulan)
-                            </span>
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 border border-amber-200/80 shrink-0">
-                              Turbo
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            2-3 jam/hari &bull; Akselerasi cepat ke interview Tokyo
-                          </p>
-                        </div>
-                        <div className="shrink-0 pl-1">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                            selectedTimeline === '6_months'
-                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
-                              : 'border-slate-300 bg-white'
-                          }`}>
-                            {selectedTimeline === '6_months' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card 2: Ideal (Populer) */}
-                      <div
-                        onClick={() => setSelectedTimeline('1_year')}
-                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
-                          selectedTimeline === '1_year'
-                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
-                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
-                          <IdealPaceIllustration />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
-                              Ideal (1 Tahun)
-                            </span>
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200/80 shrink-0">
-                              Rekomendasi
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            1 jam/hari &bull; Ritme belajar seimbang &amp; sustainable
-                          </p>
-                        </div>
-                        <div className="shrink-0 pl-1">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                            selectedTimeline === '1_year'
-                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
-                              : 'border-slate-300 bg-white'
-                          }`}>
-                            {selectedTimeline === '1_year' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card 3: Santai */}
-                      <div
-                        onClick={() => setSelectedTimeline('exploring')}
-                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
-                          selectedTimeline === 'exploring'
-                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
-                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
-                          <RelaxedPaceIllustration />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
-                              Santai (Fleksibel)
-                            </span>
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-slate-100 text-slate-600 border border-slate-200 shrink-0">
-                              Mandiri
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            Waktu fleksibel &bull; Eksplorasi materi tanpa tenggat waktu
-                          </p>
-                        </div>
-                        <div className="shrink-0 pl-1">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                            selectedTimeline === 'exploring'
-                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
-                              : 'border-slate-300 bg-white'
-                          }`}>
-                            {selectedTimeline === 'exploring' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Column 2: Kesiapan Bahasa */}
-                  <div className="flex flex-col">
-                    <div className="flex items-center justify-between mb-2.5 px-0.5">
-                      <span className="text-[11px] font-bold text-slate-800 uppercase tracking-wider">
-                        Kesiapan Bahasa {selectedCountry?.code === 'JP' ? 'Jepang' : 'Kerja'}
-                      </span>
-                      <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-200/80">
-                        {selectedLanguageLevel === 'none' ? 'Mulai dari Nol' : selectedLanguageLevel === 'basic' ? 'Percakapan Dasar' : 'Siap Interview'}
-                      </span>
-                    </div>
-
-                    {/* 3 Landscape Interactive Cards */}
-                    <div className="space-y-2.5">
-                      {/* Card 1: Mulai Nol */}
-                      <div
-                        onClick={() => setSelectedLanguageLevel('none')}
-                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
-                          selectedLanguageLevel === 'none'
-                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
-                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
-                          <LanguageZeroIllustration />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
-                              Mulai dari Nol
-                            </span>
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200/80 shrink-0">
-                              Level 0
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            Bimbingan dari abjad Hiragana, Katakana &amp; kosakata harian
-                          </p>
-                        </div>
-                        <div className="shrink-0 pl-1">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                            selectedLanguageLevel === 'none'
-                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
-                              : 'border-slate-300 bg-white'
-                          }`}>
-                            {selectedLanguageLevel === 'none' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card 2: Dasar */}
-                      <div
-                        onClick={() => setSelectedLanguageLevel('basic')}
-                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
-                          selectedLanguageLevel === 'basic'
-                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
-                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
-                          <LanguageBasicIllustration />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
-                              Dasar (N5 / N4)
-                            </span>
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-sky-100 text-sky-700 border border-sky-200/80 shrink-0">
-                              Percakapan
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            Paham tata bahasa dasar &amp; instruksi teknis kerja tim
-                          </p>
-                        </div>
-                        <div className="shrink-0 pl-1">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                            selectedLanguageLevel === 'basic'
-                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
-                              : 'border-slate-300 bg-white'
-                          }`}>
-                            {selectedLanguageLevel === 'basic' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Card 3: Lancar */}
-                      <div
-                        onClick={() => setSelectedLanguageLevel('conversational')}
-                        className={`p-2.5 rounded-2xl border flex items-center gap-3 transition-all cursor-pointer relative ${
-                          selectedLanguageLevel === 'conversational'
-                            ? 'bg-indigo-50/70 border-2 border-[#4F46E5] ring-2 ring-indigo-500/10 shadow-xs'
-                            : 'bg-white border border-slate-200/90 hover:border-slate-300 hover:bg-slate-50/50 hover:shadow-2xs'
-                        }`}
-                      >
-                        <div className="w-16 h-13 sm:w-18 sm:h-14 rounded-xl bg-gradient-to-b from-slate-50 to-indigo-50/30 flex items-center justify-center shrink-0 border border-slate-100 overflow-hidden p-1">
-                          <LanguageFluentIllustration />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5 mb-0.5">
-                            <span className="text-xs sm:text-[13px] font-extrabold text-slate-900 leading-tight">
-                              Lancar (N3+)
-                            </span>
-                            <span className="text-[9px] font-bold uppercase px-1.5 py-0.2 rounded-full bg-purple-100 text-purple-700 border border-purple-200/80 shrink-0">
-                              Siap Kerja
-                            </span>
-                          </div>
-                          <p className="text-[11px] text-slate-500 font-medium leading-tight">
-                            Siap simulasi wawancara teknis di perusahaan Tokyo
-                          </p>
-                        </div>
-                        <div className="shrink-0 pl-1">
-                          <div className={`w-5 h-5 rounded-full flex items-center justify-center border transition-all ${
-                            selectedLanguageLevel === 'conversational'
-                              ? 'bg-[#4F46E5] border-[#4F46E5] text-white shadow-2xs'
-                              : 'border-slate-300 bg-white'
-                          }`}>
-                            {selectedLanguageLevel === 'conversational' && <Check className="w-3 h-3 stroke-[3]" />}
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ── TAHAP 4: TIKET PENERBANGAN RESMI ── */}
+          {/* Step 4: Official Boarding Pass Ticket */}
           {currentStep === 4 && (
-            <div className="max-w-md w-full mx-auto">
-              <div className="bg-white rounded-3xl border border-slate-200/90 shadow-md overflow-hidden text-left relative">
-                {/* Ticket Top Banner */}
-                <div className="bg-gradient-to-r from-[#4F46E5] via-[#4338CA] to-[#312E81] px-6 py-4.5 text-white flex items-center justify-between">
-                  <div>
-                    <span className="text-[9px] font-bold uppercase tracking-widest text-indigo-200">
-                      Official Boarding Pass
-                    </span>
-                    <h3 className="text-base font-black tracking-tight mt-0.5">
-                      CodeAbroad Global Journey
-                    </h3>
-                  </div>
-                  <div className="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center border border-white/20">
-                    <Plane className="w-4.5 h-4.5 text-white" />
-                  </div>
-                </div>
-
-                {/* Ticket Body Details */}
-                <div className="p-5 sm:p-6 space-y-3 text-xs sm:text-sm">
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Nama Rekayasa</span>
-                    <span className="font-bold text-slate-800">{completionResult?.name || user?.name || user?.username}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Rute Destinasi</span>
-                    <span className="font-bold text-[#4F46E5] flex items-center gap-1.5">
-                      Jakarta (CGK) <ArrowRight className="w-3.5 h-3.5" /> {selectedCountry?.name || 'Japan'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Spesialisasi</span>
-                    <span className="font-bold text-slate-800">{selectedCareerPath?.label || 'Backend Engineer'}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Teknologi Utama</span>
-                    <span className="font-bold text-[#4F46E5]">{formatSelectedStackLabel(selectedStackSlug)}</span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Tingkat Awal</span>
-                    <span className="font-bold text-slate-800 capitalize">
-                      {selectedLevel === 'beginner' ? 'Mulai dari Dasar' : 'Sudah Berpengalaman'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Target Waktu</span>
-                    <span className="font-bold text-slate-800">
-                      {selectedTimeline === '6_months'
-                        ? '6 Bulan (Sprint)'
-                        : selectedTimeline === '1_year'
-                        ? '1 Tahun (Ideal)'
-                        : 'Eksplorasi Mandiri'}
-                    </span>
-                  </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-2.5">
-                    <span className="text-slate-500">Bahasa Kerja</span>
-                    <span className="font-bold text-slate-800">
-                      {selectedLanguageLevel === 'none'
-                        ? 'Belum Ada (Nol)'
-                        : selectedLanguageLevel === 'basic'
-                        ? 'Dasar (N5/N4)'
-                        : 'Percakapan (N3+)'}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100">
-                    <div className="flex items-center gap-2 text-[#4F46E5] font-medium text-xs">
-                      <ShieldCheck className="w-4 h-4 text-[#4F46E5]" />
-                      <span>Paspor aktif &amp; kurikulum siap diakses</span>
-                    </div>
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200/80 text-[11px] font-bold">
-                      <Sparkles className="w-3 h-3 text-amber-500" />
-                      +50 XP
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <Step4BoardingPass
+              completionResult={completionResult}
+              user={user}
+              selectedCountry={selectedCountry}
+              selectedCareerPath={selectedCareerPath}
+              selectedStackSlug={selectedStackSlug}
+              selectedLevel={selectedLevel}
+              selectedTimeline={selectedTimeline}
+              selectedLanguageLevel={selectedLanguageLevel}
+            />
           )}
         </div>
 

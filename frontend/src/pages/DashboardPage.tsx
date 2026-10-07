@@ -5,7 +5,7 @@ import { api } from '../services/api'
 import { UserAvatar } from '../components/ui/UserAvatar'
 import type { AvatarStyle } from '../utils/avatar'
 import { MascotCard, type KodiPose } from '../components/ui/MascotCard'
-import { DoodleHanko } from '../components/ui/DoodleIcons'
+import { DoodleHanko } from '../components/illustrations/doodles'
 import { Logo } from '../components/ui/Logo'
 import { 
   LogOut, 
@@ -18,49 +18,18 @@ import {
   Zap, 
   Target 
 } from 'lucide-react'
+import {
+  INITIAL_ROADMAP_NODES,
+  INITIAL_DAILY_QUESTS,
+  getKodiPoseMessage,
+} from '../static/dashboard'
+import {
+  formatTechStack,
+  formatExperienceLevel,
+} from '../utils/formatters'
+import { formatTimezoneClock } from '../utils/date'
 
-// Helper to format tech stack slug into readable label with icon
-const formatTechStack = (slug?: string | null): string => {
-  switch (slug) {
-    case 'golang':
-      return '🐹 Go (Gin Framework)'
-    case 'java':
-      return '☕ Java (Spring Boot)'
-    case 'node':
-    case 'nodejs':
-      return '🟩 Node.js (Express)'
-    case 'react':
-    case 'react-ts':
-      return '⚛️ React'
-    case 'vue':
-      return '🟢 Vue.js'
-    case 'svelte':
-      return '🧡 Svelte'
-    case 'react_golang':
-    case 'react-golang':
-      return '⚛️🐹 React + Go + AWS'
-    case 'react_node':
-      return '⚛️🟩 React + Node + AWS'
-    case 'devops_aws':
-    case 'devops_cloud':
-    case 'docker-k8s-aws':
-      return '☁️ AWS Cloud Native'
-    case 'devops_gcp':
-      return '☁️ GCP Cloud Native'
-    case 'devops_terraform':
-      return '🟣 Terraform & GitOps'
-    default:
-      return slug ? slug.replace(/_/g, ' ').toUpperCase() : 'Go (Gin Framework)'
-  }
-}
 
-// Helper to format experience level
-const formatExperienceLevel = (level?: string | null): string => {
-  if (level === 'intermediate') {
-    return '🚀 Berpengalaman (2+ thn)'
-  }
-  return '🌱 Pemula (< 1-2 thn)'
-}
 
 export const DashboardPage = () => {
   const navigate = useNavigate()
@@ -94,17 +63,8 @@ export const DashboardPage = () => {
     return () => clearInterval(timer)
   }, [])
 
-  const tokyoTime = currentTime.toLocaleTimeString('id-ID', {
-    timeZone: 'Asia/Tokyo',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-
-  const jakartaTime = currentTime.toLocaleTimeString('id-ID', {
-    timeZone: 'Asia/Jakarta',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  const tokyoTime = formatTimezoneClock(currentTime, 'Asia/Tokyo')
+  const jakartaTime = formatTimezoneClock(currentTime, 'Asia/Jakarta')
 
   const handleAvatarStyleChange = (style: AvatarStyle) => {
     setAvatarStyle(style)
@@ -124,79 +84,6 @@ export const DashboardPage = () => {
 
   const firstName = user?.name?.split(' ')[0] || 'Developer'
   const destinationName = user?.country?.name || 'Tokyo, Jepang'
-
-  const poseMessages: Record<KodiPose, string> = {
-    welcome: `Konnichiwa, ${firstName}-san! Kodi siap mendampingi persiapan teknismu menuju karier global di ${destinationName}! 🎌`,
-    coding: `Mode fokus AKTIF! Ayo selesaikan quest harian untuk mendongkrak skor interview teknismu... 💻`,
-    celebrate: `Yatta! Paspor karier aktif, streak 1 hari bertambah, dan bonus +50 XP siap digunakan! 🎉`,
-  }
-
-  // Roadmap Nodes Data
-  const roadmapNodes = [
-    {
-      id: 1,
-      title: 'Fondasi Git & Go CLI',
-      desc: 'Penguasaan toolchain & syntax standar industri global',
-      status: 'completed',
-      xp: '+50 XP',
-      level: 'Lv. 1',
-    },
-    {
-      id: 2,
-      title: 'Clean Architecture & REST API',
-      desc: 'Implementasi 4-layer Gin, domain modeling & unit test',
-      status: 'active',
-      xp: '+80 XP',
-      level: 'Lv. 2',
-    },
-    {
-      id: 3,
-      title: 'Concurrency, Redis & Kafka',
-      desc: 'Goroutine pipeline, event streaming & distributed cache',
-      status: 'locked',
-      xp: '+120 XP',
-      level: 'Lv. 3',
-    },
-    {
-      id: 4,
-      title: 'Tokyo Technical Mock Interview',
-      desc: 'Simulasi live coding & interview kultur kerja Jepang',
-      status: 'locked',
-      xp: '+200 XP',
-      level: 'Lv. 4',
-    },
-  ]
-
-  // Daily Coding Quests
-  const dailyQuests = [
-    {
-      id: 1,
-      title: 'Pecahkan 1 Algoritma Two-Pointer',
-      category: 'LeetCode Tokyo',
-      xp: 25,
-      completed: true,
-      difficulty: 'Mudah',
-      diffColor: 'bg-emerald-100 text-emerald-800 border-emerald-300',
-    },
-    {
-      id: 2,
-      title: 'Implementasikan Domain Layer di Clean Arch',
-      category: 'Backend Mastery',
-      xp: 35,
-      completed: false,
-      difficulty: 'Menengah',
-      diffColor: 'bg-indigo-100 text-indigo-800 border-indigo-300',
-    },
-    {
-      id: 3,
-      title: 'Pelajari 5 Kosakata Tech Business Japanese',
-      category: 'Kultur & Bahasa',
-      xp: 40,
-      completed: false,
-      difficulty: 'Spesial',
-      diffColor: 'bg-purple-100 text-purple-800 border-purple-300',
-    },
-  ]
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans selection:bg-indigo-500/20">
@@ -332,7 +219,7 @@ export const DashboardPage = () => {
                       Peta Jalur Karier Tokyo (Roadmap)
                     </h2>
                     <p className="text-xs text-slate-500">
-                      Kurikulum kurasi untuk target {formatTechStack(user?.primary_stack)} di Jepang
+                      Kurikulum kurasi untuk target {formatTechStack(user?.primary_stack, { withEmoji: true })} di Jepang
                     </p>
                   </div>
                 </div>
@@ -344,7 +231,7 @@ export const DashboardPage = () => {
 
               {/* The Interactive Road Nodes */}
               <div className="space-y-3 relative before:absolute before:left-5 before:top-4 before:bottom-4 before:w-0.5 before:border-l-2 before:border-dashed before:border-slate-200">
-                {roadmapNodes.map((node) => {
+                {INITIAL_ROADMAP_NODES.map((node) => {
                   const isCompleted = node.status === 'completed'
                   const isActive = node.status === 'active'
                   const isLocked = node.status === 'locked'
@@ -432,7 +319,7 @@ export const DashboardPage = () => {
 
               {/* Quest Items List */}
               <div className="space-y-3">
-                {dailyQuests.map((quest) => (
+                {INITIAL_DAILY_QUESTS.map((quest) => (
                   <div
                     key={quest.id}
                     className="p-4 rounded-2xl border-2 border-[#E5E5E5] border-b-4 hover:border-slate-300 transition-all flex items-center justify-between gap-3 bg-white"
@@ -491,7 +378,7 @@ export const DashboardPage = () => {
                 variant="mint"
                 streak={user?.streak ?? 1}
                 xp={user?.xp ?? 50}
-                message={poseMessages[currentPose]}
+                message={getKodiPoseMessage(currentPose, firstName, destinationName)}
               />
 
               {/* Interactive Pose Switcher */}
@@ -583,7 +470,7 @@ export const DashboardPage = () => {
                   <div>
                     <span className="text-slate-400 text-[10px] block uppercase font-bold">Primary Stack</span>
                     <span className="font-bold text-emerald-700 truncate block mt-0.5">
-                      {formatTechStack(user?.primary_stack)}
+                      {formatTechStack(user?.primary_stack, { withEmoji: true })}
                     </span>
                   </div>
                 </div>

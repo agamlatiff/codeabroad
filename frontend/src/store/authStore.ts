@@ -58,7 +58,13 @@ export const useAuthStore = create<AuthState>((set) => {
         updateUser: (updatedFields) => {
             set((state) => {
                 if (!state.user) return state
-                const newUser = { ...state.user, ...updatedFields }
+                // Deep-preserve nested relation objects (country, career_path) if incoming payload does not supply them
+                const newUser = {
+                    ...state.user,
+                    ...updatedFields,
+                    country: updatedFields.country ?? state.user.country,
+                    career_path: updatedFields.career_path ?? state.user.career_path,
+                }
                 if (localStorage.getItem('user')) {
                     localStorage.setItem('user', JSON.stringify(newUser))
                 } else if (sessionStorage.getItem('user')) {

@@ -346,6 +346,32 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 		}
 	})
 
+	t.Run("happy path - completes onboarding with fluent language level and 6_months sprint", func(t *testing.T) {
+		userRepo.users["user-fluent"] = &domain.User{
+			ID:          "user-fluent",
+			IsOnboarded: false,
+		}
+		req := &domain.OnboardingRequest{
+			CountryID:      "c-jp",
+			CareerPathID:   "cp-backend",
+			PrimaryStack:   "golang",
+			Level:          "intermediate",
+			TargetTimeline: "6_months",
+			LanguageLevel:  "fluent",
+		}
+
+		res, err := uc.CompleteOnboarding(context.Background(), "user-fluent", req)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if res.LanguageLevel == nil || *res.LanguageLevel != "fluent" {
+			t.Errorf("expected LanguageLevel = fluent, got %v", res.LanguageLevel)
+		}
+		if res.TargetTimeline == nil || *res.TargetTimeline != "6_months" {
+			t.Errorf("expected TargetTimeline = 6_months, got %v", res.TargetTimeline)
+		}
+	})
+
 	t.Run("fails when user is not found", func(t *testing.T) {
 		req := &domain.OnboardingRequest{
 			CountryID:    "c-jp",

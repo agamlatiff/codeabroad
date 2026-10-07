@@ -1,7 +1,7 @@
 import doodleWelcome from '../../assets/kodi/doodle-welcome.png'
 import doodleCoding from '../../assets/kodi/doodle-coding.png'
 import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
-import { DoodleFire, DoodleStar } from './DoodleIcons'
+import { DoodleFire, DoodleStar } from '../illustrations/doodles'
 
 export type KodiPose = 'welcome' | 'coding' | 'celebrate'
 
