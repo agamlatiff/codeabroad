@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom'
 
 export interface LogoProps {
   size?: 'sm' | 'md' | 'lg'
-  variant?: 'matcha' | 'emerald' | 'slate' | 'white'
+  variant?: 'blue' | 'slate' | 'white' | 'emerald'
   showText?: boolean
   linkTo?: string | null
   className?: string
@@ -18,23 +18,23 @@ export const Logo: FC<LogoProps> = ({
 }) => {
   // Brand color mappings synchronizing mascot and wordmark colors
   const colors = {
-    // Duolingo vibrant matcha green
-    matcha: {
-      text: 'text-[#58CC02]',
-      fill: '#58CC02',
-      accent: '#46A302',
-    },
-    // Modern tech emerald
-    emerald: {
-      text: 'text-emerald-500',
-      fill: '#10B981',
-      accent: '#059669',
+    // Official Electric Tech Blue
+    blue: {
+      text: 'text-blue-600',
+      fill: '#2563EB',
+      accent: '#1D4ED8',
     },
     // Monochrome slate
     slate: {
       text: 'text-slate-900',
       fill: '#0F172A',
       accent: '#334155',
+    },
+    // Modern tech emerald
+    emerald: {
+      text: 'text-emerald-500',
+      fill: '#10B981',
+      accent: '#059669',
     },
     // White for dark mode or dark backgrounds
     white: {

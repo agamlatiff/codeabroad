@@ -1,15 +1,14 @@
 @import "tailwindcss";
 
 @theme {
-  /* Surfaces & Backgrounds (Duolingo Dark Matte) */
-  --color-duo-bg: #0A0E17;
-  --color-duo-canvas: #0F172A;
-  --color-duo-card: #111827;
-  --color-duo-elevated: #162032;
-  --color-duo-overlay: #1E293B;
-  --color-duo-modal: #0B1120;
-  --color-duo-border: rgba(255, 255, 255, 0.08);
-  --color-duo-hover: rgba(59, 130, 246, 0.4);
+  /* Surfaces & Backgrounds (Clean Light Mode Primary) */
+  --color-duo-bg: #FAFAF9;
+  --color-duo-canvas: #FFFFFF;
+  --color-duo-card: #FFFFFF;
+  --color-duo-elevated: #F1F5F9;
+  --color-duo-overlay: #F8FAFC;
+  --color-duo-border: #E2E8F0;
+  --color-duo-hover: #CBD5E1;
 
   /* Primary Brand: Electric Tech Blue */
   --color-duo-blue-400: #60A5FA;
@@ -63,21 +62,21 @@
   background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 100%);
 }
 
-/* Tactile Dark Form Control */
+/* Tactile Clean Light Form Control */
 .input-duo {
-  background-color: #0F172A;
-  border: 1.5px solid #1E293B;
-  color: #F8FAFC;
+  background-color: #FFFFFF;
+  border: 2px solid #E2E8F0;
+  color: #0F172A;
   border-radius: 1rem;
   transition: all 0.15s ease;
 }
 .input-duo:hover {
-  border-color: #334155;
+  border-color: #CBD5E1;
 }
 .input-duo:focus {
   outline: none;
   border-color: #2563EB;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.15);
 }
 
 /* Ambient Brand Gradients */
@@ -95,10 +94,13 @@
 }
 
 @layer base {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
   body {
     background-color: #FAFAF9;
     color: #0F172A;
-    font-family: 'Inter', 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'Plus Jakarta Sans', 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     min-height: 100vh;
     margin: 0;
     -webkit-font-smoothing: antialiased;
@@ -111,12 +113,12 @@
   font-family: 'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
 
-/* Custom Utilities for Japanese Tech Doodle Aesthetic */
+/* Custom Utilities for Duolingo Tactile 3D Aesthetic */
 .card-doodle {
   background-color: #FFFFFF;
-  border: 2px solid #0F172A;
+  border: 2px solid #E2E8F0;
   border-radius: 1.5rem;
-  box-shadow: 4px 4px 0px 0px #0F172A;
+  box-shadow: 0 4px 0 0 #CBD5E1;
 }
 
 .card-soft {
@@ -127,14 +129,14 @@
 }
 
 .btn-tactile {
-  border: 2px solid #0F172A;
-  box-shadow: 0 4px 0 0 #0F172A;
+  border: 2px solid #CBD5E1;
+  box-shadow: 0 4px 0 0 #CBD5E1;
   transition: all 0.15s ease;
 }
 
 .btn-tactile:hover {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 0 #0F172A;
+  transform: translateY(1px);
+  box-shadow: 0 3px 0 0 #CBD5E1;
 }
 
 .btn-tactile:active {

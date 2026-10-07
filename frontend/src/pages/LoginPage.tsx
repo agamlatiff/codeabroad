@@ -5,7 +5,8 @@ import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthField } from '../components/auth/AuthField'
 import { AuthDivider } from '../components/auth/AuthDivider'
 import { AuthCheckbox } from '../components/auth/AuthCheckbox'
-import { Mail, Lock, Loader2, AlertCircle } from 'lucide-react'
+import { Button3D } from '../components/ui/Button3D'
+import { Mail, Lock, AlertCircle } from 'lucide-react'
 
 export const LoginPage = () => {
   const { form, status, actions } = useLogin()
@@ -64,20 +65,23 @@ export const LoginPage = () => {
           />
           <button
             type="button"
-            className="text-xs font-medium text-[#4F46E5] hover:text-[#4338CA] hover:underline cursor-pointer"
+            className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
           >
             Lupa kata sandi?
           </button>
         </div>
 
-        {/* Submit Button with Elevated Glow */}
-        <button
+        {/* Submit Button with Duolingo 3D Tactile Push-Down */}
+        <Button3D
           type="submit"
-          disabled={status.loading}
-          className="w-full h-11 rounded-xl bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] active:scale-[0.99] text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 disabled:opacity-50 mt-2"
+          variant="blue"
+          size="md"
+          fullWidth
+          loading={status.loading}
+          className="mt-2 text-sm"
         >
-          {status.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Masuk Sekarang'}
-        </button>
+          Masuk Sekarang
+        </Button3D>
       </form>
 
       {/* ── 2. DIVIDER ── */}
@@ -93,7 +97,7 @@ export const LoginPage = () => {
       {/* ── 4. REGISTRATION FOOTER ── */}
       <div className="mt-4 sm:mt-5 text-center text-xs text-slate-500 font-normal">
         Belum punya akun?{' '}
-        <Link to="/register" className="text-[#4F46E5] font-semibold hover:underline">
+        <Link to="/register" className="text-blue-600 font-semibold hover:underline">
           Daftar sekarang
         </Link>
       </div>

@@ -5,7 +5,7 @@ import { DoodleFire, DoodleStar } from '../illustrations/doodles'
 
 export type KodiPose = 'welcome' | 'coding' | 'celebrate'
 
-interface MascotCardProps {
+export interface MascotCardProps {
   message?: string
   streak?: number
   xp?: number
@@ -39,10 +39,10 @@ export const MascotCard = ({
   return (
     <div className={`p-4 sm:p-5 md:p-6 rounded-2xl sm:rounded-3xl relative overflow-hidden flex flex-col items-center text-center transition-all ${bgStyles}`}>
       {/* Speech Bubble */}
-      <div className="relative mb-3 w-full max-w-[280px] sm:max-w-sm px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-white text-slate-900 border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0F172A] font-bold text-[11px] sm:text-xs leading-relaxed animate-fade-in z-10">
+      <div className="relative mb-3 w-full max-w-[280px] sm:max-w-sm px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-white text-slate-900 border-2 border-slate-200/90 shadow-[0_3px_0_0_#CBD5E1] font-bold text-[11px] sm:text-xs leading-relaxed animate-fade-in z-10">
         <span>{message}</span>
         {/* Tail Bubble */}
-        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-900 rotate-45" />
+        <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-200/90 rotate-45" />
       </div>
 
       {/* Kodi 2D Doodle Mascot (Responsive scale: compact on mobile, expansive on desktop) */}

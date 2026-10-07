@@ -77,7 +77,7 @@ export const INITIAL_DAILY_QUESTS: DailyQuestItem[] = [
     xp: 35,
     completed: false,
     difficulty: 'Menengah',
-    diffColor: 'bg-indigo-100 text-indigo-800 border-indigo-300',
+    diffColor: 'bg-blue-100 text-blue-800 border-blue-300',
   },
   {
     id: 3,
@@ -86,7 +86,7 @@ export const INITIAL_DAILY_QUESTS: DailyQuestItem[] = [
     xp: 40,
     completed: false,
     difficulty: 'Spesial',
-    diffColor: 'bg-purple-100 text-purple-800 border-purple-300',
+    diffColor: 'bg-amber-100 text-amber-800 border-amber-300',
   },
 ]
 

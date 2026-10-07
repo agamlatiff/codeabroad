@@ -3,6 +3,7 @@ import { UserAvatar } from '../components/ui/UserAvatar'
 import { MascotCard } from '../components/ui/MascotCard'
 import { DoodleHanko } from '../components/illustrations/doodles'
 import { Logo } from '../components/ui/Logo'
+import { Button3D } from '../components/ui/Button3D'
 import {
   LogOut,
   Plane,
@@ -10,7 +11,6 @@ import {
   Flame,
   Lock,
   Check,
-  Zap,
   Target,
   Sparkles
 } from 'lucide-react'
@@ -28,7 +28,7 @@ export const DashboardPage = () => {
   const { user, firstName, destinationName } = profile
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans selection:bg-indigo-500/20">
+    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans selection:bg-blue-500/20">
 
       {/* ── 1. TOP HUD NAVBAR (DUAL CLOCK + GAMIFIED STATS) ── */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b-2 border-[#E5E5E5] px-4 sm:px-8 py-3">
@@ -67,9 +67,9 @@ export const DashboardPage = () => {
               <span>{user?.streak ?? 1} Hari</span>
             </div>
 
-            {/* XP Pill */}
-            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-indigo-50 border-2 border-indigo-200 border-b-4 border-b-indigo-300 shadow-2xs font-black text-xs text-indigo-950">
-              <Zap className="w-4 h-4 text-indigo-600 fill-indigo-600" />
+            {/* XP Pill (Amber Gold Duolingo) */}
+            <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-50 border-2 border-amber-200 border-b-4 border-b-amber-300 shadow-2xs font-black text-xs text-amber-950">
+              <Sparkles className="w-4 h-4 text-amber-600 fill-amber-500" />
               <span>{user?.xp ?? 50} XP</span>
             </div>
 
@@ -92,19 +92,19 @@ export const DashboardPage = () => {
       {/* ── 2. MAIN CONTAINER ── */}
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6">
 
-        {/* Welcome Hero Banner */}
-        <div className="relative rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-8 shadow-xl overflow-hidden border border-slate-800">
+        {/* Welcome Hero Banner (Electric Blue Clean Stage) */}
+        <div className="relative rounded-3xl bg-gradient-to-r from-blue-600 via-blue-700 to-sky-700 text-white p-6 sm:p-8 shadow-md overflow-hidden border-2 border-blue-600 shadow-[0_4px_0_0_#1D4ED8]">
           {/* Subtle Ambient Light */}
-          <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-0 right-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div className="space-y-2 max-w-xl">
               <div className="flex items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs font-black flex items-center gap-1">
+                <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/30 text-xs font-black flex items-center gap-1">
                   <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
                   KARIER AKTIF • PASPOR TERDAFTAR
                 </span>
-                <span className="text-xs text-slate-400 font-mono">
+                <span className="text-xs text-blue-100 font-mono">
                   Level {user?.current_level ?? 1} Developer
                 </span>
               </div>
@@ -113,31 +113,31 @@ export const DashboardPage = () => {
                 Selamat Datang, {firstName}-san! 🎌
               </h1>
 
-              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+              <p className="text-xs sm:text-sm text-blue-100 leading-relaxed font-normal">
                 Persiapan teknis menuju panggung global di <strong className="text-white font-bold">{destinationName}</strong> telah dimulai.
                 Selesaikan quest harian untuk membangun portofolio berstandar internasional dan membuka sponsor visa.
               </p>
             </div>
 
             {/* Quick Level Progress Card */}
-            <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-2xl p-4 sm:p-5 shrink-0 min-w-[240px] space-y-3">
+            <div className="bg-white/15 backdrop-blur-md border border-white/25 rounded-2xl p-4 sm:p-5 shrink-0 min-w-[240px] space-y-3">
               <div className="flex items-center justify-between text-xs font-bold">
-                <span className="text-slate-300">Level Saat Ini</span>
+                <span className="text-blue-100">Level Saat Ini</span>
                 <span className="text-amber-300 font-black flex items-center gap-1">
                   <Award className="w-4 h-4" /> Lv. {user?.current_level ?? 1}
                 </span>
               </div>
 
-              <div className="w-full h-3 bg-black/40 rounded-full overflow-hidden p-0.5">
+              <div className="w-full h-3 bg-black/20 rounded-full overflow-hidden p-0.5">
                 <div
-                  className="h-full bg-gradient-to-r from-amber-400 to-orange-500 rounded-full transition-all duration-500"
+                  className="h-full bg-gradient-to-r from-amber-300 to-amber-500 rounded-full transition-all duration-500"
                   style={{ width: `${Math.min(100, ((user?.xp ?? 50) % 100))}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-300">
+              <div className="flex items-center justify-between text-[11px] text-blue-100">
                 <span>{user?.xp ?? 50} / 100 XP</span>
-                <span className="text-emerald-300 font-bold">50 XP menuju Lv. 2</span>
+                <span className="text-white font-bold">50 XP menuju Lv. 2</span>
               </div>
             </div>
           </div>
@@ -153,7 +153,7 @@ export const DashboardPage = () => {
             <div className="bg-white rounded-3xl border-2 border-[#E5E5E5] border-b-4 p-6 shadow-xs space-y-5">
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center text-indigo-600">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center text-blue-600">
                     <Target className="w-5 h-5" />
                   </div>
                   <div>
@@ -166,7 +166,7 @@ export const DashboardPage = () => {
                   </div>
                 </div>
 
-                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full border border-indigo-200 hidden sm:inline-block">
+                <span className="text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1 rounded-full border border-blue-200 hidden sm:inline-block">
                   Tahap 1 Aktif
                 </span>
               </div>
@@ -182,7 +182,7 @@ export const DashboardPage = () => {
                     <div
                       key={node.id}
                       className={`relative flex items-start gap-4 p-3.5 sm:p-4 rounded-2xl border-2 transition-all ${isActive
-                        ? 'border-[#4F46E5] border-b-4 border-b-[#3730A3] bg-indigo-50/50 shadow-xs'
+                        ? 'border-blue-600 border-b-4 border-b-blue-700 bg-blue-50/50 shadow-xs'
                         : isCompleted
                           ? 'border-emerald-200 bg-emerald-50/30'
                           : 'border-slate-200 bg-slate-50/60 opacity-60'
@@ -193,7 +193,7 @@ export const DashboardPage = () => {
                         className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 z-10 font-bold text-xs ${isCompleted
                           ? 'bg-emerald-500 text-white shadow-xs'
                           : isActive
-                            ? 'bg-indigo-600 text-white ring-4 ring-indigo-200 animate-pulse'
+                            ? 'bg-blue-600 text-white ring-4 ring-blue-200 animate-pulse'
                             : 'bg-slate-200 text-slate-500'
                           }`}
                       >
@@ -216,7 +216,7 @@ export const DashboardPage = () => {
                             className={`text-[10px] font-black px-2 py-0.5 rounded-md border shrink-0 ${isCompleted
                               ? 'bg-emerald-100 text-emerald-800 border-emerald-300'
                               : isActive
-                                ? 'bg-indigo-600 text-white border-indigo-700'
+                                ? 'bg-blue-600 text-white border-blue-700'
                                 : 'bg-slate-100 text-slate-500 border-slate-200'
                               }`}
                           >
@@ -283,21 +283,19 @@ export const DashboardPage = () => {
                           </span>
                         </div>
                         <span className="text-[11px] text-slate-400 font-medium">
-                          {quest.category} • Hadiah: <strong className="text-indigo-600 font-extrabold">+{quest.xp} XP</strong>
+                          {quest.category} • Hadiah: <strong className="text-amber-600 font-extrabold">+{quest.xp} XP</strong>
                         </span>
                       </div>
                     </div>
 
-                    <button
-                      type="button"
+                    <Button3D
+                      variant="blue"
+                      size="sm"
                       disabled={quest.completed}
-                      className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition-all shrink-0 cursor-pointer ${quest.completed
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
-                        : 'bg-[#4F46E5] hover:bg-[#4338CA] text-white border-b-2 border-b-[#312E81] shadow-2xs active:translate-y-0.5'
-                        }`}
+                      className="text-xs px-3.5 py-1.5"
                     >
                       {quest.completed ? 'Selesai ✓' : 'Mulai'}
-                    </button>
+                    </Button3D>
                   </div>
                 ))}
               </div>
@@ -312,7 +310,7 @@ export const DashboardPage = () => {
               <MascotCard
                 name="Kodi"
                 pose={mascot.pose}
-                variant="mint"
+                variant="sky"
                 streak={user?.streak ?? 1}
                 xp={user?.xp ?? 50}
                 message={mascot.message}
@@ -354,14 +352,14 @@ export const DashboardPage = () => {
             </div>
 
             {/* 2. Digital Career Passport Boarding Pass Card */}
-            <div className="rounded-3xl bg-white border-2 border-slate-900 shadow-[6px_6px_0px_0px_#0F172A] overflow-hidden">
+            <div className="rounded-3xl bg-white border-2 border-slate-200 shadow-[0_4px_0_0_#CBD5E1] overflow-hidden">
               {/* Ticket Top Header */}
-              <div className="px-5 py-3 bg-slate-950 text-white flex items-center justify-between">
-                <div className="flex items-center gap-2 text-xs font-black tracking-wider text-slate-200">
-                  <Plane className="w-4 h-4 text-indigo-400" />
+              <div className="px-5 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-black tracking-wider text-white">
+                  <Plane className="w-4 h-4 text-blue-200" />
                   <span>PASPOR KARIER GLOBAL (搭乗券)</span>
                 </div>
-                <span className="font-mono text-[11px] font-bold text-slate-400">
+                <span className="font-mono text-[11px] font-bold text-blue-100">
                   CA-2026
                 </span>
               </div>

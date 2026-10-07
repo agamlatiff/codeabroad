@@ -9,11 +9,11 @@ export const LanguageZeroIllustration = ({ className = 'w-full h-full' }: { clas
     </defs>
 
     {/* Wooden Easel / Desk Podium */}
-    <rect x="30" y="80" width="100" height="8" rx="4" fill="#EEF2FF" stroke="#C7D2FE" strokeWidth="1.5" />
+    <rect x="30" y="80" width="100" height="8" rx="4" fill="#DBEAFE" stroke="#C7D2FE" strokeWidth="1.5" />
 
     {/* Japanese Washi Flashcard with Shadow */}
     <rect x="42" y="22" width="48" height="58" rx="8" fill="#F8FAFC" />
-    <rect x="40" y="20" width="48" height="58" rx="8" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2.4" />
+    <rect x="40" y="20" width="48" height="58" rx="8" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.4" />
     {/* Authentic Bold Brush Hiragana 'A' (あ) */}
     <text x="64" y="58" fill="#0F172A" fontSize="34" fontWeight="bold" fontFamily="'Hiragino Sans', 'Noto Sans JP', sans-serif" textAnchor="middle">
       あ
@@ -42,8 +42,8 @@ export const LanguageBasicIllustration = ({ className = 'w-full h-full' }: { cla
     <circle cx="118" cy="68" r="3" fill="#818CF8" />
 
     {/* Primary Japanese Speech Bubble */}
-    <rect x="24" y="16" width="70" height="40" rx="12" fill="#4F46E5" />
-    <polygon points="46,56 52,66 60,56" fill="#4F46E5" />
+    <rect x="24" y="16" width="70" height="40" rx="12" fill="#2563EB" />
+    <polygon points="46,56 52,66 60,56" fill="#2563EB" />
     <text x="59" y="42" fill="#FFFFFF" fontSize="15" fontWeight="bold" fontFamily="'Noto Sans JP', sans-serif" textAnchor="middle">
       こんにちは！
     </text>
@@ -75,19 +75,19 @@ export const LanguageFluentIllustration = ({ className = 'w-full h-full' }: { cl
     </defs>
 
     {/* Tokyo Skyline Silhouette in Soft Background */}
-    <rect x="22" y="40" width="16" height="48" rx="2" fill="#EEF2FF" />
-    <rect x="42" y="28" width="18" height="60" rx="2" fill="#EEF2FF" />
-    <rect x="108" y="34" width="20" height="54" rx="2" fill="#EEF2FF" />
-    <rect x="132" y="46" width="14" height="42" rx="2" fill="#EEF2FF" />
+    <rect x="22" y="40" width="16" height="48" rx="2" fill="#DBEAFE" />
+    <rect x="42" y="28" width="18" height="60" rx="2" fill="#DBEAFE" />
+    <rect x="108" y="34" width="20" height="54" rx="2" fill="#DBEAFE" />
+    <rect x="132" y="46" width="14" height="42" rx="2" fill="#DBEAFE" />
 
     {/* Lanyard Ribbon Strap */}
-    <path d="M 64 6 L 80 28 L 96 6" stroke="#4F46E5" strokeWidth="3" strokeLinecap="round" />
+    <path d="M 64 6 L 80 28 L 96 6" stroke="#2563EB" strokeWidth="3" strokeLinecap="round" />
     <rect x="74" y="26" width="12" height="6" rx="2" fill="#94A3B8" />
 
     {/* Tech Employee Credential ID Card */}
-    <rect x="54" y="30" width="52" height="60" rx="7" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2.4" />
+    <rect x="54" y="30" width="52" height="60" rx="7" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.4" />
     {/* Photo Placeholder */}
-    <rect x="62" y="38" width="36" height="20" rx="4" fill="#EEF2FF" />
+    <rect x="62" y="38" width="36" height="20" rx="4" fill="#DBEAFE" />
     <circle cx="80" cy="46" r="5" fill="#818CF8" />
     <path d="M 72 56 C 72 52, 76 50, 80 50 C 84 50, 88 52, 88 56 Z" fill="#818CF8" />
     {/* ID Barcode / Details */}
@@ -118,14 +118,14 @@ export const LanguageBusinessIllustration = ({ className = 'w-full h-full' }: { 
     </defs>
 
     {/* Modern Tokyo Tower Silhouette in Sunset Violet */}
-    <path d="M 40 85 L 50 25 L 56 25 L 66 85 Z" fill="#EEF2FF" />
+    <path d="M 40 85 L 50 25 L 56 25 L 66 85 Z" fill="#DBEAFE" />
     <polygon points="53,16 50,25 56,25" fill="#C7D2FE" />
     <line x1="53" y1="12" x2="53" y2="16" stroke="#818CF8" strokeWidth="2" />
     <rect x="44" y="55" width="18" height="6" rx="2" fill="#C7D2FE" />
 
     {/* Executive Briefcase / Business Dossier */}
-    <rect x="76" y="38" width="56" height="42" rx="7" fill="#FFFFFF" stroke="#4F46E5" strokeWidth="2.2" />
-    <path d="M 94 38 L 94 32 C 94 29, 114 29, 114 32 L 114 38" stroke="#4F46E5" strokeWidth="2" fill="none" />
+    <rect x="76" y="38" width="56" height="42" rx="7" fill="#FFFFFF" stroke="#2563EB" strokeWidth="2.2" />
+    <path d="M 94 38 L 94 32 C 94 29, 114 29, 114 32 L 114 38" stroke="#2563EB" strokeWidth="2" fill="none" />
     <line x1="76" y1="56" x2="132" y2="56" stroke="#E0E7FF" strokeWidth="1.5" />
     <rect x="100" y="53" width="8" height="6" rx="1.5" fill="#F59E0B" />
 

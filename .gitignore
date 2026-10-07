@@ -142,3 +142,6 @@ coverage/
 .tmp/
 tmp/
 temp/
+
+
+prompt.txt

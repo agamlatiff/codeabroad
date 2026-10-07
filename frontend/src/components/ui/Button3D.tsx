@@ -35,7 +35,7 @@ export const Button3D = ({
     amber: 'bg-[#D97706] hover:bg-[#F59E0B] active:bg-[#D97706] text-white shadow-[0_5px_0_0_#B45309] hover:shadow-[0_6px_0_0_#B45309]',
     rose: 'bg-[#E11D48] hover:bg-[#F43F5E] active:bg-[#E11D48] text-white shadow-[0_5px_0_0_#BE123C] hover:shadow-[0_6px_0_0_#BE123C]',
     white: 'bg-white hover:bg-slate-50 active:bg-white text-slate-900 border border-slate-200 shadow-[0_4px_0_0_#CBD5E1] hover:shadow-[0_5px_0_0_#CBD5E1]',
-    ghost: 'bg-transparent text-slate-400 hover:text-white hover:bg-white/5 active:translate-y-0 active:shadow-none shadow-none',
+    ghost: 'bg-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:translate-y-0 active:shadow-none shadow-none',
   }
 
   const sizes = {

@@ -5,8 +5,9 @@ import { AuthField } from '../components/auth/AuthField'
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthDivider } from '../components/auth/AuthDivider'
+import { Button3D } from '../components/ui/Button3D'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
-import { User, AtSign, Mail, Lock, Loader2, AlertCircle } from 'lucide-react'
+import { User, AtSign, Mail, Lock, AlertCircle } from 'lucide-react'
 
 export const RegisterPage = () => {
   const { form, status, actions } = useRegister()
@@ -90,14 +91,17 @@ export const RegisterPage = () => {
           <PasswordStrengthMeter password={form.password} />
         </div>
 
-        {/* Submit Button */}
-        <button
+        {/* Submit Button with Duolingo 3D Tactile Push-Down */}
+        <Button3D
           type="submit"
-          disabled={status.loading}
-          className="w-full h-11 rounded-xl bg-gradient-to-r from-[#4F46E5] to-[#4338CA] hover:from-[#4338CA] hover:to-[#3730A3] active:scale-[0.99] text-white font-semibold text-sm transition-all duration-200 flex items-center justify-center cursor-pointer shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/30 disabled:opacity-50 mt-2.5"
+          variant="blue"
+          size="md"
+          fullWidth
+          loading={status.loading}
+          className="mt-2.5 text-sm"
         >
-          {status.loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Daftar Sekarang'}
-        </button>
+          Daftar Sekarang
+        </Button3D>
       </form>
 
       {/* ── 2. DIVIDER ── */}
@@ -113,7 +117,7 @@ export const RegisterPage = () => {
       {/* ── 4. LOGIN FOOTER ── */}
       <div className="mt-3.5 sm:mt-4 text-center text-xs text-slate-500 font-normal">
         Sudah punya akun?{' '}
-        <Link to="/login" className="text-[#4F46E5] font-semibold hover:underline">
+        <Link to="/login" className="text-blue-600 font-semibold hover:underline">
           Masuk sekarang
         </Link>
       </div>

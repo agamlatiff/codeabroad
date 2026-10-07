@@ -43,16 +43,16 @@ export const ProgressBar3D: FC<ProgressBar3DProps> = ({
     <div className={`w-full ${className}`}>
       {showLabel && (
         <div className="flex items-center justify-between text-xs font-bold mb-1.5 px-0.5">
-          <span className="text-slate-400">{label || 'Progress'}</span>
-          <span className="font-mono text-white">
+          <span className="text-slate-500">{label || 'Progress'}</span>
+          <span className="font-mono text-slate-900 font-extrabold">
             {value} / {max}
           </span>
         </div>
       )}
 
-      {/* Recessed Track Container */}
+      {/* Recessed Track Container (Light Mode) */}
       <div
-        className={`w-full ${sizeStyles} bg-[#1E293B] rounded-full p-[2px] border border-white/5 shadow-inner relative overflow-hidden`}
+        className={`w-full ${sizeStyles} bg-slate-200 rounded-full p-[2px] border border-slate-300/60 shadow-inner relative overflow-hidden`}
       >
         {/* Animated Fill Bar */}
         <div

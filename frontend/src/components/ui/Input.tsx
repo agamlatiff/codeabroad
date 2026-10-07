@@ -48,12 +48,12 @@ export const Input = ({
         <input
           id={id}
           type={inputType}
-          className={`w-full min-h-[44px] h-11 sm:h-11.5 bg-white border rounded-xl text-base sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal font-sans ${
+          className={`w-full min-h-[44px] h-11 sm:h-11.5 bg-white border-2 rounded-2xl text-base sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal font-sans ${
             icon ? 'pl-10.5 pr-4' : 'px-3.5'
           } ${isPassword ? 'pr-11' : ''} ${
             error
-              ? 'border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10'
-              : 'border-slate-200 hover:border-slate-300 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10'
+              ? 'border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15'
+              : 'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15'
           } ${className}`}
           {...props}
         />

@@ -19,13 +19,13 @@ export const BadgePill = ({
   className = '',
 }: BadgePillProps) => {
   const variantStyles = {
-    xp: 'bg-amber-500/10 border-amber-500/30 text-amber-300 shadow-inner',
-    streak: 'bg-orange-500/10 border-orange-500/30 text-orange-400 shadow-inner',
-    verified: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300 shadow-inner',
-    blue: 'bg-blue-500/10 border-blue-500/30 text-blue-300 shadow-inner',
-    cyan: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-300 shadow-inner',
-    neutral: 'bg-slate-800 border-slate-700 text-slate-300',
-    error: 'bg-rose-500/10 border-rose-500/30 text-rose-300 shadow-inner',
+    xp: 'bg-amber-50 border-amber-200 text-amber-800',
+    streak: 'bg-orange-50 border-orange-200 text-orange-800',
+    verified: 'bg-emerald-50 border-emerald-200 text-emerald-800',
+    blue: 'bg-blue-50 border-blue-200 text-blue-700',
+    cyan: 'bg-sky-50 border-sky-200 text-sky-800',
+    neutral: 'bg-slate-100 border-slate-200 text-slate-700',
+    error: 'bg-rose-50 border-rose-200 text-rose-700',
   }[variant]
 
   const sizeStyles = {

@@ -9,7 +9,7 @@ export const AuthCheckbox = ({ label, id, ...props }: AuthCheckboxProps) => (
     <input
       id={id}
       type="checkbox"
-      className="w-4 h-4 rounded border-slate-300 text-[#4F46E5] focus:ring-[#4F46E5] cursor-pointer"
+      className="w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
       {...props}
     />
     <span className="text-xs text-slate-600 font-medium">{label}</span>

@@ -41,7 +41,7 @@ export const KodiMascot: FC<KodiMascotProps> = ({
   const auraColor = {
     welcome: 'bg-blue-500/20',
     celebrate: 'bg-emerald-500/25',
-    coding: 'bg-indigo-500/20',
+    coding: 'bg-blue-500/20',
     proud: 'bg-amber-500/25',
   }[emotion]
 
@@ -57,7 +57,7 @@ export const KodiMascot: FC<KodiMascotProps> = ({
       {/* Optional Speech Bubble above mascot */}
       {speechText && speechDirection === 'bottom' && (
         <div className="mb-2 z-20">
-          <SpeechBubble direction="bottom" variant="dark">
+          <SpeechBubble direction="bottom" variant="light">
             {speechText}
           </SpeechBubble>
         </div>
@@ -82,7 +82,7 @@ export const KodiMascot: FC<KodiMascotProps> = ({
       {/* Optional Speech Bubble below mascot */}
       {speechText && speechDirection === 'top' && (
         <div className="mt-2 z-20">
-          <SpeechBubble direction="top" variant="dark">
+          <SpeechBubble direction="top" variant="light">
             {speechText}
           </SpeechBubble>
         </div>

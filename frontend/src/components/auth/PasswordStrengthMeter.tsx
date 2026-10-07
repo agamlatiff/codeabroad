@@ -47,7 +47,7 @@ export const PasswordStrengthMeter: FC<PasswordStrengthMeterProps> = ({ password
         return {
           score: 4,
           label: 'Sangat Kuat',
-          colorClass: 'text-indigo-600',
+          colorClass: 'text-blue-600',
           hint: 'Kata sandi sangat aman & terlindungi 🛡️',
         }
       default:
@@ -77,7 +77,7 @@ export const PasswordStrengthMeter: FC<PasswordStrengthMeterProps> = ({ password
                   ? 'bg-amber-500'
                   : score === 3
                   ? 'bg-emerald-500'
-                  : 'bg-indigo-600'
+                  : 'bg-blue-600'
                 : 'bg-slate-200'
             }`}
           />

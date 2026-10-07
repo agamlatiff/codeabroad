@@ -24,7 +24,7 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
   return (
     <div className="min-h-screen min-h-dvh lg:h-screen lg:h-dvh w-full bg-[#FAFAF9] flex flex-col lg:flex-row lg:overflow-hidden font-sans">
       {/* ── 1. DESKTOP ONLY (>= 1024px): EXPANSIVE 50/50 SPLIT-SCREEN WITH 3D GLASS PODIUM ── */}
-      <div className="hidden lg:flex lg:w-[50%] xl:w-[48%] h-full bg-gradient-to-br from-[#4F46E5] via-[#4338CA] to-[#312E81] text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden [clip-path:polygon(0_0,100%_0,85%_100%,0%_100%)] shadow-2xl shrink-0 select-none">
+      <div className="hidden lg:flex lg:w-[50%] xl:w-[48%] h-full bg-gradient-to-br from-blue-600 via-blue-700 to-sky-800 text-white p-10 xl:p-14 flex-col justify-between relative overflow-hidden [clip-path:polygon(0_0,100%_0,85%_100%,0%_100%)] shadow-2xl shrink-0 select-none">
         {/* Top: CodeAbroad Logo */}
         <div className="flex items-center justify-between z-10">
           <Logo variant="white" size="md" />
@@ -49,12 +49,12 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
 
               {/* ── MANGA / COMIC SPEECH BUBBLE (DESKTOP) ── */}
               <div className="absolute -top-10 -right-8 z-30 select-none transition-all duration-300 ease-out group-hover:scale-105 group-hover:-rotate-2 group-hover:-translate-y-1">
-                <div className="relative bg-white text-slate-900 px-4 py-2.5 rounded-[22px] border-2 border-slate-900 shadow-[3px_3px_0px_0px_#0F172A] max-w-[220px] text-center">
+                <div className="relative bg-white text-slate-900 px-4 py-2.5 rounded-[22px] border-2 border-slate-200 shadow-[0_4px_0_0_#CBD5E1] max-w-[220px] text-center">
                   <p className="text-[13px] font-bold tracking-tight leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
                     {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
                   </p>
                   {/* Manga Tail pointing towards Kodi */}
-                  <div className="absolute -bottom-2.5 left-6 w-3.5 h-3.5 bg-white border-b-2 border-l-2 border-slate-900 -rotate-45" />
+                  <div className="absolute -bottom-2.5 left-6 w-3.5 h-3.5 bg-white border-b-2 border-l-2 border-slate-200 -rotate-45" />
                 </div>
               </div>
 
@@ -95,18 +95,18 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
           </div>
 
           {/* Integrated Kodi Companion Card (Mobile & Tablet) */}
-          <div className="relative bg-gradient-to-r from-indigo-50/90 via-white to-indigo-50/60 border border-indigo-100 rounded-2xl p-3 sm:p-3.5 shadow-sm flex items-center gap-3">
+          <div className="relative bg-gradient-to-r from-blue-50/90 via-white to-sky-50/60 border border-blue-100 rounded-2xl p-3 sm:p-3.5 shadow-sm flex items-center gap-3">
             <img
               src={heroImage || doodleWelcome}
               alt="Kodi Mascot"
               className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0 drop-shadow-sm select-none"
             />
             <div className="flex-1 min-w-0 pl-1 pr-1">
-              <div className="relative inline-block bg-white text-slate-800 text-[11px] sm:text-xs font-semibold px-3 py-2 rounded-2xl border border-indigo-100 shadow-sm leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
+              <div className="relative inline-block bg-white text-slate-800 text-[11px] sm:text-xs font-semibold px-3 py-2 rounded-2xl border border-blue-100 shadow-sm leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
                 {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
 
                 {/* Speech Bubble Arrow pointing left towards Kodi */}
-                <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 bg-white border-l border-b border-indigo-100 rotate-45" />
+                <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 bg-white border-l border-b border-blue-100 rotate-45" />
               </div>
             </div>
           </div>

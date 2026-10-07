@@ -2,7 +2,7 @@
  * ============================================================================
  * CodeAbroad Design Tokens — Comprehensive System Specification
  * ============================================================================
- * Visual Identity: 90% Duolingo Dark Taste + 10% CodeAbroad Electric Blue Soul
+ * Visual Identity: 90% Duolingo Clean Light Mode Taste + 10% CodeAbroad Electric Blue Soul
  *
  * This file serves as the Single Source of Truth (SSOT) for colors, typography,
  * 3D tactile physics, gamification variables, elevations, progress bars, form states,
@@ -12,26 +12,26 @@
 export const TOKENS = {
   // ── 1. COLOR SYSTEM ────────────────────────────────────────────────────────
   colors: {
-    // A. Surfaces & Backgrounds (Duolingo Dark Matte Aesthetic)
+    // A. Surfaces & Backgrounds (Duolingo Clean Light Mode Aesthetic)
     surface: {
-      ground: '#0A0E17',        // Deepest obsidian / OLED stage canvas
-      canvas: '#0F172A',        // Secondary page background / slate base
-      card: '#111827',          // Primary card container / stage backdrop
-      elevated: '#162032',      // 2x2 metric tiles, interactive item containers
-      overlay: '#1E293B',       // Dropdowns, floating pills, hover surfaces
-      modal: '#0B1120',         // Modal windows & flight ticket cockpit
-      border: 'rgba(255, 255, 255, 0.08)',       // Subtle card boundary
-      borderHover: 'rgba(59, 130, 246, 0.4)',    // Active/hover electric glow boundary
-      borderFocus: '#3B82F6',                    // Keyboard focus ring
+      ground: '#FAFAF9',        // Warm canvas / stone base (#FAFAF9)
+      canvas: '#FFFFFF',        // Primary container / pure white surface
+      card: '#FFFFFF',          // Stage card container
+      elevated: '#F1F5F9',      // 2x2 metric tiles, interactive item containers
+      overlay: '#F8FAFC',       // Dropdowns, floating pills, hover surfaces
+      modal: '#FFFFFF',         // Modal windows & flight ticket cockpit
+      border: '#E2E8F0',        // Subtle card boundary
+      borderHover: '#CBD5E1',   // Active/hover boundary
+      borderFocus: '#2563EB',   // Keyboard focus ring (Electric Blue)
     },
 
-    // B. Light Mode Surfaces (Contextual Landing & High-Contrast Documents)
-    lightSurface: {
-      ground: '#FAFAF9',
-      card: '#FFFFFF',
-      elevated: '#F1F5F9',
-      border: '#E2E8F0',
-      borderHover: '#CBD5E1',
+    // B. Dark Contrast Surfaces (Optional High-Contrast Contexts)
+    darkSurface: {
+      ground: '#0A0E17',
+      card: '#111827',
+      elevated: '#162032',
+      border: 'rgba(255, 255, 255, 0.08)',
+      borderHover: 'rgba(59, 130, 246, 0.4)',
     },
 
     // C. Primary Brand: Electric Tech Blue (Replacing Duolingo Green)
@@ -132,13 +132,13 @@ export const TOKENS = {
       },
     },
 
-    // G. Typography Colors
+    // G. Typography Colors (Clean Light Mode High-Contrast)
     text: {
-      primary: '#F8FAFC',       // Pure high-contrast white
-      secondary: '#94A3B8',     // Muted slate for descriptions & subheads
-      muted: '#64748B',         // Subtle footnotes, watermarks, airport labels
-      accent: '#60A5FA',        // Clickable interactive link text
-      inverse: '#0F172A',       // Text on bright white/gold cards
+      primary: '#0F172A',       // High-contrast slate-900
+      secondary: '#475569',     // Slate-600 descriptions & subheads
+      muted: '#94A3B8',         // Subtle footnotes, watermarks, airport labels
+      accent: '#2563EB',        // Clickable interactive link text (Electric Blue)
+      inverse: '#FFFFFF',       // Text on dark/blue buttons
     },
   },
 
@@ -203,8 +203,8 @@ export const TOKENS = {
       md: '14px',        // Standard quest & lesson tracker
       lg: '20px',        // Hero chunky milestone bar
     },
-    trackBg: '#1E293B',  // Recessed dark groove
-    trackBorder: 'rgba(255, 255, 255, 0.05)',
+    trackBg: '#E2E8F0',  // Recessed light groove
+    trackBorder: '#CBD5E1',
     colors: {
       blue: '#2563EB',
       cyan: '#38BDF8',
@@ -213,33 +213,33 @@ export const TOKENS = {
       emerald: '#10B981',
     },
     glow: {
-      blue: '0 0 12px rgba(37, 99, 235, 0.5)',
-      emerald: '0 0 12px rgba(16, 185, 129, 0.5)',
-      xp: '0 0 12px rgba(245, 158, 11, 0.5)',
+      blue: '0 0 12px rgba(37, 99, 235, 0.35)',
+      emerald: '0 0 12px rgba(16, 185, 129, 0.35)',
+      xp: '0 0 12px rgba(245, 158, 11, 0.35)',
     },
   },
 
-  // ── 5. FORM & INPUT CONTROLS (TACTILE DARK FORM SYSTEM) ────────────────────
+  // ── 5. FORM & INPUT CONTROLS (TACTILE CLEAN LIGHT FORM SYSTEM) ────────────
   forms: {
-    inputBg: '#0F172A',
-    inputBgHover: '#131D35',
-    borderResting: '#1E293B',
-    borderHover: '#334155',
-    focusRing: '0 0 0 3px rgba(37, 99, 235, 0.25)',
-    errorRing: '0 0 0 3px rgba(244, 63, 94, 0.25)',
-    placeholder: '#64748B',
-    text: '#F8FAFC',
+    inputBg: '#FFFFFF',
+    inputBgHover: '#F8FAFC',
+    borderResting: '#E2E8F0',
+    borderHover: '#CBD5E1',
+    focusRing: '0 0 0 4px rgba(37, 99, 235, 0.15)',
+    errorRing: '0 0 0 4px rgba(244, 63, 94, 0.15)',
+    placeholder: '#94A3B8',
+    text: '#0F172A',
     disabledOpacity: 0.5,
   },
 
-  // ── 6. GLASSMORPHISM & BLUR PRESETS ────────────────────────────────────────
+  // ── 6. GLASSMORPHISM & BLUR PRESETS (CLEAN FROSTED LIGHT) ─────────────────
   glass: {
     blurSubtle: 'blur(4px)',
     blurMedium: 'blur(12px)',
     blurDeep: 'blur(20px)',
-    surfaceNav: 'rgba(11, 17, 32, 0.8)',
-    surfaceModal: 'rgba(15, 23, 42, 0.85)',
-    backdropDim: 'rgba(10, 14, 23, 0.85)',
+    surfaceNav: 'rgba(255, 255, 255, 0.9)',
+    surfaceModal: 'rgba(255, 255, 255, 0.98)',
+    backdropDim: 'rgba(15, 23, 42, 0.45)',
   },
 
   // ── 7. TYPOGRAPHY SCALE ────────────────────────────────────────────────────
@@ -348,7 +348,7 @@ export const TOKENS = {
     emotions: {
       welcome: { label: 'Greeting / Hello', aura: 'rgba(59, 130, 246, 0.25)' },
       celebrate: { label: 'Yatta / Milestone Success', aura: 'rgba(16, 185, 129, 0.3)' },
-      coding: { label: 'Deep Focus / Quest Active', aura: 'rgba(99, 102, 241, 0.25)' },
+      coding: { label: 'Deep Focus / Quest Active', aura: 'rgba(37, 99, 235, 0.25)' },
       proud: { label: 'Boarding Pass / Offer Unlocked', aura: 'rgba(245, 158, 11, 0.3)' },
       warning: { label: 'Streak Alert / Daily Reminder', aura: 'rgba(251, 146, 60, 0.3)' },
     },
@@ -360,15 +360,15 @@ export const TOKENS = {
     },
   },
 
-  // ── 12. DUOLINGO COMIC SPEECH BUBBLE ───────────────────────────────────────
+  // ── 12. DUOLINGO COMIC SPEECH BUBBLE (CLEAN LIGHT SSOT) ───────────────────
   speechBubble: {
-    bg: '#162032',
-    bgLight: '#FFFFFF',
-    border: 'rgba(255, 255, 255, 0.12)',
-    borderLight: '#0F172A',
+    bg: '#FFFFFF',
+    bgDark: '#162032',
+    border: '#E2E8F0',
+    borderDark: 'rgba(255, 255, 255, 0.12)',
     tailSize: '8px',
     radius: '1.25rem',  // 20px
-    shadow: '0 4px 14px rgba(0, 0, 0, 0.3)',
+    shadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
   },
 
   // ── 13. GAMIFIED MICRO-INTERACTION KEYFRAMES ──────────────────────────────

@@ -43,12 +43,12 @@ export const AuthField = ({
         <input
           id={id}
           type={inputType}
-          className={`w-full h-11 bg-white border rounded-xl text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal ${
+          className={`w-full h-11 bg-white border-2 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal ${
             icon ? 'pl-10' : 'pl-3.5'
           } ${isPassword ? 'pr-11' : 'pr-3.5'} ${
             error
-              ? 'border-rose-300 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10'
-              : 'border-slate-200 hover:border-slate-300 focus:border-[#4F46E5] focus:ring-4 focus:ring-[#4F46E5]/10'
+              ? 'border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15'
+              : 'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15'
           } ${className}`}
           {...props}
         />

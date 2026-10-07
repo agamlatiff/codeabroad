@@ -20,7 +20,7 @@ export const MetricTile = ({
   subtitle,
   icon,
   variant = 'default',
-  surface = 'dark',
+  surface = 'light',
   className = '',
 }: MetricTileProps) => {
   const isLight = surface === 'light'

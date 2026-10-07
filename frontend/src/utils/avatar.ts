@@ -29,12 +29,12 @@ export const getInitials = (name?: string, username?: string): string => {
  */
 export const getDeterministicGradient = (seed: string): string => {
   const gradients = [
-    'from-indigo-500 to-purple-600',
+    'from-blue-600 to-sky-400',
     'from-blue-500 to-cyan-500',
-    'from-emerald-500 to-teal-600',
-    'from-amber-500 to-orange-600',
-    'from-rose-500 to-pink-600',
-    'from-violet-500 to-indigo-600',
+    'from-emerald-500 to-teal-500',
+    'from-amber-500 to-orange-500',
+    'from-rose-500 to-pink-500',
+    'from-sky-500 to-blue-600',
   ]
 
   let hash = 0
