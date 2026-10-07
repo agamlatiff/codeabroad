@@ -315,42 +315,42 @@ The Onboarding experience will be built under **`frontend/src/pages/OnboardingPa
 ## ✅ 6. End-to-End Implementation Tracker
 
 ### Phase A: Database Seeds & Backend (Golang Clean Architecture)
-- [ ] **Migration 000002:** Create `000002_seed_and_enhance_onboarding.up.sql` and `.down.sql`.
-- [ ] **Domain Entities & Interfaces:**
+- [x] **Migration 000002:** Create `000002_seed_and_enhance_onboarding.up.sql` and `.down.sql`.
+- [x] **Domain Entities & Interfaces:**
   - Define `Country`, `CareerPath`, `TechStack` in `internal/domain/`.
   - Add `OnboardingRequest` DTO and repository interfaces (`CountryRepository`, `CareerPathRepository`).
-- [ ] **Repository Layer:**
+- [x] **Repository Layer:**
   - Implement `country_repository.go` (`GetAll`, `GetByID`, `GetByCode`).
   - Implement `career_path_repository.go` (`GetAll`, `GetByID`, `GetBySlug`).
   - Extend `user_repository.go` to support onboarding updates and eager-loading country & career path.
-- [ ] **Usecase Layer:**
+- [x] **Usecase Layer:**
   - Implement `onboarding_usecase.go` (`CompleteOnboarding`, `GetMasterData`).
   - Award initial 50 XP bonus on onboarding completion.
-- [ ] **HTTP Delivery Layer:**
+- [x] **HTTP Delivery Layer:**
   - Create `onboarding_handler.go` with `/countries`, `/career-paths`, and `/onboarding` endpoints.
   - Register endpoints in Gin router.
-- [ ] **Automated Tests:**
+- [x] **Automated Tests:**
   - Author unit tests covering valid onboarding, inactive country validation, invalid stack validation, and duplicate submission.
 
 ---
 
 ### Phase B: Frontend (React + TypeScript + Zustand)
-- [ ] **Zustand Store Updates:** Update `authStore.ts` to store populated `country`, `career_path`, and `primary_stack`.
-- [ ] **Route Guard Updates:** Update `ProtectedRoute.tsx` to enforce onboarding redirection.
-- [ ] **Onboarding Page (`OnboardingPage.tsx`):**
+- [x] **Zustand Store Updates:** Update `authStore.ts` to store populated `country`, `career_path`, and `primary_stack`.
+- [x] **Route Guard Updates:** Update `ProtectedRoute.tsx` to enforce onboarding redirection.
+- [x] **Onboarding Page (`OnboardingPage.tsx`):**
   - Implement multi-step state with progress indicator bar.
   - Step 1: Destination Selector (Japan active, DE/SG coming soon).
   - Step 2: Track & Stack Selector (React/Go unlocked, others coming soon).
   - Step 3: Experience Calibration (Beginner vs Intermediate).
   - Step 4: Stamped Developer Boarding Pass with Hanko seal.
-- [ ] **Dashboard Personalization:**
+- [x] **Dashboard Personalization:**
   - Dynamically display the user's chosen country flag, name, salary benchmarks, and tech track.
 
 ---
 
 ### Phase C: Integration, Container & Walkthrough
-- [ ] **Docker Compose Verification:** Ensure seeds run and containers build cleanly.
-- [ ] **End-to-End Walkthrough:** New user registration ➔ redirected to onboarding ➔ complete wizard ➔ personalized dashboard.
+- [x] **Docker Compose Verification:** Ensure seeds run and containers build cleanly.
+- [x] **End-to-End Walkthrough:** New user registration ➔ redirected to onboarding ➔ complete wizard ➔ personalized dashboard.
 
 ---
 
