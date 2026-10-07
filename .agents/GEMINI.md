@@ -79,6 +79,32 @@ The following stack is locked. Do not introduce new libraries or tools without e
   - **Mobile (<768px):** Task-first UX. Primary interaction elements (login/register form, inputs, primary action) must be immediately visible and ergonomic without tedious scrolling. Heavy decorative hero sections must either adapt into sleek, compact companion banners or yield priority to the primary form.
 - **Beauty & UX Harmony:** Responsiveness must be both comfortable from a UX standpoint (accessible, ergonomic touch targets min 44px, fast flow) and beautiful in UI (intentional whitespace, harmonious typography scale, no awkward overflow or clipped decorative stages).
 
+### 🎨 Visual Design System (90% Duolingo Dark + 10% CodeAbroad Identity)
+- **Reference Image:** `.agents/references/duolingo-dark-reference.png` (MUST ALWAYS follow the visual taste and gamified feel in this reference).
+- **90% Duolingo Dark Taste & Physics:**
+  - **Surface & Backgrounds:** Matte dark charcoal / deep obsidian (`#0A0E17`, `#0F172A`, `#131B2E`) with subtle radial ambient lighting / glows behind hero elements.
+  - **Tactile 3D Buttons:** Chunky, pill-shaped buttons (`rounded-full` or `rounded-2xl`) with physical bottom bevel shadow depth (e.g. `shadow-[0_4px_0_0_#1D4ED8]` or `shadow-[0_5px_0_0_#1E40AF]` that depresses down into `active:translate-y-1 active:shadow-none`).
+  - **Metrics & Cards:** Clean rounded-3xl dark containers, 2x2 metric stat grids with bold display typography, subtle borders (`border-white/10`).
+  - **Anti-AI Slop Rule:** Absolutely NO generic SaaS filler bullet cards, NO fake feature lists with random gray icon boxes, NO cluttered multi-column widgets. Keep hero stages focused, bold, and satisfying.
+- **10% CodeAbroad Soul & Branding:**
+  - **Brand Color:** Electric Tech Blue / Cobalt (`#2563EB`, `#3B82F6`, `#60A5FA` with neon cyan accents `#38BDF8`), replacing Duolingo neon green.
+  - **Brand Mascot:** Kodi (the friendly, tech-savvy companion).
+  - **Narrative:** Global developer flight / boarding pass to international tech hubs (CGK ✈️ HND/BER/SIN), visa sponsor track, core stack specialization.
+
+### 🧩 Design Tokens & Reusable UI Primitives
+- **Token Source of Truth:** `frontend/src/tokens/index.ts` (`TOKENS`) & `frontend/src/index.css` (`@theme`).
+- **Tailwind Tokens:**
+  - Backgrounds: `bg-duo-bg` (`#0A0E17`), `bg-duo-card` (`#111827`), `bg-duo-elevated` (`#162032`)
+  - Borders: `border-duo-border`, `border-duo-hover`
+  - Colors: `text-duo-blue`, `text-duo-cyan`, `text-duo-xp`, `text-duo-streak`, `text-duo-verified`
+  - 3D Shadows: `shadow-tactile-blue`, `shadow-tactile-cyan`, `shadow-tactile-dark`
+- **Reusable UI Primitives (`frontend/src/components/ui/`):**
+  - `<Button3D>`: Chunky 3D Duolingo button with push-down click physics (`variant="blue"|"cyan"|"dark"|"emerald"|"ghost"`).
+  - `<MetricTile>`: 2x2 gamified stat tile for metrics, XP, streaks, milestones.
+  - `<Card3D>`: Matte dark obsidian card container with subtle borders & optional ambient glow.
+  - `<BadgePill>`: Gamified status pill (`variant="xp"|"verified"|"blue"|"cyan"|"neutral"`).
+- **Rule of Thumb:** Always use `<Button3D>`, `<MetricTile>`, `<Card3D>`, and `<BadgePill>` for new gamified features instead of writing ad-hoc arbitrary Tailwind values.
+
 ---
 
 ## 🔌 API Design

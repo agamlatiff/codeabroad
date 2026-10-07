@@ -14,6 +14,8 @@ import {
 } from '../illustrations/onboarding'
 import { TRACK_BADGES, STACK_DESCRIPTIONS } from '../../static/onboarding'
 import { formatStackBadge } from '../../utils/formatters'
+import { BadgePill } from '../ui'
+import { triggerHaptic } from '../../utils/haptics'
 
 export type Step2SubStep = 'mindset' | 'track' | 'stack' | 'stack_fe' | 'stack_be'
 
@@ -74,25 +76,31 @@ export const Step2CareerTracks = ({
             role="button"
             tabIndex={0}
             aria-pressed={mindsetTab === 'specialist'}
-            onClick={() => onSwitchMindsetTab('specialist')}
+            onClick={() => {
+              triggerHaptic('tap')
+              onSwitchMindsetTab('specialist')
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
+                triggerHaptic('tap')
                 onSwitchMindsetTab('specialist')
               }
             }}
-            className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[380px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+            className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[380px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
               mindsetTab === 'specialist'
-                ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
             }`}
           >
             {/* Top Illustration Frame */}
             <div className="w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative bg-[#F8FAFC]">
               <SpecialistMindsetIllustration />
-              <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-indigo-100 text-indigo-700 border-indigo-200">
-                3 Jalur Tersedia
-              </span>
+              <div className="absolute top-2.5 right-2.5">
+                <BadgePill variant="blue" size="sm">
+                  3 Jalur Tersedia
+                </BadgePill>
+              </div>
             </div>
 
             <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -101,7 +109,7 @@ export const Step2CareerTracks = ({
                 Specialist Track
               </h2>
             </div>
-            <p className="text-xs font-semibold text-indigo-600 mb-2">Deep Domain Mastery</p>
+            <p className="text-xs font-semibold text-blue-600 mb-2">Deep Domain Mastery</p>
             <p className="text-xs sm:text-sm text-slate-500 leading-relaxed font-normal mb-4">
               Fokus mendalam pada satu ranah rekayasa software spesifik dengan standar arsitektur mendalam.
             </p>
@@ -115,7 +123,7 @@ export const Step2CareerTracks = ({
 
             <div className="mt-3 text-xs font-semibold">
               {mindsetTab === 'specialist' ? (
-                <span className="text-[#4F46E5] flex items-center justify-center gap-1">
+                <span className="text-blue-600 flex items-center justify-center gap-1">
                   <Check className="w-3.5 h-3.5" /> Mindset Terpilih
                 </span>
               ) : (
@@ -129,25 +137,31 @@ export const Step2CareerTracks = ({
             role="button"
             tabIndex={0}
             aria-pressed={mindsetTab === 'generalist'}
-            onClick={() => onSwitchMindsetTab('generalist')}
+            onClick={() => {
+              triggerHaptic('tap')
+              onSwitchMindsetTab('generalist')
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter' || e.key === ' ') {
                 e.preventDefault()
+                triggerHaptic('tap')
                 onSwitchMindsetTab('generalist')
               }
             }}
-            className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[380px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+            className={`rounded-3xl p-6 sm:p-7 flex flex-col text-center transition-all duration-200 max-w-[380px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
               mindsetTab === 'generalist'
-                ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
             }`}
           >
             {/* Top Illustration Frame */}
             <div className="w-full h-40 sm:h-44 rounded-2xl flex items-center justify-center mb-4 overflow-hidden relative bg-[#F8FAFC]">
               <GeneralistMindsetIllustration />
-              <span className="absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border bg-amber-100 text-amber-700 border-amber-200">
-                3 Jalur Tersedia
-              </span>
+              <div className="absolute top-2.5 right-2.5">
+                <BadgePill variant="neutral" size="sm">
+                  3 Jalur Tersedia
+                </BadgePill>
+              </div>
             </div>
 
             <div className="flex items-center justify-center gap-1.5 mb-1">
@@ -170,7 +184,7 @@ export const Step2CareerTracks = ({
 
             <div className="mt-3 text-xs font-semibold">
               {mindsetTab === 'generalist' ? (
-                <span className="text-[#4F46E5] flex items-center justify-center gap-1">
+                <span className="text-blue-600 flex items-center justify-center gap-1">
                   <Check className="w-3.5 h-3.5" /> Mindset Terpilih
                 </span>
               ) : (
@@ -186,14 +200,17 @@ export const Step2CareerTracks = ({
         <div className="flex flex-col items-center w-full">
           {/* Subtle Mindset Context Header */}
           <div className="flex items-center gap-2 mb-6">
-            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-indigo-50 border border-indigo-200/80 text-indigo-700 text-xs font-bold shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-blue-50 border border-blue-200/80 text-blue-700 text-xs font-bold shadow-2xs">
               <span>{mindsetTab === 'specialist' ? '🎯' : '🌐'}</span>
               <span>{mindsetTab === 'specialist' ? 'Specialist Track' : 'Generalist Track'}</span>
             </span>
             <button
               type="button"
-              onClick={() => setTrackSubStep('mindset')}
-              className="text-xs text-slate-400 hover:text-indigo-600 font-semibold cursor-pointer transition-colors"
+              onClick={() => {
+                triggerHaptic('tap')
+                setTrackSubStep('mindset')
+              }}
+              className="text-xs text-slate-400 hover:text-blue-600 font-semibold cursor-pointer transition-colors"
             >
               (Ubah Mindset)
             </button>
@@ -206,7 +223,7 @@ export const Step2CareerTracks = ({
               : careerPaths.filter((p) => ['fullstack', 'product_engineer', 'solutions_architect'].includes(p.slug))
             ).map((path) => {
               const isSelected = selectedCareerPathId === path.id
-              const badge = TRACK_BADGES[path.slug] || { text: 'Jalur Aktif', color: 'bg-indigo-100 text-indigo-700 border-indigo-200' }
+              const badge = TRACK_BADGES[path.slug] || { text: 'Jalur Aktif', color: 'bg-blue-100 text-blue-700 border-blue-200' }
               const isComingSoon = path.slug === 'product_engineer' || path.slug === 'solutions_architect'
               const TrackIllustration = TRACK_ILLUSTRATION_MAP[path.slug] || BackendIllustration
 
@@ -219,21 +236,23 @@ export const Step2CareerTracks = ({
                   aria-pressed={isSelected}
                   onClick={() => {
                     if (!isComingSoon) {
+                      triggerHaptic('tap')
                       onSelectCareerPath(path)
                     }
                   }}
                   onKeyDown={(e) => {
                     if ((e.key === 'Enter' || e.key === ' ') && !isComingSoon) {
                       e.preventDefault()
+                      triggerHaptic('tap')
                       onSelectCareerPath(path)
                     }
                   }}
-                  className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+                  className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
                     isComingSoon
                       ? 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
                       : isSelected
-                      ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                      : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                      ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                      : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
                   }`}
                 >
                   {/* Top Track Illustration Frame */}
@@ -245,12 +264,16 @@ export const Step2CareerTracks = ({
                     <TrackIllustration />
 
                     {/* Track Badge */}
-                    <span
-                      className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${badge.color}`}
-                    >
-                      {isComingSoon && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                      {badge.text}
-                    </span>
+                    <div className="absolute top-2.5 right-2.5">
+                      <BadgePill
+                        variant={isComingSoon ? 'neutral' : (isSelected ? 'blue' : 'neutral')}
+                        size="sm"
+                        className={isComingSoon ? 'opacity-80' : ''}
+                      >
+                        {isComingSoon && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {badge.text}
+                      </BadgePill>
+                    </div>
                   </div>
 
                   {/* Title & Description */}
@@ -283,20 +306,22 @@ export const Step2CareerTracks = ({
                 aria-pressed={isSelected}
                 onClick={() => {
                   if (isActive) {
+                    triggerHaptic('tap')
                     onSelectStackSlug(stack.slug)
                   }
                 }}
                 onKeyDown={(e) => {
                   if ((e.key === 'Enter' || e.key === ' ') && isActive) {
                     e.preventDefault()
+                    triggerHaptic('tap')
                     onSelectStackSlug(stack.slug)
                   }
                 }}
-                className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+                className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
                   isActive
                     ? isSelected
-                      ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                      : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                      ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                      : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
                     : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
                 }`}
               >
@@ -309,16 +334,16 @@ export const Step2CareerTracks = ({
                   <TechIcon slug={stack.slug} className="w-20 h-20" />
 
                   {/* Stack Badge */}
-                  <span
-                    className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                      isActive
-                        ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                        : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                    }`}
-                  >
-                    {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                    {formatStackBadge(stack.badge, isActive)}
-                  </span>
+                  <div className="absolute top-2.5 right-2.5">
+                    <BadgePill
+                      variant={!isActive ? 'neutral' : (isSelected ? 'blue' : 'neutral')}
+                      size="sm"
+                      className={!isActive ? 'opacity-80' : ''}
+                    >
+                      {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                      {formatStackBadge(stack.badge, isActive)}
+                    </BadgePill>
+                  </div>
                 </div>
 
                 {/* Title & Description */}
@@ -338,8 +363,8 @@ export const Step2CareerTracks = ({
       {trackSubStep === 'stack_fe' && (
         <div className="flex flex-col items-center w-full">
           {/* Stepper Progress Pill */}
-          <div className="mb-5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/90 text-xs font-semibold text-[#4F46E5] shadow-2xs">
-            <span className="w-2 h-2 rounded-full bg-[#4F46E5] animate-pulse"></span>
+          <div className="mb-5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/90 text-xs font-semibold text-blue-700 shadow-2xs">
+            <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
             <span>Langkah 1 dari 2: Rekayasa Frontend</span>
           </div>
 
@@ -357,6 +382,7 @@ export const Step2CareerTracks = ({
                   aria-pressed={isSelected}
                   onClick={() => {
                     if (isActive) {
+                      triggerHaptic('tap')
                       onSelectFullstackFe(stack.slug)
                       onSelectStackSlug(`${stack.slug}_${selectedFullstackBe}`)
                     }
@@ -364,15 +390,16 @@ export const Step2CareerTracks = ({
                   onKeyDown={(e) => {
                     if ((e.key === 'Enter' || e.key === ' ') && isActive) {
                       e.preventDefault()
+                      triggerHaptic('tap')
                       onSelectFullstackFe(stack.slug)
                       onSelectStackSlug(`${stack.slug}_${selectedFullstackBe}`)
                     }
                   }}
-                  className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+                  className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
                     isActive
                       ? isSelected
-                        ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                        : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                        ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                        : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
                       : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
                   }`}
                 >
@@ -385,16 +412,16 @@ export const Step2CareerTracks = ({
                     <TechIcon slug={stack.slug} className="w-20 h-20" />
 
                     {/* Stack Badge */}
-                    <span
-                      className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                        isActive
-                          ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                          : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                      }`}
-                    >
-                      {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                      {formatStackBadge(stack.badge, isActive)}
-                    </span>
+                    <div className="absolute top-2.5 right-2.5">
+                      <BadgePill
+                        variant={!isActive ? 'neutral' : (isSelected ? 'blue' : 'neutral')}
+                        size="sm"
+                        className={!isActive ? 'opacity-80' : ''}
+                      >
+                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {formatStackBadge(stack.badge, isActive)}
+                      </BadgePill>
+                    </div>
                   </div>
 
                   {/* Title & Description */}
@@ -415,13 +442,13 @@ export const Step2CareerTracks = ({
       {trackSubStep === 'stack_be' && (
         <div className="flex flex-col items-center w-full">
           {/* Stepper Progress Pill with Selected FE */}
-          <div className="mb-5 inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-indigo-50 border border-indigo-200/90 text-xs font-semibold text-[#4F46E5] shadow-2xs">
+          <div className="mb-5 inline-flex items-center gap-2.5 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200/90 text-xs font-semibold text-blue-700 shadow-2xs">
             <span>
-              Frontend: <strong className="text-indigo-900">{selectedFullstackFe === 'react' ? 'React + TypeScript' : selectedFullstackFe}</strong>
+              Frontend: <strong className="text-blue-900">{selectedFullstackFe === 'react' ? 'React + TypeScript' : selectedFullstackFe}</strong>
             </span>
-            <span className="text-indigo-300">➔</span>
-            <span className="flex items-center gap-1.5 text-indigo-700">
-              <span className="w-2 h-2 rounded-full bg-[#4F46E5] animate-pulse"></span>
+            <span className="text-blue-300">➔</span>
+            <span className="flex items-center gap-1.5 text-blue-700">
+              <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
               Langkah 2 dari 2: Pilih Backend Pendamping
             </span>
           </div>
@@ -440,6 +467,7 @@ export const Step2CareerTracks = ({
                   aria-pressed={isSelected}
                   onClick={() => {
                     if (isActive) {
+                      triggerHaptic('tap')
                       onSelectFullstackBe(stack.slug)
                       onSelectStackSlug(`${selectedFullstackFe}_${stack.slug}`)
                     }
@@ -447,15 +475,16 @@ export const Step2CareerTracks = ({
                   onKeyDown={(e) => {
                     if ((e.key === 'Enter' || e.key === ' ') && isActive) {
                       e.preventDefault()
+                      triggerHaptic('tap')
                       onSelectFullstackBe(stack.slug)
                       onSelectStackSlug(`${selectedFullstackFe}_${stack.slug}`)
                     }
                   }}
-                  className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+                  className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[310px] sm:max-w-[330px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
                     isActive
                       ? isSelected
-                        ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                        : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                        ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                        : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
                       : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
                   }`}
                 >
@@ -468,16 +497,16 @@ export const Step2CareerTracks = ({
                     <TechIcon slug={stack.slug} className="w-20 h-20" />
 
                     {/* Stack Badge */}
-                    <span
-                      className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                        isActive
-                          ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                          : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                      }`}
-                    >
-                      {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                      {formatStackBadge(stack.badge, isActive)}
-                    </span>
+                    <div className="absolute top-2.5 right-2.5">
+                      <BadgePill
+                        variant={!isActive ? 'neutral' : (isSelected ? 'blue' : 'neutral')}
+                        size="sm"
+                        className={!isActive ? 'opacity-80' : ''}
+                      >
+                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {formatStackBadge(stack.badge, isActive)}
+                      </BadgePill>
+                    </div>
                   </div>
 
                   {/* Title & Description */}

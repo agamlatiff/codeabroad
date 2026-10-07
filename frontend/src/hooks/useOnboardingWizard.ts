@@ -85,22 +85,38 @@ export const useOnboardingWizard = () => {
         setStep(4)
       }, 350)
     },
-    onError: (err: any) => {
+    onError: (err: unknown) => {
       setIsLanding(false)
+      const errorObj = err as {
+        response?: {
+          status?: number
+          data?: { code?: string; error?: string; message?: string }
+        }
+        message?: string
+      }
       // Gracefully handle 409 Conflict if user is already onboarded
       if (
-        err?.response?.status === 409 ||
-        err?.message?.includes('ALREADY_ONBOARDED') ||
-        err?.response?.data?.code === 'ALREADY_ONBOARDED'
+        errorObj?.response?.status === 409 ||
+        errorObj?.message?.includes('ALREADY_ONBOARDED') ||
+        errorObj?.response?.data?.code === 'ALREADY_ONBOARDED'
       ) {
         reset()
         updateUser({ is_onboarded: true })
         navigate('/dashboard', { replace: true })
         return
       }
-      setFormError(err.message || 'Gagal menyelesaikan onboarding. Silakan coba lagi.')
+      const backendMessage =
+        errorObj?.response?.data?.error ||
+        errorObj?.response?.data?.message ||
+        errorObj?.message ||
+        'Gagal menyelesaikan onboarding. Silakan coba lagi.'
+      setFormError(backendMessage)
     },
   })
+
+  // Active entities
+  const selectedCountry = countries.find((c) => c.id === form.countryId)
+  const selectedCareerPath = careerPaths.find((c) => c.id === form.careerPathId) || careerPaths[0]
 
   // Handle career path selection
   const handleSelectCareerPath = (path: CareerPath) => {
@@ -153,7 +169,7 @@ export const useOnboardingWizard = () => {
   }
 
   // Submit onboarding selections to backend
-  const handleSubmitOnboarding = async () => {
+  const handleSubmitOnboarding = () => {
     if (!form.countryId || !form.careerPathId || !form.stackSlug) {
       setFormError('Mohon lengkapi preferensi pilihanmu terlebih dahulu.')
       return
@@ -162,8 +178,7 @@ export const useOnboardingWizard = () => {
     setIsLanding(true)
     setFormError(null)
 
-    const flightDurationPromise = new Promise((resolve) => setTimeout(resolve, 1500))
-    const mutationPromise = completeMutation.mutateAsync({
+    completeMutation.mutate({
       country_id: form.countryId,
       career_path_id: form.careerPathId,
       primary_stack: form.stackSlug,
@@ -171,17 +186,7 @@ export const useOnboardingWizard = () => {
       target_timeline: form.timeline,
       language_level: form.languageLevel,
     })
-
-    try {
-      await Promise.all([flightDurationPromise, mutationPromise])
-    } catch {
-      // Handled in completeMutation.onError
-    }
   }
-
-  // Active entities
-  const selectedCountry = countries.find((c) => c.id === form.countryId)
-  const selectedCareerPath = careerPaths.find((c) => c.id === form.careerPathId) || careerPaths[0]
 
   // Step validation
   const isStepValid = useCallback(() => {
@@ -248,23 +253,8 @@ export const useOnboardingWizard = () => {
         handleSubmitOnboarding()
       }
     } else if (currentStep === 4) {
-      if (completionResult) {
-        updateUser({
-          is_onboarded: true,
-          xp: completionResult.xp,
-          current_level: completionResult.current_level,
-          streak: completionResult.streak,
-          primary_stack: completionResult.primary_stack,
-          target_timeline: completionResult.target_timeline,
-          language_level: completionResult.language_level,
-          country: completionResult.country,
-          career_path: completionResult.career_path,
-          level: completionResult.level,
-        })
-      } else {
-        updateUser({ is_onboarded: true })
-      }
       reset()
+      updateUser({ is_onboarded: true })
       navigate('/dashboard', { replace: true })
     }
   }
@@ -292,6 +282,9 @@ export const useOnboardingWizard = () => {
           trackSubStep: selectedCareerPath?.slug === 'fullstack' ? 'stack_be' : 'stack',
         })
       }
+    } else if (currentStep === 4) {
+      setStep(3)
+      setNavigation({ step3SubStep: 'readiness' })
     }
   }
 

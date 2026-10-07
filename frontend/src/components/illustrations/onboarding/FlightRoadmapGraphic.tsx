@@ -111,10 +111,10 @@ export const FlightRoadmapGraphic = ({
 
           {/* Flight Path Active Ribbon */}
           <linearGradient id="scenicFlightGrad" x1="0%" y1="100%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#4F46E5" />
-            <stop offset="45%" stopColor="#6366F1" />
-            <stop offset="80%" stopColor="#818CF8" />
-            <stop offset="100%" stopColor="#4F46E5" />
+            <stop offset="0%" stopColor="#2563EB" />
+            <stop offset="45%" stopColor="#3B82F6" />
+            <stop offset="80%" stopColor="#60A5FA" />
+            <stop offset="100%" stopColor="#2563EB" />
           </linearGradient>
 
           {/* Monas Golden Flame Radial */}
@@ -138,15 +138,15 @@ export const FlightRoadmapGraphic = ({
 
           {/* Mt Fuji Twilight Gradient */}
           <linearGradient id="fujiTwilightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#E0E7FF" />
-            <stop offset="60%" stopColor="#C7D2FE" />
+            <stop offset="0%" stopColor="#DBEAFE" />
+            <stop offset="60%" stopColor="#BFDBFE" />
             <stop offset="100%" stopColor="#F1F5F9" />
           </linearGradient>
 
           {/* Airplane Jet Contrail */}
           <linearGradient id="contrailGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stopColor="#4F46E5" stopOpacity="0" />
-            <stop offset="100%" stopColor="#4F46E5" stopOpacity="0.5" />
+            <stop offset="0%" stopColor="#2563EB" stopOpacity="0" />
+            <stop offset="100%" stopColor="#2563EB" stopOpacity="0.5" />
           </linearGradient>
 
           {/* Airplane Elevation Drop Shadow */}

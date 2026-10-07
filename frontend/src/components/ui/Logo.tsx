@@ -11,7 +11,7 @@ export interface LogoProps {
 
 export const Logo: FC<LogoProps> = ({
   size = 'md',
-  variant = 'matcha',
+  variant = 'slate',
   showText = true,
   linkTo = '/',
   className = '',

@@ -1,5 +1,99 @@
 @import "tailwindcss";
 
+@theme {
+  /* Surfaces & Backgrounds (Duolingo Dark Matte) */
+  --color-duo-bg: #0A0E17;
+  --color-duo-canvas: #0F172A;
+  --color-duo-card: #111827;
+  --color-duo-elevated: #162032;
+  --color-duo-overlay: #1E293B;
+  --color-duo-modal: #0B1120;
+  --color-duo-border: rgba(255, 255, 255, 0.08);
+  --color-duo-hover: rgba(59, 130, 246, 0.4);
+
+  /* Primary Brand: Electric Tech Blue */
+  --color-duo-blue-400: #60A5FA;
+  --color-duo-blue-500: #3B82F6;
+  --color-duo-blue: #2563EB;
+  --color-duo-blue-hover: #3B82F6;
+  --color-duo-blue-shadow: #1D4ED8;
+  --color-duo-blue-deep: #1E40AF;
+
+  /* Accent: Neon Cyan */
+  --color-duo-cyan: #38BDF8;
+  --color-duo-cyan-hover: #0EA5E9;
+  --color-duo-cyan-shadow: #0284C7;
+
+  /* Gamification Engine */
+  --color-duo-xp: #F59E0B;
+  --color-duo-xp-hover: #D97706;
+  --color-duo-xp-shadow: #B45309;
+  --color-duo-streak: #FB923C;
+  --color-duo-streak-shadow: #C2410C;
+  --color-duo-verified: #10B981;
+  --color-duo-verified-shadow: #047857;
+  --color-duo-hanko: #E11D48;
+  --color-duo-hanko-shadow: #BE123C;
+
+  /* Tactile 3D Button Shadows (Physical Bevel Depth) */
+  --shadow-tactile-blue: 0 5px 0 0 #1D4ED8;
+  --shadow-tactile-blue-hover: 0 6px 0 0 #1D4ED8;
+  --shadow-tactile-cyan: 0 5px 0 0 #0284C7;
+  --shadow-tactile-cyan-hover: 0 6px 0 0 #0284C7;
+  --shadow-tactile-dark: 0 5px 0 0 #020617;
+  --shadow-tactile-dark-hover: 0 6px 0 0 #020617;
+  --shadow-tactile-emerald: 0 5px 0 0 #047857;
+  --shadow-tactile-emerald-hover: 0 6px 0 0 #047857;
+  --shadow-tactile-amber: 0 5px 0 0 #B45309;
+  --shadow-tactile-amber-hover: 0 6px 0 0 #B45309;
+  --shadow-tactile-rose: 0 5px 0 0 #9F1239;
+  --shadow-tactile-white: 0 4px 0 0 #CBD5E1;
+
+  /* Atmospheric Spotlight Glows */
+  --shadow-glow-blue: 0 10px 30px -5px rgba(37, 99, 235, 0.35);
+  --shadow-glow-cyan: 0 10px 30px -5px rgba(56, 189, 248, 0.35);
+  --shadow-glow-streak: 0 10px 30px -5px rgba(251, 146, 60, 0.35);
+  --shadow-glow-xp: 0 10px 30px -5px rgba(245, 158, 11, 0.35);
+  --shadow-glow-card: 0 20px 45px -15px rgba(0, 0, 0, 0.75);
+}
+
+/* ── DUOLINGO GAMIFICATION UTILITIES ─────────────────────────────────────── */
+/* Iconic Pill Gloss Shine across top half of progress bars */
+.gloss-shine {
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0%, rgba(255, 255, 255, 0) 100%);
+}
+
+/* Tactile Dark Form Control */
+.input-duo {
+  background-color: #0F172A;
+  border: 1.5px solid #1E293B;
+  color: #F8FAFC;
+  border-radius: 1rem;
+  transition: all 0.15s ease;
+}
+.input-duo:hover {
+  border-color: #334155;
+}
+.input-duo:focus {
+  outline: none;
+  border-color: #2563EB;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.25);
+}
+
+/* Ambient Brand Gradients */
+.bg-gradient-brand {
+  background-image: linear-gradient(135deg, #2563EB 0%, #38BDF8 100%);
+}
+.bg-gradient-streak {
+  background-image: linear-gradient(135deg, #FB923C 0%, #EF4444 100%);
+}
+.bg-gradient-xp {
+  background-image: linear-gradient(135deg, #F59E0B 0%, #FBBF24 100%);
+}
+.bg-gradient-card {
+  background-image: linear-gradient(180deg, #162032 0%, #111827 100%);
+}
+
 @layer base {
   body {
     background-color: #FAFAF9;
@@ -178,4 +272,68 @@
 
 .animate-stepTransition {
   animation: stepTransition 0.28s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ── DUOLINGO GAMIFIED MICRO-ANIMATIONS ──────────────────────────────────── */
+@keyframes stamp-slam {
+  0% {
+    opacity: 0;
+    transform: scale(2) rotate(-25deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.95) rotate(-6deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-6deg);
+  }
+}
+
+@keyframes flame-pulse {
+  0%, 100% {
+    transform: scale(1);
+    filter: drop-shadow(0 0 8px rgba(251, 146, 60, 0.4));
+  }
+  50% {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 16px rgba(251, 146, 60, 0.7));
+  }
+}
+
+@keyframes pop {
+  0% {
+    transform: scale(0.85);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wobble {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-6px); }
+  40%, 80% { transform: translateX(6px); }
+}
+
+.animate-stamp-slam {
+  animation: stamp-slam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.animate-flame-pulse {
+  animation: flame-pulse 2s ease-in-out infinite;
+}
+
+.animate-pop {
+  animation: pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+.animate-wobble {
+  animation: wobble 0.4s ease-in-out;
 }

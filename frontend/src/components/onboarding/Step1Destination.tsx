@@ -7,6 +7,8 @@ import {
   GermanyFlagIllustration,
 } from '../illustrations/onboarding'
 import { COUNTRY_DESCRIPTIONS } from '../../static/onboarding'
+import { BadgePill } from '../ui'
+import { triggerHaptic } from '../../utils/haptics'
 
 // Static flag component lookup map placed outside to avoid re-allocations on render
 const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -42,20 +44,22 @@ export const Step1Destination = ({
             aria-pressed={isSelected}
             onClick={() => {
               if (isActive) {
+                triggerHaptic('tap')
                 onSelectCountry(country.id)
               }
             }}
             onKeyDown={(e) => {
               if ((e.key === 'Enter' || e.key === ' ') && isActive) {
                 e.preventDefault()
+                triggerHaptic('tap')
                 onSelectCountry(country.id)
               }
             }}
-            className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] sm:max-w-[350px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-500/20 ${
+            className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] sm:max-w-[350px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
               isActive
                 ? isSelected
-                  ? 'bg-indigo-50/60 border-2 border-[#4F46E5] shadow-md shadow-indigo-500/10 ring-4 ring-indigo-500/10 cursor-pointer'
-                  : 'bg-white border border-slate-200/90 shadow-2xs hover:border-slate-300 hover:shadow-sm cursor-pointer'
+                  ? 'bg-blue-50/60 border-2 border-blue-600 shadow-md shadow-blue-500/15 ring-4 ring-blue-500/10 cursor-pointer -translate-y-1'
+                  : 'bg-white border border-slate-200/90 shadow-2xs hover:border-blue-300 hover:shadow-sm cursor-pointer hover:-translate-y-0.5'
                 : 'bg-slate-50/70 border border-dashed border-slate-300/80 opacity-60 cursor-not-allowed select-none'
             }`}
           >
@@ -68,16 +72,16 @@ export const Step1Destination = ({
               <FlagIllustration />
 
               {/* Status Badge */}
-              <span
-                className={`absolute top-2.5 right-2.5 text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border flex items-center gap-1 ${
-                  isActive
-                    ? 'bg-indigo-100 text-indigo-700 border-indigo-200'
-                    : 'bg-slate-200/80 text-slate-600 border-slate-300'
-                }`}
-              >
-                {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
-                {isActive ? 'Jalur Aktif' : 'Coming Soon'}
-              </span>
+              <div className="absolute top-2.5 right-2.5">
+                <BadgePill
+                  variant={isActive ? (isSelected ? 'blue' : 'neutral') : 'neutral'}
+                  size="sm"
+                  className={!isActive ? 'opacity-80' : ''}
+                >
+                  {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                  {isActive ? 'Jalur Aktif' : 'Coming Soon'}
+                </BadgePill>
+              </div>
             </div>
 
             {/* Title & Description */}
