@@ -78,6 +78,18 @@ func (m *mockCareerPathRepository) GetByID(ctx context.Context, id string) (*dom
 	return p, nil
 }
 
+func (m *mockCareerPathRepository) GetBySlug(ctx context.Context, slug string) (*domain.CareerPath, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	for _, p := range m.paths {
+		if p.Slug == slug {
+			return p, nil
+		}
+	}
+	return nil, domain.ErrCareerPathNotFound
+}
+
 // onboardingMockUserRepo provides state tracking for onboarding updates
 type onboardingMockUserRepo struct {
 	users                 map[string]*domain.User
@@ -180,6 +192,10 @@ func (m *onboardingMockUserRepo) GetProfileWithDetails(ctx context.Context, user
 		},
 		CreatedAt: u.CreatedAt,
 	}, nil
+}
+
+func (m *onboardingMockUserRepo) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
+	return nil
 }
 
 func TestOnboardingUsecase_GetCountries(t *testing.T) {

@@ -53,6 +53,10 @@ func (m *mockUserRepository) GetProfileWithDetails(ctx context.Context, userID s
 	return nil, nil
 }
 
+func (m *mockUserRepository) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
+	return nil
+}
+
 // mockSessionRepository implements an in-memory domain.SessionRepository for unit testing
 type mockSessionRepository struct {
 	sessions map[string]string

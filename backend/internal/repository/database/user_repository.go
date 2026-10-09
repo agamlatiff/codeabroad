@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/jackc/pgx/v5"
 )
 
@@ -288,5 +290,19 @@ func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID strin
 	}
 
 	return &profile, nil
+}
+
+// UpdateGamification updates a user's XP, level, streak counter, and last active timestamp
+func (r *UserRepository) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
+	query := `
+		UPDATE users
+		SET xp = $2, current_level = $3, streak = $4, last_active_at = $5, updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.db.Pool.Exec(ctx, query, userID, xp, currentLevel, streak, lastActiveAt)
+	if err != nil {
+		return fmt.Errorf("failed to update user gamification: %w", err)
+	}
+	return nil
 }
 

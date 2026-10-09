@@ -12,6 +12,8 @@ type RouterConfig struct {
 	HealthHandler     *handler.HealthHandler
 	AuthHandler       *handler.AuthHandler
 	OnboardingHandler *handler.OnboardingHandler
+	RoadmapHandler    *handler.RoadmapHandler
+	QuestHandler      *handler.QuestHandler
 	AuthMiddleware    gin.HandlerFunc
 }
 
@@ -40,6 +42,12 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine {
 		}
 		if cfg.OnboardingHandler != nil {
 			cfg.OnboardingHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
+		if cfg.RoadmapHandler != nil {
+			cfg.RoadmapHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
+		if cfg.QuestHandler != nil {
+			cfg.QuestHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 		}
 	}
 	return r

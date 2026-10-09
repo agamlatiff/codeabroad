@@ -52,6 +52,10 @@ func (r *testUserRepo) GetProfileWithDetails(ctx context.Context, userID string)
 	return nil, nil
 }
 
+func (r *testUserRepo) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
+	return nil
+}
+
 
 type testSessionRepo struct {
 	sessions map[string]string

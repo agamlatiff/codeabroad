@@ -76,6 +76,7 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id string) (*User, error)
 	UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error
 	GetProfileWithDetails(ctx context.Context, userID string) (*OnboardingProfileResponse, error)
+	UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error
 }
 
 // AuthUsecase specifies the business logic contract for authentication

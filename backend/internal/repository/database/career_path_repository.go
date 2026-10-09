@@ -104,3 +104,40 @@ func (r *CareerPathRepository) GetByID(ctx context.Context, id string) (*domain.
 
 	return &cp, nil
 }
+
+// GetBySlug retrieves a single career path by its slug (e.g., "backend", "devops", "frontend")
+func (r *CareerPathRepository) GetBySlug(ctx context.Context, slug string) (*domain.CareerPath, error) {
+	query := `
+		SELECT id, slug, label, description, stacks, created_at, updated_at
+		FROM career_paths
+		WHERE slug = $1
+		LIMIT 1
+	`
+	var cp domain.CareerPath
+	var rawStacks []byte
+	err := r.db.Pool.QueryRow(ctx, query, slug).Scan(
+		&cp.ID,
+		&cp.Slug,
+		&cp.Label,
+		&cp.Description,
+		&rawStacks,
+		&cp.CreatedAt,
+		&cp.UpdatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrCareerPathNotFound
+		}
+		return nil, fmt.Errorf("failed to get career path by slug: %w", err)
+	}
+
+	if len(rawStacks) > 0 {
+		if err := json.Unmarshal(rawStacks, &cp.Stacks); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal career path stacks: %w", err)
+		}
+	} else {
+		cp.Stacks = []domain.TechStack{}
+	}
+
+	return &cp, nil
+}

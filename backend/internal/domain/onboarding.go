@@ -115,6 +115,7 @@ type CountryRepository interface {
 type CareerPathRepository interface {
 	GetAll(ctx context.Context) ([]CareerPath, error)
 	GetByID(ctx context.Context, id string) (*CareerPath, error)
+	GetBySlug(ctx context.Context, slug string) (*CareerPath, error)
 }
 
 // OnboardingUsecase specifies the business logic contract for onboarding operations
