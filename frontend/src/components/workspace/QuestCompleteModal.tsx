@@ -1,6 +1,9 @@
 import type { FC } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { SubmitQuestResponse, Quest } from '../../types/quest'
+import { Button3D } from '../ui/Button3D'
+import { DoodleHanko } from '../illustrations/doodles'
+import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
 
 export interface QuestCompleteModalProps {
   isOpen: boolean
@@ -33,25 +36,36 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="bg-white rounded-3xl border-2 border-[#E2E8F0] shadow-2xl p-6 sm:p-8 max-w-xl w-full text-center space-y-5 animate-in zoom-in-95 duration-200">
-        {/* ── 1. CELEBRATION ICON & HEADLINE ── */}
-        <div className="w-20 h-20 rounded-3xl bg-[#EFF6FF] border-2 border-blue-200 text-blue-600 flex items-center justify-center mx-auto text-4xl shadow-xs">
-          🎉
+      <div className="bg-white rounded-3xl border-2 border-slate-200 shadow-2xl p-6 sm:p-8 max-w-xl w-full text-center space-y-5 animate-in zoom-in-95 duration-200 relative overflow-hidden">
+        {/* Hanko Stamp watermark at top-right */}
+        <div className="absolute top-4 right-4 -rotate-12 pointer-events-none opacity-90">
+          <DoodleHanko text="合格" className="w-14 h-14 drop-shadow-sm" />
+        </div>
+
+        {/* ── 1. CELEBRATION KODI MASCOT & HEADLINE ── */}
+        <div className="relative flex flex-col items-center justify-center pt-2">
+          {/* Subtle Stepped Glass Base */}
+          <div className="w-28 h-8 bg-blue-200/50 rounded-[50%] absolute bottom-0 z-0 blur-[1px]" />
+          <img
+            src={doodleCelebrate}
+            alt="Kodi Celebrating"
+            className="w-28 h-28 sm:w-32 sm:h-32 object-contain relative z-10 select-none drop-shadow-md animate-bounce"
+          />
         </div>
 
         <div className="space-y-1">
-          <span className="bg-[#F0F9FF] text-[#0284C7] font-black text-xs px-3 py-1 rounded-full inline-block">
-            YATTA! KERJA BAGUS!
+          <span className="bg-[#EFF6FF] text-[#2563EB] font-black text-xs px-3.5 py-1 rounded-full inline-block border border-blue-200">
+            🎉 YATTA! KERJA BAGUS!
           </span>
           <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight pt-1">
             Bab 2 Berhasil Diselesaikan! 🚀
           </h2>
-          <p className="text-xs text-[#64748B] font-medium max-w-md mx-auto">
+          <p className="text-xs text-slate-600 font-medium max-w-md mx-auto">
             Logika JWT Middleware tervalidasi dan siap digunakan di service produksi Tokyo.
           </p>
         </div>
 
-        {/* ── 2. 3 REWARD PILLS (MATCHING SCREEN 11 PEN) ── */}
+        {/* ── 2. 3 REWARD PILLS ── */}
         <div className="grid grid-cols-3 gap-3">
           {/* XP Pill */}
           <div className="p-3 rounded-2xl bg-[#EFF6FF] border border-blue-200 flex flex-col items-center justify-center space-y-0.5">
@@ -86,20 +100,20 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-1.5 font-black text-[#0F172A]">
               <span>✈️</span>
-              <span>RUTE KARIER: CGK ➔ NRT (TOKYO TRACK)</span>
+              <span>RUTE KARIER: CGK ➔ HND (TOKYO TRACK)</span>
             </div>
             <span className="bg-[#EFF6FF] text-[#2563EB] font-black text-[10px] px-2 py-0.5 rounded-md">
               +2.0% KESIAPAN
             </span>
           </div>
 
-          <div className="w-full h-2.5 bg-[#E2E8F0] rounded-full overflow-hidden">
+          <div className="w-full h-2.5 bg-slate-200 rounded-full overflow-hidden">
             <div className="w-[70%] h-full bg-[#2563EB] rounded-full transition-all duration-700" />
           </div>
 
-          <div className="flex items-center justify-between text-[11px] text-[#64748B]">
+          <div className="flex items-center justify-between text-[11px] text-slate-600">
             <span className="font-bold text-[#0F172A]">Tingkat Kesiapan Kerja: 68% ➔ 70%</span>
-            <span>Target Job Ready: 85%</span>
+            <span>Target Sponsor Visa: 85%</span>
           </div>
         </div>
 
@@ -123,17 +137,18 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
           <button
             type="button"
             onClick={handleReviewCode}
-            className="w-full sm:w-auto bg-[#F1F5F9] hover:bg-slate-200 text-[#64748B] font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer"
+            className="w-full sm:w-auto bg-[#F1F5F9] hover:bg-slate-200 text-slate-600 font-bold text-xs px-4 py-2.5 rounded-xl transition-all cursor-pointer"
           >
             Review Kode Solusi
           </button>
-          <button
-            type="button"
+          <Button3D
+            variant="blue"
+            size="md"
             onClick={handleNextBab}
-            className="w-full sm:w-auto bg-[#2563EB] hover:bg-blue-700 active:translate-y-0.5 text-white font-black text-xs sm:text-sm px-6 py-3 rounded-2xl shadow-[0_4px_0_0_#1D4ED8] transition-all cursor-pointer"
+            className="w-full sm:w-auto text-xs px-6 py-3"
           >
-            LANJUTKAN KE BAB 3: GORM & DATABASE ▶
-          </button>
+            <span>LANJUTKAN KE BAB 3: GORM & DATABASE ▶</span>
+          </Button3D>
         </div>
       </div>
     </div>

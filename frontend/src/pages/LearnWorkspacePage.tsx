@@ -2,9 +2,8 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLearnWorkspace } from '../hooks'
 import { QuestCompleteModal } from '../components/workspace/QuestCompleteModal'
-import {
-  RotateCcw,
-} from 'lucide-react'
+import { Button3D } from '../components/ui/Button3D'
+import { RotateCcw } from 'lucide-react'
 
 export const LearnWorkspacePage = () => {
   const navigate = useNavigate()
@@ -409,15 +408,16 @@ export const LearnWorkspacePage = () => {
             </div>
           ) : isFailed ? (
             <div className="flex items-center gap-3">
-              <span className="w-7 h-7 rounded-xl bg-[#EF4444] text-white flex items-center justify-center font-black text-xs shrink-0">
+              <span className="w-8 h-8 rounded-xl bg-rose-500 text-white flex items-center justify-center font-black text-xs shrink-0 shadow-xs">
                 ✕
               </span>
               <div className="space-y-0.5">
-                <p className="font-black text-xs sm:text-sm text-[#991B1B]">
-                  Ups, pengujian belum lolos! Ada 1 kriteria yang belum terpenuhi.
+                <p className="font-black text-xs sm:text-sm text-rose-900 flex items-center gap-1.5">
+                  <span>Pengujian belum lolos! Ada 1 kriteria yang belum terpenuhi.</span>
+                  <span>🎌</span>
                 </p>
-                <p className="text-[11px] text-[#B91C1C]">
-                  Periksa terminal error di atas atau buka petunjuk untuk panduan.
+                <p className="text-[11px] text-rose-700">
+                  Kodi: <em>&quot;Ganbatte! Periksa validasi prefix &apos;Bearer &apos; dan header Authorization di terminal atas.&quot;</em>
                 </p>
               </div>
             </div>
@@ -472,14 +472,15 @@ export const LearnWorkspacePage = () => {
               >
                 ▶ Jalankan Tes (Ctrl+Enter)
               </button>
-              <button
-                type="button"
+              <Button3D
+                variant="blue"
+                size="md"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className="bg-[#2563EB] hover:bg-blue-700 active:translate-y-0.5 text-white font-black text-xs sm:text-sm px-6 py-3 rounded-2xl shadow-[0_4px_0_0_#1D4ED8] transition-all cursor-pointer"
+                className="text-xs px-6 py-3"
               >
                 {isSubmitting ? 'Mengirim...' : 'PERIKSA & SELESAIKAN MISI ✓'}
-              </button>
+              </Button3D>
             </>
           ) : (
             <>
@@ -490,14 +491,15 @@ export const LearnWorkspacePage = () => {
               >
                 ↺ Reset
               </button>
-              <button
-                type="button"
+              <Button3D
+                variant="blue"
+                size="md"
                 onClick={handleRunTests}
                 disabled={isRunningTests}
-                className="bg-[#2563EB] hover:bg-blue-700 active:translate-y-0.5 text-white font-black text-xs sm:text-sm px-6 py-3 rounded-2xl shadow-[0_4px_0_0_#1D4ED8] transition-all cursor-pointer"
+                className="text-xs px-6 py-3"
               >
                 {isRunningTests ? 'Menguji...' : '▶ JALANKAN TES (Ctrl+Enter)'}
-              </button>
+              </Button3D>
             </>
           )}
         </div>
