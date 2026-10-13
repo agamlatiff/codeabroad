@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { RotateCcw } from 'lucide-react'
+import { RotateCcw, Clock, Sparkles } from 'lucide-react'
 import { Button3D } from '../ui/Button3D'
 import { SpeechBubble } from '../ui/SpeechBubble'
 import doodleCoding from '../../assets/kodi/doodle-coding.png'
@@ -13,6 +13,7 @@ export interface KodiHeroStageProps {
   unitTag?: string
   progressPercentage?: number
   timeEstimate?: string
+  nextQuestRoute?: string
 }
 
 export const KodiHeroStage = ({
@@ -23,71 +24,80 @@ export const KodiHeroStage = ({
   unitTag = 'UNIT 4 • SHIBUYA ENGINE',
   progressPercentage = 62,
   timeEstimate = '15 Menit',
+  nextQuestRoute = '/learn/station-3-jwt-middleware',
 }: KodiHeroStageProps) => {
   const navigate = useNavigate()
-  const firstName = user?.name ? user.name.split(' ')[0] : user?.username || 'Agam'
+  const firstName = user?.name ? user.name.split(' ')[0] : user?.username || 'Developer'
 
   return (
-    <div className={`rounded-3xl bg-gradient-to-br from-[#EFF6FF] via-white to-sky-50/70 border-2 border-[#BFDBFE] p-6 sm:p-7 shadow-sm relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6 ${className}`}>
-      {/* ── BACKGROUND AMBIENT GLOW ── */}
-      <div className="absolute top-0 right-0 w-80 h-80 bg-blue-400/10 rounded-full blur-3xl pointer-events-none -z-0" />
+    <div
+      className={`rounded-3xl bg-[#101827] border border-[#27364D] p-6 sm:p-7 shadow-xl relative overflow-hidden flex flex-col lg:flex-row items-center justify-between gap-6 ${className}`}
+    >
+      {/* ── BACKGROUND AMBIENT NIGHT GLOW ── */}
+      <div className="absolute top-0 right-0 w-80 h-80 bg-blue-600/10 rounded-full blur-3xl pointer-events-none -z-0" />
+      <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-cyan-500/5 rounded-full blur-2xl pointer-events-none -z-0" />
 
-      {/* ── LEFT: KODI COMPANION WITH 3D GLASS PODIUM & SPEECH BUBBLE ── */}
+      {/* ── LEFT: KODI COMPANION & LEARNING OBJECTIVE COMMAND ── */}
       <div className="flex flex-col sm:flex-row items-center gap-6 relative z-10 w-full lg:w-auto">
-        {/* Kodi Mascot on Glass Base */}
+        {/* Subtle Kodi Mascot on Atmospheric Stepped Base */}
         <div className="relative flex flex-col items-center justify-center shrink-0 group">
-          {/* Subtle Stepped Glass Base */}
-          <div className="w-28 sm:w-32 h-10 bg-blue-200/50 rounded-[50%] absolute -bottom-3 z-0 blur-[1px] shadow-sm transition-transform group-hover:scale-105" />
-          <div className="w-24 sm:w-28 h-8 bg-blue-300/40 rounded-[50%] absolute -bottom-2 z-0" />
+          {/* Night glass glow ring */}
+          <div className="w-24 sm:w-28 h-8 bg-blue-500/15 rounded-[50%] absolute -bottom-2 z-0 blur-[2px] transition-transform group-hover:scale-105" />
+          <div className="w-20 sm:w-24 h-6 bg-cyan-500/20 rounded-[50%] absolute -bottom-1 z-0 blur-xs" />
 
           {/* Kodi Character */}
           <img
             src={doodleCoding}
             alt="Kodi Coding in Tokyo"
-            className="w-28 h-28 sm:w-32 sm:h-32 object-contain relative z-10 drop-shadow-md select-none transition-transform duration-300 group-hover:-translate-y-1.5 group-hover:scale-105"
+            className="w-24 h-24 sm:w-28 sm:h-28 object-contain relative z-10 drop-shadow-md select-none transition-transform duration-300 group-hover:-translate-y-1"
           />
         </div>
 
-        {/* Narrative & Manga Speech Bubble */}
+        {/* Narrative, Greeting & Module Information */}
         <div className="space-y-3 text-center sm:text-left flex-1 min-w-0">
-          {/* Manga Speech Bubble from Kodi */}
+          {/* Subtle manga dialogue from Kodi */}
           <div className="inline-block">
-            <SpeechBubble direction="left" variant="light" className="shadow-xs py-2 px-3.5 max-w-sm">
-              <span className="text-xs font-bold text-slate-800">
-                Konnichiwa, <strong className="text-[#2563EB]">{firstName}-san</strong>! 🎌 Siap tuntaskan bab ini untuk amankan sponsor visa Tokyo? 🚀
+            <SpeechBubble direction="left" variant="dark" className="border border-[#27364D] py-1.5 px-3.5 max-w-sm">
+              <span className="text-xs font-semibold text-[#F1F5F9]">
+                Konnichiwa, <strong className="text-[#38BDF8]">{firstName}-san</strong>! 🎌 Siap tuntaskan bab ini untuk amankan sponsor visa Tokyo?
               </span>
             </SpeechBubble>
           </div>
 
-          {/* Unit Tag & Title */}
-          <div className="space-y-1">
+          {/* Station Tag & Real Progress */}
+          <div className="space-y-1.5">
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-              <span className="bg-[#DBEAFE] text-[#065F46] font-black text-[11px] px-2.5 py-0.5 rounded-md">
-                {unitTag}
+              <span className="bg-[#172236] text-[#38BDF8] border border-[#27364D] font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-md flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-[#38BDF8]" />
+                <span>{unitTag}</span>
               </span>
-              <span className="text-[#047857] font-bold text-xs">
-                {progressPercentage}% Selesai (25/40 Sesi)
+              <span className="text-[#10B981] font-mono font-bold text-xs bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-md">
+                {progressPercentage}% SELESAI
               </span>
             </div>
 
-            <h2 className="text-lg sm:text-2xl font-black text-[#0F172A] tracking-tight">
+            <h2 className="text-lg sm:text-2xl font-black text-[#F1F5F9] tracking-tight">
               {trackTitle}
             </h2>
 
-            <p className="text-xs text-slate-600 font-medium">
-              {chapterTitle} • Estimasi {timeEstimate}
-            </p>
+            <div className="flex items-center justify-center sm:justify-start gap-3 text-xs text-[#94A3B8] font-medium flex-wrap">
+              <span>{chapterTitle}</span>
+              <span className="flex items-center gap-1 text-[#F5B942] font-mono">
+                <Clock className="w-3.5 h-3.5" />
+                <span>Estimasi {timeEstimate}</span>
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* ── RIGHT: PRIMARY 3D DUOLINGO CTA ── */}
-      <div className="flex flex-col sm:flex-row lg:flex-col items-center sm:items-end gap-2.5 shrink-0 w-full sm:w-auto relative z-10">
+      {/* ── RIGHT: DOMINANT "CONTINUE LEARNING" ACTION (PRIMARY VISUAL WEIGHT) ── */}
+      <div className="flex flex-col sm:flex-row lg:flex-col items-center sm:items-end gap-3 shrink-0 w-full sm:w-auto relative z-10">
         <Button3D
           variant="blue"
           size="lg"
-          onClick={() => navigate('/learn/station-3-jwt-middleware')}
-          className="w-full sm:w-auto text-xs sm:text-sm px-7 py-3.5 shadow-[0_5px_0_0_#1D4ED8]"
+          onClick={() => navigate(nextQuestRoute)}
+          className="w-full sm:w-auto text-xs sm:text-sm px-8 py-3.5 glow-primary shadow-[0_4px_16px_rgba(59,130,246,0.35)]"
         >
           <span>LANJUTKAN KODING ▶</span>
         </Button3D>
@@ -95,10 +105,10 @@ export const KodiHeroStage = ({
         <button
           type="button"
           onClick={() => navigate('/courses')}
-          className="text-xs font-bold text-[#059669] hover:text-emerald-800 hover:underline flex items-center gap-1 cursor-pointer py-1"
+          className="text-xs font-semibold text-[#94A3B8] hover:text-[#38BDF8] hover:underline flex items-center gap-1.5 cursor-pointer py-1 transition-colors"
         >
           <RotateCcw className="w-3.5 h-3.5" />
-          <span>Review Materi Lalu</span>
+          <span>Review Silabus & Materi Lalu</span>
         </button>
       </div>
     </div>

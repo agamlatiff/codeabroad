@@ -12,29 +12,30 @@
 export const TOKENS = {
   // ── 1. COLOR SYSTEM ────────────────────────────────────────────────────────
   colors: {
-    // A. Surfaces & Backgrounds (Duolingo Clean Light Mode Aesthetic)
+    // A. Surfaces & Backgrounds (Midnight Departure Palette)
     surface: {
-      ground: '#FAFAF9',        // Warm canvas / stone base (#FAFAF9)
-      canvas: '#FFFFFF',        // Primary container / pure white surface
-      card: '#FFFFFF',          // Stage card container
-      elevated: '#F1F5F9',      // 2x2 metric tiles, interactive item containers
-      overlay: '#F8FAFC',       // Dropdowns, floating pills, hover surfaces
-      modal: '#FFFFFF',         // Modal windows & flight ticket cockpit
-      border: '#E2E8F0',        // Subtle card boundary
-      borderHover: '#CBD5E1',   // Active/hover boundary
-      borderFocus: '#2563EB',   // Keyboard focus ring (Electric Blue)
+      ground: '#080D18',        // Deep midnight navy base canvas
+      canvas: '#101827',        // Primary night container surface
+      card: '#101827',          // Main card containers
+      elevated: '#172236',      // Interactive item containers, list slots, tiles
+      overlay: '#172236',       // Dropdowns, floating pills, hover surfaces
+      modal: '#101827',         // Modal windows & dark cockpit
+      border: '#27364D',        // Subtle blue-gray card boundary
+      borderHover: '#3B82F6',   // Active / hover boundary (Electric Blue)
+      borderFocus: '#3B82F6',   // Keyboard focus ring
     },
 
-    // B. Dark Contrast Surfaces (Optional High-Contrast Contexts)
-    darkSurface: {
-      ground: '#0A0E17',
-      card: '#111827',
-      elevated: '#162032',
-      border: 'rgba(255, 255, 255, 0.08)',
-      borderHover: 'rgba(59, 130, 246, 0.4)',
+    // B. Light Surfaces (For isolated light mode flows: Onboarding & Auth)
+    lightSurface: {
+      ground: '#FAFAF9',
+      canvas: '#FFFFFF',
+      card: '#FFFFFF',
+      elevated: '#F1F5F9',
+      border: '#E2E8F0',
+      borderHover: '#CBD5E1',
     },
 
-    // C. Primary Brand: Electric Tech Blue (Replacing Duolingo Green)
+    // C. Primary Brand: Electric Tech Blue
     brand: {
       50: '#EFF6FF',
       100: '#DBEAFE',
@@ -47,11 +48,11 @@ export const TOKENS = {
       800: '#1E40AF',
       900: '#1E3A8A',
       950: '#172554',
-      primary: '#2563EB',
-      hover: '#3B82F6',
-      active: '#1D4ED8',
+      primary: '#3B82F6',
+      hover: '#60A5FA',
+      active: '#2563EB',
       shadow: '#1D4ED8',
-      glow: 'rgba(37, 99, 235, 0.35)',
+      glow: 'rgba(59, 130, 246, 0.35)',
     },
 
     // D. Brand Secondary: Neon Cyan & Flight Path
@@ -74,15 +75,15 @@ export const TOKENS = {
       streakGlow: 'rgba(251, 146, 60, 0.35)',
 
       // XP & Rewards System (Gold Coin / Star)
-      xp: '#F59E0B',            // Amber gold
+      xp: '#F5B942',            // Warm amber gold
       xpHover: '#D97706',
       xpShadow: '#B45309',
-      xpBg: 'rgba(245, 158, 11, 0.12)',
-      xpBorder: 'rgba(245, 158, 11, 0.3)',
-      xpGlow: 'rgba(245, 158, 11, 0.35)',
+      xpBg: 'rgba(245, 185, 66, 0.12)',
+      xpBorder: '#27364D',
+      xpGlow: 'rgba(245, 185, 66, 0.35)',
 
       // Verified / Pass / Quests Complete
-      verified: '#10B981',      // Emerald green
+      verified: '#10B981',      // Restrained emerald green
       verifiedHover: '#059669',
       verifiedShadow: '#047857',
       verifiedBg: 'rgba(16, 185, 129, 0.12)',
@@ -109,13 +110,13 @@ export const TOKENS = {
       success: {
         base: '#10B981',
         surface: 'rgba(16, 185, 129, 0.1)',
-        border: 'rgba(16, 185, 129, 0.3)',
+        border: '#27364D',
         text: '#34D399',
       },
       warning: {
-        base: '#F59E0B',
-        surface: 'rgba(245, 158, 11, 0.1)',
-        border: 'rgba(245, 158, 11, 0.3)',
+        base: '#F5B942',
+        surface: 'rgba(245, 185, 66, 0.1)',
+        border: '#27364D',
         text: '#FBBF24',
       },
       error: {
@@ -127,18 +128,18 @@ export const TOKENS = {
       info: {
         base: '#38BDF8',
         surface: 'rgba(56, 189, 248, 0.1)',
-        border: 'rgba(56, 189, 248, 0.3)',
+        border: '#27364D',
         text: '#7DD3FC',
       },
     },
 
-    // G. Typography Colors (Clean Light Mode High-Contrast)
+    // G. Typography Colors (Cool White High-Contrast)
     text: {
-      primary: '#0F172A',       // High-contrast slate-900
-      secondary: '#475569',     // Slate-600 descriptions & subheads
-      muted: '#94A3B8',         // Subtle footnotes, watermarks, airport labels
-      accent: '#2563EB',        // Clickable interactive link text (Electric Blue)
-      inverse: '#FFFFFF',       // Text on dark/blue buttons
+      primary: '#F1F5F9',       // High-contrast cool white
+      secondary: '#94A3B8',     // Muted slate descriptions & subheads
+      muted: '#64748B',         // Subtle footnotes, watermarks, airport labels
+      accent: '#3B82F6',        // Clickable interactive link text (Electric Blue)
+      inverse: '#080D18',       // Text on bright buttons/badges
     },
   },
 
