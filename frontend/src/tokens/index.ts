@@ -12,27 +12,27 @@
 export const TOKENS = {
   // ── 1. COLOR SYSTEM ────────────────────────────────────────────────────────
   colors: {
-    // A. Surfaces & Backgrounds (Midnight Departure Palette)
+    // A. Surfaces & Backgrounds (Clean Warm Light Mode Primary - SSOT)
     surface: {
-      ground: '#080D18',        // Deep midnight navy base canvas
-      canvas: '#101827',        // Primary night container surface
-      card: '#101827',          // Main card containers
-      elevated: '#172236',      // Interactive item containers, list slots, tiles
-      overlay: '#172236',       // Dropdowns, floating pills, hover surfaces
-      modal: '#101827',         // Modal windows & dark cockpit
-      border: '#27364D',        // Subtle blue-gray card boundary
-      borderHover: '#3B82F6',   // Active / hover boundary (Electric Blue)
-      borderFocus: '#3B82F6',   // Keyboard focus ring
+      ground: '#FAFAF9',        // Warm white canvas (consistent with Onboarding & Auth)
+      canvas: '#FFFFFF',        // Pure white card container
+      card: '#FFFFFF',          // Clean white surface
+      elevated: '#F8FAFC',      // Soft elevated container, list slots, tiles
+      overlay: '#FFFFFF',       // Dropdowns, floating pills, hover surfaces
+      modal: '#FFFFFF',         // Modal windows
+      border: '#E2E8F0',        // Tactile slate border
+      borderHover: '#CBD5E1',   // Active / hover boundary
+      borderFocus: '#3B82F6',   // Keyboard focus ring (Electric Blue)
     },
 
-    // B. Light Surfaces (For isolated light mode flows: Onboarding & Auth)
-    lightSurface: {
-      ground: '#FAFAF9',
-      canvas: '#FFFFFF',
-      card: '#FFFFFF',
-      elevated: '#F1F5F9',
-      border: '#E2E8F0',
-      borderHover: '#CBD5E1',
+    // B. Dark Code Editor Surfaces (Exclusively for LearnWorkspacePage IDE)
+    editorSurface: {
+      ground: '#080D18',        // Deep midnight canvas for Monaco / code syntax
+      canvas: '#101827',        // Code editor dark panel
+      card: '#101827',
+      elevated: '#172236',
+      border: '#27364D',
+      borderHover: '#3B82F6',
     },
 
     // C. Primary Brand: Electric Tech Blue
@@ -246,8 +246,8 @@ export const TOKENS = {
   // ── 7. TYPOGRAPHY SCALE ────────────────────────────────────────────────────
   typography: {
     fontFamily: {
+      brand: "'Nunito', 'Fredoka', system-ui, -apple-system, sans-serif",
       sans: "'Plus Jakarta Sans', system-ui, -apple-system, sans-serif",
-      brand: "'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif",
       mono: "'JetBrains Mono', 'Fira Code', monospace",
     },
 

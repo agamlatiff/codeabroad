@@ -1,74 +1,64 @@
 @import "tailwindcss";
 
 @theme {
-  /* Surfaces & Backgrounds (Midnight Departure Primary) */
-  --color-duo-bg: #080D18;
-  --color-duo-canvas: #101827;
-  --color-duo-card: #101827;
-  --color-duo-elevated: #172236;
-  --color-duo-overlay: #172236;
-  --color-duo-border: #27364D;
-  --color-duo-hover: #3B82F6;
+  /* ── CODEABROAD TYPOGRAPHY SYSTEM ── */
+  --font-brand: 'Nunito', 'Fredoka', system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
 
-  /* Midnight Departure Palette Specifics */
-  --color-midnight-bg: #080D18;
-  --color-midnight-surface: #101827;
-  --color-midnight-elevated: #172236;
-  --color-midnight-border: #27364D;
-  --color-midnight-border-hover: #3B82F6;
-  --color-midnight-text: #F1F5F9;
-  --color-midnight-text-muted: #94A3B8;
+  /* ── CLEAN WARM LIGHT SURFACES (PRIMARY SSOT) ── */
+  --color-code-bg: #FAFAF9;
+  --color-code-canvas: #FFFFFF;
+  --color-code-card: #FFFFFF;
+  --color-code-elevated: #F8FAFC;
+  --color-code-border: #E2E8F0;
+  --color-code-border-hover: #CBD5E1;
+  --color-code-text: #0F172A;
+  --color-code-text-muted: #64748B;
 
-  /* Primary Brand: Electric Tech Blue */
-  --color-duo-blue-400: #60A5FA;
-  --color-duo-blue-500: #3B82F6;
+  /* ── PRIMARY BRAND: ELECTRIC TECH BLUE ── */
+  --color-code-blue: #3B82F6;
+  --color-code-blue-hover: #60A5FA;
+  --color-code-blue-shadow: #1D4ED8;
+  --color-code-cyan: #38BDF8;
+
+  /* ── GAMIFICATION TOKENS ── */
+  --color-code-xp: #F59E0B;
+  --color-code-streak: #FB923C;
+  --color-code-verified: #10B981;
+
+  /* ── TACTILE 3D BUTTON SHADOWS (DUOLINGO TASTE) ── */
+  --shadow-tactile-code: 0 4px 0 0 #1D4ED8;
+  --shadow-tactile-blue: 0 4px 0 0 #1D4ED8;
+  --shadow-tactile-blue-hover: 0 5px 0 0 #1D4ED8;
+  --shadow-tactile-cyan: 0 4px 0 0 #0284C7;
+  --shadow-tactile-emerald: 0 4px 0 0 #047857;
+  --shadow-tactile-amber: 0 4px 0 0 #B45309;
+  --shadow-tactile-slate: 0 4px 0 0 #94A3B8;
+  --shadow-tactile-dark: 0 4px 0 0 #0F172A;
+
+  /* ── DARK CODE EDITOR (EXCLUSIVELY FOR WORKSPACE IDE) ── */
+  --color-editor-bg: #080D18;
+  --color-editor-surface: #101827;
+  --color-editor-elevated: #172236;
+  --color-editor-border: #27364D;
+  --color-editor-text: #F1F5F9;
+  --color-editor-text-muted: #94A3B8;
+
+  /* Legacy aliases for backward compatibility */
+  --color-duo-bg: #FAFAF9;
+  --color-duo-card: #FFFFFF;
+  --color-duo-border: #E2E8F0;
   --color-duo-blue: #3B82F6;
-  --color-duo-blue-hover: #60A5FA;
-  --color-duo-blue-shadow: #1D4ED8;
-  --color-duo-blue-deep: #1E40AF;
-
-  /* Accent: Neon Cyan */
-  --color-duo-cyan: #38BDF8;
-  --color-duo-cyan-hover: #0EA5E9;
-  --color-duo-cyan-shadow: #0284C7;
-
-  /* Gamification Engine */
-  --color-duo-xp: #F5B942;
-  --color-duo-xp-hover: #D97706;
-  --color-duo-xp-shadow: #B45309;
+  --color-duo-xp: #F59E0B;
   --color-duo-streak: #FB923C;
-  --color-duo-streak-shadow: #C2410C;
   --color-duo-verified: #10B981;
-  --color-duo-verified-shadow: #047857;
-  --color-duo-hanko: #E11D48;
-  --color-duo-hanko-shadow: #BE123C;
-
-  /* Tactile 3D Button Shadows (Physical Bevel Depth) */
-  --shadow-tactile-blue: 0 5px 0 0 #1D4ED8;
-  --shadow-tactile-blue-hover: 0 6px 0 0 #1D4ED8;
-  --shadow-tactile-cyan: 0 5px 0 0 #0284C7;
-  --shadow-tactile-cyan-hover: 0 6px 0 0 #0284C7;
-  --shadow-tactile-dark: 0 5px 0 0 #020617;
-  --shadow-tactile-dark-hover: 0 6px 0 0 #020617;
-  --shadow-tactile-emerald: 0 5px 0 0 #047857;
-  --shadow-tactile-emerald-hover: 0 6px 0 0 #047857;
-  --shadow-tactile-amber: 0 5px 0 0 #B45309;
-  --shadow-tactile-amber-hover: 0 6px 0 0 #B45309;
-  --shadow-tactile-rose: 0 5px 0 0 #9F1239;
-  --shadow-tactile-white: 0 4px 0 0 #CBD5E1;
-
-  /* Atmospheric Spotlight Glows */
-  --shadow-glow-blue: 0 10px 30px -5px rgba(59, 130, 246, 0.35);
-  --shadow-glow-cyan: 0 10px 30px -5px rgba(56, 189, 248, 0.35);
-  --shadow-glow-streak: 0 10px 30px -5px rgba(251, 146, 60, 0.35);
-  --shadow-glow-xp: 0 10px 30px -5px rgba(245, 185, 66, 0.35);
-  --shadow-glow-card: 0 20px 45px -15px rgba(0, 0, 0, 0.75);
 }
 
 body {
-  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #F1F5F9;
-  background-color: #080D18;
+  font-family: var(--font-sans);
+  color: #0F172A;
+  background-color: #FAFAF9;
 }
 
 /* ── MIDNIGHT DEPARTURE UTILITIES ────────────────────────────────────────── */

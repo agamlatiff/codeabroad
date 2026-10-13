@@ -2,9 +2,22 @@ import type { FC } from 'react'
 import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
 import doodleCoding from '../../assets/kodi/doodle-coding.png'
 import doodleWelcome from '../../assets/kodi/doodle-welcome.png'
+import doodleThinking from '../../assets/kodi/doodle-thinking.png'
+import doodleStreakWarning from '../../assets/kodi/doodle-streak-warning.png'
+import doodleOnFire from '../../assets/kodi/doodle-on-fire.png'
+import doodleCoffeeBreak from '../../assets/kodi/doodle-coffee-break.png'
+import doodleProud from '../../assets/kodi/doodle-proud.png'
 import { SpeechBubble } from './SpeechBubble'
 
-export type KodiEmotion = 'welcome' | 'celebrate' | 'coding' | 'proud'
+export type KodiEmotion =
+  | 'welcome'
+  | 'celebrate'
+  | 'coding'
+  | 'proud'
+  | 'thinking'
+  | 'warning'
+  | 'onFire'
+  | 'coffee'
 
 export interface KodiMascotProps {
   emotion?: KodiEmotion
@@ -17,8 +30,8 @@ export interface KodiMascotProps {
 }
 
 /**
- * KodiMascot — The 10% Soul of CodeAbroad.
- * Friendly, tech-savvy companion with emotion switching, speech bubbles, and aura glows.
+ * KodiMascot — The Living Companion of CodeAbroad.
+ * Friendly, tech-savvy mascot with 8 distinct emotional states and speech bubbles.
  */
 export const KodiMascot: FC<KodiMascotProps> = ({
   emotion = 'welcome',
@@ -34,15 +47,23 @@ export const KodiMascot: FC<KodiMascotProps> = ({
     welcome: doodleWelcome,
     celebrate: doodleCelebrate,
     coding: doodleCoding,
-    proud: doodleCelebrate, // Proud posture uses graduation/celebration asset
+    proud: doodleProud,
+    thinking: doodleThinking,
+    warning: doodleStreakWarning,
+    onFire: doodleOnFire,
+    coffee: doodleCoffeeBreak,
   }[emotion]
 
   // Aura glow color by emotion
   const auraColor = {
-    welcome: 'bg-blue-500/20',
-    celebrate: 'bg-emerald-500/25',
-    coding: 'bg-blue-500/20',
-    proud: 'bg-amber-500/25',
+    welcome: 'bg-blue-500/15',
+    celebrate: 'bg-emerald-500/20',
+    coding: 'bg-blue-500/15',
+    proud: 'bg-blue-500/20',
+    thinking: 'bg-amber-500/15',
+    warning: 'bg-orange-500/20',
+    onFire: 'bg-red-500/25',
+    coffee: 'bg-amber-500/15',
   }[emotion]
 
   const sizeClasses = {

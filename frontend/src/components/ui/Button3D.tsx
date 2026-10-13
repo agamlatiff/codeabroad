@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { CircleNotch } from '@phosphor-icons/react'
 
 export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'blue' | 'cyan' | 'dark' | 'emerald' | 'amber' | 'rose' | 'white' | 'ghost'
@@ -11,7 +11,8 @@ export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /**
  * Button3D — Tactile 3D Duolingo-style push-down button.
- * Uses 90% Duolingo physics (thick bottom shadow depth that presses flat on click).
+ * Uses 90% Duolingo physics (thick bottom shadow depth that presses flat on click)
+ * and font-brand typography.
  */
 export const Button3D = ({
   children,
@@ -25,10 +26,10 @@ export const Button3D = ({
   ...props
 }: Button3DProps) => {
   const baseStyles =
-    'inline-flex items-center justify-center font-black tracking-wide uppercase rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:translate-y-1 active:shadow-none'
+    'inline-flex items-center justify-center font-brand font-black tracking-wide uppercase rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:translate-y-1 active:shadow-none'
 
   const variants = {
-    blue: 'bg-[#2563EB] hover:bg-[#3B82F6] active:bg-[#2563EB] text-white shadow-[0_5px_0_0_#1D4ED8] hover:shadow-[0_6px_0_0_#1D4ED8]',
+    blue: 'bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white shadow-[0_4px_0_0_#1D4ED8] hover:shadow-[0_5px_0_0_#1D4ED8]',
     cyan: 'bg-[#0284C7] hover:bg-[#38BDF8] active:bg-[#0284C7] text-white shadow-[0_5px_0_0_#0369A1] hover:shadow-[0_6px_0_0_#0369A1]',
     dark: 'bg-[#0F172A] hover:bg-[#1E293B] active:bg-[#0F172A] text-white border border-white/10 shadow-[0_5px_0_0_#020617] hover:shadow-[0_6px_0_0_#020617]',
     emerald: 'bg-[#059669] hover:bg-[#10B981] active:bg-[#059669] text-white shadow-[0_5px_0_0_#047857] hover:shadow-[0_6px_0_0_#047857]',
@@ -53,7 +54,7 @@ export const Button3D = ({
       {...props}
     >
       {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <CircleNotch weight="bold" className="w-4 h-4 animate-spin" />
       ) : (
         <>
           {icon && <span className="shrink-0">{icon}</span>}
