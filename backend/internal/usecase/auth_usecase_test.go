@@ -86,8 +86,32 @@ func (m *mockUserRepository) GetWeeklyActivityLogs(ctx context.Context, userID s
 			{Date: "2026-10-15", DayIndex: 3, DayLabel: "Kam", IsActive: false},
 			{Date: "2026-10-16", DayIndex: 4, DayLabel: "Jum", IsActive: false},
 			{Date: "2026-10-17", DayIndex: 5, DayLabel: "Sab", IsActive: false},
-			{Date: "2026-10-18", DayIndex: 6, DayLabel: "Min", IsActive: false},
 		},
+	}, nil
+}
+
+func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
+	user := m.usersByID[userID]
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+	user.XP += xpAwarded
+	user.CurrentLevel = (user.XP / 100) + 1
+	return &domain.DailyRewardClaimResponse{
+		RewardType:   rewardType,
+		XPAwarded:    xpAwarded,
+		CurrentXP:    user.XP,
+		CurrentLevel: user.CurrentLevel,
+		Streak:       user.Streak,
+		ClaimedAt:    "2026-10-14T10:00:00Z",
+	}, nil
+}
+
+func (m *mockUserRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
+	return &domain.DailyRewardsStatusResponse{
+		Date:               "2026-10-14",
+		VocabQuestClaimed:  false,
+		GoldenChestClaimed: false,
 	}, nil
 }
 

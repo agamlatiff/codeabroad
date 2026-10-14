@@ -13,6 +13,7 @@ var (
 	ErrInvalidCredentials = fmt.Errorf("%w: invalid email or password", ErrUnauthorized)
 	ErrUserNotFound       = fmt.Errorf("%w: user not found", ErrNotFound)
 	ErrTokenExpired       = fmt.Errorf("%w: token has expired or revoked", ErrUnauthorized)
+	ErrDailyRewardAlreadyClaimed = fmt.Errorf("%w: hadiah hari ini sudah diklaim sebelumnya", ErrConflict)
 )
 
 // User represents the core account and gamification profile entity
@@ -97,6 +98,28 @@ type UserActivitySummary struct {
 	WeeklyLogs      []UserActivityLog `json:"weekly_logs"` // 7 days of current week (Mon-Sun)
 }
 
+// DailyRewardClaimRequest defines the payload for claiming a daily reward
+type DailyRewardClaimRequest struct {
+	RewardType string `json:"reward_type" binding:"required"` // "vocab_quest" or "golden_chest"
+}
+
+// DailyRewardClaimResponse defines the response after claiming a daily reward
+type DailyRewardClaimResponse struct {
+	RewardType   string `json:"reward_type"`
+	XPAwarded    int    `json:"xp_awarded"`
+	CurrentXP    int    `json:"current_xp"`
+	CurrentLevel int    `json:"current_level"`
+	Streak       int    `json:"streak"`
+	ClaimedAt    string `json:"claimed_at"`
+}
+
+// DailyRewardsStatusResponse reports which daily rewards have been claimed today
+type DailyRewardsStatusResponse struct {
+	Date               string `json:"date"`
+	VocabQuestClaimed  bool   `json:"vocab_quest_claimed"`
+	GoldenChestClaimed bool   `json:"golden_chest_claimed"`
+}
+
 // UserRepository specifies the database contract for user persistence
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
@@ -109,6 +132,8 @@ type UserRepository interface {
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
 	LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error
 	GetWeeklyActivityLogs(ctx context.Context, userID string) (*UserActivitySummary, error)
+	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error)
+	GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error)
 }
 
 // AuthUsecase specifies the business logic contract for authentication
@@ -119,6 +144,8 @@ type AuthUsecase interface {
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
 	GetActivityLogs(ctx context.Context, userID string) (*UserActivitySummary, error)
+	ClaimDailyReward(ctx context.Context, userID string, rewardType string) (*DailyRewardClaimResponse, error)
+	GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error)
 	Logout(ctx context.Context, userID string) error
 }
 

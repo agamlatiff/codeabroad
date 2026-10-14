@@ -67,25 +67,45 @@ export const DashboardPage = () => {
     }
   }
 
-  const handleClaimVocabQuest = () => {
+  const handleClaimVocabQuest = async () => {
     triggerHaptic('success')
     localStorage.setItem(claimedVocabQuestKey, 'true')
     setClaimedLocalQuest(true)
-    updateUser({
-      xp: (user?.xp || 0) + 30,
-    })
+
+    try {
+      const res = await authService.claimDailyReward('vocab_quest')
+      updateUser({
+        xp: res.current_xp,
+        current_level: res.current_level,
+        streak: res.streak,
+      })
+    } catch {
+      updateUser({
+        xp: (user?.xp || 0) + 30,
+      })
+    }
     window.dispatchEvent(new Event('codeabroad_quest_completed'))
     window.dispatchEvent(new Event('storage'))
   }
 
-  const handleClaimChest = () => {
+  const handleClaimChest = async () => {
     triggerHaptic('success')
     localStorage.setItem(chestStorageKey, 'true')
     setIsChestClaimedToday(true)
     setIsChestModalOpen(false)
-    updateUser({
-      xp: (user?.xp || 0) + 50,
-    })
+
+    try {
+      const res = await authService.claimDailyReward('golden_chest')
+      updateUser({
+        xp: res.current_xp,
+        current_level: res.current_level,
+        streak: res.streak,
+      })
+    } catch {
+      updateUser({
+        xp: (user?.xp || 0) + 50,
+      })
+    }
     window.dispatchEvent(new Event('codeabroad_quest_completed'))
     window.dispatchEvent(new Event('storage'))
   }
@@ -98,7 +118,7 @@ export const DashboardPage = () => {
   const [questCompletionTick, setQuestCompletionTick] = useState(0)
   const [activitySummary, setActivitySummary] = useState<UserActivitySummary | null>(null)
 
-  // Fetch real 7-day weekly activity logs from backend API
+  // Fetch real 7-day weekly activity logs and daily rewards status from backend API
   useEffect(() => {
     let isMounted = true
     authService
@@ -109,10 +129,28 @@ export const DashboardPage = () => {
       .catch((err) => {
         console.warn('Using offline activity log fallback:', err)
       })
+
+    authService
+      .getDailyRewardsStatus()
+      .then((status) => {
+        if (!isMounted || !status) return
+        if (status.vocab_quest_claimed) {
+          localStorage.setItem(claimedVocabQuestKey, 'true')
+          setClaimedLocalQuest(true)
+        }
+        if (status.golden_chest_claimed) {
+          localStorage.setItem(chestStorageKey, 'true')
+          setIsChestClaimedToday(true)
+        }
+      })
+      .catch((err) => {
+        console.warn('Using offline daily rewards status fallback:', err)
+      })
+
     return () => {
       isMounted = false
     }
-  }, [questCompletionTick])
+  }, [questCompletionTick, claimedVocabQuestKey, chestStorageKey])
 
   // Listen for real-time quest completions across the application
   useEffect(() => {

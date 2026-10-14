@@ -522,3 +522,40 @@
 - [x] `useLogin.ts`: Form state, TanStack Query mutation, auto-redirect.
 - [x] `useRegister.ts`: Form state, TanStack Query mutation, auto-login.
 - [x] `useDashboard.ts`: Server state, live clock Tokyo/Jakarta, avatar & mascot selectors.
+
+---
+
+## ⚡ FASE 22: Dinamisasi Peta S-Curve & Pelacakan Progres Riil (SELESAI ✅)
+- [x] **22.1 Pemetaan Status Node Riil Berdasarkan Penyelesaian:**
+  - Node part yang sudah diselesaikan berubah menjadi hijau emerald 3D `✓`.
+  - Node part aktif berikutnya terbuka (unlocked) dengan ring berdenyut biru + popover CTA `LANJUTKAN KODING (+50 XP)` + Kodi mascot.
+  - Node part berikutnya terkunci `🔒`.
+- [x] **22.2 Penyelesaian Masalah UUID Type Casting:**
+  - Query DB di `quest_repository.go` mendukung mixed UUID dan part slugs (`part-1-variabel-dan-tipe-data`) tanpa syntax error.
+- [x] **22.3 Event Bus Sinkronisasi Antar-Halaman:**
+  - Event `codeabroad_quest_completed` dan `codeabroad_completed_quests` storage listener terpasang.
+
+---
+
+## 🇯🇵 FASE 23: Bank Kosakata Bahasa Jepang IT Terpadu (PostgreSQL API) (SELESAI ✅)
+- [x] **23.1 Clean Architecture Backend Kosakata:**
+  - Entity `domain.Vocabulary`, `domain.VocabularyRepository`, `domain.VocabularyUsecase`.
+  - Repository `vocabulary_repository.go` dengan query PostgreSQL dan fallback Tokyo IT offline.
+  - Usecase `vocabulary_usecase.go` dengan `GetDailyVocabularies` dan `ListVocabularies`.
+  - HTTP Handler `vocabulary_handler.go` (`GET /api/v1/vocabularies/daily`, `GET /api/v1/vocabularies`).
+- [x] **23.2 Integrasi Frontend `TechNihongoCard.tsx`:**
+  - Terkoneksi ke `vocabularyService.getDailyVocabularies()` dengan graceful offline fallback.
+  - Alur belajar interaktif: tombol `PELAJARI KOSAKATA INI (DENGARKAN & PAHAMI)` memutar audio (🔊 ja-JP) sebelum mengaktifkan klaim.
+
+---
+
+## 💎 FASE 24: Integrasi Penuh Backend Daily Rewards & Gamifikasi Multi-Device (SELESAI ✅)
+- [x] **24.1 Endpoint Sinkronisasi Cloud Harian:**
+  - `POST /api/v1/users/me/daily-rewards/claim`: Klaim `vocab_quest` (+30 XP) dan `golden_chest` (+50 XP) langsung ke tabel database `user_activity_logs` & `users`.
+  - Validasi pencegahan klaim ganda harian (`409 Conflict`).
+  - `GET /api/v1/users/me/daily-rewards`: Mengecek status klaim hari ini secara real-time lintas perangkat.
+- [x] **24.2 Adaptasi Track Spesialisasi Misi Koding Harian:**
+  - Misi 1 di dasbor otomatis berganti judul, chip label (`GO 01`, `REACT 01`, `DEVOPS 01`), dan rute sesuai pilihan track aktif.
+- [x] **24.3 Pengujian Backend & Frontend Build:**
+  - 100% Go unit tests lulus (`go test ./...` PASS).
+  - TypeScript frontend lulus tanpa error (`npm run build` PASS dalam 1.03s).

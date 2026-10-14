@@ -90,6 +90,25 @@ func (r *testUserRepo) GetWeeklyActivityLogs(ctx context.Context, userID string)
 	}, nil
 }
 
+func (r *testUserRepo) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
+	return &domain.DailyRewardClaimResponse{
+		RewardType:   rewardType,
+		XPAwarded:    xpAwarded,
+		CurrentXP:    100,
+		CurrentLevel: 2,
+		Streak:       1,
+		ClaimedAt:    "2026-10-14T10:00:00Z",
+	}, nil
+}
+
+func (r *testUserRepo) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
+	return &domain.DailyRewardsStatusResponse{
+		Date:               "2026-10-14",
+		VocabQuestClaimed:  false,
+		GoldenChestClaimed: false,
+	}, nil
+}
+
 
 type testSessionRepo struct {
 	sessions map[string]string
@@ -296,6 +315,91 @@ func TestHTTP_GetActivityLogs_Success(t *testing.T) {
 
 	if len(res.Data.WeeklyLogs) != 7 {
 		t.Errorf("expected 7 weekly logs, got %d", len(res.Data.WeeklyLogs))
+	}
+}
+
+func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
+	router, _, _ := setupTestRouter()
+
+	// Register user to obtain access token
+	regBody, _ := json.Marshal(map[string]string{
+		"name":     "Reward Tester",
+		"username": "rewardtester",
+		"email":    "reward@codeabroad.dev",
+		"password": "StrongPassword123!",
+	})
+	wReg := httptest.NewRecorder()
+	reqReg, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewBuffer(regBody))
+	reqReg.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(wReg, reqReg)
+
+	var regRes struct {
+		Data struct {
+			AccessToken string `json:"access_token"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(wReg.Body.Bytes(), &regRes)
+	token := regRes.Data.AccessToken
+
+	// Claim vocab quest reward
+	claimBody, _ := json.Marshal(map[string]string{
+		"reward_type": "vocab_quest",
+	})
+	wClaim := httptest.NewRecorder()
+	reqClaim, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
+	reqClaim.Header.Set("Content-Type", "application/json")
+	reqClaim.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(wClaim, reqClaim)
+
+	if wClaim.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for reward claim, got: %d, body: %s", wClaim.Code, wClaim.Body.String())
+	}
+
+	var claimRes struct {
+		Success bool                            `json:"success"`
+		Data    domain.DailyRewardClaimResponse `json:"data"`
+	}
+	if err := json.Unmarshal(wClaim.Body.Bytes(), &claimRes); err != nil {
+		t.Fatalf("failed to parse claim response: %v", err)
+	}
+
+	if !claimRes.Success {
+		t.Errorf("expected success true, got false")
+	}
+	if claimRes.Data.XPAwarded != 30 {
+		t.Errorf("expected 30 XP awarded, got %d", claimRes.Data.XPAwarded)
+	}
+}
+
+func TestHTTP_GetDailyRewardsStatus_Success(t *testing.T) {
+	router, _, _ := setupTestRouter()
+
+	regBody, _ := json.Marshal(map[string]string{
+		"name":     "Status Tester",
+		"username": "statustester",
+		"email":    "status@codeabroad.dev",
+		"password": "StrongPassword123!",
+	})
+	wReg := httptest.NewRecorder()
+	reqReg, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewBuffer(regBody))
+	reqReg.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(wReg, reqReg)
+
+	var regRes struct {
+		Data struct {
+			AccessToken string `json:"access_token"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(wReg.Body.Bytes(), &regRes)
+	token := regRes.Data.AccessToken
+
+	wStatus := httptest.NewRecorder()
+	reqStatus, _ := http.NewRequest(http.MethodGet, "/api/v1/users/me/daily-rewards", nil)
+	reqStatus.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(wStatus, reqStatus)
+
+	if wStatus.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for daily rewards status, got: %d, body: %s", wStatus.Code, wStatus.Body.String())
 	}
 }
 

@@ -449,3 +449,88 @@ func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID strin
 		WeeklyLogs:      weeklyLogs,
 	}, nil
 }
+
+// ClaimDailyReward records a daily reward claim, increments user XP, and records activity
+func (r *UserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
+	activityType := "daily_" + rewardType + "_claim"
+	today := time.Now().UTC().Format("2006-01-02")
+
+	// 1. Check if already claimed today
+	checkQuery := `
+		SELECT EXISTS (
+			SELECT 1 FROM user_activity_logs
+			WHERE user_id = $1
+			  AND activity_type = $2
+			  AND created_at >= CURRENT_DATE
+		)
+	`
+	var alreadyClaimed bool
+	err := r.db.Pool.QueryRow(ctx, checkQuery, userID, activityType).Scan(&alreadyClaimed)
+	if err == nil && alreadyClaimed {
+		return nil, domain.ErrDailyRewardAlreadyClaimed
+	}
+
+	// 2. Update user XP and level atomically
+	updateQuery := `
+		UPDATE users
+		SET xp = xp + $2,
+		    current_level = ((xp + $2) / 100) + 1,
+		    last_active_at = NOW(),
+		    updated_at = NOW()
+		WHERE id = $1
+		RETURNING xp, current_level, streak
+	`
+	var currentXP, currentLevel, streak int
+	err = r.db.Pool.QueryRow(ctx, updateQuery, userID, xpAwarded).Scan(&currentXP, &currentLevel, &streak)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user xp for daily reward: %w", err)
+	}
+
+	// 3. Log activity
+	meta := map[string]interface{}{
+		"reward_type": rewardType,
+		"date":        today,
+	}
+	_ = r.LogActivity(ctx, userID, activityType, xpAwarded, meta)
+
+	return &domain.DailyRewardClaimResponse{
+		RewardType:   rewardType,
+		XPAwarded:    xpAwarded,
+		CurrentXP:    currentXP,
+		CurrentLevel: currentLevel,
+		Streak:       streak,
+		ClaimedAt:    time.Now().UTC().Format(time.RFC3339),
+	}, nil
+}
+
+// GetDailyRewardsStatus checks whether daily vocab and golden chest rewards have been claimed today
+func (r *UserRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
+	today := time.Now().UTC().Format("2006-01-02")
+	query := `
+		SELECT 
+			EXISTS (
+				SELECT 1 FROM user_activity_logs 
+				WHERE user_id = $1 AND activity_type = 'daily_vocab_quest_claim' AND created_at >= CURRENT_DATE
+			) as vocab_claimed,
+			EXISTS (
+				SELECT 1 FROM user_activity_logs 
+				WHERE user_id = $1 AND activity_type = 'daily_golden_chest_claim' AND created_at >= CURRENT_DATE
+			) as chest_claimed
+	`
+	var vocabClaimed, chestClaimed bool
+	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(&vocabClaimed, &chestClaimed)
+	if err != nil {
+		// Default to false on fallback
+		return &domain.DailyRewardsStatusResponse{
+			Date:               today,
+			VocabQuestClaimed:  false,
+			GoldenChestClaimed: false,
+		}, nil
+	}
+
+	return &domain.DailyRewardsStatusResponse{
+		Date:               today,
+		VocabQuestClaimed:  vocabClaimed,
+		GoldenChestClaimed: chestClaimed,
+	}, nil
+}

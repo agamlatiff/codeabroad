@@ -234,6 +234,30 @@ func (u *authUsecase) Logout(ctx context.Context, userID string) error {
 	return u.sessionRepo.DeleteSession(ctx, userID)
 }
 
+// ClaimDailyReward handles reward claim business logic and XP validation
+func (u *authUsecase) ClaimDailyReward(ctx context.Context, userID string, rewardType string) (*domain.DailyRewardClaimResponse, error) {
+	if userID == "" {
+		return nil, domain.ErrUnauthorized
+	}
+
+	xpAwarded := 30
+	if rewardType == "golden_chest" {
+		xpAwarded = 50
+	} else if rewardType != "vocab_quest" {
+		return nil, fmt.Errorf("%w: tipe hadiah tidak valid", domain.ErrBadRequest)
+	}
+
+	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded)
+}
+
+// GetDailyRewardsStatus checks reward status for the authenticated user
+func (u *authUsecase) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
+	if userID == "" {
+		return nil, domain.ErrUnauthorized
+	}
+	return u.userRepo.GetDailyRewardsStatus(ctx, userID)
+}
+
 // generateTokenPair produces a signed access token and dynamic duration refresh token
 func (u *authUsecase) generateTokenPair(user *domain.User, refreshDuration time.Duration) (string, string, error) {
 	now := time.Now()

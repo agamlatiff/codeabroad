@@ -68,6 +68,30 @@ export const authService = {
   },
 
   /**
+   * Claims a daily reward (vocab_quest or golden_chest) and persists XP on backend PostgreSQL.
+   */
+  async claimDailyReward(rewardType: 'vocab_quest' | 'golden_chest'): Promise<import('../types/auth').DailyRewardClaimResponse> {
+    const response = await api.post<ApiResponse<import('../types/auth').DailyRewardClaimResponse>>('/users/me/daily-rewards/claim', {
+      reward_type: rewardType,
+    })
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Gagal mengklaim hadiah harian.')
+    }
+    return response.data.data
+  },
+
+  /**
+   * Fetches today's daily rewards status from backend PostgreSQL.
+   */
+  async getDailyRewardsStatus(): Promise<import('../types/auth').DailyRewardsStatusResponse> {
+    const response = await api.get<ApiResponse<import('../types/auth').DailyRewardsStatusResponse>>('/users/me/daily-rewards')
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Gagal memuat status hadiah harian.')
+    }
+    return response.data.data
+  },
+
+  /**
    * Terminates active session on the backend.
    */
   async logout(): Promise<void> {

@@ -69,4 +69,19 @@ export interface UserActivitySummary {
     weekly_logs: UserActivityLog[]
 }
 
+export interface DailyRewardClaimResponse {
+    reward_type: string
+    xp_awarded: number
+    current_xp: number
+    current_level: number
+    streak: number
+    claimed_at: string
+}
+
+export interface DailyRewardsStatusResponse {
+    date: string
+    vocab_quest_claimed: boolean
+    golden_chest_claimed: boolean
+}
+
 

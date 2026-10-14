@@ -134,6 +134,46 @@ func (h *AuthHandler) Logout(c *gin.Context) {
 	response.Success(c, http.StatusOK, "user logged out successfully", nil)
 }
 
+// ClaimDailyReward handles POST /api/v1/users/me/daily-rewards/claim
+func (h *AuthHandler) ClaimDailyReward(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, domain.ErrUnauthorized)
+		return
+	}
+
+	var req domain.DailyRewardClaimRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	res, err := h.authUsecase.ClaimDailyReward(c.Request.Context(), userID, req.RewardType)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "daily reward claimed successfully", res)
+}
+
+// GetDailyRewardsStatus handles GET /api/v1/users/me/daily-rewards
+func (h *AuthHandler) GetDailyRewardsStatus(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, domain.ErrUnauthorized)
+		return
+	}
+
+	status, err := h.authUsecase.GetDailyRewardsStatus(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "daily rewards status retrieved successfully", status)
+}
+
 func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	// Public routes
 	auth := rg.Group("/auth")
@@ -157,5 +197,7 @@ func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Han
 		users.GET("/me", h.GetProfile)
 		users.PATCH("/me", h.UpdateProfile)
 		users.GET("/me/activity-logs", h.GetActivityLogs)
+		users.GET("/me/daily-rewards", h.GetDailyRewardsStatus)
+		users.POST("/me/daily-rewards/claim", h.ClaimDailyReward)
 	}
 }

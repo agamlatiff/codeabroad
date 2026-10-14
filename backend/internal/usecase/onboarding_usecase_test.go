@@ -232,6 +232,25 @@ func (m *onboardingMockUserRepo) GetWeeklyActivityLogs(ctx context.Context, user
 	}, nil
 }
 
+func (m *onboardingMockUserRepo) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
+	return &domain.DailyRewardClaimResponse{
+		RewardType:   rewardType,
+		XPAwarded:    xpAwarded,
+		CurrentXP:    100,
+		CurrentLevel: 2,
+		Streak:       1,
+		ClaimedAt:    "2026-10-14T10:00:00Z",
+	}, nil
+}
+
+func (m *onboardingMockUserRepo) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
+	return &domain.DailyRewardsStatusResponse{
+		Date:               "2026-10-14",
+		VocabQuestClaimed:  false,
+		GoldenChestClaimed: false,
+	}, nil
+}
+
 func TestOnboardingUsecase_GetCountries(t *testing.T) {
 	countryRepo := newMockCountryRepository()
 	careerPathRepo := newMockCareerPathRepository()
