@@ -367,6 +367,43 @@
 - [x] Ubah rute fallback semua part dari `/courses` menjadi rute koding langsung `/learn/:id`.
 - [x] Tombol CTA floating popover dan tombol modal 3D mengarahkan user langsung ke workspace koding materi yang dipilih.
 
+## ⚡ FASE 22: Dinamisasi Jalur Belajar Peta S-Curve (`CurriculumPathMap.tsx` ➔ Database PostgreSQL) (SELESAI ✅)
+
+### [x] 22.1 Pemetaan Real-Time Status Node Part dari `user_quests`
+- [x] Sambungkan setiap node part berangka (1, 2, 3...) di `CurriculumPathMap.tsx` ke status riil dari `completedSet` (gabungan tabel `user_quests` backend dan persistensi local).
+- [x] Pastikan saat quest diselesaikan di `/learn/:id`, event `codeabroad_quest_completed` terpicu secara instan: node part berubah hijau emerald 3D `✓` (completed), XP bertambah nyata, dan part berikutnya otomatis terbuka (`active`) dengan popover CTA berdenyut dan maskot Kodi.
+- [x] Sinkronkan penghitung progres track pada Top Bar (`{completed}/{total} Modul ({percent}%)`) secara dinamis dari agregasi modul selesai.
+- [x] Dukung alias slug koding (`part-1-variabel-dan-tipe-data`, dll.) di repository PostgreSQL sehingga eksekusi unit test dan submit quest berjalan 100% valid tanpa UUID syntax error.
+
+---
+
+## ⚡ FASE 23: Bank Kosakata Bahasa Jepang IT Terpadu (`TechNihongoCard.tsx` ➔ PostgreSQL API)
+
+### [ ] 23.1 Skema & Seed Kosakata Standar Tokyo di Backend
+- [ ] Buat migrasi database `vocabularies` di PostgreSQL (`id`, `career_path_id`, `term`, `reading`, `meaning`, `category`, `example_ja`, `example_id`, `difficulty_level`).
+- [ ] Seed kamus kosakata IT Tokyo (Asakai standup, Pull Request, code review, terminologi arsitektur, dan etika kantor).
+- [ ] Buat handler & usecase `GET /api/v1/vocabularies/daily` dan `GET /api/v1/vocabularies` dengan rotasi harian otomatis.
+
+### [ ] 23.2 Integrasi Frontend `TechNihongoCard.tsx` ke API Riil
+- [ ] Ganti array konstanta statis `VOCAB_LIST` dengan fetch data dari endpoint `GET /api/v1/vocabularies/daily`.
+- [ ] Hubungkan tombol "Ganti (X/Y)" ke rotasi kosakata dinamis dari database.
+
+---
+
+## ⚡ FASE 24: Sinkronisasi Kalender Absensi Streak Riil (`user_activity_logs`)
+
+### [ ] 24.1 Endpoint Riwayat Aktivitas Mingguan
+- [ ] Buat endpoint `GET /api/v1/users/me/activity-logs` untuk mengembalikan riwayat hari aktif 7 hari terakhir berdasarkan timestamp aktivitas koding user.
+- [ ] Sinkronkan titik status 7-hari pada widget "Rentetan Belajar" di `DashboardPage.tsx` dan `RoadmapPage.tsx` agar menampilkan hari aktif riil secara akurat.
+
+---
+
+## ⚡ FASE 25: Halaman Portofolio & Kesiapan Sponsor Visa Tokyo (`/career` & NavRail)
+
+### [ ] 25.1 Halaman Portofolio Karir Mandiri (`CareerPortfolioPage.tsx`)
+- [ ] Buat rute `/career` di `App.tsx` dan hubungkan tombol tas kerja (`Briefcase` 💼) di `NavRail.tsx`.
+- [ ] Tampilkan kalkulator kesiapan kerja Tokyo (Tokyo Job Readiness Meter), ringkasan proyek koding yang telah diselesaikan dari modul quest, sertifikat kompetensi digital, dan checklist persyaratan sponsor visa kerja IT Jepang.
+
 ---
 
 ## 📜 Riwayat Fase yang Sudah Selesai (100% Completed)

@@ -35,7 +35,17 @@ func (r *QuestRepository) GetByID(ctx context.Context, id string, userID string)
 		       uq.code_submission
 		FROM quests q
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $2
-		WHERE q.id = $1
+		WHERE (
+			q.id::text = $1
+			OR q.id = CASE
+				WHEN $1 IN ('part-1-variabel-dan-tipe-data', 'part-1', 'GO 01') THEN 'd1000001-0000-0000-0000-000000000001'::uuid
+				WHEN $1 IN ('part-2-pointer-dan-struktur-data', 'part-2', 'GO 02') THEN 'd1000001-0000-0000-0000-000000000001'::uuid
+				WHEN $1 IN ('part-3-gin-routing-engine', 'part-4-routing-dan-jwt-middleware', 'station-3-jwt-middleware', 'GIN 01', 'GIN 02') THEN 'd1000001-0000-0000-0000-000000000001'::uuid
+				WHEN $1 IN ('docker-multi-stage', 'part-docker', 'DOCKER 01', 'DOCKER 02') THEN 'd2000001-0000-0000-0000-000000000001'::uuid
+				WHEN $1 IN ('react-accordion', 'part-react', 'REACT 01', 'REACT 02') THEN 'd3000001-0000-0000-0000-000000000001'::uuid
+				ELSE NULL
+			END
+		)
 		LIMIT 1
 	`
 

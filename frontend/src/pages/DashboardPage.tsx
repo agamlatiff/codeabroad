@@ -86,6 +86,40 @@ export const DashboardPage = () => {
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
   const { roadmap } = useRoadmap(activeTrack)
 
+  const [questCompletionTick, setQuestCompletionTick] = useState(0)
+
+  // Listen for real-time quest completions across the application
+  useEffect(() => {
+    const handler = () => setQuestCompletionTick((prev) => prev + 1)
+    window.addEventListener('codeabroad_quest_completed', handler)
+    window.addEventListener('storage', handler)
+    return () => {
+      window.removeEventListener('codeabroad_quest_completed', handler)
+      window.removeEventListener('storage', handler)
+    }
+  }, [])
+
+  // Aggregated set of all completed quest IDs
+  const completedQuestsSet = useMemo(() => {
+    const set = new Set<string>()
+    if (dailyQuests) {
+      dailyQuests.forEach((q) => {
+        if (q.user_status === 'completed') set.add(q.id)
+      })
+    }
+    try {
+      const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+      if (Array.isArray(stored)) {
+        stored.forEach((id: string) => set.add(id))
+      }
+    } catch {}
+    return set
+  }, [dailyQuests, questCompletionTick])
+
+  const isPart1Completed =
+    completedQuestsSet.has('part-1-variabel-dan-tipe-data') ||
+    completedQuestsSet.has('d1000001-0000-0000-0000-000000000001')
+
   // Dynamic career track progress aggregation (completed vs total modules)
   const trackProgressMap = useMemo(() => {
     let completed = 0
@@ -97,26 +131,30 @@ export const DashboardPage = () => {
           st.chapters.forEach((ch) => {
             if (ch.quests && ch.quests.length > 0) {
               total += ch.quests.length
-              completed += ch.quests.filter((q) => q.status === 'completed').length
+              completed += ch.quests.filter((q) => q.status === 'completed' || completedQuestsSet.has(q.id)).length
             } else {
               total += 1
-              if (ch.is_completed) completed += 1
+              if (ch.is_completed || completedQuestsSet.has(ch.id)) completed += 1
             }
           })
         } else {
           total += 1
-          if (st.is_completed) completed += 1
+          if (st.is_completed || completedQuestsSet.has(st.id)) completed += 1
         }
       })
     }
 
+    const localCount = completedQuestsSet.size
+    const effectiveCompleted = Math.max(completed, localCount)
+    const effectiveTotal = total > 0 ? total : 10
+
     return {
       [activeTrack]: {
-        completed: total > 0 ? completed : 0,
-        total: total > 0 ? total : 10,
+        completed: Math.min(effectiveCompleted, effectiveTotal),
+        total: effectiveTotal,
       },
     }
-  }, [roadmap, activeTrack])
+  }, [roadmap, activeTrack, completedQuestsSet])
 
   // Synchronize activeTrack when user profile arrives from backend
   useEffect(() => {
@@ -138,7 +176,6 @@ export const DashboardPage = () => {
     }
   }
 
-
   const currentTrackConfig =
     CAREER_TRACKS.find((t) => t.slug === activeTrack) || CAREER_TRACKS[0]
 
@@ -158,6 +195,7 @@ export const DashboardPage = () => {
   const todayEarnedXp = Math.min(
     dailyTargetXp,
     completedApiXp +
+      (isPart1Completed ? 50 : 0) +
       (claimedLocalQuest ? 30 : 0) +
       (reviewedNihongoToday && !claimedLocalQuest ? 15 : 0)
   )
@@ -173,7 +211,7 @@ export const DashboardPage = () => {
       chip_label: 'GO 01',
       xp_reward: 50,
       difficulty: 'Pemula',
-      user_status: (dailyQuests?.find((q) => q.id === 'part-1-variabel-dan-tipe-data')?.user_status || 'available') as 'completed' | 'available',
+      user_status: (isPart1Completed ? 'completed' : 'available') as 'completed' | 'available',
     },
     {
       id: 'nihongo-n3-vocab',

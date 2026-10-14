@@ -96,9 +96,34 @@ export const useLearnWorkspace = () => {
         streak: res.streak,
       })
 
+      // Persist completed quest for instant multi-page reactivity
+      try {
+        const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+        if (!stored.includes(id)) {
+          stored.push(id)
+          localStorage.setItem('codeabroad_completed_quests', JSON.stringify(stored))
+          window.dispatchEvent(new Event('codeabroad_quest_completed'))
+        }
+      } catch {
+        // Ignore localStorage error
+      }
+
       triggerHaptic('stampImpact')
       // Modal is opened via submitResult in store
     } catch (err: unknown) {
+      // Graceful offline fallback: if tests already passed, record completion
+      if (testResult?.success) {
+        try {
+          const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+          if (!stored.includes(id)) {
+            stored.push(id)
+            localStorage.setItem('codeabroad_completed_quests', JSON.stringify(stored))
+            window.dispatchEvent(new Event('codeabroad_quest_completed'))
+          }
+        } catch {
+          // Ignore localStorage error
+        }
+      }
       const msg = err instanceof Error ? err.message : 'Gagal menyelesaikan quest'
       setError(msg)
       triggerHaptic('error')

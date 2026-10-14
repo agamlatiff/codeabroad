@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
@@ -781,9 +781,47 @@ export const CurriculumPathMap = ({
 }: CurriculumPathMapProps) => {
   const navigate = useNavigate()
   const [activeModalNode, setActiveModalNode] = useState<PathMapNode | null>(null)
+  const [questCompletionTick, setQuestCompletionTick] = useState(0)
+
+  // Listen for real-time quest completions across the application
+  useEffect(() => {
+    const handler = () => setQuestCompletionTick((prev) => prev + 1)
+    window.addEventListener('codeabroad_quest_completed', handler)
+    window.addEventListener('storage', handler)
+    return () => {
+      window.removeEventListener('codeabroad_quest_completed', handler)
+      window.removeEventListener('storage', handler)
+    }
+  }, [])
 
   // Dynamic roadmap query from backend API
   const { roadmap } = useRoadmap(trackSlug)
+
+  // Aggregated set of all completed quest IDs from backend and local storage
+  const completedSet = useMemo(() => {
+    const set = new Set<string>()
+    // 1. From backend roadmap quests
+    if (roadmap?.stations) {
+      roadmap.stations.forEach((st) => {
+        (st.chapters || []).forEach((ch) => {
+          (ch.quests || []).forEach((q) => {
+            if (q.status === 'completed') {
+              set.add(q.id)
+              if (q.chip_label) set.add(q.chip_label)
+            }
+          })
+        })
+      })
+    }
+    // 2. From localStorage
+    try {
+      const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+      if (Array.isArray(stored)) {
+        stored.forEach((id: string) => set.add(id))
+      }
+    } catch {}
+    return set
+  }, [roadmap, questCompletionTick])
 
   // Derive units from backend roadmap if available, with graceful fallback to TRACK_CURRICULA
   const units: CurriculumUnitData[] = useMemo(() => {
@@ -821,8 +859,9 @@ export const CurriculumPathMap = ({
             if (ch.quests && ch.quests.length > 0) {
               ch.quests.forEach((q) => {
                 const partNum = globalPartCounter++
+                const isQuestCompleted = q.status === 'completed' || completedSet.has(q.id)
                 let questStatus: 'completed' | 'active' | 'locked' = 'locked'
-                if (q.status === 'completed') {
+                if (isQuestCompleted) {
                   questStatus = 'completed'
                 } else if (!hasFoundActiveQuest) {
                   questStatus = 'active'
@@ -920,21 +959,33 @@ export const CurriculumPathMap = ({
       })
     }
 
-    // Fallback to local static curriculum if backend roadmap is offline or unseeded
+    // Fallback to local structured curriculum with dynamic completion checking
     const fallbackConfig = TRACK_CURRICULA[trackSlug] || TRACK_CURRICULA['golang']
-    const activePartNumber = currentPart ?? fallbackConfig.defaultActivePart
+    let hasFoundActiveFallback = false
 
     return fallbackConfig.units.map((u) => {
-      const parts = u.parts.map((p) => ({
-        ...p,
-        route: `/learn/${p.id}`,
-        status:
-          p.number < activePartNumber
-            ? ('completed' as const)
-            : p.number === activePartNumber
-            ? ('active' as const)
-            : ('locked' as const),
-      }))
+      const parts = u.parts.map((p) => {
+        const isCompleted =
+          completedSet.has(p.id) ||
+          completedSet.has(`part-${p.number}`) ||
+          (typeof currentPart === 'number' && p.number < currentPart)
+
+        let partStatus: 'completed' | 'active' | 'locked' = 'locked'
+        if (isCompleted) {
+          partStatus = 'completed'
+        } else if (!hasFoundActiveFallback) {
+          partStatus = 'active'
+          hasFoundActiveFallback = true
+        } else {
+          partStatus = 'locked'
+        }
+
+        return {
+          ...p,
+          route: `/learn/${p.id}`,
+          status: partStatus,
+        }
+      })
 
       const isCompleted = parts.length > 0 && parts.every((p) => p.status === 'completed')
       const isActive = !isCompleted && parts.some((p) => p.status === 'active')

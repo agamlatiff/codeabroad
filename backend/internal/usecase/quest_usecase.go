@@ -184,7 +184,7 @@ func (u *questUsecase) SubmitQuest(ctx context.Context, questID string, userID s
 	}
 
 	// 3. Mark quest as completed
-	err = u.userQuestRepo.MarkCompleted(ctx, userID, questID, req.Code, testResult.TestsPassed, testResult.TotalTests)
+	err = u.userQuestRepo.MarkCompleted(ctx, userID, quest.ID, req.Code, testResult.TestsPassed, testResult.TotalTests)
 	if err != nil {
 		return nil, fmt.Errorf("failed to mark quest completed: %w", err)
 	}
