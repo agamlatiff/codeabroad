@@ -45,7 +45,7 @@ export const NavRail = () => {
     {
       label: 'Karir',
       tooltip: 'Karir • Portofolio Tokyo IT',
-      href: '/dashboard#competency',
+      href: '/career',
       icon: Briefcase,
     },
   ]
@@ -88,6 +88,7 @@ export const NavRail = () => {
               const Icon = item.icon
               const isActive =
                 location.pathname === item.href ||
+                (item.href === '/career' && location.pathname.startsWith('/career')) ||
                 (item.href === '/courses' &&
                   (location.pathname.startsWith('/roadmap') ||
                     location.pathname.startsWith('/learn')))
@@ -203,6 +204,7 @@ export const NavRail = () => {
           const Icon = item.icon
           const isActive =
             location.pathname === item.href ||
+            (item.href === '/career' && location.pathname.startsWith('/career')) ||
             (item.href === '/courses' &&
               (location.pathname.startsWith('/roadmap') ||
                 location.pathname.startsWith('/learn')))

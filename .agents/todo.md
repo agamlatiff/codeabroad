@@ -411,11 +411,17 @@
 
 ---
 
-## ⚡ FASE 25: Halaman Portofolio & Kesiapan Sponsor Visa Tokyo (`/career` & NavRail)
+## ⚡ FASE 25: Halaman Portofolio & Kesiapan Sponsor Visa Tokyo (`/career` & NavRail) (SELESAI ✅)
 
-### [ ] 25.1 Halaman Portofolio Karir Mandiri (`CareerPortfolioPage.tsx`)
-- [ ] Buat rute `/career` di `App.tsx` dan hubungkan tombol tas kerja (`Briefcase` 💼) di `NavRail.tsx`.
-- [ ] Tampilkan kalkulator kesiapan kerja Tokyo (Tokyo Job Readiness Meter), ringkasan proyek koding yang telah diselesaikan dari modul quest, sertifikat kompetensi digital, dan checklist persyaratan sponsor visa kerja IT Jepang.
+### [x] 25.1 Halaman Portofolio Karir Mandiri (`CareerPortfolioPage.tsx`)
+- [x] Buat komponen `CareerPortfolioPage.tsx` lengkap dengan layout Duolingo 3D Tactile, navigasi tab, dan maskot Kodi.
+- [x] Daftarkan rute `/career` di `App.tsx` di dalam `ProtectedRoute`.
+- [x] Hubungkan tombol tas kerja (`Briefcase` 💼) di `NavRail.tsx` ke `/career` (desktop & mobile) dengan active route highlighting.
+- [x] Tampilkan **Tokyo Job Readiness Meter** (kalkulator kesiapan kerja dinamis berdasarkan modul yang diselesaikan, XP, level, dan streak).
+- [x] Tampilkan **Showcase Proyek Koding Mandiri** dengan spesifikasi standar industri Shibuya/Roppongi dan verifikasi otomatis.
+- [x] Tampilkan **Sertifikat Kompetensi Digital CodeAbroad Tokyo** dengan stempel hanko digital `合格` dan tombol cetak/unduh PDF.
+- [x] Tampilkan **Checklist Persyaratan Sponsor Visa Kerja IT Jepang** (*Engineer / Specialist in Humanities / International Services*).
+- [x] Validasi build `npm run build` sukses (exit code 0).
 
 ---
 

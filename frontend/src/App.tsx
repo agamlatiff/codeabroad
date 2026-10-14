@@ -7,6 +7,7 @@ import { RoadmapPage } from './pages/RoadmapPage'
 import { QuestLogPage } from './pages/QuestLogPage'
 import { LearnWorkspacePage } from './pages/LearnWorkspacePage'
 import { QuestCompletePage } from './pages/QuestCompletePage'
+import { CareerPortfolioPage } from './pages/CareerPortfolioPage'
 import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="/quests" element={<QuestLogPage />} />
           <Route path="/learn/:id" element={<LearnWorkspacePage />} />
           <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
+          <Route path="/career" element={<CareerPortfolioPage />} />
         </Route>
 
         {/* Default Fallback */}
