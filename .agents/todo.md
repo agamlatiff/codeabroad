@@ -318,7 +318,7 @@
   - Ganti nama hardcoded "agam" pada contoh kalimat perkenalan diri (*"Hajimemashite, Indonesia kara kimashita agam to moushimasu."*) dengan nama profil asli pengguna `{user?.name || user?.username || 'developer'}`.
 - [ ] **19.2 Sinkronisasi Fallback Misi Harian (`DashboardPage.tsx`):**
   - Ubah fallback `activeQuests` yang awalnya merujuk ke modul lanjut (`part-4-gin-routing`) agar selaras dengan posisi fresh user di Part 1 (`part-1-variabel-dan-tipe-data`, "GO 01").
-- [ ] **19.3 Perbaikan Bug UI: Backdrop Shadow Modal Terpotong di Bagian Bawah (`CurriculumPathMap.tsx` & Modals):**
+- [x] **19.3 Perbaikan Bug UI: Backdrop Shadow Modal Terpotong di Bagian Bawah (`CurriculumPathMap.tsx` & Modals):**
   - **Penyebab:** Modal di-render inline di dalam nested container `<main>` (yang memiliki `pb-20 md:pb-8`), sehingga `.fixed.inset-0` terikat pada batasan container parent dan tidak menutup ~56px bagian bawah layar.
   - **Solusi:** Gunakan `createPortal(modalElement, document.body)` dari `react-dom` dengan `fixed inset-0 w-screen h-screen z-50` agar overlay backdrop gelap langsung terpasang di root `<body>` dan menutupi 100% viewport layar secara menyeluruh.
 

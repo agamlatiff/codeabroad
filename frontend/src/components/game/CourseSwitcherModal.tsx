@@ -1,3 +1,4 @@
+import { createPortal } from 'react-dom'
 import {
   Check,
   CaretRight,
@@ -86,6 +87,7 @@ export const CourseSwitcherModal = ({
   trackProgressMap,
 }: CourseSwitcherModalProps) => {
   if (!isOpen) return null
+  if (typeof document === 'undefined') return null
 
   const handleSelect = (track: CareerTrackItem) => {
     triggerHaptic('success')
@@ -188,8 +190,8 @@ export const CourseSwitcherModal = ({
     )
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in select-none">
+  return createPortal(
+    <div className="fixed inset-0 z-50 w-screen h-screen flex items-start sm:items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in select-none">
       {/* Backdrop click dismiss */}
       <div className="absolute inset-0" onClick={onClose} />
 
@@ -237,6 +239,7 @@ export const CourseSwitcherModal = ({
           </p>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

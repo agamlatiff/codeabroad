@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { createPortal } from 'react-dom'
 import type { FC } from 'react'
 import {
   X,
@@ -122,8 +123,10 @@ export const AccountSettingsModal: FC<AccountSettingsModalProps> = ({
     { id: 'lorelei', label: 'Manga Anime', desc: 'Ilustrasi elegan khas Jepang' },
   ]
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+  if (typeof document === 'undefined') return null
+
+  return createPortal(
+    <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
       <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-7 max-w-lg w-full space-y-5 shadow-2xl animate-pop relative max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
@@ -365,6 +368,7 @@ export const AccountSettingsModal: FC<AccountSettingsModalProps> = ({
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   Check,
@@ -1097,8 +1098,8 @@ func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
   return (
     <div className={`space-y-12 sm:space-y-16 select-none ${className}`}>
       {/* ── BUKU PANDUAN BAB MODAL (GUIDEBOOK CHEATSHEET) ── */}
-      {activeGuidebook && guidebookContent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+      {activeGuidebook && guidebookContent && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
           <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl animate-pop relative max-h-[90vh] overflow-y-auto">
             <button
               type="button"
@@ -1184,12 +1185,13 @@ func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
               MENGERTI, KEMBALI KE PETA BELAJAR
             </Button3D>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── INTERACTIVE LESSON MODAL / POPOVER ── */}
-      {activeModalNode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      {activeModalNode && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
           <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-pop relative">
             <button
               type="button"
@@ -1359,7 +1361,8 @@ func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
               </Button3D>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ══════════════════════════════════════════════════════════════ */}

@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard, useQuests } from '../hooks'
 import { useRoadmap } from '../hooks/useRoadmap'
@@ -508,8 +509,8 @@ export const DashboardPage = () => {
       />
 
       {/* ── 4. CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}
-      {isChestModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+      {isChestModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
           <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-pop relative">
             <button
               type="button"
@@ -554,7 +555,8 @@ export const DashboardPage = () => {
               KLAIM HADIAH & LANJUTKAN
             </Button3D>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   )
