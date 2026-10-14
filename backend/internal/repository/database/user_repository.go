@@ -306,3 +306,23 @@ func (r *UserRepository) UpdateGamification(ctx context.Context, userID string, 
 	return nil
 }
 
+// UpdateProfile updates user profile fields such as primary stack, career path, bio, and social links
+func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
+	query := `
+		UPDATE users
+		SET primary_stack = COALESCE($2, primary_stack),
+		    career_path_id = COALESCE($3, career_path_id),
+		    bio = COALESCE($4, bio),
+		    github_url = COALESCE($5, github_url),
+		    linkedin_url = COALESCE($6, linkedin_url),
+		    updated_at = NOW()
+		WHERE id = $1
+	`
+	_, err := r.db.Pool.Exec(ctx, query, userID, req.PrimaryStack, req.CareerPathID, req.Bio, req.GithubURL, req.LinkedinURL)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user profile: %w", err)
+	}
+	return r.GetByID(ctx, userID)
+}
+
+

@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom'
 import { roadmapService } from '../services/roadmapService'
 import type { Roadmap, Station } from '../types/roadmap'
 
-export const useRoadmap = () => {
-  const { track } = useParams<{ track?: string }>()
+export const useRoadmap = (explicitTrack?: string) => {
+  const { track: routeTrack } = useParams<{ track?: string }>()
+  const effectiveTrack = explicitTrack || routeTrack
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null)
   const [selectedStationId, setSelectedStationId] = useState<string | null>(null)
   const [openChapterIds, setOpenChapterIds] = useState<Set<string>>(new Set())
@@ -15,8 +16,8 @@ export const useRoadmap = () => {
     setIsLoading(true)
     setError(null)
     try {
-      const data = track
-        ? await roadmapService.getTrackRoadmap(track)
+      const data = effectiveTrack
+        ? await roadmapService.getTrackRoadmap(effectiveTrack)
         : await roadmapService.getActiveRoadmap()
       setRoadmap(data)
 
@@ -37,7 +38,7 @@ export const useRoadmap = () => {
     } finally {
       setIsLoading(false)
     }
-  }, [track])
+  }, [effectiveTrack])
 
   useEffect(() => {
     fetchRoadmap()

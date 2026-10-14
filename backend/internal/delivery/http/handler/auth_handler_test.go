@@ -56,6 +56,20 @@ func (r *testUserRepo) UpdateGamification(ctx context.Context, userID string, xp
 	return nil
 }
 
+func (r *testUserRepo) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
+	u := r.users[userID]
+	if u == nil {
+		return nil, domain.ErrUserNotFound
+	}
+	if req.PrimaryStack != nil {
+		u.PrimaryStack = req.PrimaryStack
+	}
+	if req.CareerPathID != nil {
+		u.CareerPathID = req.CareerPathID
+	}
+	return u, nil
+}
+
 
 type testSessionRepo struct {
 	sessions map[string]string

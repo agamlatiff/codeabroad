@@ -80,6 +80,28 @@ func (h *AuthHandler) GetProfile(c *gin.Context) {
 	response.Success(c, http.StatusOK, "user profile retrieved successfully", user)
 }
 
+func (h *AuthHandler) UpdateProfile(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, domain.ErrUnauthorized)
+		return
+	}
+
+	var req domain.UpdateProfileRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, err.Error())
+		return
+	}
+
+	user, err := h.authUsecase.UpdateProfile(c.Request.Context(), userID, &req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "user profile updated successfully", user)
+}
+
 func (h *AuthHandler) Logout(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
@@ -116,5 +138,6 @@ func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Han
 	users.Use(authMiddleware)
 	{
 		users.GET("/me", h.GetProfile)
+		users.PATCH("/me", h.UpdateProfile)
 	}
 }

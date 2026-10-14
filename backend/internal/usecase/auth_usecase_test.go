@@ -57,6 +57,20 @@ func (m *mockUserRepository) UpdateGamification(ctx context.Context, userID stri
 	return nil
 }
 
+func (m *mockUserRepository) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
+	user := m.usersByID[userID]
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+	if req.PrimaryStack != nil {
+		user.PrimaryStack = req.PrimaryStack
+	}
+	if req.CareerPathID != nil {
+		user.CareerPathID = req.CareerPathID
+	}
+	return user, nil
+}
+
 // mockSessionRepository implements an in-memory domain.SessionRepository for unit testing
 type mockSessionRepository struct {
 	sessions map[string]string

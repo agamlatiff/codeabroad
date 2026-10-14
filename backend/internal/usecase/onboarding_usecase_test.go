@@ -198,6 +198,20 @@ func (m *onboardingMockUserRepo) UpdateGamification(ctx context.Context, userID 
 	return nil
 }
 
+func (m *onboardingMockUserRepo) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
+	u := m.users[userID]
+	if u == nil {
+		return nil, domain.ErrUserNotFound
+	}
+	if req.PrimaryStack != nil {
+		u.PrimaryStack = req.PrimaryStack
+	}
+	if req.CareerPathID != nil {
+		u.CareerPathID = req.CareerPathID
+	}
+	return u, nil
+}
+
 func TestOnboardingUsecase_GetCountries(t *testing.T) {
 	countryRepo := newMockCountryRepository()
 	careerPathRepo := newMockCareerPathRepository()

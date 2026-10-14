@@ -68,7 +68,11 @@ const VOCAB_PROGRESSION = [
 ]
 
 export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const [currentIndex, setCurrentIndex] = useState(() => {
+    // Seed with day of year so each calendar day opens with a fresh Tokyo IT vocab
+    const dayOfYear = Math.floor(Date.now() / 86400000)
+    return dayOfYear % VOCAB_PROGRESSION.length
+  })
   const [copied, setCopied] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 

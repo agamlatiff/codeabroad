@@ -1,6 +1,8 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard, useQuests } from '../hooks'
+import { authService } from '../services/authService'
+import { questService } from '../services/questService'
 import { NavRail } from '../components/layout/NavRail'
 import {
   CurriculumPathMap,
@@ -22,6 +24,7 @@ import {
   Translate,
   Lightning,
   Gift,
+  X,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -33,27 +36,79 @@ import {
 
 export const DashboardPage = () => {
   const navigate = useNavigate()
-  const { profile } = useDashboard()
+  const { profile, actions } = useDashboard()
   const { user } = profile
-  const { dailyQuests, quests, timeLeft } = useQuests()
+  const { dailyQuests, quests, timeLeft, refetch: refetchQuests } = useQuests()
   const [searchQuery, setSearchQuery] = useState('')
   const [claimedLocalQuest, setClaimedLocalQuest] = useState(false)
-  const [activeTrack, setActiveTrack] = useState('golang')
+  const [claimingQuestId, setClaimingQuestId] = useState<string | null>(null)
+  const [isChestModalOpen, setIsChestModalOpen] = useState(false)
+  const [activeTrack, setActiveTrack] = useState(() => {
+    return user?.primary_stack || user?.career_path?.slug || 'golang'
+  })
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
+
+  // Synchronize activeTrack when user profile arrives from backend
+  useEffect(() => {
+    if (user?.primary_stack) {
+      setActiveTrack(user.primary_stack)
+    } else if (user?.career_path?.slug) {
+      setActiveTrack(user.career_path.slug)
+    }
+  }, [user?.primary_stack, user?.career_path?.slug])
+
+  const handleSelectTrack = async (newTrack: string) => {
+    triggerHaptic('tap')
+    setActiveTrack(newTrack)
+    try {
+      await authService.updateProfile({ primary_stack: newTrack })
+      actions.refetchProfile()
+    } catch {
+      // Gracefully continue with local state if backend update fails
+    }
+  }
+
+  const handleClaimQuest = async (questId: string) => {
+    triggerHaptic('success')
+    setClaimingQuestId(questId)
+    try {
+      await questService.submitQuest(questId, { code: '// Daily Quest Auto-Claim' })
+      await Promise.all([refetchQuests(), actions.refetchProfile()])
+    } catch {
+      setClaimedLocalQuest(true)
+    } finally {
+      setClaimingQuestId(null)
+    }
+  }
 
   const currentTrackConfig =
     CAREER_TRACKS.find((t) => t.slug === activeTrack) || CAREER_TRACKS[0]
 
-  const userXp = user?.xp ? (user.xp * 100).toLocaleString() : '5,400'
-  const userStreak = user?.streak ?? 14
-  const userLevel = user?.current_level ?? 7
+  // Dynamic user gamification stats
+  const userXp = typeof user?.xp === 'number' ? user.xp.toLocaleString() : '0'
+  const userStreak = typeof user?.streak === 'number' ? user.streak : 0
+  const userLevel = typeof user?.current_level === 'number' ? user.current_level : 1
+
+  // Dynamic day calculation (0=Sen, 1=Sel, 2=Rab, 3=Kam, 4=Jum, 5=Sab, 6=Min)
+  const jsDay = new Date().getDay()
+  const todayDayIndex = jsDay === 0 ? 6 : jsDay - 1
+
+  // Dynamic Daily Quests & Golden Chest XP Progress
+  const dailyTargetXp = 50
+  const completedDailyQuests = (dailyQuests || []).filter((q) => q.user_status === 'completed')
+  const todayEarnedXp =
+    completedDailyQuests.reduce((sum, q) => sum + (q.xp_reward || 0), 0) +
+    (claimedLocalQuest ? 50 : 0)
+  const dailyProgressPercent = Math.min(100, Math.round((todayEarnedXp / dailyTargetXp) * 100))
+  const isChestUnlocked = todayEarnedXp >= dailyTargetXp
+  const remainingXp = Math.max(0, dailyTargetXp - todayEarnedXp)
 
   // Active Daily Quests: Prefer API dailyQuests, fallback to active quests
   const activeQuests =
     dailyQuests && dailyQuests.length > 0
-      ? dailyQuests.slice(0, 2)
+      ? dailyQuests.slice(0, 3)
       : quests && quests.length > 0
-      ? quests.slice(0, 2)
+      ? quests.slice(0, 3)
       : [
           {
             id: 'station-3-jwt-middleware',
@@ -72,11 +127,6 @@ export const DashboardPage = () => {
             user_status: 'available',
           },
         ]
-
-  const handleClaim = () => {
-    triggerHaptic('success')
-    setClaimedLocalQuest(true)
-  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -190,15 +240,16 @@ export const DashboardPage = () => {
                 { label: 'Sen', dayIndex: 0 },
                 { label: 'Sel', dayIndex: 1 },
                 { label: 'Rab', dayIndex: 2 },
-                { label: 'Kam', dayIndex: 3, isToday: true },
+                { label: 'Kam', dayIndex: 3 },
                 { label: 'Jum', dayIndex: 4 },
                 { label: 'Sab', dayIndex: 5 },
                 { label: 'Min', dayIndex: 6 },
               ].map((item) => {
-                const currentDayIndex = 3
+                const isToday = item.dayIndex === todayDayIndex
                 const isCompleted =
-                  item.dayIndex <= currentDayIndex &&
-                  currentDayIndex - item.dayIndex < Math.max(1, userStreak)
+                  item.dayIndex < todayDayIndex
+                    ? todayDayIndex - item.dayIndex < Math.max(1, userStreak)
+                    : isToday && userStreak > 0
 
                 return (
                   <div key={item.label} className="flex flex-col items-center gap-1">
@@ -206,7 +257,7 @@ export const DashboardPage = () => {
                       className={`text-[9px] font-brand font-black transition-colors ${
                         isCompleted
                           ? 'text-orange-600 font-black'
-                          : item.isToday
+                          : isToday
                           ? 'text-orange-500 font-black underline decoration-orange-400 decoration-2 underline-offset-2'
                           : 'text-slate-400 font-bold'
                       }`}
@@ -225,7 +276,7 @@ export const DashboardPage = () => {
                           className="w-3.5 h-3.5 text-amber-100 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] animate-pulse"
                         />
                       </div>
-                    ) : item.isToday ? (
+                    ) : isToday ? (
                       /* Active Day in Progress Ring */
                       <div
                         className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-orange-50 border-2 border-dashed border-orange-400 flex items-center justify-center text-orange-500 shadow-2xs relative"
@@ -279,11 +330,13 @@ export const DashboardPage = () => {
               <div className="flex items-center justify-between text-[10px]">
                 <span className="font-brand font-black text-slate-800 flex items-center gap-1">
                   <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
-                  <span>35 / 50 XP Hari Ini</span>
+                  <span>{todayEarnedXp} / {dailyTargetXp} XP Hari Ini</span>
                 </span>
                 <span className="font-brand font-black text-amber-700 text-[10px] flex items-center gap-1">
                   <span>🎁 +20 💎</span>
-                  <span className="text-slate-400 font-medium">(15 XP lagi)</span>
+                  <span className="text-slate-400 font-medium">
+                    ({isChestUnlocked ? 'Tercapai! 🎉' : `${remainingXp} XP lagi`})
+                  </span>
                 </span>
               </div>
 
@@ -292,17 +345,30 @@ export const DashboardPage = () => {
                 <div className="flex-1 h-2.5 bg-white rounded-full border border-slate-200/90 p-0.5 shadow-inner overflow-hidden relative">
                   <div
                     className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706] relative"
-                    style={{ width: '70%' }}
+                    style={{ width: `${dailyProgressPercent}%` }}
                   >
                     <div className="absolute inset-x-0 top-0 h-[45%] bg-white/35 rounded-full" />
                   </div>
                 </div>
-                <div
-                  className="w-6 h-6 rounded-lg bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800 shrink-0 shadow-2xs"
-                  title="Peti Emas Hadiah 50 XP (+20 💎)"
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setIsChestModalOpen(true)
+                  }}
+                  className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 shadow-2xs transition-transform cursor-pointer ${
+                    isChestUnlocked
+                      ? 'bg-amber-400 border-amber-500 text-amber-950 animate-bounce shadow-[0_2px_0_0_#B45309] hover:scale-110 active:scale-95'
+                      : 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200'
+                  }`}
+                  title={
+                    isChestUnlocked
+                      ? 'Klik untuk membuka Peti Emas Hadiah 50 XP! (+20 💎)'
+                      : `Peti Emas Hadiah 50 XP (+20 💎) - ${remainingXp} XP lagi`
+                  }
                 >
-                  <Gift weight="fill" className="w-3.5 h-3.5 text-amber-800" />
-                </div>
+                  <Gift weight={isChestUnlocked ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
+                </button>
               </div>
             </div>
 
@@ -357,14 +423,15 @@ export const DashboardPage = () => {
                         <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
                         <span>SELESAI</span>
                       </span>
-                    ) : idx === 0 && !claimedLocalQuest ? (
+                    ) : quest.user_status === 'available' || (!claimedLocalQuest && idx === 0) ? (
                       <Button3D
                         variant="amber"
                         size="sm"
-                        onClick={handleClaim}
+                        disabled={claimingQuestId === quest.id}
+                        onClick={() => handleClaimQuest(quest.id)}
                         className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
                       >
-                        KLAIM
+                        {claimingQuestId === quest.id ? 'KLAIM...' : 'KLAIM'}
                       </Button3D>
                     ) : (
                       <Button3D
@@ -395,8 +462,58 @@ export const DashboardPage = () => {
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
-        onSelectTrack={setActiveTrack}
+        onSelectTrack={handleSelectTrack}
       />
+
+      {/* ── 4. CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}
+      {isChestModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-pop relative">
+            <button
+              type="button"
+              onClick={() => setIsChestModalOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer"
+            >
+              <X weight="bold" className="w-4 h-4" />
+            </button>
+            <div className="w-20 h-20 mx-auto rounded-3xl bg-gradient-to-b from-amber-300 via-amber-400 to-amber-500 shadow-[0_6px_0_0_#B45309] flex items-center justify-center text-amber-950 animate-bounce">
+              <Gift weight="fill" className="w-10 h-10 text-white drop-shadow-md" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-brand font-black text-xl text-slate-900">
+                Peti Emas Hadiah Terbuka! 🎉
+              </h3>
+              <p className="text-xs text-slate-600 font-medium">
+                {isChestUnlocked
+                  ? 'Kerja kerasmu hari ini luar biasa! Kamu telah menuntaskan target 50 XP harian.'
+                  : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka hadiah permata di peti ini.`}
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+              <span className="font-brand font-black text-sm text-amber-900 flex items-center gap-1">
+                <Lightning weight="fill" className="w-4 h-4 text-amber-500" />
+                <span>+50 XP Harian</span>
+              </span>
+              <span className="text-slate-300">•</span>
+              <span className="font-brand font-black text-sm text-amber-900 flex items-center gap-1">
+                <span>+20 💎 Permata</span>
+              </span>
+            </div>
+            <Button3D
+              variant="amber"
+              size="md"
+              fullWidth
+              onClick={() => {
+                triggerHaptic('success')
+                setIsChestModalOpen(false)
+              }}
+              className="py-2.5 font-black text-xs shadow-[0_3px_0_0_#B45309]"
+            >
+              KLAIM HADIAH & LANJUTKAN
+            </Button3D>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

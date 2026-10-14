@@ -210,6 +210,14 @@ func (u *authUsecase) GetProfile(ctx context.Context, userID string) (*domain.Us
 	return user, nil
 }
 
+// UpdateProfile updates user profile preferences and stack
+func (u *authUsecase) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
+	if userID == "" {
+		return nil, domain.ErrUnauthorized
+	}
+	return u.userRepo.UpdateProfile(ctx, userID, req)
+}
+
 // Logout invalidates the active user session in the cache
 func (u *authUsecase) Logout(ctx context.Context, userID string) error {
 	if userID == "" {

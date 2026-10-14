@@ -61,6 +61,15 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// UpdateProfileRequest defines the input payload for updating user preferences and profile
+type UpdateProfileRequest struct {
+	PrimaryStack *string `json:"primary_stack"`
+	CareerPathID *string `json:"career_path_id"`
+	Bio          *string `json:"bio"`
+	GithubURL    *string `json:"github_url"`
+	LinkedinURL  *string `json:"linkedin_url"`
+}
+
 // AuthResponse defines the payload returned upon successful authentication
 type AuthResponse struct {
 	AccessToken  string `json:"access_token"`
@@ -77,6 +86,7 @@ type UserRepository interface {
 	UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error
 	GetProfileWithDetails(ctx context.Context, userID string) (*OnboardingProfileResponse, error)
 	UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error
+	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
 }
 
 // AuthUsecase specifies the business logic contract for authentication
@@ -85,6 +95,7 @@ type AuthUsecase interface {
 	Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error)
 	GetProfile(ctx context.Context, userID string) (*User, error)
+	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
 	Logout(ctx context.Context, userID string) error
 }
 

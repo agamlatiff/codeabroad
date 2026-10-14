@@ -19,7 +19,7 @@ export const useDashboard = () => {
   const { user, logout, updateUser } = useAuthStore()
 
   // 1. Profile Synchronization via TanStack Query
-  const { data: profile } = useQuery({
+  const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ['profile'],
     queryFn: authService.getProfile,
     staleTime: 1000 * 60 * 5, // 5 minutes cache
@@ -106,6 +106,7 @@ export const useDashboard = () => {
     // 5. Actions
     actions: {
       logout: handleLogout,
+      refetchProfile,
     },
   }
 }

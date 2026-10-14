@@ -191,6 +191,70 @@
 
 ---
 
+## ⚡ FASE 13: Integrasi Data Dinamis Dashboard & Sinkronisasi Backend (SELESAI ✅)
+
+### [x] 13.1 Sinkronisasi Profil & Gamifikasi Real-Time (`useDashboard.ts` & HUD Bar)
+- [x] Sambungkan `user.xp`, `user.streak`, dan `user.current_level` dari `GET /api/v1/users/me` langsung ke HUD bar atas.
+- [x] Hapus mock multiplier `user.xp * 100` dan fallback angka palsu (`5,400`, `14`, `7`).
+- [x] Set peminatan aktif (`activeTrack`) secara otomatis dari `user.primary_stack` atau `user.career_path_id` profil pengguna saat pertama kali memuat dashboard.
+
+### [x] 13.2 Kalender Konsistensi 7-Hari Dinamis (Streak Calendar Engine)
+- [x] Deteksi hari aktif mingguan (Senin–Minggu) secara dinamis sesuai kalender lokal (`new Date().getDay()`).
+- [x] Tandai token api 3D menyala secara akurat berdasarkan `user.streak` dan tanggal `user.last_active_at`.
+- [x] Sorot hari ini (*Today Indicator*) dengan border putus-putus dan pesan pemicu aksi yang tepat.
+
+### [x] 13.3 Target Peti Emas & Misi Harian Terpadu (Daily Quest Engine)
+- [x] Konsumsi data misi harian riil dari `GET /api/v1/quests/daily` via hook `useQuests()`.
+- [x] Hitung total XP misi harian yang diselesaikan hari ini secara otomatis.
+- [x] Buat progress bar `todayXp / 50 XP` bergerak dinamis (0% – 100%) dan berikan status buka pada Peti Emas saat target 50 XP tercapai.
+- [x] Pastikan klik tombol aksi pada misi mengarahkan pengguna langsung ke workspace belajar `/learn/:questId`.
+
+### [x] 13.4 Peta Kurikulum Dinamis (`CurriculumPathMap.tsx` ➔ `useRoadmap`)
+- [x] Integrasikan hook `useRoadmap(activeTrack)` yang memanggil endpoint `GET /api/v1/roadmaps/:track_slug` atau `GET /api/v1/roadmaps/active`.
+- [x] Transformasikan struktur data backend (`Roadmap ➔ Stations ➔ Chapters ➔ Quests`) ke format kanvas kurikulum:
+  - Station / Chapter ➔ Unit Banner (Nomor unit, judul materi, tema gradasi, status).
+  - Quests ➔ Stepping Stone Berangka 3D (1, 2, 3...) dengan status riil (`completed`, `active`, `locked`) dari tabel `user_quests`.
+- [x] Pertahankan *graceful degradation* (fallback kurikulum bawaan) jika backend sedang offline atau koneksi terputus.
+
+### [x] 13.5 Kosakata Harian Kantor Tokyo Dinamis (`TechNihongoCard.tsx`)
+- [x] Bangun engine rotasi kosakata harian IT Tokyo (*Daily Tech Nihongo*) berdasarkan tanggal kalender.
+- [x] Tampilkan istilah teknis relevan (Kanji, Romaji, Furigana, Terjemahan, dan contoh kalimat standup *Asakai*).
+- [x] Integrasikan fitur Web Speech API (audio pengucapan) dan tombol salin instan.
+
+### [x] 13.6 Validasi Pipeline & Pengujian End-to-End
+- [x] Jalankan `npm run build` di frontend untuk memvalidasi zero error TypeScript.
+- [x] Jalankan `go test -count=1 ./...` di backend untuk menjamin 100% test coverage endpoint.
+- [x] Uji skenario alur: Pengguna login ➔ dashboard menampilkan progres riil ➔ ganti track karier ➔ peta kurikulum berganti secara instan.
+
+---
+
+## ⚡ FASE 14: Finalisasi Interaktivitas & Dinamisasi Lanjutan (SELESAI ✅)
+
+### [x] 14.1 Modal Detail Part Belajar 3D (`CurriculumPathMap.tsx` ➔ `activeModalNode`)
+- [x] Render Modal Dialog 3D taktil bergaya Duolingo saat pengguna mengklik node stepping stone manapun.
+- [x] State Selesai (Completed): Tampilkan ringkasan materi, badge "Sudah Selesai", ilustrasi Kodi Proud, dan tombol `KODING ULANG (LATIHAN)`.
+- [x] State Aktif (Active): Tampilkan popover info lengkap, prasyarat, estimasi waktu, ilustrasi Kodi Coding, dan tombol `MULAI KODING SEKARANG (+50 XP)`.
+- [x] State Terkunci (Locked): Tampilkan ilustrasi Kodi Thinking dengan pesan ramah bahwa part sebelumnya harus diselesaikan terlebih dahulu, serta tombol `MENGERTI, TUTUP`.
+- [x] State Peti/Trofi: Menampilkan ilustrasi Kodi Celebrate dengan info hadiah bonus XP dan permata.
+
+### [x] 14.2 Persistensi Pilihan Jalur Belajar ke Backend (`CourseSwitcherModal.tsx` & `PATCH /api/v1/users/me`)
+- [x] Buat handler & usecase `PATCH /api/v1/users/me` di backend Go untuk memperbarui `primary_stack` dan `career_path_id`.
+- [x] Sambungkan modal switcher ke mutasi API via `authService.updateProfile` dan `actions.refetchProfile()` sehingga saat berganti track (misal Golang ➔ Frontend), preferensi tersimpan permanen di database PostgreSQL.
+
+### [x] 14.3 Klaim Hadiah Nyata di Backend (Quest Claim & Peti Emas)
+- [x] Sambungkan tombol `KLAIM` pada Misi Harian ke backend (`POST /api/v1/quests/:id/submit`) via `questService.submitQuest` agar perolehan XP dan status tersimpan nyata di PostgreSQL (menghilangkan ketergantungan pada state semu).
+- [x] Tambahkan aksi interaktif klik pada Peti Emas saat mencapai target 50 XP untuk membuka modal selebrasi Peti Emas (+20 💎 Permata dan +50 XP Harian) dengan animasi selebrasi.
+
+### [x] 14.4 Drawer / Modal Buku Panduan Bab (Guidebook Cheatsheet)
+- [x] Ganti toast banner statis pada tombol `📖 BUKU PANDUAN BAB` menjadi modal cheatsheet 3D nyata.
+- [x] Tampilkan ringkasan konsep inti, contekan sintaks standar industri dengan tombol salin instan (📋), dan standar engineering Tokyo untuk setiap unit kurikulum.
+
+### [ ] 14.5 Filter Pencarian Real-Time di Peta Belajar (`searchQuery`)
+- [ ] *(Ditunda sesuai arahan user: "searchquery jgn diapa apain dulu")*
+- [ ] Rencana lanjutan: Hubungkan input pencarian ke filter/highlight node kanvas kurikulum.
+
+---
+
 ## 📜 Riwayat Fase yang Sudah Selesai (100% Completed)
 
 ### [x] FASE 1: Fondasi Token Light Mode, Tipografi & Phosphor Icons (SELESAI)
