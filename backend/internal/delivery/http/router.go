@@ -14,6 +14,7 @@ type RouterConfig struct {
 	OnboardingHandler *handler.OnboardingHandler
 	RoadmapHandler    *handler.RoadmapHandler
 	QuestHandler      *handler.QuestHandler
+	VocabularyHandler *handler.VocabularyHandler
 	AuthMiddleware    gin.HandlerFunc
 }
 
@@ -48,6 +49,9 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine {
 		}
 		if cfg.QuestHandler != nil {
 			cfg.QuestHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
+		if cfg.VocabularyHandler != nil {
+			cfg.VocabularyHandler.RegisterRoutes(v1)
 		}
 	}
 	return r

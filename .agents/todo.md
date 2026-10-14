@@ -377,16 +377,19 @@
 
 ---
 
-## ⚡ FASE 23: Bank Kosakata Bahasa Jepang IT Terpadu (`TechNihongoCard.tsx` ➔ PostgreSQL API)
+## ⚡ FASE 23: Bank Kosakata Bahasa Jepang IT Terpadu (`TechNihongoCard.tsx` ➔ PostgreSQL API) (SELESAI ✅)
 
-### [ ] 23.1 Skema & Seed Kosakata Standar Tokyo di Backend
-- [ ] Buat migrasi database `vocabularies` di PostgreSQL (`id`, `career_path_id`, `term`, `reading`, `meaning`, `category`, `example_ja`, `example_id`, `difficulty_level`).
-- [ ] Seed kamus kosakata IT Tokyo (Asakai standup, Pull Request, code review, terminologi arsitektur, dan etika kantor).
-- [ ] Buat handler & usecase `GET /api/v1/vocabularies/daily` dan `GET /api/v1/vocabularies` dengan rotasi harian otomatis.
+### [x] 23.1 Skema & Seed Kosakata Standar Tokyo di Backend
+- [x] Buat migrasi database `vocabularies` di PostgreSQL (`000005_create_vocabularies_table.up.sql`).
+- [x] Seed kamus kosakata IT Tokyo (Asakai standup, Pull Request, code review, terminologi arsitektur, dan etika kantor).
+- [x] Buat domain model, repository, usecase, dan HTTP handler `GET /api/v1/vocabularies/daily` dan `GET /api/v1/vocabularies` dengan rotasi harian otomatis.
+- [x] Unit test usecase & handler lulus 100% (`go test ./...` PASS).
 
-### [ ] 23.2 Integrasi Frontend `TechNihongoCard.tsx` ke API Riil
-- [ ] Ganti array konstanta statis `VOCAB_LIST` dengan fetch data dari endpoint `GET /api/v1/vocabularies/daily`.
-- [ ] Hubungkan tombol "Ganti (X/Y)" ke rotasi kosakata dinamis dari database.
+### [x] 23.2 Integrasi Frontend `TechNihongoCard.tsx` ke API Riil
+- [x] Buat `frontend/src/services/vocabularyService.ts` dan tipe TypeScript `VocabularyItem`.
+- [x] Ganti array konstanta statis dengan fetch dinamis dari endpoint `GET /api/v1/vocabularies/daily` disertai graceful fallback offline jika jaringan terputus.
+- [x] Hubungkan tombol "Ganti (X/Y)" ke rotasi kosakata dinamis dari database.
+- [x] Validasi frontend build `npm run build` sukses (exit code 0).
 
 ---
 

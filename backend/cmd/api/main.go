@@ -58,12 +58,14 @@ func main() {
 	roadmapRepo := database.NewRoadmapRepository(pg)
 	questRepo := database.NewQuestRepository(pg)
 	userQuestRepo := database.NewUserQuestRepository(pg)
+	vocabRepo := database.NewVocabularyRepository(pg)
 
 	// 5. Initialize Usecases (Business Logic Layer)
 	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
 	onboardingUsecase := usecase.NewOnboardingUsecase(countryRepo, careerPathRepo, userRepo)
 	roadmapUsecase := usecase.NewRoadmapUsecase(roadmapRepo, careerPathRepo, userRepo)
 	questUsecase := usecase.NewQuestUsecase(questRepo, userQuestRepo, userRepo)
+	vocabUsecase := usecase.NewVocabularyUsecase(vocabRepo)
 
 	// 6. Initialize Handlers & Middlewares (Delivery Layer)
 	healthHandler := handler.NewHealthHandler(pg, rdb)
@@ -71,6 +73,7 @@ func main() {
 	onboardingHandler := handler.NewOnboardingHandler(onboardingUsecase)
 	roadmapHandler := handler.NewRoadmapHandler(roadmapUsecase)
 	questHandler := handler.NewQuestHandler(questUsecase)
+	vocabHandler := handler.NewVocabularyHandler(vocabUsecase)
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 
 	// 7. Setup Gin router with registered routes
@@ -80,6 +83,7 @@ func main() {
 		OnboardingHandler: onboardingHandler,
 		RoadmapHandler:    roadmapHandler,
 		QuestHandler:      questHandler,
+		VocabularyHandler: vocabHandler,
 		AuthMiddleware:    authMiddleware,
 	})
 

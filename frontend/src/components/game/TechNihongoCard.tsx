@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   Translate,
   Copy,
@@ -8,6 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../utils/haptics'
 import { useAuthStore } from '../../store/authStore'
+import { vocabularyService } from '../../services/vocabularyService'
 
 export interface TechNihongoCardProps {
   className?: string
@@ -19,13 +20,9 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
   const developerName = user?.name ? user.name.split(' ')[0] : user?.username || 'developer'
 
   /**
-   * Curated progressive Tokyo vocabularies:
-   * Level 1: Everyday Sapaan & Aisatsu Kantor (Paling Penting!)
-   * Level 2: Jikoshoukai (Perkenalan Diri Developer)
-   * Level 3: Asakai (Morning Standup)
-   * Level 4: Fuguai / Jissou (Bug & Feature PR)
+   * Curated progressive Tokyo vocabularies fallback for offline use
    */
-  const vocabList = useMemo(
+  const defaultVocabList = useMemo(
     () => [
       {
         level: 'LEVEL 1 • SAPAAN HARIAN',
@@ -76,6 +73,7 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
     [developerName]
   )
 
+  const [apiVocabs, setApiVocabs] = useState<typeof defaultVocabList | null>(null)
   const [currentIndex, setCurrentIndex] = useState(() => {
     // Seed with day of year so each calendar day opens with a fresh Tokyo IT vocab
     const dayOfYear = Math.floor(Date.now() / 86400000)
@@ -84,6 +82,39 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
   const [copied, setCopied] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 
+  useEffect(() => {
+    let isMounted = true
+    vocabularyService
+      .getDailyVocabularies()
+      .then((items) => {
+        if (!isMounted || !items || items.length === 0) return
+        const mapped = items.map((v) => {
+          const parts = v.reading ? v.reading.split('•').map((s) => s.trim()) : []
+          const kana = parts[0] || v.reading || ''
+          const romaji = parts[1] || ''
+          return {
+            level: `${v.difficulty_level || 'N3'} • ${v.category.toUpperCase()}`,
+            romaji,
+            kanji: v.term,
+            kana,
+            arti: v.meaning,
+            contoh: v.example_ja,
+            terjemahan: v.example_id,
+          }
+        })
+        setApiVocabs(mapped)
+      })
+      .catch((err) => {
+        // Graceful fallback to default offline vocabularies
+        console.warn('Using offline Tokyo vocabularies fallback:', err)
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [])
+
+  const vocabList = apiVocabs && apiVocabs.length > 0 ? apiVocabs : defaultVocabList
   const currentVocab = vocabList[currentIndex % vocabList.length]
 
   const handleNextVocab = () => {
@@ -94,8 +125,9 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
 
   const handleCopy = () => {
     triggerHaptic('tap')
+    const romajiPart = currentVocab.romaji ? ` (${currentVocab.romaji})` : ''
     navigator.clipboard.writeText(
-      `${currentVocab.kanji} (${currentVocab.romaji}) - ${currentVocab.arti}`
+      `${currentVocab.kanji}${romajiPart} - ${currentVocab.arti}`
     )
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
@@ -145,7 +177,7 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
           title="Lihat kosakata berikutnya"
         >
           <ArrowsClockwise weight="bold" className="w-2.5 h-2.5 text-slate-500" />
-          <span>GANTI ({currentIndex + 1}/{vocabList.length})</span>
+          <span>GANTI ({(currentIndex % vocabList.length) + 1}/{vocabList.length})</span>
         </button>
       </div>
 
@@ -156,7 +188,7 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
             {currentVocab.kanji}
           </span>
           <span className="bg-white text-rose-800 border border-rose-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-lg shadow-2xs">
-            {currentVocab.kana} • {currentVocab.romaji}
+            {currentVocab.kana}{currentVocab.romaji ? ` • ${currentVocab.romaji}` : ''}
           </span>
           <span className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-md shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
