@@ -257,7 +257,20 @@
 
 ---
 
-## ⚡ FASE 15: Dinamisasi Penuh Workspace Koding & Quiz Runner (`LearnWorkspacePage.tsx` & `QuestCompleteModal.tsx`)
+## ⚡ FASE 19: Refinement Gamifikasi Dashboard & Widget Pendukung (Opsi B)
+
+### [ ] 19.1 Dinamisasi Nama Developer pada Kosakata Jikoshoukai (`TechNihongoCard.tsx`)
+- [ ] Ganti nama hardcoded "agam" pada contoh kalimat perkenalan diri (*"Hajimemashite, Indonesia kara kimashita agam to moushimasu."*) dengan nama profil asli pengguna `{user?.name || user?.username || 'developer'}` dari `useAuthStore`.
+
+### [ ] 19.2 Sinkronisasi Fallback Misi Harian (`DashboardPage.tsx`)
+- [ ] Ubah fallback `activeQuests` yang awalnya merujuk ke modul lanjut (`part-4-gin-routing`) agar selaras dengan posisi fresh user di Part 1 (`part-1-variabel-dan-tipe-data`, "GO 01").
+
+### [x] 19.3 Perbaikan Bug UI: Backdrop Shadow Modal Terpotong di Bagian Bawah (`CurriculumPathMap.tsx` & Modals)
+- [x] Bungkus modal dengan `createPortal(modalElement, document.body)` dari `react-dom` dengan `fixed inset-0 w-screen h-screen z-50` agar overlay backdrop gelap menutup 100% viewport layar tanpa celah putih di bagian bawah.
+
+---
+
+## ⚡ FASE 15: Dinamisasi Penuh Workspace Koding & Quiz Runner (Opsi A) (`LearnWorkspacePage.tsx` & `QuestCompleteModal.tsx`)
 
 ### [ ] 15.1 Sinkronisasi Detail Misi Riil dari Backend (`useLearnWorkspace` ➔ UI)
 - [ ] Ganti teks hardcoded breadcrumb ("Station 3 • Bab 2") dengan `{quest?.chip_label}` dan `{quest?.title}`.
@@ -282,7 +295,7 @@
 
 ---
 
-## ⚡ FASE 16: Dinamisasi Pusat Misi & Quest Log (`QuestLogPage.tsx` ➔ `useQuests`)
+## ⚡ FASE 16: Dinamisasi Pusat Misi & Quest Log (Opsi C) (`QuestLogPage.tsx` ➔ `useQuests`)
 
 ### [ ] 16.1 Integrasi Hook `useQuests` & Eliminasi Mock State
 - [ ] Hubungkan `QuestLogPage.tsx` ke hook `useQuests()` (`GET /api/v1/quests` & `GET /api/v1/quests/daily`).
@@ -310,17 +323,6 @@
 - [ ] Ganti icon `lucide-react` dengan `@phosphor-icons/react` yang konsisten.
 - [ ] Hapus ketergantungan pada komponen legacy `TokyoPassportWidget`.
 - [ ] Hubungkan tombol "LANJUTKAN KODING" ke quest aktif pengguna berikutnya.
-
----
-
-## ⚡ FASE 19: Refinement Gamifikasi Dashboard & Widget Pendukung
-- [ ] **19.1 Dinamisasi Nama Developer pada Kosakata Jikoshoukai (`TechNihongoCard.tsx`):**
-  - Ganti nama hardcoded "agam" pada contoh kalimat perkenalan diri (*"Hajimemashite, Indonesia kara kimashita agam to moushimasu."*) dengan nama profil asli pengguna `{user?.name || user?.username || 'developer'}`.
-- [ ] **19.2 Sinkronisasi Fallback Misi Harian (`DashboardPage.tsx`):**
-  - Ubah fallback `activeQuests` yang awalnya merujuk ke modul lanjut (`part-4-gin-routing`) agar selaras dengan posisi fresh user di Part 1 (`part-1-variabel-dan-tipe-data`, "GO 01").
-- [x] **19.3 Perbaikan Bug UI: Backdrop Shadow Modal Terpotong di Bagian Bawah (`CurriculumPathMap.tsx` & Modals):**
-  - **Penyebab:** Modal di-render inline di dalam nested container `<main>` (yang memiliki `pb-20 md:pb-8`), sehingga `.fixed.inset-0` terikat pada batasan container parent dan tidak menutup ~56px bagian bawah layar.
-  - **Solusi:** Gunakan `createPortal(modalElement, document.body)` dari `react-dom` dengan `fixed inset-0 w-screen h-screen z-50` agar overlay backdrop gelap langsung terpasang di root `<body>` dan menutupi 100% viewport layar secara menyeluruh.
 
 ---
 
