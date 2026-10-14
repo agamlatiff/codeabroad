@@ -259,56 +259,56 @@
 
 ## ⚡ FASE 19: Refinement Gamifikasi Dashboard & Widget Pendukung (Opsi B)
 
-### [ ] 19.1 Dinamisasi Nama Developer pada Kosakata Jikoshoukai (`TechNihongoCard.tsx`)
-- [ ] Ganti nama hardcoded "agam" pada contoh kalimat perkenalan diri (*"Hajimemashite, Indonesia kara kimashita agam to moushimasu."*) dengan nama profil asli pengguna `{user?.name || user?.username || 'developer'}` dari `useAuthStore`.
+### [x] 19.1 Dinamisasi Nama Developer pada Kosakata Jikoshoukai (`TechNihongoCard.tsx`)
+- [x] Ganti nama hardcoded "agam" pada contoh kalimat perkenalan diri (*"Hajimemashite, Indonesia kara kimashita agam to moushimasu."*) dengan nama profil asli pengguna `{user?.name || user?.username || 'developer'}` dari `useAuthStore`.
 
-### [ ] 19.2 Sinkronisasi Fallback Misi Harian (`DashboardPage.tsx`)
-- [ ] Ubah fallback `activeQuests` yang awalnya merujuk ke modul lanjut (`part-4-gin-routing`) agar selaras dengan posisi fresh user di Part 1 (`part-1-variabel-dan-tipe-data`, "GO 01").
+### [x] 19.2 Sinkronisasi Fallback Misi Harian (`DashboardPage.tsx`)
+- [x] Ubah fallback `activeQuests` yang awalnya merujuk ke modul lanjut (`part-4-gin-routing`) agar selaras dengan posisi fresh user di Part 1 (`part-1-variabel-dan-tipe-data`, "GO 01").
 
 ### [x] 19.3 Perbaikan Bug UI: Backdrop Shadow Modal Terpotong di Bagian Bawah (`CurriculumPathMap.tsx` & Modals)
 - [x] Bungkus modal dengan `createPortal(modalElement, document.body)` dari `react-dom` dengan `fixed inset-0 w-screen h-screen z-50` agar overlay backdrop gelap menutup 100% viewport layar tanpa celah putih di bagian bawah.
 
 ---
 
-## ⚡ FASE 15: Dinamisasi Penuh Workspace Koding & Quiz Runner (Opsi A) (`LearnWorkspacePage.tsx` & `QuestCompleteModal.tsx`)
+## ⚡ FASE 15: Dinamisasi Penuh Workspace Koding & Quiz Runner (Opsi A) (`LearnWorkspacePage.tsx` & `QuestCompleteModal.tsx`) (SELESAI ✅)
 
-### [ ] 15.1 Sinkronisasi Detail Misi Riil dari Backend (`useLearnWorkspace` ➔ UI)
-- [ ] Ganti teks hardcoded breadcrumb ("Station 3 • Bab 2") dengan `{quest?.chip_label}` dan `{quest?.title}`.
-- [ ] Ganti tombol navigasi `← Silabus` yang mengarah ke `/courses` menjadi kembali ke `/dashboard`.
-- [ ] Ganti badge statis XP (`⚡ +50 XP`) dan estimasi waktu dengan data riil `{quest?.xp_reward}` dan `{quest?.estimated_minutes}`.
-- [ ] Ganti badge statis streak `🔥 5 HARI` dengan data streak riil pengguna dari `useAuthStore` / profil.
-- [ ] Ganti progress bar statis `Step 2/4 (50%)` dengan kalkulasi kriteria penerimaan yang terpenuhi vs total kriteria.
-- [ ] Sinkronkan deskripsi materi, skenario industri Tokyo (`{quest?.story_context}` / `{quest?.description}`), dan catatan Nihongo (`{quest?.nihongo_notes}`).
-- [ ] Render daftar Kriteria Penerimaan (*Acceptance Criteria*) secara dinamis dari `{quest?.acceptance_criteria}` (menghilangkan hardcoded checklist).
-- [ ] Muat starter code dan nama file tab editor secara dinamis dari `{quest?.starter_code}`.
+### [x] 15.1 Sinkronisasi Detail Misi Riil dari Backend (`useLearnWorkspace` ➔ UI)
+- [x] Ganti teks hardcoded breadcrumb ("Station 3 • Bab 2") dengan `{quest?.chip_label}` dan `{quest?.title}`.
+- [x] Ganti tombol navigasi `← Silabus` yang mengarah ke `/courses` menjadi kembali ke `/dashboard`.
+- [x] Ganti badge statis XP (`⚡ +50 XP`) dan estimasi waktu dengan data riil `{quest?.xp_reward}` dan `{quest?.estimated_minutes}`.
+- [x] Ganti badge statis streak `🔥 5 HARI` dengan data streak riil pengguna dari `useAuthStore` / profil.
+- [x] Ganti progress bar statis `Step 2/4 (50%)` dengan kalkulasi kriteria penerimaan yang terpenuhi vs total kriteria.
+- [x] Sinkronkan deskripsi materi, skenario industri Tokyo (`{quest?.story_context}` / `{quest?.description}`), dan catatan Nihongo (`{quest?.nihongo_notes}`).
+- [x] Render daftar Kriteria Penerimaan (*Acceptance Criteria*) secara dinamis dari `{quest?.acceptance_criteria}` (menghilangkan hardcoded checklist).
+- [x] Muat starter code dan nama file tab editor secara dinamis dari `{quest?.starter_code}`.
 
-### [ ] 15.2 Integrasi Test Runner & Eksekusi Unit Test Real-Time
-- [ ] Sambungkan tombol `JALANKAN TES (CTRL+ENTER)` ke `POST /api/v1/quests/:id/run-tests` dengan payload kode editor.
-- [ ] Update status centang/silang pada masing-masing kriteria penerimaan berdasarkan `testResult.criteria_results`.
-- [ ] Tampilkan output terminal konsol riil dari sandbox Go runner (stdout, stderr, durasi eksekusi dalam milidetik).
+### [x] 15.2 Integrasi Test Runner & Eksekusi Unit Test Real-Time
+- [x] Sambungkan tombol `JALANKAN TES (CTRL+ENTER)` ke `POST /api/v1/quests/:id/run-tests` dengan payload kode editor.
+- [x] Update status centang/silang pada masing-masing kriteria penerimaan berdasarkan `testResult.criteria_results`.
+- [x] Tampilkan output terminal konsol riil dari sandbox Go runner (stdout, stderr, durasi eksekusi dalam milidetik).
 
-### [ ] 15.3 Layar & Modal Selebrasi Kelulusan Dinamis (`QuestCompleteModal.tsx` & `QuestCompletePage.tsx`)
-- [ ] Tampilkan judul quest yang baru diselesaikan secara dinamis dari `{quest?.title}` (hapus hardcoded `Station 3 • Bab 2` dan `GIN // 04`).
-- [ ] Tampilkan perolehan XP riil (`submitResult.xp_awarded`), saldo streak terkini dari auth state (bukan fallback statis `5 HARI` / `1,450 XP`), dan peningkatan skor kesiapan Tokyo IT.
-- [ ] Tampilkan kartu istilah kosakata Jepang baru yang di-unlock (`submitResult.unlocked_vocab`).
-- [ ] Arahkan tombol aksi "Lanjutkan" ke quest berikutnya (`submitResult.next_quest.id`) atau kembali ke dashboard kurikulum.
+### [x] 15.3 Layar & Modal Selebrasi Kelulusan Dinamis (`QuestCompleteModal.tsx` & `QuestCompletePage.tsx`)
+- [x] Tampilkan judul quest yang baru diselesaikan secara dinamis dari `{quest?.title}` (hapus hardcoded `Station 3 • Bab 2` dan `GIN // 04`).
+- [x] Tampilkan perolehan XP riil (`submitResult.xp_awarded`), saldo streak terkini dari auth state (bukan fallback statis `5 HARI` / `1,450 XP`), dan peningkatan skor kesiapan Tokyo IT.
+- [x] Tampilkan kartu istilah kosakata Jepang baru yang di-unlock (`submitResult.unlocked_vocab`).
+- [x] Arahkan tombol aksi "Lanjutkan" ke quest berikutnya (`submitResult.next_quest.id`) atau kembali ke dashboard kurikulum.
 
 ---
 
-## ⚡ FASE 16: Dinamisasi Pusat Misi & Quest Log (Opsi C) (`QuestLogPage.tsx` ➔ `useQuests`)
+## ⚡ FASE 16: Dinamisasi Pusat Misi & Quest Log (Opsi C) (`QuestLogPage.tsx` ➔ `useQuests`) (SELESAI ✅)
 
-### [ ] 16.1 Integrasi Hook `useQuests` & Eliminasi Mock State
-- [ ] Hubungkan `QuestLogPage.tsx` ke hook `useQuests()` (`GET /api/v1/quests` & `GET /api/v1/quests/daily`).
-- [ ] Hapus data hardcoded D1, D2, D3, mock gems (45 💎), dan perbaiki bug perkalian `user.xp * 100` serta fallback streak (`userStreak || 14`).
-- [ ] Bersihkan penamaan stasiun lama ("Akihabara Quest Board") menjadi format standar Pusat Misi CodeAbroad.
+### [x] 16.1 Integrasi Hook `useQuests` & Eliminasi Mock State
+- [x] Hubungkan `QuestLogPage.tsx` ke hook `useQuests()` (`GET /api/v1/quests` & `GET /api/v1/quests/daily`).
+- [x] Hapus data hardcoded D1, D2, D3, mock gems (45 💎), dan perbaiki bug perkalian `user.xp * 100` serta fallback streak (`userStreak || 14`).
+- [x] Bersihkan penamaan stasiun lama ("Akihabara Quest Board") menjadi format standar Pusat Misi CodeAbroad.
 
-### [ ] 16.2 Filter Tab & Hitung Mundur Reset Harian Dinamis
-- [ ] Buat tab filter ("Semua", "Misi Harian", "Misi Utama", "Portofolio") memfilter quest secara dinamis berdasarkan data backend.
-- [ ] Tampilkan timer countdown riil menuju reset tengah malam JST/WIB (`timeLeft` dari `useQuests`).
+### [x] 16.2 Filter Tab & Hitung Mundur Reset Harian Dinamis
+- [x] Buat tab filter ("Semua", "Misi Harian", "Misi Utama", "Portofolio") memfilter quest secara dinamis berdasarkan data backend.
+- [x] Tampilkan timer countdown riil menuju reset tengah malam JST/WIB (`timeLeft` dari `useQuests`).
 
-### [ ] 16.3 Klaim Hadiah Quest Langsung ke Backend
-- [ ] Hubungkan tombol "KLAIM HADIAH" ke `questService.submitQuest(id)` dan sinkronkan mutasi ke profil user (XP, gems, level).
-- [ ] Hubungkan tombol "Mulai / Lanjutkan" ke navigasi workspace belajar `/learn/:questId`.
+### [x] 16.3 Klaim Hadiah Quest Langsung ke Backend
+- [x] Hubungkan tombol "KLAIM HADIAH" ke `questService.submitQuest(id)` dan sinkronkan mutasi ke profil user (XP, gems, level).
+- [x] Hubungkan tombol "Mulai / Lanjutkan" ke navigasi workspace belajar `/learn/:questId`.
 
 ---
 

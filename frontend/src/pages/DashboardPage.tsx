@@ -144,11 +144,11 @@ export const DashboardPage = () => {
       ? quests.slice(0, 3)
       : [
           {
-            id: 'part-4-gin-routing',
-            title: 'Tuntaskan 1 Part Koding REST API',
-            chip_label: 'GIN 04',
+            id: 'part-1-variabel-dan-tipe-data',
+            title: 'Tuntaskan Part 1: Variabel & Tipe Data',
+            chip_label: 'GO 01',
             xp_reward: 50,
-            difficulty: 'Menengah',
+            difficulty: 'Pemula',
             user_status: claimedLocalQuest ? 'completed' : 'available',
           },
           {

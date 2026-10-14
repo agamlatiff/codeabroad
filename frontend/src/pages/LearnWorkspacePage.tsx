@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLearnWorkspace } from '../hooks'
+import { useAuthStore } from '../store/authStore'
 import { QuestCompleteModal } from '../components/workspace/QuestCompleteModal'
 import { Button3D } from '../components/ui/Button3D'
 import { RotateCcw } from 'lucide-react'
 
 export const LearnWorkspacePage = () => {
   const navigate = useNavigate()
+  const { user } = useAuthStore()
   const {
     quest,
     userCode,
@@ -23,8 +25,24 @@ export const LearnWorkspacePage = () => {
   } = useLearnWorkspace()
 
   const [activeTab, setActiveTab] = useState<'briefing' | 'nihongo' | 'discuss'>('briefing')
-  const [activeFile, setActiveFile] = useState<'handler.go' | 'handler_test.go' | 'main.go'>('handler.go')
+  const primaryFilename = quest?.starter_code?.filename || 'main.go'
+  const [activeFile, setActiveFile] = useState<string>(primaryFilename)
   const [showHint, setShowHint] = useState(false)
+
+  useEffect(() => {
+    if (quest?.starter_code?.filename) {
+      setActiveFile(quest.starter_code.filename)
+    }
+  }, [quest?.starter_code?.filename])
+
+  const criteriaList = quest?.acceptance_criteria || []
+  const criteriaCount = criteriaList.length > 0 ? criteriaList.length : 1
+  const passedCriteriaCount = testResult?.criteria_results
+    ? testResult.criteria_results.filter((c) => c.passed).length
+    : testResult?.success
+    ? criteriaCount
+    : 0
+  const progressPercent = Math.round((passedCriteriaCount / criteriaCount) * 100)
 
   // Derive testing states
   const isPassed = testResult?.success === true
@@ -64,43 +82,46 @@ export const LearnWorkspacePage = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/courses')}
+            onClick={() => navigate('/dashboard')}
             className="bg-[#F1F5F9] hover:bg-slate-200 active:translate-y-0.5 text-[#0F172A] font-bold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer"
           >
-            ← Silabus
+            ← Dashboard
           </button>
           <span className="bg-[#EFF6FF] text-[#2563EB] font-black text-xs px-2 py-0.5 rounded">
-            {quest?.chip_label || 'GIN // 04'}
+            {quest?.chip_label || 'MODUL'}
           </span>
           <h1 className="text-xs sm:text-sm font-black text-[#0F172A] truncate max-w-xs sm:max-w-md">
-            Station 3 • Bab 2: REST Handler & Auth Middleware
+            {quest?.title || 'Modul Pembelajaran Koding'}
           </h1>
         </div>
 
         {/* Center: Progress Bar */}
         <div className="hidden md:flex items-center gap-3">
           <span className="text-xs text-[#64748B] font-medium font-mono">
-            Step 2/4 (50%)
+            Kriteria {passedCriteriaCount}/{criteriaCount} ({progressPercent}%)
           </span>
           <div className="w-40 h-2 bg-[#E2E8F0] rounded-full overflow-hidden">
-            <div className="w-[50%] h-full bg-[#2563EB] rounded-full" />
+            <div
+              className="h-full bg-[#2563EB] rounded-full transition-all duration-300"
+              style={{ width: `${progressPercent}%` }}
+            />
           </div>
         </div>
 
         {/* Right: Gamification Badges & Hints Button */}
         <div className="flex items-center gap-2 sm:gap-3">
           <span className="bg-[#FFFBEB] text-[#D97706] font-black text-xs px-2.5 py-1 rounded-xl">
-            🔥 5 HARI
+            🔥 {user?.streak || 1} HARI
           </span>
           <span className="bg-[#EFF6FF] text-[#2563EB] font-black text-xs px-2.5 py-1 rounded-xl">
-            ⚡ +50 XP
+            ⚡ +{quest?.xp_reward || 50} XP
           </span>
           <button
             type="button"
             onClick={() => setShowHint(!showHint)}
             className="bg-white hover:bg-slate-50 border border-slate-200 text-[#0F172A] font-bold text-xs px-3 py-1 rounded-xl cursor-pointer"
           >
-            💡 Petunjuk (3)
+            💡 Petunjuk
           </button>
         </div>
       </header>
@@ -149,10 +170,10 @@ export const LearnWorkspacePage = () => {
           {/* Mission Title & Career Context */}
           <div className="space-y-1">
             <h2 className="font-black text-base text-[#0F172A]">
-              Misi: Validasi Bearer Token JWT Middleware
+              Misi: {quest?.title || 'Selesaikan Tantangan Koding'}
             </h2>
             <p className="text-xs text-[#64748B] font-medium">
-              Karier Tokyo Target: Startup FinTech Shibuya • Backend Specialist (Go Gin)
+              Tingkat: <span className="font-bold text-[#2563EB]">{quest?.difficulty || 'Pemula'}</span> • Target: Standar Industri Tokyo
             </p>
           </div>
 
@@ -162,24 +183,28 @@ export const LearnWorkspacePage = () => {
               KONTEKS REAL-WORLD TOKYO 🗼
             </h3>
             <p className="text-xs text-[#334155] leading-relaxed">
-              Di sebagian besar microservices di Jepang, setiap request antar-service maupun client mobile wajib diverifikasi melalui HTTP Middleware sebelum mencapai endpoint controller utama. Tugasmu adalah melengkapi fungsi AuthMiddleware() di file handler.go.
+              {quest?.story_context || quest?.description || 'Tuntaskan instruksi koding di editor sebelah kanan dan pastikan semua kriteria penerimaan terpenuhi melalui unit test runner.'}
             </p>
           </div>
 
           {/* Nihongo Notes Card */}
-          <div className="bg-[#F0F9FF] border border-sky-200 rounded-xl p-3 flex items-start gap-3">
-            <span className="bg-[#0284C7] text-white font-black text-[10px] px-2 py-0.5 rounded shrink-0">
-              JLPT N3
-            </span>
-            <div className="space-y-0.5 text-xs">
-              <p className="font-bold text-[#0369A1]">
-                認可 (Nin-ka) = Authorization | 認証 (Nin-shō) = Authentication
-              </p>
-              <p className="text-[11px] text-[#0284C7] leading-relaxed">
-                Istilah kunci dalam code review & dokumentasi Jira tim tech Jepang.
-              </p>
+          {quest?.nihongo_notes && (
+            <div className="bg-[#F0F9FF] border border-sky-200 rounded-xl p-3 flex items-start gap-3">
+              <span className="bg-[#0284C7] text-white font-black text-[10px] px-2 py-0.5 rounded shrink-0">
+                JLPT N3
+              </span>
+              <div className="space-y-0.5 text-xs">
+                <p className="font-bold text-[#0369A1]">
+                  {quest.nihongo_notes.term} {quest.nihongo_notes.reading ? `(${quest.nihongo_notes.reading})` : ''} = {quest.nihongo_notes.meaning}
+                </p>
+                {quest.nihongo_notes.example && (
+                  <p className="text-[11px] text-[#0284C7] leading-relaxed">
+                    {quest.nihongo_notes.example}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Acceptance Criteria Box */}
           <div className="bg-white border-2 border-slate-100 rounded-xl p-4 space-y-2.5">
@@ -188,63 +213,48 @@ export const LearnWorkspacePage = () => {
             </h3>
 
             <div className="space-y-2 text-xs">
-              {/* Criterion 1 */}
-              <div className="flex items-center gap-2.5">
-                <span className="w-5 h-5 rounded-md bg-[#EFF6FF] text-[#2563EB] font-black text-xs flex items-center justify-center shrink-0">
-                  ✓
-                </span>
-                <span className="text-[#0F172A] font-medium">
-                  Ambil header &apos;Authorization&apos; dari c.GetHeader()
-                </span>
-              </div>
+              {criteriaList.length > 0 ? (
+                criteriaList.map((criterion, idx) => {
+                  const resultCriterion = testResult?.criteria_results?.find(
+                    (c) => c.id === criterion.id || c.description === criterion.description
+                  )
+                  const passed = resultCriterion ? resultCriterion.passed : (isPassed ? true : criterion.passed)
+                  const failed = isFailed && resultCriterion && !resultCriterion.passed
 
-              {/* Criterion 2 (Changes based on test failure) */}
-              <div className="flex items-center gap-2.5">
-                <span
-                  className={`w-5 h-5 rounded-md font-black text-xs flex items-center justify-center shrink-0 ${
-                    isFailed
-                      ? 'bg-[#DC2626] text-white'
-                      : isPassed
-                      ? 'bg-[#EFF6FF] text-[#2563EB]'
-                      : 'bg-slate-100 text-slate-400'
-                  }`}
-                >
-                  {isFailed ? '✕' : isPassed ? '✓' : '○'}
-                </span>
-                <span
-                  className={`font-medium ${
-                    isFailed ? 'text-[#DC2626] font-bold' : isPassed ? 'text-[#0F172A]' : 'text-[#64748B]'
-                  }`}
-                >
-                  {isFailed
-                    ? 'Periksa apakah format diawali prefix \'Bearer \' (GAGAL)'
-                    : 'Periksa apakah format diawali prefix \'Bearer \''}
-                </span>
-              </div>
-
-              {/* Criterion 3 */}
-              <div className="flex items-center gap-2.5">
-                <span className={`w-5 h-5 rounded-md font-black text-xs flex items-center justify-center shrink-0 ${isPassed ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-slate-100 text-slate-400'}`}>
-                  {isPassed ? '✓' : '○'}
-                </span>
-                <span className="text-[#64748B] font-medium">
-                  Jika invalid, abort dengan c.AbortWithStatusJSON(401, ...)
-                </span>
-              </div>
-
-              {/* Criterion 4 */}
-              <div className="flex items-center gap-2.5">
-                <span className={`w-5 h-5 rounded-md font-black text-xs flex items-center justify-center shrink-0 ${isPassed ? 'bg-[#EFF6FF] text-[#2563EB]' : 'bg-slate-100 text-slate-400'}`}>
-                  {isPassed ? '✓' : '○'}
-                </span>
-                <span className="text-[#64748B] font-medium">
-                  Jika valid, simpan claims ke c.Set() dan panggil c.Next()
-                </span>
-              </div>
+                  return (
+                    <div key={criterion.id || idx} className="flex items-center gap-2.5">
+                      <span
+                        className={`w-5 h-5 rounded-md font-black text-xs flex items-center justify-center shrink-0 ${
+                          failed
+                            ? 'bg-[#DC2626] text-white'
+                            : passed
+                            ? 'bg-[#EFF6FF] text-[#2563EB]'
+                            : 'bg-slate-100 text-slate-400'
+                        }`}
+                      >
+                        {failed ? '✕' : passed ? '✓' : '○'}
+                      </span>
+                      <span
+                        className={`font-medium ${
+                          failed ? 'text-[#DC2626] font-bold' : passed ? 'text-[#0F172A]' : 'text-[#64748B]'
+                        }`}
+                      >
+                        {criterion.description}
+                        {failed && ' (GAGAL)'}
+                      </span>
+                    </div>
+                  )
+                })
+              ) : (
+                <div className="flex items-center gap-2 text-slate-500 italic">
+                  <span>○</span>
+                  <span>Selesaikan implementasi sesuai spesifikasi unit test.</span>
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Screen 10B Failure Hint Box */}
+          {/* Failure / Hint Box */}
           {(isFailed || showHint) && (
             <div className="bg-[#FFFBEB] border-2 border-amber-300 rounded-xl p-4 space-y-2 shadow-xs">
               <div className="flex items-center gap-1.5 font-black text-xs text-[#D97706]">
@@ -252,7 +262,9 @@ export const LearnWorkspacePage = () => {
                 <span>PETUNJUK KODING DARI KODI</span>
               </div>
               <p className="text-xs text-[#92400E] leading-relaxed">
-                Fungsi test mengharapkan status HTTP 401 saat token tidak diawali dengan &apos;Bearer &apos;. Pastikan kamu menggunakan package strings.HasPrefix(authHeader, &quot;Bearer &quot;) untuk memeriksa token sebelum diproses lebih lanjut.
+                {testResult?.output?.includes('FAIL')
+                  ? 'Periksa baris kode yang menyebabkan unit test gagal pada terminal konsol di sebelah kanan. Pastikan fungsi, variabel, dan tipe data telah sesuai ekspektasi.'
+                  : 'Pastikan penulisan sintaks Go tepat, tipe data sesuai, dan periksa fungsi pembantu yang diminta oleh test runner.'}
               </p>
             </div>
           )}
@@ -263,48 +275,21 @@ export const LearnWorkspacePage = () => {
           {/* 1. Editor Tabs Bar */}
           <div className="h-11 bg-[#1E293B] px-4 flex items-center justify-between border-b border-slate-800 shrink-0">
             <div className="flex items-center gap-1">
-              {/* handler.go */}
               <button
                 type="button"
-                onClick={() => setActiveFile('handler.go')}
+                onClick={() => setActiveFile(primaryFilename)}
                 className={`px-3.5 py-2 font-mono text-xs rounded-t-lg flex items-center gap-2 transition-all ${
-                  activeFile === 'handler.go'
+                  activeFile === primaryFilename
                     ? 'bg-[#0F172A] text-[#F8FAFC] font-bold'
                     : 'text-[#94A3B8] hover:text-white'
                 }`}
               >
-                <span>handler.go</span>
+                <span>{primaryFilename}</span>
                 <span
                   className={`w-1.5 h-1.5 rounded-full ${
                     isFailed ? 'bg-[#EF4444]' : isPassed ? 'bg-[#10B981]' : 'bg-[#38BDF8]'
                   }`}
                 />
-              </button>
-
-              {/* handler_test.go */}
-              <button
-                type="button"
-                onClick={() => setActiveFile('handler_test.go')}
-                className={`px-3 py-2 font-mono text-xs rounded-t-lg transition-all ${
-                  activeFile === 'handler_test.go'
-                    ? 'bg-[#0F172A] text-[#F8FAFC] font-bold'
-                    : 'text-[#94A3B8] hover:text-white'
-                }`}
-              >
-                handler_test.go
-              </button>
-
-              {/* main.go */}
-              <button
-                type="button"
-                onClick={() => setActiveFile('main.go')}
-                className={`px-3 py-2 font-mono text-xs rounded-t-lg transition-all ${
-                  activeFile === 'main.go'
-                    ? 'bg-[#0F172A] text-[#F8FAFC] font-bold'
-                    : 'text-[#64748B] hover:text-white'
-                }`}
-              >
-                main.go
               </button>
             </div>
 
@@ -349,18 +334,20 @@ export const LearnWorkspacePage = () => {
                   <span className="w-2.5 h-2.5 rounded-full bg-[#10B981]" />
                 </div>
                 <span className="text-[#94A3B8] font-mono text-[11px] font-bold tracking-wider pl-2">
-                  TERMINAL // GO TEST RUNNER
+                  TERMINAL // GO TEST RUNNER {testResult?.duration_ms ? `[${testResult.duration_ms}ms]` : ''}
                 </span>
               </div>
 
-              {isPassed ? (
-                <span className="bg-[#064E3B] text-[#34D399] font-mono font-bold text-[10px] px-2.5 py-0.5 rounded">
-                  ● 2/2 TESTS PASSING
-                </span>
-              ) : isFailed ? (
-                <span className="bg-[#7F1D1D] text-[#FCA5A5] font-mono font-bold text-[10px] px-2.5 py-0.5 rounded">
-                  ✕ 1/2 TESTS FAILED
-                </span>
+              {testResult ? (
+                isPassed ? (
+                  <span className="bg-[#064E3B] text-[#34D399] font-mono font-bold text-[10px] px-2.5 py-0.5 rounded">
+                    ● {testResult.tests_passed}/{testResult.total_tests} TESTS PASSING
+                  </span>
+                ) : (
+                  <span className="bg-[#7F1D1D] text-[#FCA5A5] font-mono font-bold text-[10px] px-2.5 py-0.5 rounded">
+                    ✕ {testResult.total_tests - testResult.tests_passed}/{testResult.total_tests} TESTS FAILED
+                  </span>
+                )
               ) : (
                 <span className="text-slate-500 font-mono text-[10px]">
                   IDLE // READY TO RUN
@@ -372,7 +359,7 @@ export const LearnWorkspacePage = () => {
             <div className="flex-1 p-4 overflow-y-auto font-mono text-xs space-y-1 text-slate-300">
               {isRunningTests ? (
                 <p className="text-[#38BDF8] animate-pulse">
-                  $ go test -v ./internal/middleware/... [Sedang menguji...]
+                  $ go test -v ./... [Sedang mengeksekusi test runner...]
                 </p>
               ) : testResult?.output ? (
                 <pre className="whitespace-pre-wrap font-mono text-xs leading-relaxed">
@@ -380,7 +367,7 @@ export const LearnWorkspacePage = () => {
                 </pre>
               ) : (
                 <div className="space-y-1 text-[#64748B]">
-                  <p>$ go test -v ./internal/middleware/...</p>
+                  <p>$ go test -v ./...</p>
                   <p>Tekan tombol &quot;JALANKAN TES&quot; atau Ctrl+Enter untuk mengeksekusi test runner.</p>
                 </div>
               )}
@@ -413,17 +400,17 @@ export const LearnWorkspacePage = () => {
               </span>
               <div className="space-y-0.5">
                 <p className="font-black text-xs sm:text-sm text-rose-900 flex items-center gap-1.5">
-                  <span>Pengujian belum lolos! Ada 1 kriteria yang belum terpenuhi.</span>
+                  <span>Pengujian belum lolos! Ada kriteria yang belum terpenuhi.</span>
                   <span>🎌</span>
                 </p>
                 <p className="text-[11px] text-rose-700">
-                  Kodi: <em>&quot;Ganbatte! Periksa validasi prefix &apos;Bearer &apos; dan header Authorization di terminal atas.&quot;</em>
+                  Kodi: <em>&quot;Ganbatte! Periksa pesan error di terminal konsol dan coba sesuaikan kodenya.&quot;</em>
                 </p>
               </div>
             </div>
           ) : (
             <div className="flex items-center gap-2 text-slate-600 text-xs font-bold">
-              <span>Lengkapi fungsi AuthMiddleware() untuk menguji kesiapan microservice Tokyo.</span>
+              <span>Lengkapi fungsi di {primaryFilename} untuk menyelesaikan misi koding ini.</span>
             </div>
           )}
         </div>

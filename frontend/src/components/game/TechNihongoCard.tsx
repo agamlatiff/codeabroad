@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Translate,
   Copy,
@@ -7,80 +7,87 @@ import {
   ArrowsClockwise,
 } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../utils/haptics'
+import { useAuthStore } from '../../store/authStore'
 
 export interface TechNihongoCardProps {
   className?: string
 }
 
-/**
- * Curated progressive Tokyo vocabularies:
- * Level 1: Everyday Sapaan & Aisatsu Kantor (Paling Penting!)
- * Level 2: Jikoshoukai (Perkenalan Diri)
- * Level 3: Asakai (Morning Standup)
- * Level 4: Fuguai / Jissou (Bug & Feature PR)
- */
-const VOCAB_PROGRESSION = [
-  {
-    level: 'LEVEL 1 • SAPAAN HARIAN',
-    romaji: 'Aisatsu',
-    kanji: '挨拶',
-    kana: 'あいさつ',
-    arti: 'Sapaan Pagi & Etika Kantor',
-    contoh: 'Minasan, ohayou gozaimasu! Kyou mo yoroshiku onegaishimasu.',
-    terjemahan: 'Selamat pagi semuanya! Mohon kerja samanya hari ini juga.',
-  },
-  {
-    level: 'LEVEL 1 • PERKENALAN DIRI',
-    romaji: 'Jikoshoukai',
-    kanji: '自己紹介',
-    kana: 'じこしょうかい',
-    arti: 'Perkenalan Diri Developer',
-    contoh: 'Hajimemashite, Indonesia kara kimashita agam to moushimasu.',
-    terjemahan: 'Salam kenal, saya Agam dari Indonesia. Senang berkenalan dengan Anda.',
-  },
-  {
-    level: 'LEVEL 2 • MORNING STANDUP',
-    romaji: 'Asakai',
-    kanji: '朝会',
-    kana: 'あさかい',
-    arti: 'Standup Harian IT',
-    contoh: 'Kinou wa Gin API wo jissou shimashita. Kyou wa unit test wo kakimasu.',
-    terjemahan: 'Kemarin saya implementasi Gin API. Hari ini saya tulis unit test.',
-  },
-  {
-    level: 'LEVEL 3 • CODE REVIEW',
-    romaji: 'Fuguai',
-    kanji: '不具合',
-    kana: 'ふぐあい',
-    arti: 'Bug / Isu Teknis',
-    contoh: 'Login endpoint de fuguai ga hassei shimashita node, shuusei chuu desu.',
-    terjemahan: 'Terjadi bug pada endpoint login, saat ini sedang dalam perbaikan.',
-  },
-  {
-    level: 'LEVEL 3 • IMPLEMENTASI FITUR',
-    romaji: 'Jissou',
-    kanji: '実装',
-    kana: 'じっそう',
-    arti: 'Implementasi Fitur',
-    contoh: 'Kinou no PR wa mou jissou shimashita.',
-    terjemahan: 'PR kemarin sudah selesai saya implementasikan.',
-  },
-]
-
 export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
+  const { user } = useAuthStore()
+  const developerName = user?.name ? user.name.split(' ')[0] : user?.username || 'developer'
+
+  /**
+   * Curated progressive Tokyo vocabularies:
+   * Level 1: Everyday Sapaan & Aisatsu Kantor (Paling Penting!)
+   * Level 2: Jikoshoukai (Perkenalan Diri Developer)
+   * Level 3: Asakai (Morning Standup)
+   * Level 4: Fuguai / Jissou (Bug & Feature PR)
+   */
+  const vocabList = useMemo(
+    () => [
+      {
+        level: 'LEVEL 1 • SAPAAN HARIAN',
+        romaji: 'Aisatsu',
+        kanji: '挨拶',
+        kana: 'あいさつ',
+        arti: 'Sapaan Pagi & Etika Kantor',
+        contoh: 'Minasan, ohayou gozaimasu! Kyou mo yoroshiku onegaishimasu.',
+        terjemahan: 'Selamat pagi semuanya! Mohon kerja samanya hari ini juga.',
+      },
+      {
+        level: 'LEVEL 1 • PERKENALAN DIRI',
+        romaji: 'Jikoshoukai',
+        kanji: '自己紹介',
+        kana: 'じこしょうかい',
+        arti: 'Perkenalan Diri Developer',
+        contoh: `Hajimemashite, Indonesia kara kimashita ${developerName} to moushimasu.`,
+        terjemahan: `Salam kenal, saya ${developerName} dari Indonesia. Senang berkenalan dengan Anda.`,
+      },
+      {
+        level: 'LEVEL 2 • MORNING STANDUP',
+        romaji: 'Asakai',
+        kanji: '朝会',
+        kana: 'あさかい',
+        arti: 'Standup Harian IT',
+        contoh: 'Kinou wa Gin API wo jissou shimashita. Kyou wa unit test wo kakimasu.',
+        terjemahan: 'Kemarin saya implementasi Gin API. Hari ini saya tulis unit test.',
+      },
+      {
+        level: 'LEVEL 3 • CODE REVIEW',
+        romaji: 'Fuguai',
+        kanji: '不具合',
+        kana: 'ふぐあい',
+        arti: 'Bug / Isu Teknis',
+        contoh: 'Login endpoint de fuguai ga hassei shimashita node, shuusei chuu desu.',
+        terjemahan: 'Terjadi bug pada endpoint login, saat ini sedang dalam perbaikan.',
+      },
+      {
+        level: 'LEVEL 3 • IMPLEMENTASI FITUR',
+        romaji: 'Jissou',
+        kanji: '実装',
+        kana: 'じっそう',
+        arti: 'Implementasi Fitur',
+        contoh: 'Kinou no PR wa mou jissou shimashita.',
+        terjemahan: 'PR kemarin sudah selesai saya implementasikan.',
+      },
+    ],
+    [developerName]
+  )
+
   const [currentIndex, setCurrentIndex] = useState(() => {
     // Seed with day of year so each calendar day opens with a fresh Tokyo IT vocab
     const dayOfYear = Math.floor(Date.now() / 86400000)
-    return dayOfYear % VOCAB_PROGRESSION.length
+    return dayOfYear % 5
   })
   const [copied, setCopied] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 
-  const currentVocab = VOCAB_PROGRESSION[currentIndex]
+  const currentVocab = vocabList[currentIndex % vocabList.length]
 
   const handleNextVocab = () => {
     triggerHaptic('tap')
-    setCurrentIndex((prev) => (prev + 1) % VOCAB_PROGRESSION.length)
+    setCurrentIndex((prev) => (prev + 1) % vocabList.length)
   }
 
   const handleCopy = () => {
@@ -134,7 +141,7 @@ export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
           title="Lihat kosakata berikutnya"
         >
           <ArrowsClockwise weight="bold" className="w-2.5 h-2.5 text-slate-500" />
-          <span>GANTI ({currentIndex + 1}/{VOCAB_PROGRESSION.length})</span>
+          <span>GANTI ({currentIndex + 1}/{vocabList.length})</span>
         </button>
       </div>
 
