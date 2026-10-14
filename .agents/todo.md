@@ -605,3 +605,41 @@
 - [x] Verifikasi `npm run build` di `frontend/` (0 error TypeScript & Vite bundle).
 - [x] Verifikasi `go test ./...` di `backend/` (100% test lulus).
 - [x] Uji responsivitas mobile & desktop (tidak ada elemen terpotong atau overflow horizontal).
+
+---
+
+## 🚀 FASE 26: Rombak Total Arsitektur Silabus `/courses` (Direct Sequential Part & Unit Guidebook System) (SELESAI ✅)
+
+> **Tujuan Utama:** Menyatukan mental model `/courses` dengan `/dashboard` sesuai Arahan Utama Desain Baru (User Directive baris 9–18): menghilangkan hierarki chapter berbelit, menerapkan nomor Part berurutan langsung (Part 1, 2, 3, 4, 5, 6, 7...), menghadirkan fitur krusial **Buku Panduan Unit (Guidebook Modal)** dengan rangkuman contekan sintaks & kode standar Tokyo, serta menyegarkan sidebar kanan dengan proyek portofolio riil.
+
+### [x] 26.1 Direct Sequential Part Breakdown (Tanpa Hierarki Chapter Berbelit)
+- [x] Buang abstraksi chapter yang me-reset penomoran ke `01`, `02`.
+- [x] Di dalam tiap Unit Kurikulum, bentangkan langsung part koding secara berurutan:
+  - **Unit 1: Fondasi Sintaks & Alokasi Memori** $\to$ Part 1, Part 2, Part 3 (Nihongo Aisatsu)
+  - **Unit 2: Gin REST API & Middleware** $\to$ Part 4, Part 5, Part 6
+  - **Unit 3: Concurrency Engine & Worker Pool** $\to$ Part 7, Part 8
+  - **Unit 4: Microservices & Capstone Tokyo** $\to$ Part 9, Part 10
+- [x] Tampilkan nomor part dengan badge timbul 3D yang tegas (`1`, `2`, `3` atau centang `✓`).
+
+### [x] 26.2 Komponen "Buku Panduan Unit" (`UnitGuidebookModal.tsx`)
+- [x] Buat komponen modal taktil Duolingo 3D `UnitGuidebookModal.tsx` yang memuat materi teoritis per-unit:
+  - **Rangkuman Konsep Kunci**: Penjelasan singkat pointer, stack vs heap, goroutine, interface, middleware.
+  - **Code Cheat Sheet (Standar Tokyo)**: Cuplikan kode idiomatik yang siap disalin (*copy to clipboard*).
+  - **Kosakata & Etika Kantor Jepang**: Frasa standup dan code review yang relevan dengan topik unit.
+- [x] Pasang tombol **`📖 BUKU PANDUAN UNIT`** di setiap header unit kartu kurikulum.
+
+### [x] 26.3 Header Silabus Master & Tab Filter Interaktif
+- [x] Ganti hero banner lama dengan **Curriculum Master Overview Header**:
+  - Track Switcher Pill dengan modal berganti spesialisasi (Golang, React, DevOps).
+  - Filter Tabs Taktil: `Semua Part`, `Sedang Berjalan ⚡`, `Sudah Lulus ✓`, `Nihongo IT 🌸`.
+  - Input pencarian modul instan dengan ikon Phosphor `MagnifyingGlass`.
+  - Bilah metrik: Total Jam Belajar, Estimasi XP, dan Ketuntasan Kurikulum.
+
+### [x] 26.4 Penyegaran Sidebar Kanan: Proyek Portofolio Riil & Tokyo Passport
+- [x] Pertahankan 7-Day Streak Tracker yang terhubung ke backend database.
+- [x] Tampilkan **Portofolio Proyek Tokyo (GitHub Ready)** dengan 4 proyek capstone nyata yang dihasilkan dari kurikulum.
+- [x] Tampilkan Paspor Kesiapan Kerja Tokyo dengan target relokasi 2026 dan status visa kerja.
+
+### [x] 26.5 Pengujian Build & Verifikasi
+- [x] Verifikasi `npm run build` di `frontend/` (0 error TypeScript).
+- [x] Verifikasi `go test ./...` di `backend/` (100% test lulus).
