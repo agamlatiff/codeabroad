@@ -559,3 +559,49 @@
 - [x] **24.3 Pengujian Backend & Frontend Build:**
   - 100% Go unit tests lulus (`go test ./...` PASS).
   - TypeScript frontend lulus tanpa error (`npm run build` PASS dalam 1.03s).
+
+---
+
+## 🗺️ FASE 25: Perombakan Total Halaman Silabus Kurikulum (`/courses` ➔ `RoadmapPage.tsx`) (AKAN DIKERJAKAN ⏳)
+
+> **Tujuan Utama:** Menyelaraskan seluruh pengalaman visual, istilah kurikulum, dan integrasi gamifikasi halaman `/courses` agar 100% konsisten dengan Dasbor Duolingo 3D Tactile Light Mode (`#FAFAF9` / `#FFFFFF`). Menghilangkan istilah usang "Stasiun", memperbaiki duplikasi tag chip, menyinkronkan track switcher spesialisasi, dan merapikan sidebar kanan.
+
+### [ ] 25.1 Pembersihan Istilah Usang & Konsistensi Bahasa
+- [ ] Ganti seluruh terminologi "Stasiun Kurikulum" dan "Stasiun Lulus" menjadi **"Unit Kurikulum"** (Unit 1, Unit 2, Unit 3, Unit 4, Unit 5).
+- [ ] Perbaiki bug duplikasi string chip label: dari `STN-01 • STN-01 • GO` menjadi bersih: `UNIT 01 • GO` atau `UNIT 01 • FONDASI GOLANG`.
+- [ ] Perbaiki kontradiksi kalkulasi progres di hero banner (misal: tulisan "3 dari 6 Sesi Tuntas (0%)" harus sinkron dengan persentase riil 50%).
+- [ ] Ganti istilah "Boss Challenge: Verifikasi Kompetensi Stasiun" menjadi **"Capstone Challenge: Verifikasi Proyek Unit"**.
+
+### [ ] 25.2 Header Bar Terpadu & Track Switcher Modal
+- [ ] Pasang tombol **Track Switcher Pill** (`Backend Engineer (Golang)`, `Frontend Engineer (React)`, `DevOps & Cloud`) di bar atas yang membuka `CourseSwitcherModal` secara seamless (sinkron dengan pilihan di `/dashboard`).
+- [ ] Desain ulang search input modul koding dengan ikon Phosphor `MagnifyingGlass`, focus ring biru tactile, dan filter real-time instan.
+- [ ] Tampilkan HUD statistik terpadu: Streak 🔥 (merah-oranye), Total XP ⭐ (kuning-emas), dan Level Kodi ⚡ (biru elektrik).
+
+### [ ] 25.3 Desain Ulang Spotlight Hero Banner Unit Aktif
+- [ ] Format ulang Hero Card Kodi dengan bevel 3D taktil yang cerah dan bersih (tanpa garis batas kaku bernuansa gelap).
+- [ ] Speech bubble dinamis menyapa user: *"Sugoi, [Nama]-san! Siap menaklukkan [Nama Unit Aktif] hari ini!"*.
+- [ ] Tombol aksi 3D utama yang kontras dan tebal: `LANJUTKAN BELAJAR ▶` yang otomatis mengarahkan ke modul yang sedang aktif pengerjaannya.
+- [ ] Bilah progres linier unit aktif dengan gradien biru cerah + persentase akurat.
+
+### [ ] 25.4 Accordion Kartu Unit Kurikulum 3D Taktil
+- [ ] Desain 3 State Kartu Unit yang ekspresif:
+  - **Unit Selesai (`is_completed`)**: Border emerald lembut, badge stempel Hanko Duolingo `✓ LULUS 合格`, ringkasan sesi tuntas `100%`.
+  - **Unit Aktif (`is_unlocked && !is_completed`)**: Border biru elektrik 3D tebal, bayangan elevasi halus, badge `SEDANG BERJALAN ⚡`, dan tombol aksi `BUKA / TUTUP BAB`.
+  - **Unit Terkunci (`!is_unlocked`)**: Border slate taktil, ikon gembok 3D `🔒`, keterangan jelas: *"Selesaikan Unit Sebelumnya untuk Membuka"*.
+- [ ] Daftar Sub-Bab & Sesi Koding di dalam Accordion:
+  - Menghapus styling baris gelap yang kontras tajam.
+  - Setiap modul koding berderet rapi dengan nomor 3D timbul (`01`, `02`, `03`), chip materi, estimasi waktu pengerjaan, dan tombol aksi 3D `Mulai Koding ▶` / `✓ Selesai (+50 XP)` / `🔒 Terkunci`.
+  - Sesi bahasa Jepang di dalam kurikulum bertanda chip khusus `🌸 NIHONGO IT`.
+
+### [ ] 25.5 Peremajaan Sidebar Kanan (`354px` Sticky Gamification Rail)
+- [ ] **Rentetan Belajar (7-Day Streak Tracker)**:
+  - Selaraskan desain visual bubble Senin–Minggu agar 100% identik dengan Dasbor (terhubung riil ke backend `authService.getActivityLogs()`).
+- [ ] **Paspor Kesiapan Kerja Tokyo (Tokyo Job-Readiness Passport)**:
+  - Widget kesiapan kerja dengan visual Duolingo 3D: skor kesiapan 0–100%, meteran standar industri Tokyo, estimasi kesiapan sponsor visa kerja (Visa Gijinkoku).
+- [ ] **Proyek Portofolio Tokyo (GitHub & Shibuya Ready)**:
+  - Checklist proyek nyata yang dihasilkan dari kurikulum (REST API Gin, Docker Multi-Stage, React Micro-Frontend).
+
+### [ ] 25.6 Pengujian & Verifikasi Kualitas
+- [ ] Verifikasi `npm run build` di `frontend/` (0 error TypeScript & Vite bundle).
+- [ ] Verifikasi `go test ./...` di `backend/` (100% test lulus).
+- [ ] Uji responsivitas mobile & desktop (tidak ada elemen terpotong atau overflow horizontal).
