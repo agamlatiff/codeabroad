@@ -217,11 +217,46 @@ export const DashboardPage = () => {
   // Dynamic Daily Quests & Golden Chest XP Progress
   const dailyTargetXp = 50
   const completedDailyQuests = (dailyQuests || []).filter((q) => q.user_status === 'completed')
+  // Dynamic Coding Quest 1 Configuration based on Active Career Track
+  const trackQuestConfig = useMemo(() => {
+    switch (activeTrack) {
+      case 'frontend':
+      case 'react':
+        return {
+          id: 'part-1-react-components-and-props',
+          title: 'Tuntaskan Part 1: Komponen React & Props TS',
+          chip_label: 'REACT 01',
+          route: '/courses',
+        }
+      case 'devops':
+      case 'devops_aws':
+        return {
+          id: 'part-1-linux-and-docker-fundamentals',
+          title: 'Tuntaskan Part 1: Linux CLI & Docker Container',
+          chip_label: 'DEVOPS 01',
+          route: '/courses',
+        }
+      case 'golang':
+      case 'backend':
+      default:
+        return {
+          id: 'part-1-variabel-dan-tipe-data',
+          title: 'Tuntaskan Part 1: Variabel & Tipe Data',
+          chip_label: 'GO 01',
+          route: '/learn/part-1-variabel-dan-tipe-data',
+        }
+    }
+  }, [activeTrack])
+
+  const isCurrentTrackPart1Completed =
+    completedQuestsSet.has(trackQuestConfig.id) ||
+    (activeTrack === 'golang' && isPart1Completed)
+
   const completedApiXp = completedDailyQuests.reduce((sum, q) => sum + (q.xp_reward || 0), 0)
   const todayEarnedXp = Math.min(
     dailyTargetXp,
     completedApiXp +
-      (isPart1Completed ? 50 : 0) +
+      (isCurrentTrackPart1Completed ? 50 : 0) +
       (claimedLocalQuest ? 30 : 0) +
       (reviewedNihongoToday && !claimedLocalQuest ? 15 : 0)
   )
@@ -229,20 +264,22 @@ export const DashboardPage = () => {
   const isChestUnlocked = todayEarnedXp >= dailyTargetXp
   const remainingXp = Math.max(0, dailyTargetXp - todayEarnedXp)
 
-  // Active Daily Quests with realistic state
+  // Active Daily Quests with realistic state adapted to current track
   const activeQuests = [
     {
-      id: 'part-1-variabel-dan-tipe-data',
-      title: 'Tuntaskan Part 1: Variabel & Tipe Data',
-      chip_label: 'GO 01',
+      id: trackQuestConfig.id,
+      title: trackQuestConfig.title,
+      chip_label: trackQuestConfig.chip_label,
+      route: trackQuestConfig.route,
       xp_reward: 50,
       difficulty: 'Pemula',
-      user_status: (isPart1Completed ? 'completed' : 'available') as 'completed' | 'available',
+      user_status: (isCurrentTrackPart1Completed ? 'completed' : 'available') as 'completed' | 'available',
     },
     {
       id: 'nihongo-n3-vocab',
       title: 'Review 1 Kosakata Standup Tokyo',
       chip_label: 'STANDUP IT',
+      route: '#tech-nihongo-card',
       xp_reward: 30,
       difficulty: 'Mudah',
       user_status: (claimedLocalQuest
@@ -528,7 +565,7 @@ export const DashboardPage = () => {
             <div className="space-y-2">
               {activeQuests.map((quest, idx) => {
                 const isDone = quest.user_status === 'completed'
-                const questRoute = `/learn/${quest.id}`
+                const questRoute = quest.route || `/learn/${quest.id}`
                 const isLanguage =
                   quest.id?.includes('nihongo') ||
                   quest.title?.toLowerCase().includes('kosakata') ||
