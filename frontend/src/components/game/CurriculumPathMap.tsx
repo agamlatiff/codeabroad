@@ -1514,7 +1514,7 @@ func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
                     )}
                   </span>
                 </div>
-                <h2 className="text-sm sm:text-base font-brand font-black tracking-tight text-white leading-snug truncate">
+                <h2 className="text-xs sm:text-sm md:text-base font-brand font-black tracking-tight text-white leading-snug line-clamp-2">
                   {unit.title}
                 </h2>
               </div>

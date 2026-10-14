@@ -42,18 +42,21 @@ export const DashboardPage = () => {
   const { user } = profile
   const { updateUser } = useAuthStore()
   const { dailyQuests, timeLeft } = useQuests()
-  const [claimedLocalQuest, setClaimedLocalQuest] = useState(false)
-  const [isChestModalOpen, setIsChestModalOpen] = useState(false)
-
-  // Daily persistence keys
+  // Daily persistence keys per calendar day (YYYY-MM-DD)
   const todayDateStr = new Date().toISOString().slice(0, 10)
   const chestStorageKey = `codeabroad_daily_chest_claimed_${todayDateStr}`
   const vocabStorageKey = `codeabroad_vocab_reviewed_${todayDateStr}`
+  const claimedVocabQuestKey = `codeabroad_vocab_quest_claimed_${todayDateStr}`
+
+  const [isChestModalOpen, setIsChestModalOpen] = useState(false)
   const [isChestClaimedToday, setIsChestClaimedToday] = useState(() => {
     return localStorage.getItem(chestStorageKey) === 'true'
   })
   const [reviewedNihongoToday, setReviewedNihongoToday] = useState(() => {
     return localStorage.getItem(vocabStorageKey) === 'true'
+  })
+  const [claimedLocalQuest, setClaimedLocalQuest] = useState(() => {
+    return localStorage.getItem(claimedVocabQuestKey) === 'true'
   })
 
   const handleVocabReview = () => {
@@ -66,10 +69,13 @@ export const DashboardPage = () => {
 
   const handleClaimVocabQuest = () => {
     triggerHaptic('success')
+    localStorage.setItem(claimedVocabQuestKey, 'true')
     setClaimedLocalQuest(true)
     updateUser({
       xp: (user?.xp || 0) + 30,
     })
+    window.dispatchEvent(new Event('codeabroad_quest_completed'))
+    window.dispatchEvent(new Event('storage'))
   }
 
   const handleClaimChest = () => {
@@ -80,6 +86,8 @@ export const DashboardPage = () => {
     updateUser({
       xp: (user?.xp || 0) + 50,
     })
+    window.dispatchEvent(new Event('codeabroad_quest_completed'))
+    window.dispatchEvent(new Event('storage'))
   }
   const [activeTrack, setActiveTrack] = useState(() => {
     return user?.primary_stack || user?.career_path?.slug || 'golang'
