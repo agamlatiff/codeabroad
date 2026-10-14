@@ -1,18 +1,18 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
+import { createPortal } from 'react-dom'
 import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
 import { useRoadmap } from '../hooks/useRoadmap'
 import { authService } from '../services/authService'
 import type { UserActivitySummary } from '../types/auth'
 import { Button3D } from '../components/ui/Button3D'
-import { DoodleHanko } from '../components/illustrations/doodles'
 import { triggerHaptic } from '../utils/haptics'
 import {
   CourseSwitcherModal,
   CAREER_TRACKS,
-} from '../components/game/CourseSwitcherModal'
-import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
+  TechNihongoCard,
+} from '../components/game'
 import {
   GolangLogo,
   ReactLogo,
@@ -27,20 +27,20 @@ import {
   CaretDown,
   Sparkle,
   Medal,
-  Trophy,
   Fire,
   Star,
   Check,
   Lightning,
-  Briefcase,
-  ArrowSquareOut,
   CheckCircle,
-  BookOpen,
   Clock,
+  Target,
+  Gift,
+  Translate,
   Code,
+  ArrowSquareOut,
 } from '@phosphor-icons/react'
 
-// Standard Flat Sequential Curriculum Unit Definition
+// Standard Flat Sequential Curriculum Unit Definition (Clean Technical Only)
 export interface SequentialPartItem {
   id: string
   globalPartNumber: number
@@ -61,22 +61,18 @@ export interface SequentialCurriculumUnit {
   title: string
   description: string
   totalXp: number
-  capstoneTitle: string
-  capstoneDescription: string
   parts: SequentialPartItem[]
 }
 
-// Canonical Curriculum Blueprint for Go Backend Engineer
+// Canonical Real Technical Curriculum for Go Backend Engineer
 const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'unit-1-fondasi-go',
     unitNumber: 1,
-    tag: 'FONDASI SINTAKS GO & MEMORI POINTER',
-    title: 'Fondasi Sintaks Go & Memory Pointer',
-    description: 'Pahami arsitektur runtime Go, alokasi memori heap vs stack, manipulasi pointer dan tata krama aisatsu di kantor Tokyo.',
+    tag: 'SINTAKS DASAR & MEMORI POINTER',
+    title: 'Unit 1: Fondasi Sintaks Go & Memory Pointer',
+    description: 'Arsitektur runtime Go, alokasi memori stack vs heap, manipulasi pointer dan etika code review tim engineering.',
     totalXp: 150,
-    capstoneTitle: 'Verifikasi Modul Memori: Profiler CPU & Pointer Allocation',
-    capstoneDescription: 'Validasi pemahaman escape analysis dan memory safety standar rekrutmen Tokyo.',
     parts: [
       {
         id: 'part-1-variabel-dan-tipe-data',
@@ -105,7 +101,7 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'part-3-aisatsu-onboarding-tokyo',
         globalPartNumber: 3,
-        title: 'Aisatsu & Jikoshoukai di Kantor Tokyo',
+        title: 'Aisatsu & Etika Code Review Tim Engineering',
         subtitle: 'Salam pagi standup, perkenalan diri & budaya Pull Request tim engineering',
         chipLabel: '🌸 NIHONGO',
         category: 'nihongo',
@@ -119,17 +115,15 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'unit-2-gin-rest-api',
     unitNumber: 2,
-    tag: 'GIN REST API & CLEAN ARCHITECTURE',
-    title: 'Sintaks Go & Gin REST API Engine',
-    description: 'Bangun RESTful API enterprise dengan Gin framework, middleware auth guard JWT, DTO validation, dan Clean Architecture.',
-    totalXp: 200,
-    capstoneTitle: 'Capstone Project: Tokyo E-Commerce Auth & Product API Gateway',
-    capstoneDescription: 'Arsitektur Clean Architecture dengan database PostgreSQL Pgx connection pool.',
+    tag: 'REST API & CLEAN ARCHITECTURE',
+    title: 'Unit 2: Gin REST API & Middleware Engine',
+    description: 'Membangun RESTful API enterprise dengan Gin framework, middleware auth guard JWT, DTO validation, dan Clean Architecture.',
+    totalXp: 150,
     parts: [
       {
         id: 'part-4-routing-dan-jwt-middleware',
         globalPartNumber: 4,
-        title: 'Gin Radix Router & JSON Envelope',
+        title: 'Gin Radix Router & JSON Response Envelope',
         subtitle: 'Setup router engine, parameter binding, dan standard response envelope',
         chipLabel: 'GIN 01',
         category: 'code',
@@ -141,7 +135,7 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'part-5-jwt-auth-middleware-guard',
         globalPartNumber: 5,
-        title: 'JWT Middleware & Auth Guard Tokyo',
+        title: 'JWT Auth Middleware & Context Injection',
         subtitle: 'Header parsing, token verification, dan user context injection',
         chipLabel: 'GIN 02',
         category: 'code',
@@ -168,11 +162,9 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
     id: 'unit-3-concurrency-channels',
     unitNumber: 3,
     tag: 'HIGH CONCURRENCY & WORKER POOL',
-    title: 'Concurrency Engine & Worker Pool',
+    title: 'Unit 3: Concurrency Engine & Worker Pool',
     description: 'Kuasai goroutines, buffered channels, select statement, dan worker pool pattern untuk pemrosesan paralel anti-race condition.',
     totalXp: 175,
-    capstoneTitle: 'Capstone Project: Batch Event Pipeline & Asynchronous Notifier',
-    capstoneDescription: 'Pemrosesan 10,000 transaksi bersamaan dengan zero memory leak.',
     parts: [
       {
         id: 'part-7-goroutines-dan-channels',
@@ -189,8 +181,8 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'part-8-high-concurrency-worker-pool',
         globalPartNumber: 8,
-        title: 'High-Concurrency Worker Pool Tokyo',
-        subtitle: 'Pola distribusi beban komputasi server backend di kawasan Shibuya',
+        title: 'High-Concurrency Worker Pool Engine',
+        subtitle: 'Pola worker pool distribusi beban komputasi server backend performa tinggi',
         chipLabel: 'CONC 02',
         category: 'code',
         difficulty: 'Sulit',
@@ -203,18 +195,16 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'unit-4-docker-microservices',
     unitNumber: 4,
-    tag: 'CONTAINER & CAPSTONE PORTOFOLIO',
-    title: 'Microservices & Capstone Portofolio',
-    description: 'Packaging container Docker multi-stage, deployment cloud server, dan verifikasi repositori portofolio kerja Tokyo.',
+    tag: 'CONTAINER & CLOUD DEPLOYMENT',
+    title: 'Unit 4: Microservices & Cloud Deployment',
+    description: 'Packaging container Docker multi-stage, scratch image, API gateway, dan pengujian end-to-end siap produksi.',
     totalXp: 300,
-    capstoneTitle: 'Grand Capstone: Repositori Portofolio Siap Review Shibuya & Sponsor Visa',
-    capstoneDescription: 'Lengkap dengan Swagger/OpenAPI docs, unit test 80% coverage, dan CI/CD pipeline.',
     parts: [
       {
         id: 'part-9-docker-multistage-build',
         globalPartNumber: 9,
         title: 'Docker Multi-Stage Build & Scratch Image',
-        subtitle: 'Optimasi image container Go dari 800MB menjadi 15MB untuk produksi',
+        subtitle: 'Optimasi image container Go dari 800MB menjadi 15MB untuk lingkungan produksi',
         chipLabel: 'CLOUD 01',
         category: 'code',
         difficulty: 'Menengah',
@@ -225,8 +215,8 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'part-10-tokyo-capstone-portfolio',
         globalPartNumber: 10,
-        title: 'Grand Capstone Portofolio Shibuya-Ready',
-        subtitle: 'Verifikasi repositori GitHub standar wawancara teknis perusahaan teknologi Jepang',
+        title: 'Final Capstone: Repositori API Siap Produksi',
+        subtitle: 'Implementasi lengkap Clean Architecture dengan unit test dan dokumentasi OpenAPI',
         chipLabel: 'CAPSTONE',
         category: 'capstone',
         difficulty: 'Sulit',
@@ -241,7 +231,7 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
 export const RoadmapPage = () => {
   const navigate = useNavigate()
   const { track: routeTrack } = useParams<{ track?: string }>()
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
 
   // Track state management
   const [activeTrack, setActiveTrack] = useState(() => {
@@ -249,18 +239,41 @@ export const RoadmapPage = () => {
   })
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
 
-  // Guidebook Modal State
-  const [selectedGuidebookUnit, setSelectedGuidebookUnit] = useState<{
-    unitNumber: number
-    unitTitle: string
-  } | null>(null)
-
   // Filter Tabs: 'all' | 'active' | 'completed' | 'nihongo'
   const [activeFilterTab, setActiveFilterTab] = useState<'all' | 'active' | 'completed' | 'nihongo'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 7-day activity summary
+  // 7-day activity summary and daily rewards status
   const [activitySummary, setActivitySummary] = useState<UserActivitySummary | null>(null)
+  const [isChestModalOpen, setIsChestModalOpen] = useState(false)
+
+  // Local storage keys for daily rewards & completions
+  const todayDateStr = new Date().toISOString().split('T')[0]
+  const chestStorageKey = `codeabroad_daily_chest_claimed_${todayDateStr}`
+  const claimedVocabQuestKey = `codeabroad_vocab_quest_claimed_${todayDateStr}`
+  const reviewedNihongoKey = `codeabroad_nihongo_reviewed_${todayDateStr}`
+
+  const [isChestClaimedToday, setIsChestClaimedToday] = useState(() => {
+    try {
+      return localStorage.getItem(chestStorageKey) === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [reviewedNihongoToday, setReviewedNihongoToday] = useState(() => {
+    try {
+      return localStorage.getItem(reviewedNihongoKey) === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [claimedLocalQuest, setClaimedLocalQuest] = useState(() => {
+    try {
+      return localStorage.getItem(claimedVocabQuestKey) === 'true'
+    } catch {
+      return false
+    }
+  })
 
   // Completed quests persistence set
   const [completedQuestsSet, setCompletedQuestsSet] = useState<Set<string>>(() => {
@@ -281,7 +294,7 @@ export const RoadmapPage = () => {
 
   const { roadmap, isLoading } = useRoadmap(activeTrack)
 
-  // Fetch real 7-day activity logs from backend
+  // Fetch real 7-day activity logs & daily rewards status from backend
   useEffect(() => {
     let isMounted = true
     authService
@@ -292,10 +305,28 @@ export const RoadmapPage = () => {
       .catch((err) => {
         console.warn('Using offline activity log fallback in Roadmap:', err)
       })
+
+    authService
+      .getDailyRewardsStatus()
+      .then((status) => {
+        if (!isMounted || !status) return
+        if (status.vocab_quest_claimed) {
+          localStorage.setItem(claimedVocabQuestKey, 'true')
+          setClaimedLocalQuest(true)
+        }
+        if (status.golden_chest_claimed) {
+          localStorage.setItem(chestStorageKey, 'true')
+          setIsChestClaimedToday(true)
+        }
+      })
+      .catch((err) => {
+        console.warn('Using offline daily rewards status fallback in Roadmap:', err)
+      })
+
     return () => {
       isMounted = false
     }
-  }, [])
+  }, [claimedVocabQuestKey, chestStorageKey])
 
   // Listen for quest completion events
   useEffect(() => {
@@ -328,7 +359,7 @@ export const RoadmapPage = () => {
     )
   }, [activeTrack])
 
-  // Flat Sequential Units
+  // Flat Sequential Units (Pure Technical)
   const units: SequentialCurriculumUnit[] = useMemo(() => {
     return GOLANG_CURRICULUM_UNITS
   }, [])
@@ -397,6 +428,46 @@ export const RoadmapPage = () => {
     navigate(`/roadmap/${trackSlug}`)
   }
 
+  // Daily XP Goal Calculations
+  const isPart1Done = completedQuestsSet.has('part-1-variabel-dan-tipe-data')
+  const isPart2Done = completedQuestsSet.has('part-2-pointer-dan-struktur-data')
+  const baseEarnedXp = (isPart1Done ? 50 : 0) + (isPart2Done ? 50 : 0) + (claimedLocalQuest ? 30 : 0)
+  const todayEarnedXp = Math.min(50, baseEarnedXp)
+  const dailyTargetXp = 50
+  const dailyProgressPercent = Math.min(100, Math.round((todayEarnedXp / dailyTargetXp) * 100))
+  const remainingXp = Math.max(0, dailyTargetXp - todayEarnedXp)
+  const isChestUnlocked = todayEarnedXp >= dailyTargetXp
+
+  const handleVocabReview = () => {
+    triggerHaptic('success')
+    setReviewedNihongoToday(true)
+    localStorage.setItem(reviewedNihongoKey, 'true')
+  }
+
+  const handleClaimVocabQuest = async () => {
+    triggerHaptic('success')
+    setClaimedLocalQuest(true)
+    localStorage.setItem(claimedVocabQuestKey, 'true')
+    try {
+      await authService.claimDailyReward('vocab_quest')
+      updateUser({})
+    } catch {
+      // Gracefully continue with local state
+    }
+  }
+
+  const handleClaimGoldenChest = async () => {
+    triggerHaptic('streakIgnite')
+    setIsChestClaimedToday(true)
+    localStorage.setItem(chestStorageKey, 'true')
+    try {
+      await authService.claimDailyReward('golden_chest')
+      updateUser({})
+    } catch {
+      // Gracefully continue with local state
+    }
+  }
+
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
@@ -418,7 +489,7 @@ export const RoadmapPage = () => {
                   setIsCourseSwitcherOpen(true)
                 }}
                 className="flex items-center gap-2.5 px-3.5 py-2 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0"
-                title="Peminatan karier saat ini. Klik untuk beralih jalur silabus."
+                title="Peminatan kurikulum saat ini. Klik untuk berganti jalur spesialisasi."
               >
                 <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-4 h-4" />}
@@ -456,7 +527,7 @@ export const RoadmapPage = () => {
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari part, sintaks, materi..."
+                  placeholder="Cari modul, topik, sintaks..."
                   className="w-full bg-white text-xs font-semibold pl-9 pr-4 py-2 rounded-2xl border-2 border-slate-200/90 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 shadow-2xs"
                 />
               </div>
@@ -481,65 +552,62 @@ export const RoadmapPage = () => {
             </div>
           </div>
 
-          {/* ── 2. CURRICULUM MASTER OVERVIEW BANNER (ELEGANT 3D HEADER) ── */}
-          <div className="rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white p-6 sm:p-7 shadow-md relative overflow-hidden border-2 border-indigo-900/60">
-            {/* Background ambient pattern */}
-            <div className="absolute right-0 top-0 bottom-0 w-1/3 bg-radial from-blue-500/10 to-transparent pointer-events-none" />
-
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 relative z-10">
+          {/* ── 2. LIGHT DUOLINGO 3D HERO HEADER (CLEAN & BRIGHT) ── */}
+          <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-7 shadow-2xs relative overflow-hidden space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
               <div className="space-y-2 max-w-xl">
                 <div className="flex items-center gap-2">
-                  <span className="bg-blue-500/20 text-blue-300 border border-blue-400/30 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-lg tracking-wider">
-                    SILABUS KURIKULUM TOKYO 2026
+                  <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-lg tracking-wider">
+                    KURIKULUM TEKNIS RELEVAN
                   </span>
                   <span className="text-xs text-slate-400 font-semibold">• {units.length} Unit Utama</span>
                 </div>
-                <h1 className="font-brand font-black text-xl sm:text-2xl text-white tracking-tight">
+                <h1 className="font-brand font-black text-xl sm:text-2xl text-slate-900 tracking-tight">
                   {roadmap?.title || currentTrackConfig.title}
                 </h1>
-                <p className="text-xs sm:text-sm text-slate-300 font-medium leading-relaxed">
-                  Pohon kompetensi resmi berstandar industri koding Tokyo. Setiap modul dirancang berurutan (Part 1, 2, 3...) untuk menghasilkan portofolio kerja yang siap diuji di Shibuya.
+                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
+                  Pohon kompetensi berjenjang dari alokasi memori dasar hingga arsitektur high-concurrency siap produksi. Setiap modul disusun berurutan untuk fondasi koding yang kuat.
                 </p>
               </div>
 
-              {/* Master Metrics HUD Card */}
-              <div className="grid grid-cols-3 gap-3 bg-white/10 backdrop-blur-md rounded-2xl p-3.5 border border-white/15 shrink-0 text-center">
+              {/* Master Curriculum Metrics */}
+              <div className="grid grid-cols-3 gap-3 bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 shrink-0 text-center">
                 <div className="space-y-0.5">
-                  <div className="flex items-center justify-center gap-1 text-slate-300 text-[10px] font-bold">
-                    <Clock weight="bold" className="w-3 h-3 text-sky-300" />
+                  <div className="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold">
+                    <Clock weight="bold" className="w-3 h-3 text-blue-600" />
                     <span>Durasi</span>
                   </div>
-                  <span className="text-xs sm:text-sm font-brand font-black text-white">~{totalHours} Jam</span>
+                  <span className="text-xs sm:text-sm font-brand font-black text-slate-900">~{totalHours} Jam</span>
                 </div>
 
-                <div className="space-y-0.5 border-x border-white/10 px-2">
-                  <div className="flex items-center justify-center gap-1 text-slate-300 text-[10px] font-bold">
-                    <Lightning weight="fill" className="w-3 h-3 text-amber-300" />
+                <div className="space-y-0.5 border-x border-slate-200 px-2">
+                  <div className="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold">
+                    <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
                     <span>Total XP</span>
                   </div>
-                  <span className="text-xs sm:text-sm font-brand font-black text-amber-300">+{totalCurriculumXp}</span>
+                  <span className="text-xs sm:text-sm font-brand font-black text-amber-600">+{totalCurriculumXp}</span>
                 </div>
 
                 <div className="space-y-0.5">
-                  <div className="flex items-center justify-center gap-1 text-slate-300 text-[10px] font-bold">
-                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-300" />
+                  <div className="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold">
+                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-500" />
                     <span>Tuntas</span>
                   </div>
-                  <span className="text-xs sm:text-sm font-brand font-black text-emerald-300">{curriculumProgressPercent}%</span>
+                  <span className="text-xs sm:text-sm font-brand font-black text-emerald-600">{curriculumProgressPercent}%</span>
                 </div>
               </div>
             </div>
 
             {/* Next Active Part Quick Action CTA */}
             {nextActivePart && (
-              <div className="mt-5 pt-4 border-t border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
                 <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-lg bg-blue-500 text-white font-brand font-black text-[11px] flex items-center justify-center shadow-xs">
+                  <span className="w-6 h-6 rounded-lg bg-blue-600 text-white font-brand font-black text-[11px] flex items-center justify-center shadow-xs">
                     {nextActivePart.globalPartNumber}
                   </span>
-                  <span className="text-slate-300">
-                    Modul aktif Anda berikutnya:{' '}
-                    <strong className="text-white font-black">{nextActivePart.title}</strong>
+                  <span className="text-slate-600">
+                    Modul aktif berikutnya:{' '}
+                    <strong className="text-slate-900 font-black">{nextActivePart.title}</strong>
                   </span>
                 </div>
 
@@ -558,8 +626,8 @@ export const RoadmapPage = () => {
             )}
           </div>
 
-          {/* ── 3. FILTER TABS & SEARCH BAR ── */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
+          {/* ── 3. FILTER TABS & S-CURVE LINK ── */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
             <div className="flex items-center gap-2 overflow-x-auto pb-1 select-none">
               {[
                 { id: 'all', label: `Semua Part (${totalPartsCount})` },
@@ -595,7 +663,7 @@ export const RoadmapPage = () => {
             </Link>
           </div>
 
-          {/* ── 4. DIRECT SEQUENTIAL CURRICULUM UNITS ── */}
+          {/* ── 4. DIRECT SEQUENTIAL TECHNICAL UNIT CARDS ── */}
           <div className="space-y-6">
             {isLoading && (
               <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center text-slate-500 text-xs font-semibold animate-pulse">
@@ -626,8 +694,8 @@ export const RoadmapPage = () => {
                       : 'border-slate-200/80 opacity-90'
                   }`}
                 >
-                  {/* ── UNIT BANNER HEADER ── */}
-                  <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-white to-blue-50/30 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {/* ── UNIT BANNER HEADER (CLEAN & RELEVANT) ── */}
+                  <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-white to-blue-50/20 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div className="flex items-start gap-4 min-w-0">
                       <div
                         className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs font-brand font-black text-lg ${
@@ -682,35 +750,17 @@ export const RoadmapPage = () => {
                       </div>
                     </div>
 
-                    {/* Unit Actions: Guidebook Button & Hanko Stamp */}
-                    <div className="flex items-center gap-2.5 shrink-0 self-start md:self-center">
-                      {/* 📖 BUKU PANDUAN UNIT BUTTON */}
-                      <button
-                        type="button"
-                        onClick={() => {
-                          triggerHaptic('tap')
-                          setSelectedGuidebookUnit({
-                            unitNumber: unit.unitNumber,
-                            unitTitle: unit.title,
-                          })
-                        }}
-                        className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white hover:bg-slate-50 active:translate-y-0.5 border-2 border-slate-200 hover:border-blue-400 text-slate-800 text-xs font-brand font-black transition-all shadow-2xs cursor-pointer group"
-                        title="Buka contekan sintaks, teori dan Nihongo IT untuk unit ini"
-                      >
-                        <BookOpen weight="fill" className="w-4 h-4 text-blue-600 group-hover:scale-110 transition-transform" />
-                        <span>BUKU PANDUAN</span>
-                      </button>
-
+                    {/* Unit Status Badge */}
+                    <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
                       {isUnitCompleted ? (
-                        <div className="flex items-center gap-1 bg-emerald-50 text-emerald-700 font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-200">
+                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 font-brand font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-200">
                           <Check weight="bold" className="w-3.5 h-3.5" />
-                          <span>LULUS</span>
-                          <DoodleHanko text="合格" className="w-5 h-5 ml-1" />
+                          <span>LULUS ✓</span>
                         </div>
                       ) : isUnitActive ? (
                         <span className="bg-blue-50 text-blue-700 font-brand font-black text-xs px-3 py-1.5 rounded-xl border border-blue-200 flex items-center gap-1">
                           <Sparkle weight="fill" className="w-3.5 h-3.5" />
-                          <span>SEDANG BERJALAN</span>
+                          <span>SEDANG AKTIF ⚡</span>
                         </span>
                       ) : (
                         <span className="bg-slate-100 text-slate-500 font-bold text-xs px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
@@ -721,7 +771,7 @@ export const RoadmapPage = () => {
                     </div>
                   </div>
 
-                  {/* ── DIRECT SEQUENTIAL PART BREAKDOWN (FLAT 3D ROWS) ── */}
+                  {/* ── SEQUENTIAL PART BREAKDOWN (FLAT 3D ROWS) ── */}
                   <div className="p-4 sm:p-5 space-y-2.5 bg-white">
                     {unit.filteredParts.map((part) => {
                       const isCompleted = completedQuestsSet.has(part.id)
@@ -813,26 +863,6 @@ export const RoadmapPage = () => {
                         </div>
                       )
                     })}
-
-                    {/* Unit Capstone Project Challenge */}
-                    <div className="mt-3 bg-amber-50/70 border-2 border-amber-200/90 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <span className="w-9 h-9 rounded-xl bg-gradient-to-b from-amber-400 to-amber-500 text-white font-black text-sm flex items-center justify-center shrink-0 shadow-[0_2px_0_0_#B45309]">
-                          <Trophy weight="fill" className="w-4 h-4" />
-                        </span>
-                        <div className="truncate">
-                          <span className="text-xs font-brand font-black text-amber-950 block truncate">
-                            Capstone Challenge: {unit.capstoneTitle}
-                          </span>
-                          <span className="text-[11px] text-amber-800 font-medium">
-                            {unit.capstoneDescription}
-                          </span>
-                        </div>
-                      </div>
-                      <span className="text-xs font-brand font-black text-amber-900 shrink-0 bg-amber-200/80 px-3 py-1 rounded-xl self-end sm:self-center">
-                        +200 XP ⚡
-                      </span>
-                    </div>
                   </div>
                 </div>
               )
@@ -840,9 +870,9 @@ export const RoadmapPage = () => {
           </div>
         </main>
 
-        {/* ══════ RIGHT SIDEBAR RAIL (354px width SSOT) ══════ */}
-        <aside className="w-full xl:w-[354px] shrink-0 border-t-2 xl:border-t-0 xl:border-l-2 border-slate-200/90 bg-white p-5 sm:p-6 space-y-5">
-          {/* ── 1. UNIFIED 7-DAY STREAK TRACKER (IDENTICAL TO DASHBOARD) ── */}
+        {/* ══════ RIGHT SIDEBAR RAIL (100% IDENTICAL TO DASHBOARD) ══════ */}
+        <aside className="w-full xl:w-[354px] shrink-0 border-t-2 xl:border-t-0 xl:border-l-2 border-slate-200/90 bg-white p-5 sm:p-6 space-y-6">
+          {/* ── 1. RENTETAN BELAJAR (7-DAY STREAK TRACKER) ── */}
           <div className="border-2 border-slate-200/90 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-2xs bg-white">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -928,111 +958,197 @@ export const RoadmapPage = () => {
             </div>
           </div>
 
-          {/* ── 2. TOKYO JOB READINESS PASSPORT CARD ── */}
-          <div className="border-2 border-slate-200/90 rounded-3xl p-4 sm:p-5 space-y-4 shadow-2xs bg-white">
+          {/* ── SUBTLE SECTION DIVIDER ── */}
+          <div className="h-[1px] bg-slate-100" />
+
+          {/* ── 2. MISI & TARGET HARIAN (IDENTICAL TO DASHBOARD) ── */}
+          <div className="space-y-2.5">
             <div className="flex items-center justify-between">
-              <h4 className="font-brand font-black text-xs text-slate-900 flex items-center gap-1.5">
-                <span>Paspor Kesiapan Kerja Tokyo</span>
-                <span className="text-xs">🇯🇵</span>
-              </h4>
-              <span className="text-[10px] font-brand font-black text-blue-600 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-full">
-                Relokasi 2026
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
+                  <Target weight="bold" className="w-4 h-4 text-amber-600" />
+                </div>
+                <div>
+                  <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
+                    Misi & Target Harian
+                  </h4>
+                  <span className="text-[9px] text-slate-400 font-medium">
+                    Raih 50 XP untuk Buka Peti
+                  </span>
+                </div>
+              </div>
+              <span className="bg-slate-50 text-slate-600 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs border border-slate-200/60">
+                <Clock weight="bold" className="w-3 h-3 text-slate-500" />
+                <span>4j 20m</span>
               </span>
             </div>
 
-            {/* Readiness Meter */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-brand font-black text-slate-700">Skor Kelulusan Tokyo:</span>
-                <span className="font-brand font-black text-blue-600">{Math.max(65, curriculumProgressPercent)}% / 100%</span>
+            {/* Duolingo Integrated Progress Track with Golden Chest */}
+            <div className="p-2.5 bg-amber-50/30 border border-amber-100/90 rounded-xl space-y-1.5 shadow-2xs">
+              <div className="flex items-center justify-between text-[10px]">
+                <span className="font-brand font-black text-slate-800 flex items-center gap-1">
+                  <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
+                  <span>{todayEarnedXp} / {dailyTargetXp} XP Hari Ini</span>
+                </span>
+                <span className="font-brand font-black text-amber-700 text-[10px] flex items-center gap-1">
+                  <span>🎁 +20 💎</span>
+                  <span className="text-slate-400 font-medium">
+                    ({isChestUnlocked ? 'Tercapai! 🎉' : `${remainingXp} XP lagi`})
+                  </span>
+                </span>
               </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-500 to-emerald-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
-                  style={{ width: `${Math.max(65, curriculumProgressPercent)}%` }}
-                />
+
+              {/* Progress Bar Track with Golden Chest Anchor */}
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-2.5 bg-white rounded-full border border-slate-200/90 p-0.5 shadow-inner overflow-hidden relative">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706] relative"
+                    style={{ width: `${dailyProgressPercent}%` }}
+                  >
+                    <div className="absolute inset-x-0 top-0 h-[45%] bg-white/35 rounded-full" />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setIsChestModalOpen(true)
+                  }}
+                  className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 shadow-2xs transition-transform cursor-pointer ${
+                    isChestUnlocked
+                      ? 'bg-amber-400 border-amber-500 text-amber-950 animate-bounce shadow-[0_2px_0_0_#B45309] hover:scale-110 active:scale-95'
+                      : 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200'
+                  }`}
+                  title={
+                    isChestUnlocked
+                      ? 'Klik untuk membuka Peti Emas Hadiah 50 XP! (+20 💎)'
+                      : `Peti Emas Hadiah 50 XP (+20 💎) - ${remainingXp} XP lagi`
+                  }
+                >
+                  <Gift weight={isChestUnlocked ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
+                </button>
               </div>
-              <p className="text-[10px] text-slate-500 font-medium">
-                Target: Sponsor Visa Gijinkoku (技術・人文知識・国際業務)
-              </p>
             </div>
 
-            {/* Competency Checklist */}
-            <div className="space-y-2 pt-1 border-t border-slate-100">
-              {[
-                { label: 'Sintaks & Memori Pointer', badge: 'Mahir 100%', variant: 'emerald' },
-                { label: 'REST API & Clean Architecture', badge: 'Mahir 100%', variant: 'emerald' },
-                { label: 'Docker Container Deployment', badge: 'Aktif 60%', variant: 'blue' },
-                { label: 'Business Nihongo N3', badge: 'Aktif 45%', variant: 'amber' },
-              ].map((skill, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 truncate pr-2">{skill.label}</span>
-                  <span
-                    className={`font-brand font-black text-[10px] px-2 py-0.5 rounded-full shrink-0 ${
-                      skill.variant === 'emerald'
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : skill.variant === 'blue'
-                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                        : 'bg-amber-50 text-amber-800 border border-amber-200'
-                    }`}
-                  >
-                    {skill.badge}
-                  </span>
+            {/* Actionable Quests */}
+            <div className="space-y-2">
+              {/* Quest 1: Code Quest */}
+              <div className="p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2.5 shadow-2xs hover:shadow-xs transition-all group">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E3A8A] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Code weight="bold" className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <p className="font-brand font-black text-[11px] text-slate-900 leading-tight line-clamp-2">
+                      Selesaikan 1 Bab Coding
+                    </p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="bg-amber-100 text-amber-900 border border-amber-300/80 text-[9px] font-brand font-black px-1.5 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
+                        <Lightning weight="fill" className="w-2.5 h-2.5 text-amber-500" />
+                        <span>+50 XP</span>
+                      </span>
+                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1 py-0.2 rounded">
+                        KODING
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              ))}
+
+                {isPart1Done ? (
+                  <span className="bg-emerald-50 border border-emerald-300 text-emerald-700 font-brand font-black text-[9px] px-2 py-1 rounded-lg flex items-center gap-0.5 shrink-0 shadow-2xs">
+                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
+                    <span>SELESAI</span>
+                  </span>
+                ) : (
+                  <Button3D
+                    variant="blue"
+                    size="sm"
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      navigate('/learn/part-1-variabel-dan-tipe-data')
+                    }}
+                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
+                  >
+                    MULAI ▶
+                  </Button3D>
+                )}
+              </div>
+
+              {/* Quest 2: Japanese Vocab Quest */}
+              <div className="p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2.5 shadow-2xs hover:shadow-xs transition-all group">
+                <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                  <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-rose-400 to-pink-500 shadow-[0_2px_0_0_#9F1239] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Translate weight="bold" className="w-4 h-4 text-white" />
+                  </div>
+                  <div className="space-y-0.5 min-w-0 flex-1">
+                    <p className="font-brand font-black text-[11px] text-slate-900 leading-tight line-clamp-2">
+                      Review Kosakata IT Hari Ini
+                    </p>
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="bg-amber-100 text-amber-900 border border-amber-300/80 text-[9px] font-brand font-black px-1.5 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
+                        <Lightning weight="fill" className="w-2.5 h-2.5 text-amber-500" />
+                        <span>+30 XP</span>
+                      </span>
+                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1 py-0.2 rounded">
+                        BAHASA
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {claimedLocalQuest ? (
+                  <span className="bg-emerald-50 border border-emerald-300 text-emerald-700 font-brand font-black text-[9px] px-2 py-1 rounded-lg flex items-center gap-0.5 shrink-0 shadow-2xs">
+                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
+                    <span>SELESAI</span>
+                  </span>
+                ) : reviewedNihongoToday ? (
+                  <Button3D
+                    variant="amber"
+                    size="sm"
+                    onClick={handleClaimVocabQuest}
+                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
+                  >
+                    KLAIM ⚡
+                  </Button3D>
+                ) : (
+                  <Button3D
+                    variant="blue"
+                    size="sm"
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      const el = document.getElementById('tech-nihongo-card')
+                      if (el) {
+                        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                        el.classList.add('ring-4', 'ring-blue-400', 'rounded-2xl', 'transition-all')
+                        setTimeout(() => {
+                          el.classList.remove('ring-4', 'ring-blue-400', 'rounded-2xl')
+                        }, 2000)
+                      }
+                    }}
+                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
+                  >
+                    MULAI ▶
+                  </Button3D>
+                )}
+              </div>
             </div>
           </div>
 
-          {/* ── 3. CAREER PORTFOLIO SUMMARY CARD ── */}
-          <div className="border-2 border-slate-200/90 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-2xs bg-gradient-to-b from-white to-slate-50/50">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-blue-100 border border-blue-200 text-blue-600 flex items-center justify-center shrink-0">
-                <Briefcase weight="bold" className="w-4 h-4" />
-              </div>
-              <div>
-                <h4 className="font-brand font-black text-xs text-slate-900">Portofolio Tokyo IT</h4>
-                <p className="text-[10px] text-slate-500">4 Proyek Capstone Kurikulum</p>
-              </div>
-            </div>
+          {/* ── SUBTLE SECTION DIVIDER ── */}
+          <div className="h-[1px] bg-slate-100" />
 
-            <div className="space-y-2">
-              {[
-                { name: 'Tokyo REST API Gateway', isReady: true },
-                { name: 'High-Concurrency Worker Pool', isReady: true },
-                { name: 'Dockerized Microservices Cloud', isReady: false },
-                { name: 'Tokyo Business IT Passport', isReady: false },
-              ].map((proj, idx) => (
-                <div key={idx} className="flex items-center justify-between text-xs">
-                  <span className="font-medium text-slate-700 flex items-center gap-1.5 truncate pr-2">
-                    <Code weight="bold" className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                    <span className="truncate">{proj.name}</span>
-                  </span>
-                  <span
-                    className={`text-[10px] font-brand font-black px-2 py-0.5 rounded-full shrink-0 ${
-                      proj.isReady
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-100 text-slate-500 border border-slate-200'
-                    }`}
-                  >
-                    {proj.isReady ? 'Siap Review ✓' : 'Dalam Proses'}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <Link
-              to="/career"
-              onClick={() => triggerHaptic('tap')}
-              className="w-full flex items-center justify-center gap-1.5 py-2 px-3 bg-white hover:bg-slate-50 border-2 border-slate-200 hover:border-blue-400 rounded-2xl text-xs font-brand font-black text-blue-600 transition-all shadow-2xs cursor-pointer group"
-            >
-              <span>Buka Portofolio Lengkap</span>
-              <ArrowSquareOut weight="bold" className="w-3.5 h-3.5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
-            </Link>
+          {/* ── 3. KOSAKATA KANTOR TOKYO (TECH NIHONGO CARD SSOT) ── */}
+          <div id="tech-nihongo-card">
+            <TechNihongoCard
+              isReviewed={reviewedNihongoToday}
+              isClaimed={claimedLocalQuest}
+              onReview={handleVocabReview}
+            />
           </div>
         </aside>
       </div>
 
-      {/* ── 4. TRACK SWITCHER MODAL ── */}
+      {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
       <CourseSwitcherModal
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
@@ -1040,14 +1156,79 @@ export const RoadmapPage = () => {
         onSelectTrack={handleSelectTrack}
       />
 
-      {/* ── 5. UNIT GUIDEBOOK MODAL (THEORY CHEATSHEET & NIHONGO) ── */}
-      {selectedGuidebookUnit && (
-        <UnitGuidebookModal
-          isOpen={!!selectedGuidebookUnit}
-          onClose={() => setSelectedGuidebookUnit(null)}
-          unitNumber={selectedGuidebookUnit.unitNumber}
-          unitTitle={selectedGuidebookUnit.unitTitle}
-        />
+      {/* ── 4. CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}
+      {isChestModalOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+          <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-pop relative">
+            <button
+              type="button"
+              onClick={() => setIsChestModalOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer"
+            >
+              ✕
+            </button>
+
+            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-b from-amber-400 to-yellow-500 flex items-center justify-center text-3xl shadow-[0_4px_0_0_#B45309] animate-bounce">
+              🎁
+            </div>
+
+            <div>
+              <h3 className="font-brand font-black text-lg text-slate-900">
+                {isChestUnlocked ? 'Peti Hadiah Emas Terbuka!' : 'Peti Hadiah Harian'}
+              </h3>
+              <p className="text-xs text-slate-500 mt-1">
+                {isChestUnlocked
+                  ? 'Selamat! Kamu mencapai target 50 XP hari ini. Klaim hadiah kristalmu!'
+                  : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka peti hadiah emas!`}
+              </p>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 flex items-center justify-around">
+              <div className="text-center">
+                <span className="text-[10px] text-amber-700 font-bold block">Hadiah Kristal</span>
+                <span className="font-brand font-black text-sm text-amber-900">+20 💎</span>
+              </div>
+              <div className="w-[1px] h-6 bg-amber-200" />
+              <div className="text-center">
+                <span className="text-[10px] text-amber-700 font-bold block">XP Bonus</span>
+                <span className="font-brand font-black text-sm text-amber-900">+50 ⚡</span>
+              </div>
+            </div>
+
+            {isChestClaimedToday ? (
+              <div className="py-2.5 px-4 bg-emerald-50 border border-emerald-200 text-emerald-700 font-brand font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs">
+                <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+                <span>Peti Sudah Diklaim Hari Ini</span>
+              </div>
+            ) : isChestUnlocked ? (
+              <Button3D
+                variant="amber"
+                size="md"
+                className="w-full shadow-[0_4px_0_0_#B45309]"
+                onClick={() => {
+                  handleClaimGoldenChest()
+                  setIsChestModalOpen(false)
+                }}
+              >
+                KLAIM HADIAH 🎁
+              </Button3D>
+            ) : (
+              <Button3D
+                variant="blue"
+                size="md"
+                className="w-full shadow-[0_4px_0_0_#1D4ED8]"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setIsChestModalOpen(false)
+                  if (nextActivePart) navigate(nextActivePart.route)
+                }}
+              >
+                LANJUT KODING ▶
+              </Button3D>
+            )}
+          </div>
+        </div>,
+        document.body
       )}
     </div>
   )

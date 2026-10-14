@@ -425,6 +425,36 @@
 
 ---
 
+## ⚡ FASE 26: Unified Career Switcher & Dynamic Track Synchronizer (`CourseSwitcherModal.tsx`) (SELESAI ✅)
+
+### [x] 26.1 Konsolidasi Modal Penggantian Track Karier
+- [x] Sinkronkan pilihan track karier (`golang`, `react`, `docker`, `fundamental`) antara `DashboardPage.tsx` dan `RoadmapPage.tsx`.
+- [x] Simpan preferensi track aktif ke `authStore` dan database pengguna via API saat berganti kurikulum.
+
+---
+
+## ⚡ FASE 27: Penyelarasan Penuh Kurikulum Bersih & Harmonisasi Sidebar (`RoadmapPage.tsx`) (SELESAI ✅)
+
+### [x] 27.1 Eliminasi Residu Gimmick Non-Teknis di Kurikulum
+- [x] Hapus seluruh stempel hanko merah (`赤色スタンプ`), watermark visual, dan stempel stasiun non-teknis.
+- [x] Bersihkan penamaan unit dari stasiun fiktif (Akihabara, Shibuya, dll.) menjadi modul kompetensi rekayasa perangkat lunak standar Tokyo:
+  - Unit 1: Fondasi Sintaks Go & Memory Pointer (`SYNTAX 01-03`)
+  - Unit 2: Gin REST API & Middleware Engine (`REST 01-03`)
+  - Unit 3: Concurrency Goroutine & Channel (`CONC 01-02`)
+  - Unit 4: Microservices, Docker & Cloud Deployment (`CLOUD 01` & `CAPSTONE`)
+- [x] Jadikan tombol "Buku Panduan Unit" mengarahkan langsung ke part aktif atau cheatsheet ringkas tanpa error popup.
+
+### [x] 27.2 Harmonisasi Sidebar Kanan dengan Dashboard (`RoadmapPage.tsx`)
+- [x] Terapkan widget **Rentetan Belajar (7-Day Streak Tracker)** dengan api 3D menyala dan sinkronisasi log aktivitas riil.
+- [x] Terapkan widget **Misi & Target Harian (Daily Quest Chest)** dengan progress bar `todayXp / 50 XP`, status klaim peti emas, dan modal selebrasi.
+- [x] Terapkan widget **Tech Nihongo Card** dengan rotasi harian database PostgreSQL, tombol salin, dan audio pelafalan.
+
+### [x] 27.3 Verifikasi Kualitas & Kompilasi
+- [x] Validasi frontend build `npm run build` 100% bebas error TypeScript (exit code 0).
+- [x] Validasi backend test suite `go test ./...` 100% lulus (exit code 0).
+
+---
+
 ## 📜 Riwayat Fase yang Sudah Selesai (100% Completed)
 
 ### [x] FASE 1: Fondasi Token Light Mode, Tipografi & Phosphor Icons (SELESAI)
