@@ -643,3 +643,35 @@
 ### [x] 26.5 Pengujian Build & Verifikasi
 - [x] Verifikasi `npm run build` di `frontend/` (0 error TypeScript).
 - [x] Verifikasi `go test ./...` di `backend/` (100% test lulus).
+
+---
+
+## 🚀 FASE 27: Pembersihan Total & Harmonisasi Teknis `/courses` (Murni Kurikulum Teknis, No Gimmick/Hanko, Harmonized Right Sidebar) (SEDANG BERJALAN ⚡)
+
+> **Tujuan Utama:** Menghapus seluruh gimmick tidak relevan (stempel hanko, nama stasiun fiktif Akihabara/Shibuya, icon SaaS koper/briefcase dan checklist statis buatan), menampilkan unit kurikulum murni teknis yang nyata, dan menyelaraskan sidebar kanan 100% dengan widget Dasbor (Streak, Misi Peti Emas, dan Tech Nihongo Card).
+
+### [ ] 27.1 Pembersihan Gimmick & Elemen Tidak Relevan
+- [ ] Hapus seluruh komponen `DoodleHanko` dan stempel `合格`.
+- [ ] Hapus penamaan fiktif wilayah/stasiun (`Akihabara`, `Shibuya`, `Roppongi`, `Stasiun`).
+- [ ] Hapus icon SaaS generik di sidebar kanan (`Briefcase`, panah `ArrowSquareOut`, kartu checklist persentase statis).
+- [ ] Hapus modal tebal yang tidak diminta.
+
+### [ ] 27.2 Kartu Unit Kurikulum Murni Teknis (Duolingo 3D Tactile Light Mode)
+- [ ] Format judul unit teknis nyata:
+  - **Unit 1: Fondasi Sintaks Go & Memory Pointer**
+  - **Unit 2: Gin REST API & Middleware Engine**
+  - **Unit 3: Concurrency Engine & Worker Pool**
+  - **Unit 4: Microservices & Cloud Deployment**
+- [ ] Baris part langsung teknis dengan nomor global (Part 1, 2, 3...) tanpa nama stasiun.
+- [ ] Badge status bersih: `✓ LULUS` (hijau emerald 3D), `SEDANG AKTIF ⚡` (biru 3D), `🔒 TERKUNCI` (slate taktil).
+
+### [ ] 27.3 Harmonisasi Penuh Sidebar Kanan dengan Dasbor
+- [ ] Gunakan 3 widget fungsional yang identik dengan Dasbor:
+  1. **Rentetan Belajar (7-Day Streak Tracker)** terhubung ke log database aktivitas.
+  2. **Misi & Target Harian (Daily Goal)** dengan progres XP harian dan Peti Emas 3D.
+  3. **Kartu Kosakata Jepang IT ([`TechNihongoCard.tsx`](file:///c:/Projects/codeabroad/frontend/src/components/game/TechNihongoCard.tsx))** terhubung ke API kosakata Tokyo.
+
+### [ ] 27.4 Pengujian & Verifikasi Kualitas
+- [ ] `npm run build` di `frontend/` (0 error TypeScript).
+- [ ] `go test ./...` di `backend/` (100% test pass).
+- [ ] Git commit dan push ke remote repository.
