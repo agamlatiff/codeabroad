@@ -26,10 +26,8 @@ import {
   LockSimple,
   CaretDown,
   Sparkle,
-  Medal,
   Fire,
   Star,
-  Check,
   Lightning,
   CheckCircle,
   Clock,
@@ -38,7 +36,12 @@ import {
   Translate,
   Code,
   ArrowSquareOut,
+  CheckFat,
+  Play,
+  BookOpen,
 } from '@phosphor-icons/react'
+import doodleCoding from '../assets/kodi/doodle-coding.png'
+import doodleThinking from '../assets/kodi/doodle-thinking.png'
 
 // Standard Flat Sequential Curriculum Unit Definition (Clean Technical Only)
 export interface SequentialPartItem {
@@ -227,6 +230,51 @@ const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
     ],
   },
 ]
+
+// Duolingo 3D Tactile Unit Visual Theme Configurations
+interface UnitTheme {
+  gradientBg: string
+  border3D: string
+  tagBg: string
+  tagText: string
+  accentGlow: string
+  btnGuideBg: string
+}
+
+const UNIT_THEMES: Record<number, UnitTheme> = {
+  1: {
+    gradientBg: 'bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700',
+    border3D: 'border-b-[5px] border-blue-900',
+    tagBg: 'bg-blue-500/30 border border-blue-300/30 text-white',
+    tagText: 'text-white',
+    accentGlow: 'ring-blue-500/15',
+    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
+  },
+  2: {
+    gradientBg: 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700',
+    border3D: 'border-b-[5px] border-emerald-900',
+    tagBg: 'bg-emerald-500/30 border border-emerald-300/30 text-white',
+    tagText: 'text-white',
+    accentGlow: 'ring-emerald-500/15',
+    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
+  },
+  3: {
+    gradientBg: 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700',
+    border3D: 'border-b-[5px] border-purple-900',
+    tagBg: 'bg-purple-500/30 border border-purple-300/30 text-white',
+    tagText: 'text-white',
+    accentGlow: 'ring-purple-500/15',
+    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
+  },
+  4: {
+    gradientBg: 'bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700',
+    border3D: 'border-b-[5px] border-amber-900',
+    tagBg: 'bg-amber-500/30 border border-amber-300/30 text-white',
+    tagText: 'text-white',
+    accentGlow: 'ring-amber-500/15',
+    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
+  },
+}
 
 export const RoadmapPage = () => {
   const navigate = useNavigate()
@@ -598,17 +646,37 @@ export const RoadmapPage = () => {
               </div>
             </div>
 
-            {/* Next Active Part Quick Action CTA */}
+            {/* Next Active Part Kodi Companion Hero CTA */}
             {nextActivePart && (
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <span className="w-6 h-6 rounded-lg bg-blue-600 text-white font-brand font-black text-[11px] flex items-center justify-center shadow-xs">
-                    {nextActivePart.globalPartNumber}
-                  </span>
-                  <span className="text-slate-600">
-                    Modul aktif berikutnya:{' '}
-                    <strong className="text-slate-900 font-black">{nextActivePart.title}</strong>
-                  </span>
+              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
+                <div className="flex items-center gap-3.5 min-w-0">
+                  <div className="relative shrink-0">
+                    <img
+                      src={doodleCoding}
+                      alt="Kodi Ngoding"
+                      className="w-14 h-14 object-contain drop-shadow-sm select-none"
+                    />
+                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white font-brand font-black text-[10px] flex items-center justify-center border-2 border-white shadow-xs">
+                      {nextActivePart.globalPartNumber}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] font-brand font-black text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                        🎯 TARGET KAMU HARI INI
+                      </span>
+                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
+                        +{nextActivePart.xpReward} XP
+                      </span>
+                    </div>
+                    <h3 className="font-brand font-black text-sm sm:text-base text-slate-900 truncate">
+                      Part {nextActivePart.globalPartNumber}: {nextActivePart.title}
+                    </h3>
+                    <p className="text-xs text-slate-500 font-medium truncate">
+                      {nextActivePart.subtitle} • Estimasi {nextActivePart.estimatedMinutes} Menit
+                    </p>
+                  </div>
                 </div>
 
                 <Button3D
@@ -618,8 +686,9 @@ export const RoadmapPage = () => {
                     triggerHaptic('success')
                     navigate(nextActivePart.route)
                   }}
-                  className="text-xs px-4 py-2 shadow-[0_3px_0_0_#1D4ED8] shrink-0"
+                  className="text-xs px-5 py-2.5 shadow-[0_3px_0_0_#1D4ED8] font-brand font-black shrink-0 flex items-center justify-center gap-1.5"
                 >
+                  <Play weight="fill" className="w-3.5 h-3.5" />
                   <span>LANJUTKAN KODING ▶</span>
                 </Button3D>
               </div>
@@ -632,7 +701,7 @@ export const RoadmapPage = () => {
               {[
                 { id: 'all', label: `Semua Part (${totalPartsCount})` },
                 { id: 'active', label: 'Sedang Berjalan ⚡' },
-                { id: 'completed', label: `Sudah Lulus ✓ (${completedPartsCount})` },
+                { id: 'completed', label: `Sudah Lulus (${completedPartsCount})` },
                 { id: 'nihongo', label: 'Nihongo IT 🌸' },
               ].map((tab) => (
                 <button
@@ -672,8 +741,25 @@ export const RoadmapPage = () => {
             )}
 
             {!isLoading && filteredUnits.length === 0 && (
-              <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center text-slate-500 text-xs">
-                Tidak ada part atau modul yang cocok dengan kriteria filter saat ini.
+              <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center space-y-3">
+                <img
+                  src={doodleThinking}
+                  alt="Kodi Thinking"
+                  className="w-20 h-20 mx-auto object-contain drop-shadow-sm select-none"
+                />
+                <h4 className="font-brand font-black text-sm text-slate-800">
+                  Tidak Ada Modul di Kategori Ini
+                </h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                  Coba ubah filter atau pilih tab "Semua Part" untuk melihat seluruh pohon kompetensi kurikulum.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveFilterTab('all')}
+                  className="text-xs font-brand font-black text-blue-600 hover:underline cursor-pointer"
+                >
+                  Lihat Semua Part ({totalPartsCount})
+                </button>
               </div>
             )}
 
@@ -682,97 +768,132 @@ export const RoadmapPage = () => {
               const unitCompletedCount = unitParts.filter((p) => completedQuestsSet.has(p.id)).length
               const isUnitCompleted = unitCompletedCount === unitParts.length
               const isUnitActive = !isUnitCompleted && unitParts.some((p) => p.id === nextActivePart?.id)
+              const unitPercent = Math.round((unitCompletedCount / unitParts.length) * 100)
+              const theme = UNIT_THEMES[unit.unitNumber] || UNIT_THEMES[1]
 
               return (
                 <div
                   key={unit.id}
                   className={`bg-white rounded-3xl border-2 transition-all duration-200 overflow-hidden shadow-2xs ${
                     isUnitCompleted
-                      ? 'border-slate-200/90'
+                      ? 'border-emerald-300 ring-4 ring-emerald-500/10'
                       : isUnitActive
-                      ? 'border-blue-500 ring-4 ring-blue-500/10'
-                      : 'border-slate-200/80 opacity-90'
+                      ? 'border-blue-500 ring-4 ring-blue-500/15'
+                      : 'border-slate-200/90'
                   }`}
                 >
-                  {/* ── UNIT BANNER HEADER (CLEAN & RELEVANT) ── */}
-                  <div className="p-5 sm:p-6 bg-gradient-to-r from-slate-50 via-white to-blue-50/20 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div className="flex items-start gap-4 min-w-0">
-                      <div
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 shadow-2xs font-brand font-black text-lg ${
-                          isUnitCompleted
-                            ? 'bg-emerald-50 border border-emerald-200 text-emerald-600'
-                            : isUnitActive
-                            ? 'bg-blue-600 text-white shadow-[0_3px_0_0_#1D4ED8]'
-                            : 'bg-slate-100 border border-slate-200 text-slate-400'
-                        }`}
-                      >
-                        {isUnitCompleted ? (
-                          <Medal weight="fill" className="w-6 h-6" />
-                        ) : isUnitActive ? (
-                          <Sparkle weight="fill" className="w-6 h-6" />
-                        ) : (
-                          <LockSimple weight="bold" className="w-6 h-6" />
-                        )}
-                      </div>
-
-                      <div className="space-y-1 min-w-0">
+                  {/* ── DUOLINGO 3D UNIT BANNER HEADER ── */}
+                  <div
+                    className={`p-5 sm:p-6 transition-all ${
+                      isUnitCompleted
+                        ? 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white border-b-[5px] border-emerald-900'
+                        : isUnitActive
+                        ? `${theme.gradientBg} text-white ${theme.border3D}`
+                        : 'bg-slate-100 text-slate-800 border-b-[4px] border-slate-300'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                      <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
-                            className={`font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow-2xs ${
+                            className={`font-mono font-bold text-[10px] px-2.5 py-1 rounded-lg ${
                               isUnitCompleted
-                                ? 'bg-slate-100 text-slate-700'
+                                ? 'bg-emerald-500/30 border border-emerald-300/30 text-white'
                                 : isUnitActive
-                                ? 'bg-blue-600 text-white font-black'
-                                : 'bg-slate-200 text-slate-600'
+                                ? theme.tagBg
+                                : 'bg-slate-200 border border-slate-300 text-slate-700'
                             }`}
                           >
                             UNIT 0{unit.unitNumber} • {unit.tag}
                           </span>
-                          <span
-                            className={`text-xs font-black ${
-                              isUnitCompleted
-                                ? 'text-emerald-700'
-                                : isUnitActive
-                                ? 'text-blue-700'
-                                : 'text-slate-500'
-                            }`}
-                          >
-                            {unitCompletedCount}/{unitParts.length} Sesi Tuntas ({Math.round((unitCompletedCount / unitParts.length) * 100)}%)
-                          </span>
+
+                          {isUnitCompleted ? (
+                            <span className="bg-white/20 text-white font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-white/25">
+                              <CheckFat weight="fill" className="w-3 h-3 text-emerald-200" />
+                              <span>LULUS SEMUA SESI</span>
+                            </span>
+                          ) : isUnitActive ? (
+                            <span className="bg-white/20 text-white font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-white/25">
+                              <Sparkle weight="fill" className="w-3 h-3 text-amber-300" />
+                              <span>SEDANG AKTIF</span>
+                            </span>
+                          ) : (
+                            <span className="bg-slate-200/90 text-slate-600 font-bold text-[10px] px-2 py-0.5 rounded-lg flex items-center gap-1 border border-slate-300">
+                              <LockSimple weight="bold" className="w-3 h-3" />
+                              <span>TERKUNCI</span>
+                            </span>
+                          )}
                         </div>
 
-                        <h3 className="font-brand font-black text-base sm:text-lg text-slate-900 tracking-tight">
+                        <h3
+                          className={`font-brand font-black text-lg sm:text-xl tracking-tight ${
+                            isUnitCompleted || isUnitActive ? 'text-white' : 'text-slate-900'
+                          }`}
+                        >
                           {unit.title}
                         </h3>
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                        <p
+                          className={`text-xs leading-relaxed max-w-2xl font-medium ${
+                            isUnitCompleted || isUnitActive ? 'text-white/80' : 'text-slate-600'
+                          }`}
+                        >
                           {unit.description}
                         </p>
                       </div>
+
+                      {/* Guidebook Button */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          triggerHaptic('tap')
+                          const firstPart = unit.parts[0]
+                          if (firstPart) navigate(firstPart.route)
+                        }}
+                        className={`self-start sm:self-center px-4 py-2 rounded-xl text-xs font-brand font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 shadow-2xs ${
+                          isUnitCompleted || isUnitActive
+                            ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25 active:translate-y-0.5'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 active:translate-y-0.5'
+                        }`}
+                      >
+                        <BookOpen weight="bold" className="w-4 h-4" />
+                        <span>Buku Panduan Unit</span>
+                      </button>
                     </div>
 
-                    {/* Unit Status Badge */}
-                    <div className="flex items-center gap-2 shrink-0 self-start md:self-center">
-                      {isUnitCompleted ? (
-                        <div className="flex items-center gap-1.5 bg-emerald-50 text-emerald-700 font-brand font-black text-xs px-3 py-1.5 rounded-xl border border-emerald-200">
-                          <Check weight="bold" className="w-3.5 h-3.5" />
-                          <span>LULUS ✓</span>
+                    {/* 3D Segmented Progress Bar */}
+                    <div className="mt-4 pt-3 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div className="flex-1 max-w-md">
+                        <div
+                          className={`h-3 rounded-full overflow-hidden p-0.5 border ${
+                            isUnitCompleted || isUnitActive
+                              ? 'bg-black/25 border-white/20'
+                              : 'bg-slate-200 border-slate-300'
+                          }`}
+                        >
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 shadow-xs ${
+                              isUnitCompleted
+                                ? 'bg-emerald-300'
+                                : isUnitActive
+                                ? 'bg-white'
+                                : 'bg-slate-400'
+                            }`}
+                            style={{ width: `${Math.max(5, unitPercent)}%` }}
+                          />
                         </div>
-                      ) : isUnitActive ? (
-                        <span className="bg-blue-50 text-blue-700 font-brand font-black text-xs px-3 py-1.5 rounded-xl border border-blue-200 flex items-center gap-1">
-                          <Sparkle weight="fill" className="w-3.5 h-3.5" />
-                          <span>SEDANG AKTIF ⚡</span>
-                        </span>
-                      ) : (
-                        <span className="bg-slate-100 text-slate-500 font-bold text-xs px-3 py-1.5 rounded-xl border border-slate-200 flex items-center gap-1">
-                          <LockSimple weight="bold" className="w-3.5 h-3.5" />
-                          <span>TERKUNCI</span>
-                        </span>
-                      )}
+                      </div>
+                      <span
+                        className={`text-xs font-brand font-black shrink-0 ${
+                          isUnitCompleted || isUnitActive ? 'text-white' : 'text-slate-600'
+                        }`}
+                      >
+                        {unitCompletedCount}/{unitParts.length} Sesi Selesai ({unitPercent}%)
+                      </span>
                     </div>
                   </div>
 
-                  {/* ── SEQUENTIAL PART BREAKDOWN (FLAT 3D ROWS) ── */}
-                  <div className="p-4 sm:p-5 space-y-2.5 bg-white">
+                  {/* ── SEQUENTIAL PART BREAKDOWN (DUOLINGO 3D TACTILE CARDS) ── */}
+                  <div className="p-4 sm:p-5 space-y-3 bg-white">
                     {unit.filteredParts.map((part) => {
                       const isCompleted = completedQuestsSet.has(part.id)
                       const isNextActive = part.id === nextActivePart?.id
@@ -781,83 +902,107 @@ export const RoadmapPage = () => {
                       return (
                         <div
                           key={part.id}
-                          className={`p-3.5 sm:p-4 rounded-2xl flex items-center justify-between gap-3.5 transition-all ${
+                          className={`p-4 sm:p-4.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 ${
                             isCompleted
-                              ? 'bg-slate-50/70 border-2 border-slate-200/80 hover:bg-slate-50'
+                              ? 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
                               : isNextActive
-                              ? 'bg-blue-50/60 border-2 border-blue-500 shadow-sm ring-2 ring-blue-500/10'
-                              : 'bg-white border-2 border-slate-100 opacity-60'
+                              ? 'bg-blue-50/50 border-2 border-blue-500 border-b-[5px] border-b-blue-600 ring-4 ring-blue-500/10 shadow-sm hover:border-b-[6px] hover:-translate-y-0.5'
+                              : 'bg-slate-50/70 border-2 border-slate-200/70 border-b-[3px] border-b-slate-200 opacity-60'
+                          } ${
+                            part.category === 'nihongo' && !isCompleted && !isNextActive
+                              ? 'bg-rose-50/40 border-rose-200/60'
+                              : ''
                           }`}
                         >
-                          {/* Left: Sequential Number Badge + Meta */}
-                          <div className="flex items-center gap-3.5 min-w-0">
-                            {/* 3D Tactile Global Number Badge */}
+                          {/* Left: 3D Tactile Token Cube + Details */}
+                          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                            {/* 3D Tactile Token Cube */}
                             <div
-                              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-2xl font-brand font-black text-sm flex items-center justify-center shrink-0 transition-transform ${
+                              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform ${
                                 isCompleted
-                                  ? 'bg-emerald-500 text-white shadow-[0_2.5px_0_0_#047857]'
+                                  ? 'bg-emerald-500 border-2 border-emerald-300 text-white shadow-[0_3.5px_0_0_#047857]'
                                   : isNextActive
-                                  ? 'bg-blue-600 text-white shadow-[0_2.5px_0_0_#1D4ED8]'
-                                  : 'bg-slate-100 text-slate-400 border border-slate-200'
+                                  ? 'bg-blue-600 border-2 border-blue-400 text-white shadow-[0_3.5px_0_0_#1D4ED8] animate-pulse'
+                                  : 'bg-slate-100 border-2 border-slate-200 text-slate-400'
                               }`}
                             >
-                              {isCompleted ? '✓' : part.globalPartNumber}
+                              {isCompleted ? (
+                                <CheckFat weight="fill" className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-xs" />
+                              ) : isNextActive ? (
+                                <span className="font-brand font-black text-base sm:text-lg text-white">
+                                  {part.globalPartNumber}
+                                </span>
+                              ) : (
+                                <LockSimple weight="bold" className="w-5 h-5 text-slate-400" />
+                              )}
                             </div>
 
-                            <div className="space-y-0.5 truncate">
-                              <div className="flex items-center gap-2">
+                            <div className="space-y-0.5 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
                                 <span
-                                  className={`text-[10px] font-mono font-bold px-1.5 py-0.5 rounded ${
+                                  className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
                                     part.category === 'nihongo'
                                       ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                                      : 'bg-slate-100 text-slate-700'
+                                      : 'bg-slate-100 text-slate-700 border border-slate-200'
                                   }`}
                                 >
                                   {part.chipLabel}
                                 </span>
-                                <h4
-                                  className={`text-xs sm:text-sm font-brand font-bold truncate ${
-                                    isNextActive ? 'text-blue-950 font-black' : 'text-slate-900'
-                                  }`}
-                                >
-                                  Part {part.globalPartNumber}: {part.title}
-                                </h4>
+
+                                {isNextActive && (
+                                  <span className="bg-blue-100 text-blue-700 border border-blue-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-md flex items-center gap-1 shadow-2xs">
+                                    <Sparkle weight="fill" className="w-3 h-3 text-blue-600" />
+                                    <span>MODUL AKTIF</span>
+                                  </span>
+                                )}
                               </div>
 
-                              <p className="text-[11px] text-slate-500 font-medium truncate">
-                                {part.subtitle} • {part.difficulty} • Estimasi {part.estimatedMinutes} Menit
+                              <h4
+                                className={`text-sm sm:text-base font-brand font-bold tracking-tight truncate ${
+                                  isNextActive ? 'text-blue-950 font-black' : 'text-slate-900'
+                                }`}
+                              >
+                                Part {part.globalPartNumber}: {part.title}
+                              </h4>
+
+                              <p className="text-xs text-slate-500 font-medium truncate">
+                                {part.subtitle} • {part.difficulty} • ⏱️ Estimasi {part.estimatedMinutes} Menit
                               </p>
                             </div>
                           </div>
 
-                          {/* Right: Action Button */}
-                          <div className="shrink-0 flex items-center gap-2.5">
-                            <span className="hidden sm:inline-flex bg-amber-50 text-amber-800 text-[11px] font-black px-2 py-0.5 rounded-lg border border-amber-200">
-                              +{part.xpReward} XP
+                          {/* Right: XP Chip & Tactile Action */}
+                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <span className="bg-amber-50 text-amber-900 border border-amber-300 font-brand font-black text-xs px-2.5 py-1 rounded-xl shadow-2xs flex items-center gap-1">
+                              <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-600" />
+                              <span>+{part.xpReward} XP</span>
                             </span>
 
                             {isCompleted ? (
-                              <span className="text-xs font-brand font-black text-emerald-600 flex items-center gap-1 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-xl">
-                                <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500" />
-                                <span>Lulus ✓</span>
-                              </span>
+                              <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-brand font-black text-xs flex items-center gap-1.5 shadow-[0_2px_0_0_#A7F3D0]">
+                                <CheckFat weight="fill" className="w-4 h-4 text-emerald-600" />
+                                <span>SELESAI</span>
+                              </div>
                             ) : isUnlocked ? (
                               <Button3D
                                 variant="blue"
                                 size="sm"
                                 onClick={() => {
-                                  triggerHaptic('tap')
+                                  triggerHaptic('success')
                                   navigate(part.route)
                                 }}
-                                className="text-xs px-4 py-2 shadow-[0_3px_0_0_#1D4ED8]"
+                                className="text-xs px-5 py-2.5 shadow-[0_3.5px_0_0_#1D4ED8] font-brand font-black"
                               >
-                                Mulai Koding ▶
+                                <div className="flex items-center gap-1.5">
+                                  <Play weight="fill" className="w-3.5 h-3.5" />
+                                  <span>MULAI KODING</span>
+                                </div>
                               </Button3D>
                             ) : (
-                              <span className="text-xs font-bold text-slate-400 flex items-center gap-1 bg-slate-100 px-3 py-1.5 rounded-xl border border-slate-200">
+                              <div className="px-3.5 py-2 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-400 text-xs font-bold flex items-center gap-1.5">
                                 <LockSimple weight="bold" className="w-3.5 h-3.5" />
                                 <span>Terkunci</span>
-                              </span>
+                              </div>
                             )}
                           </div>
                         </div>
