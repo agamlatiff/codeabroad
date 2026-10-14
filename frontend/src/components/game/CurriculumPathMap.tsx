@@ -219,7 +219,7 @@ const TRACK_CURRICULA: Record<string, RawTrackConfig> = {
   },
 
   golang: {
-    defaultActivePart: 4,
+    defaultActivePart: 1,
     units: [
       {
         id: 'unit-1',
@@ -227,8 +227,8 @@ const TRACK_CURRICULA: Record<string, RawTrackConfig> = {
         tag: 'UNIT 1 • ARSITEKTUR MEMORI & LOGIKA EKSEKUSI (GOLANG)',
         title: 'Manajemen Heap/Stack, Pointer & Salam Kantor Tokyo',
         description: 'Pahami cara CPU & memori bekerja, alokasi pointer statis Go, dan etika sapaan Aisatsu hari pertama.',
-        statusBadge: 'SELESAI (100%)',
-        badgeType: 'completed',
+        statusBadge: 'SEDANG BERJALAN',
+        badgeType: 'active',
         bannerGradient: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700',
         bannerBorder: 'border-emerald-500/40',
         parts: [
@@ -268,8 +268,8 @@ const TRACK_CURRICULA: Record<string, RawTrackConfig> = {
         tag: 'UNIT 2 • DESAIN SISTEM REST API & KONTRAK DATA',
         title: 'Gin Routing Engine, JWT Auth, Database & Asakai Standup',
         description: 'Bangun API backend Go berstandar internasional, query database PostgreSQL, dan lapor di Asakai.',
-        statusBadge: 'SEDANG BERJALAN',
-        badgeType: 'active',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
         bannerGradient: 'bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700',
         bannerBorder: 'border-blue-500/40',
         parts: [
@@ -809,6 +809,8 @@ export const CurriculumPathMap = ({
         },
       ]
 
+      let hasFoundActiveQuest = false
+
       return roadmap.stations.map((st, stIdx) => {
         const palette = unitPalettes[stIdx % unitPalettes.length]
         const stationQuests: CurriculumPartNode[] = []
@@ -818,17 +820,22 @@ export const CurriculumPathMap = ({
             if (ch.quests && ch.quests.length > 0) {
               ch.quests.forEach((q) => {
                 const partNum = globalPartCounter++
+                let questStatus: 'completed' | 'active' | 'locked' = 'locked'
+                if (q.status === 'completed') {
+                  questStatus = 'completed'
+                } else if (!hasFoundActiveQuest) {
+                  questStatus = 'active'
+                  hasFoundActiveQuest = true
+                } else {
+                  questStatus = 'locked'
+                }
+
                 stationQuests.push({
                   id: q.id,
                   number: partNum,
                   title: q.title,
                   subtitle: q.chip_label ? `${q.chip_label} • ${q.difficulty}` : q.difficulty,
-                  status:
-                    q.status === 'completed'
-                      ? 'completed'
-                      : q.status === 'available'
-                      ? 'active'
-                      : 'locked',
+                  status: questStatus,
                   route: `/learn/${q.id}`,
                   xpReward: q.xp_reward || 50,
                   category: (q.type as string) === 'nihongo' ? 'nihongo' : 'code',
@@ -837,12 +844,22 @@ export const CurriculumPathMap = ({
               })
             } else {
               const partNum = globalPartCounter++
+              let chapterStatus: 'completed' | 'active' | 'locked' = 'locked'
+              if (ch.is_completed) {
+                chapterStatus = 'completed'
+              } else if (!hasFoundActiveQuest) {
+                chapterStatus = 'active'
+                hasFoundActiveQuest = true
+              } else {
+                chapterStatus = 'locked'
+              }
+
               stationQuests.push({
                 id: ch.id,
                 number: partNum,
                 title: ch.title,
                 subtitle: ch.description || 'Modul Pembelajaran',
-                status: ch.is_completed ? 'completed' : ch.is_unlocked ? 'active' : 'locked',
+                status: chapterStatus,
                 route: `/learn/${ch.id}`,
                 xpReward: 50,
                 category: 'code',
@@ -852,12 +869,22 @@ export const CurriculumPathMap = ({
         }
 
         if (stationQuests.length === 0) {
+          let stStatus: 'completed' | 'active' | 'locked' = 'locked'
+          if (st.is_completed) {
+            stStatus = 'completed'
+          } else if (!hasFoundActiveQuest) {
+            stStatus = 'active'
+            hasFoundActiveQuest = true
+          } else {
+            stStatus = 'locked'
+          }
+
           stationQuests.push({
             id: st.id,
             number: globalPartCounter++,
             title: st.title,
             subtitle: st.description || 'Pondasi Modul',
-            status: st.is_completed ? 'completed' : st.is_unlocked ? 'active' : 'locked',
+            status: stStatus,
             route: `/courses`,
             xpReward: 50,
             category: 'code',
@@ -896,18 +923,36 @@ export const CurriculumPathMap = ({
     const fallbackConfig = TRACK_CURRICULA[trackSlug] || TRACK_CURRICULA['golang']
     const activePartNumber = currentPart ?? fallbackConfig.defaultActivePart
 
-    return fallbackConfig.units.map((u) => ({
-      ...u,
-      parts: u.parts.map((p) => ({
+    return fallbackConfig.units.map((u) => {
+      const parts = u.parts.map((p) => ({
         ...p,
+        route: `/learn/${p.id}`,
         status:
           p.number < activePartNumber
-            ? 'completed'
+            ? ('completed' as const)
             : p.number === activePartNumber
-            ? 'active'
-            : 'locked',
-      })),
-    }))
+            ? ('active' as const)
+            : ('locked' as const),
+      }))
+
+      const isCompleted = parts.length > 0 && parts.every((p) => p.status === 'completed')
+      const isActive = !isCompleted && parts.some((p) => p.status === 'active')
+
+      return {
+        ...u,
+        parts,
+        statusBadge: isCompleted
+          ? 'SELESAI (100%)'
+          : isActive
+          ? 'SEDANG BERJALAN'
+          : 'TERKUNCI',
+        badgeType: isCompleted
+          ? ('completed' as const)
+          : isActive
+          ? ('active' as const)
+          : ('locked' as const),
+      }
+    })
   }, [roadmap, trackSlug, currentPart])
 
   const [activeGuidebook, setActiveGuidebook] = useState<{

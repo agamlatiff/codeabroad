@@ -33,6 +33,7 @@ export interface CourseSwitcherModalProps {
   onClose: () => void
   currentTrack: string
   onSelectTrack: (trackSlug: string) => void
+  trackProgressMap?: Record<string, { completed: number; total: number }>
 }
 
 export const CAREER_TRACKS: CareerTrackItem[] = [
@@ -58,8 +59,8 @@ export const CAREER_TRACKS: CareerTrackItem[] = [
     iconType: 'golang',
     badgeLabel: 'Sedang Aktif',
     badgeVariant: 'active',
-    progressPercent: 40,
-    partsCompleted: 4,
+    progressPercent: 0,
+    partsCompleted: 0,
     totalParts: 11,
   },
   {
@@ -82,6 +83,7 @@ export const CourseSwitcherModal = ({
   onClose,
   currentTrack,
   onSelectTrack,
+  trackProgressMap,
 }: CourseSwitcherModalProps) => {
   if (!isOpen) return null
 
@@ -108,6 +110,10 @@ export const CourseSwitcherModal = ({
 
   const renderTrackCard = (track: CareerTrackItem) => {
     const isCurrent = track.slug === currentTrack
+    const stats = trackProgressMap?.[track.slug]
+    const completed = stats ? stats.completed : track.partsCompleted
+    const total = stats ? stats.total : track.totalParts
+    const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : track.progressPercent
 
     return (
       <div
@@ -164,11 +170,11 @@ export const CourseSwitcherModal = ({
                     className={`h-full rounded-full transition-all ${
                       isCurrent ? 'bg-blue-600' : 'bg-slate-300'
                     }`}
-                    style={{ width: `${track.progressPercent}%` }}
+                    style={{ width: `${percent}%` }}
                   />
                 </div>
                 <span className="text-[11px] font-bold text-slate-600 shrink-0">
-                  {track.partsCompleted}/{track.totalParts} Modul ({track.progressPercent}%)
+                  {completed}/{total} Modul ({percent}%)
                 </span>
               </div>
             </div>

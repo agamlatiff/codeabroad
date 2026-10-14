@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard, useQuests } from '../hooks'
+import { useRoadmap } from '../hooks/useRoadmap'
 import { authService } from '../services/authService'
 import { questService } from '../services/questService'
 import { NavRail } from '../components/layout/NavRail'
@@ -13,7 +14,6 @@ import {
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
 import {
-  MagnifyingGlass,
   Target,
   Fire,
   Star,
@@ -39,7 +39,6 @@ export const DashboardPage = () => {
   const { profile, actions } = useDashboard()
   const { user } = profile
   const { dailyQuests, quests, timeLeft, refetch: refetchQuests } = useQuests()
-  const [searchQuery, setSearchQuery] = useState('')
   const [claimedLocalQuest, setClaimedLocalQuest] = useState(false)
   const [claimingQuestId, setClaimingQuestId] = useState<string | null>(null)
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
@@ -47,6 +46,39 @@ export const DashboardPage = () => {
     return user?.primary_stack || user?.career_path?.slug || 'golang'
   })
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
+  const { roadmap } = useRoadmap(activeTrack)
+
+  // Dynamic career track progress aggregation (completed vs total modules)
+  const trackProgressMap = useMemo(() => {
+    let completed = 0
+    let total = 0
+
+    if (roadmap?.stations && roadmap.stations.length > 0) {
+      roadmap.stations.forEach((st) => {
+        if (st.chapters && st.chapters.length > 0) {
+          st.chapters.forEach((ch) => {
+            if (ch.quests && ch.quests.length > 0) {
+              total += ch.quests.length
+              completed += ch.quests.filter((q) => q.status === 'completed').length
+            } else {
+              total += 1
+              if (ch.is_completed) completed += 1
+            }
+          })
+        } else {
+          total += 1
+          if (st.is_completed) completed += 1
+        }
+      })
+    }
+
+    return {
+      [activeTrack]: {
+        completed: total > 0 ? completed : 0,
+        total: total > 0 ? total : 10,
+      },
+    }
+  }, [roadmap, activeTrack])
 
   // Synchronize activeTrack when user profile arrives from backend
   useEffect(() => {
@@ -111,7 +143,7 @@ export const DashboardPage = () => {
       ? quests.slice(0, 3)
       : [
           {
-            id: 'station-3-jwt-middleware',
+            id: 'part-4-gin-routing',
             title: 'Tuntaskan 1 Part Koding REST API',
             chip_label: 'GIN 04',
             xp_reward: 50,
@@ -128,6 +160,13 @@ export const DashboardPage = () => {
           },
         ]
 
+  // Active Career Track progress stats for Option 3 top bar
+  const activeTrackStats = trackProgressMap[activeTrack] || { completed: 0, total: 10 }
+  const activeTrackPercent =
+    activeTrackStats.total > 0
+      ? Math.min(100, Math.round((activeTrackStats.completed / activeTrackStats.total) * 100))
+      : 0
+
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. LEFT 76PX COMPACT NAV RAIL (SSOT) ── */}
@@ -137,43 +176,45 @@ export const DashboardPage = () => {
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8">
         {/* ══════ CENTER CONTENT STAGE (flex-1) ══════ */}
         <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 space-y-6">
-          {/* ── 1. CLEAN TOP CONTEXTUAL BAR (NO ROBOTIC DOUBLE GREETINGS) ── */}
+          {/* ── 1. CLEAN TOP CONTEXTUAL BAR (TRACK SELECTOR & PROGRESS BAR) ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            {/* Search Pill & Subtle Career Indicator */}
-            <div className="flex items-center gap-3 w-full sm:w-auto">
-              <div className="relative flex-1 sm:w-72 md:w-80">
-                <MagnifyingGlass
-                  weight="bold"
-                  className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari materi atau topik..."
-                  className="w-full bg-white text-xs font-medium pl-9 pr-3.5 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs"
-                />
-              </div>
-
-              {/* Discreet Track Indicator (Duolingo Style) */}
+            {/* Track Switcher Pill & Linear Progress Bar (Option 3) */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+              {/* Clickable Track Switcher Pill */}
               <button
                 type="button"
-                onClick={() => setIsCourseSwitcherOpen(true)}
-                className="hidden md:flex items-center gap-2 px-3 py-2 bg-white border-2 border-slate-200/90 hover:border-blue-300 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer shrink-0"
-                title="Peminatan karier Anda saat ini. Klik untuk melihat pilihan jalur."
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setIsCourseSwitcherOpen(true)
+                }}
+                className="flex items-center gap-2.5 px-3.5 py-2 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0"
+                title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
               >
-                <div className="w-5 h-5 flex items-center justify-center shrink-0">
+                <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                   {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-4 h-4" />}
                   {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-5 h-3.5" />}
                   {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-4 h-4" />}
                   {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-4 h-4" />}
                   {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-4 h-4" />}
                 </div>
-                <span className="text-[11px] font-bold text-slate-700">
-                  {currentTrackConfig.title.split(' ')[0]} {currentTrackConfig.title.split(' ')[1] || ''}
+                <span className="text-xs font-brand font-black text-slate-900 leading-tight">
+                  {currentTrackConfig.title}
                 </span>
-                <CaretDown weight="bold" className="w-3 h-3 text-slate-400" />
+                <CaretDown weight="bold" className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition-colors ml-0.5" />
               </button>
+
+              {/* Track Linear Progress Bar */}
+              <div className="flex items-center gap-2.5 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-2 shadow-2xs">
+                <div className="w-24 sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
+                  <div
+                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
+                    style={{ width: `${activeTrackPercent}%` }}
+                  />
+                </div>
+                <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0">
+                  {activeTrackStats.completed}/{activeTrackStats.total} Modul ({activeTrackPercent}%)
+                </span>
+              </div>
             </div>
 
             {/* Game Status HUD (Clean Light Mode) */}
@@ -463,6 +504,7 @@ export const DashboardPage = () => {
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
         onSelectTrack={handleSelectTrack}
+        trackProgressMap={trackProgressMap}
       />
 
       {/* ── 4. CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}

@@ -63,6 +63,7 @@ type RefreshTokenRequest struct {
 
 // UpdateProfileRequest defines the input payload for updating user preferences and profile
 type UpdateProfileRequest struct {
+	Name         *string `json:"name"`
 	PrimaryStack *string `json:"primary_stack"`
 	CareerPathID *string `json:"career_path_id"`
 	Bio          *string `json:"bio"`

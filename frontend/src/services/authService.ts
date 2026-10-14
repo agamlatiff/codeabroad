@@ -41,7 +41,14 @@ export const authService = {
   /**
    * Updates user preferences, primary stack, or profile fields.
    */
-  async updateProfile(payload: { primary_stack?: string; career_path_id?: string; bio?: string }): Promise<User> {
+  async updateProfile(payload: {
+    name?: string
+    primary_stack?: string
+    career_path_id?: string
+    bio?: string
+    github_url?: string
+    linkedin_url?: string
+  }): Promise<User> {
     const response = await api.patch<ApiResponse<User>>('/users/me', payload)
     if (!response.data.success || !response.data.data) {
       throw new Error(response.data.error || 'Gagal memperbarui profil pengguna.')

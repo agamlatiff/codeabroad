@@ -249,9 +249,11 @@
 - [x] Ganti toast banner statis pada tombol `📖 BUKU PANDUAN BAB` menjadi modal cheatsheet 3D nyata.
 - [x] Tampilkan ringkasan konsep inti, contekan sintaks standar industri dengan tombol salin instan (📋), dan standar engineering Tokyo untuk setiap unit kurikulum.
 
-### [ ] 14.5 Filter Pencarian Real-Time di Peta Belajar (`searchQuery`)
-- [ ] *(Ditunda sesuai arahan user: "searchquery jgn diapa apain dulu")*
-- [ ] Rencana lanjutan: Hubungkan input pencarian ke filter/highlight node kanvas kurikulum.
+### [x] 14.5 Eliminasi Kotak Pencarian & Penggantian dengan Bar Progres Jalur (Opsi 3)
+- [x] Hapus input pencarian `searchQuery` yang kurang cocok di peta belajar bertahap gamified.
+- [x] Pasang pemilih jalur belajar taktil 3D lengkap dengan logo SVG resmi (`GolangLogo`, `ReactLogo`, `DockerLogo`).
+- [x] Pasang bar progres horizontal ramping dengan metrik dinamis modul selesai vs total modul (`0/10 Modul (0%)` saat mulai fresh).
+- [x] Inisialisasi status progres fresh user ke Part 1 (`defaultActivePart: 1`, Unit 1 `SEDANG BERJALAN`, Unit 2+ `TERKUNCI`, dan sequential locking ketat sehingga hanya 1 modul pertama yang aktif).
 
 ---
 
@@ -308,16 +310,20 @@
 
 ---
 
-## ⚡ FASE 18: Agregasi Progres Track & Modal Pengaturan Akun
+## ⚡ FASE 18: Agregasi Progres Track & Modal Pengaturan Akun (SELESAI ✅)
 
-### [ ] 18.1 Hitung Progres Karier Dinamis di `CourseSwitcherModal.tsx`
-- [ ] Ganti persentase statis (`40%` di Go, `0%` di React/DevOps) dengan perhitungan dinamis modul selesai vs total modul per track.
-- [ ] Tampilkan total part materi riil per track karir.
+### [x] 18.1 Hitung Progres Karier Dinamis di `CourseSwitcherModal.tsx`
+- [x] Ganti persentase statis (`40%` di Go, `0%` di React/DevOps) dengan perhitungan dinamis modul selesai vs total modul per track (`trackProgressMap`).
+- [x] Tampilkan total part materi riil dan persentase dinamis per track karir.
 
-### [ ] 18.2 Modal Pengaturan Akun & Profil (`NavRail.tsx`)
-- [ ] Buka modal pengaturan saat tombol gear (`GearSix`) diklik.
-- [ ] Fitur pengaturan: Update nama, bio, preferensi karir, dan selector avatar Kodi.
-- [ ] Tampilkan popover info akun saat avatar di kiri bawah diklik.
+### [x] 18.2 Modal Pengaturan Akun & Profil (`NavRail.tsx` ➔ `AccountSettingsModal.tsx`)
+- [x] Buka modal pengaturan 3D saat tombol gear (`GearSix`) dan avatar pengguna di kiri bawah diklik.
+- [x] Fitur pengaturan: Update nama lengkap, bio developer, target spesialisasi koding, dan live selector gaya avatar Kodi (Adventurer, Cyber Bottts, Lorelei).
+- [x] Dukungan backend Go: Perluas `UpdateProfileRequest` di domain, repository, dan `PATCH /api/v1/users/me` untuk mendukung pembaruan `name`.
+
+### [x] 18.3 Perbaikan Rute Belajar di Peta Kurikulum (`CurriculumPathMap.tsx`)
+- [x] Ubah rute fallback semua part dari `/courses` menjadi rute koding langsung `/learn/:id`.
+- [x] Tombol CTA floating popover dan tombol modal 3D mengarahkan user langsung ke workspace koding materi yang dipilih.
 
 ---
 

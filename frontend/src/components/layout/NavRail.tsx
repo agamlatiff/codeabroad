@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useLocation, Link, useNavigate } from 'react-router-dom'
 import {
   SquaresFour,
@@ -12,12 +13,14 @@ import { useAuthStore } from '../../store/authStore'
 import { useDashboard } from '../../hooks'
 import { UserAvatar } from '../ui/UserAvatar'
 import { triggerHaptic } from '../../utils/haptics'
+import { AccountSettingsModal } from './AccountSettingsModal'
 
 export const NavRail = () => {
   const location = useLocation()
   const navigate = useNavigate()
   const { user } = useAuthStore()
   const { avatar, actions } = useDashboard()
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
   const navItems = [
     {
@@ -139,7 +142,10 @@ export const NavRail = () => {
           {/* Settings Button */}
           <button
             type="button"
-            onClick={() => triggerHaptic('tap')}
+            onClick={() => {
+              triggerHaptic('tap')
+              setIsSettingsOpen(true)
+            }}
             className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-slate-100/80 hover:border-slate-300 text-slate-500 hover:text-slate-800 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
             title="Pengaturan"
           >
@@ -170,7 +176,10 @@ export const NavRail = () => {
 
           {/* User Profile Avatar with Online Dot */}
           <div
-            onClick={() => triggerHaptic('tap')}
+            onClick={() => {
+              triggerHaptic('tap')
+              setIsSettingsOpen(true)
+            }}
             className="relative group cursor-pointer mt-1"
           >
             <div className="ring-2 ring-slate-200 hover:ring-blue-400 rounded-full transition-all hover:scale-105">
@@ -181,7 +190,7 @@ export const NavRail = () => {
 
             {/* Tooltip */}
             <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
-              <span>Profil: {user?.name || 'Software Engineer'}</span>
+              <span>Profil & Pengaturan: {user?.name || 'Software Engineer'}</span>
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
             </div>
           </div>
@@ -216,6 +225,16 @@ export const NavRail = () => {
           )
         })}
       </div>
+
+      {/* ── DUOLINGO 3D ACCOUNT SETTINGS MODAL ── */}
+      <AccountSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={user}
+        avatarStyle={avatar.style}
+        onAvatarStyleChange={avatar.setStyle}
+        onProfileUpdated={actions.refetchProfile}
+      />
     </>
   )
 }
