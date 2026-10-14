@@ -261,9 +261,12 @@
 
 ### [ ] 15.1 Sinkronisasi Detail Misi Riil dari Backend (`useLearnWorkspace` ➔ UI)
 - [ ] Ganti teks hardcoded breadcrumb ("Station 3 • Bab 2") dengan `{quest?.chip_label}` dan `{quest?.title}`.
+- [ ] Ganti tombol navigasi `← Silabus` yang mengarah ke `/courses` menjadi kembali ke `/dashboard`.
 - [ ] Ganti badge statis XP (`⚡ +50 XP`) dan estimasi waktu dengan data riil `{quest?.xp_reward}` dan `{quest?.estimated_minutes}`.
+- [ ] Ganti badge statis streak `🔥 5 HARI` dengan data streak riil pengguna dari `useAuthStore` / profil.
+- [ ] Ganti progress bar statis `Step 2/4 (50%)` dengan kalkulasi kriteria penerimaan yang terpenuhi vs total kriteria.
 - [ ] Sinkronkan deskripsi materi, skenario industri Tokyo (`{quest?.story_context}` / `{quest?.description}`), dan catatan Nihongo (`{quest?.nihongo_notes}`).
-- [ ] Render daftar Kriteria Penerimaan (*Acceptance Criteria*) secara dinamis dari `{quest?.acceptance_criteria}` (bukan teks statis).
+- [ ] Render daftar Kriteria Penerimaan (*Acceptance Criteria*) secara dinamis dari `{quest?.acceptance_criteria}` (menghilangkan hardcoded checklist).
 - [ ] Muat starter code dan nama file tab editor secara dinamis dari `{quest?.starter_code}`.
 
 ### [ ] 15.2 Integrasi Test Runner & Eksekusi Unit Test Real-Time
@@ -272,8 +275,8 @@
 - [ ] Tampilkan output terminal konsol riil dari sandbox Go runner (stdout, stderr, durasi eksekusi dalam milidetik).
 
 ### [ ] 15.3 Layar & Modal Selebrasi Kelulusan Dinamis (`QuestCompleteModal.tsx` & `QuestCompletePage.tsx`)
-- [ ] Tampilkan judul quest yang baru diselesaikan secara dinamis.
-- [ ] Tampilkan perolehan XP riil (`submitResult.xp_awarded`), saldo streak terkini, dan peningkatan skor kesiapan Tokyo IT.
+- [ ] Tampilkan judul quest yang baru diselesaikan secara dinamis dari `{quest?.title}` (hapus hardcoded `Station 3 • Bab 2` dan `GIN // 04`).
+- [ ] Tampilkan perolehan XP riil (`submitResult.xp_awarded`), saldo streak terkini dari auth state (bukan fallback statis `5 HARI` / `1,450 XP`), dan peningkatan skor kesiapan Tokyo IT.
 - [ ] Tampilkan kartu istilah kosakata Jepang baru yang di-unlock (`submitResult.unlocked_vocab`).
 - [ ] Arahkan tombol aksi "Lanjutkan" ke quest berikutnya (`submitResult.next_quest.id`) atau kembali ke dashboard kurikulum.
 
@@ -283,11 +286,11 @@
 
 ### [ ] 16.1 Integrasi Hook `useQuests` & Eliminasi Mock State
 - [ ] Hubungkan `QuestLogPage.tsx` ke hook `useQuests()` (`GET /api/v1/quests` & `GET /api/v1/quests/daily`).
-- [ ] Hapus data hardcoded D1, D2, D3, mock gems (45 💎), dan mock streak/xp multiplier (`user.xp * 100`, `userStreak || 14`).
+- [ ] Hapus data hardcoded D1, D2, D3, mock gems (45 💎), dan perbaiki bug perkalian `user.xp * 100` serta fallback streak (`userStreak || 14`).
 - [ ] Bersihkan penamaan stasiun lama ("Akihabara Quest Board") menjadi format standar Pusat Misi CodeAbroad.
 
 ### [ ] 16.2 Filter Tab & Hitung Mundur Reset Harian Dinamis
-- [ ] Buat tab filter ("Semua", "Misi Harian", "Misi Utama", "Portofolio") memfilter quest secara dinamis.
+- [ ] Buat tab filter ("Semua", "Misi Harian", "Misi Utama", "Portofolio") memfilter quest secara dinamis berdasarkan data backend.
 - [ ] Tampilkan timer countdown riil menuju reset tengah malam JST/WIB (`timeLeft` dari `useQuests`).
 
 ### [ ] 16.3 Klaim Hadiah Quest Langsung ke Backend
@@ -301,12 +304,20 @@
 ### [ ] 17.1 Migrasi ke Data Kurikulum Dinamis Backend
 - [ ] Hubungkan `RoadmapPage.tsx` ke hook `useRoadmap(activeTrack)` (`GET /api/v1/roadmaps/:track_slug`).
 - [ ] Hapus ribuan baris HTML kartu stasiun distrik statis (Akihabara, Shinjuku, Shibuya) dan ganti dengan rendering dinamis Stations ➔ Chapters ➔ Quests.
-- [ ] Hapus mock multiplier `user.xp * 100`, streak fallback, dan ganti ke data auth store riil.
+- [ ] Perbaiki bug perkalian XP (`user.xp * 100`), fallback streak 14, dan persentase progress statis `62% Selesai` dengan agregasi riil dari backend.
 
 ### [ ] 17.2 Refaktor Tampilan ke Duolingo 3D Design Tokens
 - [ ] Ganti icon `lucide-react` dengan `@phosphor-icons/react` yang konsisten.
 - [ ] Hapus ketergantungan pada komponen legacy `TokyoPassportWidget`.
 - [ ] Hubungkan tombol "LANJUTKAN KODING" ke quest aktif pengguna berikutnya.
+
+---
+
+## ⚡ FASE 19: Refinement Gamifikasi Dashboard & Widget Pendukung
+- [ ] **19.1 Dinamisasi Nama Developer pada Kosakata Jikoshoukai (`TechNihongoCard.tsx`):**
+  - Ganti nama hardcoded "agam" pada contoh kalimat perkenalan diri (*"Hajimemashite, Indonesia kara kimashita agam to moushimasu."*) dengan nama profil asli pengguna `{user?.name || user?.username || 'developer'}`.
+- [ ] **19.2 Sinkronisasi Fallback Misi Harian (`DashboardPage.tsx`):**
+  - Ubah fallback `activeQuests` yang awalnya merujuk ke modul lanjut (`part-4-gin-routing`) agar selaras dengan posisi fresh user di Part 1 (`part-1-variabel-dan-tipe-data`, "GO 01").
 
 ---
 
