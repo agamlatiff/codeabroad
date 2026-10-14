@@ -455,7 +455,7 @@ export const DashboardPage = () => {
           <div className="h-[1px] bg-slate-100" />
 
           {/* ── 2. MISI & TARGET HARIAN (SEAMLESS SECTION) ── */}
-          <div className="space-y-2.5">
+          <div id="daily-quests-section" className="space-y-2.5 scroll-mt-20">
             {/* Header with Title & Timer */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -591,7 +591,14 @@ export const DashboardPage = () => {
                         onClick={() => {
                           triggerHaptic('tap')
                           if (isLanguage) {
-                            document.getElementById('tech-nihongo-card')?.scrollIntoView({ behavior: 'smooth' })
+                            const el = document.getElementById('tech-nihongo-card')
+                            if (el) {
+                              el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+                              el.classList.add('ring-4', 'ring-blue-400', 'rounded-2xl', 'transition-all')
+                              setTimeout(() => {
+                                el.classList.remove('ring-4', 'ring-blue-400', 'rounded-2xl')
+                              }, 2000)
+                            }
                           } else {
                             navigate(questRoute)
                           }
@@ -611,7 +618,11 @@ export const DashboardPage = () => {
           <div className="h-[1px] bg-slate-100" />
 
           {/* ── 3. KOSAKATA KANTOR TOKYO (SEAMLESS SECTION) ── */}
-          <TechNihongoCard onReview={handleVocabReview} />
+          <TechNihongoCard
+            isReviewed={reviewedNihongoToday}
+            isClaimed={claimedLocalQuest}
+            onReview={handleVocabReview}
+          />
         </aside>
       </div>
 

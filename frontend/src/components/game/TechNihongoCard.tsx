@@ -5,17 +5,28 @@ import {
   Check,
   SpeakerHigh,
   ArrowsClockwise,
+  BookOpen,
+  CheckCircle,
+  Sparkle,
 } from '@phosphor-icons/react'
+import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
 import { useAuthStore } from '../../store/authStore'
 import { vocabularyService } from '../../services/vocabularyService'
 
 export interface TechNihongoCardProps {
   className?: string
+  isReviewed?: boolean
+  isClaimed?: boolean
   onReview?: () => void
 }
 
-export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardProps) => {
+export const TechNihongoCard = ({
+  className = '',
+  isReviewed = false,
+  isClaimed = false,
+  onReview,
+}: TechNihongoCardProps) => {
   const { user } = useAuthStore()
   const developerName = user?.name ? user.name.split(' ')[0] : user?.username || 'developer'
 
@@ -120,7 +131,6 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
   const handleNextVocab = () => {
     triggerHaptic('tap')
     setCurrentIndex((prev) => (prev + 1) % vocabList.length)
-    onReview?.()
   }
 
   const handleCopy = () => {
@@ -131,7 +141,6 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
     )
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
-    onReview?.()
   }
 
   const handleSpeak = () => {
@@ -237,6 +246,55 @@ export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardPro
         <p className="text-slate-500 font-medium leading-snug">
           "{currentVocab.terjemahan}"
         </p>
+      </div>
+
+      {/* ── INTERACTIVE TASK ACTION ── */}
+      <div className="pt-1">
+        {isClaimed ? (
+          <div className="flex items-center justify-between p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-xl text-emerald-800 shadow-2xs">
+            <div className="flex items-center gap-1.5">
+              <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-[10px] font-brand font-black">
+                Misi Selesai (+30 XP) ✓
+              </span>
+            </div>
+            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded">
+              BESOK KOSAKATA BARU
+            </span>
+          </div>
+        ) : isReviewed ? (
+          <div className="flex items-center justify-between p-2 bg-amber-50/90 border border-amber-200 rounded-xl text-amber-900 shadow-2xs">
+            <div className="flex items-center gap-1.5">
+              <Sparkle weight="fill" className="w-4 h-4 text-amber-500 shrink-0" />
+              <span className="text-[10px] font-brand font-black">
+                Kosakata Dipelajari!
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                document.getElementById('daily-quests-section')?.scrollIntoView({ behavior: 'smooth' })
+              }}
+              className="text-[9px] font-brand font-black text-amber-900 bg-amber-200 hover:bg-amber-300 px-2.5 py-1 rounded-lg transition-all cursor-pointer shadow-2xs active:scale-95"
+            >
+              KLAIM XP DI ATAS ↑
+            </button>
+          </div>
+        ) : (
+          <Button3D
+            variant="blue"
+            size="sm"
+            onClick={() => {
+              handleSpeak()
+              onReview?.()
+            }}
+            className="w-full text-[11px] font-brand font-black flex items-center justify-center gap-2 py-1.5 shadow-[0_2px_0_0_#1D4ED8]"
+          >
+            <BookOpen weight="bold" className="w-3.5 h-3.5 text-white" />
+            <span>PELAJARI KOSAKATA INI (DENGARKAN & PAHAMI)</span>
+          </Button3D>
+        )}
       </div>
     </div>
   )
