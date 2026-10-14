@@ -218,6 +218,14 @@ func (u *authUsecase) UpdateProfile(ctx context.Context, userID string, req *dom
 	return u.userRepo.UpdateProfile(ctx, userID, req)
 }
 
+// GetActivityLogs retrieves weekly activity summary for the user
+func (u *authUsecase) GetActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
+	if userID == "" {
+		return nil, domain.ErrUnauthorized
+	}
+	return u.userRepo.GetWeeklyActivityLogs(ctx, userID)
+}
+
 // Logout invalidates the active user session in the cache
 func (u *authUsecase) Logout(ctx context.Context, userID string) error {
 	if userID == "" {

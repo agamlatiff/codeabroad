@@ -393,11 +393,21 @@
 
 ---
 
-## ⚡ FASE 24: Sinkronisasi Kalender Absensi Streak Riil (`user_activity_logs`)
+## ⚡ FASE 24: Sinkronisasi Kalender Absensi Streak Riil (`user_activity_logs`) (SELESAI ✅)
 
-### [ ] 24.1 Endpoint Riwayat Aktivitas Mingguan
-- [ ] Buat endpoint `GET /api/v1/users/me/activity-logs` untuk mengembalikan riwayat hari aktif 7 hari terakhir berdasarkan timestamp aktivitas koding user.
-- [ ] Sinkronkan titik status 7-hari pada widget "Rentetan Belajar" di `DashboardPage.tsx` dan `RoadmapPage.tsx` agar menampilkan hari aktif riil secara akurat.
+### [x] 24.1 Endpoint Riwayat Aktivitas Mingguan & Migrasi Database
+- [x] Buat migrasi database `000006_create_user_activity_logs.up.sql` (`id`, `user_id`, `activity_type`, `xp_earned`, `metadata`, `created_at`).
+- [x] Tambahkan method `LogActivity` dan `GetWeeklyActivityLogs` pada `UserRepository` dan `AuthUsecase`.
+- [x] Pasang pencatatan otomatis di `SubmitQuest` (`quest_usecase.go`) saat modul koding diselesaikan.
+- [x] Buat endpoint `GET /api/v1/users/me/activity-logs` di `AuthHandler` dan amankan via `AuthMiddleware`.
+- [x] Unit test usecase & handler lulus 100% (`go test ./...` PASS).
+
+### [x] 24.2 Integrasi Frontend & Sinkronisasi Token Api 7-Hari
+- [x] Buat tipe data `UserActivityLog` dan `UserActivitySummary` di `frontend/src/types/auth.ts`.
+- [x] Tambahkan method `authService.getActivityLogs()` di `frontend/src/services/authService.ts`.
+- [x] Sinkronkan token api 3D 7-hari pada kartu "Rentetan Belajar" di `DashboardPage.tsx` dengan data API riil dan auto-refresh saat quest selesai.
+- [x] Sinkronkan baris absensi 7-hari di `RoadmapPage.tsx` dengan status aktif riil database.
+- [x] Validasi frontend build `npm run build` sukses (exit code 0).
 
 ---
 

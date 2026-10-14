@@ -5,6 +5,7 @@ import { useDashboard, useQuests } from '../hooks'
 import { useAuthStore } from '../store/authStore'
 import { useRoadmap } from '../hooks/useRoadmap'
 import { authService } from '../services/authService'
+import type { UserActivitySummary } from '../types/auth'
 import { NavRail } from '../components/layout/NavRail'
 import {
   CurriculumPathMap,
@@ -87,6 +88,23 @@ export const DashboardPage = () => {
   const { roadmap } = useRoadmap(activeTrack)
 
   const [questCompletionTick, setQuestCompletionTick] = useState(0)
+  const [activitySummary, setActivitySummary] = useState<UserActivitySummary | null>(null)
+
+  // Fetch real 7-day weekly activity logs from backend API
+  useEffect(() => {
+    let isMounted = true
+    authService
+      .getActivityLogs()
+      .then((data) => {
+        if (isMounted) setActivitySummary(data)
+      })
+      .catch((err) => {
+        console.warn('Using offline activity log fallback:', err)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [questCompletionTick])
 
   // Listen for real-time quest completions across the application
   useEffect(() => {
@@ -344,20 +362,38 @@ export const DashboardPage = () => {
 
             {/* 7 Days Duolingo Flame Tokens Row */}
             <div className="grid grid-cols-7 gap-1.5 text-center bg-orange-50/30 border border-orange-100/80 rounded-2xl p-2 shadow-2xs">
-              {[
-                { label: 'Sen', dayIndex: 0 },
-                { label: 'Sel', dayIndex: 1 },
-                { label: 'Rab', dayIndex: 2 },
-                { label: 'Kam', dayIndex: 3 },
-                { label: 'Jum', dayIndex: 4 },
-                { label: 'Sab', dayIndex: 5 },
-                { label: 'Min', dayIndex: 6 },
-              ].map((item) => {
-                const isToday = item.dayIndex === todayDayIndex
-                const isCompleted =
-                  item.dayIndex < todayDayIndex
-                    ? todayDayIndex - item.dayIndex < Math.max(1, userStreak)
-                    : isToday && userStreak > 0
+              {(
+                activitySummary?.weekly_logs && activitySummary.weekly_logs.length === 7
+                  ? activitySummary.weekly_logs.map((log) => ({
+                      label: log.day_label,
+                      dayIndex: log.day_index,
+                      isToday: log.is_today,
+                      isCompleted: log.is_active,
+                      xpEarned: log.xp_earned,
+                      questsCount: log.quests_count,
+                    }))
+                  : [
+                      { label: 'Sen', dayIndex: 0 },
+                      { label: 'Sel', dayIndex: 1 },
+                      { label: 'Rab', dayIndex: 2 },
+                      { label: 'Kam', dayIndex: 3 },
+                      { label: 'Jum', dayIndex: 4 },
+                      { label: 'Sab', dayIndex: 5 },
+                      { label: 'Min', dayIndex: 6 },
+                    ].map((item) => ({
+                      label: item.label,
+                      dayIndex: item.dayIndex,
+                      isToday: item.dayIndex === todayDayIndex,
+                      isCompleted:
+                        item.dayIndex < todayDayIndex
+                          ? todayDayIndex - item.dayIndex < Math.max(1, userStreak)
+                          : item.dayIndex === todayDayIndex && userStreak > 0,
+                      xpEarned: 0,
+                      questsCount: 0,
+                    }))
+              ).map((item) => {
+                const isToday = item.isToday
+                const isCompleted = item.isCompleted
 
                 return (
                   <div key={item.label} className="flex flex-col items-center gap-1">

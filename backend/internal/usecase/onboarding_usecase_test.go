@@ -212,6 +212,26 @@ func (m *onboardingMockUserRepo) UpdateProfile(ctx context.Context, userID strin
 	return u, nil
 }
 
+func (m *onboardingMockUserRepo) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
+	return nil
+}
+
+func (m *onboardingMockUserRepo) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
+	return &domain.UserActivitySummary{
+		CurrentStreak:   3,
+		TotalActiveDays: 3,
+		WeeklyLogs: []domain.UserActivityLog{
+			{Date: "2026-10-12", DayIndex: 0, DayLabel: "Sen", IsActive: true},
+			{Date: "2026-10-13", DayIndex: 1, DayLabel: "Sel", IsActive: true},
+			{Date: "2026-10-14", DayIndex: 2, DayLabel: "Rab", IsActive: true, IsToday: true},
+			{Date: "2026-10-15", DayIndex: 3, DayLabel: "Kam", IsActive: false},
+			{Date: "2026-10-16", DayIndex: 4, DayLabel: "Jum", IsActive: false},
+			{Date: "2026-10-17", DayIndex: 5, DayLabel: "Sab", IsActive: false},
+			{Date: "2026-10-18", DayIndex: 6, DayLabel: "Min", IsActive: false},
+		},
+	}, nil
+}
+
 func TestOnboardingUsecase_GetCountries(t *testing.T) {
 	countryRepo := newMockCountryRepository()
 	careerPathRepo := newMockCareerPathRepository()

@@ -4,6 +4,7 @@ import (
 	"codeabroad/backend/internal/domain"
 	"codeabroad/backend/internal/infrastructure/postgres"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -326,4 +327,125 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *
 	return r.GetByID(ctx, userID)
 }
 
+// LogActivity records an explicit learning activity and updates last_active_at
+func (r *UserRepository) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
+	var metaJSON []byte
+	if metadata != nil {
+		metaJSON, _ = json.Marshal(metadata)
+	}
 
+	query := `
+		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		VALUES ($1, $2, $3, $4, NOW())
+	`
+	_, _ = r.db.Pool.Exec(ctx, query, userID, activityType, xpEarned, metaJSON)
+
+	now := time.Now()
+	_, _ = r.db.Pool.Exec(ctx, `UPDATE users SET last_active_at = $2, updated_at = NOW() WHERE id = $1`, userID, now)
+	return nil
+}
+
+// GetWeeklyActivityLogs returns the 7 days of the current week (Senin to Minggu) with active status
+func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
+	user, err := r.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now()
+	// In Go: Sunday=0, Monday=1, ..., Saturday=6
+	weekday := int(now.Weekday())
+	mondayOffset := (weekday + 6) % 7 // Monday becomes 0, Sunday becomes 6
+	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	monday := startOfToday.AddDate(0, 0, -mondayOffset)
+
+	// Fetch active dates from user_activity_logs in this week
+	activeDates := make(map[string]struct {
+		xp     int
+		quests int
+	})
+
+	logQuery := `
+		SELECT TO_CHAR(created_at, 'YYYY-MM-DD') AS act_date, COALESCE(SUM(xp_earned), 0), COUNT(*)
+		FROM user_activity_logs
+		WHERE user_id = $1 AND created_at >= $2
+		GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')
+	`
+	rows, err := r.db.Pool.Query(ctx, logQuery, userID, monday)
+	if err == nil {
+		defer rows.Close()
+		for rows.Next() {
+			var dateStr string
+			var xp, count int
+			if scanErr := rows.Scan(&dateStr, &xp, &count); scanErr == nil {
+				activeDates[dateStr] = struct {
+					xp     int
+					quests int
+				}{xp: xp, quests: count}
+			}
+		}
+	}
+
+	// Also check user_quests completions for robust backward-compatibility
+	questQuery := `
+		SELECT TO_CHAR(completed_at, 'YYYY-MM-DD') AS act_date, COUNT(*)
+		FROM user_quests
+		WHERE user_id = $1 AND completed_at >= $2 AND status = 'completed'
+		GROUP BY TO_CHAR(completed_at, 'YYYY-MM-DD')
+	`
+	qRows, qErr := r.db.Pool.Query(ctx, questQuery, userID, monday)
+	if qErr == nil {
+		defer qRows.Close()
+		for qRows.Next() {
+			var dateStr string
+			var count int
+			if scanErr := qRows.Scan(&dateStr, &count); scanErr == nil {
+				existing := activeDates[dateStr]
+				existing.quests += count
+				activeDates[dateStr] = existing
+			}
+		}
+	}
+
+	dayLabels := []string{"Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"}
+	weeklyLogs := make([]domain.UserActivityLog, 7)
+	totalActiveDays := 0
+
+	for i := 0; i < 7; i++ {
+		dayDate := monday.AddDate(0, 0, i)
+		dateStr := dayDate.Format("2006-01-02")
+		isToday := (i == mondayOffset)
+
+		data, hasLog := activeDates[dateStr]
+		isActive := hasLog
+
+		// If user has active streak and recent days are within streak window
+		if !isActive && user.Streak > 0 {
+			daysDiffFromToday := mondayOffset - i
+			if daysDiffFromToday >= 0 && daysDiffFromToday < user.Streak {
+				isActive = true
+			}
+		}
+
+		if isActive {
+			totalActiveDays++
+		}
+
+		weeklyLogs[i] = domain.UserActivityLog{
+			Date:        dateStr,
+			DayIndex:    i,
+			DayLabel:    dayLabels[i],
+			IsActive:    isActive,
+			IsToday:     isToday,
+			XPEarned:    data.xp,
+			QuestsCount: data.quests,
+		}
+	}
+
+	return &domain.UserActivitySummary{
+		CurrentStreak:   user.Streak,
+		TotalActiveDays: totalActiveDays,
+		LastActiveAt:    user.LastActiveAt,
+		WeeklyLogs:      weeklyLogs,
+	}, nil
+}

@@ -57,6 +57,17 @@ export const authService = {
   },
 
   /**
+   * Fetches 7-day weekly activity history and real streak tracking from /users/me/activity-logs.
+   */
+  async getActivityLogs(): Promise<import('../types/auth').UserActivitySummary> {
+    const response = await api.get<ApiResponse<import('../types/auth').UserActivitySummary>>('/users/me/activity-logs')
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Gagal memuat catatan aktivitas belajar.')
+    }
+    return response.data.data
+  },
+
+  /**
    * Terminates active session on the backend.
    */
   async logout(): Promise<void> {

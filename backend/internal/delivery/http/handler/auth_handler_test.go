@@ -70,6 +70,26 @@ func (r *testUserRepo) UpdateProfile(ctx context.Context, userID string, req *do
 	return u, nil
 }
 
+func (r *testUserRepo) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
+	return nil
+}
+
+func (r *testUserRepo) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
+	return &domain.UserActivitySummary{
+		CurrentStreak:   7,
+		TotalActiveDays: 4,
+		WeeklyLogs: []domain.UserActivityLog{
+			{Date: "2026-10-12", DayIndex: 0, DayLabel: "Sen", IsActive: true},
+			{Date: "2026-10-13", DayIndex: 1, DayLabel: "Sel", IsActive: true},
+			{Date: "2026-10-14", DayIndex: 2, DayLabel: "Rab", IsActive: true, IsToday: true},
+			{Date: "2026-10-15", DayIndex: 3, DayLabel: "Kam", IsActive: false},
+			{Date: "2026-10-16", DayIndex: 4, DayLabel: "Jum", IsActive: false},
+			{Date: "2026-10-17", DayIndex: 5, DayLabel: "Sab", IsActive: false},
+			{Date: "2026-10-18", DayIndex: 6, DayLabel: "Min", IsActive: false},
+		},
+	}, nil
+}
+
 
 type testSessionRepo struct {
 	sessions map[string]string
@@ -225,3 +245,57 @@ func TestHTTP_Logout_Success(t *testing.T) {
 		t.Fatalf("expected 200 OK for logout, got: %d, body: %s", w.Code, w.Body.String())
 	}
 }
+
+func TestHTTP_GetActivityLogs_Success(t *testing.T) {
+	router, _, _ := setupTestRouter()
+
+	// 1. Register a user first to get a valid token
+	payload := domain.RegisterRequest{
+		Name:     "Activity User",
+		Username: "activityuser",
+		Email:    "activity@example.com",
+		Password: "Password123!",
+	}
+	body, _ := json.Marshal(payload)
+	regReq, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/register", bytes.NewBuffer(body))
+	regReq.Header.Set("Content-Type", "application/json")
+
+	wReg := httptest.NewRecorder()
+	router.ServeHTTP(wReg, regReq)
+
+	var regRes struct {
+		Data struct {
+			AccessToken string `json:"access_token"`
+		} `json:"data"`
+	}
+	_ = json.Unmarshal(wReg.Body.Bytes(), &regRes)
+	token := regRes.Data.AccessToken
+
+	// 2. Call GET /api/v1/users/me/activity-logs with valid token
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/users/me/activity-logs", nil)
+	req.Header.Set("Authorization", "Bearer "+token)
+
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for activity-logs, got: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	var res struct {
+		Success bool                       `json:"success"`
+		Data    domain.UserActivitySummary `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &res); err != nil {
+		t.Fatalf("failed to decode activity logs response: %v", err)
+	}
+
+	if !res.Success {
+		t.Fatalf("expected success: true, got %v", res.Success)
+	}
+
+	if len(res.Data.WeeklyLogs) != 7 {
+		t.Errorf("expected 7 weekly logs, got %d", len(res.Data.WeeklyLogs))
+	}
+}
+

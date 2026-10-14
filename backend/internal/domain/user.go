@@ -78,6 +78,25 @@ type AuthResponse struct {
 	User         User   `json:"user"`
 }
 
+// UserActivityLog represents a daily learning activity entry
+type UserActivityLog struct {
+	Date        string `json:"date"`         // "2026-10-14"
+	DayIndex    int    `json:"day_index"`    // 0=Sen, 1=Sel, 2=Rab, 3=Kam, 4=Jum, 5=Sab, 6=Min
+	DayLabel    string `json:"day_label"`    // "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"
+	IsActive    bool   `json:"is_active"`    // true if user was active on this day
+	IsToday     bool   `json:"is_today"`
+	XPEarned    int    `json:"xp_earned"`
+	QuestsCount int    `json:"quests_count"`
+}
+
+// UserActivitySummary provides weekly activity context and streak status
+type UserActivitySummary struct {
+	CurrentStreak   int               `json:"current_streak"`
+	TotalActiveDays int               `json:"total_active_days"`
+	LastActiveAt    *time.Time        `json:"last_active_at"`
+	WeeklyLogs      []UserActivityLog `json:"weekly_logs"` // 7 days of current week (Mon-Sun)
+}
+
 // UserRepository specifies the database contract for user persistence
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
@@ -88,6 +107,8 @@ type UserRepository interface {
 	GetProfileWithDetails(ctx context.Context, userID string) (*OnboardingProfileResponse, error)
 	UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
+	LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error
+	GetWeeklyActivityLogs(ctx context.Context, userID string) (*UserActivitySummary, error)
 }
 
 // AuthUsecase specifies the business logic contract for authentication
@@ -97,6 +118,7 @@ type AuthUsecase interface {
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error)
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
+	GetActivityLogs(ctx context.Context, userID string) (*UserActivitySummary, error)
 	Logout(ctx context.Context, userID string) error
 }
 

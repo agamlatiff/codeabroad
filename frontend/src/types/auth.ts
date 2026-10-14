@@ -52,3 +52,21 @@ export interface RegisterPayload {
     password: string
 }
 
+export interface UserActivityLog {
+    date: string
+    day_index: number
+    day_label: string
+    is_active: boolean
+    is_today: boolean
+    xp_earned: number
+    quests_count: number
+}
+
+export interface UserActivitySummary {
+    current_streak: number
+    total_active_days: number
+    last_active_at?: string | null
+    weekly_logs: UserActivityLog[]
+}
+
+

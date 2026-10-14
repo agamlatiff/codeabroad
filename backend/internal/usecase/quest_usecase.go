@@ -210,6 +210,7 @@ func (u *questUsecase) SubmitQuest(ctx context.Context, questID string, userID s
 	user.LastActiveAt = &now
 
 	_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, newStreak, &now)
+	_ = u.userRepo.LogActivity(ctx, userID, "quest_completed", xpEarned, map[string]interface{}{"quest_id": quest.ID})
 
 	// 5. Calculate Tokyo Job-Readiness Score
 	careerPathID := ""

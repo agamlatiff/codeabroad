@@ -102,6 +102,23 @@ func (h *AuthHandler) UpdateProfile(c *gin.Context) {
 	response.Success(c, http.StatusOK, "user profile updated successfully", user)
 }
 
+// GetActivityLogs handles GET /api/v1/users/me/activity-logs
+func (h *AuthHandler) GetActivityLogs(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, domain.ErrUnauthorized)
+		return
+	}
+
+	summary, err := h.authUsecase.GetActivityLogs(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "user activity logs retrieved successfully", summary)
+}
+
 func (h *AuthHandler) Logout(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
@@ -139,5 +156,6 @@ func (h *AuthHandler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Han
 	{
 		users.GET("/me", h.GetProfile)
 		users.PATCH("/me", h.UpdateProfile)
+		users.GET("/me/activity-logs", h.GetActivityLogs)
 	}
 }

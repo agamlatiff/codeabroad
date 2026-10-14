@@ -1,8 +1,10 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
 import { useRoadmap } from '../hooks/useRoadmap'
+import { authService } from '../services/authService'
+import type { UserActivitySummary } from '../types/auth'
 import { TokyoPassportWidget } from '../components/game/TokyoPassportWidget'
 import { Button3D } from '../components/ui/Button3D'
 import { SpeechBubble } from '../components/ui/SpeechBubble'
@@ -274,6 +276,22 @@ export const RoadmapPage = () => {
 
   const [searchQuery, setSearchQuery] = useState('')
   const [expandedStationIds, setExpandedStationIds] = useState<Set<string>>(() => new Set(['st-03-gin-rest-api']))
+  const [activitySummary, setActivitySummary] = useState<UserActivitySummary | null>(null)
+
+  useEffect(() => {
+    let isMounted = true
+    authService
+      .getActivityLogs()
+      .then((data) => {
+        if (isMounted) setActivitySummary(data)
+      })
+      .catch((err) => {
+        console.warn('Using offline activity log fallback in Roadmap:', err)
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   const toggleStation = (stationId: string) => {
     triggerHaptic('tap')
@@ -740,26 +758,40 @@ export const RoadmapPage = () => {
 
             {/* 7 Days Row */}
             <div className="grid grid-cols-7 gap-1.5 text-center">
-              {[0, 1, 2, 3, 4, 5, 6].map((dayOffset) => {
-                const isToday = dayOffset === (currentDayIndex === 0 ? 6 : currentDayIndex - 1)
-                const isPast = dayOffset < (currentDayIndex === 0 ? 6 : currentDayIndex - 1)
-                const dayLabel = dayNames[(dayOffset + 1) % 7]
-
+              {(
+                activitySummary?.weekly_logs && activitySummary.weekly_logs.length === 7
+                  ? activitySummary.weekly_logs.map((log) => ({
+                      dayOffset: log.day_index,
+                      dayLabel: log.day_label,
+                      isToday: log.is_today,
+                      isActive: log.is_active,
+                    }))
+                  : [0, 1, 2, 3, 4, 5, 6].map((dayOffset) => ({
+                      dayOffset,
+                      dayLabel: dayNames[(dayOffset + 1) % 7],
+                      isToday: dayOffset === (currentDayIndex === 0 ? 6 : currentDayIndex - 1),
+                      isActive:
+                        dayOffset < (currentDayIndex === 0 ? 6 : currentDayIndex - 1)
+                          ? (currentDayIndex === 0 ? 6 : currentDayIndex - 1) - dayOffset < Math.max(1, userStreak)
+                          : dayOffset === (currentDayIndex === 0 ? 6 : currentDayIndex - 1) && userStreak > 0,
+                    }))
+              ).map((day) => {
                 return (
-                  <div key={dayOffset} className="flex flex-col items-center gap-1">
-                    <span className={`text-[9px] font-bold ${isToday ? 'text-[#0284C7]' : 'text-slate-400'}`}>
-                      {dayLabel}
+                  <div key={day.dayOffset} className="flex flex-col items-center gap-1">
+                    <span className={`text-[9px] font-bold ${day.isToday ? 'text-[#0284C7]' : 'text-slate-400'}`}>
+                      {day.dayLabel}
                     </span>
                     <div
                       className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-[11px] transition-all ${
-                        isPast
+                        day.isActive
                           ? 'bg-[#10B981] text-white shadow-2xs'
-                          : isToday
+                          : day.isToday
                           ? 'bg-[#2563EB] text-white shadow-xs ring-2 ring-blue-200'
                           : 'bg-[#F1F5F9] text-[#475569]'
                       }`}
+                      title={day.isActive ? `${day.dayLabel}: Hari Aktif Belajar ✓` : day.isToday ? 'Hari Ini' : `${day.dayLabel}: Belum Belajar`}
                     >
-                      {isPast ? '✓' : isToday ? '🔥' : '•'}
+                      {day.isActive ? '✓' : day.isToday ? '🔥' : '•'}
                     </div>
                   </div>
                 )
