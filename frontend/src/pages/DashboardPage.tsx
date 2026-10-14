@@ -2,9 +2,9 @@ import { useState, useEffect, useMemo } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import { useDashboard, useQuests } from '../hooks'
+import { useAuthStore } from '../store/authStore'
 import { useRoadmap } from '../hooks/useRoadmap'
 import { authService } from '../services/authService'
-import { questService } from '../services/questService'
 import { NavRail } from '../components/layout/NavRail'
 import {
   CurriculumPathMap,
@@ -39,10 +39,47 @@ export const DashboardPage = () => {
   const navigate = useNavigate()
   const { profile, actions } = useDashboard()
   const { user } = profile
-  const { dailyQuests, quests, timeLeft, refetch: refetchQuests } = useQuests()
+  const { updateUser } = useAuthStore()
+  const { dailyQuests, timeLeft } = useQuests()
   const [claimedLocalQuest, setClaimedLocalQuest] = useState(false)
-  const [claimingQuestId, setClaimingQuestId] = useState<string | null>(null)
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
+
+  // Daily persistence keys
+  const todayDateStr = new Date().toISOString().slice(0, 10)
+  const chestStorageKey = `codeabroad_daily_chest_claimed_${todayDateStr}`
+  const vocabStorageKey = `codeabroad_vocab_reviewed_${todayDateStr}`
+  const [isChestClaimedToday, setIsChestClaimedToday] = useState(() => {
+    return localStorage.getItem(chestStorageKey) === 'true'
+  })
+  const [reviewedNihongoToday, setReviewedNihongoToday] = useState(() => {
+    return localStorage.getItem(vocabStorageKey) === 'true'
+  })
+
+  const handleVocabReview = () => {
+    if (!reviewedNihongoToday) {
+      localStorage.setItem(vocabStorageKey, 'true')
+      setReviewedNihongoToday(true)
+      triggerHaptic('success')
+    }
+  }
+
+  const handleClaimVocabQuest = () => {
+    triggerHaptic('success')
+    setClaimedLocalQuest(true)
+    updateUser({
+      xp: (user?.xp || 0) + 30,
+    })
+  }
+
+  const handleClaimChest = () => {
+    triggerHaptic('success')
+    localStorage.setItem(chestStorageKey, 'true')
+    setIsChestClaimedToday(true)
+    setIsChestModalOpen(false)
+    updateUser({
+      xp: (user?.xp || 0) + 50,
+    })
+  }
   const [activeTrack, setActiveTrack] = useState(() => {
     return user?.primary_stack || user?.career_path?.slug || 'golang'
   })
@@ -101,18 +138,6 @@ export const DashboardPage = () => {
     }
   }
 
-  const handleClaimQuest = async (questId: string) => {
-    triggerHaptic('success')
-    setClaimingQuestId(questId)
-    try {
-      await questService.submitQuest(questId, { code: '// Daily Quest Auto-Claim' })
-      await Promise.all([refetchQuests(), actions.refetchProfile()])
-    } catch {
-      setClaimedLocalQuest(true)
-    } finally {
-      setClaimingQuestId(null)
-    }
-  }
 
   const currentTrackConfig =
     CAREER_TRACKS.find((t) => t.slug === activeTrack) || CAREER_TRACKS[0]
@@ -129,37 +154,40 @@ export const DashboardPage = () => {
   // Dynamic Daily Quests & Golden Chest XP Progress
   const dailyTargetXp = 50
   const completedDailyQuests = (dailyQuests || []).filter((q) => q.user_status === 'completed')
-  const todayEarnedXp =
-    completedDailyQuests.reduce((sum, q) => sum + (q.xp_reward || 0), 0) +
-    (claimedLocalQuest ? 50 : 0)
+  const completedApiXp = completedDailyQuests.reduce((sum, q) => sum + (q.xp_reward || 0), 0)
+  const todayEarnedXp = Math.min(
+    dailyTargetXp,
+    completedApiXp +
+      (claimedLocalQuest ? 30 : 0) +
+      (reviewedNihongoToday && !claimedLocalQuest ? 15 : 0)
+  )
   const dailyProgressPercent = Math.min(100, Math.round((todayEarnedXp / dailyTargetXp) * 100))
   const isChestUnlocked = todayEarnedXp >= dailyTargetXp
   const remainingXp = Math.max(0, dailyTargetXp - todayEarnedXp)
 
-  // Active Daily Quests: Prefer API dailyQuests, fallback to active quests
-  const activeQuests =
-    dailyQuests && dailyQuests.length > 0
-      ? dailyQuests.slice(0, 3)
-      : quests && quests.length > 0
-      ? quests.slice(0, 3)
-      : [
-          {
-            id: 'part-1-variabel-dan-tipe-data',
-            title: 'Tuntaskan Part 1: Variabel & Tipe Data',
-            chip_label: 'GO 01',
-            xp_reward: 50,
-            difficulty: 'Pemula',
-            user_status: claimedLocalQuest ? 'completed' : 'available',
-          },
-          {
-            id: 'nihongo-n3-vocab',
-            title: 'Review 1 Kosakata Standup Tokyo',
-            chip_label: 'STANDUP IT',
-            xp_reward: 30,
-            difficulty: 'Mudah',
-            user_status: 'available',
-          },
-        ]
+  // Active Daily Quests with realistic state
+  const activeQuests = [
+    {
+      id: 'part-1-variabel-dan-tipe-data',
+      title: 'Tuntaskan Part 1: Variabel & Tipe Data',
+      chip_label: 'GO 01',
+      xp_reward: 50,
+      difficulty: 'Pemula',
+      user_status: (dailyQuests?.find((q) => q.id === 'part-1-variabel-dan-tipe-data')?.user_status || 'available') as 'completed' | 'available',
+    },
+    {
+      id: 'nihongo-n3-vocab',
+      title: 'Review 1 Kosakata Standup Tokyo',
+      chip_label: 'STANDUP IT',
+      xp_reward: 30,
+      difficulty: 'Mudah',
+      user_status: (claimedLocalQuest
+        ? 'completed'
+        : reviewedNihongoToday
+        ? 'ready_to_claim'
+        : 'available') as 'completed' | 'ready_to_claim' | 'available',
+    },
+  ]
 
   // Active Career Track progress stats for Option 3 top bar
   const activeTrackStats = trackProgressMap[activeTrack] || { completed: 0, total: 10 }
@@ -465,24 +493,30 @@ export const DashboardPage = () => {
                         <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
                         <span>SELESAI</span>
                       </span>
-                    ) : quest.user_status === 'available' || (!claimedLocalQuest && idx === 0) ? (
+                    ) : quest.user_status === 'ready_to_claim' ? (
                       <Button3D
                         variant="amber"
                         size="sm"
-                        disabled={claimingQuestId === quest.id}
-                        onClick={() => handleClaimQuest(quest.id)}
+                        onClick={handleClaimVocabQuest}
                         className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
                       >
-                        {claimingQuestId === quest.id ? 'KLAIM...' : 'KLAIM'}
+                        KLAIM ⚡
                       </Button3D>
                     ) : (
                       <Button3D
                         variant="blue"
                         size="sm"
-                        onClick={() => navigate(questRoute)}
+                        onClick={() => {
+                          triggerHaptic('tap')
+                          if (isLanguage) {
+                            document.getElementById('tech-nihongo-card')?.scrollIntoView({ behavior: 'smooth' })
+                          } else {
+                            navigate(questRoute)
+                          }
+                        }}
                         className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
                       >
-                        MULAI
+                        MULAI ▶
                       </Button3D>
                     )}
                   </div>
@@ -495,7 +529,7 @@ export const DashboardPage = () => {
           <div className="h-[1px] bg-slate-100" />
 
           {/* ── 3. KOSAKATA KANTOR TOKYO (SEAMLESS SECTION) ── */}
-          <TechNihongoCard />
+          <TechNihongoCard onReview={handleVocabReview} />
         </aside>
       </div>
 
@@ -527,7 +561,9 @@ export const DashboardPage = () => {
                 Peti Emas Hadiah Terbuka! 🎉
               </h3>
               <p className="text-xs text-slate-600 font-medium">
-                {isChestUnlocked
+                {isChestClaimedToday
+                  ? 'Hadiah peti hari ini sudah kamu klaim. Kembali lagi besok untuk peti berikutnya!'
+                  : isChestUnlocked
                   ? 'Kerja kerasmu hari ini luar biasa! Kamu telah menuntaskan target 50 XP harian.'
                   : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka hadiah permata di peti ini.`}
               </p>
@@ -546,13 +582,15 @@ export const DashboardPage = () => {
               variant="amber"
               size="md"
               fullWidth
-              onClick={() => {
-                triggerHaptic('success')
-                setIsChestModalOpen(false)
-              }}
+              disabled={!isChestUnlocked || isChestClaimedToday}
+              onClick={handleClaimChest}
               className="py-2.5 font-black text-xs shadow-[0_3px_0_0_#B45309]"
             >
-              KLAIM HADIAH & LANJUTKAN
+              {isChestClaimedToday
+                ? 'HADIAH PETI SUDAH DIKLAIM ✓'
+                : isChestUnlocked
+                ? 'KLAIM HADIAH & LANJUTKAN 🎁'
+                : 'SELESAIKAN TARGET 50 XP (TERKUNCI)'}
             </Button3D>
           </div>
         </div>,

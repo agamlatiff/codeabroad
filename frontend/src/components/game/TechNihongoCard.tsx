@@ -11,9 +11,10 @@ import { useAuthStore } from '../../store/authStore'
 
 export interface TechNihongoCardProps {
   className?: string
+  onReview?: () => void
 }
 
-export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
+export const TechNihongoCard = ({ className = '', onReview }: TechNihongoCardProps) => {
   const { user } = useAuthStore()
   const developerName = user?.name ? user.name.split(' ')[0] : user?.username || 'developer'
 
@@ -88,6 +89,7 @@ export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
   const handleNextVocab = () => {
     triggerHaptic('tap')
     setCurrentIndex((prev) => (prev + 1) % vocabList.length)
+    onReview?.()
   }
 
   const handleCopy = () => {
@@ -97,11 +99,13 @@ export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
     )
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+    onReview?.()
   }
 
   const handleSpeak = () => {
     triggerHaptic('tap')
     setIsPlayingAudio(true)
+    onReview?.()
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(currentVocab.kana)
@@ -116,7 +120,7 @@ export const TechNihongoCard = ({ className = '' }: TechNihongoCardProps) => {
   }
 
   return (
-    <div className={`space-y-2.5 select-none ${className}`}>
+    <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
       {/* ── CARD HEADER ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">

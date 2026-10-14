@@ -53,7 +53,15 @@ func (r *RoadmapRepository) GetByCareerPathSlug(ctx context.Context, slug string
 		SELECT r.id, r.career_path_id, r.title, r.description, r.is_active, r.created_at, r.updated_at
 		FROM roadmaps r
 		JOIN career_paths cp ON r.career_path_id = cp.id
-		WHERE cp.slug = $1 AND r.is_active = TRUE
+		WHERE (
+			cp.slug = $1 
+			OR cp.slug = CASE 
+				WHEN $1 IN ('golang', 'go', 'backend_go') THEN 'backend'
+				WHEN $1 IN ('react', 'nextjs', 'frontend_react') THEN 'frontend'
+				WHEN $1 IN ('devops_aws', 'aws', 'docker', 'devops_cloud') THEN 'devops'
+				ELSE $1 
+			END
+		) AND r.is_active = TRUE
 		LIMIT 1
 	`
 	var rm domain.Roadmap

@@ -312,17 +312,43 @@
 
 ---
 
-## ⚡ FASE 17: Modernisasi Silabus Kurikulum (`RoadmapPage.tsx` ➔ `useRoadmap` & Clean 3D)
+## ⚡ FASE 20: Perbaikan Interaksi Misi Harian & Persistensi Hadiah Peti Emas (Dashboard Sidebar) (SELESAI ✅)
 
-### [ ] 17.1 Migrasi ke Data Kurikulum Dinamis Backend
-- [ ] Hubungkan `RoadmapPage.tsx` ke hook `useRoadmap(activeTrack)` (`GET /api/v1/roadmaps/:track_slug`).
-- [ ] Hapus ribuan baris HTML kartu stasiun distrik statis (Akihabara, Shinjuku, Shibuya) dan ganti dengan rendering dinamis Stations ➔ Chapters ➔ Quests.
-- [ ] Perbaiki bug perkalian XP (`user.xp * 100`), fallback streak 14, dan persentase progress statis `62% Selesai` dengan agregasi riil dari backend.
+### [x] 20.1 Perbaiki Logika Tombol Misi Harian di `DashboardPage.tsx`
+- [x] Pisahkan status misi: jika belum tuntas (`available`), tampilkan tombol biru `MULAI ▶` yang mengarahkan ke workspace `/learn/:id` atau scroll halus ke kartu materi Nihongo.
+- [x] Hanya tampilkan tombol amber `KLAIM ⚡` jika misi berstatus selesai/tervalidasi (`ready_to_claim`) setelah interaksi riil (Next, Copy, Speak vocab).
+- [x] Tampilkan badge hijau `✓ SELESAI` saat reward misi sudah diklaim secara sah (+30 XP) dan tersimpan ke user state.
 
-### [ ] 17.2 Refaktor Tampilan ke Duolingo 3D Design Tokens
-- [ ] Ganti icon `lucide-react` dengan `@phosphor-icons/react` yang konsisten.
-- [ ] Hapus ketergantungan pada komponen legacy `TokyoPassportWidget`.
-- [ ] Hubungkan tombol "LANJUTKAN KODING" ke quest aktif pengguna berikutnya.
+### [x] 20.2 Sinkronisasi Progres Peti Emas Harian (Target 50 XP) & Klaim Hadiah
+- [x] Hitung `todayEarnedXp` secara dinamis dari quest harian API dan interaksi vocab lokal berbobot (+15 XP review, +30 XP klaim).
+- [x] Kunci persistensi status klaim peti harian per tanggal (`codeabroad_daily_chest_claimed_YYYY-MM-DD`).
+- [x] Tombol "KLAIM HADIAH & LANJUTKAN" pada modal Peti Emas memberikan reward +50 XP nyata yang tersimpan ke profil pengguna dan menandai peti sebagai sudah diklaim hari ini.
+
+---
+
+## ⚡ FASE 17: Modernisasi Silabus Kurikulum (`RoadmapPage.tsx` ➔ `useRoadmap` & Clean 3D) (SELESAI ✅)
+
+### [x] 17.1 Migrasi ke Data Kurikulum Dinamis Backend
+- [x] Hubungkan `RoadmapPage.tsx` ke hook `useRoadmap(activeTrack)` (`GET /api/v1/roadmaps/:track_slug` atau `GET /api/v1/roadmaps/active`).
+- [x] Hapus ribuan baris HTML kartu stasiun distrik statis (Akihabara, Shinjuku, Shibuya) dan ganti dengan rendering dinamis Stations ➔ Chapters ➔ Quests.
+- [x] Perbaiki bug perkalian XP (`user.xp * 100`), fallback streak 14, dan persentase progress statis `62% Selesai` dengan agregasi riil dari backend.
+- [x] Dukung alias slug koding (`golang` ➔ `backend`, `react` ➔ `frontend`, `devops_aws` ➔ `devops`) di repository SQL backend.
+
+### [x] 17.2 Refaktor Tampilan ke Duolingo 3D Design Tokens
+- [x] Ganti icon `lucide-react` dengan `@phosphor-icons/react` yang konsisten (`MagnifyingGlass`, `CalendarBlank`, `LockSimple`, `CaretDown`, `CaretUp`, `Star`, `Fire`, `Sparkle`, `ArrowClockwise`, `Medal`, `Trophy`, `Lightning`).
+- [x] Hapus avatar panda mock `🐼` dan sinkronkan level dengan `user.current_level` dari profil auth.
+- [x] Hubungkan tombol "LANJUTKAN KODING" ke quest aktif pertama yang belum selesai (`/learn/:questId`).
+- [x] Sediakan fallback kurikulum komprehensif saat offline untuk graceful degradation.
+
+---
+
+## ⚡ FASE 21: Pembersihan Halaman Selebrasi Quest Lama (`QuestCompletePage.tsx`) (SELESAI ✅)
+
+### [x] 21.1 Sinkronisasi Halaman Kelulusan Terpisah
+- [x] Sinkronkan data quest title, chip label, XP reward, dan streak pengguna secara dinamis dari `location.state` atau query parameter.
+- [x] Hapus teks hardcoded legacy "Station 3 • Bab 2", "1,450 XP", dan "2/2 Tes Lolos".
+- [x] Tampilkan ilustrasi Kodi Celebrate yang ceria dan animasi pantul selebrasi 3D.
+- [x] Sambungkan tombol "Lanjutkan ke Modul Berikutnya" ke rute quest berikutnya (`submitResult.next_quest.id`) atau dashboard kurikulum.
 
 ---
 
