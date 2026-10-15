@@ -25,15 +25,18 @@ import {
   GlobeHemisphereWest,
   Copy,
   CurrencyJpy,
+  FileText,
 } from '@phosphor-icons/react'
 import { TokyoSalarySimulatorCard } from '../components/game/TokyoSalarySimulatorCard'
+import { TokyoResumeBuilderModal } from '../components/game/TokyoResumeBuilderModal'
 
 export const CareerPortfolioPage = () => {
   const { user } = useAuthStore()
   const effectiveTrack = user?.primary_stack || user?.career_path?.slug || 'golang'
   const { roadmap } = useRoadmap(effectiveTrack)
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'certificate' | 'visa' | 'simulator'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'certificate' | 'resume' | 'visa' | 'simulator'>('overview')
+  const [isResumeModalOpen, setIsResumeModalOpen] = useState(false)
   const [copiedLink, setCopiedLink] = useState(false)
   const [downloadingCert, setDownloadingCert] = useState(false)
 
@@ -192,8 +195,21 @@ export const CareerPortfolioPage = () => {
               </p>
             </div>
 
-            {/* Quick Action Button */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            {/* Quick Action Buttons */}
+            <div className="flex items-center gap-2.5 shrink-0 flex-wrap sm:flex-nowrap">
+              <Button3D
+                variant="white"
+                size="sm"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setIsResumeModalOpen(true)
+                }}
+                className="text-xs flex items-center gap-1.5"
+              >
+                <FileText weight="bold" className="w-4 h-4 text-blue-600" />
+                <span>BUAT RESUME JIS</span>
+              </Button3D>
+
               <Button3D
                 variant="white"
                 size="sm"
@@ -231,6 +247,7 @@ export const CareerPortfolioPage = () => {
               { id: 'overview', label: 'Ringkasan Kesiapan', icon: Trophy },
               { id: 'projects', label: 'Proyek Koding Mandiri', icon: FileCode },
               { id: 'certificate', label: 'Sertifikat Digital', icon: Certificate },
+              { id: 'resume', label: 'Dokumen Lamaran (JIS)', icon: FileText },
               { id: 'visa', label: 'Checklist Visa IT', icon: Buildings },
               { id: 'simulator', label: 'Simulasi Finansial Tokyo', icon: CurrencyJpy },
             ].map((tab) => {
@@ -539,7 +556,112 @@ export const CareerPortfolioPage = () => {
             </div>
           )}
 
-          {/* ══════ TAB 4: VISA REQUIREMENTS CHECKLIST ══════ */}
+          {/* ══════ TAB 4: DOKUMEN LAMARAN KERJA TOKYO (JIS RIREKISHO & SHOKUMU KEIREKISHO) ══════ */}
+          {activeTab === 'resume' && (
+            <div className="space-y-6">
+              <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 space-y-4 shadow-xs">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2">
+                      <span className="bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                        <FileText weight="fill" className="w-3.5 h-3.5 text-blue-600" />
+                        <span>Standar Resmi Rekrutmen Tokyo</span>
+                      </span>
+                      <span className="bg-emerald-100 text-emerald-800 border border-emerald-200 text-[10px] font-brand font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
+                        <span>JIS Standard Formats</span>
+                      </span>
+                    </div>
+                    <h3 className="font-brand font-black text-lg sm:text-xl text-slate-900">
+                      Dokumen Wajib Lamaran Kerja IT di Jepang
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-2xl">
+                      Perusahaan teknologi di Tokyo mewajibkan 2 jenis dokumen formal berstandar JIS: Rirekisho untuk riwayat hidup dan Shokumu Keirekisho untuk detail keahlian teknis.
+                    </p>
+                  </div>
+
+                  <Button3D
+                    variant="blue"
+                    size="md"
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      setIsResumeModalOpen(true)
+                    }}
+                    className="text-xs flex items-center gap-2 shrink-0"
+                  >
+                    <FileText weight="bold" className="w-4 h-4 text-white" />
+                    <span>BUKA GENERATOR DOKUMEN JIS</span>
+                  </Button3D>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
+                  {/* Card 1: Rirekisho */}
+                  <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="bg-slate-900 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
+                        DOKUMEN #1
+                      </span>
+                      <span className="text-xs font-mono font-bold text-slate-500">Standar JIS 履歴書</span>
+                    </div>
+                    <div>
+                      <h4 className="font-brand font-black text-sm text-slate-900">
+                        履歴書 (Rirekisho — Curriculum Vitae Formal)
+                      </h4>
+                      <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                        Dokumen resmi yang merangkum pasfoto resmi, biodata kontak, garis waktu pendidikan, sertifikat kompetensi (JLPT/AWS), dan pernyataan motivasi resmi (志望動機 / Shibou Douki) menggunakan bahasa formal Jepang (Keigo).
+                      </p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <CheckCircle weight="bold" className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Otomatis diisi dari data kurikulum CodeAbroad & profil Anda.</span>
+                    </div>
+                  </div>
+
+                  {/* Card 2: Shokumu Keirekisho */}
+                  <div className="bg-slate-50 border-2 border-slate-200 rounded-2xl p-5 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="bg-blue-600 text-white text-[10px] font-mono font-bold px-2 py-0.5 rounded-md">
+                        DOKUMEN #2
+                      </span>
+                      <span className="text-xs font-mono font-bold text-slate-500">Standar Teknis 職務経歴書</span>
+                    </div>
+                    <div>
+                      <h4 className="font-brand font-black text-sm text-slate-900">
+                        職務経歴書 (Shokumu Keirekisho — Technical Work History)
+                      </h4>
+                      <p className="text-xs text-slate-600 font-medium mt-1 leading-relaxed">
+                        Portofolio mendalam seputar proyek koding, tech stack matrix (Go 1.24, PostgreSQL, Gin, Docker), arsitektur Clean Architecture, metrik performa (15k req/s, 0 downtime), dan Self-PR bagi engineering team Tokyo.
+                      </p>
+                    </div>
+                    <div className="pt-2 border-t border-slate-200 text-[11px] text-slate-500 flex items-center gap-1.5">
+                      <CheckCircle weight="bold" className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Dilengkapi metrik pengujian unit test dan Clean Architecture.</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Etiquette and Tips */}
+              <div className="bg-blue-50/70 border-2 border-blue-200/90 rounded-3xl p-5 flex items-center gap-4">
+                <img
+                  src={doodleProud}
+                  alt="Kodi Advice"
+                  className="w-16 h-16 object-contain shrink-0"
+                />
+                <div className="space-y-1">
+                  <h4 className="font-brand font-black text-xs text-slate-900 flex items-center gap-1.5">
+                    <Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Kodi Etiquette Tip: Format Dokumen Rekrutmen Tokyo</span>
+                  </h4>
+                  <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                    Perusahaan Jepang mengapresiasi kerapian format JIS. Jangan gunakan CV gaya bebas satu halaman barat tanpa menyertakan Rirekisho formal! Gunakan generator CodeAbroad untuk mencetak format A4 PDF standar dengan satu klik.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════ TAB 5: VISA REQUIREMENTS CHECKLIST ══════ */}
           {activeTab === 'visa' && (
             <div className="space-y-6">
               <div className="bg-amber-50 border-2 border-amber-200 rounded-3xl p-5 sm:p-6 space-y-2">
@@ -613,7 +735,7 @@ export const CareerPortfolioPage = () => {
             </div>
           )}
 
-          {/* ══════ TAB 5: TOKYO NET SALARY & LIVING COST SIMULATOR ══════ */}
+          {/* ══════ TAB 6: TOKYO NET SALARY & LIVING COST SIMULATOR ══════ */}
           {activeTab === 'simulator' && (
             <div className="space-y-6">
               <TokyoSalarySimulatorCard />
@@ -621,6 +743,13 @@ export const CareerPortfolioPage = () => {
           )}
         </main>
       </div>
+
+      {/* ── TOKYO RESUME BUILDER MODAL (A4 JIS PRINT READY) ── */}
+      <TokyoResumeBuilderModal
+        isOpen={isResumeModalOpen}
+        onClose={() => setIsResumeModalOpen(false)}
+        userTrack={effectiveTrack}
+      />
     </div>
   )
 }

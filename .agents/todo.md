@@ -803,25 +803,26 @@
 
 ---
 
-## 🚀 FASE 31: Generator Resume / CV Standar Industri Rekrutmen Tokyo (JIS Rirekisho & Shokumu Keirekisho) (PENDING ⏳)
+## 🚀 FASE 31: Generator Resume / CV Standar Industri Rekrutmen Tokyo (JIS Rirekisho & Shokumu Keirekisho) (SELESAI ✅)
 
 > **Tujuan Utama:** Menghadirkan generator dokumen lamaran kerja standar formal Jepang (履歴書 JIS & 職務経歴書) yang otomatis menarik data riil kurikulum, proyek capstone, dan kesiapan visa kerja pengguna ke dalam template siap print/PDF A4.
 
-### [ ] 31.1 Template Format Resmi Rekrutmen Tokyo
-- [ ] Buat generator dokumen format standar JIS:
+### [x] 31.1 Template Format Resmi Rekrutmen Tokyo
+- [x] Buat generator dokumen format standar JIS:
   - **Rirekisho (履歴書)**: Pasfoto profil, informasi kontak, profil pendidikan & sertifikasi, dan alasan melamar (*Shibou Douki* 志望動機).
   - **Shokumu Keirekisho (職務経歴書)**: Rincian proyek teknis, stack teknologi (Golang, Gin, Postgres, Docker), peran, arsitektur, dan tautan GitHub.
-- [ ] Dukungan bilingual (Bahasa Indonesia & format formal Jepang / Keigo).
+- [x] Dukungan bilingual (Bahasa Indonesia & format formal Jepang / Keigo).
 
-### [ ] 31.2 Komponen Modal Generator `TokyoResumeBuilderModal.tsx`
-- [ ] Integrasikan data pengguna dari `useAuthStore` dan `useRoadmap`.
-- [ ] Tombol cetak & unduh PDF berformat A4 teroptimasi CSS `@media print`.
+### [x] 31.2 Komponen Modal Generator `TokyoResumeBuilderModal.tsx`
+- [x] Integrasikan data pengguna dari `useAuthStore` dan `useRoadmap`.
+- [x] Tombol cetak & unduh PDF berformat A4 teroptimasi CSS `@media print`.
 
-### [ ] 31.3 Integrasi ke Tab "Dokumen Lamaran" di `CareerPortfolioPage.tsx`
-- [ ] Hubungkan tombol "Buat Dokumen Tokyo (JIS)" di `CareerPortfolioPage.tsx`.
+### [x] 31.3 Integrasi ke Tab "Dokumen Lamaran" di `CareerPortfolioPage.tsx`
+- [x] Hubungkan tombol "Buat Dokumen Tokyo (JIS)" di `CareerPortfolioPage.tsx`.
 
-### [ ] 31.4 Pengujian & Verifikasi
-- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+### [x] 31.4 Pengujian & Verifikasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build sukses 875ms).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% lulus).
 
 ---
 
