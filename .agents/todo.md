@@ -769,36 +769,37 @@
 
 ---
 
-## 🚀 FASE 30: Simulator Finansial & Kalkulator Gaji Bersih Tokyo (Living Cost JPY ➔ IDR) (PENDING ⏳)
+## 🚀 FASE 30: Simulator Finansial & Kalkulator Gaji Bersih Tokyo (Living Cost JPY ➔ IDR) (SELESAI ✅)
 
 > **Tujuan Utama:** Memberikan kalkulator finansial interaktif yang menghitung gaji bersih riil (Tedori 手取り), potongan pajak & asuransi resmi Jepang, estimasi sewa apartemen di Tokyo, serta sisa tabungan bulanan yang dapat dikirim ke Indonesia dalam Rupiah.
 
-### [ ] 30.1 Modul Perhitungan Pajak & Biaya Hidup Jepang `frontend/src/utils/taxCalculatorTokyo.ts`
-- [ ] Rumus potongan resmi Jepang:
+### [x] 30.1 Modul Perhitungan Pajak & Biaya Hidup Jepang `frontend/src/utils/taxCalculatorTokyo.ts`
+- [x] Rumus potongan resmi Jepang:
   - Pajak Penghasilan (Shotokuzei 所得税) bertingkat (5% - 20%).
   - Pajak Penduduk Daerah (Juminzei 住民税) ~10%.
   - Asuransi Sosial Terpadu (Shakai Hoken 社会保険: Kenko Hoken + Kosei Nenkin) ~14.4%.
   - Asuransi Ketenagakerjaan (Koyo Hoken 雇用保険) ~0.6%.
-- [ ] Parameter biaya hidup Tokyo bulanan:
+- [x] Parameter biaya hidup Tokyo bulanan:
   - Sewa apartemen 1K (Tokyo 23 Wards vs Kanagawa/Saitama) ¥65,000 - ¥95,000.
   - Utilitas (listrik, gas, air, wifi) ~¥20,000.
   - Makan & kebutuhan harian ~¥45,000.
-- [ ] Konversi dinamis JPY ke IDR (default kurs referensi 1 JPY = Rp 105).
+- [x] Konversi dinamis JPY ke IDR (default kurs referensi 1 JPY = Rp 105).
 
-### [ ] 30.2 Komponen Kalkulator Finansial `TokyoSalarySimulatorCard.tsx`
-- [ ] Slider interaktif gaji tahunan: ¥4,000,000 s/d ¥10,000,000.
-- [ ] Pilihan preferensi hunian (Tokyo Central vs Suburb).
-- [ ] Visual breakdown Duolingo 3D:
+### [x] 30.2 Komponen Kalkulator Finansial `TokyoSalarySimulatorCard.tsx`
+- [x] Slider interaktif gaji tahunan: ¥4,000,000 s/d ¥12,000,000 dengan preset junior/mid/senior/lead.
+- [x] Pilihan preferensi hunian (Tokyo Central vs Suburb).
+- [x] Visual breakdown Duolingo 3D:
   - Gaji Bersih Bulanan (Tedori).
   - Total Potongan Pajak & Asuransi.
   - Estimasi Sisa Tabungan Bulanan (dalam Yen & Rupiah).
   - Proyeksi tabungan 1 tahun.
 
-### [ ] 30.3 Integrasi ke Halaman Karier (`CareerPortfolioPage.tsx`)
-- [ ] Tambahkan tab "Simulasi Finansial" di `CareerPortfolioPage.tsx`.
+### [x] 30.3 Integrasi ke Halaman Karier (`CareerPortfolioPage.tsx`)
+- [x] Tambahkan tab "Simulasi Finansial Tokyo" di `CareerPortfolioPage.tsx`.
 
-### [ ] 30.4 Pengujian & Verifikasi
-- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+### [x] 30.4 Pengujian & Verifikasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build sukses 853ms).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% lulus).
 
 ---
 

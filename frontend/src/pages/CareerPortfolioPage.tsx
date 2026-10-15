@@ -24,14 +24,16 @@ import {
   Cpu,
   GlobeHemisphereWest,
   Copy,
+  CurrencyJpy,
 } from '@phosphor-icons/react'
+import { TokyoSalarySimulatorCard } from '../components/game/TokyoSalarySimulatorCard'
 
 export const CareerPortfolioPage = () => {
   const { user } = useAuthStore()
   const effectiveTrack = user?.primary_stack || user?.career_path?.slug || 'golang'
   const { roadmap } = useRoadmap(effectiveTrack)
 
-  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'certificate' | 'visa'>('overview')
+  const [activeTab, setActiveTab] = useState<'overview' | 'projects' | 'certificate' | 'visa' | 'simulator'>('overview')
   const [copiedLink, setCopiedLink] = useState(false)
   const [downloadingCert, setDownloadingCert] = useState(false)
 
@@ -230,6 +232,7 @@ export const CareerPortfolioPage = () => {
               { id: 'projects', label: 'Proyek Koding Mandiri', icon: FileCode },
               { id: 'certificate', label: 'Sertifikat Digital', icon: Certificate },
               { id: 'visa', label: 'Checklist Visa IT', icon: Buildings },
+              { id: 'simulator', label: 'Simulasi Finansial Tokyo', icon: CurrencyJpy },
             ].map((tab) => {
               const Icon = tab.icon
               const isSelected = activeTab === tab.id
@@ -607,6 +610,13 @@ export const CareerPortfolioPage = () => {
                   </p>
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ══════ TAB 5: TOKYO NET SALARY & LIVING COST SIMULATOR ══════ */}
+          {activeTab === 'simulator' && (
+            <div className="space-y-6">
+              <TokyoSalarySimulatorCard />
             </div>
           )}
         </main>
