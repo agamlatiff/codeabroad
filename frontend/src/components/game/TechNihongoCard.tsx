@@ -11,6 +11,7 @@ import {
 } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
+import { audioEngine } from '../../utils/audio'
 import { useAuthStore } from '../../store/authStore'
 import { vocabularyService } from '../../services/vocabularyService'
 
@@ -143,21 +144,16 @@ export const TechNihongoCard = ({
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const handleSpeak = () => {
+  const handleSpeak = (textToSpeak?: string) => {
     triggerHaptic('tap')
     setIsPlayingAudio(true)
     onReview?.()
-    if ('speechSynthesis' in window) {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(currentVocab.kana)
-      utterance.lang = 'ja-JP'
-      utterance.rate = 0.85
-      utterance.onend = () => setIsPlayingAudio(false)
-      utterance.onerror = () => setIsPlayingAudio(false)
-      window.speechSynthesis.speak(utterance)
-    } else {
-      setTimeout(() => setIsPlayingAudio(false), 800)
-    }
+    const phrase = typeof textToSpeak === 'string' && textToSpeak ? textToSpeak : (currentVocab.kana || currentVocab.kanji)
+    audioEngine.speakJapanese(
+      phrase,
+      () => setIsPlayingAudio(false),
+      () => setIsPlayingAudio(false)
+    )
   }
 
   return (
@@ -209,7 +205,7 @@ export const TechNihongoCard = ({
         <div className="flex items-center gap-1 shrink-0">
           <button
             type="button"
-            onClick={handleSpeak}
+            onClick={() => handleSpeak()}
             className={`w-7 h-7 rounded-xl border flex items-center justify-center transition-all cursor-pointer shadow-2xs active:translate-y-0.5 ${
               isPlayingAudio
                 ? 'bg-rose-500 border-rose-600 text-white scale-105'
@@ -239,13 +235,23 @@ export const TechNihongoCard = ({
       </div>
 
       {/* ── CONVERSATION DIALOGUE (NATURAL SUBTLE TYPOGRAPHY) ── */}
-      <div className="text-[10px] space-y-0.5 px-0.5">
-        <p className="font-brand font-bold italic text-slate-800 leading-snug">
-          "{currentVocab.contoh}"
-        </p>
-        <p className="text-slate-500 font-medium leading-snug">
-          "{currentVocab.terjemahan}"
-        </p>
+      <div className="flex items-start justify-between gap-2 p-2 bg-slate-50 border border-slate-200/60 rounded-xl">
+        <div className="text-[10px] space-y-0.5 min-w-0">
+          <p className="font-brand font-bold italic text-slate-800 leading-snug">
+            "{currentVocab.contoh}"
+          </p>
+          <p className="text-slate-500 font-medium leading-snug">
+            "{currentVocab.terjemahan}"
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => handleSpeak(currentVocab.contoh)}
+          className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 hover:border-rose-400 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer shadow-2xs active:translate-y-0.5"
+          title="Dengarkan Contoh Kalimat Percakapan"
+        >
+          <SpeakerHigh weight="bold" className="w-3.5 h-3.5" />
+        </button>
       </div>
 
       {/* ── INTERACTIVE TASK ACTION ── */}

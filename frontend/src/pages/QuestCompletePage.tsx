@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '../store/authStore'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
+import { audioEngine } from '../utils/audio'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
 import {
   Fire,
@@ -33,6 +35,10 @@ export const QuestCompletePage = () => {
   const unlockedVocab = submitResult?.unlocked_vocab || quest?.nihongo_notes
   const readinessScore = Math.round(submitResult?.current_readiness_score ?? 70)
   const readinessIncrease = submitResult?.readiness_increase ?? 2.0
+
+  useEffect(() => {
+    audioEngine.playFanfare()
+  }, [])
 
   const handleNextQuest = () => {
     triggerHaptic('success')

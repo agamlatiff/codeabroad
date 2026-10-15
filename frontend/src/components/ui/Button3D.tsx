@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { CircleNotch } from '@phosphor-icons/react'
+import { audioEngine } from '../../utils/audio'
 
 export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'blue' | 'cyan' | 'dark' | 'emerald' | 'amber' | 'rose' | 'white' | 'ghost'
@@ -23,6 +24,7 @@ export const Button3D = ({
   fullWidth = false,
   disabled,
   className = '',
+  onClick,
   ...props
 }: Button3DProps) => {
   const baseStyles =
@@ -47,10 +49,16 @@ export const Button3D = ({
 
   const widthStyle = fullWidth ? 'w-full' : ''
 
+  const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    audioEngine.playPop()
+    onClick?.(e)
+  }
+
   return (
     <button
       disabled={disabled || loading}
       className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyle} ${className}`}
+      onClick={handleClick}
       {...props}
     >
       {loading ? (

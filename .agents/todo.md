@@ -705,3 +705,137 @@
 - [x] `npm run build` di `frontend/` (0 error TypeScript).
 - [x] `go test ./...` di `backend/` (100% test pass).
 - [x] Git commit dan push ke remote repository.
+
+---
+
+## 🚀 FASE 28: Duolingo Web Audio Engine & Audio Pelafalan Tech Nihongo (SELESAI ✅)
+
+> **Tujuan Utama:** Menghadirkan umpan balik suara taktil (*chimes, pops, coin jingle, flame whoosh*) khas Duolingo menggunakan native browser Web Audio API Synthesizer (zero download external MP3, 100% instan & ringan), serta menambahkan tombol pelafalan suara native bahasa Jepang (`ja-JP`) pada kartu kosakata kantor Tokyo.
+
+### [x] 28.1 Sound Engine Taktil `frontend/src/utils/audio.ts`
+- [x] Buat synthesizer Web Audio API `audioEngine`:
+  - `playPop()`: Nada bubble pop lembut (120Hz-240Hz exponentially decaying sine wave) untuk klik tombol `Button3D` dan interaksi tactile.
+  - `playSuccess()`: Nada arpeggio kemenangan Duolingo (C5, E5, G5, C6) saat unit test koding lolos atau quest diselesaikan.
+  - `playChestClaim()`: Nada koin bergemerincing (multi-tone harmonic bell) saat klaim Peti Emas (+50 XP).
+  - `playStreakFlame()`: Desisan hangat bernada naik saat streak bertambah.
+  - `playError()`: Nada thud lembut bernada rendah saat input salah atau tes gagal.
+- [x] Persistensi status suara (mute / unmute) di `localStorage` (`codeabroad_sound_muted`).
+- [x] Tambahkan toggle audio 3D di HUD Bar atas (`SpeakerSimpleHigh` / `SpeakerSimpleSlash`) di `DashboardPage.tsx` dan `RoadmapPage.tsx`.
+
+### [x] 28.2 Integrasi Sound Effects ke Komponen
+- [x] Integrasikan `playPop()` ke `Button3D.tsx` (berbarengan dengan haptic vibration).
+- [x] Integrasikan `playChestClaim()` ke `DailyGoalChestCard.tsx` saat klaim hadiah 50 XP.
+- [x] Integrasikan `playSuccess()` dan `playError()` ke `LearnWorkspacePage.tsx` (via `useLearnWorkspace.ts`) saat running unit test.
+- [x] Integrasikan `playSuccess()` / `playFanfare()` ke `QuestCompletePage.tsx` saat animasi kelulusan muncul.
+
+### [x] 28.3 Audio Pelafalan Tech Nihongo via Web Speech Synthesis
+- [x] Pada [`TechNihongoCard.tsx`](file:///c:/Projects/codeabroad/frontend/src/components/game/TechNihongoCard.tsx), tambahkan tombol speaker 3D di samping teks Romaji & Kanji dan tombol audio contoh percakapan standup Tokyo.
+- [x] Panggil `window.speechSynthesis.speak(utterance)` dengan suara bahasa Jepang `ja-JP` via `audioEngine.speakJapanese()`.
+- [x] Tampilkan animasi visual denyut pada tombol speaker saat audio sedang memutar suara.
+
+### [x] 28.4 Pengujian & Verifikasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript & Vite bundle).
+- [x] Validasi sanity test backend `go test -count=1 ./...` (100% test PASS).
+- [x] Uji persistensi mute audio lintas tab dan halaman.
+
+---
+
+## 🚀 FASE 29: Standarisasi Penuh Ikonografi `@phosphor-icons/react` & Pembersihan Sisa Mock (PENDING ⏳)
+
+> **Tujuan Utama:** Menghapus seluruh dependensi `lucide-react` lama pada halaman `QuestLogPage`, `OnboardingPage`, `LearnWorkspacePage`, dan `LoginPage` demi kepatuhan 100% terhadap Design System CodeAbroad (@phosphor-icons/react) serta membersihkan data statis.
+
+### [ ] 29.1 Pembersihan `QuestLogPage.tsx`
+- [ ] Ganti seluruh import `lucide-react` (`Search`, `Calendar`, `Shield`, `Award`, `Sparkles`, `Gift`, `Trophy`, `Timer`) menjadi `@phosphor-icons/react` (`MagnifyingGlass`, `CalendarBlank`, `ShieldCheck`, `Medal`, `Sparkle`, `Gift`, `Trophy`, `Hourglass`).
+- [ ] Ganti state hardcoded `userGems (45)` menjadi data dinamis dari `user?.gems || 0` atau token dinamis.
+- [ ] Sinkronkan filter quest tab & hitung mundur reset harian.
+
+### [ ] 29.2 Pembersihan `OnboardingPage.tsx`
+- [ ] Ganti import `lucide-react` (`ArrowRight`, `ArrowLeft`, `Check`) menjadi `@phosphor-icons/react` (`ArrowRight`, `ArrowLeft`, `Check`).
+- [ ] Polish layout Step 1 s/d Step 4 mengikuti referensi card Gatheround / Dozehost dengan shadow taktil dan badge negara berstandar 3D.
+
+### [ ] 29.3 Pembersihan `LearnWorkspacePage.tsx`
+- [ ] Ganti `RotateCcw` dari `lucide-react` menjadi `ArrowCounterClockwise` dari `@phosphor-icons/react`.
+
+### [ ] 29.4 Pembersihan `LoginPage.tsx` & `RegisterPage.tsx`
+- [ ] Ganti `Mail`, `Lock`, `AlertCircle` dari `lucide-react` menjadi `EnvelopeSimple`, `LockSimple`, `WarningCircle` dari `@phosphor-icons/react`.
+
+### [ ] 29.5 Pengujian & Verifikasi
+- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+
+---
+
+## 🚀 FASE 30: Simulator Finansial & Kalkulator Gaji Bersih Tokyo (Living Cost JPY ➔ IDR) (PENDING ⏳)
+
+> **Tujuan Utama:** Memberikan kalkulator finansial interaktif yang menghitung gaji bersih riil (Tedori 手取り), potongan pajak & asuransi resmi Jepang, estimasi sewa apartemen di Tokyo, serta sisa tabungan bulanan yang dapat dikirim ke Indonesia dalam Rupiah.
+
+### [ ] 30.1 Modul Perhitungan Pajak & Biaya Hidup Jepang `frontend/src/utils/taxCalculatorTokyo.ts`
+- [ ] Rumus potongan resmi Jepang:
+  - Pajak Penghasilan (Shotokuzei 所得税) bertingkat (5% - 20%).
+  - Pajak Penduduk Daerah (Juminzei 住民税) ~10%.
+  - Asuransi Sosial Terpadu (Shakai Hoken 社会保険: Kenko Hoken + Kosei Nenkin) ~14.4%.
+  - Asuransi Ketenagakerjaan (Koyo Hoken 雇用保険) ~0.6%.
+- [ ] Parameter biaya hidup Tokyo bulanan:
+  - Sewa apartemen 1K (Tokyo 23 Wards vs Kanagawa/Saitama) ¥65,000 - ¥95,000.
+  - Utilitas (listrik, gas, air, wifi) ~¥20,000.
+  - Makan & kebutuhan harian ~¥45,000.
+- [ ] Konversi dinamis JPY ke IDR (default kurs referensi 1 JPY = Rp 105).
+
+### [ ] 30.2 Komponen Kalkulator Finansial `TokyoSalarySimulatorCard.tsx`
+- [ ] Slider interaktif gaji tahunan: ¥4,000,000 s/d ¥10,000,000.
+- [ ] Pilihan preferensi hunian (Tokyo Central vs Suburb).
+- [ ] Visual breakdown Duolingo 3D:
+  - Gaji Bersih Bulanan (Tedori).
+  - Total Potongan Pajak & Asuransi.
+  - Estimasi Sisa Tabungan Bulanan (dalam Yen & Rupiah).
+  - Proyeksi tabungan 1 tahun.
+
+### [ ] 30.3 Integrasi ke Halaman Karier (`CareerPortfolioPage.tsx`)
+- [ ] Tambahkan tab "Simulasi Finansial" di `CareerPortfolioPage.tsx`.
+
+### [ ] 30.4 Pengujian & Verifikasi
+- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+
+---
+
+## 🚀 FASE 31: Generator Resume / CV Standar Industri Rekrutmen Tokyo (JIS Rirekisho & Shokumu Keirekisho) (PENDING ⏳)
+
+> **Tujuan Utama:** Menghadirkan generator dokumen lamaran kerja standar formal Jepang (履歴書 JIS & 職務経歴書) yang otomatis menarik data riil kurikulum, proyek capstone, dan kesiapan visa kerja pengguna ke dalam template siap print/PDF A4.
+
+### [ ] 31.1 Template Format Resmi Rekrutmen Tokyo
+- [ ] Buat generator dokumen format standar JIS:
+  - **Rirekisho (履歴書)**: Pasfoto profil, informasi kontak, profil pendidikan & sertifikasi, dan alasan melamar (*Shibou Douki* 志望動機).
+  - **Shokumu Keirekisho (職務経歴書)**: Rincian proyek teknis, stack teknologi (Golang, Gin, Postgres, Docker), peran, arsitektur, dan tautan GitHub.
+- [ ] Dukungan bilingual (Bahasa Indonesia & format formal Jepang / Keigo).
+
+### [ ] 31.2 Komponen Modal Generator `TokyoResumeBuilderModal.tsx`
+- [ ] Integrasikan data pengguna dari `useAuthStore` dan `useRoadmap`.
+- [ ] Tombol cetak & unduh PDF berformat A4 teroptimasi CSS `@media print`.
+
+### [ ] 31.3 Integrasi ke Tab "Dokumen Lamaran" di `CareerPortfolioPage.tsx`
+- [ ] Hubungkan tombol "Buat Dokumen Tokyo (JIS)" di `CareerPortfolioPage.tsx`.
+
+### [ ] 31.4 Pengujian & Verifikasi
+- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+
+---
+
+## 🚀 FASE 32: Papan Peringkat Liga Tokyo (Tokyo League Division Leaderboard & Promotion System) (PENDING ⏳)
+
+> **Tujuan Utama:** Menghadirkan papan peringkat mingguan gamifikasi kompetitif ala Duolingo Leagues (Divisi Shinjuku, Shibuya, Akihabara, dan Roppongi Master) untuk mendorong konsistensi belajar harian.
+
+### [ ] 32.1 Endpoint Backend Leaderboard
+- [ ] Buat endpoint `GET /api/v1/leaderboard/weekly` yang mengembalikan ranking pengguna berdasarkan perolehan XP 7 hari terakhir.
+- [ ] Logika pembagian divisi (Bronze, Silver, Gold, Diamond).
+
+### [ ] 32.2 Komponen Papan Peringkat Duolingo 3D (`TokyoLeaderboardModal.tsx` / `/leaderboard`)
+- [ ] Visual 4 Divisi dengan Badge 3D:
+  - Divisi Shinjuku (Bronze)
+  - Divisi Shibuya (Silver)
+  - Divisi Akihabara (Gold)
+  - Divisi Roppongi (Diamond Master)
+- [ ] Indikator visual zona promosi (Top 3 - Hijau 3D), zona aman, dan zona degradasi (Rose 3D).
+- [ ] Sticky row posisi akun pengguna dengan highlight biru elektrik 3D.
+
+### [ ] 32.3 Pengujian & Verifikasi
+- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+- [ ] Validasi `go test ./...` di `backend/` (100% test pass).

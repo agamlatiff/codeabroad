@@ -8,6 +8,7 @@ import { authService } from '../services/authService'
 import type { UserActivitySummary } from '../types/auth'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
+import { audioEngine } from '../utils/audio'
 import {
   CourseSwitcherModal,
   CAREER_TRACKS,
@@ -39,6 +40,8 @@ import {
   CheckFat,
   Play,
   BookOpen,
+  SpeakerSimpleHigh,
+  SpeakerSimpleSlash,
 } from '@phosphor-icons/react'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleThinking from '../assets/kodi/doodle-thinking.png'
@@ -322,6 +325,25 @@ export const RoadmapPage = () => {
       return false
     }
   })
+  const [isMuted, setIsMuted] = useState(() => audioEngine.isMuted())
+
+  useEffect(() => {
+    const handleSoundToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ muted: boolean }>
+      setIsMuted(customEvent.detail.muted)
+    }
+    window.addEventListener('codeabroad_sound_toggle', handleSoundToggle)
+    return () => window.removeEventListener('codeabroad_sound_toggle', handleSoundToggle)
+  }, [])
+
+  const handleToggleSound = () => {
+    triggerHaptic('tap')
+    const nextMuted = audioEngine.toggleMute()
+    setIsMuted(nextMuted)
+    if (!nextMuted) {
+      audioEngine.playPop()
+    }
+  }
 
   // Completed quests persistence set
   const [completedQuestsSet, setCompletedQuestsSet] = useState<Set<string>>(() => {
@@ -596,6 +618,19 @@ export const RoadmapPage = () => {
                   <Sparkle weight="fill" className="w-3.5 h-3.5" />
                   <span>Lv. {userLevel} Kodi</span>
                 </div>
+                <div className="w-[1px] h-3.5 bg-slate-200" />
+                <button
+                  type="button"
+                  onClick={handleToggleSound}
+                  className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 active:translate-y-0.5"
+                  title={isMuted ? 'Aktifkan Efek Suara' : 'Bisukan Efek Suara'}
+                >
+                  {isMuted ? (
+                    <SpeakerSimpleSlash weight="bold" className="w-4 h-4 text-slate-400" />
+                  ) : (
+                    <SpeakerSimpleHigh weight="bold" className="w-4 h-4 text-blue-600" />
+                  )}
+                </button>
               </div>
             </div>
           </div>

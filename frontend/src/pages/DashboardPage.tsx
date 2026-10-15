@@ -15,6 +15,7 @@ import {
 } from '../components/game'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
+import { audioEngine } from '../utils/audio'
 import {
   Target,
   Fire,
@@ -27,6 +28,8 @@ import {
   Lightning,
   Gift,
   X,
+  SpeakerSimpleHigh,
+  SpeakerSimpleSlash,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -58,6 +61,25 @@ export const DashboardPage = () => {
   const [claimedLocalQuest, setClaimedLocalQuest] = useState(() => {
     return localStorage.getItem(claimedVocabQuestKey) === 'true'
   })
+  const [isMuted, setIsMuted] = useState(() => audioEngine.isMuted())
+
+  useEffect(() => {
+    const handleSoundToggle = (e: Event) => {
+      const customEvent = e as CustomEvent<{ muted: boolean }>
+      setIsMuted(customEvent.detail.muted)
+    }
+    window.addEventListener('codeabroad_sound_toggle', handleSoundToggle)
+    return () => window.removeEventListener('codeabroad_sound_toggle', handleSoundToggle)
+  }, [])
+
+  const handleToggleSound = () => {
+    triggerHaptic('tap')
+    const nextMuted = audioEngine.toggleMute()
+    setIsMuted(nextMuted)
+    if (!nextMuted) {
+      audioEngine.playPop()
+    }
+  }
 
   const handleVocabReview = () => {
     if (!reviewedNihongoToday) {
@@ -69,6 +91,7 @@ export const DashboardPage = () => {
 
   const handleClaimVocabQuest = async () => {
     triggerHaptic('success')
+    audioEngine.playRewardClaim()
     localStorage.setItem(claimedVocabQuestKey, 'true')
     setClaimedLocalQuest(true)
 
@@ -90,6 +113,7 @@ export const DashboardPage = () => {
 
   const handleClaimChest = async () => {
     triggerHaptic('success')
+    audioEngine.playChestClaim()
     localStorage.setItem(chestStorageKey, 'true')
     setIsChestClaimedToday(true)
     setIsChestModalOpen(false)
@@ -406,6 +430,21 @@ export const DashboardPage = () => {
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 <span>Tingkat {userLevel}</span>
               </div>
+
+              {/* Audio Sound Toggle */}
+              <div className="w-[1px] h-3.5 bg-slate-200" />
+              <button
+                type="button"
+                onClick={handleToggleSound}
+                className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 active:translate-y-0.5"
+                title={isMuted ? 'Aktifkan Efek Suara' : 'Bisukan Efek Suara'}
+              >
+                {isMuted ? (
+                  <SpeakerSimpleSlash weight="bold" className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <SpeakerSimpleHigh weight="bold" className="w-4 h-4 text-blue-600" />
+                )}
+              </button>
             </div>
           </div>
 

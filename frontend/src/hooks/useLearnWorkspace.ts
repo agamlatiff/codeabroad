@@ -4,6 +4,7 @@ import { questService } from '../services/questService'
 import { useQuestStore } from '../store/questStore'
 import { useAuthStore } from '../store/authStore'
 import { triggerHaptic } from '../utils/haptics'
+import { audioEngine } from '../utils/audio'
 
 export const useLearnWorkspace = () => {
   const { id } = useParams<{ id: string }>()
@@ -66,13 +67,16 @@ export const useLearnWorkspace = () => {
       setTestResult(res)
       if (res.success) {
         triggerHaptic('success')
+        audioEngine.playSuccess()
       } else {
         triggerHaptic('error')
+        audioEngine.playError()
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Gagal menjalankan unit test'
       setError(msg)
       triggerHaptic('error')
+      audioEngine.playError()
     } finally {
       setIsRunningTests(false)
     }
@@ -109,6 +113,7 @@ export const useLearnWorkspace = () => {
       }
 
       triggerHaptic('stampImpact')
+      audioEngine.playSuccess()
       // Modal is opened via submitResult in store
     } catch (err: unknown) {
       // Graceful offline fallback: if tests already passed, record completion
@@ -123,6 +128,9 @@ export const useLearnWorkspace = () => {
         } catch {
           // Ignore localStorage error
         }
+        audioEngine.playSuccess()
+      } else {
+        audioEngine.playError()
       }
       const msg = err instanceof Error ? err.message : 'Gagal menyelesaikan quest'
       setError(msg)

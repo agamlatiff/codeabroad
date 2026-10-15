@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Sparkle, Check, Trophy, Lightning } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../utils/haptics'
+import { audioEngine } from '../../utils/audio'
 import { Button3D } from '../ui/Button3D'
 
 export interface DailyGoalChestCardProps {
@@ -112,6 +113,7 @@ export const DailyGoalChestCard = ({
 
   const handleClaimChest = () => {
     triggerHaptic('success')
+    audioEngine.playChestClaim()
     setClaimed(true)
   }
 
