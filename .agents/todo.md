@@ -846,3 +846,60 @@
 ### [x] 32.3 Pengujian & Verifikasi
 - [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build sukses 858ms).
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+
+---
+
+## 🚀 FASE 33: Peningkatan Interaktivitas Silabus `/courses` (Unit Guidebook, Trophy Liga HUD & Akordeon Unit) (SELESAI ✅)
+
+> **Tujuan Utama:** Memaksimalkan pengalaman belajar di rute `/courses` dengan menghadirkan Modal Buku Panduan Teori (*Unit Guidebook*), tombol akses cepat Liga Tokyo di HUD atas, interaktivitas akordeon lipat-buka unit kurikulum, dan badge trofi ujian kelulusan unit.
+
+### [x] 33.1 Komponen Modal Buku Panduan Teori Unit `UnitGuidebookModal.tsx`
+- [x] Modal Duolingo 3D berisi *cheat sheet* teori unit, contoh snippet kode sintaks, dan tips kosakata teknis kantor Tokyo.
+- [x] Tombol "Buku Panduan Unit" di setiap unit banner memicu modal dengan konten dinamis sesuai unit yang diklik.
+
+### [x] 33.2 Integrasi Tombol Pintas Liga Tokyo di Top HUD Bar (`RoadmapPage.tsx`)
+- [x] Tambahkan tombol piala `Trophy` Liga Tokyo di HUD bar atas `/courses` sejajar dengan Streak, XP, dan Level Kodi.
+- [x] Membuka modal `TokyoLeaderboardModal` secara instan.
+
+### [x] 33.3 Interaktivitas Akordeon Expand/Collapse Unit
+- [x] Dukungan melipat dan membuka daftar sesi per unit dengan tombol toggle panah halus (`CaretDown` / `CaretUp`).
+- [x] Default: Unit yang sedang aktif (*in progress*) otomatis terbuka, unit lain dapat dilipat untuk kenyamanan navigasi.
+
+### [x] 33.4 Trofi Ujian Kelulusan Unit (*Unit Milestone Trophy Badge*)
+- [x] Penanda visual trofi 3D emas di bagian akhir setiap unit yang sudah 100% tuntas.
+
+### [x] 33.5 Pengujian & Verifikasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build sukses 787ms).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+
+---
+
+## 🚀 FASE 34: Standardisasi & Konsistensi Right Sidebar Gamifikasi (`GameSidebarRail.tsx` SSOT) (SELESAI ✅)
+
+> **Tujuan Utama:** Menghilangkan disparitas visual dan fragmentasi kode antara Dasbor Utama (`/dashboard`) dan Silabus Kursus (`/courses`) dengan mengekstrak Right Sidebar ke dalam satu komponen tunggal (*Single Source of Truth* / SSOT) bernama `GameSidebarRail.tsx`.
+
+### [x] 34.1 Ekstraksi Komponen Tunggal `GameSidebarRail.tsx` (SSOT)
+- [x] Buat `GameSidebarRail.tsx` di `frontend/src/components/game/` dengan prop `activeTrack?: string`.
+- [x] Format Duolingo Seamless Sectional Rail (*Zero Card-itis*) dengan posisi responsif `xl:sticky xl:top-4 xl:self-start`.
+- [x] Section 1: Rentetan Belajar 7 Hari (*Streak Tracker*) dinamis dari `authService.getActivityLogs()` dengan flame pill oranye 3D Duolingo.
+- [x] Section 2: Misi & Target Harian (Peti Emas 50 XP) dengan countdown timer riil `useQuests()`, progress bar interaktif, dan quest koding adaptif per track karier.
+- [x] Section 3: Kartu Kosakata Harian Kantor Tokyo (`TechNihongoCard`) terintegrasi Web Speech API dan tombol salin.
+- [x] Modal Selebrasi Peti Emas Terpadu: Render portal modal 3D dengan SFX audio `playChestClaim()`, permata +20 💎, dan tombol `Button3D`.
+
+### [x] 34.2 Ekspor Komponen dari Index Game
+- [x] Daftarkan dan ekspor `GameSidebarRail` dari `frontend/src/components/game/index.ts`.
+
+### [x] 34.3 Refactor & Streamline `DashboardPage.tsx`
+- [x] Gantikan ~250 baris duplikasi sidebar inline dan modal peti emas dengan `<GameSidebarRail activeTrack={activeTrack} />`.
+- [x] Pertahankan clean separation of concerns pada panggung peta belajar utama.
+
+### [x] 34.4 Refactor & Transformasi `RoadmapPage.tsx` (`/courses`)
+- [x] Hapus kartu tebal legacy, border-itis, timer mati `4j 20m`, dan modal peti lama dari `RoadmapPage.tsx`.
+- [x] Pasang `<GameSidebarRail activeTrack={activeTrack} />` sehingga sidebar di `/courses` 100% identik, dinamis, dan sticky saat pengguna melakukan scroll silabus panjang.
+
+### [x] 34.5 Pengujian & Verifikasi Menyeluruh
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, bundle sukses).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+- [x] Uji responsivitas sticky sidebar di `/dashboard` dan `/courses`.
+
+

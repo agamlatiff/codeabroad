@@ -1,18 +1,15 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { createPortal } from 'react-dom'
 import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
 import { useRoadmap } from '../hooks/useRoadmap'
-import { authService } from '../services/authService'
-import type { UserActivitySummary } from '../types/auth'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
 import {
   CourseSwitcherModal,
   CAREER_TRACKS,
-  TechNihongoCard,
+  GameSidebarRail,
 } from '../components/game'
 import {
   GolangLogo,
@@ -23,7 +20,6 @@ import {
 } from '../components/ui/BrandLogos'
 import {
   MagnifyingGlass,
-  CalendarBlank,
   LockSimple,
   CaretDown,
   Sparkle,
@@ -31,18 +27,21 @@ import {
   Star,
   Lightning,
   CheckCircle,
-  Clock,
-  Target,
-  Gift,
-  Translate,
-  Code,
   ArrowSquareOut,
-  CheckFat,
   Play,
   BookOpen,
-  SpeakerSimpleHigh,
+  Trophy,
+  CaretUp,
   SpeakerSimpleSlash,
+  SpeakerSimpleHigh,
+  Clock,
+  CheckFat,
 } from '@phosphor-icons/react'
+import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
+import type { GuidebookContent } from '../components/game/UnitGuidebookModal'
+import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
+
+import { soundEngine } from '../utils/audio'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleThinking from '../assets/kodi/doodle-thinking.png'
 
@@ -282,7 +281,7 @@ const UNIT_THEMES: Record<number, UnitTheme> = {
 export const RoadmapPage = () => {
   const navigate = useNavigate()
   const { track: routeTrack } = useParams<{ track?: string }>()
-  const { user, updateUser } = useAuthStore()
+  const { user } = useAuthStore()
 
   // Track state management
   const [activeTrack, setActiveTrack] = useState(() => {
@@ -294,37 +293,124 @@ export const RoadmapPage = () => {
   const [activeFilterTab, setActiveFilterTab] = useState<'all' | 'active' | 'completed' | 'nihongo'>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 7-day activity summary and daily rewards status
-  const [activitySummary, setActivitySummary] = useState<UserActivitySummary | null>(null)
-  const [isChestModalOpen, setIsChestModalOpen] = useState(false)
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
+  const [guidebookModalUnit, setGuidebookModalUnit] = useState<GuidebookContent | null>(null)
+  const [collapsedUnitIds, setCollapsedUnitIds] = useState<Set<string>>(new Set())
 
-  // Local storage keys for daily rewards & completions
-  const todayDateStr = new Date().toISOString().split('T')[0]
-  const chestStorageKey = `codeabroad_daily_chest_claimed_${todayDateStr}`
-  const claimedVocabQuestKey = `codeabroad_vocab_quest_claimed_${todayDateStr}`
-  const reviewedNihongoKey = `codeabroad_nihongo_reviewed_${todayDateStr}`
+  const toggleUnitCollapse = (unitId: string) => {
+    triggerHaptic('tap')
+    setCollapsedUnitIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(unitId)) {
+        next.delete(unitId)
+      } else {
+        next.add(unitId)
+      }
+      return next
+    })
+  }
 
-  const [isChestClaimedToday, setIsChestClaimedToday] = useState(() => {
-    try {
-      return localStorage.getItem(chestStorageKey) === 'true'
-    } catch {
-      return false
+  const handleOpenGuidebook = (unit: SequentialCurriculumUnit) => {
+    triggerHaptic('tap')
+    soundEngine.playPop()
+
+    const GUIDEBOOK_DATA: Record<string, GuidebookContent> = {
+      'unit-1-fondasi-go': {
+        unitNumber: 1,
+        unitTag: 'SINTAKS DASAR & MEMORI POINTER',
+        title: 'Unit 1: Fondasi Sintaks Go & Memory Pointer',
+        summary:
+          'Go mengalokasikan variabel pada stack secara default dan memindahkannya ke heap hanya saat lolos analisis escape (escape analysis). Memahami pointer (& dan *) sangat penting untuk menghindari alokasi payload berlebih saat memanggil fungsi atau method.',
+        codeSnippetTitle: 'Manipulasi Pointer & Alokasi Memori Tanpa Copy',
+        codeSnippet: `package main\n\nimport "fmt"\n\ntype TokyoEngineer struct {\n    Name  string\n    Track string\n    Level int\n}\n\nfunc promoteLevel(eng *TokyoEngineer) {\n    // Dereferencing pointer langsung memodifikasi nilai memori asli\n    eng.Level++\n}\n\nfunc main() {\n    dev := TokyoEngineer{Name: "Kodi", Track: "Go Backend", Level: 1}\n    promoteLevel(&dev)\n    fmt.Println(dev.Level) // Output: 2 (zero payload copy)\n}`,
+        codeExplanation:
+          'Dengan meneruskan address &dev ke fungsi promoteLevel, kita menghindari overhead copy struct pada memori stack CPU.',
+        nihongoTerms: [
+          { term: '朝会 (Asakai)', reading: 'あさかい', meaning: 'Daily Standup Meeting pagi hari' },
+          { term: '実装 (Jissou)', reading: 'じっそう', meaning: 'Implementasi / Coding fitur' },
+          { term: '修正 (Shuusei)', reading: 'しゅうせい', meaning: 'Perbaikan bug / Revisi kode' },
+        ],
+        tokyoIndustryTip:
+          'Di code review perusahaan Tokyo (seperti Mercari atau Rakuten), selalu utamakan pointer receiver untuk method yang memodifikasi state struct atau struct berukuran besar.',
+      },
+      'unit-2-gin-rest-api': {
+        unitNumber: 2,
+        unitTag: 'REST API & CLEAN ARCHITECTURE',
+        title: 'Unit 2: Gin REST API & Middleware Engine',
+        summary:
+          'Gin menggunakan Radix Tree Routing berkecepatan tinggi dengan memory footprint yang minimal. Middleware chaining memungkinkan authentication guard JWT dan graceful error recovery sebelum request sampai ke controller layer.',
+        codeSnippetTitle: 'Standard Gin Router & JWT Auth Middleware',
+        codeSnippet: `func AuthGuard(secret string) gin.HandlerFunc {\n    return func(c *gin.Context) {\n        auth := c.GetHeader("Authorization")\n        if !strings.HasPrefix(auth, "Bearer ") {\n            c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})\n            return\n        }\n        token := strings.TrimPrefix(auth, "Bearer ")\n        claims, err := parseJWT(token, secret)\n        if err != nil {\n            c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Token"})\n            return\n        }\n        c.Set("userID", claims.UserID)\n        c.Next()\n    }\n}`,
+        codeExplanation:
+          'Fungsi c.AbortWithStatusJSON() menghentikan pipeline middleware seketika, mencegah unauthorized request menyentuh logic handler.',
+        nihongoTerms: [
+          { term: '本番環境 (Honban Kankyou)', reading: 'ほんばんかんきょう', meaning: 'Production Environment' },
+          { term: '不具合 (Fuguai)', reading: 'ふぐあい', meaning: 'Bug / Defect sistem' },
+          { term: '確認 (Kakunin)', reading: 'かくにん', meaning: 'Konfirmasi / Verification' },
+        ],
+        tokyoIndustryTip:
+          'Selalu gunakan standard response envelope (success, message, data, error) agar mudah diintegrasikan dengan frontend TypeScript web app.',
+      },
+      'unit-3-concurrency': {
+        unitNumber: 3,
+        unitTag: 'GOROUTINE & CHANNEL PIPELINE',
+        title: 'Unit 3: Goroutine, Channel & Concurrency Patterns',
+        summary:
+          'Concurrency di Go menganut prinsip CSP (Communicating Sequential Processes): Jangan berkomunikasi dengan membagi memori, melainkan bagikan memori dengan berkomunikasi melalui Channels.',
+        codeSnippetTitle: 'Worker Pool Pattern dengan Buffered Channels',
+        codeSnippet: `func worker(id int, jobs <-chan int, results chan<- int) {\n    for j := range jobs {\n        results <- j * 2\n    }\n}\n\nfunc main() {\n    jobs := make(chan int, 100)\n    results := make(chan int, 100)\n    for w := 1; w <= 3; w++ {\n        go worker(w, jobs, results)\n    }\n}`,
+        codeExplanation:
+          'Buffered channel mencegah blocking yang tidak diinginkan dan membatasi jumlah goroutine simultan agar tidak terjadi memory leak.',
+        nihongoTerms: [
+          { term: '共有 (Kyouyuu)', reading: 'きょうゆう', meaning: 'Share / Berbagi informasi' },
+          { term: '同期 (Douki)', reading: 'どうき', meaning: 'Synchronous' },
+          { term: '非同期 (Hidouki)', reading: 'ひどうき', meaning: 'Asynchronous' },
+        ],
+        tokyoIndustryTip:
+          'Tes wawancara teknis senior backend di Tokyo kerap menguji penanganan context.Context timeout dan pencegahan goroutine leak.',
+      },
+      'unit-4-postgres-dan-pgx': {
+        unitNumber: 4,
+        unitTag: 'POSTGRESQL & PGX CONNECTION POOL',
+        title: 'Unit 4: Database Pooling Pgx & Clean Architecture',
+        summary:
+          'Menggunakan pgxpool untuk mengelola koneksi database secara efisien dengan prepared statements, database migrations, dan pemisahan layer Entity, Repository, Usecase, dan Handler.',
+        codeSnippetTitle: 'Clean Architecture Repository Interface & Pgxpool',
+        codeSnippet: `type UserRepository interface {\n    GetByID(ctx context.Context, id string) (*domain.User, error)\n}\n\ntype pgUserRepo struct {\n    pool *pgxpool.Pool\n}\n\nfunc (r *pgUserRepo) GetByID(ctx context.Context, id string) (*domain.User, error) {\n    var u domain.User\n    err := r.pool.QueryRow(ctx, "SELECT id, name FROM users WHERE id=$1", id).Scan(&u.ID, &u.Name)\n    return &u, err\n}`,
+        codeExplanation:
+          'Pemisahan interface di domain layer memudahkan testing menggunakan mock repository tanpa perlu database nyata saat unit test.',
+        nihongoTerms: [
+          { term: '設計 (Sekkei)', reading: 'せっけい', meaning: 'Software Architecture / Design' },
+          { term: '移行 (Ikou)', reading: 'いこう', meaning: 'Database Migration' },
+          { term: '障害 (Shougai)', reading: 'しょうがい', meaning: 'System Outage / Incident' },
+        ],
+        tokyoIndustryTip:
+          'Standar Clean Architecture diakui secara luas oleh tech lead di Tokyo karena mempermudah kolaborasi multi-engineer berskala besar.',
+      },
     }
-  })
-  const [reviewedNihongoToday, setReviewedNihongoToday] = useState(() => {
-    try {
-      return localStorage.getItem(reviewedNihongoKey) === 'true'
-    } catch {
-      return false
+
+    const fallbackGuidebook: GuidebookContent = {
+      unitNumber: unit.unitNumber,
+      unitTag: unit.tag,
+      title: unit.title,
+      summary: unit.description,
+      codeSnippetTitle: `Contoh Sintaks & Best Practice: Unit 0${unit.unitNumber}`,
+      codeSnippet: `// Contoh implementasi untuk ${unit.title}\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("CodeAbroad Tokyo Curriculum - Unit 0${unit.unitNumber}")\n}`,
+      codeExplanation:
+        'Pahami pola penulisan kode di atas dan pastikan Anda menguji kode secara menyeluruh sebelum mengirim Pull Request.',
+      nihongoTerms: [
+        { term: '設計書 (Sekkeisho)', reading: 'せっけいしょ', meaning: 'Dokumen Spesifikasi / Architecture Design' },
+        { term: '開発 (Kaihatsu)', reading: 'かいはつ', meaning: 'Software Development' },
+        { term: 'テスト (Tesuto)', reading: 'てすと', meaning: 'Unit Testing & Quality Assurance' },
+      ],
+      tokyoIndustryTip:
+        'Di industri rekrutmen Tokyo, pemahaman konseptual yang kokoh dinilai sama tingginya dengan kecepatan mengetik kode.',
+      firstPartRoute: unit.parts[0]?.route,
     }
-  })
-  const [claimedLocalQuest, setClaimedLocalQuest] = useState(() => {
-    try {
-      return localStorage.getItem(claimedVocabQuestKey) === 'true'
-    } catch {
-      return false
-    }
-  })
+
+    setGuidebookModalUnit(GUIDEBOOK_DATA[unit.id] || fallbackGuidebook)
+  }
+
   const [isMuted, setIsMuted] = useState(() => audioEngine.isMuted())
 
   useEffect(() => {
@@ -364,39 +450,6 @@ export const RoadmapPage = () => {
 
   const { roadmap, isLoading } = useRoadmap(activeTrack)
 
-  // Fetch real 7-day activity logs & daily rewards status from backend
-  useEffect(() => {
-    let isMounted = true
-    authService
-      .getActivityLogs()
-      .then((data) => {
-        if (isMounted) setActivitySummary(data)
-      })
-      .catch((err) => {
-        console.warn('Using offline activity log fallback in Roadmap:', err)
-      })
-
-    authService
-      .getDailyRewardsStatus()
-      .then((status) => {
-        if (!isMounted || !status) return
-        if (status.vocab_quest_claimed) {
-          localStorage.setItem(claimedVocabQuestKey, 'true')
-          setClaimedLocalQuest(true)
-        }
-        if (status.golden_chest_claimed) {
-          localStorage.setItem(chestStorageKey, 'true')
-          setIsChestClaimedToday(true)
-        }
-      })
-      .catch((err) => {
-        console.warn('Using offline daily rewards status fallback in Roadmap:', err)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [claimedVocabQuestKey, chestStorageKey])
 
   // Listen for quest completion events
   useEffect(() => {
@@ -498,45 +551,6 @@ export const RoadmapPage = () => {
     navigate(`/roadmap/${trackSlug}`)
   }
 
-  // Daily XP Goal Calculations
-  const isPart1Done = completedQuestsSet.has('part-1-variabel-dan-tipe-data')
-  const isPart2Done = completedQuestsSet.has('part-2-pointer-dan-struktur-data')
-  const baseEarnedXp = (isPart1Done ? 50 : 0) + (isPart2Done ? 50 : 0) + (claimedLocalQuest ? 30 : 0)
-  const todayEarnedXp = Math.min(50, baseEarnedXp)
-  const dailyTargetXp = 50
-  const dailyProgressPercent = Math.min(100, Math.round((todayEarnedXp / dailyTargetXp) * 100))
-  const remainingXp = Math.max(0, dailyTargetXp - todayEarnedXp)
-  const isChestUnlocked = todayEarnedXp >= dailyTargetXp
-
-  const handleVocabReview = () => {
-    triggerHaptic('success')
-    setReviewedNihongoToday(true)
-    localStorage.setItem(reviewedNihongoKey, 'true')
-  }
-
-  const handleClaimVocabQuest = async () => {
-    triggerHaptic('success')
-    setClaimedLocalQuest(true)
-    localStorage.setItem(claimedVocabQuestKey, 'true')
-    try {
-      await authService.claimDailyReward('vocab_quest')
-      updateUser({})
-    } catch {
-      // Gracefully continue with local state
-    }
-  }
-
-  const handleClaimGoldenChest = async () => {
-    triggerHaptic('streakIgnite')
-    setIsChestClaimedToday(true)
-    localStorage.setItem(chestStorageKey, 'true')
-    try {
-      await authService.claimDailyReward('golden_chest')
-      updateUser({})
-    } catch {
-      // Gracefully continue with local state
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -618,6 +632,20 @@ export const RoadmapPage = () => {
                   <Sparkle weight="fill" className="w-3.5 h-3.5" />
                   <span>Lv. {userLevel} Kodi</span>
                 </div>
+                {/* Tokyo League Leaderboard HUD Button (Subtask 33.2) */}
+                <div className="w-[1px] h-3.5 bg-slate-200" />
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setIsLeaderboardOpen(true)
+                  }}
+                  className="flex items-center gap-1 font-brand font-black text-xs text-amber-700 hover:text-amber-800 transition-colors cursor-pointer group"
+                  title="Buka Papan Peringkat Liga Tokyo"
+                >
+                  <Trophy weight="fill" className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                  <span className="hidden sm:inline">Liga</span>
+                </button>
                 <div className="w-[1px] h-3.5 bg-slate-200" />
                 <button
                   type="button"
@@ -876,22 +904,37 @@ export const RoadmapPage = () => {
                         </p>
                       </div>
 
-                      {/* Guidebook Button */}
+                      {/* Guidebook Button (Subtask 33.1) */}
                       <button
                         type="button"
-                        onClick={() => {
-                          triggerHaptic('tap')
-                          const firstPart = unit.parts[0]
-                          if (firstPart) navigate(firstPart.route)
-                        }}
+                        onClick={() => handleOpenGuidebook(unit)}
                         className={`self-start sm:self-center px-4 py-2 rounded-xl text-xs font-brand font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 shadow-2xs ${
                           isUnitCompleted || isUnitActive
                             ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25 active:translate-y-0.5'
                             : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 active:translate-y-0.5'
                         }`}
+                        title="Buka ringkasan teori, sintaks kode, dan kosakata unit"
                       >
                         <BookOpen weight="bold" className="w-4 h-4" />
                         <span>Buku Panduan Unit</span>
+                      </button>
+
+                      {/* Expand / Collapse Button (Subtask 33.3) */}
+                      <button
+                        type="button"
+                        onClick={() => toggleUnitCollapse(unit.id)}
+                        className={`self-start sm:self-center p-2 rounded-xl text-xs transition-all flex items-center justify-center cursor-pointer shrink-0 ${
+                          isUnitCompleted || isUnitActive
+                            ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25'
+                            : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
+                        }`}
+                        title={collapsedUnitIds.has(unit.id) ? 'Buka Sesi Unit' : 'Lipat Sesi Unit'}
+                      >
+                        {collapsedUnitIds.has(unit.id) ? (
+                          <CaretDown weight="bold" className="w-4 h-4" />
+                        ) : (
+                          <CaretUp weight="bold" className="w-4 h-4" />
+                        )}
                       </button>
                     </div>
 
@@ -927,28 +970,29 @@ export const RoadmapPage = () => {
                     </div>
                   </div>
 
-                  {/* ── SEQUENTIAL PART BREAKDOWN (DUOLINGO 3D TACTILE CARDS) ── */}
-                  <div className="p-4 sm:p-5 space-y-3 bg-white">
-                    {unit.filteredParts.map((part) => {
-                      const isCompleted = completedQuestsSet.has(part.id)
-                      const isNextActive = part.id === nextActivePart?.id
-                      const isUnlocked = isCompleted || isNextActive
+                  {/* ── SEQUENTIAL PART BREAKDOWN (COLLAPSIBLE - Subtask 33.3) ── */}
+                  {!collapsedUnitIds.has(unit.id) && (
+                    <div className="p-4 sm:p-5 space-y-3 bg-white">
+                      {unit.filteredParts.map((part) => {
+                        const isCompleted = completedQuestsSet.has(part.id)
+                        const isNextActive = part.id === nextActivePart?.id
+                        const isUnlocked = isCompleted || isNextActive
 
-                      return (
-                        <div
-                          key={part.id}
-                          className={`p-4 sm:p-4.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 ${
-                            isCompleted
-                              ? 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
-                              : isNextActive
-                              ? 'bg-blue-50/50 border-2 border-blue-500 border-b-[5px] border-b-blue-600 ring-4 ring-blue-500/10 shadow-sm hover:border-b-[6px] hover:-translate-y-0.5'
-                              : 'bg-slate-50/70 border-2 border-slate-200/70 border-b-[3px] border-b-slate-200 opacity-60'
-                          } ${
-                            part.category === 'nihongo' && !isCompleted && !isNextActive
-                              ? 'bg-rose-50/40 border-rose-200/60'
-                              : ''
-                          }`}
-                        >
+                        return (
+                          <div
+                            key={part.id}
+                            className={`p-4 sm:p-4.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 ${
+                              isCompleted
+                                ? 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
+                                : isNextActive
+                                ? 'bg-blue-50/50 border-2 border-blue-500 border-b-[5px] border-b-blue-600 ring-4 ring-blue-500/10 shadow-sm hover:border-b-[6px] hover:-translate-y-0.5'
+                                : 'bg-slate-50/70 border-2 border-slate-200/70 border-b-[3px] border-b-slate-200 opacity-60'
+                            } ${
+                              part.category === 'nihongo' && !isCompleted && !isNextActive
+                                ? 'bg-rose-50/40 border-rose-200/60'
+                                : ''
+                            }`}
+                          >
                           {/* Left: 3D Tactile Token Cube + Details */}
                           <div className="flex items-start sm:items-center gap-3.5 min-w-0">
                             {/* 3D Tactile Token Cube */}
@@ -1044,288 +1088,37 @@ export const RoadmapPage = () => {
                       )
                     })}
                   </div>
+                  )}
+
+                  {/* Unit Milestone Trophy Badge (Subtask 33.4) */}
+                  {isUnitCompleted && (
+                    <div className="p-3.5 sm:p-4 bg-emerald-50/90 border-t-2 border-emerald-200/90 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shadow-xs">
+                          <Trophy weight="fill" className="w-4 h-4 text-amber-200" />
+                        </div>
+                        <div>
+                          <span className="font-brand font-black text-emerald-950 block">
+                            Unit 0{unit.unitNumber} Lulus 100%!
+                          </span>
+                          <span className="text-[11px] text-emerald-700 font-medium">
+                            +{unit.totalXp} XP telah ditambahkan ke profil Anda.
+                          </span>
+                        </div>
+                      </div>
+                      <span className="bg-emerald-600 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-xl shadow-xs">
+                        TERVERIFIKASI ✓
+                      </span>
+                    </div>
+                  )}
                 </div>
               )
             })}
           </div>
         </main>
 
-        {/* ══════ RIGHT SIDEBAR RAIL (100% IDENTICAL TO DASHBOARD) ══════ */}
-        <aside className="w-full xl:w-[354px] shrink-0 border-t-2 xl:border-t-0 xl:border-l-2 border-slate-200/90 bg-white p-5 sm:p-6 space-y-6">
-          {/* ── 1. RENTETAN BELAJAR (7-DAY STREAK TRACKER) ── */}
-          <div className="border-2 border-slate-200/90 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-2xs bg-white">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CalendarBlank weight="bold" className="w-4 h-4 text-blue-600" />
-                <h4 className="font-brand font-black text-xs text-slate-900">Rentetan Belajar</h4>
-              </div>
-              <span className="bg-red-50 text-red-600 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full border border-red-200/80 flex items-center gap-1">
-                <Fire weight="fill" className="w-3.5 h-3.5 text-red-500" />
-                <span>{userStreak} Hari Aktif</span>
-              </span>
-            </div>
-
-            {/* 7 Days Row */}
-            <div className="grid grid-cols-7 gap-1.5 text-center">
-              {(activitySummary?.weekly_logs && activitySummary.weekly_logs.length === 7
-                ? activitySummary.weekly_logs.map((log) => ({
-                    label: log.day_label,
-                    isToday: log.is_today,
-                    isCompleted: log.is_active,
-                  }))
-                : [
-                    { label: 'Sen', dayIndex: 0 },
-                    { label: 'Sel', dayIndex: 1 },
-                    { label: 'Rab', dayIndex: 2 },
-                    { label: 'Kam', dayIndex: 3 },
-                    { label: 'Jum', dayIndex: 4 },
-                    { label: 'Sab', dayIndex: 5 },
-                    { label: 'Min', dayIndex: 6 },
-                  ].map((item) => {
-                    const todayDayIndex = (new Date().getDay() + 6) % 7
-                    return {
-                      label: item.label,
-                      isToday: item.dayIndex === todayDayIndex,
-                      isCompleted:
-                        item.dayIndex < todayDayIndex
-                          ? todayDayIndex - item.dayIndex < Math.max(1, userStreak)
-                          : item.dayIndex === todayDayIndex && userStreak > 0,
-                    }
-                  })
-              ).map((item) => {
-                const isToday = item.isToday
-                const isCompleted = item.isCompleted
-
-                return (
-                  <div key={item.label} className="flex flex-col items-center gap-1">
-                    <span
-                      className={`text-[9px] font-brand font-black transition-colors ${
-                        isCompleted
-                          ? 'text-orange-600 font-black'
-                          : isToday
-                          ? 'text-orange-500 font-black underline decoration-orange-400 decoration-2 underline-offset-2'
-                          : 'text-slate-400 font-bold'
-                      }`}
-                    >
-                      {item.label}
-                    </span>
-
-                    {isCompleted ? (
-                      <div
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-b from-amber-400 via-orange-400 to-orange-500 shadow-[0_2.5px_0_0_#C2410C] flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 cursor-default"
-                        title={`${item.label}: Hari Aktif Belajar 🔥`}
-                      >
-                        <Fire weight="fill" className="w-3.5 h-3.5 text-amber-100 drop-shadow-[0_1px_1px_rgba(0,0,0,0.25)] animate-pulse" />
-                      </div>
-                    ) : isToday ? (
-                      <div
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-orange-50 border-2 border-dashed border-orange-400 flex items-center justify-center text-orange-500 shadow-2xs relative"
-                        title="Hari ini: Belajar 1 modul untuk menyalakan api!"
-                      >
-                        <Fire weight="bold" className="w-3.5 h-3.5 text-orange-500 animate-bounce" />
-                      </div>
-                    ) : (
-                      <div
-                        className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100/80 border border-slate-200/90 flex items-center justify-center text-slate-400"
-                        title={`${item.label}: Belum Tercapai`}
-                      >
-                        <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
-                      </div>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* ── SUBTLE SECTION DIVIDER ── */}
-          <div className="h-[1px] bg-slate-100" />
-
-          {/* ── 2. MISI & TARGET HARIAN (IDENTICAL TO DASHBOARD) ── */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-700 shrink-0">
-                  <Target weight="bold" className="w-4 h-4 text-amber-600" />
-                </div>
-                <div>
-                  <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
-                    Misi & Target Harian
-                  </h4>
-                  <span className="text-[9px] text-slate-400 font-medium">
-                    Raih 50 XP untuk Buka Peti
-                  </span>
-                </div>
-              </div>
-              <span className="bg-slate-50 text-slate-600 text-[9px] font-mono font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs border border-slate-200/60">
-                <Clock weight="bold" className="w-3 h-3 text-slate-500" />
-                <span>4j 20m</span>
-              </span>
-            </div>
-
-            {/* Duolingo Integrated Progress Track with Golden Chest */}
-            <div className="p-2.5 bg-amber-50/30 border border-amber-100/90 rounded-xl space-y-1.5 shadow-2xs">
-              <div className="flex items-center justify-between text-[10px]">
-                <span className="font-brand font-black text-slate-800 flex items-center gap-1">
-                  <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
-                  <span>{todayEarnedXp} / {dailyTargetXp} XP Hari Ini</span>
-                </span>
-                <span className="font-brand font-black text-amber-700 text-[10px] flex items-center gap-1">
-                  <span>🎁 +20 💎</span>
-                  <span className="text-slate-400 font-medium">
-                    ({isChestUnlocked ? 'Tercapai! 🎉' : `${remainingXp} XP lagi`})
-                  </span>
-                </span>
-              </div>
-
-              {/* Progress Bar Track with Golden Chest Anchor */}
-              <div className="flex items-center gap-2">
-                <div className="flex-1 h-2.5 bg-white rounded-full border border-slate-200/90 p-0.5 shadow-inner overflow-hidden relative">
-                  <div
-                    className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706] relative"
-                    style={{ width: `${dailyProgressPercent}%` }}
-                  >
-                    <div className="absolute inset-x-0 top-0 h-[45%] bg-white/35 rounded-full" />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    setIsChestModalOpen(true)
-                  }}
-                  className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 shadow-2xs transition-transform cursor-pointer ${
-                    isChestUnlocked
-                      ? 'bg-amber-400 border-amber-500 text-amber-950 animate-bounce shadow-[0_2px_0_0_#B45309] hover:scale-110 active:scale-95'
-                      : 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200'
-                  }`}
-                  title={
-                    isChestUnlocked
-                      ? 'Klik untuk membuka Peti Emas Hadiah 50 XP! (+20 💎)'
-                      : `Peti Emas Hadiah 50 XP (+20 💎) - ${remainingXp} XP lagi`
-                  }
-                >
-                  <Gift weight={isChestUnlocked ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Actionable Quests */}
-            <div className="space-y-2">
-              {/* Quest 1: Code Quest */}
-              <div className="p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2.5 shadow-2xs hover:shadow-xs transition-all group">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E3A8A] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Code weight="bold" className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <p className="font-brand font-black text-[11px] text-slate-900 leading-tight line-clamp-2">
-                      Selesaikan 1 Bab Coding
-                    </p>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="bg-amber-100 text-amber-900 border border-amber-300/80 text-[9px] font-brand font-black px-1.5 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
-                        <Lightning weight="fill" className="w-2.5 h-2.5 text-amber-500" />
-                        <span>+50 XP</span>
-                      </span>
-                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1 py-0.2 rounded">
-                        KODING
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {isPart1Done ? (
-                  <span className="bg-emerald-50 border border-emerald-300 text-emerald-700 font-brand font-black text-[9px] px-2 py-1 rounded-lg flex items-center gap-0.5 shrink-0 shadow-2xs">
-                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
-                    <span>SELESAI</span>
-                  </span>
-                ) : (
-                  <Button3D
-                    variant="blue"
-                    size="sm"
-                    onClick={() => {
-                      triggerHaptic('tap')
-                      navigate('/learn/part-1-variabel-dan-tipe-data')
-                    }}
-                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
-                  >
-                    MULAI ▶
-                  </Button3D>
-                )}
-              </div>
-
-              {/* Quest 2: Japanese Vocab Quest */}
-              <div className="p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2.5 shadow-2xs hover:shadow-xs transition-all group">
-                <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-rose-400 to-pink-500 shadow-[0_2px_0_0_#9F1239] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Translate weight="bold" className="w-4 h-4 text-white" />
-                  </div>
-                  <div className="space-y-0.5 min-w-0 flex-1">
-                    <p className="font-brand font-black text-[11px] text-slate-900 leading-tight line-clamp-2">
-                      Review Kosakata IT Hari Ini
-                    </p>
-                    <div className="flex items-center gap-1 flex-wrap">
-                      <span className="bg-amber-100 text-amber-900 border border-amber-300/80 text-[9px] font-brand font-black px-1.5 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
-                        <Lightning weight="fill" className="w-2.5 h-2.5 text-amber-500" />
-                        <span>+30 XP</span>
-                      </span>
-                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1 py-0.2 rounded">
-                        BAHASA
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                {claimedLocalQuest ? (
-                  <span className="bg-emerald-50 border border-emerald-300 text-emerald-700 font-brand font-black text-[9px] px-2 py-1 rounded-lg flex items-center gap-0.5 shrink-0 shadow-2xs">
-                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
-                    <span>SELESAI</span>
-                  </span>
-                ) : reviewedNihongoToday ? (
-                  <Button3D
-                    variant="amber"
-                    size="sm"
-                    onClick={handleClaimVocabQuest}
-                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
-                  >
-                    KLAIM ⚡
-                  </Button3D>
-                ) : (
-                  <Button3D
-                    variant="blue"
-                    size="sm"
-                    onClick={() => {
-                      triggerHaptic('tap')
-                      const el = document.getElementById('tech-nihongo-card')
-                      if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'center' })
-                        el.classList.add('ring-4', 'ring-blue-400', 'rounded-2xl', 'transition-all')
-                        setTimeout(() => {
-                          el.classList.remove('ring-4', 'ring-blue-400', 'rounded-2xl')
-                        }, 2000)
-                      }
-                    }}
-                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
-                  >
-                    MULAI ▶
-                  </Button3D>
-                )}
-              </div>
-            </div>
-          </div>
-
-          {/* ── SUBTLE SECTION DIVIDER ── */}
-          <div className="h-[1px] bg-slate-100" />
-
-          {/* ── 3. KOSAKATA KANTOR TOKYO (TECH NIHONGO CARD SSOT) ── */}
-          <div id="tech-nihongo-card">
-            <TechNihongoCard
-              isReviewed={reviewedNihongoToday}
-              isClaimed={claimedLocalQuest}
-              onReview={handleVocabReview}
-            />
-          </div>
-        </aside>
+        {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 34.4) ══════ */}
+        <GameSidebarRail activeTrack={activeTrack} />
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
@@ -1336,80 +1129,24 @@ export const RoadmapPage = () => {
         onSelectTrack={handleSelectTrack}
       />
 
-      {/* ── 4. CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}
-      {isChestModalOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-          <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-pop relative">
-            <button
-              type="button"
-              onClick={() => setIsChestModalOpen(false)}
-              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer"
-            >
-              ✕
-            </button>
 
-            <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-b from-amber-400 to-yellow-500 flex items-center justify-center text-3xl shadow-[0_4px_0_0_#B45309] animate-bounce">
-              🎁
-            </div>
+      {/* ── TOKYO LEADERBOARD MODAL (Subtask 33.2) ── */}
+      <TokyoLeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+      />
 
-            <div>
-              <h3 className="font-brand font-black text-lg text-slate-900">
-                {isChestUnlocked ? 'Peti Hadiah Emas Terbuka!' : 'Peti Hadiah Harian'}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                {isChestUnlocked
-                  ? 'Selamat! Kamu mencapai target 50 XP hari ini. Klaim hadiah kristalmu!'
-                  : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka peti hadiah emas!`}
-              </p>
-            </div>
-
-            <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 flex items-center justify-around">
-              <div className="text-center">
-                <span className="text-[10px] text-amber-700 font-bold block">Hadiah Kristal</span>
-                <span className="font-brand font-black text-sm text-amber-900">+20 💎</span>
-              </div>
-              <div className="w-[1px] h-6 bg-amber-200" />
-              <div className="text-center">
-                <span className="text-[10px] text-amber-700 font-bold block">XP Bonus</span>
-                <span className="font-brand font-black text-sm text-amber-900">+50 ⚡</span>
-              </div>
-            </div>
-
-            {isChestClaimedToday ? (
-              <div className="py-2.5 px-4 bg-emerald-50 border border-emerald-200 text-emerald-700 font-brand font-black text-xs rounded-xl flex items-center justify-center gap-1.5 shadow-2xs">
-                <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
-                <span>Peti Sudah Diklaim Hari Ini</span>
-              </div>
-            ) : isChestUnlocked ? (
-              <Button3D
-                variant="amber"
-                size="md"
-                className="w-full shadow-[0_4px_0_0_#B45309]"
-                onClick={() => {
-                  handleClaimGoldenChest()
-                  setIsChestModalOpen(false)
-                }}
-              >
-                KLAIM HADIAH 🎁
-              </Button3D>
-            ) : (
-              <Button3D
-                variant="blue"
-                size="md"
-                className="w-full shadow-[0_4px_0_0_#1D4ED8]"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  setIsChestModalOpen(false)
-                  if (nextActivePart) navigate(nextActivePart.route)
-                }}
-              >
-                LANJUT KODING ▶
-              </Button3D>
-            )}
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* ── UNIT GUIDEBOOK MODAL (Subtask 33.1) ── */}
+      <UnitGuidebookModal
+        isOpen={guidebookModalUnit !== null}
+        content={guidebookModalUnit}
+        onClose={() => setGuidebookModalUnit(null)}
+        onStartUnit={() => {
+          if (guidebookModalUnit?.firstPartRoute) {
+            navigate(guidebookModalUnit.firstPartRoute)
+          }
+        }}
+      />
     </div>
   )
 }
