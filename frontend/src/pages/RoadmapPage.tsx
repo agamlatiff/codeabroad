@@ -19,14 +19,12 @@ import {
   TechNihongoLogo,
 } from '../components/ui/BrandLogos'
 import {
-  MagnifyingGlass,
   LockSimple,
   CaretDown,
   Sparkle,
   Fire,
   Star,
   Lightning,
-  CheckCircle,
   ArrowSquareOut,
   Play,
   BookOpen,
@@ -34,7 +32,6 @@ import {
   CaretUp,
   SpeakerSimpleSlash,
   SpeakerSimpleHigh,
-  Clock,
   CheckFat,
 } from '@phosphor-icons/react'
 import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
@@ -42,8 +39,6 @@ import type { GuidebookContent } from '../components/game/UnitGuidebookModal'
 import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
 
 import { soundEngine } from '../utils/audio'
-import doodleCoding from '../assets/kodi/doodle-coding.png'
-import doodleThinking from '../assets/kodi/doodle-thinking.png'
 
 // Standard Flat Sequential Curriculum Unit Definition (Clean Technical Only)
 export interface SequentialPartItem {
@@ -289,10 +284,6 @@ export const RoadmapPage = () => {
   })
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
 
-  // Filter Tabs: 'all' | 'active' | 'completed' | 'nihongo'
-  const [activeFilterTab, setActiveFilterTab] = useState<'all' | 'active' | 'completed' | 'nihongo'>('all')
-  const [searchQuery, setSearchQuery] = useState('')
-
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
   const [guidebookModalUnit, setGuidebookModalUnit] = useState<GuidebookContent | null>(null)
   const [collapsedUnitIds, setCollapsedUnitIds] = useState<Set<string>>(new Set())
@@ -458,7 +449,7 @@ export const RoadmapPage = () => {
     }
   }, [routeTrack, activeTrack])
 
-  const { roadmap, isLoading } = useRoadmap(activeTrack)
+  const { isLoading } = useRoadmap(activeTrack)
 
 
   // Listen for quest completion events
@@ -505,48 +496,12 @@ export const RoadmapPage = () => {
     100,
     Math.round((completedPartsCount / totalPartsCount) * 100)
   )
-  const totalCurriculumXp = units.reduce((sum, u) => sum + u.totalXp, 0)
-  const totalEstimatedMinutes = allParts.reduce((sum, p) => sum + p.estimatedMinutes, 0)
-  const totalHours = (totalEstimatedMinutes / 60).toFixed(1)
 
   // First active part (next unlocked part)
   const nextActivePart = useMemo(() => {
     return allParts.find((p) => !completedQuestsSet.has(p.id)) || allParts[0]
   }, [allParts, completedQuestsSet])
 
-  // Filter parts based on search and active tab
-  const filteredUnits = useMemo(() => {
-    const q = searchQuery.toLowerCase().trim()
-
-    return units
-      .map((unit) => {
-        const matchingParts = unit.parts.filter((part) => {
-          const isCompleted = completedQuestsSet.has(part.id)
-          const isNextActive = part.id === nextActivePart?.id
-
-          // Tab filter
-          if (activeFilterTab === 'completed' && !isCompleted) return false
-          if (activeFilterTab === 'active' && !isNextActive && isCompleted) return false
-          if (activeFilterTab === 'nihongo' && part.category !== 'nihongo') return false
-
-          // Search query filter
-          if (q) {
-            const matchTitle = part.title.toLowerCase().includes(q)
-            const matchSubtitle = part.subtitle.toLowerCase().includes(q)
-            const matchChip = part.chipLabel.toLowerCase().includes(q)
-            const matchUnit = unit.title.toLowerCase().includes(q)
-            return matchTitle || matchSubtitle || matchChip || matchUnit
-          }
-          return true
-        })
-
-        return {
-          ...unit,
-          filteredParts: matchingParts,
-        }
-      })
-      .filter((u) => u.filteredParts.length > 0)
-  }, [units, searchQuery, activeFilterTab, completedQuestsSet, nextActivePart])
 
   // User Stats (Clean SSOT)
   const userXp = user?.xp ? user.xp.toLocaleString() : '0'
@@ -572,9 +527,9 @@ export const RoadmapPage = () => {
         {/* ══════ CENTER CONTENT STAGE ══════ */}
         <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 space-y-6">
           {/* ── 1. CLEAN CONTEXTUAL TOP BAR (TRACK SELECTOR & HUD) ── */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             {/* Left: Track Switcher & Linear Progress */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full lg:w-auto">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
               {/* Clickable Track Switcher Pill */}
               <button
                 type="button"
@@ -610,233 +565,74 @@ export const RoadmapPage = () => {
                   {completedPartsCount}/{totalPartsCount} Part ({curriculumProgressPercent}%)
                 </span>
               </div>
+
+              {/* Quick Switch to Dashboard S-Curve Map */}
+              <Link
+                to="/dashboard"
+                onClick={() => triggerHaptic('tap')}
+                className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border-2 border-slate-200/80 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-bold text-slate-600 hover:text-blue-600 transition-all shrink-0"
+                title="Beralih ke tampilan Peta Belajar S-Curve"
+              >
+                <span>Peta Belajar</span>
+                <ArrowSquareOut weight="bold" className="w-3.5 h-3.5 text-slate-400" />
+              </Link>
             </div>
 
-            {/* Right: Search & Game Stats HUD */}
-            <div className="flex items-center gap-3 flex-wrap">
-              {/* Search Input */}
-              <div className="relative w-full sm:w-60">
-                <MagnifyingGlass className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari modul, topik, sintaks..."
-                  className="w-full bg-white text-xs font-semibold pl-9 pr-4 py-2 rounded-2xl border-2 border-slate-200/90 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 shadow-2xs"
-                />
+            {/* Right: Game Status HUD (Clean Light Mode) */}
+            <div className="bg-white border-2 border-slate-200/90 rounded-2xl px-3.5 py-1.5 flex items-center gap-3 shadow-2xs self-start sm:self-auto shrink-0">
+              <div className="flex items-center gap-1.5 font-black text-xs text-orange-600">
+                <Fire weight="fill" className="w-4 h-4 text-orange-500" />
+                <span>{userStreak} Hari</span>
               </div>
-
-              {/* Game Status HUD */}
-              <div className="bg-white border-2 border-slate-200/90 rounded-2xl px-3.5 py-1.5 flex items-center gap-3 shadow-2xs">
-                <div className="flex items-center gap-1.5 font-black text-xs text-orange-600">
-                  <Fire weight="fill" className="w-4 h-4 text-orange-500" />
-                  <span>{userStreak} Hari</span>
-                </div>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <div className={`flex items-center gap-1.5 font-black text-xs text-amber-600 rounded-lg px-1.5 py-0.5 transition-all ${isXpPulsing ? 'animate-pulse-ring bg-amber-50 scale-105' : ''}`}>
-                  <Star weight="fill" className={`w-4 h-4 text-amber-500 ${isXpPulsing ? 'animate-bounce' : ''}`} />
-                  <span>{userXp} XP</span>
-                </div>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <div className="flex items-center gap-1.5 font-black text-xs text-blue-600">
-                  <Sparkle weight="fill" className="w-3.5 h-3.5" />
-                  <span>Lv. {userLevel} Kodi</span>
-                </div>
-                {/* Tokyo League Leaderboard HUD Button (Subtask 33.2) */}
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    setIsLeaderboardOpen(true)
-                  }}
-                  className="flex items-center gap-1 font-brand font-black text-xs text-amber-700 hover:text-amber-800 transition-colors cursor-pointer group"
-                  title="Buka Papan Peringkat Liga Tokyo"
-                >
-                  <Trophy weight="fill" className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                  <span className="hidden sm:inline">Liga</span>
-                </button>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <button
-                  type="button"
-                  onClick={handleToggleSound}
-                  className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 active:translate-y-0.5"
-                  title={isMuted ? 'Aktifkan Efek Suara' : 'Bisukan Efek Suara'}
-                >
-                  {isMuted ? (
-                    <SpeakerSimpleSlash weight="bold" className="w-4 h-4 text-slate-400" />
-                  ) : (
-                    <SpeakerSimpleHigh weight="bold" className="w-4 h-4 text-blue-600" />
-                  )}
-                </button>
+              <div className="w-[1px] h-3.5 bg-slate-200" />
+              <div className={`flex items-center gap-1.5 font-black text-xs text-amber-600 rounded-lg px-1.5 py-0.5 transition-all ${isXpPulsing ? 'animate-pulse-ring bg-amber-50 scale-105' : ''}`}>
+                <Star weight="fill" className={`w-4 h-4 text-amber-500 ${isXpPulsing ? 'animate-bounce' : ''}`} />
+                <span>{userXp} XP</span>
               </div>
+              <div className="w-[1px] h-3.5 bg-slate-200" />
+              <div className="flex items-center gap-1.5 font-black text-xs text-blue-600">
+                <Sparkle weight="fill" className="w-3.5 h-3.5" />
+                <span>Lv. {userLevel} Kodi</span>
+              </div>
+              {/* Tokyo League Leaderboard HUD Button (Subtask 33.2) */}
+              <div className="w-[1px] h-3.5 bg-slate-200" />
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setIsLeaderboardOpen(true)
+                }}
+                className="flex items-center gap-1 font-brand font-black text-xs text-amber-700 hover:text-amber-800 transition-colors cursor-pointer group"
+                title="Buka Papan Peringkat Liga Tokyo"
+              >
+                <Trophy weight="fill" className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline">Liga</span>
+              </button>
+              <div className="w-[1px] h-3.5 bg-slate-200" />
+              <button
+                type="button"
+                onClick={handleToggleSound}
+                className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 active:translate-y-0.5"
+                title={isMuted ? 'Aktifkan Efek Suara' : 'Bisukan Efek Suara'}
+              >
+                {isMuted ? (
+                  <SpeakerSimpleSlash weight="bold" className="w-4 h-4 text-slate-400" />
+                ) : (
+                  <SpeakerSimpleHigh weight="bold" className="w-4 h-4 text-blue-600" />
+                )}
+              </button>
             </div>
           </div>
 
-          {/* ── 2. LIGHT DUOLINGO 3D HERO HEADER (CLEAN & BRIGHT) ── */}
-          <div className="rounded-3xl bg-white border-2 border-slate-200/90 p-6 sm:p-7 shadow-2xs relative overflow-hidden space-y-4">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-5">
-              <div className="space-y-2 max-w-xl">
-                <div className="flex items-center gap-2">
-                  <span className="bg-blue-50 text-blue-700 border border-blue-200 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-lg tracking-wider">
-                    KURIKULUM TEKNIS RELEVAN
-                  </span>
-                  <span className="text-xs text-slate-400 font-semibold">• {units.length} Unit Utama</span>
-                </div>
-                <h1 className="font-brand font-black text-xl sm:text-2xl text-slate-900 tracking-tight">
-                  {roadmap?.title || currentTrackConfig.title}
-                </h1>
-                <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                  Pohon kompetensi berjenjang dari alokasi memori dasar hingga arsitektur high-concurrency siap produksi. Setiap modul disusun berurutan untuk fondasi koding yang kuat.
-                </p>
-              </div>
-
-              {/* Master Curriculum Metrics */}
-              <div className="grid grid-cols-3 gap-3 bg-slate-50 rounded-2xl p-3.5 border border-slate-200/80 shrink-0 text-center">
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold">
-                    <Clock weight="bold" className="w-3 h-3 text-blue-600" />
-                    <span>Durasi</span>
-                  </div>
-                  <span className="text-xs sm:text-sm font-brand font-black text-slate-900">~{totalHours} Jam</span>
-                </div>
-
-                <div className="space-y-0.5 border-x border-slate-200 px-2">
-                  <div className="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold">
-                    <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
-                    <span>Total XP</span>
-                  </div>
-                  <span className="text-xs sm:text-sm font-brand font-black text-amber-600">+{totalCurriculumXp}</span>
-                </div>
-
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-center gap-1 text-slate-500 text-[10px] font-bold">
-                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-500" />
-                    <span>Tuntas</span>
-                  </div>
-                  <span className="text-xs sm:text-sm font-brand font-black text-emerald-600">{curriculumProgressPercent}%</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Next Active Part Kodi Companion Hero CTA */}
-            {nextActivePart && (
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 text-xs">
-                <div className="flex items-center gap-3.5 min-w-0">
-                  <div className="relative shrink-0">
-                    <img
-                      src={doodleCoding}
-                      alt="Kodi Ngoding"
-                      className="w-14 h-14 object-contain drop-shadow-sm select-none"
-                    />
-                    <span className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-blue-600 text-white font-brand font-black text-[10px] flex items-center justify-center border-2 border-white shadow-xs">
-                      {nextActivePart.globalPartNumber}
-                    </span>
-                  </div>
-
-                  <div className="space-y-0.5 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[10px] font-brand font-black text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
-                        🎯 TARGET KAMU HARI INI
-                      </span>
-                      <span className="text-[10px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md">
-                        +{nextActivePart.xpReward} XP
-                      </span>
-                    </div>
-                    <h3 className="font-brand font-black text-sm sm:text-base text-slate-900 truncate">
-                      Part {nextActivePart.globalPartNumber}: {nextActivePart.title}
-                    </h3>
-                    <p className="text-xs text-slate-500 font-medium truncate">
-                      {nextActivePart.subtitle} • Estimasi {nextActivePart.estimatedMinutes} Menit
-                    </p>
-                  </div>
-                </div>
-
-                <Button3D
-                  variant="blue"
-                  size="sm"
-                  onClick={() => {
-                    triggerHaptic('success')
-                    navigate(nextActivePart.route)
-                  }}
-                  className="text-xs px-5 py-2.5 shadow-[0_3px_0_0_#1D4ED8] font-brand font-black shrink-0 flex items-center justify-center gap-1.5"
-                >
-                  <Play weight="fill" className="w-3.5 h-3.5" />
-                  <span>LANJUTKAN KODING ▶</span>
-                </Button3D>
-              </div>
-            )}
-          </div>
-
-          {/* ── 3. FILTER TABS & S-CURVE LINK ── */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
-            <div className="flex items-center gap-2 overflow-x-auto pb-1 select-none">
-              {[
-                { id: 'all', label: `Semua Part (${totalPartsCount})` },
-                { id: 'active', label: 'Sedang Berjalan ⚡' },
-                { id: 'completed', label: `Sudah Lulus (${completedPartsCount})` },
-                { id: 'nihongo', label: 'Nihongo IT 🌸' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    setActiveFilterTab(tab.id as typeof activeFilterTab)
-                  }}
-                  className={`px-3.5 py-1.5 rounded-xl text-xs font-brand font-black transition-all cursor-pointer whitespace-nowrap ${
-                    activeFilterTab === tab.id
-                      ? 'bg-blue-600 text-white shadow-[0_2.5px_0_0_#1D4ED8]'
-                      : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200/90 shadow-2xs'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            <Link
-              to="/dashboard"
-              onClick={() => triggerHaptic('tap')}
-              className="text-xs font-brand font-bold text-slate-500 hover:text-blue-600 transition-colors ml-auto flex items-center gap-1"
-            >
-              <span>Lihat di Peta S-Curve Dasbor</span>
-              <ArrowSquareOut weight="bold" className="w-3.5 h-3.5" />
-            </Link>
-          </div>
-
-          {/* ── 4. DIRECT SEQUENTIAL TECHNICAL UNIT CARDS ── */}
-          <div className="space-y-6">
+          {/* ── 2. DIRECT SEQUENTIAL TECHNICAL UNIT CARDS (IMMERSIVE UNIT STAGE) ── */}
+          <div className="space-y-6 pt-1">
             {isLoading && (
               <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center text-slate-500 text-xs font-semibold animate-pulse">
                 Memuat silabus kurikulum spesialisasi...
               </div>
             )}
 
-            {!isLoading && filteredUnits.length === 0 && (
-              <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center space-y-3">
-                <img
-                  src={doodleThinking}
-                  alt="Kodi Thinking"
-                  className="w-20 h-20 mx-auto object-contain drop-shadow-sm select-none"
-                />
-                <h4 className="font-brand font-black text-sm text-slate-800">
-                  Tidak Ada Modul di Kategori Ini
-                </h4>
-                <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                  Coba ubah filter atau pilih tab "Semua Part" untuk melihat seluruh pohon kompetensi kurikulum.
-                </p>
-                <button
-                  type="button"
-                  onClick={() => setActiveFilterTab('all')}
-                  className="text-xs font-brand font-black text-blue-600 hover:underline cursor-pointer"
-                >
-                  Lihat Semua Part ({totalPartsCount})
-                </button>
-              </div>
-            )}
-
-            {filteredUnits.map((unit) => {
+            {units.map((unit) => {
               const unitParts = unit.parts
               const unitCompletedCount = unitParts.filter((p) => completedQuestsSet.has(p.id)).length
               const isUnitCompleted = unitCompletedCount === unitParts.length
@@ -983,7 +779,7 @@ export const RoadmapPage = () => {
                   {/* ── SEQUENTIAL PART BREAKDOWN (COLLAPSIBLE - Subtask 33.3) ── */}
                   {!collapsedUnitIds.has(unit.id) && (
                     <div className="p-4 sm:p-5 space-y-3 bg-white">
-                      {unit.filteredParts.map((part) => {
+                      {unitParts.map((part) => {
                         const isCompleted = completedQuestsSet.has(part.id)
                         const isNextActive = part.id === nextActivePart?.id
                         const isUnlocked = isCompleted || isNextActive

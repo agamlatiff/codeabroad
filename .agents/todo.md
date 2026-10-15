@@ -935,6 +935,32 @@
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 - [x] Uji responsivitas kalender kehadiran dan animasi klaim XP.
 
+---
+
+## 🚀 FASE 36: Restrukturisasi & Simplifikasi Visual Silabus `/courses` (SELESAI ✅)
+
+> **Tujuan Utama:** Menghilangkan kesan tampilan yang terlalu ramai dan berdesakan di halaman `/courses`, membuang search box yang terangkat ke margin atas dan bertumpuk canggung dengan HUD, membuang kartu hero raksasa yang menduplikasi progres dan target, serta memusatkan panggung visual langsung pada Duolingo 3D Unit Banners yang memikat.
+
+### [x] 36.1 Eliminasi Search Bar & Filter Tabs yang Memadati Tampilan
+- [x] Hapus komponen pencarian `searchQuery` dan input pencarian yang mengambang di bar atas.
+- [x] Hapus baris tab filter kurikulum (*"Semua Part"*, *"Sedang Berjalan"*, *"Sudah Lulus"*, *"Nihongo IT"*) yang menambah redundansi visual.
+- [x] Rendering unit dan part kurikulum langsung secara utuh tanpa pemfilteran artifisial.
+
+### [x] 36.2 Eliminasi Kartu Hero Putih Raksasa Redundan (*Zero Duplicate Hero Card*)
+- [x] Hapus kontainer kartu putih hero raksasa di bawah bar atas yang menduplikasi judul silabus, bar persentase, target part aktif, dan kotak-kotak metrik abu-abu.
+- [x] Hilangkan ilustrasi doodle maskot yang repetitif di area hero silabus.
+- [x] Duolingo 3D Unit Banners kini langsung menjadi panggung visual utama silabus yang lega dan berdaya tarik tinggi.
+
+### [x] 36.3 Standardisasi Top Contextual Bar Ramping 1 Baris Sejajar
+- [x] Sisi kiri: Tombol Course Switcher (`CourseSwitcher`) + Track Linear Progress Bar ringkas (`1/10 Part (10%)`) + tombol navigasi cepat `Peta Belajar` ke `/dashboard`.
+- [x] Sisi kanan: Game Status HUD terpadu (`🔥 1 Hari | ⭐ 130 XP | ✨ Lv. 2 Kodi | 🏆 Liga Tokyo | 🔊 SFX`) dengan spasi proporsional tanpa tertekuk atau berdesakan ke baris kedua.
+
+### [x] 36.4 Pengujian, Verifikasi & Validasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, Vite bundle lulus 100%).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+- [x] Tampilan silabus `/courses` kini lega, modern, rapi, dan estetis mengikuti Duolingo 3D design system.
+
+
 
 
 
