@@ -960,6 +960,36 @@
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 - [x] Tampilan silabus `/courses` kini lega, modern, rapi, dan estetis mengikuti Duolingo 3D design system.
 
+---
+
+## 🚀 FASE 37: Penyatuan Komponen SSOT Top Contextual Bar (`GameTopBar.tsx`) (SELESAI ✅)
+
+> **Tujuan Utama:** Menghilangkan seluruh ketidakkonsistenan visual antara `/dashboard` dan `/courses` (seperti tombol ekstra `Peta Belajar ↗`, perbedaan satuan `Part` vs `Modul`, perbedaan label level `✨ Lv. 2 Kodi` vs `• Tingkat 2`, serta selisih padding/token warna) dengan mengekstrak satu komponen Single Source of Truth `GameTopBar.tsx`.
+
+### [x] 37.1 Pembuatan Komponen Tunggal `GameTopBar.tsx` (SSOT)
+- [x] Buat komponen terpadu [GameTopBar.tsx](file:///c:/Projects/codeabroad/frontend/src/components/game/GameTopBar.tsx) di `frontend/src/components/game/`.
+- [x] Sisi Kiri: Tombol Track Switcher taktil berlogo resmi brand IT + Linear Progress Bar terukur (`{completed}/{total} Modul ({percent}%)`).
+- [x] Sisi Kanan: Game Status HUD Light Mode Duolingo (`🔥 {userStreak} Hari | ⭐ {userXp} XP | • Tingkat {userLevel} | 🏆 Liga | 🔊 Sound Toggle`).
+- [x] Enkapsulasi internal state: deteksi audio mute, denyut animasi penambahan XP (`codeabroad_xp_gained`), serta sinkronisasi dinamis dari `useAuthStore`.
+
+### [x] 37.2 Registrasi & Ekspor di Index Game
+- [x] Daftarkan `export * from './GameTopBar'` di [frontend/src/components/game/index.ts](file:///c:/Projects/codeabroad/frontend/src/components/game/index.ts).
+
+### [x] 37.3 Integrasi & Refactor `DashboardPage.tsx`
+- [x] Gantikan ~100 baris inlined top bar manual dengan `<GameTopBar />`.
+- [x] Bersihkan imports logo brand dan audio listener yang redundan dari halaman dashboard.
+
+### [x] 37.4 Integrasi & Refactor `RoadmapPage.tsx` (`/courses`)
+- [x] Hapus tombol asing `Peta Belajar ↗` dari top bar silabus (navigasi antar halaman tetap konsisten melalui NavRail).
+- [x] Selaraskan label level menjadi `• Tingkat {N}` (dot biru berdenyut) dan satuan progres menjadi `Modul`.
+- [x] Gantikan inlined HUD lama dengan `<GameTopBar />` sehingga tampilan bar atas di `/dashboard` dan `/courses` 100% identik dan konsisten.
+
+### [x] 37.5 Pengujian, Verifikasi & Validasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, bundling berhasil).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+- [x] Desain top bar di kedua halaman kini seragam, presisi, dan proporsional.
+
+
 
 
 

@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react'
-import { useNavigate, useParams, Link } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
 import { useRoadmap } from '../hooks/useRoadmap'
@@ -8,37 +8,23 @@ import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
 import {
   CourseSwitcherModal,
-  CAREER_TRACKS,
   GameSidebarRail,
+  GameTopBar,
 } from '../components/game'
-import {
-  GolangLogo,
-  ReactLogo,
-  DockerLogo,
-  FundamentalLogo,
-  TechNihongoLogo,
-} from '../components/ui/BrandLogos'
 import {
   LockSimple,
   CaretDown,
   Sparkle,
-  Fire,
-  Star,
   Lightning,
-  ArrowSquareOut,
   Play,
   BookOpen,
-  Trophy,
   CaretUp,
-  SpeakerSimpleSlash,
-  SpeakerSimpleHigh,
   CheckFat,
+  Trophy,
 } from '@phosphor-icons/react'
 import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
 import type { GuidebookContent } from '../components/game/UnitGuidebookModal'
 import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
-
-import { soundEngine } from '../utils/audio'
 
 // Standard Flat Sequential Curriculum Unit Definition (Clean Technical Only)
 export interface SequentialPartItem {
@@ -303,7 +289,7 @@ export const RoadmapPage = () => {
 
   const handleOpenGuidebook = (unit: SequentialCurriculumUnit) => {
     triggerHaptic('tap')
-    soundEngine.playPop()
+    audioEngine.playPop()
 
     const GUIDEBOOK_DATA: Record<string, GuidebookContent> = {
       'unit-1-fondasi-go': {
@@ -402,35 +388,6 @@ export const RoadmapPage = () => {
     setGuidebookModalUnit(GUIDEBOOK_DATA[unit.id] || fallbackGuidebook)
   }
 
-  const [isMuted, setIsMuted] = useState(() => audioEngine.isMuted())
-  const [isXpPulsing, setIsXpPulsing] = useState(false)
-
-  useEffect(() => {
-    const handleXp = () => {
-      setIsXpPulsing(true)
-      setTimeout(() => setIsXpPulsing(false), 1200)
-    }
-    window.addEventListener('codeabroad_xp_gained', handleXp)
-    return () => window.removeEventListener('codeabroad_xp_gained', handleXp)
-  }, [])
-
-  useEffect(() => {
-    const handleSoundToggle = (e: Event) => {
-      const customEvent = e as CustomEvent<{ muted: boolean }>
-      setIsMuted(customEvent.detail.muted)
-    }
-    window.addEventListener('codeabroad_sound_toggle', handleSoundToggle)
-    return () => window.removeEventListener('codeabroad_sound_toggle', handleSoundToggle)
-  }, [])
-
-  const handleToggleSound = () => {
-    triggerHaptic('tap')
-    const nextMuted = audioEngine.toggleMute()
-    setIsMuted(nextMuted)
-    if (!nextMuted) {
-      audioEngine.playPop()
-    }
-  }
 
   // Completed quests persistence set
   const [completedQuestsSet, setCompletedQuestsSet] = useState<Set<string>>(() => {
@@ -470,18 +427,6 @@ export const RoadmapPage = () => {
     }
   }, [])
 
-  // Active track configuration from CAREER_TRACKS
-  const currentTrackConfig = useMemo(() => {
-    return (
-      CAREER_TRACKS.find(
-        (t) =>
-          t.slug === activeTrack ||
-          (activeTrack === 'backend' && t.slug === 'golang') ||
-          (activeTrack === 'devops_aws' && t.slug === 'devops') ||
-          (activeTrack === 'react' && t.slug === 'frontend')
-      ) || CAREER_TRACKS[1]
-    )
-  }, [activeTrack])
 
   // Flat Sequential Units (Pure Technical)
   const units: SequentialCurriculumUnit[] = useMemo(() => {
@@ -503,10 +448,6 @@ export const RoadmapPage = () => {
   }, [allParts, completedQuestsSet])
 
 
-  // User Stats (Clean SSOT)
-  const userXp = user?.xp ? user.xp.toLocaleString() : '0'
-  const userStreak = user?.streak || 1
-  const userLevel = user?.current_level || 1
 
   // Handle track switch from CourseSwitcherModal
   const handleSelectTrack = (trackSlug: string) => {
@@ -526,103 +467,16 @@ export const RoadmapPage = () => {
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8">
         {/* ══════ CENTER CONTENT STAGE ══════ */}
         <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 space-y-6">
-          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (TRACK SELECTOR & HUD) ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            {/* Left: Track Switcher & Linear Progress */}
-            <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
-              {/* Clickable Track Switcher Pill */}
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  setIsCourseSwitcherOpen(true)
-                }}
-                className="flex items-center gap-2.5 px-3.5 py-2 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0"
-                title="Peminatan kurikulum saat ini. Klik untuk berganti jalur spesialisasi."
-              >
-                <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                  {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-4 h-4" />}
-                  {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-5 h-3.5" />}
-                  {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-4 h-4" />}
-                  {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-4 h-4" />}
-                  {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-4 h-4" />}
-                </div>
-                <span className="text-xs font-brand font-black text-slate-900 leading-tight">
-                  {currentTrackConfig.title}
-                </span>
-                <CaretDown weight="bold" className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition-colors ml-0.5" />
-              </button>
-
-              {/* Track Linear Progress Bar */}
-              <div className="flex items-center gap-2.5 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-2 shadow-2xs">
-                <div className="w-24 sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
-                    style={{ width: `${curriculumProgressPercent}%` }}
-                  />
-                </div>
-                <span className="text-[11px] font-brand font-black text-slate-700 whitespace-nowrap">
-                  {completedPartsCount}/{totalPartsCount} Part ({curriculumProgressPercent}%)
-                </span>
-              </div>
-
-              {/* Quick Switch to Dashboard S-Curve Map */}
-              <Link
-                to="/dashboard"
-                onClick={() => triggerHaptic('tap')}
-                className="hidden md:flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-50 border-2 border-slate-200/80 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-bold text-slate-600 hover:text-blue-600 transition-all shrink-0"
-                title="Beralih ke tampilan Peta Belajar S-Curve"
-              >
-                <span>Peta Belajar</span>
-                <ArrowSquareOut weight="bold" className="w-3.5 h-3.5 text-slate-400" />
-              </Link>
-            </div>
-
-            {/* Right: Game Status HUD (Clean Light Mode) */}
-            <div className="bg-white border-2 border-slate-200/90 rounded-2xl px-3.5 py-1.5 flex items-center gap-3 shadow-2xs self-start sm:self-auto shrink-0">
-              <div className="flex items-center gap-1.5 font-black text-xs text-orange-600">
-                <Fire weight="fill" className="w-4 h-4 text-orange-500" />
-                <span>{userStreak} Hari</span>
-              </div>
-              <div className="w-[1px] h-3.5 bg-slate-200" />
-              <div className={`flex items-center gap-1.5 font-black text-xs text-amber-600 rounded-lg px-1.5 py-0.5 transition-all ${isXpPulsing ? 'animate-pulse-ring bg-amber-50 scale-105' : ''}`}>
-                <Star weight="fill" className={`w-4 h-4 text-amber-500 ${isXpPulsing ? 'animate-bounce' : ''}`} />
-                <span>{userXp} XP</span>
-              </div>
-              <div className="w-[1px] h-3.5 bg-slate-200" />
-              <div className="flex items-center gap-1.5 font-black text-xs text-blue-600">
-                <Sparkle weight="fill" className="w-3.5 h-3.5" />
-                <span>Lv. {userLevel} Kodi</span>
-              </div>
-              {/* Tokyo League Leaderboard HUD Button (Subtask 33.2) */}
-              <div className="w-[1px] h-3.5 bg-slate-200" />
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  setIsLeaderboardOpen(true)
-                }}
-                className="flex items-center gap-1 font-brand font-black text-xs text-amber-700 hover:text-amber-800 transition-colors cursor-pointer group"
-                title="Buka Papan Peringkat Liga Tokyo"
-              >
-                <Trophy weight="fill" className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-                <span className="hidden sm:inline">Liga</span>
-              </button>
-              <div className="w-[1px] h-3.5 bg-slate-200" />
-              <button
-                type="button"
-                onClick={handleToggleSound}
-                className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 active:translate-y-0.5"
-                title={isMuted ? 'Aktifkan Efek Suara' : 'Bisukan Efek Suara'}
-              >
-                {isMuted ? (
-                  <SpeakerSimpleSlash weight="bold" className="w-4 h-4 text-slate-400" />
-                ) : (
-                  <SpeakerSimpleHigh weight="bold" className="w-4 h-4 text-blue-600" />
-                )}
-              </button>
-            </div>
-          </div>
+          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - GameTopBar) ── */}
+          <GameTopBar
+            activeTrack={activeTrack}
+            onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
+            onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+            completedCount={completedPartsCount}
+            totalCount={totalPartsCount}
+            progressPercent={curriculumProgressPercent}
+            unitLabel="Modul"
+          />
 
           {/* ── 2. DIRECT SEQUENTIAL TECHNICAL UNIT CARDS (IMMERSIVE UNIT STAGE) ── */}
           <div className="space-y-6 pt-1">
