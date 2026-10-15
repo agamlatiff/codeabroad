@@ -989,6 +989,153 @@
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 - [x] Desain top bar di kedua halaman kini seragam, presisi, dan proporsional.
 
+---
+
+## 🚀 FASE 38: Multi-Track Kurikulum Silabus Dinamis `/courses` (5 Spesialisasi Industri)
+
+> **Tujuan Utama:** Menghubungkan silabus `/courses` secara dinamis dengan pemilih jalur belajar (`activeTrack`) sehingga ketika pengguna memilih track seperti React/TypeScript, DevOps/Docker, Fundamental Programming, atau Tech Nihongo, kurikulum yang ditampilkan berganti secara instan sesuai kurikulum spesialisasi yang dipilih, bukan hanya Golang.
+
+### [ ] 38.1 Pembuatan Dataset Kurikulum Terstruktur untuk 5 Track (`CURRICULUM_TRACKS_MAP`)
+- [ ] Susun modul spesialisasi **React & TypeScript Frontend**:
+  - Unit 1: TypeScript & Modern JavaScript (Strict types, Generics, interfaces, Async/Await)
+  - Unit 2: React 19 Core & Advanced Hooks (Custom Hooks, Context, useMemo, useCallback)
+  - Unit 3: Next.js App Router, SSR & API Integration (Server Components, Routing, Fetching)
+  - Unit 4: Global State, Tailwind & UI Testing (Zustand, Vitest, Testing Library)
+- [ ] Susun modul spesialisasi **DevOps & Cloud Infrastructure**:
+  - Unit 1: Linux CLI & Shell Scripting (Bash automation, systemd, networking tools)
+  - Unit 2: Docker Containers & Multi-stage Builds (Dockerfile, Compose, Container security)
+  - Unit 3: CI/CD Pipeline Automation (GitHub Actions, Automated Testing, Build artifacts)
+  - Unit 4: Cloud Infrastructure AWS & Kubernetes (ECS, EKS, Terraform, Production deployment)
+- [ ] Susun modul spesialisasi **Fundamental Programming & Computer Science**:
+  - Unit 1: CPU Architecture & Memory Pointer (Stack vs Heap, Variables, Data Types)
+  - Unit 2: Algoritma & Struktur Data Esensial (Hash Map, Linked List, Tree, Big-O Complexity)
+  - Unit 3: Git CLI, HTTP Protocol & Clean Architecture Principles
+- [ ] Susun modul spesialisasi **Tech Nihongo (Bahasa Jepang IT Tokyo)**:
+  - Unit 1: Kosakata Koding, Git & Standup Pagi (Asakai, PR review, Aisatsu, Jissou)
+  - Unit 2: Dokumen Spesifikasi Desain (Sekkeisho, Youken Teigi, QA Testing & Bug Report)
+  - Unit 3: Wawancara Kerja Tokyo & Etika Bisnis IT (Mensetsu, Jiko PR, Keigo Tim Engineering)
+- [ ] Pertahankan modul **Golang Backend Engineering** yang sudah matang (Unit 1 s/d 4).
+
+### [ ] 38.2 Integrasi Seleksi Track Dinamis di `RoadmapPage.tsx`
+- [ ] Gantikan hardcode `GOLANG_CURRICULUM_UNITS` dengan selector adaptif `CURRICULUM_TRACKS_MAP[activeTrack] || GOLANG_CURRICULUM_UNITS`.
+- [ ] Sinkronkan tema warna 3D unit banner per track (React cyan, DevOps navy/blue, Nihongo rose, Fundamental indigo, Golang emerald).
+- [ ] Sinkronkan data `totalPartsCount`, `completedPartsCount`, dan `curriculumProgressPercent` agar adaptif per track.
+
+### [ ] 38.3 Sinkronisasi Progress & Part Unlocking Antar Track
+- [ ] Pastikan pengerjaan part di track yang berbeda tetap tercatat di `codeabroad_completed_quests`.
+- [ ] Node pertama pada track yang baru dipilih otomatis aktif dan bisa langsung dikerjakan.
+
+### [ ] 38.4 Pengujian, Verifikasi & Validasi
+- [ ] Uji peralihan antar 5 track melalui Course Switcher Modal di `/courses`.
+- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript, bundling berhasil).
+- [ ] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+
+---
+
+## 🚀 FASE 39: Modernisasi Halaman Pusat Misi `/quests` ke Duolingo 3D (`QuestLogPage.tsx`)
+
+> **Tujuan Utama:** Mentransformasikan halaman `/quests` (tab ke-3 di NavRail) dari tampilan warisan lama ke standar visual Duolingo 3D modern dengan memanfaatkan komponen SSOT `<GameTopBar />` dan `<GameSidebarRail />`, merapikan filter tab misi, serta menghadirkan Toko Penukaran Gems Tokyo (Akihabara Arcade) yang interaktif.
+
+### [ ] 39.1 Pemasangan Arsitektur Standar SSOT
+- [ ] Gantikan custom header lama di `QuestLogPage.tsx` dengan `<GameTopBar />`.
+- [ ] Gantikan sidebar inline lama di `QuestLogPage.tsx` dengan `<GameSidebarRail />`.
+- [ ] Hilangkan duplikasi state streak, XP, audio toggle, dan user stats.
+
+### [ ] 39.2 Tab Filter Misi & Papan Quest Berangka Duolingo 3D
+- [ ] Hadirkan filter tab 3D taktil: `Misi Harian 🎯`, `Tantangan Portofolio 💼`, dan `Spesialisasi Track ⚡`.
+- [ ] Buat kartu misi yang ergonomis dengan indikator reward (+50 XP, +10 Gems 💎) dan tombol 3D taktil `Button3D`.
+- [ ] Terapkan visual status pengerjaan yang jelas: *Tersedia*, *Sedang Berjalan*, *Dapat Diklaim*, dan *Sudah Selesai*.
+
+### [ ] 39.3 Toko Penukaran Gems Tokyo (Akihabara Arcade) Duolingo 3D
+- [ ] Desain panel Toko Penukaran Gems yang memikat:
+  - *Streak Freeze ❄️ (20 Gems)*: Perlindungan rentetan belajar saat absen 1 hari.
+  - *XP Booster Potion 🧪 (35 Gems)*: Pengganda bonus 2x XP selama 30 menit.
+  - *Review CV & Portofolio Prioritas 📋 (100 Gems)*: Ulasan oleh tim engineer Tokyo.
+- [ ] Sambungkan transaksi penukaran gems ke backend / user state lokal.
+
+### [ ] 39.4 Pengujian, Verifikasi & Validasi
+- [ ] Validasi alur klaim misi harian dan transaksi gems di toko.
+- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+- [ ] Validasi `go test -count=1 ./...` di `backend/`.
+
+---
+
+## 🚀 FASE 40: Penyempurnaan Alur Belajar Interaktif Koding (`/learn/:partId` & `LearnWorkspacePage.tsx`)
+
+> **Tujuan Utama:** Memastikan pengalaman belajar koding yang mulus saat pengguna menekan tombol `▶ MULAI KODING` pada node silabus: mencakup pemuatan starter code dinamis, eksekusi tes acceptance criteria instan, feedback error ramah pemula, dan selebrasi kelulusan modul berhadiah XP & Gems.
+
+### [ ] 40.1 Integrasi Alur Rute & Starter Code Dinamis per Part Kurikulum
+- [ ] Pastikan setiap node part di `/dashboard` dan `/courses` mengarahkan ke rute `/learn/:partId` dengan data soal yang tepat.
+- [ ] Sediakan starter code yang relevan untuk Golang, React/TypeScript, DevOps/Linux, Fundamental, dan Nihongo.
+- [ ] Sediakan Acceptance Criteria yang jelas dan terukur di panel briefing kiri.
+
+### [ ] 40.2 Testing Engine & Evaluasi Kriteria Penerimaan
+- [ ] Pastikan shortcut keyboard `Ctrl + Enter` (atau `Cmd + Enter`) mengeksekusi test runner secara instan.
+- [ ] Tampilkan hasil pengujian per kriteria: centang hijau `✓` untuk kriteria lolos, silang merah `✗` beserta petunjuk perbaikan jika gagal.
+- [ ] Feedback visual yang mendidik dan memotivasi saat kode belum berhasil.
+
+### [ ] 40.3 Modal Selebrasi Kelulusan Sesi Koding (*Lesson Complete Celebration*)
+- [ ] Tampilkan popup selebrasi 3D memikat saat semua kriteria terpenuhi:
+  - Audio kemenangan `audioEngine.playLevelComplete()`.
+  - Partikel reward: `+50 XP ⚡`, `+5 Gems 💎`, dan penambahan streak harian.
+  - Tombol aksi `LANJUT KE SESI BERIKUTNYA ▶` yang mengarahkan langsung ke part selanjutnya atau kembali ke peta belajar.
+- [ ] Sinkronisasi otomatis status `completed` ke backend dan local storage.
+
+### [ ] 40.4 Pengujian, Verifikasi & Validasi
+- [ ] Uji coba pengerjaan 1 modul koding dari awal hingga selebrasi reward selesai.
+- [ ] Validasi `npm run build` dan `go test -count=1 ./...`.
+
+---
+
+## 🚀 FASE 41: Audio TTS Interaktif & Kuis Konseptual di Buku Panduan Unit (`UnitGuidebookModal.tsx`)
+
+> **Tujuan Utama:** Meningkatkan nilai edukasi dan daya tarik Buku Panduan Unit dengan menambahkan pelafalan audio penutur asli (*Web Speech API*) pada setiap kosakata kanji IT Jepang dan menghadirkan mini-kuis konseptual interaktif 1-soal sebelum masuk ke sesi koding.
+
+### [ ] 41.1 Integrasi Pengucapan Suara Asli (*Web Speech API*) untuk Kanji IT Tokyo
+- [ ] Tambahkan icon tombol audio `SpeakerSimpleHigh` di sebelah setiap kata Jepang (misal: 実装, 設計書, 確認, 同期).
+- [ ] Hubungkan ke browser Web Speech Synthesis API dengan suara bahasa Jepang (`ja-JP`).
+- [ ] Micro-interaction visual: ikon berdenyut saat audio sedang diputar.
+
+### [ ] 41.2 Mini Kuis Pemahaman Cepat 1-Soal (*Concept Check Flashcard*)
+- [ ] Hadirkan bagian kuis pemahaman konsep di akhir buku panduan unit:
+  - Soal pilihan ganda teknis / etika kerja Tokyo.
+  - Feedback instan: kartu berubah hijau bila benar (+10 XP bonus) atau merah dengan ulasan jawaban bila salah.
+  - Tombol langsung: `MULAI KODING SEKARANG (+50 XP)`.
+
+### [ ] 41.3 Cheatsheet Sintaksis & Best Practice Tokyo Engineering per Unit untuk Semua Track
+- [ ] Lengkapi data `GUIDEBOOK_DATA` untuk seluruh unit di 5 spesialisasi track.
+- [ ] Sediakan contoh kode nyata berstandar industri dengan penjelasan baris per baris.
+
+### [ ] 41.4 Pengujian, Verifikasi & Validasi
+- [ ] Uji fungsionalitas audio TTS di berbagai browser (Chrome, Firefox, Edge).
+- [ ] Validasi `npm run build` di `frontend/`.
+
+---
+
+## 🚀 FASE 42: Sinkronisasi Portofolio Rekrutmen Tokyo & Salary Simulator (`/career`)
+
+> **Tujuan Utama:** Menghubungkan progres belajar nyata pengguna dengan halaman portofolio karier (`/career`), mencakup kalkulator estimasi gaji software engineer di Tokyo berbasis modul yang diselesaikan, indikator kelayakan visa kerja Jepang, dan format ekspor resume siap kirim (Rirekisho / Shokumu Keirekisho).
+
+### [ ] 42.1 Dynamic Tokyo Salary Simulator
+- [ ] Hitung estimasi rentang gaji Tokyo (misal: ¥5.5M – ¥9.5M per tahun) secara dinamis berdasarkan akumulasi modul dan capstone project yang sudah diselesaikan.
+- [ ] Tampilkan perbandingan level: Junior Developer (¥4.5M - ¥6M), Mid-Level Engineer (¥6.5M - ¥8.5M), hingga Senior Specialist (¥9M - ¥13M+).
+
+### [ ] 42.2 Visa Sponsorship Eligibility Meter
+- [ ] Tampilkan speedometer/indikator kesiapan sponsor visa kerja Jepang (0% s/d 100%).
+- [ ] Rincian poin kualifikasi:
+  - Skill Teknis IT (berdasarkan kelulusan unit silabus).
+  - Bahasa Jepang Bisnis IT (berdasarkan kelulusan unit Nihongo).
+  - Portofolio Proyek Nyata & GitHub Repository.
+
+### [ ] 42.3 Tokyo Tech Resume Builder (Format Rirekisho & Shokumu Keirekisho)
+- [ ] Ekspor ringkasan keahlian ke template PDF / Markdown berstandar rekrutmen perusahaan teknologi Tokyo.
+- [ ] Sertakan link verifikasi sertifikat digital penyelesaian jalur spesialisasi CodeAbroad.
+
+### [ ] 42.4 Pengujian, Verifikasi & Validasi
+- [ ] Uji kalkulasi gaji dan kelayakan visa saat modul koding diselesaikan.
+- [ ] Validasi `npm run build` di `frontend/` dan `go test -count=1 ./...` di `backend/`.
+
+
 
 
 
