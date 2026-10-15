@@ -345,7 +345,7 @@ func (r *UserRepository) LogActivity(ctx context.Context, userID string, activit
 	return nil
 }
 
-// GetWeeklyActivityLogs returns the 7 days of the current week (Senin to Minggu) with active status
+// GetWeeklyActivityLogs returns the 7 days of the current week (Senin to Minggu) with active status and full active dates
 func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
 	user, err := r.GetByID(ctx, userID)
 	if err != nil {
@@ -353,6 +353,41 @@ func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID strin
 	}
 
 	now := time.Now()
+	todayStr := now.Format("2006-01-02")
+	yesterdayStr := now.AddDate(0, 0, -1).Format("2006-01-02")
+
+	// 1. Ensure today's login/presence is tracked
+	var alreadyActiveToday bool
+	_ = r.db.Pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1 FROM user_activity_logs
+			WHERE user_id = $1 AND TO_CHAR(created_at, 'YYYY-MM-DD') = $2
+		)
+	`, userID, todayStr).Scan(&alreadyActiveToday)
+
+	if !alreadyActiveToday {
+		_ = r.LogActivity(ctx, userID, "daily_login", 0, map[string]interface{}{"date": todayStr})
+
+		newStreak := user.Streak
+		if user.LastActiveAt == nil {
+			newStreak = 1
+		} else {
+			lastDate := user.LastActiveAt.Format("2006-01-02")
+			if lastDate == yesterdayStr {
+				newStreak = user.Streak + 1
+			} else if lastDate != todayStr {
+				newStreak = 1
+			} else if user.Streak == 0 {
+				newStreak = 1
+			}
+		}
+
+		if newStreak != user.Streak {
+			user.Streak = newStreak
+			_ = r.UpdateGamification(ctx, userID, user.XP, user.CurrentLevel, newStreak, &now)
+		}
+	}
+
 	// In Go: Sunday=0, Monday=1, ..., Saturday=6
 	weekday := int(now.Weekday())
 	mondayOffset := (weekday + 6) % 7 // Monday becomes 0, Sunday becomes 6
@@ -427,6 +462,10 @@ func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID strin
 			}
 		}
 
+		if isToday {
+			isActive = true // Today is active since presence was confirmed
+		}
+
 		if isActive {
 			totalActiveDays++
 		}
@@ -442,13 +481,42 @@ func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID strin
 		}
 	}
 
+	// 2. Fetch full historical active dates for monthly streak calendar modal (last 90 days)
+	calendarStart := startOfToday.AddDate(0, -3, 0)
+	allActiveDatesSet := make(map[string]bool)
+
+	histQuery := `
+		SELECT DISTINCT TO_CHAR(created_at, 'YYYY-MM-DD') AS act_date
+		FROM user_activity_logs
+		WHERE user_id = $1 AND created_at >= $2
+	`
+	hRows, hErr := r.db.Pool.Query(ctx, histQuery, userID, calendarStart)
+	if hErr == nil {
+		defer hRows.Close()
+		for hRows.Next() {
+			var dt string
+			if scanErr := hRows.Scan(&dt); scanErr == nil {
+				allActiveDatesSet[dt] = true
+			}
+		}
+	}
+
+	allActiveDatesSet[todayStr] = true
+
+	activeDatesList := make([]string, 0, len(allActiveDatesSet))
+	for dt := range allActiveDatesSet {
+		activeDatesList = append(activeDatesList, dt)
+	}
+
 	return &domain.UserActivitySummary{
 		CurrentStreak:   user.Streak,
 		TotalActiveDays: totalActiveDays,
 		LastActiveAt:    user.LastActiveAt,
 		WeeklyLogs:      weeklyLogs,
+		ActiveDates:     activeDatesList,
 	}, nil
 }
+
 
 // ClaimDailyReward records a daily reward claim, increments user XP, and records activity
 func (r *UserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {

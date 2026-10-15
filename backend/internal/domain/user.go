@@ -96,6 +96,7 @@ type UserActivitySummary struct {
 	TotalActiveDays int               `json:"total_active_days"`
 	LastActiveAt    *time.Time        `json:"last_active_at"`
 	WeeklyLogs      []UserActivityLog `json:"weekly_logs"` // 7 days of current week (Mon-Sun)
+	ActiveDates     []string          `json:"active_dates"` // Active dates for monthly calendar (YYYY-MM-DD)
 }
 
 // DailyRewardClaimRequest defines the payload for claiming a daily reward

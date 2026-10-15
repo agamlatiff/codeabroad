@@ -68,6 +68,7 @@ export interface UserActivitySummary {
     total_active_days: number
     last_active_at?: string | null
     weekly_logs: UserActivityLog[]
+    active_dates?: string[]
 }
 
 export interface DailyRewardClaimResponse {

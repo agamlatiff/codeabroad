@@ -6,6 +6,7 @@ import { useAuthStore } from '../../store/authStore'
 import { authService } from '../../services/authService'
 import type { UserActivitySummary } from '../../types/auth'
 import { TechNihongoCard } from './TechNihongoCard'
+import { StreakCalendarModal } from './StreakCalendarModal'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
 import { audioEngine } from '../../utils/audio'
@@ -18,6 +19,7 @@ import {
   Translate,
   Lightning,
   Gift,
+  CalendarCheck,
   X,
 } from '@phosphor-icons/react'
 
@@ -50,6 +52,20 @@ export const GameSidebarRail = ({
   const claimedVocabQuestKey = `codeabroad_vocab_quest_claimed_${todayDateStr}`
 
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
+  const [isStreakModalOpen, setIsStreakModalOpen] = useState(false)
+  const [floatingRewards, setFloatingRewards] = useState<{ id: number; amount: number; x: number; y: number }[]>([])
+
+  const spawnFloatingReward = useCallback((amount: number, clientX?: number, clientY?: number) => {
+    const x = typeof clientX === 'number' && clientX > 0 ? clientX : window.innerWidth / 2
+    const y = typeof clientY === 'number' && clientY > 0 ? clientY : window.innerHeight / 2
+    const id = Date.now() + Math.random()
+    setFloatingRewards((prev) => [...prev, { id, amount, x, y }])
+    window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount } }))
+    setTimeout(() => {
+      setFloatingRewards((prev) => prev.filter((r) => r.id !== id))
+    }, 1500)
+  }, [])
+
   const [isChestClaimedToday, setIsChestClaimedToday] = useState(() => {
     return localStorage.getItem(chestStorageKey) === 'true'
   })
@@ -121,9 +137,10 @@ export const GameSidebarRail = ({
     }
   }, [reviewedNihongoToday, vocabStorageKey])
 
-  const handleClaimVocabQuest = async () => {
+  const handleClaimVocabQuest = async (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
     triggerHaptic('success')
     audioEngine.playRewardClaim()
+    spawnFloatingReward(30, e?.clientX, e?.clientY)
     localStorage.setItem(claimedVocabQuestKey, 'true')
     setClaimedLocalQuest(true)
 
@@ -143,9 +160,10 @@ export const GameSidebarRail = ({
     window.dispatchEvent(new Event('storage'))
   }
 
-  const handleClaimChest = async () => {
+  const handleClaimChest = async (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
     triggerHaptic('success')
     audioEngine.playChestClaim()
+    spawnFloatingReward(50, e?.clientX, e?.clientY)
     localStorage.setItem(chestStorageKey, 'true')
     setIsChestClaimedToday(true)
     setIsChestModalOpen(false)
@@ -267,7 +285,7 @@ export const GameSidebarRail = ({
   return (
     <>
       <aside
-        className={`w-full xl:w-[354px] shrink-0 border-t xl:border-t-0 xl:border-l border-slate-200/80 bg-white p-5 space-y-4 select-none xl:sticky xl:top-4 xl:self-start ${className}`}
+        className={`w-full xl:w-[354px] shrink-0 border-t xl:border-t-0 xl:border-l border-slate-200/80 bg-white p-5 pb-8 sm:pb-12 space-y-4 select-none xl:sticky xl:top-4 xl:self-start ${className}`}
       >
         {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (SEAMLESS SECTION) ── */}
         <div className="space-y-2.5">
@@ -287,15 +305,34 @@ export const GameSidebarRail = ({
               </div>
             </div>
 
-            {/* Flame Pill Badge */}
-            <span className="bg-gradient-to-b from-orange-500 to-orange-600 text-white font-brand font-black text-[10px] px-2.5 py-0.5 rounded-full shadow-2xs flex items-center gap-1">
+            {/* Flame Pill Badge & Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                setIsStreakModalOpen(true)
+              }}
+              className="bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 group/streak"
+              title="Buka Kalender Rentetan Belajar Lengkap"
+            >
               <Fire weight="fill" className="w-3 h-3 text-amber-200 animate-pulse" />
-              <span>{userStreak} Hari Aktif</span>
-            </span>
+              <span>{userStreak} Hari</span>
+              <span className="bg-white/20 text-[9px] px-1 py-0.2 rounded font-bold group-hover/streak:bg-white/30 flex items-center gap-0.5">
+                <CalendarCheck weight="bold" className="w-2.5 h-2.5" />
+                <span>Kalender</span>
+              </span>
+            </button>
           </div>
 
-          {/* 7 Days Duolingo Flame Tokens Row */}
-          <div className="grid grid-cols-7 gap-1.5 text-center bg-orange-50/30 border border-orange-100/80 rounded-2xl p-2 shadow-2xs">
+          {/* 7 Days Duolingo Flame Tokens Row (Clickable) */}
+          <div
+            onClick={() => {
+              triggerHaptic('tap')
+              setIsStreakModalOpen(true)
+            }}
+            className="grid grid-cols-7 gap-1.5 text-center bg-orange-50/30 hover:bg-orange-50/60 border border-orange-100/80 hover:border-orange-300 rounded-2xl p-2 shadow-2xs cursor-pointer transition-colors"
+            title="Klik untuk membuka Kalender Kehadiran & Rentetan Lengkap 📅"
+          >
             {(
               activitySummary?.weekly_logs && activitySummary.weekly_logs.length === 7
                 ? activitySummary.weekly_logs.map((log) => ({
@@ -502,7 +539,7 @@ export const GameSidebarRail = ({
                     <Button3D
                       variant="amber"
                       size="sm"
-                      onClick={handleClaimVocabQuest}
+                      onClick={(e) => handleClaimVocabQuest(e)}
                       className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
                     >
                       KLAIM ⚡
@@ -546,9 +583,37 @@ export const GameSidebarRail = ({
             isReviewed={reviewedNihongoToday}
             isClaimed={claimedLocalQuest}
             onReview={handleVocabReview}
+            onClaim={(e?: React.MouseEvent) => handleClaimVocabQuest(e)}
           />
         </div>
       </aside>
+
+      {/* ── STREAK ATTENDANCE CALENDAR MODAL ── */}
+      <StreakCalendarModal
+        isOpen={isStreakModalOpen}
+        onClose={() => setIsStreakModalOpen(false)}
+        currentStreak={userStreak}
+        activeDates={activitySummary?.active_dates}
+      />
+
+      {/* ── FLOATING XP BURST REWARDS ── */}
+      {typeof document !== 'undefined' &&
+        createPortal(
+          <div className="fixed inset-0 pointer-events-none z-[9999]">
+            {floatingRewards.map((reward) => (
+              <div
+                key={reward.id}
+                className="absolute transform -translate-x-1/2 -translate-y-full animate-float-up-fade flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-brand font-black text-sm shadow-[0_4px_16px_rgba(245,158,11,0.5)] border-2 border-white ring-2 ring-amber-400/50"
+                style={{ left: reward.x, top: reward.y }}
+              >
+                <Lightning weight="fill" className="w-4 h-4 text-amber-950 animate-bounce" />
+                <span>+{reward.amount} XP</span>
+                <span className="text-xs">⚡</span>
+              </div>
+            ))}
+          </div>,
+          document.body
+        )}
 
       {/* ── CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}
       {isChestModalOpen && typeof document !== 'undefined' && createPortal(
@@ -591,7 +656,7 @@ export const GameSidebarRail = ({
               size="md"
               fullWidth
               disabled={!isChestUnlocked || isChestClaimedToday}
-              onClick={handleClaimChest}
+              onClick={(e) => handleClaimChest(e)}
               className="py-2.5 font-black text-xs shadow-[0_3px_0_0_#B45309]"
             >
               {isChestClaimedToday

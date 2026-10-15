@@ -59,15 +59,21 @@ export const DashboardPage = () => {
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
   const { roadmap } = useRoadmap(activeTrack)
   const [questCompletionTick, setQuestCompletionTick] = useState(0)
+  const [isXpPulsing, setIsXpPulsing] = useState(false)
 
-
-  // Listen for real-time quest completions across the application
+  // Listen for real-time quest completions and XP gains across the application
   useEffect(() => {
     const handler = () => setQuestCompletionTick((prev) => prev + 1)
+    const handleXp = () => {
+      setIsXpPulsing(true)
+      setTimeout(() => setIsXpPulsing(false), 1200)
+    }
     window.addEventListener('codeabroad_quest_completed', handler)
+    window.addEventListener('codeabroad_xp_gained', handleXp)
     window.addEventListener('storage', handler)
     return () => {
       window.removeEventListener('codeabroad_quest_completed', handler)
+      window.removeEventListener('codeabroad_xp_gained', handleXp)
       window.removeEventListener('storage', handler)
     }
   }, [])
@@ -221,8 +227,8 @@ export const DashboardPage = () => {
               <div className="w-[1px] h-3.5 bg-slate-200" />
 
               {/* XP Star */}
-              <div className="flex items-center gap-1.5 font-brand font-black text-xs text-amber-500">
-                <Star weight="fill" className="w-4 h-4 text-amber-400" />
+              <div className={`flex items-center gap-1.5 font-brand font-black text-xs text-amber-500 rounded-lg px-1.5 py-0.5 transition-all ${isXpPulsing ? 'animate-pulse-ring bg-amber-50 scale-105' : ''}`}>
+                <Star weight="fill" className={`w-4 h-4 text-amber-400 ${isXpPulsing ? 'animate-bounce' : ''}`} />
                 <span>{userXp} XP</span>
               </div>
               <div className="w-[1px] h-3.5 bg-slate-200" />

@@ -902,4 +902,39 @@
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 - [x] Uji responsivitas sticky sidebar di `/dashboard` dan `/courses`.
 
+---
+
+## 🚀 FASE 35: Presensi Login Harian, Kalender Rentetan Belajar 3D & Efek Animasi Klaim XP (SELESAI ✅)
+
+> **Tujuan Utama:** Menghadirkan feedback visual klaim XP yang memuaskan (*floating burst animation*), memperbaiki masalah ergonomi tombol klaim yang dempet di kartu kosakata, mengaktifkan tracking otomatis presensi login harian agar api rentetan menyala setiap hari, serta menambahkan Modal Kalender Kehadiran Bulanan interaktif ala Duolingo Streak Society.
+
+### [x] 35.1 Efek Animasi Penambahan XP Mengambang (*Floating XP Burst & HUD Ripple Animation*)
+- [x] Buat micro-interaction floating reward badge (misal: `+30 XP ⚡` / `+50 XP ⚡`) yang meluncur ke atas (*float & fade-out*) saat tombol klaim diklik.
+- [x] Integrasikan audio perolehan reward yang sinkron dengan animasi.
+- [x] Tambahkan efek denyut visual (*pulse ring*) pada pill XP di HUD bar atas ketika nilai XP bertambah.
+
+### [x] 35.2 Perbaikan Spasi, Margin & Tombol Klaim Langsung di Kartu Kosakata Tokyo
+- [x] Berikan padding & margin bawah yang lega pada [TechNihongoCard.tsx](file:///c:/Projects/codeabroad/frontend/src/components/game/TechNihongoCard.tsx) dan container [GameSidebarRail.tsx](file:///c:/Projects/codeabroad/frontend/src/components/game/GameSidebarRail.tsx) (`pb-8 sm:pb-12`).
+- [x] Hilangkan masalah tombol aksi yang dempet ke tepi bawah kartu.
+- [x] Sediakan tombol aksi langsung `KLAIM +30 XP ⚡` di dalam `TechNihongoCard` saat kosakata selesai dipelajari, sehingga pengguna tidak perlu menggulir ke atas untuk mengklaim.
+
+### [x] 35.3 Engine Presensi Login Harian & Tracking Rentetan Belajar Otomatis
+- [x] Tambahkan pencatatan presensi login/kunjungan harian di backend (`activity_type = 'daily_login'`).
+- [x] Hubungkan otomatisasi saat pengguna login atau mengakses profil `/api/v1/users/me` pertama kali dalam hari tersebut.
+- [x] Perbarui kalkulasi streak harian agar hari ini langsung ditandai aktif menyala 🔥 tanpa harus menyelesaikan quest koding terlebih dahulu.
+
+### [x] 35.4 Modal Kalender Kehadiran & Rentetan Belajar Lengkap (`StreakCalendarModal.tsx`)
+- [x] Buat komponen `StreakCalendarModal.tsx` di `frontend/src/components/game/` dengan visual Duolingo 3D.
+- [x] Jadikan kartu "Rentetan Belajar" di sidebar interaktif (dapat diklik) dengan affordance kursor pointer dan tombol "Lihat Kalender 📅".
+- [x] Tampilkan kalender bulanan lengkap (tanggal 1 s/d akhir bulan) dengan penanda api 🔥 pada setiap hari aktif belajar.
+- [x] Tampilkan ringkasan statistik konsistensi: Rentetan Saat Ini, Rekor Rentetan Terpanjang, Total Kehadiran Bulan Ini, dan status Perlindungan Pembeku Api (*Streak Freeze* ❄️).
+- [x] Ekspor dan daftarkan di `frontend/src/components/game/index.ts`.
+
+### [x] 35.5 Pengujian, Verifikasi & Validasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, bundling berhasil).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+- [x] Uji responsivitas kalender kehadiran dan animasi klaim XP.
+
+
+
 

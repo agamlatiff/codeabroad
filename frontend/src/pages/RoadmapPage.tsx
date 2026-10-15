@@ -412,6 +412,16 @@ export const RoadmapPage = () => {
   }
 
   const [isMuted, setIsMuted] = useState(() => audioEngine.isMuted())
+  const [isXpPulsing, setIsXpPulsing] = useState(false)
+
+  useEffect(() => {
+    const handleXp = () => {
+      setIsXpPulsing(true)
+      setTimeout(() => setIsXpPulsing(false), 1200)
+    }
+    window.addEventListener('codeabroad_xp_gained', handleXp)
+    return () => window.removeEventListener('codeabroad_xp_gained', handleXp)
+  }, [])
 
   useEffect(() => {
     const handleSoundToggle = (e: Event) => {
@@ -623,8 +633,8 @@ export const RoadmapPage = () => {
                   <span>{userStreak} Hari</span>
                 </div>
                 <div className="w-[1px] h-3.5 bg-slate-200" />
-                <div className="flex items-center gap-1.5 font-black text-xs text-amber-600">
-                  <Star weight="fill" className="w-4 h-4 text-amber-500" />
+                <div className={`flex items-center gap-1.5 font-black text-xs text-amber-600 rounded-lg px-1.5 py-0.5 transition-all ${isXpPulsing ? 'animate-pulse-ring bg-amber-50 scale-105' : ''}`}>
+                  <Star weight="fill" className={`w-4 h-4 text-amber-500 ${isXpPulsing ? 'animate-bounce' : ''}`} />
                   <span>{userXp} XP</span>
                 </div>
                 <div className="w-[1px] h-3.5 bg-slate-200" />

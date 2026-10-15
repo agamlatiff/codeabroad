@@ -138,12 +138,37 @@ func (u *authUsecase) Login(ctx context.Context, req *domain.LoginRequest) (*dom
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
 
+	// 6. Record daily attendance and streak
+	now := time.Now()
+	todayStr := now.Format("2006-01-02")
+	yesterdayStr := now.AddDate(0, 0, -1).Format("2006-01-02")
+	_ = u.userRepo.LogActivity(ctx, user.ID, "daily_login", 0, map[string]interface{}{"source": "login", "date": todayStr})
+
+	newStreak := user.Streak
+	if user.LastActiveAt == nil {
+		newStreak = 1
+	} else {
+		lastDate := user.LastActiveAt.Format("2006-01-02")
+		if lastDate == yesterdayStr {
+			newStreak = user.Streak + 1
+		} else if lastDate != todayStr {
+			newStreak = 1
+		} else if user.Streak == 0 {
+			newStreak = 1
+		}
+	}
+	if newStreak != user.Streak {
+		user.Streak = newStreak
+		_ = u.userRepo.UpdateGamification(ctx, user.ID, user.XP, user.CurrentLevel, newStreak, &now)
+	}
+
 	return &domain.AuthResponse{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 		User:         *user,
 	}, nil
 }
+
 
 // RefreshToken validates an existing refresh token and generates a new pair (token rotation)
 func (u *authUsecase) RefreshToken(ctx context.Context, refreshToken string) (*domain.AuthResponse, error) {
