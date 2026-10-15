@@ -4,6 +4,7 @@ import {
   SquaresFour,
   Books,
   Target,
+  Trophy,
   Briefcase,
   GearSix,
   SignOut,
@@ -41,6 +42,12 @@ export const NavRail = () => {
       href: '/quests',
       icon: Target,
       hasBadge: true,
+    },
+    {
+      label: 'Peringkat',
+      tooltip: 'Peringkat • Liga Tokyo',
+      href: '/leaderboard',
+      icon: Trophy,
     },
     {
       label: 'Karir',

@@ -30,7 +30,9 @@ import {
   X,
   SpeakerSimpleHigh,
   SpeakerSimpleSlash,
+  Trophy,
 } from '@phosphor-icons/react'
+import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
 import {
   GolangLogo,
   ReactLogo,
@@ -137,6 +139,7 @@ export const DashboardPage = () => {
     return user?.primary_stack || user?.career_path?.slug || 'golang'
   })
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
   const { roadmap } = useRoadmap(activeTrack)
 
   const [questCompletionTick, setQuestCompletionTick] = useState(0)
@@ -430,6 +433,21 @@ export const DashboardPage = () => {
                 <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
                 <span>Tingkat {userLevel}</span>
               </div>
+
+              {/* Tokyo League Leaderboard HUD Button */}
+              <div className="w-[1px] h-3.5 bg-slate-200" />
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setIsLeaderboardOpen(true)
+                }}
+                className="flex items-center gap-1 font-brand font-black text-xs text-amber-700 hover:text-amber-800 transition-colors cursor-pointer group"
+                title="Buka Papan Peringkat Liga Tokyo"
+              >
+                <Trophy weight="fill" className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
+                <span className="hidden sm:inline">Liga</span>
+              </button>
 
               {/* Audio Sound Toggle */}
               <div className="w-[1px] h-3.5 bg-slate-200" />
@@ -803,6 +821,12 @@ export const DashboardPage = () => {
         </div>,
         document.body
       )}
+
+      {/* ── TOKYO LEADERBOARD MODAL ── */}
+      <TokyoLeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+      />
     </div>
   )
 }

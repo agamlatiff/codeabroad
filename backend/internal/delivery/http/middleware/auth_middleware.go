@@ -65,5 +65,35 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		c.Set("username", claims.Username)
 		c.Next()
 	}
+}
 
+// OptionalAuthMiddleware attempts to parse JWT if present, but does not abort if missing
+func OptionalAuthMiddleware(jwtSecret string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.Next()
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString := parts[1]
+			token, err := jwt.ParseWithClaims(tokenString, &usecase.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+				if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+					return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				}
+				return []byte(jwtSecret), nil
+			})
+			if err == nil && token.Valid {
+				if claims, ok := token.Claims.(*usecase.JWTClaims); ok {
+					c.Set("userID", claims.UserID)
+					c.Set("email", claims.Email)
+					c.Set("username", claims.Username)
+				}
+			}
+		}
+
+		c.Next()
+	}
 }

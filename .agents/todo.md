@@ -826,23 +826,23 @@
 
 ---
 
-## 🚀 FASE 32: Papan Peringkat Liga Tokyo (Tokyo League Division Leaderboard & Promotion System) (PENDING ⏳)
+## 🚀 FASE 32: Papan Peringkat Liga Tokyo (Tokyo League Division Leaderboard & Promotion System) (SELESAI ✅)
 
 > **Tujuan Utama:** Menghadirkan papan peringkat mingguan gamifikasi kompetitif ala Duolingo Leagues (Divisi Shinjuku, Shibuya, Akihabara, dan Roppongi Master) untuk mendorong konsistensi belajar harian.
 
-### [ ] 32.1 Endpoint Backend Leaderboard
-- [ ] Buat endpoint `GET /api/v1/leaderboard/weekly` yang mengembalikan ranking pengguna berdasarkan perolehan XP 7 hari terakhir.
-- [ ] Logika pembagian divisi (Bronze, Silver, Gold, Diamond).
+### [x] 32.1 Endpoint Backend Leaderboard
+- [x] Buat endpoint `GET /api/v1/leaderboard/weekly` yang mengembalikan ranking pengguna berdasarkan perolehan XP 7 hari terakhir.
+- [x] Logika pembagian divisi (Bronze, Silver, Gold, Diamond).
 
-### [ ] 32.2 Komponen Papan Peringkat Duolingo 3D (`TokyoLeaderboardModal.tsx` / `/leaderboard`)
-- [ ] Visual 4 Divisi dengan Badge 3D:
+### [x] 32.2 Komponen Papan Peringkat Duolingo 3D (`TokyoLeaderboardModal.tsx` / `/leaderboard`)
+- [x] Visual 4 Divisi dengan Badge 3D:
   - Divisi Shinjuku (Bronze)
   - Divisi Shibuya (Silver)
   - Divisi Akihabara (Gold)
   - Divisi Roppongi (Diamond Master)
-- [ ] Indikator visual zona promosi (Top 3 - Hijau 3D), zona aman, dan zona degradasi (Rose 3D).
-- [ ] Sticky row posisi akun pengguna dengan highlight biru elektrik 3D.
+- [x] Indikator visual zona promosi (Top 3 - Hijau 3D), zona aman, dan zona degradasi (Rose 3D).
+- [x] Sticky row posisi akun pengguna dengan highlight biru elektrik 3D.
 
-### [ ] 32.3 Pengujian & Verifikasi
-- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
-- [ ] Validasi `go test ./...` di `backend/` (100% test pass).
+### [x] 32.3 Pengujian & Verifikasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build sukses 858ms).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).

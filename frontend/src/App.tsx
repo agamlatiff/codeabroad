@@ -8,6 +8,7 @@ import { QuestLogPage } from './pages/QuestLogPage'
 import { LearnWorkspacePage } from './pages/LearnWorkspacePage'
 import { QuestCompletePage } from './pages/QuestCompletePage'
 import { CareerPortfolioPage } from './pages/CareerPortfolioPage'
+import { LeaderboardPage } from './pages/LeaderboardPage'
 import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
 
 function App() {
@@ -31,6 +32,7 @@ function App() {
           <Route path="/courses" element={<RoadmapPage />} />
           <Route path="/roadmap/:track" element={<RoadmapPage />} />
           <Route path="/quests" element={<QuestLogPage />} />
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
           <Route path="/learn/:id" element={<LearnWorkspacePage />} />
           <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
           <Route path="/career" element={<CareerPortfolioPage />} />

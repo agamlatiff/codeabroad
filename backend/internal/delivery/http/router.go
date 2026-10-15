@@ -15,7 +15,9 @@ type RouterConfig struct {
 	RoadmapHandler    *handler.RoadmapHandler
 	QuestHandler      *handler.QuestHandler
 	VocabularyHandler *handler.VocabularyHandler
+	LeaderboardHandler *handler.LeaderboardHandler
 	AuthMiddleware    gin.HandlerFunc
+	OptionalAuthMiddleware gin.HandlerFunc
 }
 
 // SetupRouter initializes the Gin engine and configures API v1 routes
@@ -52,6 +54,9 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine {
 		}
 		if cfg.VocabularyHandler != nil {
 			cfg.VocabularyHandler.RegisterRoutes(v1)
+		}
+		if cfg.LeaderboardHandler != nil {
+			cfg.LeaderboardHandler.RegisterRoutes(v1, cfg.OptionalAuthMiddleware)
 		}
 	}
 	return r
