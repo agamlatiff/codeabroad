@@ -6,7 +6,7 @@ import { AuthField } from '../components/auth/AuthField'
 import { AuthDivider } from '../components/auth/AuthDivider'
 import { AuthCheckbox } from '../components/auth/AuthCheckbox'
 import { Button3D } from '../components/ui/Button3D'
-import { Mail, Lock, AlertCircle } from 'lucide-react'
+import { EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
 
 export const LoginPage = () => {
   const { form, status, actions } = useLogin()
@@ -20,7 +20,7 @@ export const LoginPage = () => {
       {/* Error Alert */}
       {status.error && (
         <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+          <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
           <span>{status.error}</span>
         </div>
       )}
@@ -38,7 +38,7 @@ export const LoginPage = () => {
             form.setEmail(e.target.value)
             form.clearFieldError('email')
           }}
-          icon={<Mail className="w-4 h-4" />}
+          icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
         />
 
         <AuthField
@@ -52,7 +52,7 @@ export const LoginPage = () => {
             form.setPassword(e.target.value)
             form.clearFieldError('password')
           }}
-          icon={<Lock className="w-4 h-4" />}
+          icon={<LockSimple weight="bold" className="w-4 h-4" />}
         />
 
         {/* Remember Me & Forgot Password Row */}

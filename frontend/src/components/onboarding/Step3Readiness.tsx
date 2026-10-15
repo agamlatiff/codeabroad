@@ -1,5 +1,5 @@
 import type { Country, TargetTimeline, LanguageLevel } from '../../types/onboarding'
-import { Check } from 'lucide-react'
+import { Check } from '@phosphor-icons/react'
 import {
   BeginnerIllustration,
   ExperiencedIllustration,
@@ -122,7 +122,7 @@ export const Step3Readiness = ({
                 <div className="mt-3 text-xs font-semibold">
                   {isSelected ? (
                     <span className="text-blue-600 flex items-center justify-center gap-1 font-bold">
-                      <Check className="w-3.5 h-3.5" /> Pilihan Terpilih
+                      <Check weight="bold" className="w-3.5 h-3.5" /> Pilihan Terpilih
                     </span>
                   ) : (
                     <span className="text-slate-400">Klik untuk memilih</span>
@@ -235,7 +235,7 @@ export const Step3Readiness = ({
                               ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
                               : 'border-slate-300 bg-white'
                           }`}>
-                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                            {isSelected && <Check weight="bold" className="w-3 h-3" />}
                           </div>
                         </div>
                       </div>
@@ -312,7 +312,7 @@ export const Step3Readiness = ({
                               ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
                               : 'border-slate-300 bg-white'
                           }`}>
-                            {isSelected && <Check className="w-3 h-3 stroke-[3]" />}
+                            {isSelected && <Check weight="bold" className="w-3 h-3" />}
                           </div>
                         </div>
                       </div>

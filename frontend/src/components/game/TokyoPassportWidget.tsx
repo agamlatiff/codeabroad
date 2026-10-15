@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { Plane, CheckCircle2, ExternalLink } from 'lucide-react'
+import { Airplane, CheckCircle, ArrowSquareOut } from '@phosphor-icons/react'
 import { DoodleHanko } from '../illustrations/doodles'
 import type { User } from '../../types/auth'
 
@@ -63,7 +63,7 @@ export const TokyoPassportWidget = ({
             </span>
             <div className="flex items-center gap-1 font-black text-xs sm:text-sm text-[#38BDF8] font-mono">
               <span>CGK</span>
-              <Plane className="w-3 h-3 text-[#3B82F6]" />
+              <Airplane weight="bold" className="w-3 h-3 text-[#3B82F6]" />
               <span>HND</span>
             </div>
           </div>
@@ -91,11 +91,11 @@ export const TokyoPassportWidget = ({
       {/* ── 3. VISA CHECKLIST MILESTONES ── */}
       <div className="space-y-2 text-xs relative z-10">
         <div className="flex items-center gap-2 text-[#F1F5F9]">
-          <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+          <CheckCircle weight="fill" className="w-4 h-4 text-[#10B981] shrink-0" />
           <span className="font-medium text-[11px]">Sintaks Go & Strict Typing (Lulus ✓)</span>
         </div>
         <div className="flex items-center gap-2 text-[#F1F5F9]">
-          <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+          <CheckCircle weight="fill" className="w-4 h-4 text-[#10B981] shrink-0" />
           <span className="font-medium text-[11px]">JLPT N3 Business Vocab (Terverifikasi)</span>
         </div>
         <div className="flex items-center gap-2 text-[#94A3B8]">
@@ -124,7 +124,7 @@ export const TokyoPassportWidget = ({
           className="text-[10px] font-mono font-bold text-[#38BDF8] hover:text-sky-300 hover:underline flex items-center gap-1 cursor-pointer transition-colors"
         >
           <span>Detail Paspor</span>
-          <ExternalLink className="w-3 h-3" />
+          <ArrowSquareOut weight="bold" className="w-3 h-3" />
         </button>
       </div>
     </div>

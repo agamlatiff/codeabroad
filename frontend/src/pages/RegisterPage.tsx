@@ -7,7 +7,7 @@ import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthDivider } from '../components/auth/AuthDivider'
 import { Button3D } from '../components/ui/Button3D'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
-import { User, AtSign, Mail, Lock, AlertCircle } from 'lucide-react'
+import { User, At, EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
 
 export const RegisterPage = () => {
   const { form, status, actions } = useRegister()
@@ -24,7 +24,7 @@ export const RegisterPage = () => {
       {/* Error Alert */}
       {status.error && (
         <div className="mb-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2">
-          <AlertCircle className="w-4 h-4 shrink-0" />
+          <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
           <span>{status.error}</span>
         </div>
       )}
@@ -42,7 +42,7 @@ export const RegisterPage = () => {
             form.setName(e.target.value)
             form.clearFieldError('name')
           }}
-          icon={<User className="w-4 h-4" />}
+          icon={<User weight="bold" className="w-4 h-4" />}
         />
 
         <AuthField
@@ -56,7 +56,7 @@ export const RegisterPage = () => {
             form.setUsername(e.target.value.toLowerCase().trim())
             form.clearFieldError('username')
           }}
-          icon={<AtSign className="w-4 h-4" />}
+          icon={<At weight="bold" className="w-4 h-4" />}
         />
 
         <AuthField
@@ -70,7 +70,7 @@ export const RegisterPage = () => {
             form.setEmail(e.target.value)
             form.clearFieldError('email')
           }}
-          icon={<Mail className="w-4 h-4" />}
+          icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
         />
 
         <div>
@@ -85,7 +85,7 @@ export const RegisterPage = () => {
               form.setPassword(e.target.value)
               form.clearFieldError('password')
             }}
-            icon={<Lock className="w-4 h-4" />}
+            icon={<LockSimple weight="bold" className="w-4 h-4" />}
           />
           {/* Real-time Password Strength Meter */}
           <PasswordStrengthMeter password={form.password} />

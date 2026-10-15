@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { MapPin, Award, Gift, Lock, Sparkles, CheckCircle2 } from 'lucide-react'
+import { MapPin, Medal, Gift, LockSimple, Sparkle, CheckCircle } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../utils/haptics'
 import type { Station } from '../../types/roadmap'
 
@@ -179,7 +179,7 @@ export const YamanoteRailTrack = ({
           </div>
 
           <div className="w-11 h-11 rounded-2xl bg-emerald-950/40 border border-emerald-500/30 flex items-center justify-center text-[#10B981] shadow-inner">
-            <Award className="w-5 h-5 stroke-[2.2]" />
+            <Medal weight="bold" className="w-5 h-5" />
           </div>
 
           <div className="space-y-1">
@@ -192,7 +192,7 @@ export const YamanoteRailTrack = ({
           </div>
 
           <span className="w-full bg-emerald-950/40 border border-emerald-500/30 text-[#10B981] text-[10px] font-mono font-bold py-1.5 rounded-xl flex items-center justify-center gap-1">
-            <CheckCircle2 className="w-3.5 h-3.5" />
+            <CheckCircle weight="fill" className="w-3.5 h-3.5" />
             <span>LULUS (+200 XP)</span>
           </span>
         </div>
@@ -205,7 +205,7 @@ export const YamanoteRailTrack = ({
           </div>
 
           <div className="w-11 h-11 rounded-2xl bg-amber-950/40 border border-amber-500/40 flex items-center justify-center text-[#F5B942] shadow-inner animate-bounce">
-            <Gift className="w-5 h-5 stroke-[2.2]" />
+            <Gift weight="fill" className="w-5 h-5" />
           </div>
 
           <div className="space-y-1">
@@ -242,7 +242,7 @@ export const YamanoteRailTrack = ({
           </div>
 
           <div className="w-11 h-11 rounded-2xl bg-blue-950/60 border border-blue-500/40 flex items-center justify-center text-[#38BDF8] shadow-inner">
-            <Sparkles className="w-5 h-5 fill-cyan-400 text-cyan-300" />
+            <Sparkle weight="fill" className="w-5 h-5 text-cyan-300" />
           </div>
 
           <div className="space-y-1.5 w-full">
@@ -275,7 +275,7 @@ export const YamanoteRailTrack = ({
           </div>
 
           <div className="w-11 h-11 rounded-2xl bg-[#172236] border border-[#27364D] flex items-center justify-center text-[#64748B]">
-            <Lock className="w-5 h-5 stroke-[1.8]" />
+            <LockSimple weight="bold" className="w-5 h-5" />
           </div>
 
           <div className="space-y-1">

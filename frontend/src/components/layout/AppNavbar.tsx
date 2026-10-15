@@ -4,13 +4,13 @@ import { UserAvatar } from '../ui/UserAvatar'
 import { useAuthStore } from '../../store/authStore'
 import { useDashboard } from '../../hooks'
 import {
-  Flame,
-  Sparkles,
-  LogOut,
-  Map,
+  Fire,
+  Sparkle,
+  SignOut,
+  MapTrifold,
   Compass,
-  CheckCircle2,
-} from 'lucide-react'
+  CheckCircle,
+} from '@phosphor-icons/react'
 
 export const AppNavbar = () => {
   const location = useLocation()
@@ -20,8 +20,8 @@ export const AppNavbar = () => {
 
   const navLinks = [
     { label: 'Beranda', href: '/dashboard', icon: Compass },
-    { label: 'Silabus Roadmap', href: '/courses', icon: Map },
-    { label: 'Daftar Misi', href: '/quests', icon: CheckCircle2 },
+    { label: 'Silabus Roadmap', href: '/courses', icon: MapTrifold },
+    { label: 'Daftar Misi', href: '/quests', icon: CheckCircle },
   ]
 
   const handleLogout = () => {
@@ -61,7 +61,7 @@ export const AppNavbar = () => {
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 border-2 border-transparent'
                   }`}
                 >
-                  <Icon className={`w-4 h-4 ${isActive ? 'text-blue-600 stroke-[2.5]' : 'text-slate-400'}`} />
+                  <Icon weight={isActive ? 'bold' : 'regular'} className={`w-4 h-4 ${isActive ? 'text-blue-600' : 'text-slate-400'}`} />
                   <span>{item.label}</span>
                 </Link>
               )
@@ -88,13 +88,13 @@ export const AppNavbar = () => {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Streak Pill */}
           <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-orange-50 border-2 border-orange-200 border-b-4 border-b-orange-300 shadow-2xs font-black text-xs text-orange-950">
-            <Flame className="w-4 h-4 text-orange-500 fill-orange-500" />
+            <Fire weight="fill" className="w-4 h-4 text-orange-500" />
             <span>{user?.streak ?? 1} Hari</span>
           </div>
 
           {/* XP Pill (Amber Gold Duolingo) */}
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-2xl bg-amber-50 border-2 border-amber-200 border-b-4 border-b-amber-300 shadow-2xs font-black text-xs text-amber-950">
-            <Sparkles className="w-4 h-4 text-amber-600 fill-amber-500" />
+            <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
             <span>{user?.xp ?? 50} XP</span>
           </div>
 
@@ -107,7 +107,7 @@ export const AppNavbar = () => {
               className="w-9 h-9 rounded-xl border-2 border-[#E5E5E5] hover:bg-rose-50 hover:border-rose-300 hover:text-rose-600 flex items-center justify-center text-slate-400 transition-colors cursor-pointer"
               title="Keluar (Sign Out)"
             >
-              <LogOut className="w-4 h-4" />
+              <SignOut weight="bold" className="w-4 h-4" />
             </button>
           </div>
         </div>

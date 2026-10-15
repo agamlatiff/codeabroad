@@ -1,4 +1,4 @@
-import { ArrowRight, ArrowLeft, Check } from 'lucide-react'
+import { ArrowRight, ArrowLeft, Check } from '@phosphor-icons/react'
 import { Logo, Button3D } from '../components/ui'
 import { triggerHaptic } from '../utils/haptics'
 import { Step1Destination } from '../components/onboarding/Step1Destination'
@@ -65,7 +65,7 @@ export const OnboardingPage = () => {
                             : 'bg-slate-100 text-slate-400'
                         }`}
                       >
-                        {isPast ? <Check className="w-2.5 h-2.5 stroke-[3]" /> : stepNum}
+                        {isPast ? <Check weight="bold" className="w-2.5 h-2.5" /> : stepNum}
                       </div>
                       {stepNum < 3 && (
                         <div
@@ -191,23 +191,23 @@ export const OnboardingPage = () => {
                 )
               ) : navigation.step === 2 && navigation.trackSubStep === 'mindset' ? (
                 <>
-                  Lanjut Pilih Jalur Spesifik <ArrowRight className="w-3.5 h-3.5" />
+                  Lanjut Pilih Jalur Spesifik <ArrowRight weight="bold" className="w-3.5 h-3.5" />
                 </>
               ) : navigation.step === 2 && navigation.trackSubStep === 'track' ? (
                 <>
-                  Pilih Stack Teknologi <ArrowRight className="w-3.5 h-3.5" />
+                  Pilih Stack Teknologi <ArrowRight weight="bold" className="w-3.5 h-3.5" />
                 </>
               ) : navigation.step === 2 && navigation.trackSubStep === 'stack_fe' ? (
                 <>
-                  Lanjut ke Pilihan Backend <ArrowRight className="w-3.5 h-3.5" />
+                  Lanjut ke Pilihan Backend <ArrowRight weight="bold" className="w-3.5 h-3.5" />
                 </>
               ) : navigation.step === 2 && (navigation.trackSubStep === 'stack' || navigation.trackSubStep === 'stack_be') ? (
                 <>
-                  Lanjutkan ke Kesiapan <ArrowRight className="w-3.5 h-3.5" />
+                  Lanjutkan ke Kesiapan <ArrowRight weight="bold" className="w-3.5 h-3.5" />
                 </>
               ) : (
                 <>
-                  Lanjutkan ke Pilihan Jalur <ArrowRight className="w-3.5 h-3.5" />
+                  Lanjutkan ke Pilihan Jalur <ArrowRight weight="bold" className="w-3.5 h-3.5" />
                 </>
               )}
             </Button3D>
@@ -221,7 +221,7 @@ export const OnboardingPage = () => {
                 }}
                 className="text-xs font-semibold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-1 mt-1"
               >
-                <ArrowLeft className="w-3.5 h-3.5" />
+                <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
                 {navigation.step === 3 && navigation.step3SubStep === 'readiness'
                   ? 'Kembali ke pilihan pengalaman coding'
                   : navigation.step === 3 && navigation.step3SubStep === 'level'

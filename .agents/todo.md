@@ -740,27 +740,32 @@
 
 ---
 
-## 🚀 FASE 29: Standarisasi Penuh Ikonografi `@phosphor-icons/react` & Pembersihan Sisa Mock (PENDING ⏳)
+## 🚀 FASE 29: Standarisasi Penuh Ikonografi `@phosphor-icons/react` & Pembersihan Sisa Mock (SELESAI ✅)
 
-> **Tujuan Utama:** Menghapus seluruh dependensi `lucide-react` lama pada halaman `QuestLogPage`, `OnboardingPage`, `LearnWorkspacePage`, dan `LoginPage` demi kepatuhan 100% terhadap Design System CodeAbroad (@phosphor-icons/react) serta membersihkan data statis.
+> **Tujuan Utama:** Menghapus seluruh dependensi `lucide-react` lama pada seluruh halaman (`QuestLogPage`, `OnboardingPage`, `LearnWorkspacePage`, `LoginPage`, `RegisterPage`, komponen UI, dan widget) demi kepatuhan 100% terhadap Design System CodeAbroad (@phosphor-icons/react) serta membersihkan data statis.
 
-### [ ] 29.1 Pembersihan `QuestLogPage.tsx`
-- [ ] Ganti seluruh import `lucide-react` (`Search`, `Calendar`, `Shield`, `Award`, `Sparkles`, `Gift`, `Trophy`, `Timer`) menjadi `@phosphor-icons/react` (`MagnifyingGlass`, `CalendarBlank`, `ShieldCheck`, `Medal`, `Sparkle`, `Gift`, `Trophy`, `Hourglass`).
-- [ ] Ganti state hardcoded `userGems (45)` menjadi data dinamis dari `user?.gems || 0` atau token dinamis.
-- [ ] Sinkronkan filter quest tab & hitung mundur reset harian.
+### [x] 29.1 Pembersihan `QuestLogPage.tsx`
+- [x] Ganti seluruh import `lucide-react` (`Search`, `Calendar`, `Shield`, `Award`, `Sparkles`, `Gift`, `Trophy`, `Timer`) menjadi `@phosphor-icons/react` (`MagnifyingGlass`, `CalendarBlank`, `ShieldCheck`, `Medal`, `Sparkle`, `Gift`, `Trophy`, `Hourglass`).
+- [x] Ganti state hardcoded `userGems (45)` menjadi data dinamis dari `user?.gems` dengan fallback token dinamis.
+- [x] Sinkronkan filter quest tab & hitung mundur reset harian.
 
-### [ ] 29.2 Pembersihan `OnboardingPage.tsx`
-- [ ] Ganti import `lucide-react` (`ArrowRight`, `ArrowLeft`, `Check`) menjadi `@phosphor-icons/react` (`ArrowRight`, `ArrowLeft`, `Check`).
-- [ ] Polish layout Step 1 s/d Step 4 mengikuti referensi card Gatheround / Dozehost dengan shadow taktil dan badge negara berstandar 3D.
+### [x] 29.2 Pembersihan `OnboardingPage.tsx` & Komponen Step
+- [x] Ganti import `lucide-react` (`ArrowRight`, `ArrowLeft`, `Check`) menjadi `@phosphor-icons/react` (`ArrowRight`, `ArrowLeft`, `Check`).
+- [x] Bersihkan seluruh komponen step onboarding (`Step1Destination`, `Step2CareerTracks`, `Step3Readiness`, `Step4BoardingPass`) dengan `@phosphor-icons/react` (`LockSimple`, `Airplane`, `Sparkle`, `CheckCircle`, `Check`).
+- [x] Polish layout Step 1 s/d Step 4 mengikuti referensi card Gatheround / Dozehost dengan shadow taktil dan badge negara berstandar 3D.
 
-### [ ] 29.3 Pembersihan `LearnWorkspacePage.tsx`
-- [ ] Ganti `RotateCcw` dari `lucide-react` menjadi `ArrowCounterClockwise` dari `@phosphor-icons/react`.
+### [x] 29.3 Pembersihan `LearnWorkspacePage.tsx`
+- [x] Ganti `RotateCcw` dari `lucide-react` menjadi `ArrowCounterClockwise` dari `@phosphor-icons/react`.
 
-### [ ] 29.4 Pembersihan `LoginPage.tsx` & `RegisterPage.tsx`
-- [ ] Ganti `Mail`, `Lock`, `AlertCircle` dari `lucide-react` menjadi `EnvelopeSimple`, `LockSimple`, `WarningCircle` dari `@phosphor-icons/react`.
+### [x] 29.4 Pembersihan `LoginPage.tsx` & `RegisterPage.tsx`
+- [x] Ganti `Mail`, `Lock`, `AlertCircle`, `User`, `AtSign` dari `lucide-react` menjadi `EnvelopeSimple`, `LockSimple`, `WarningCircle`, `User`, `At` dari `@phosphor-icons/react`.
+- [x] Bersihkan komponen form primitif `Input.tsx` dan `AuthField.tsx` (`Eye`, `EyeSlash`, `WarningCircle`).
+- [x] Bersihkan komponen primitif `Button.tsx`, `Modal3D.tsx`, `RoadmapNode3D.tsx`, `AppNavbar.tsx`, `TokyoPassportWidget.tsx`, `KodiHeroStage.tsx`, dan `YamanoteRailTrack.tsx` ke `@phosphor-icons/react`.
 
-### [ ] 29.5 Pengujian & Verifikasi
-- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+### [x] 29.5 Pengujian & Verifikasi
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript & Vite bundle lolos dalam 897ms).
+- [x] Validasi backend sanity test `go test -count=1 ./...` (100% test PASS).
+- [x] Verifikasi 0 import `lucide-react` di seluruh folder `frontend/src`.
 
 ---
 

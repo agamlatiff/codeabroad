@@ -1,6 +1,6 @@
 import React from 'react'
 import type { Country } from '../../types/onboarding'
-import { Lock } from 'lucide-react'
+import { LockSimple } from '@phosphor-icons/react'
 import {
   JapanFlagIllustration,
   SingaporeFlagIllustration,
@@ -78,7 +78,7 @@ export const Step1Destination = ({
                   size="sm"
                   className={!isActive ? 'opacity-80' : ''}
                 >
-                  {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                  {!isActive && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
                   {isActive ? 'Jalur Aktif' : 'Coming Soon'}
                 </BadgePill>
               </div>

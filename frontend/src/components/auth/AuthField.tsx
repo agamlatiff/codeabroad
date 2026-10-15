@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
-import { Eye, EyeOff, AlertCircle } from 'lucide-react'
+import { Eye, EyeSlash, WarningCircle } from '@phosphor-icons/react'
 
 export interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -62,14 +62,14 @@ export const AuthField = ({
             tabIndex={-1}
             title={showPassword ? 'Hide password' : 'Show password'}
           >
-            {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            {showPassword ? <EyeSlash weight="bold" className="w-4 h-4" /> : <Eye weight="bold" className="w-4 h-4" />}
           </button>
         )}
       </div>
 
       {error && (
         <p className="text-xs text-rose-500 font-medium flex items-center gap-1.5 mt-1 animate-in fade-in duration-150">
-          <AlertCircle className="w-3.5 h-3.5 shrink-0" />
+          <WarningCircle weight="bold" className="w-3.5 h-3.5 shrink-0" />
           <span>{error}</span>
         </p>
       )}

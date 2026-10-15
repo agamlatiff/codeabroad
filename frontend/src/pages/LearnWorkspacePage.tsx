@@ -4,7 +4,7 @@ import { useLearnWorkspace } from '../hooks'
 import { useAuthStore } from '../store/authStore'
 import { QuestCompleteModal } from '../components/workspace/QuestCompleteModal'
 import { Button3D } from '../components/ui/Button3D'
-import { RotateCcw } from 'lucide-react'
+import { ArrowCounterClockwise } from '@phosphor-icons/react'
 
 export const LearnWorkspacePage = () => {
   const navigate = useNavigate()
@@ -299,7 +299,7 @@ export const LearnWorkspacePage = () => {
               title="Reset Kode ke Template Asli"
               className="text-[#94A3B8] hover:text-white text-xs flex items-center gap-1.5 font-mono cursor-pointer"
             >
-              <RotateCcw className="w-3.5 h-3.5" />
+              <ArrowCounterClockwise className="w-3.5 h-3.5" />
               <span>Reset</span>
             </button>
           </div>

@@ -13,6 +13,7 @@ export interface User {
     xp: number
     current_level: number
     streak: number
+    gems?: number | null
     is_onboarded: boolean
     primary_stack?: string | null
     country?: {

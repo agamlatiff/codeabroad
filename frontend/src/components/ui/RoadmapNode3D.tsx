@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { Check, Lock, Star } from 'lucide-react'
+import { Check, LockSimple, Star } from '@phosphor-icons/react'
 
 export interface RoadmapNode3DProps {
   status: 'completed' | 'active' | 'locked'
@@ -79,13 +79,13 @@ export const RoadmapNode3D = ({
           {icon ? (
             icon
           ) : isCompleted ? (
-            <Check className="w-7 h-7 stroke-[3.5]" />
+            <Check weight="bold" className="w-7 h-7" />
           ) : isLocked ? (
-            <Lock className="w-6 h-6 stroke-[2.5]" />
+            <LockSimple weight="bold" className="w-6 h-6" />
           ) : number !== undefined ? (
             <span>{number}</span>
           ) : (
-            <Star className="w-6 h-6 fill-current stroke-[2]" />
+            <Star weight="fill" className="w-6 h-6" />
           )}
         </span>
       </button>

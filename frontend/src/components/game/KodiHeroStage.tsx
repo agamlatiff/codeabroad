@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { RotateCcw, Clock, Sparkles } from 'lucide-react'
+import { ArrowCounterClockwise, Clock, Sparkle } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
 import { SpeechBubble } from '../ui/SpeechBubble'
 import doodleCoding from '../../assets/kodi/doodle-coding.png'
@@ -68,7 +68,7 @@ export const KodiHeroStage = ({
           <div className="space-y-1.5">
             <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
               <span className="bg-[#172236] text-[#38BDF8] border border-[#27364D] font-mono font-bold text-[11px] px-2.5 py-0.5 rounded-md flex items-center gap-1">
-                <Sparkles className="w-3 h-3 text-[#38BDF8]" />
+                <Sparkle weight="fill" className="w-3 h-3 text-[#38BDF8]" />
                 <span>{unitTag}</span>
               </span>
               <span className="text-[#10B981] font-mono font-bold text-xs bg-emerald-950/40 border border-emerald-500/30 px-2 py-0.5 rounded-md">
@@ -83,7 +83,7 @@ export const KodiHeroStage = ({
             <div className="flex items-center justify-center sm:justify-start gap-3 text-xs text-[#94A3B8] font-medium flex-wrap">
               <span>{chapterTitle}</span>
               <span className="flex items-center gap-1 text-[#F5B942] font-mono">
-                <Clock className="w-3.5 h-3.5" />
+                <Clock weight="bold" className="w-3.5 h-3.5" />
                 <span>Estimasi {timeEstimate}</span>
               </span>
             </div>
@@ -107,7 +107,7 @@ export const KodiHeroStage = ({
           onClick={() => navigate('/courses')}
           className="text-xs font-semibold text-[#94A3B8] hover:text-[#38BDF8] hover:underline flex items-center gap-1.5 cursor-pointer py-1 transition-colors"
         >
-          <RotateCcw className="w-3.5 h-3.5" />
+          <ArrowCounterClockwise weight="bold" className="w-3.5 h-3.5" />
           <span>Review Silabus & Materi Lalu</span>
         </button>
       </div>

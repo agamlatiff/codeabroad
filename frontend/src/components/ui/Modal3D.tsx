@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import { useEffect } from 'react'
-import { X } from 'lucide-react'
+import { X } from '@phosphor-icons/react'
 
 export interface Modal3DProps {
   isOpen: boolean
@@ -74,7 +74,7 @@ export const Modal3D = ({
           className="absolute top-4 right-4 w-9 h-9 rounded-2xl border-2 border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
           aria-label="Tutup"
         >
-          <X className="w-4 h-4" />
+          <X weight="bold" className="w-4 h-4" />
         </button>
 
         {/* Modal Header */}

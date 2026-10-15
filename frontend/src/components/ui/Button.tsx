@@ -1,5 +1,5 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { Loader2 } from 'lucide-react'
+import { CircleNotch } from '@phosphor-icons/react'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'outline' | 'ghost' | 'danger'
@@ -52,7 +52,7 @@ export const Button = ({
       {...props}
     >
       {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin" />
+        <CircleNotch className="w-4 h-4 animate-spin" />
       ) : (
         <>
           {icon && <span className="shrink-0">{icon}</span>}

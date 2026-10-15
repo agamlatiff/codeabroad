@@ -8,15 +8,15 @@ import { ProgressBar3D } from '../components/ui/ProgressBar3D'
 import { DoodleFire, DoodleStar } from '../components/illustrations/doodles'
 import { triggerHaptic } from '../utils/haptics'
 import {
-  Search,
-  Calendar,
-  Shield,
-  Award,
-  Sparkles,
+  MagnifyingGlass,
+  CalendarBlank,
+  ShieldCheck,
+  Medal,
+  Sparkle,
   Gift,
   Trophy,
-  Timer,
-} from 'lucide-react'
+  Hourglass,
+} from '@phosphor-icons/react'
 
 export const QuestLogPage = () => {
   const navigate = useNavigate()
@@ -35,22 +35,22 @@ export const QuestLogPage = () => {
   const [searchQuery, setSearchQuery] = useState('')
   const [claimedD1, setClaimedD1] = useState(false)
   const [claimedChest, setClaimedChest] = useState(false)
-  const [userGems, setUserGems] = useState(45)
+  const [userGems, setUserGems] = useState<number>(() => (typeof user?.gems === 'number' ? user.gems : 45))
 
   // Real user stats without artificial * 100 multiplication
-  const userXp = user?.xp ? user.xp.toLocaleString() : '0'
-  const userStreak = user?.streak || 1
+  const userXp = typeof user?.xp === 'number' ? user.xp.toLocaleString() : '0'
+  const userStreak = typeof user?.streak === 'number' ? user.streak : 0
 
   const handleClaimD1 = () => {
     triggerHaptic('success')
     setClaimedD1(true)
-    setUserGems((prev) => prev + 10)
+    setUserGems((prev: number) => prev + 10)
   }
 
   const handleClaimChest = () => {
     triggerHaptic('success')
     setClaimedChest(true)
-    setUserGems((prev) => prev + 15)
+    setUserGems((prev: number) => prev + 15)
   }
 
   // Filter daily quests based on search query
@@ -147,7 +147,7 @@ export const QuestLogPage = () => {
             <div className="flex items-center gap-3 flex-wrap">
               {/* Search Pill */}
               <div className="relative w-56 sm:w-64">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                <MagnifyingGlass weight="bold" className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                 <input
                   type="text"
                   value={searchQuery}
@@ -209,7 +209,7 @@ export const QuestLogPage = () => {
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 text-[#D97706] flex items-center justify-center shrink-0">
-                    <Sparkles className="w-4 h-4 fill-amber-500" />
+                    <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
@@ -227,7 +227,7 @@ export const QuestLogPage = () => {
                 </div>
 
                 <span className="bg-[#FFFBEB] text-[#B45309] text-xs font-black px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1.5">
-                  <Timer className="w-3.5 h-3.5" />
+                  <Hourglass weight="bold" className="w-3.5 h-3.5" />
                   <span>Sisa Waktu: {timeLeft}</span>
                 </span>
               </div>
@@ -364,7 +364,7 @@ export const QuestLogPage = () => {
                 <div className="space-y-2.5 relative z-10">
                   <div className="flex items-center justify-between">
                     <span className="bg-[#FEF2F2] text-[#DC2626] font-black text-xs px-2.5 py-1 rounded-xl flex items-center gap-1.5">
-                      <Trophy className="w-3.5 h-3.5" />
+                      <Trophy weight="fill" className="w-3.5 h-3.5" />
                       <span>TANTANGAN PORTOFOLIO TOKYO</span>
                     </span>
                     <span className="bg-red-50 text-red-600 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-red-200">
@@ -411,7 +411,7 @@ export const QuestLogPage = () => {
           <div className="border-2 border-slate-200 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#2563EB]" />
+                <CalendarBlank weight="bold" className="w-4 h-4 text-[#2563EB]" />
                 <h4 className="font-black text-xs text-[#0F172A]">Streak & Jadwal Live</h4>
               </div>
               <span className="bg-[#FEF2F2] text-[#DC2626] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-red-200 flex items-center gap-1">
@@ -470,7 +470,7 @@ export const QuestLogPage = () => {
           <div className="bg-[#FFFBEB] border-2 border-amber-300 rounded-3xl p-5 space-y-3 shadow-xs">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Gift className="w-4 h-4 text-amber-600" />
+                <Gift weight="fill" className="w-4 h-4 text-amber-600" />
                 <h4 className="font-black text-xs text-[#92400E]">
                   Peti Hadiah Mingguan 🎁
                 </h4>
@@ -533,7 +533,7 @@ export const QuestLogPage = () => {
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[#2563EB]">
-                    <Shield className="w-4 h-4" />
+                    <ShieldCheck weight="bold" className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800 block">
@@ -554,7 +554,7 @@ export const QuestLogPage = () => {
               <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
                 <div className="flex items-center gap-2.5">
                   <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
-                    <Award className="w-4 h-4" />
+                    <Medal weight="bold" className="w-4 h-4" />
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800 block">

@@ -1,6 +1,6 @@
 import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, LanguageLevel } from '../../types/onboarding'
 import type { User } from '../../types/auth'
-import { Plane, Sparkles, CheckCircle2, ArrowRight, ArrowLeft } from 'lucide-react'
+import { Airplane, Sparkle, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
 import { DoodleHanko } from '../illustrations/doodles'
 import { Button3D, MetricTile, BadgePill } from '../ui'
 import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
@@ -88,7 +88,7 @@ export const Step4BoardingPass = ({
 
         {/* Celebratory Speech Pill */}
         <div className="mb-2">
-          <BadgePill variant="blue" size="sm" icon={<Sparkles className="w-3.5 h-3.5 text-blue-500" />}>
+          <BadgePill variant="blue" size="sm" icon={<Sparkle weight="fill" className="w-3.5 h-3.5 text-blue-500" />}>
             Yatta! Siap Lepas Landas
           </BadgePill>
         </div>
@@ -110,7 +110,7 @@ export const Step4BoardingPass = ({
           <div className="flex items-center justify-between pb-3.5 border-b border-white/15 text-xs">
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-white shadow-xs backdrop-blur-xs">
-                <Plane className="w-3.5 h-3.5" />
+                <Airplane weight="bold" className="w-3.5 h-3.5" />
               </div>
               <span className="font-mono font-bold tracking-widest text-blue-100 text-[10px] uppercase">
                 CODEABROAD AIRWAYS • 搭乗券
@@ -142,7 +142,7 @@ export const Step4BoardingPass = ({
               <div className="w-full max-w-[130px] flex items-center gap-1.5">
                 <div className="w-2 h-2 rounded-full bg-white shrink-0" />
                 <div className="flex-1 border-t-2 border-dashed border-white/40" />
-                <Plane className="w-4 h-4 text-white shrink-0 transform rotate-90" />
+                <Airplane weight="bold" className="w-4 h-4 text-white shrink-0 transform rotate-90" />
                 <div className="flex-1 border-t-2 border-dashed border-white/40" />
                 <div className="w-2 h-2 rounded-full bg-cyan-300 shrink-0" />
               </div>
@@ -219,14 +219,14 @@ export const Step4BoardingPass = ({
                 ||||| | |||| ||| |||||| | |||||
               </div>
               <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600">
-                <CheckCircle2 className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+                <CheckCircle weight="fill" className="w-3.5 h-3.5 text-blue-600 shrink-0" />
                 <span>PASPOR RESMI TERVERIFIKASI</span>
               </div>
             </div>
           </div>
 
           <div className="shrink-0">
-            <BadgePill variant="xp" icon={<Sparkles className="w-3.5 h-3.5 text-amber-500" />}>
+            <BadgePill variant="xp" icon={<Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />}>
               +50 XP
             </BadgePill>
           </div>
@@ -242,7 +242,7 @@ export const Step4BoardingPass = ({
             size="lg"
             fullWidth
             onClick={onContinue}
-            icon={<ArrowRight className="w-5 h-5 ml-1" />}
+            icon={<ArrowRight weight="bold" className="w-5 h-5 ml-1" />}
           >
             Masuk ke Dashboard Sekarang
           </Button3D>
@@ -254,7 +254,7 @@ export const Step4BoardingPass = ({
             onClick={onBack}
             className="text-xs text-slate-400 hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-1.5 font-bold py-1 select-none"
           >
-            <ArrowLeft className="w-3.5 h-3.5" />
+            <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
             <span>← Ubah Preferensi &amp; Pilihan Jalur</span>
           </button>
         )}

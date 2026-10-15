@@ -1,6 +1,6 @@
 import React from 'react'
 import type { CareerPath, TechStack } from '../../types/onboarding'
-import { Check, Lock } from 'lucide-react'
+import { Check, LockSimple } from '@phosphor-icons/react'
 import {
   SpecialistMindsetIllustration,
   GeneralistMindsetIllustration,
@@ -124,7 +124,7 @@ export const Step2CareerTracks = ({
             <div className="mt-3 text-xs font-semibold">
               {mindsetTab === 'specialist' ? (
                 <span className="text-blue-600 flex items-center justify-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> Mindset Terpilih
+                  <Check weight="bold" className="w-3.5 h-3.5" /> Mindset Terpilih
                 </span>
               ) : (
                 <span className="text-slate-400">Klik untuk memilih</span>
@@ -185,7 +185,7 @@ export const Step2CareerTracks = ({
             <div className="mt-3 text-xs font-semibold">
               {mindsetTab === 'generalist' ? (
                 <span className="text-blue-600 flex items-center justify-center gap-1">
-                  <Check className="w-3.5 h-3.5" /> Mindset Terpilih
+                  <Check weight="bold" className="w-3.5 h-3.5" /> Mindset Terpilih
                 </span>
               ) : (
                 <span className="text-slate-400">Klik untuk memilih</span>
@@ -270,7 +270,7 @@ export const Step2CareerTracks = ({
                         size="sm"
                         className={isComingSoon ? 'opacity-80' : ''}
                       >
-                        {isComingSoon && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {isComingSoon && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
                         {badge.text}
                       </BadgePill>
                     </div>
@@ -340,7 +340,7 @@ export const Step2CareerTracks = ({
                       size="sm"
                       className={!isActive ? 'opacity-80' : ''}
                     >
-                      {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                      {!isActive && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
                       {formatStackBadge(stack.badge, isActive)}
                     </BadgePill>
                   </div>
@@ -418,7 +418,7 @@ export const Step2CareerTracks = ({
                         size="sm"
                         className={!isActive ? 'opacity-80' : ''}
                       >
-                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {!isActive && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
                         {formatStackBadge(stack.badge, isActive)}
                       </BadgePill>
                     </div>
@@ -503,7 +503,7 @@ export const Step2CareerTracks = ({
                         size="sm"
                         className={!isActive ? 'opacity-80' : ''}
                       >
-                        {!isActive && <Lock className="w-2.5 h-2.5 stroke-[2.5]" />}
+                        {!isActive && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
                         {formatStackBadge(stack.badge, isActive)}
                       </BadgePill>
                     </div>
