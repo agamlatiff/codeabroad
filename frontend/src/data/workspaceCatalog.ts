@@ -355,8 +355,26 @@ export const getWorkspaceQuestFallback = (partId: string): Quest => {
   // Look through CURRICULUM_TRACKS_MAP
   for (const trackUnits of Object.values(CURRICULUM_TRACKS_MAP)) {
     for (const unit of trackUnits) {
-      const matchPart = unit.parts.find((p) => p.id === partId)
+      const matchPart = unit.parts.find(
+        (p) =>
+          p.id === partId ||
+          p.id.startsWith(partId + '-') ||
+          partId.startsWith(p.id + '-') ||
+          p.route === `/learn/${partId}`
+      )
       if (matchPart) {
+        const isNihongo = matchPart.category === 'nihongo' || matchPart.id.includes('nihongo')
+        const isFrontend =
+          matchPart.route.includes('fe-') ||
+          matchPart.id.includes('fe-') ||
+          matchPart.chipLabel.includes('REACT') ||
+          matchPart.chipLabel.includes('TS')
+        const isDevOps =
+          matchPart.route.includes('devops-') ||
+          matchPart.id.includes('devops-') ||
+          matchPart.chipLabel.includes('LINUX') ||
+          matchPart.chipLabel.includes('DOCKER')
+
         return {
           id: matchPart.id,
           title: matchPart.title,
@@ -370,8 +388,8 @@ export const getWorkspaceQuestFallback = (partId: string): Quest => {
             { id: 'c2', description: 'Pastikan struktur kode memenuhi standar Clean Architecture Tokyo', passed: false },
           ],
           starter_code: {
-            filename: matchPart.category === 'nihongo' ? 'notes.txt' : 'solution.go',
-            language: matchPart.category === 'nihongo' ? 'text' : 'go',
+            filename: isNihongo ? 'notes.txt' : isFrontend ? 'App.tsx' : isDevOps ? 'main.sh' : 'solution.go',
+            language: isNihongo ? 'text' : isFrontend ? 'typescript' : isDevOps ? 'shell' : 'go',
             content: `// ${matchPart.title}\n// Tokyo Curriculum - ${unit.title}\n\n// TODO: Tuliskan implementasi kode Anda di sini\n`,
           },
           order_index: matchPart.globalPartNumber,
@@ -474,7 +492,13 @@ exit status 1`
 export const findNextQuestId = (currentId: string): string => {
   for (const trackUnits of Object.values(CURRICULUM_TRACKS_MAP)) {
     const allParts = trackUnits.flatMap((u) => u.parts)
-    const idx = allParts.findIndex((p) => p.id === currentId)
+    const idx = allParts.findIndex(
+      (p) =>
+        p.id === currentId ||
+        p.id.startsWith(currentId + '-') ||
+        currentId.startsWith(p.id + '-') ||
+        p.route === `/learn/${currentId}`
+    )
     if (idx >= 0 && idx < allParts.length - 1) {
       return allParts[idx + 1].id
     }
