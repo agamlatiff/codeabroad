@@ -79,10 +79,10 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
           </p>
         </div>
 
-        {/* ── 2. 3 REWARD PILLS ── */}
-        <div className="grid grid-cols-3 gap-3">
+        {/* ── 2. REWARD PILLS ── */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
           {/* XP Pill */}
-          <div className="p-3 rounded-2xl bg-[#EFF6FF] border border-blue-200 flex flex-col items-center justify-center space-y-0.5">
+          <div className="p-3 rounded-2xl bg-[#EFF6FF] border border-blue-200 flex flex-col items-center justify-center space-y-0.5 shadow-2xs">
             <span className="text-sm">⚡</span>
             <span className="font-mono font-black text-sm sm:text-base text-[#2563EB]">
               +{xpEarned} XP
@@ -90,8 +90,17 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
             <span className="text-[10px] font-bold text-[#1E40AF]">XP Diperoleh</span>
           </div>
 
+          {/* Gems Pill */}
+          <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200 flex flex-col items-center justify-center space-y-0.5 shadow-2xs">
+            <span className="text-sm">💎</span>
+            <span className="font-mono font-black text-sm sm:text-base text-[#059669]">
+              +10 Gems
+            </span>
+            <span className="text-[10px] font-bold text-[#047857]">Gems Tokyo</span>
+          </div>
+
           {/* Tests Passed Pill */}
-          <div className="p-3 rounded-2xl bg-[#F0F9FF] border border-sky-200 flex flex-col items-center justify-center space-y-0.5">
+          <div className="p-3 rounded-2xl bg-[#F0F9FF] border border-sky-200 flex flex-col items-center justify-center space-y-0.5 shadow-2xs">
             <span className="text-sm">🎯</span>
             <span className="font-mono font-black text-sm sm:text-base text-[#0284C7]">
               100%
@@ -100,7 +109,7 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
           </div>
 
           {/* Streak Pill */}
-          <div className="p-3 rounded-2xl bg-[#FFFBEB] border border-amber-200 flex flex-col items-center justify-center space-y-0.5">
+          <div className="p-3 rounded-2xl bg-[#FFFBEB] border border-amber-200 flex flex-col items-center justify-center space-y-0.5 shadow-2xs">
             <span className="text-sm">🔥</span>
             <span className="font-mono font-black text-sm sm:text-base text-[#D97706]">
               {streakDays} HARI

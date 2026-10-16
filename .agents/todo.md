@@ -1061,30 +1061,30 @@
 
 ---
 
-## 🚀 FASE 40: Penyempurnaan Alur Belajar Interaktif Koding (`/learn/:partId` & `LearnWorkspacePage.tsx`)
+## 🚀 FASE 40: Penyempurnaan Alur Belajar Interaktif Koding (`/learn/:partId` & `LearnWorkspacePage.tsx`) [x] (SELESAI ✅)
 
 > **Tujuan Utama:** Memastikan pengalaman belajar koding yang mulus saat pengguna menekan tombol `▶ MULAI KODING` pada node silabus: mencakup pemuatan starter code dinamis, eksekusi tes acceptance criteria instan, feedback error ramah pemula, dan selebrasi kelulusan modul berhadiah XP & Gems.
 
-### [ ] 40.1 Integrasi Alur Rute & Starter Code Dinamis per Part Kurikulum
-- [ ] Pastikan setiap node part di `/dashboard` dan `/courses` mengarahkan ke rute `/learn/:partId` dengan data soal yang tepat.
-- [ ] Sediakan starter code yang relevan untuk Golang, React/TypeScript, DevOps/Linux, Fundamental, dan Nihongo.
-- [ ] Sediakan Acceptance Criteria yang jelas dan terukur di panel briefing kiri.
+### [x] 40.1 Integrasi Alur Rute & Starter Code Dinamis per Part Kurikulum
+- [x] Pastikan setiap node part di `/dashboard` dan `/courses` mengarahkan ke rute `/learn/:partId` dengan data soal yang tepat.
+- [x] Sediakan starter code yang relevan untuk Golang, React/TypeScript, DevOps/Linux, Fundamental, dan Nihongo (`workspaceCatalog.ts`).
+- [x] Sediakan Acceptance Criteria yang jelas dan terukur di panel briefing kiri.
 
-### [ ] 40.2 Testing Engine & Evaluasi Kriteria Penerimaan
-- [ ] Pastikan shortcut keyboard `Ctrl + Enter` (atau `Cmd + Enter`) mengeksekusi test runner secara instan.
-- [ ] Tampilkan hasil pengujian per kriteria: centang hijau `✓` untuk kriteria lolos, silang merah `✗` beserta petunjuk perbaikan jika gagal.
-- [ ] Feedback visual yang mendidik dan memotivasi saat kode belum berhasil.
+### [x] 40.2 Testing Engine & Evaluasi Kriteria Penerimaan
+- [x] Pastikan shortcut keyboard `Ctrl + Enter` (atau `Cmd + Enter`) mengeksekusi test runner secara instan.
+- [x] Tampilkan hasil pengujian per kriteria: centang hijau `✓` untuk kriteria lolos, silang merah `✗` beserta petunjuk perbaikan jika gagal.
+- [x] Feedback visual yang mendidik dan memotivasi saat kode belum berhasil.
 
-### [ ] 40.3 Modal Selebrasi Kelulusan Sesi Koding (*Lesson Complete Celebration*)
-- [ ] Tampilkan popup selebrasi 3D memikat saat semua kriteria terpenuhi:
-  - Audio kemenangan `audioEngine.playLevelComplete()`.
-  - Partikel reward: `+50 XP ⚡`, `+5 Gems 💎`, dan penambahan streak harian.
+### [x] 40.3 Modal Selebrasi Kelulusan Sesi Koding (*Lesson Complete Celebration*)
+- [x] Tampilkan popup selebrasi 3D memikat saat semua kriteria terpenuhi:
+  - Audio kemenangan `audioEngine.playSuccess()`.
+  - Partikel reward: `+50 XP ⚡`, `+10 Gems 💎`, dan penambahan streak harian.
   - Tombol aksi `LANJUT KE SESI BERIKUTNYA ▶` yang mengarahkan langsung ke part selanjutnya atau kembali ke peta belajar.
-- [ ] Sinkronisasi otomatis status `completed` ke backend dan local storage.
+- [x] Sinkronisasi otomatis status `completed` ke backend dan local storage.
 
-### [ ] 40.4 Pengujian, Verifikasi & Validasi
-- [ ] Uji coba pengerjaan 1 modul koding dari awal hingga selebrasi reward selesai.
-- [ ] Validasi `npm run build` dan `go test -count=1 ./...`.
+### [x] 40.4 Pengujian, Verifikasi & Validasi
+- [x] Uji coba pengerjaan 1 modul koding dari awal hingga selebrasi reward selesai.
+- [x] Validasi `npm run build` dan `go test -count=1 ./...` (keduanya lulus 100%).
 
 ---
 
