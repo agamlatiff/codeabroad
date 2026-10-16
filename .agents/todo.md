@@ -1138,6 +1138,138 @@
 - [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build 711ms).
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 
+---
+
+## 🚀 FASE 43: Audit & Eliminasi Data Dummy Serta UI/UX Refinement pada Halaman Silabus Kurikulum (`/courses` & `RoadmapPage.tsx`) [x] (SELESAI 🏁)
+
+> **Tujuan Utama:** Melakukan audit mendalam dan menyeluruh (*zero-leftover audit*) untuk mengidentifikasi dan mengeliminasi seluruh 13 titik data dummy/hardcoded pada rute silabus `/courses` (`RoadmapPage.tsx` dan seluruh ekosistem komponennya), menyinkronkan state antar-komponen dengan backend API, serta menerapkan rekomendasi Lead UI/UX Engineer untuk menyederhanakan elemen visual berlebih (*visual clutter reduction*) dan menghadirkan *delight factor* pengalaman belajar Duolingo 3D.
+
+---
+
+### 📋 HASIL OBSERVASI LENGKAP AUDIT DATA DUMMY & ANOMALI STATE PADA RUTE `/courses`
+
+1. **🚨 Desinkronisasi State Selesai Antar-Komponen (`RoadmapPage.tsx` vs `GameSidebarRail.tsx` & `DashboardPage.tsx`)**:
+   - **Temuan:** Di `RoadmapPage.tsx:L98` dan `QuestLogPage.tsx:L163`, fallback `completedQuestsSet` di-hardcode ke `new Set(['part-1-variabel-dan-tipe-data'])`. Namun di `GameSidebarRail.tsx:L196` dan `DashboardPage.tsx:L48`, fallback-nya adalah `new Set([])`.
+   - **Dampak Kritis:** Pada halaman `/courses` yang sama, panggung tengah menampilkan Part 1 `SELESAI` (8%), tetapi right sidebar di sebelah kanannya menampilkan tombol `MULAI ▶` (0 XP)!
+   - **Solusi:** Standarisasi semua state progres ke SSOT bersih dari riwayat database backend, tanpa hardcoded quest completion.
+
+2. **🚨 Disconnected Backend Roadmap Hook (`RoadmapPage.tsx` L111)**:
+   - **Temuan:** `const { isLoading } = useRoadmap(activeTrack)` memanggil endpoint backend `GET /api/v1/roadmaps/:track_slug`, namun objek `roadmap`, `stations`, dan `chapters` dari PostgreSQL diabaikan. Halaman murni merender file statis `CURRICULUM_TRACKS_MAP`.
+   - **Dampak:** Silabus di database PostgreSQL tidak menjadi SSOT status unlock/progress, melainkan hanya file statis di bundle frontend.
+   - **Solusi:** Jadikan respons backend sebagai SSOT progres dan unlock status, dengan `CURRICULUM_TRACKS_MAP` sebagai data enrichment (ikon, tema, guidebook).
+
+3. **🚨 Hardcoded PostgreSQL UUID Seed di Logic JSX (`GameSidebarRail.tsx` L247)**:
+   - **Temuan:** Terdapat hardcoded string UUID `'d1000001-0000-0000-0000-000000000001'` di dalam kode React untuk memeriksa apakah quest Go Part 1 selesai.
+   - **Dampak:** Sangat rentan bug jika ID database diubah atau pengguna berada di track selain Golang.
+   - **Solusi:** Gunakan dynamic lookup berbasis slug ID track.
+
+4. **🚨 Hardcoded Array Misi Harian Menimpa API Backend (`GameSidebarRail.tsx` L262-283)**:
+   - **Temuan:** `GameSidebarRail` memanggil `useQuests()` (`GET /api/v1/quests/daily`), tetapi mengabaikan item-item respons backend dan malah me-render array hardcoded 2 item (`trackQuestConfig` & `nihongo-n3-vocab`).
+   - **Dampak:** Misi harian dinamis dari server tidak pernah muncul di sidebar rail halaman `/courses`.
+   - **Solusi:** Hubungkan langsung `dailyQuests` dari backend API ke list quest sidebar rail.
+
+5. **🚨 Inkompatibilitas Track di `CourseSwitcherModal.tsx` & Bug Logo di `GameTopBar.tsx`**:
+   - **Temuan:** `CAREER_TRACKS` di `CourseSwitcherModal.tsx:L40-80` hanya mendaftarkan 3 track (`frontend`, `golang`, `devops`). Track `fundamental` dan `nihongo` hilang!
+   - **Dampak Kritis:** Jika pengguna membuka `/roadmap/fundamental` atau `/roadmap/nihongo`, `GameTopBar.tsx:L84-94` gagal menemukan track dan jatuh ke fallback `CAREER_TRACKS[0]` ("Frontend Engineer React & TS")! Logo dan judul di topbar jadi salah total!
+   - **Solusi:** Daftarkan 5 track lengkap di `CAREER_TRACKS` dan hitung `totalParts` secara dinamis dari `CURRICULUM_TRACKS_MAP` (12 modul per track).
+
+6. **🚨 Desinkronisasi In-Memory Store saat Berganti Track (`RoadmapPage.tsx` L179)**:
+   - **Temuan:** `handleSelectTrack` memanggil `authService.updateProfile({ primary_stack: trackSlug })` ke database, tetapi TIDAK memanggil `updateUser({ primary_stack: trackSlug })` di `useAuthStore`.
+   - **Dampak:** State user in-memory tetap menyimpan track lama. Saat pengguna pindah ke `/quests` lalu kembali ke `/courses`, halaman mereset track kembali ke track lama atau `'golang'`.
+   - **Solusi:** Panggil `updateUser({ primary_stack: trackSlug })` agar tersinkronisasi instan di seluruh tab dan navigasi.
+
+7. **🚨 Fake 5% Empty Progress Bar Hack (`RoadmapPage.tsx` L351)**:
+   - **Temuan:** Progress bar unit menggunakan `style={{ width: `${Math.max(5, unitPercent)}%` }}`.
+   - **Dampak:** Unit yang belum pernah dikerjakan (0% selesai) tetap menampilkan garis terisi 5%, membingungkan pengguna baru karena terlihat seolah sudah dikerjakan sebagian.
+   - **Solusi:** Gunakan `style={{ width: `${unitPercent}%` }}` murni.
+
+8. **🚨 Fallback Placeholder Guidebook (`RoadmapPage.tsx` L71-88)**:
+   - **Temuan:** Objek `fallbackGuidebook` berisi teks dummy generik (`// Contoh implementasi untuk...`, `Contoh Sintaks & Best Practice: Unit 0...`).
+   - **Solusi:** Pastikan seluruh 18 unit dari ke-5 track memiliki data buku panduan lengkap di `COMPREHENSIVE_GUIDEBOOK_DATA`.
+
+9. **🚨 Bonus XP Kuis Panduan Unit Tidak Dipersist ke Backend (`UnitGuidebookModal.tsx` L189)**:
+   - **Temuan:** Menjawab benar kuis konsep di Guidebook menambah +10 XP di state lokal Zustand (`updateUser`), tetapi tidak ada pemanggilan API ke backend untuk menyimpan reward tersebut.
+   - **Dampak:** Saat halaman di-refresh, +10 XP bonus hilang.
+   - **Solusi:** Sambungkan reward kuis guidebook ke endpoint reward backend.
+
+10. **🚨 Copy Teks Unit Milestone Trophy Menyesatkan (`RoadmapPage.tsx` L497)**:
+    - **Temuan:** Teks `+{unit.totalXp} XP telah ditambahkan ke profil Anda` berbunyi seolah ada bonus ekstra lump-sum 150 XP yang dikreditkan saat unit tuntas, padahal tidak ada endpoint backend penambahan XP kelulusan unit.
+    - **Solusi:** Perjelas copy menjadi `Seluruh sesi Unit 0{unit.unitNumber} lulus 100%! (+{unit.totalXp} XP total terkumpul)`.
+
+11. **🚨 Duplikasi Definisi Kurikulum antara Dashboard dan Silabus (`CurriculumPathMap.tsx` vs `curriculumData.ts`)**:
+    - **Temuan:** `CurriculumPathMap.tsx` menduplikasi kurikulum di `TRACK_CURRICULA`, dan route pada node-nya mengarah ke `/courses` bukan ke sesi koding `/learn/:id`.
+    - **Solusi:** Satukan SSOT data kurikulum ke `curriculumData.ts` dan pastikan klik node konsisten mengarah ke workspace koding `/learn/:id`.
+
+12. **🚨 Hardcoded 75.0 Readiness Score di Workspace Submit (`workspaceCatalog.ts` L503)**:
+    - **Temuan:** `current_readiness_score: 75.0` di-hardcode secara statis pada respons submit modul lokal.
+    - **Solusi:** Hitung readiness score secara proporsional berbasis total modul yang telah diselesaikan.
+
+13. **🚨 Nilai Hardcoded Total Parts di Switcher Modal (`CourseSwitcherModal.tsx` L52, L65, L78)**:
+    - **Temuan:** `totalParts: 10`, `11`, `10` di-hardcode padahal silabus riil memiliki 12 parts per track di `curriculumData.ts`.
+    - **Solusi:** Hitung total parts dinamis dari panjang array parts `CURRICULUM_TRACKS_MAP`.
+
+---
+
+### 🎨 PERSPEKTIF LEAD UI/UX ENGINEER: REKOMENDASI DESAIN & ERGONOMI
+
+#### A. Bagian yang Sebaiknya Dihapus / Disederhanakan (*Visual Clutter Reduction*):
+1. **Hapus Sound Toggle Global di GameTopBar (`GameTopBar.tsx`)**:
+   - Web app ini tidak memiliki background music. Suara pelafalan bahasa Jepang sudah memiliki tombol audio tersendiri di setiap kartu kosakata dan modal panduan.
+   - Ikon speaker di top bar hanya menambah beban kognitif dan membingungkan pengguna. Pindahkan preferensi suara ke modal *Account Settings*.
+2. **Hapus Redundansi Penamaan pada Banner Unit ([RoadmapPage.tsx:L254-263](file:///c:/Projects/codeabroad/frontend/src/pages/RoadmapPage.tsx#L254-L263))**:
+   - Di badge atas tertulis `UNIT 01 • SINTAKS DASAR` lalu tepat di bawahnya ada teks `Unit 1: Fondasi Sintaks...`.
+   - Mengulang kata "Unit 1" dua kali dalam jarak 10 piksel memakan ruang vertikal. Ubah badge atas menjadi kategori murni (misal: `SINTAKS & MEMORI`), sehingga judul utama di bawahnya lebih menonjol dan lebih hemat ruang 12px.
+3. **Hilangkan Dummy Fallback Part 1 Selesai**:
+   - User baru wajib melihat 0% untuk memicu kepuasan psikologis *zero-to-one* saat menyelesaikan latihan pertama.
+
+#### B. Bagian yang Perlu di-Refine (*Delight & Interaction Improvements*):
+1. **Interactive Locked Node Micro-Feedback**:
+   - Saat ini modul yang terkunci (`LockSimple`) tidak bereaksi apa pun saat diklik (*dead-click*).
+   - Berikan micro-interaction: getar lembut (*tactile wobble*) dan micro-tooltip mengambang: *"Selesaikan modul sebelumnya untuk membuka sesi ini 🔒"*.
+2. **Compact & Clean Unit Header**:
+   - Rampingkan ukuran banner unit dan buat tombol `Buku Panduan Unit` menjadi pill taktil yang menyatu elegan dengan baris status kelulusan di dalam banner unit.
+3. **Mobile Quick-Access Floating Dock**:
+   - Di mobile view (di mana sidebar rail berada di bawah 12 modul), sediakan floating dock ringkas di pojok kanan bawah untuk akses cepat ke Kosakata Tokyo & Daily Chest tanpa harus scroll panjang.
+
+---
+
+### 📋 RINCIAN SUBTASK FASE 43
+
+### [x] 43.1 Eliminasi Fallback Dummy & Standardisasi State Progres Lintas Komponen
+- [x] Ubah default state `completedQuestsSet` di `RoadmapPage.tsx` dan `QuestLogPage.tsx` dari hardcoded `['part-1-variabel-dan-tipe-data']` menjadi state bersih `[]`.
+- [x] Hapus hardcoded PostgreSQL UUID `'d1000001-0000-0000-0000-000000000001'` di `GameSidebarRail.tsx`.
+- [x] Hilangkan fake 5% progress bar hack (`Math.max(5, unitPercent)`) di `RoadmapPage.tsx`.
+- [x] Pastikan akun baru memulai silabus dari progress 0% dengan modul Part 1 berstatus aktif dan modul selanjutnya terkunci.
+
+### [x] 43.2 Integrasi SSOT Backend API Roadmap, Quests & Store Sync
+- [x] Hubungkan `useRoadmap` ke state `RoadmapPage.tsx` untuk memvalidasi kelulusan unit dan chapter langsung dari database PostgreSQL.
+- [x] Perbarui `GameSidebarRail.tsx` agar merender misi harian dinamis dari endpoint `GET /api/v1/quests/daily`.
+- [x] Sinkronkan `updateUser({ primary_stack: trackSlug })` di `handleSelectTrack` agar track tidak reset saat berpindah halaman.
+- [x] Pastikan event `codeabroad_quest_completed` secara realtime memperbarui status node silabus tanpa perlu refresh browser.
+
+### [x] 43.3 Penyempurnaan `CourseSwitcherModal.tsx` & Pemulihan Logo/Judul `GameTopBar.tsx`
+- [x] Daftarkan seluruh 5 track resmi CodeAbroad ke `CAREER_TRACKS`:
+  1. Frontend Engineer (React & TypeScript)
+  2. Backend Engineer (Golang)
+  3. DevOps & Cloud Engineer (Docker, K8s, AWS)
+  4. Fondasi Pemrograman & Computer Science (C / Pointer / OS)
+  5. Bahasa Jepang IT Tokyo (Tech Nihongo & Etika Kantor)
+- [x] Perbaiki resolusi `currentTrackConfig` di `GameTopBar.tsx` agar logo dan judul track Fundamental dan Nihongo tampil akurat (bukan fallback ke Frontend).
+- [x] Hitung `totalParts` dan `completedParts` secara dinamis dari `CURRICULUM_TRACKS_MAP`.
+
+### [x] 43.4 UI/UX Refinement: Pembersihan Clutter & Micro-Interactions Duolingo 3D
+- [x] Hapus toggle audio global redundan dari `GameTopBar.tsx` untuk menyederhanakan topbar HUD.
+- [x] Bersihkan penamaan ganda pada banner unit (hapus repetisi teks "Unit 01" pada tag header).
+- [x] Tambahkan animasi tactile wobble + micro-tooltip pada tombol modul yang terkunci saat diklik.
+- [x] Perbaiki copy trophy kelulusan unit agar akurat dan mendidik.
+- [x] Sediakan mobile floating dock untuk akses cepat Kosakata Tokyo & Daily Chest pada viewport kecil.
+
+### [x] 43.5 Pengujian, Verifikasi & Validasi
+- [x] Validasi alur pemilihan track di 5 spesialisasi.
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+
+
 
 
 

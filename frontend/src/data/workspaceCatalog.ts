@@ -491,6 +491,18 @@ export const generateSubmitResponse = (quest: Quest, user: User | null): SubmitQ
   const currentStreak = (user?.streak || 1) + 1
   const nextId = findNextQuestId(quest.id)
 
+  // Dynamically compute Tokyo readiness score based on completed units and accumulated XP
+  let completedCount = 0
+  try {
+    const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+    if (Array.isArray(stored)) {
+      completedCount = stored.length
+    }
+  } catch {
+    completedCount = 1
+  }
+  const dynamicReadiness = Math.min(99.0, Math.round((20 + (completedCount * 3.5) + (currentXp / 80)) * 10) / 10)
+
   return {
     quest_id: quest.id,
     xp_awarded: xpReward,
@@ -500,7 +512,7 @@ export const generateSubmitResponse = (quest: Quest, user: User | null): SubmitQ
     current_xp: currentXp,
     current_level: user?.current_level || 1,
     readiness_increase: 2.5,
-    current_readiness_score: 75.0,
+    current_readiness_score: dynamicReadiness,
     unlocked_vocab: quest.nihongo_notes,
     next_quest: {
       id: nextId,

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import {
   BookOpen,
   Code,
@@ -59,7 +59,29 @@ export const UnitGuidebookModal = ({
   // Quiz state
   const [selectedOption, setSelectedOption] = useState<number | null>(null)
   const [isAnswered, setIsAnswered] = useState(false)
-  const [quizBonusAwarded, setQuizBonusAwarded] = useState(false)
+  const [quizBonusAwarded, setQuizBonusAwarded] = useState(() => {
+    try {
+      return content?.unitNumber
+        ? localStorage.getItem(`codeabroad_guidebook_quiz_unit_${content.unitNumber}`) === 'true'
+        : false
+    } catch {
+      return false
+    }
+  })
+
+  // Synchronize quiz status when active guidebook content changes
+  useEffect(() => {
+    if (content?.unitNumber) {
+      try {
+        const isAwarded = localStorage.getItem(`codeabroad_guidebook_quiz_unit_${content.unitNumber}`) === 'true'
+        setQuizBonusAwarded(isAwarded)
+      } catch {
+        setQuizBonusAwarded(false)
+      }
+    }
+    setSelectedOption(null)
+    setIsAnswered(false)
+  }, [content?.unitNumber])
 
   // Derive smart concept quiz for the unit
   const activeQuiz: GuidebookQuiz = useMemo(() => {
@@ -184,6 +206,11 @@ export const UnitGuidebookModal = ({
       if (!quizBonusAwarded) {
         setQuizBonusAwarded(true)
         const bonusXp = 10
+        try {
+          if (content?.unitNumber) {
+            localStorage.setItem(`codeabroad_guidebook_quiz_unit_${content.unitNumber}`, 'true')
+          }
+        } catch {}
         window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: bonusXp } }))
         if (user) {
           updateUser({ xp: (user.xp || 0) + bonusXp })

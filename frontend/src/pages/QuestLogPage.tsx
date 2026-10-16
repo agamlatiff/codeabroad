@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
 import { authService } from '../services/authService'
+import { questService } from '../services/questService'
 import { useQuests } from '../hooks/useQuests'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
@@ -156,15 +157,40 @@ export const QuestLogPage = () => {
     }
   })
 
-  // Completed quests persistence set
+  // Completed quests persistence set (clean SSOT)
   const [completedQuestsSet, setCompletedQuestsSet] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem('codeabroad_completed_quests')
-      return stored ? new Set(JSON.parse(stored)) : new Set(['part-1-variabel-dan-tipe-data'])
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>()
     } catch {
-      return new Set(['part-1-variabel-dan-tipe-data'])
+      return new Set<string>()
     }
   })
+
+  // Fetch real user completed quests from backend API
+  useEffect(() => {
+    let isMounted = true
+    questService
+      .listQuests()
+      .then((quests) => {
+        if (!isMounted || !quests || quests.length === 0) return
+        setCompletedQuestsSet((prev) => {
+          const next = new Set(prev)
+          quests.forEach((q) => {
+            if (q.user_status === 'completed') {
+              next.add(q.id)
+            }
+          })
+          return next
+        })
+      })
+      .catch(() => {
+        // Gracefully continue with local storage
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Sync completed quests on custom event
   useEffect(() => {
@@ -203,6 +229,7 @@ export const QuestLogPage = () => {
     triggerHaptic('success')
     setActiveTrack(trackSlug)
     setIsCourseSwitcherOpen(false)
+    updateUser({ primary_stack: trackSlug })
     try {
       await authService.updateProfile({ primary_stack: trackSlug })
     } catch {

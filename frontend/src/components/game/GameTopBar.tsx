@@ -4,8 +4,6 @@ import {
   Fire,
   Star,
   Trophy,
-  SpeakerSimpleSlash,
-  SpeakerSimpleHigh,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -16,7 +14,6 @@ import {
 } from '../ui/BrandLogos'
 import { CAREER_TRACKS } from './CourseSwitcherModal'
 import { useAuthStore } from '../../store/authStore'
-import { audioEngine } from '../../utils/audio'
 import { triggerHaptic } from '../../utils/haptics'
 
 export interface GameTopBarProps {
@@ -45,21 +42,8 @@ export const GameTopBar = ({
   const userStreak = typeof user?.streak === 'number' ? user.streak : 0
   const userLevel = typeof user?.current_level === 'number' ? user.current_level : 1
 
-  // Sound Engine mute state
-  const [isMuted, setIsMuted] = useState(() => audioEngine.isMuted())
-
   // XP pulse animation state
   const [isXpPulsing, setIsXpPulsing] = useState(false)
-
-  // Listen for audio toggle events across windows/components
-  useEffect(() => {
-    const handleSoundToggle = (e: Event) => {
-      const customEvent = e as CustomEvent<{ muted: boolean }>
-      setIsMuted(customEvent.detail.muted)
-    }
-    window.addEventListener('codeabroad_sound_toggle', handleSoundToggle)
-    return () => window.removeEventListener('codeabroad_sound_toggle', handleSoundToggle)
-  }, [])
 
   // Listen for XP gains to trigger micro-bounce animation
   useEffect(() => {
@@ -71,14 +55,7 @@ export const GameTopBar = ({
     return () => window.removeEventListener('codeabroad_xp_gained', handleXp)
   }, [])
 
-  const handleToggleSound = () => {
-    triggerHaptic('tap')
-    const nextMuted = audioEngine.toggleMute()
-    setIsMuted(nextMuted)
-    if (!nextMuted) {
-      audioEngine.playPop()
-    }
-  }
+
 
   // Active track configuration from CAREER_TRACKS
   const currentTrackConfig = useMemo(() => {
@@ -175,20 +152,6 @@ export const GameTopBar = ({
           <span className="hidden sm:inline">Liga</span>
         </button>
 
-        {/* Audio Sound Toggle */}
-        <div className="w-[1px] h-3.5 bg-slate-200" />
-        <button
-          type="button"
-          onClick={handleToggleSound}
-          className="text-slate-400 hover:text-slate-700 transition-colors cursor-pointer flex items-center justify-center p-1 rounded-lg hover:bg-slate-100 active:translate-y-0.5"
-          title={isMuted ? 'Aktifkan Efek Suara' : 'Bisukan Efek Suara'}
-        >
-          {isMuted ? (
-            <SpeakerSimpleSlash weight="bold" className="w-4 h-4 text-slate-400" />
-          ) : (
-            <SpeakerSimpleHigh weight="bold" className="w-4 h-4 text-blue-600" />
-          )}
-        </button>
       </div>
     </div>
   )

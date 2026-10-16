@@ -242,9 +242,7 @@ export const GameSidebarRail = ({
     }
   }, [activeTrack])
 
-  const isCurrentTrackPart1Completed =
-    completedQuestsSet.has(trackQuestConfig.id) ||
-    completedQuestsSet.has('d1000001-0000-0000-0000-000000000001')
+  const isCurrentTrackPart1Completed = completedQuestsSet.has(trackQuestConfig.id)
 
   const completedApiXp = completedDailyQuests.reduce((sum, q) => sum + (q.xp_reward || 0), 0)
   const todayEarnedXp = Math.min(
@@ -258,29 +256,58 @@ export const GameSidebarRail = ({
   const isChestUnlocked = todayEarnedXp >= dailyTargetXp
   const remainingXp = Math.max(0, dailyTargetXp - todayEarnedXp)
 
-  // Active Daily Quests with realistic state adapted to current track
-  const activeQuests = [
-    {
-      id: trackQuestConfig.id,
-      title: trackQuestConfig.title,
-      chip_label: trackQuestConfig.chip_label,
-      route: trackQuestConfig.route,
-      xp_reward: 50,
-      user_status: (isCurrentTrackPart1Completed ? 'completed' : 'available') as 'completed' | 'available',
-    },
-    {
-      id: 'nihongo-n3-vocab',
-      title: 'Review 1 Kosakata Standup Tokyo',
-      chip_label: 'STANDUP IT',
-      route: '#tech-nihongo-card',
-      xp_reward: 30,
-      user_status: (claimedLocalQuest
-        ? 'completed'
-        : reviewedNihongoToday
-        ? 'ready_to_claim'
-        : 'available') as 'completed' | 'ready_to_claim' | 'available',
-    },
-  ]
+  // Active Daily Quests with realistic state adapted to current track and backend API
+  const activeQuests = useMemo(() => {
+    const defaultQuests = [
+      {
+        id: trackQuestConfig.id,
+        title: trackQuestConfig.title,
+        chip_label: trackQuestConfig.chip_label,
+        route: trackQuestConfig.route,
+        xp_reward: 50,
+        user_status: (isCurrentTrackPart1Completed ? 'completed' : 'available') as 'completed' | 'available' | 'ready_to_claim',
+      },
+      {
+        id: 'nihongo-n3-vocab',
+        title: 'Review 1 Kosakata Standup Tokyo',
+        chip_label: 'STANDUP IT',
+        route: '#tech-nihongo-card',
+        xp_reward: 30,
+        user_status: (claimedLocalQuest
+          ? 'completed'
+          : reviewedNihongoToday
+          ? 'ready_to_claim'
+          : 'available') as 'completed' | 'available' | 'ready_to_claim',
+      },
+    ]
+
+    if (dailyQuests && dailyQuests.length > 0) {
+      const apiMapped = dailyQuests.slice(0, 3).map((q) => ({
+        id: q.id,
+        title: q.title,
+        chip_label: q.chip_label || 'MISI HARIAN',
+        route: `/learn/${q.id}`,
+        xp_reward: q.xp_reward || 30,
+        user_status: (completedQuestsSet.has(q.id) || q.user_status === 'completed'
+          ? 'completed'
+          : 'available') as 'completed' | 'available' | 'ready_to_claim',
+      }))
+      const hasNihongo = apiMapped.some((q) => q.id.includes('nihongo') || q.title.toLowerCase().includes('jepang'))
+      if (!hasNihongo) {
+        return [...apiMapped.slice(0, 2), defaultQuests[1]]
+      }
+      return apiMapped
+    }
+
+    return defaultQuests
+  }, [
+    dailyQuests,
+    trackQuestConfig,
+    isCurrentTrackPart1Completed,
+    claimedLocalQuest,
+    reviewedNihongoToday,
+    completedQuestsSet,
+  ])
 
   return (
     <>

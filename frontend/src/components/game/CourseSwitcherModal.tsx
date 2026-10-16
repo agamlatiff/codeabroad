@@ -14,6 +14,7 @@ import {
   FundamentalLogo,
   TechNihongoLogo,
 } from '../ui/BrandLogos'
+import { CURRICULUM_TRACKS_MAP } from '../../data/curriculumData'
 
 export interface CareerTrackItem {
   id: string
@@ -39,43 +40,69 @@ export interface CourseSwitcherModalProps {
 
 export const CAREER_TRACKS: CareerTrackItem[] = [
   {
+    id: 'track-golang',
+    slug: 'golang',
+    title: 'Backend Engineer (Golang)',
+    subtitle: 'Arsitektur Server, REST API Gin, Database Pgx, Concurrency & Nihongo Kerja Tokyo',
+    category: 'coding',
+    iconType: 'golang',
+    badgeLabel: 'Sedang Populer',
+    badgeVariant: 'active',
+    progressPercent: 0,
+    partsCompleted: 0,
+    totalParts: CURRICULUM_TRACKS_MAP['golang']?.flatMap((u) => u.parts).length || 12,
+  },
+  {
     id: 'track-frontend',
     slug: 'frontend',
     title: 'Frontend Engineer (React & TS)',
-    subtitle: 'Dasar IT, Komponen UI, Integrasi REST API & Bahasa Jepang Kerja Tokyo',
+    subtitle: 'Strict TypeScript, Arsitektur Komponen, Custom Hooks, REST API & Nihongo Kerja Tokyo',
     category: 'coding',
     iconType: 'frontend',
     badgeLabel: 'Populer',
     badgeVariant: 'featured',
     progressPercent: 0,
     partsCompleted: 0,
-    totalParts: 10,
-  },
-  {
-    id: 'track-golang',
-    slug: 'golang',
-    title: 'Backend Engineer (Golang)',
-    subtitle: 'Dasar IT, Arsitektur Server, REST API Gin, Database & Bahasa Jepang Kerja Tokyo',
-    category: 'coding',
-    iconType: 'golang',
-    badgeLabel: 'Sedang Aktif',
-    badgeVariant: 'active',
-    progressPercent: 0,
-    partsCompleted: 0,
-    totalParts: 11,
+    totalParts: CURRICULUM_TRACKS_MAP['frontend']?.flatMap((u) => u.parts).length || 12,
   },
   {
     id: 'track-devops',
     slug: 'devops',
     title: 'DevOps & Cloud Engineer',
-    subtitle: 'Dasar IT, Linux Systemd, Container Docker, CI/CD & Bahasa Jepang Kerja Tokyo',
+    subtitle: 'Linux Systemd, Container Docker, CI/CD Pipeline, Cloud Infra & Nihongo Kerja Tokyo',
     category: 'coding',
     iconType: 'devops',
     badgeLabel: 'Tersedia',
     badgeVariant: 'available',
     progressPercent: 0,
     partsCompleted: 0,
-    totalParts: 10,
+    totalParts: CURRICULUM_TRACKS_MAP['devops']?.flatMap((u) => u.parts).length || 12,
+  },
+  {
+    id: 'track-fundamental',
+    slug: 'fundamental',
+    title: 'Dasar IT & Computer Science',
+    subtitle: 'Arsitektur CPU, Stack vs Heap, Algoritma, Big-O, Git Collaborative & Protokol HTTP',
+    category: 'coding',
+    iconType: 'fundamental',
+    badgeLabel: 'Fondasi',
+    badgeVariant: 'available',
+    progressPercent: 0,
+    partsCompleted: 0,
+    totalParts: CURRICULUM_TRACKS_MAP['fundamental']?.flatMap((u) => u.parts).length || 9,
+  },
+  {
+    id: 'track-nihongo',
+    slug: 'nihongo',
+    title: 'Tech Nihongo & Kerja Tokyo',
+    subtitle: 'Aisatsu, Standup Meeting Asakai, Sekkeisho, Code Review & Simulasi Mensetsu Tokyo',
+    category: 'language',
+    iconType: 'nihongo',
+    badgeLabel: 'Bahasa Kerja',
+    badgeVariant: 'available',
+    progressPercent: 0,
+    partsCompleted: 0,
+    totalParts: CURRICULUM_TRACKS_MAP['nihongo']?.flatMap((u) => u.parts).length || 9,
   },
 ]
 
@@ -111,11 +138,16 @@ export const CourseSwitcherModal = ({
   }
 
   const renderTrackCard = (track: CareerTrackItem) => {
-    const isCurrent = track.slug === currentTrack
+    const isCurrent =
+      track.slug === currentTrack ||
+      (currentTrack === 'backend' && track.slug === 'golang') ||
+      (currentTrack === 'react' && track.slug === 'frontend') ||
+      (currentTrack === 'devops_aws' && track.slug === 'devops')
     const stats = trackProgressMap?.[track.slug]
     const completed = stats ? stats.completed : track.partsCompleted
-    const total = stats ? stats.total : track.totalParts
-    const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : track.progressPercent
+    const dynamicTotal = CURRICULUM_TRACKS_MAP[track.slug]?.flatMap((u) => u.parts).length || track.totalParts
+    const total = stats?.total || dynamicTotal
+    const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0
 
     return (
       <div

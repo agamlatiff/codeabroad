@@ -1402,7 +1402,11 @@ func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
                 fullWidth
                 onClick={() => {
                   setActiveModalNode(null)
-                  navigate(activeModalNode.route)
+                  const targetRoute =
+                    activeModalNode.route && activeModalNode.route !== '/courses'
+                      ? activeModalNode.route
+                      : `/learn/${activeModalNode.id}`
+                  navigate(targetRoute)
                 }}
                 className="text-xs py-2.5 shadow-[0_3px_0_0_#047857]"
               >
@@ -1677,7 +1681,11 @@ func worker(id int, jobs <-chan int, results chan<- int, wg *sync.WaitGroup) {
                               fullWidth
                               onClick={(e) => {
                                 e.stopPropagation()
-                                navigate(node.route)
+                                const targetRoute =
+                                  node.route && node.route !== '/courses'
+                                    ? node.route
+                                    : `/learn/${node.id}`
+                                navigate(targetRoute)
                               }}
                               className="text-[10px] py-1.5"
                             >

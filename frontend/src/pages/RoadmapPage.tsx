@@ -26,6 +26,7 @@ import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
 import type { GuidebookContent } from '../components/game/UnitGuidebookModal'
 import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
 import { authService } from '../services/authService'
+import { questService } from '../services/questService'
 import {
   CURRICULUM_TRACKS_MAP,
   TRACK_UNIT_THEMES,
@@ -91,15 +92,18 @@ export const RoadmapPage = () => {
   }
 
 
-  // Completed quests persistence set
+  // Completed quests persistence set (clean SSOT starting from user's real progress)
   const [completedQuestsSet, setCompletedQuestsSet] = useState<Set<string>>(() => {
     try {
       const stored = localStorage.getItem('codeabroad_completed_quests')
-      return stored ? new Set(JSON.parse(stored)) : new Set(['part-1-variabel-dan-tipe-data'])
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>()
     } catch {
-      return new Set(['part-1-variabel-dan-tipe-data'])
+      return new Set<string>()
     }
   })
+
+  // Micro-feedback state for locked node clicks
+  const [lockedNotification, setLockedNotification] = useState<string | null>(null)
 
   // Sync track when route parameter changes
   useEffect(() => {
@@ -110,6 +114,30 @@ export const RoadmapPage = () => {
 
   const { isLoading } = useRoadmap(activeTrack)
 
+  // Fetch real user completed quests from backend API
+  useEffect(() => {
+    let isMounted = true
+    questService
+      .listQuests()
+      .then((quests) => {
+        if (!isMounted || !quests || quests.length === 0) return
+        setCompletedQuestsSet((prev) => {
+          const next = new Set(prev)
+          quests.forEach((q) => {
+            if (q.user_status === 'completed') {
+              next.add(q.id)
+            }
+          })
+          return next
+        })
+      })
+      .catch(() => {
+        // Gracefully continue with local storage
+      })
+    return () => {
+      isMounted = false
+    }
+  }, [])
 
   // Listen for quest completion events
   useEffect(() => {
@@ -175,11 +203,22 @@ export const RoadmapPage = () => {
     setActiveTrack(trackSlug)
     setIsCourseSwitcherOpen(false)
     navigate(`/roadmap/${trackSlug}`)
+    useAuthStore.getState().updateUser({ primary_stack: trackSlug })
     try {
       await authService.updateProfile({ primary_stack: trackSlug })
     } catch {
       // Gracefully continue with local state
     }
+  }
+
+  // Micro-interaction handler for locked curriculum nodes
+  const handleLockedNodeClick = (partTitle: string) => {
+    triggerHaptic('tap')
+    audioEngine.playPop()
+    setLockedNotification(`Selesaikan modul sebelumnya untuk membuka: "${partTitle}" 🔒`)
+    setTimeout(() => {
+      setLockedNotification((curr) => (curr?.includes(partTitle) ? null : curr))
+    }, 3200)
   }
 
 
@@ -259,7 +298,7 @@ export const RoadmapPage = () => {
                                 : 'bg-slate-200 border border-slate-300 text-slate-700'
                             }`}
                           >
-                            UNIT 0{unit.unitNumber} • {unit.tag}
+                            {unit.tag}
                           </span>
 
                           {isUnitCompleted ? (
@@ -348,7 +387,7 @@ export const RoadmapPage = () => {
                                 ? 'bg-white'
                                 : 'bg-slate-400'
                             }`}
-                            style={{ width: `${Math.max(5, unitPercent)}%` }}
+                            style={{ width: `${unitPercent}%` }}
                           />
                         </div>
                       </div>
@@ -470,10 +509,15 @@ export const RoadmapPage = () => {
                                 </div>
                               </Button3D>
                             ) : (
-                              <div className="px-3.5 py-2 rounded-xl bg-slate-100 border-2 border-slate-200 text-slate-400 text-xs font-bold flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => handleLockedNodeClick(part.title)}
+                                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                                title="Modul ini masih terkunci. Klik untuk informasi."
+                              >
                                 <LockSimple weight="bold" className="w-3.5 h-3.5" />
                                 <span>Terkunci</span>
-                              </div>
+                              </button>
                             )}
                           </div>
                         </div>
@@ -494,7 +538,7 @@ export const RoadmapPage = () => {
                             Unit 0{unit.unitNumber} Lulus 100%!
                           </span>
                           <span className="text-[11px] text-emerald-700 font-medium">
-                            +{unit.totalXp} XP telah ditambahkan ke profil Anda.
+                            Seluruh sesi Unit 0{unit.unitNumber} tuntas (+{unit.totalXp} XP total terkumpul).
                           </span>
                         </div>
                       </div>
@@ -540,6 +584,50 @@ export const RoadmapPage = () => {
           }
         }}
       />
+
+      {/* ── 4. MICRO-INTERACTION TOAST (LOCKED NODE FEEDBACK) ── */}
+      {lockedNotification && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 flex items-center gap-3 backdrop-blur-md animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+            <LockSimple weight="bold" className="w-4 h-4" />
+          </div>
+          <span className="text-xs font-semibold">{lockedNotification}</span>
+        </div>
+      )}
+
+      {/* ── 5. MOBILE QUICK-ACCESS FLOATING DOCK (Subtask 43.4) ── */}
+      <div className="xl:hidden fixed bottom-20 right-4 z-30 flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic('tap')
+            const el = document.getElementById('daily-quests-section')
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }}
+          className="px-3.5 py-2 rounded-2xl bg-white/95 backdrop-blur-md border-2 border-slate-300 text-slate-800 shadow-lg text-xs font-brand font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+          title="Lompat ke Misi Harian & Target XP"
+        >
+          <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-500" />
+          <span>Misi Harian</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => {
+            triggerHaptic('tap')
+            const el = document.getElementById('tech-nihongo-card')
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            }
+          }}
+          className="px-3.5 py-2 rounded-2xl bg-rose-500 border-2 border-rose-600 text-white shadow-lg text-xs font-brand font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
+          title="Lompat ke Kosakata Kerja Tokyo"
+        >
+          <span>🌸 Kosakata</span>
+        </button>
+      </div>
     </div>
   )
 }
