@@ -1269,6 +1269,88 @@
 - [x] Validasi `npm run build` di `frontend/` (0 error TypeScript).
 - [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 
+---
+
+## 🚀 FASE 44: Redesain Total Papan Misi `/quests` (Akihabara Bounty & Mission Hub) & Eliminasi Dummy Data [x] (SELESAI ✅)
+
+> **Tujuan Utama:** Mentransformasikan rute `/quests` agar memiliki identitas desain visual dan layout yang **berbeda total dan jauh lebih menarik daripada rute kurikulum `/courses`**. Jika `/courses` bertema *Peta Perjalanan Linier (Linear Stepped Path)*, maka `/quests` akan bertema **"Pusat Sayembara Koding Tokyo (Akihabara Bounty & Guild Hub)"** dengan atmosfer papan buletin sayembara RPG, stempel Inkan/Hanko Jepang untuk penyelesaian misi, paspor visa karier boarding pass, poster buronan boss raid, serta etalase Arcade Shop neon yang interaktif — sekaligus menghapus seluruh sisa data dummy secara tuntas.
+
+---
+
+### 🎨 PERSPEKTIF LEAD UI/UX ENGINEER: PERBEDAAN IDENTITAS DESAIN `/quests` VS `/courses`
+
+| Elemen Desain | Rute Kurikulum `/courses` | Rute Papan Misi `/quests` (Konsep Baru) |
+| :--- | :--- | :--- |
+| **Metafora Dunia** | Peta Perjalanan Stasiun Kereta Tokyo (*Subway Path Map*) | Papan Sayembara Guild Petualang (*Tokyo Bounty & Guild Board*) |
+| **Struktur Layout** | Alur zig-zag vertikal dari node ke node | Grid papan pengumuman taktil multi-seksi dengan pin & stempel memo |
+| **Indikator Selesai** | Centang node hijau + mahkota emas | Stempel Merah Tradisional Jepang **「合格」(Lulus)** / **「受領」(Diterima)** |
+| **Misi Karier** | Rantai modul per unit | Format **Paspor Visa Karier (Career Stamp Passport & Boarding Pass)** |
+| **Tantangan Boss** | Node capstone di ujung rantai | **Poster Sayembara Buronan (Wanted Bounty Poster)** berbingkai emas & pita sponsor |
+| **Toko Hadiah** | Tidak ada | **Akihabara Retro Arcade & Gachapon Cabinet** dengan kartu neon & chime coin |
+
+---
+
+### 📋 RINCIAN SUBTASK FASE 44
+
+### [x] 44.1 Eliminasi Total Data Dummy & Sinkronisasi SSOT Bersih
+- [x] **Hapus Fake Completed Status di Misi Harian**:
+  - Hapus `idx === 0` pada pemetaan `dailyQuests` di `QuestLogPage.tsx:L311`.
+  - Hapus `isCompleted: true` pada daftar fallback misi harian di `QuestLogPage.tsx:L325`.
+  - Gunakan SSOT murni: `q.user_status === 'completed' || completedQuestsSet.has(q.id) || !!claimedDailyMap[q.id]`.
+- [x] **Hapus Fake 30% Progress Fallback di Topbar**:
+  - Ubah `const completedCount = hookCompletedCount || 3` di `QuestLogPage.tsx:L452` menjadi perhitungan riil `completedQuestsSet.size` atau `hookCompletedCount ?? 0`.
+  - Pastikan user baru yang belum menyelesaikan misi melihat status akurat `0/10 Misi (0%)`.
+- [x] **Hapus Fallback Dummy 45 Gems & Default 1x Streak Freeze**:
+  - Ubah default `userGems` dari `45` menjadi `user?.gems ?? 0`.
+  - Tambahkan `useEffect` reaktif untuk sinkronisasi `userGems` saat nilai di `useAuthStore` berubah.
+  - Inisialisasi inventaris toko menjadi default `0` untuk semua item (`streak-freeze`, `xp-booster`, dll).
+- [x] **Perbaiki Rute Broken pada Tantangan Portofolio (Boss Quests)**:
+  - Hubungkan Boss Worker Pool ke `/learn/part-7-worker-pool-concurrency` (bukan part-8 yang tidak ada).
+  - Hubungkan Capstone ke `/learn/part-11-clean-architecture-repository` (bukan part-10 yang tidak ada).
+  - Sambungkan status kelulusannya ke `completedQuestsSet.has(...)`.
+
+### [x] 44.2 Header Imersif: "Tokyo Guild Reception & Bounty Hunter License"
+- [x] **Bounty Hunter License Card**:
+  - Tampilkan kartu lisensi koding taktil 3D: avatar Kodi, peringkat lisensi engineer (Rank E / C / A / S), dan badge multiplier streak aktif (misal: `🔥 Streak 2 Hari: Bonus XP 1.2x Aktif`).
+- [x] **Retro-Modern Countdown Terminal**:
+  - Tampilkan display jam countdown digital mini bergaya neon Akihabara untuk reset misi harian (00:00 JST / 22:00 WIB) dengan indikator status waktu nyata.
+- [x] **Bounty Filter Bar dengan Personality 3D**:
+  - Tombol filter taktil: `Papan Sayembara 📜`, `Misi Harian ⚡`, `Paspor Karier 🚀`, `Sayembara Boss 🏮`, dan `Arcade Gems 💎`.
+
+### [x] 44.3 Papan Sayembara Misi Harian ("Tokyo Daily Bounties") dengan Stempel Inkan Merah
+- [x] **Desain Papan Buletin Memo Taktil**:
+  - Format kartu misi memo yang menempel di papan sayembara dengan pin taktil dan aksen border dinamis.
+- [x] **Efek Stempel Merah Hanko/Inkan Jepang**:
+  - Hadirkan stempel merah khas Jepang **「合格」 (Passed)** atau **「受領」 (Claimed)** yang tertera di sudut kartu saat misi selesai.
+- [x] **Peti Progres Sayembara Harian**:
+  - Bar progres harian dengan 3 milestone peti bonus: 1 Misi (Perunggu), 2 Misi (Perak), 3 Misi (Emas Akihabara).
+
+### [x] 44.4 Paspor Kerja Tokyo ("Career Stamp Passport & Visa Clearance")
+- [x] **Format Tiket Boarding Pass / Visa Clearance**:
+  - Kartu misi jalur karier utama diubah menjadi tiket stempel visa bergaris perforasi mini dengan sponsor tag perusahaan Jepang (Mercari, Rakuten, LINE).
+- [x] **Tampilkan Seluruh 12 Part pada Tab Karier**:
+  - Hapus pembatasan `slice(0, 4)` saat pengguna berada di tab Misi Karier agar seluruh kurikulum dapat diakses dan dicek progresnya.
+  - Tampilkan status checkpoint: *LULUS STEMPEL ✓*, *SEDANG BERJALAN*, atau *TERKUNCI*.
+
+### [x] 44.5 Poster Buronan Sayembara Legendaris ("Tokyo Boss Raids Wanted Poster")
+- [x] **Wanted Poster Aesthetic**:
+  - Kartu tantangan tingkat tinggi bergaya poster sayembara buronan dengan aksen keemasan, pita stempel "SPONSOR VISA PRIORITAS 🌟", dan visual reward besar (+250 - 500 XP & +50 - 100 Gems).
+- [x] **Direct Launch ke Workspace Tantangan**:
+  - Tombol aksi 3D peluncur briefing tantangan koding langsung ke editor sandbox.
+
+### [x] 44.6 Toko Penukaran Akihabara Arcade & Gachapon Cabinet
+- [x] **Etalase Arcade Retro-Modern**:
+  - Tampilan rak hadiah bernuansa neon arcade Tokyo dengan kartu item berbayang lembut dan ikon 3D berkilau.
+  - Tag harga gems interaktif dengan micro-sound chime saat penukaran berhasil.
+  - Informasi sisa saldo dan kepemilikan riil tanpa data dummy.
+
+### [x] 44.7 Empty State 3D & Verifikasi Sistem
+- [x] **3D Maskot Empty State**:
+  - Kartu feedback ramah saat pencarian tidak menemukan hasil sayembara dengan tombol reset pencarian.
+- [x] **Pengujian & Validasi Kualitas**:
+  - `npm run build` di frontend (0 error TypeScript).
+  - `go test -count=1 ./...` di backend (100% test passing).
+
 
 
 

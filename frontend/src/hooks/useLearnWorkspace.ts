@@ -42,7 +42,21 @@ export const useLearnWorkspace = () => {
     setError(null)
     try {
       const data = await questService.getQuestDetails(id)
-      setQuest(data)
+      if (data && (!data.acceptance_criteria || data.acceptance_criteria.length === 0 || !data.starter_code)) {
+        const fallback = getWorkspaceQuestFallback(id)
+        setQuest({
+          ...fallback,
+          ...data,
+          acceptance_criteria:
+            data.acceptance_criteria && data.acceptance_criteria.length > 0
+              ? data.acceptance_criteria
+              : fallback.acceptance_criteria,
+          starter_code: data.starter_code || fallback.starter_code,
+          nihongo_notes: data.nihongo_notes || fallback.nihongo_notes,
+        })
+      } else {
+        setQuest(data)
+      }
     } catch {
       // Gracefully fallback to rich workspace catalog so any curriculum track is fully playable
       const fallback = getWorkspaceQuestFallback(id)
