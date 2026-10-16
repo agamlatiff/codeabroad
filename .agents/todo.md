@@ -991,44 +991,44 @@
 
 ---
 
-## 🚀 FASE 38: Multi-Track Kurikulum Silabus Dinamis `/courses` (5 Spesialisasi Industri)
+## 🚀 FASE 38: Multi-Track Kurikulum Silabus Dinamis `/courses` (5 Spesialisasi Industri) [x] (SELESAI ✅)
 
 > **Tujuan Utama:** Menghubungkan silabus `/courses` secara dinamis dengan pemilih jalur belajar (`activeTrack`) sehingga ketika pengguna memilih track seperti React/TypeScript, DevOps/Docker, Fundamental Programming, atau Tech Nihongo, kurikulum yang ditampilkan berganti secara instan sesuai kurikulum spesialisasi yang dipilih, bukan hanya Golang.
 
-### [ ] 38.1 Pembuatan Dataset Kurikulum Terstruktur untuk 5 Track (`CURRICULUM_TRACKS_MAP`)
-- [ ] Susun modul spesialisasi **React & TypeScript Frontend**:
+### [x] 38.1 Pembuatan Dataset Kurikulum Terstruktur untuk 5 Track (`CURRICULUM_TRACKS_MAP`)
+- [x] Susun modul spesialisasi **React & TypeScript Frontend**:
   - Unit 1: TypeScript & Modern JavaScript (Strict types, Generics, interfaces, Async/Await)
   - Unit 2: React 19 Core & Advanced Hooks (Custom Hooks, Context, useMemo, useCallback)
   - Unit 3: Next.js App Router, SSR & API Integration (Server Components, Routing, Fetching)
   - Unit 4: Global State, Tailwind & UI Testing (Zustand, Vitest, Testing Library)
-- [ ] Susun modul spesialisasi **DevOps & Cloud Infrastructure**:
+- [x] Susun modul spesialisasi **DevOps & Cloud Infrastructure**:
   - Unit 1: Linux CLI & Shell Scripting (Bash automation, systemd, networking tools)
   - Unit 2: Docker Containers & Multi-stage Builds (Dockerfile, Compose, Container security)
   - Unit 3: CI/CD Pipeline Automation (GitHub Actions, Automated Testing, Build artifacts)
   - Unit 4: Cloud Infrastructure AWS & Kubernetes (ECS, EKS, Terraform, Production deployment)
-- [ ] Susun modul spesialisasi **Fundamental Programming & Computer Science**:
+- [x] Susun modul spesialisasi **Fundamental Programming & Computer Science**:
   - Unit 1: CPU Architecture & Memory Pointer (Stack vs Heap, Variables, Data Types)
   - Unit 2: Algoritma & Struktur Data Esensial (Hash Map, Linked List, Tree, Big-O Complexity)
   - Unit 3: Git CLI, HTTP Protocol & Clean Architecture Principles
-- [ ] Susun modul spesialisasi **Tech Nihongo (Bahasa Jepang IT Tokyo)**:
+- [x] Susun modul spesialisasi **Tech Nihongo (Bahasa Jepang IT Tokyo)**:
   - Unit 1: Kosakata Koding, Git & Standup Pagi (Asakai, PR review, Aisatsu, Jissou)
   - Unit 2: Dokumen Spesifikasi Desain (Sekkeisho, Youken Teigi, QA Testing & Bug Report)
   - Unit 3: Wawancara Kerja Tokyo & Etika Bisnis IT (Mensetsu, Jiko PR, Keigo Tim Engineering)
-- [ ] Pertahankan modul **Golang Backend Engineering** yang sudah matang (Unit 1 s/d 4).
+- [x] Pertahankan modul **Golang Backend Engineering** yang sudah matang (Unit 1 s/d 4).
 
-### [ ] 38.2 Integrasi Seleksi Track Dinamis di `RoadmapPage.tsx`
-- [ ] Gantikan hardcode `GOLANG_CURRICULUM_UNITS` dengan selector adaptif `CURRICULUM_TRACKS_MAP[activeTrack] || GOLANG_CURRICULUM_UNITS`.
-- [ ] Sinkronkan tema warna 3D unit banner per track (React cyan, DevOps navy/blue, Nihongo rose, Fundamental indigo, Golang emerald).
-- [ ] Sinkronkan data `totalPartsCount`, `completedPartsCount`, dan `curriculumProgressPercent` agar adaptif per track.
+### [x] 38.2 Integrasi Seleksi Track Dinamis di `RoadmapPage.tsx`
+- [x] Gantikan hardcode `GOLANG_CURRICULUM_UNITS` dengan selector adaptif `CURRICULUM_TRACKS_MAP[activeTrack] || GOLANG_CURRICULUM_UNITS`.
+- [x] Sinkronkan tema warna 3D unit banner per track (React cyan, DevOps navy/blue, Nihongo rose, Fundamental indigo, Golang emerald).
+- [x] Sinkronkan data `totalPartsCount`, `completedPartsCount`, dan `curriculumProgressPercent` agar adaptif per track.
 
-### [ ] 38.3 Sinkronisasi Progress & Part Unlocking Antar Track
-- [ ] Pastikan pengerjaan part di track yang berbeda tetap tercatat di `codeabroad_completed_quests`.
-- [ ] Node pertama pada track yang baru dipilih otomatis aktif dan bisa langsung dikerjakan.
+### [x] 38.3 Sinkronisasi Progress & Part Unlocking Antar Track
+- [x] Pastikan pengerjaan part di track yang berbeda tetap tercatat di `codeabroad_completed_quests`.
+- [x] Node pertama pada track yang baru dipilih otomatis aktif dan bisa langsung dikerjakan.
 
-### [ ] 38.4 Pengujian, Verifikasi & Validasi
-- [ ] Uji peralihan antar 5 track melalui Course Switcher Modal di `/courses`.
-- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript, bundling berhasil).
-- [ ] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
+### [x] 38.4 Pengujian, Verifikasi & Validasi
+- [x] Uji peralihan antar 5 track melalui Course Switcher Modal di `/courses`.
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, bundling berhasil).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 
 ---
 

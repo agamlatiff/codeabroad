@@ -25,239 +25,16 @@ import {
 import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
 import type { GuidebookContent } from '../components/game/UnitGuidebookModal'
 import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
+import { authService } from '../services/authService'
+import {
+  CURRICULUM_TRACKS_MAP,
+  TRACK_UNIT_THEMES,
+  COMPREHENSIVE_GUIDEBOOK_DATA,
+  type SequentialCurriculumUnit,
+  type SequentialPartItem,
+} from '../data/curriculumData'
 
-// Standard Flat Sequential Curriculum Unit Definition (Clean Technical Only)
-export interface SequentialPartItem {
-  id: string
-  globalPartNumber: number
-  title: string
-  subtitle: string
-  chipLabel: string
-  category: 'code' | 'nihongo' | 'capstone'
-  difficulty: 'Pemula' | 'Menengah' | 'Sulit'
-  estimatedMinutes: number
-  xpReward: number
-  route: string
-}
-
-export interface SequentialCurriculumUnit {
-  id: string
-  unitNumber: number
-  tag: string
-  title: string
-  description: string
-  totalXp: number
-  parts: SequentialPartItem[]
-}
-
-// Canonical Real Technical Curriculum for Go Backend Engineer
-const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
-  {
-    id: 'unit-1-fondasi-go',
-    unitNumber: 1,
-    tag: 'SINTAKS DASAR & MEMORI POINTER',
-    title: 'Unit 1: Fondasi Sintaks Go & Memory Pointer',
-    description: 'Arsitektur runtime Go, alokasi memori stack vs heap, manipulasi pointer dan etika code review tim engineering.',
-    totalXp: 150,
-    parts: [
-      {
-        id: 'part-1-variabel-dan-tipe-data',
-        globalPartNumber: 1,
-        title: 'Variabel, Strict Typing & Memori Stack',
-        subtitle: 'Deklarasi variabel, primitive types, dan alokasi stack CPU',
-        chipLabel: 'GO 01',
-        category: 'code',
-        difficulty: 'Pemula',
-        estimatedMinutes: 10,
-        xpReward: 50,
-        route: '/learn/part-1-variabel-dan-tipe-data',
-      },
-      {
-        id: 'part-2-pointer-dan-struktur-data',
-        globalPartNumber: 2,
-        title: 'Pointer, Dereferencing & Struct Memory',
-        subtitle: 'Address memory & dan *pointer mutation tanpa copy payload',
-        chipLabel: 'GO 02',
-        category: 'code',
-        difficulty: 'Pemula',
-        estimatedMinutes: 12,
-        xpReward: 50,
-        route: '/learn/part-2-pointer-dan-struktur-data',
-      },
-      {
-        id: 'part-3-aisatsu-onboarding-tokyo',
-        globalPartNumber: 3,
-        title: 'Aisatsu & Etika Code Review Tim Engineering',
-        subtitle: 'Salam pagi standup, perkenalan diri & budaya Pull Request tim engineering',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
-        difficulty: 'Pemula',
-        estimatedMinutes: 15,
-        xpReward: 50,
-        route: '/learn/part-3-aisatsu-onboarding-tokyo',
-      },
-    ],
-  },
-  {
-    id: 'unit-2-gin-rest-api',
-    unitNumber: 2,
-    tag: 'REST API & CLEAN ARCHITECTURE',
-    title: 'Unit 2: Gin REST API & Middleware Engine',
-    description: 'Membangun RESTful API enterprise dengan Gin framework, middleware auth guard JWT, DTO validation, dan Clean Architecture.',
-    totalXp: 150,
-    parts: [
-      {
-        id: 'part-4-routing-dan-jwt-middleware',
-        globalPartNumber: 4,
-        title: 'Gin Radix Router & JSON Response Envelope',
-        subtitle: 'Setup router engine, parameter binding, dan standard response envelope',
-        chipLabel: 'GIN 01',
-        category: 'code',
-        difficulty: 'Menengah',
-        estimatedMinutes: 15,
-        xpReward: 50,
-        route: '/learn/part-4-routing-dan-jwt-middleware',
-      },
-      {
-        id: 'part-5-jwt-auth-middleware-guard',
-        globalPartNumber: 5,
-        title: 'JWT Auth Middleware & Context Injection',
-        subtitle: 'Header parsing, token verification, dan user context injection',
-        chipLabel: 'GIN 02',
-        category: 'code',
-        difficulty: 'Menengah',
-        estimatedMinutes: 15,
-        xpReward: 50,
-        route: '/learn/part-5-jwt-auth-middleware-guard',
-      },
-      {
-        id: 'part-6-database-connection-pool',
-        globalPartNumber: 6,
-        title: 'Database Connection Pool Pgx & GORM',
-        subtitle: 'Manajemen koneksi PostgreSQL, transaksi atomik ACID dan migrasi schema',
-        chipLabel: 'GIN 03',
-        category: 'code',
-        difficulty: 'Menengah',
-        estimatedMinutes: 20,
-        xpReward: 50,
-        route: '/learn/part-6-database-connection-pool',
-      },
-    ],
-  },
-  {
-    id: 'unit-3-concurrency-channels',
-    unitNumber: 3,
-    tag: 'HIGH CONCURRENCY & WORKER POOL',
-    title: 'Unit 3: Concurrency Engine & Worker Pool',
-    description: 'Kuasai goroutines, buffered channels, select statement, dan worker pool pattern untuk pemrosesan paralel anti-race condition.',
-    totalXp: 175,
-    parts: [
-      {
-        id: 'part-7-goroutines-dan-channels',
-        globalPartNumber: 7,
-        title: 'Goroutines, Buffered Channels & WaitGroup',
-        subtitle: 'Asynchronous task execution tanpa resource exhaustion thread OS',
-        chipLabel: 'CONC 01',
-        category: 'code',
-        difficulty: 'Sulit',
-        estimatedMinutes: 20,
-        xpReward: 75,
-        route: '/learn/part-7-goroutines-dan-channels',
-      },
-      {
-        id: 'part-8-high-concurrency-worker-pool',
-        globalPartNumber: 8,
-        title: 'High-Concurrency Worker Pool Engine',
-        subtitle: 'Pola worker pool distribusi beban komputasi server backend performa tinggi',
-        chipLabel: 'CONC 02',
-        category: 'code',
-        difficulty: 'Sulit',
-        estimatedMinutes: 25,
-        xpReward: 100,
-        route: '/learn/part-8-high-concurrency-worker-pool',
-      },
-    ],
-  },
-  {
-    id: 'unit-4-docker-microservices',
-    unitNumber: 4,
-    tag: 'CONTAINER & CLOUD DEPLOYMENT',
-    title: 'Unit 4: Microservices & Cloud Deployment',
-    description: 'Packaging container Docker multi-stage, scratch image, API gateway, dan pengujian end-to-end siap produksi.',
-    totalXp: 300,
-    parts: [
-      {
-        id: 'part-9-docker-multistage-build',
-        globalPartNumber: 9,
-        title: 'Docker Multi-Stage Build & Scratch Image',
-        subtitle: 'Optimasi image container Go dari 800MB menjadi 15MB untuk lingkungan produksi',
-        chipLabel: 'CLOUD 01',
-        category: 'code',
-        difficulty: 'Menengah',
-        estimatedMinutes: 20,
-        xpReward: 100,
-        route: '/learn/part-9-docker-multistage-build',
-      },
-      {
-        id: 'part-10-tokyo-capstone-portfolio',
-        globalPartNumber: 10,
-        title: 'Final Capstone: Repositori API Siap Produksi',
-        subtitle: 'Implementasi lengkap Clean Architecture dengan unit test dan dokumentasi OpenAPI',
-        chipLabel: 'CAPSTONE',
-        category: 'capstone',
-        difficulty: 'Sulit',
-        estimatedMinutes: 30,
-        xpReward: 200,
-        route: '/learn/part-10-tokyo-capstone-portfolio',
-      },
-    ],
-  },
-]
-
-// Duolingo 3D Tactile Unit Visual Theme Configurations
-interface UnitTheme {
-  gradientBg: string
-  border3D: string
-  tagBg: string
-  tagText: string
-  accentGlow: string
-  btnGuideBg: string
-}
-
-const UNIT_THEMES: Record<number, UnitTheme> = {
-  1: {
-    gradientBg: 'bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700',
-    border3D: 'border-b-[5px] border-blue-900',
-    tagBg: 'bg-blue-500/30 border border-blue-300/30 text-white',
-    tagText: 'text-white',
-    accentGlow: 'ring-blue-500/15',
-    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
-  },
-  2: {
-    gradientBg: 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-700',
-    border3D: 'border-b-[5px] border-emerald-900',
-    tagBg: 'bg-emerald-500/30 border border-emerald-300/30 text-white',
-    tagText: 'text-white',
-    accentGlow: 'ring-emerald-500/15',
-    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
-  },
-  3: {
-    gradientBg: 'bg-gradient-to-r from-purple-600 via-purple-700 to-indigo-700',
-    border3D: 'border-b-[5px] border-purple-900',
-    tagBg: 'bg-purple-500/30 border border-purple-300/30 text-white',
-    tagText: 'text-white',
-    accentGlow: 'ring-purple-500/15',
-    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
-  },
-  4: {
-    gradientBg: 'bg-gradient-to-r from-amber-600 via-amber-700 to-orange-700',
-    border3D: 'border-b-[5px] border-amber-900',
-    tagBg: 'bg-amber-500/30 border border-amber-300/30 text-white',
-    tagText: 'text-white',
-    accentGlow: 'ring-amber-500/15',
-    btnGuideBg: 'bg-white/15 hover:bg-white/25 text-white border-white/25',
-  },
-}
+export type { SequentialCurriculumUnit, SequentialPartItem }
 
 export const RoadmapPage = () => {
   const navigate = useNavigate()
@@ -291,92 +68,17 @@ export const RoadmapPage = () => {
     triggerHaptic('tap')
     audioEngine.playPop()
 
-    const GUIDEBOOK_DATA: Record<string, GuidebookContent> = {
-      'unit-1-fondasi-go': {
-        unitNumber: 1,
-        unitTag: 'SINTAKS DASAR & MEMORI POINTER',
-        title: 'Unit 1: Fondasi Sintaks Go & Memory Pointer',
-        summary:
-          'Go mengalokasikan variabel pada stack secara default dan memindahkannya ke heap hanya saat lolos analisis escape (escape analysis). Memahami pointer (& dan *) sangat penting untuk menghindari alokasi payload berlebih saat memanggil fungsi atau method.',
-        codeSnippetTitle: 'Manipulasi Pointer & Alokasi Memori Tanpa Copy',
-        codeSnippet: `package main\n\nimport "fmt"\n\ntype TokyoEngineer struct {\n    Name  string\n    Track string\n    Level int\n}\n\nfunc promoteLevel(eng *TokyoEngineer) {\n    // Dereferencing pointer langsung memodifikasi nilai memori asli\n    eng.Level++\n}\n\nfunc main() {\n    dev := TokyoEngineer{Name: "Kodi", Track: "Go Backend", Level: 1}\n    promoteLevel(&dev)\n    fmt.Println(dev.Level) // Output: 2 (zero payload copy)\n}`,
-        codeExplanation:
-          'Dengan meneruskan address &dev ke fungsi promoteLevel, kita menghindari overhead copy struct pada memori stack CPU.',
-        nihongoTerms: [
-          { term: '朝会 (Asakai)', reading: 'あさかい', meaning: 'Daily Standup Meeting pagi hari' },
-          { term: '実装 (Jissou)', reading: 'じっそう', meaning: 'Implementasi / Coding fitur' },
-          { term: '修正 (Shuusei)', reading: 'しゅうせい', meaning: 'Perbaikan bug / Revisi kode' },
-        ],
-        tokyoIndustryTip:
-          'Di code review perusahaan Tokyo (seperti Mercari atau Rakuten), selalu utamakan pointer receiver untuk method yang memodifikasi state struct atau struct berukuran besar.',
-      },
-      'unit-2-gin-rest-api': {
-        unitNumber: 2,
-        unitTag: 'REST API & CLEAN ARCHITECTURE',
-        title: 'Unit 2: Gin REST API & Middleware Engine',
-        summary:
-          'Gin menggunakan Radix Tree Routing berkecepatan tinggi dengan memory footprint yang minimal. Middleware chaining memungkinkan authentication guard JWT dan graceful error recovery sebelum request sampai ke controller layer.',
-        codeSnippetTitle: 'Standard Gin Router & JWT Auth Middleware',
-        codeSnippet: `func AuthGuard(secret string) gin.HandlerFunc {\n    return func(c *gin.Context) {\n        auth := c.GetHeader("Authorization")\n        if !strings.HasPrefix(auth, "Bearer ") {\n            c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})\n            return\n        }\n        token := strings.TrimPrefix(auth, "Bearer ")\n        claims, err := parseJWT(token, secret)\n        if err != nil {\n            c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Token"})\n            return\n        }\n        c.Set("userID", claims.UserID)\n        c.Next()\n    }\n}`,
-        codeExplanation:
-          'Fungsi c.AbortWithStatusJSON() menghentikan pipeline middleware seketika, mencegah unauthorized request menyentuh logic handler.',
-        nihongoTerms: [
-          { term: '本番環境 (Honban Kankyou)', reading: 'ほんばんかんきょう', meaning: 'Production Environment' },
-          { term: '不具合 (Fuguai)', reading: 'ふぐあい', meaning: 'Bug / Defect sistem' },
-          { term: '確認 (Kakunin)', reading: 'かくにん', meaning: 'Konfirmasi / Verification' },
-        ],
-        tokyoIndustryTip:
-          'Selalu gunakan standard response envelope (success, message, data, error) agar mudah diintegrasikan dengan frontend TypeScript web app.',
-      },
-      'unit-3-concurrency': {
-        unitNumber: 3,
-        unitTag: 'GOROUTINE & CHANNEL PIPELINE',
-        title: 'Unit 3: Goroutine, Channel & Concurrency Patterns',
-        summary:
-          'Concurrency di Go menganut prinsip CSP (Communicating Sequential Processes): Jangan berkomunikasi dengan membagi memori, melainkan bagikan memori dengan berkomunikasi melalui Channels.',
-        codeSnippetTitle: 'Worker Pool Pattern dengan Buffered Channels',
-        codeSnippet: `func worker(id int, jobs <-chan int, results chan<- int) {\n    for j := range jobs {\n        results <- j * 2\n    }\n}\n\nfunc main() {\n    jobs := make(chan int, 100)\n    results := make(chan int, 100)\n    for w := 1; w <= 3; w++ {\n        go worker(w, jobs, results)\n    }\n}`,
-        codeExplanation:
-          'Buffered channel mencegah blocking yang tidak diinginkan dan membatasi jumlah goroutine simultan agar tidak terjadi memory leak.',
-        nihongoTerms: [
-          { term: '共有 (Kyouyuu)', reading: 'きょうゆう', meaning: 'Share / Berbagi informasi' },
-          { term: '同期 (Douki)', reading: 'どうき', meaning: 'Synchronous' },
-          { term: '非同期 (Hidouki)', reading: 'ひどうき', meaning: 'Asynchronous' },
-        ],
-        tokyoIndustryTip:
-          'Tes wawancara teknis senior backend di Tokyo kerap menguji penanganan context.Context timeout dan pencegahan goroutine leak.',
-      },
-      'unit-4-postgres-dan-pgx': {
-        unitNumber: 4,
-        unitTag: 'POSTGRESQL & PGX CONNECTION POOL',
-        title: 'Unit 4: Database Pooling Pgx & Clean Architecture',
-        summary:
-          'Menggunakan pgxpool untuk mengelola koneksi database secara efisien dengan prepared statements, database migrations, dan pemisahan layer Entity, Repository, Usecase, dan Handler.',
-        codeSnippetTitle: 'Clean Architecture Repository Interface & Pgxpool',
-        codeSnippet: `type UserRepository interface {\n    GetByID(ctx context.Context, id string) (*domain.User, error)\n}\n\ntype pgUserRepo struct {\n    pool *pgxpool.Pool\n}\n\nfunc (r *pgUserRepo) GetByID(ctx context.Context, id string) (*domain.User, error) {\n    var u domain.User\n    err := r.pool.QueryRow(ctx, "SELECT id, name FROM users WHERE id=$1", id).Scan(&u.ID, &u.Name)\n    return &u, err\n}`,
-        codeExplanation:
-          'Pemisahan interface di domain layer memudahkan testing menggunakan mock repository tanpa perlu database nyata saat unit test.',
-        nihongoTerms: [
-          { term: '設計 (Sekkei)', reading: 'せっけい', meaning: 'Software Architecture / Design' },
-          { term: '移行 (Ikou)', reading: 'いこう', meaning: 'Database Migration' },
-          { term: '障害 (Shougai)', reading: 'しょうがい', meaning: 'System Outage / Incident' },
-        ],
-        tokyoIndustryTip:
-          'Standar Clean Architecture diakui secara luas oleh tech lead di Tokyo karena mempermudah kolaborasi multi-engineer berskala besar.',
-      },
-    }
-
     const fallbackGuidebook: GuidebookContent = {
       unitNumber: unit.unitNumber,
       unitTag: unit.tag,
       title: unit.title,
       summary: unit.description,
       codeSnippetTitle: `Contoh Sintaks & Best Practice: Unit 0${unit.unitNumber}`,
-      codeSnippet: `// Contoh implementasi untuk ${unit.title}\npackage main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("CodeAbroad Tokyo Curriculum - Unit 0${unit.unitNumber}")\n}`,
+      codeSnippet: `// Contoh implementasi untuk ${unit.title}\n// CodeAbroad Tokyo Curriculum - Unit 0${unit.unitNumber}`,
       codeExplanation:
         'Pahami pola penulisan kode di atas dan pastikan Anda menguji kode secara menyeluruh sebelum mengirim Pull Request.',
       nihongoTerms: [
-        { term: '設計書 (Sekkeisho)', reading: 'せっけいしょ', meaning: 'Dokumen Spesifikasi / Architecture Design' },
+        { term: '設計書 (Sekkeisho)', reading: 'せっけいしょ', meaning: 'Dokumen Spesifikasi Desain' },
         { term: '開発 (Kaihatsu)', reading: 'かいはつ', meaning: 'Software Development' },
         { term: 'テスト (Tesuto)', reading: 'てすと', meaning: 'Unit Testing & Quality Assurance' },
       ],
@@ -385,7 +87,7 @@ export const RoadmapPage = () => {
       firstPartRoute: unit.parts[0]?.route,
     }
 
-    setGuidebookModalUnit(GUIDEBOOK_DATA[unit.id] || fallbackGuidebook)
+    setGuidebookModalUnit(COMPREHENSIVE_GUIDEBOOK_DATA[unit.id] || fallbackGuidebook)
   }
 
 
@@ -428,12 +130,18 @@ export const RoadmapPage = () => {
   }, [])
 
 
-  // Flat Sequential Units (Pure Technical)
+  // Dynamic Sequential Units for Active Track
   const units: SequentialCurriculumUnit[] = useMemo(() => {
-    return GOLANG_CURRICULUM_UNITS
-  }, [])
+    return (
+      CURRICULUM_TRACKS_MAP[activeTrack] ||
+      (activeTrack === 'backend' && CURRICULUM_TRACKS_MAP['golang']) ||
+      (activeTrack === 'react' && CURRICULUM_TRACKS_MAP['frontend']) ||
+      (activeTrack === 'devops_aws' && CURRICULUM_TRACKS_MAP['devops']) ||
+      CURRICULUM_TRACKS_MAP['golang']
+    )
+  }, [activeTrack])
 
-  // Compute metrics across all parts
+  // Compute metrics across all parts of current active track
   const allParts = useMemo(() => units.flatMap((u) => u.parts), [units])
   const totalPartsCount = allParts.length
   const completedPartsCount = allParts.filter((p) => completedQuestsSet.has(p.id)).length
@@ -442,19 +150,36 @@ export const RoadmapPage = () => {
     Math.round((completedPartsCount / totalPartsCount) * 100)
   )
 
-  // First active part (next unlocked part)
+  // First active part (next unlocked part in active track)
   const nextActivePart = useMemo(() => {
     return allParts.find((p) => !completedQuestsSet.has(p.id)) || allParts[0]
   }, [allParts, completedQuestsSet])
 
-
+  // Multi-track progress map for CourseSwitcherModal
+  const trackProgressMap = useMemo(() => {
+    const progressMap: Record<string, { completed: number; total: number }> = {}
+    Object.entries(CURRICULUM_TRACKS_MAP).forEach(([trackSlug, trackUnits]) => {
+      const parts = trackUnits.flatMap((u) => u.parts)
+      const completed = parts.filter((p) => completedQuestsSet.has(p.id)).length
+      progressMap[trackSlug] = {
+        completed,
+        total: parts.length > 0 ? parts.length : 10,
+      }
+    })
+    return progressMap
+  }, [completedQuestsSet])
 
   // Handle track switch from CourseSwitcherModal
-  const handleSelectTrack = (trackSlug: string) => {
+  const handleSelectTrack = async (trackSlug: string) => {
     triggerHaptic('success')
     setActiveTrack(trackSlug)
     setIsCourseSwitcherOpen(false)
     navigate(`/roadmap/${trackSlug}`)
+    try {
+      await authService.updateProfile({ primary_stack: trackSlug })
+    } catch {
+      // Gracefully continue with local state
+    }
   }
 
 
@@ -491,8 +216,15 @@ export const RoadmapPage = () => {
               const unitCompletedCount = unitParts.filter((p) => completedQuestsSet.has(p.id)).length
               const isUnitCompleted = unitCompletedCount === unitParts.length
               const isUnitActive = !isUnitCompleted && unitParts.some((p) => p.id === nextActivePart?.id)
-              const unitPercent = Math.round((unitCompletedCount / unitParts.length) * 100)
-              const theme = UNIT_THEMES[unit.unitNumber] || UNIT_THEMES[1]
+              const unitPercent =
+                unitParts.length > 0 ? Math.round((unitCompletedCount / unitParts.length) * 100) : 0
+              const trackThemes =
+                TRACK_UNIT_THEMES[activeTrack] ||
+                (activeTrack === 'backend' && TRACK_UNIT_THEMES['golang']) ||
+                (activeTrack === 'react' && TRACK_UNIT_THEMES['frontend']) ||
+                (activeTrack === 'devops_aws' && TRACK_UNIT_THEMES['devops']) ||
+                TRACK_UNIT_THEMES['golang']
+              const theme = trackThemes[unit.unitNumber] || trackThemes[1]
 
               return (
                 <div
@@ -787,6 +519,7 @@ export const RoadmapPage = () => {
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
         onSelectTrack={handleSelectTrack}
+        trackProgressMap={trackProgressMap}
       />
 
 
