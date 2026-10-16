@@ -79,6 +79,22 @@ export const GameSidebarRail = ({
   const [questCompletionTick, setQuestCompletionTick] = useState(0)
   const [activitySummary, setActivitySummary] = useState<UserActivitySummary | null>(null)
 
+  // Aggregated active dates from activity logs and weekly logs for StreakCalendarModal
+  const calendarActiveDates = useMemo(() => {
+    const dates = new Set<string>()
+    if (activitySummary?.active_dates) {
+      activitySummary.active_dates.forEach((d) => dates.add(d))
+    }
+    if (activitySummary?.weekly_logs) {
+      activitySummary.weekly_logs.forEach((log) => {
+        if (log.is_active && log.date) {
+          dates.add(log.date)
+        }
+      })
+    }
+    return Array.from(dates)
+  }, [activitySummary])
+
   // Listen to quest completion events across tabs and components
   useEffect(() => {
     const handleQuestCompleted = () => {
@@ -620,7 +636,7 @@ export const GameSidebarRail = ({
         isOpen={isStreakModalOpen}
         onClose={() => setIsStreakModalOpen(false)}
         currentStreak={userStreak}
-        activeDates={activitySummary?.active_dates}
+        activeDates={calendarActiveDates}
       />
 
       {/* ── FLOATING XP BURST REWARDS ── */}

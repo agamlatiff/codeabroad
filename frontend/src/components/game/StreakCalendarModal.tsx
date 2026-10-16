@@ -59,16 +59,19 @@ export const StreakCalendarModal = ({
 
   const todayStr = formatYMD(today.getFullYear(), today.getMonth(), today.getDate())
 
-  // Set of all active dates
+  // Set of all active dates (merging activeDates history and all consecutive streak days ending today)
   const activeDateSet = useMemo(() => {
     const set = new Set<string>()
     activeDates.forEach((d) => set.add(d))
-    // Today is always active if currentStreak > 0
+    // If currentStreak > 0, include all consecutive days within the active streak ending today
     if (currentStreak > 0) {
-      set.add(todayStr)
+      for (let i = 0; i < currentStreak; i++) {
+        const streakDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
+        set.add(formatYMD(streakDate.getFullYear(), streakDate.getMonth(), streakDate.getDate()))
+      }
     }
     return set
-  }, [activeDates, currentStreak, todayStr])
+  }, [activeDates, currentStreak, today])
 
   // Calculate days in month and start day offset (Monday=0 to Sunday=6)
   const { startOffset, daysList } = useMemo(() => {

@@ -501,7 +501,32 @@ func (r *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID strin
 		}
 	}
 
-	allActiveDatesSet[todayStr] = true
+	// Also check user_quests completions for historical active dates
+	questHistQuery := `
+		SELECT DISTINCT TO_CHAR(completed_at, 'YYYY-MM-DD') AS act_date
+		FROM user_quests
+		WHERE user_id = $1 AND completed_at >= $2 AND status = 'completed'
+	`
+	qhRows, qhErr := r.db.Pool.Query(ctx, questHistQuery, userID, calendarStart)
+	if qhErr == nil {
+		defer qhRows.Close()
+		for qhRows.Next() {
+			var dt string
+			if scanErr := qhRows.Scan(&dt); scanErr == nil {
+				allActiveDatesSet[dt] = true
+			}
+		}
+	}
+
+	// Ensure all consecutive days within the active streak window ending today are included
+	if user.Streak > 0 {
+		for s := 0; s < user.Streak; s++ {
+			streakDate := startOfToday.AddDate(0, 0, -s).Format("2006-01-02")
+			allActiveDatesSet[streakDate] = true
+		}
+	} else {
+		allActiveDatesSet[todayStr] = true
+	}
 
 	activeDatesList := make([]string, 0, len(allActiveDatesSet))
 	for dt := range allActiveDatesSet {
