@@ -1032,31 +1032,32 @@
 
 ---
 
-## 🚀 FASE 39: Modernisasi Halaman Pusat Misi `/quests` ke Duolingo 3D (`QuestLogPage.tsx`)
+## 🚀 FASE 39: Modernisasi Halaman Pusat Misi `/quests` ke Duolingo 3D (`QuestLogPage.tsx`) [x] (SELESAI ✅)
 
 > **Tujuan Utama:** Mentransformasikan halaman `/quests` (tab ke-3 di NavRail) dari tampilan warisan lama ke standar visual Duolingo 3D modern dengan memanfaatkan komponen SSOT `<GameTopBar />` dan `<GameSidebarRail />`, merapikan filter tab misi, serta menghadirkan Toko Penukaran Gems Tokyo (Akihabara Arcade) yang interaktif.
 
-### [ ] 39.1 Pemasangan Arsitektur Standar SSOT
-- [ ] Gantikan custom header lama di `QuestLogPage.tsx` dengan `<GameTopBar />`.
-- [ ] Gantikan sidebar inline lama di `QuestLogPage.tsx` dengan `<GameSidebarRail />`.
-- [ ] Hilangkan duplikasi state streak, XP, audio toggle, dan user stats.
+### [x] 39.1 Pemasangan Arsitektur Standar SSOT
+- [x] Gantikan custom header lama di `QuestLogPage.tsx` dengan `<GameTopBar />`.
+- [x] Gantikan sidebar inline lama di `QuestLogPage.tsx` dengan `<GameSidebarRail />`.
+- [x] Hilangkan duplikasi state streak, XP, audio toggle, dan user stats.
 
-### [ ] 39.2 Tab Filter Misi & Papan Quest Berangka Duolingo 3D
-- [ ] Hadirkan filter tab 3D taktil: `Misi Harian 🎯`, `Tantangan Portofolio 💼`, dan `Spesialisasi Track ⚡`.
-- [ ] Buat kartu misi yang ergonomis dengan indikator reward (+50 XP, +10 Gems 💎) dan tombol 3D taktil `Button3D`.
-- [ ] Terapkan visual status pengerjaan yang jelas: *Tersedia*, *Sedang Berjalan*, *Dapat Diklaim*, dan *Sudah Selesai*.
+### [x] 39.2 Tab Filter Misi & Papan Quest Berangka Duolingo 3D
+- [x] Hadirkan filter tab 3D taktil: `Semua Misi 📜`, `Misi Harian ⚡`, `Misi Karier 🚀`, `Tantangan Portofolio 💼`, dan `Toko Gems Akihabara 💎`.
+- [x] Buat kartu misi yang ergonomis dengan indikator reward (+50 XP, +10 Gems 💎) dan tombol 3D taktil `Button3D`.
+- [x] Terapkan visual status pengerjaan yang jelas: *Tersedia*, *Sedang Berjalan*, *Dapat Diklaim*, dan *Sudah Selesai*.
 
-### [ ] 39.3 Toko Penukaran Gems Tokyo (Akihabara Arcade) Duolingo 3D
-- [ ] Desain panel Toko Penukaran Gems yang memikat:
+### [x] 39.3 Toko Penukaran Gems Tokyo (Akihabara Arcade) Duolingo 3D
+- [x] Desain panel Toko Penukaran Gems yang memikat:
   - *Streak Freeze ❄️ (20 Gems)*: Perlindungan rentetan belajar saat absen 1 hari.
   - *XP Booster Potion 🧪 (35 Gems)*: Pengganda bonus 2x XP selama 30 menit.
   - *Review CV & Portofolio Prioritas 📋 (100 Gems)*: Ulasan oleh tim engineer Tokyo.
-- [ ] Sambungkan transaksi penukaran gems ke backend / user state lokal.
+  - *Akses VIP Mock Interview 🎙️ (150 Gems)*: Tiket live technical interview simulasi Tokyo.
+- [x] Sambungkan transaksi penukaran gems ke `useAuthStore` dan persistensi `localStorage`.
 
-### [ ] 39.4 Pengujian, Verifikasi & Validasi
-- [ ] Validasi alur klaim misi harian dan transaksi gems di toko.
-- [ ] Validasi `npm run build` di `frontend/` (0 error TypeScript).
-- [ ] Validasi `go test -count=1 ./...` di `backend/`.
+### [x] 39.4 Pengujian, Verifikasi & Validasi
+- [x] Validasi alur klaim misi harian dan transaksi gems di toko.
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 
 ---
 

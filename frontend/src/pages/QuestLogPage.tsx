@@ -1,140 +1,471 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
-import { useQuests, type QuestTab } from '../hooks/useQuests'
+import { authService } from '../services/authService'
+import { useQuests } from '../hooks/useQuests'
 import { Button3D } from '../components/ui/Button3D'
-import { ProgressBar3D } from '../components/ui/ProgressBar3D'
-import { DoodleFire, DoodleStar } from '../components/illustrations/doodles'
 import { triggerHaptic } from '../utils/haptics'
+import { audioEngine } from '../utils/audio'
+import {
+  GameTopBar,
+  GameSidebarRail,
+  CourseSwitcherModal,
+  TokyoLeaderboardModal,
+} from '../components/game'
+import {
+  CURRICULUM_TRACKS_MAP,
+} from '../data/curriculumData'
 import {
   MagnifyingGlass,
-  CalendarBlank,
-  ShieldCheck,
-  Medal,
   Sparkle,
-  Gift,
-  Trophy,
   Hourglass,
+  Trophy,
+  ShieldCheck,
+  Flask,
+  FileText,
+  Microphone,
 } from '@phosphor-icons/react'
+
+export type QuestPageTab = 'all' | 'daily' | 'main' | 'side' | 'shop'
+
+interface ShopItem {
+  id: string
+  title: string
+  subtitle: string
+  price: number
+  badge: string
+  badgeColor: string
+  icon: typeof ShieldCheck
+  iconBg: string
+  iconColor: string
+  category: 'protection' | 'booster' | 'career'
+}
+
+const SHOP_ITEMS: ShopItem[] = [
+  {
+    id: 'streak-freeze',
+    title: 'Streak Freeze ❄️',
+    subtitle: 'Perlindungan 1 hari penuh dari pemutusan streak saat Anda berhalangan hadir.',
+    price: 20,
+    badge: 'POPULER 🔥',
+    badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
+    icon: ShieldCheck,
+    iconBg: 'bg-blue-50 border-blue-200',
+    iconColor: 'text-blue-600',
+    category: 'protection',
+  },
+  {
+    id: 'xp-booster',
+    title: 'XP Booster Potion 🧪',
+    subtitle: 'Pengganda 2x XP untuk setiap latihan koding & kuis selama 30 menit ke depan.',
+    price: 35,
+    badge: 'BOOSTER ⚡',
+    badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
+    icon: Flask,
+    iconBg: 'bg-amber-50 border-amber-200',
+    iconColor: 'text-amber-600',
+    category: 'booster',
+  },
+  {
+    id: 'cv-review',
+    title: 'Kupon Review CV Tokyo 📋',
+    subtitle: 'Audit portofolio GitHub dan resume teknis langsung oleh software engineer diaspora Tokyo.',
+    price: 100,
+    badge: 'SPONSOR VISA 🇯🇵',
+    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    icon: FileText,
+    iconBg: 'bg-emerald-50 border-emerald-200',
+    iconColor: 'text-emerald-600',
+    category: 'career',
+  },
+  {
+    id: 'mock-interview',
+    title: 'Akses VIP Mock Interview 🎙️',
+    subtitle: 'Simulasi 1-on-1 live technical interview standar Tokyo berbahasa Jepang/Inggris via Discord.',
+    price: 150,
+    badge: 'EKSKLUSIF ⭐',
+    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
+    icon: Microphone,
+    iconBg: 'bg-purple-50 border-purple-200',
+    iconColor: 'text-purple-600',
+    category: 'career',
+  },
+]
 
 export const QuestLogPage = () => {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { user, updateUser } = useAuthStore()
   const {
-    activeTab,
-    setActiveTab,
-    quests,
     dailyQuests,
     timeLeft,
-    completedCount,
-    totalCount,
-    isLoading,
+    completedCount: hookCompletedCount,
+    totalCount: hookTotalCount,
+    isLoading: hookLoading,
   } = useQuests()
 
+  // Track selection state (SSOT with user profile)
+  const [activeTrack, setActiveTrack] = useState(() => {
+    return user?.primary_stack || user?.career_path?.slug || 'golang'
+  })
+  const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
+  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
+
+  // Active filter tab
+  const [activeTab, setActiveTab] = useState<QuestPageTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
-  const [claimedD1, setClaimedD1] = useState(false)
-  const [claimedChest, setClaimedChest] = useState(false)
-  const [userGems, setUserGems] = useState<number>(() => (typeof user?.gems === 'number' ? user.gems : 45))
 
-  // Real user stats without artificial * 100 multiplication
-  const userXp = typeof user?.xp === 'number' ? user.xp.toLocaleString() : '0'
-  const userStreak = typeof user?.streak === 'number' ? user.streak : 0
+  // Gems state synced with user store & localStorage
+  const [userGems, setUserGems] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('codeabroad_user_gems')
+      if (stored !== null) return parseInt(stored, 10)
+    } catch {
+      // ignore
+    }
+    return typeof user?.gems === 'number' ? user.gems : 45
+  })
 
-  const handleClaimD1 = () => {
-    triggerHaptic('success')
-    setClaimedD1(true)
-    setUserGems((prev: number) => prev + 10)
+  // User inventory state for Akihabara Arcade items
+  const [inventory, setInventory] = useState<Record<string, number>>(() => {
+    try {
+      const stored = localStorage.getItem('codeabroad_user_inventory')
+      return stored ? JSON.parse(stored) : { 'streak-freeze': 1, 'xp-booster': 0, 'cv-review': 0, 'mock-interview': 0 }
+    } catch {
+      return { 'streak-freeze': 1, 'xp-booster': 0, 'cv-review': 0, 'mock-interview': 0 }
+    }
+  })
+
+  // Toast confirmation notification for shop purchase / quest claim
+  const [toastMessage, setToastMessage] = useState<string | null>(null)
+
+  const showToast = (message: string) => {
+    setToastMessage(message)
+    setTimeout(() => {
+      setToastMessage(null)
+    }, 4000)
   }
 
-  const handleClaimChest = () => {
+  // Claimed daily quests set
+  const [claimedDailyMap, setClaimedDailyMap] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem('codeabroad_claimed_daily_quests')
+      return stored ? JSON.parse(stored) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  // Completed quests persistence set
+  const [completedQuestsSet, setCompletedQuestsSet] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem('codeabroad_completed_quests')
+      return stored ? new Set(JSON.parse(stored)) : new Set(['part-1-variabel-dan-tipe-data'])
+    } catch {
+      return new Set(['part-1-variabel-dan-tipe-data'])
+    }
+  })
+
+  // Sync completed quests on custom event
+  useEffect(() => {
+    const handleQuestCompleted = () => {
+      try {
+        const stored = localStorage.getItem('codeabroad_completed_quests')
+        if (stored) {
+          setCompletedQuestsSet(new Set(JSON.parse(stored)))
+        }
+      } catch (e) {
+        console.error('Failed to sync completed quests in QuestLog:', e)
+      }
+    }
+    window.addEventListener('codeabroad_quest_completed', handleQuestCompleted)
+    return () => {
+      window.removeEventListener('codeabroad_quest_completed', handleQuestCompleted)
+    }
+  }, [])
+
+  // Multi-track progress map for CourseSwitcherModal
+  const trackProgressMap = useMemo(() => {
+    const progressMap: Record<string, { completed: number; total: number }> = {}
+    Object.entries(CURRICULUM_TRACKS_MAP).forEach(([trackSlug, trackUnits]) => {
+      const parts = trackUnits.flatMap((u) => u.parts)
+      const completed = parts.filter((p) => completedQuestsSet.has(p.id)).length
+      progressMap[trackSlug] = {
+        completed,
+        total: parts.length > 0 ? parts.length : 10,
+      }
+    })
+    return progressMap
+  }, [completedQuestsSet])
+
+  // Handle track switch from CourseSwitcherModal
+  const handleSelectTrack = async (trackSlug: string) => {
     triggerHaptic('success')
-    setClaimedChest(true)
-    setUserGems((prev: number) => prev + 15)
+    setActiveTrack(trackSlug)
+    setIsCourseSwitcherOpen(false)
+    try {
+      await authService.updateProfile({ primary_stack: trackSlug })
+    } catch {
+      // Gracefully continue with local state
+    }
   }
 
-  // Filter daily quests based on search query
-  const filteredDaily = useMemo(() => {
-    const list = dailyQuests.length > 0 ? dailyQuests : [
+  // Update gems and persist
+  const updateGemsState = (newTotal: number) => {
+    setUserGems(newTotal)
+    try {
+      localStorage.setItem('codeabroad_user_gems', String(newTotal))
+      updateUser({ gems: newTotal })
+    } catch {
+      // ignore
+    }
+  }
+
+  // Handle claim daily quest reward
+  const handleClaimDailyQuest = (questId: string, xpReward: number, gemReward: number) => {
+    triggerHaptic('success')
+    audioEngine.playPop()
+
+    const nextMap = { ...claimedDailyMap, [questId]: true }
+    setClaimedDailyMap(nextMap)
+    try {
+      localStorage.setItem('codeabroad_claimed_daily_quests', JSON.stringify(nextMap))
+    } catch {
+      // ignore
+    }
+
+    const nextGems = userGems + gemReward
+    updateGemsState(nextGems)
+
+    // Dispatch XP reward event
+    window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: xpReward } }))
+    showToast(`🎉 Berhasil klaim +${xpReward} XP & 💎 ${gemReward} Gems!`)
+  }
+
+  // Handle Akihabara Arcade item purchase
+  const handlePurchaseShopItem = (item: ShopItem) => {
+    if (userGems < item.price) {
+      triggerHaptic('error')
+      showToast(`⚠️ Saldo Gems tidak cukup! Butuh ${item.price} Gems (Saldo: ${userGems}).`)
+      return
+    }
+
+    triggerHaptic('success')
+    audioEngine.playPop()
+
+    const newGems = userGems - item.price
+    updateGemsState(newGems)
+
+    const nextInventory = {
+      ...inventory,
+      [item.id]: (inventory[item.id] || 0) + 1,
+    }
+    setInventory(nextInventory)
+    try {
+      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(nextInventory))
+    } catch {
+      // ignore
+    }
+
+    showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${newGems} Gems.`)
+  }
+
+  // Daily quests list (from API or canonical fallback)
+  const canonicalDailyList = useMemo(() => {
+    if (dailyQuests && dailyQuests.length > 0) {
+      return dailyQuests.map((q, idx) => ({
+        id: q.id,
+        title: q.title,
+        chip_label: q.chip_label || 'HARIAN',
+        difficulty: q.difficulty || 'Pemula',
+        xp_reward: q.xp_reward || 40,
+        gem_reward: 10,
+        estimated_minutes: q.estimated_minutes || 10,
+        isCompleted: q.user_status === 'completed' || idx === 0,
+        route: `/learn/${q.id}`,
+      }))
+    }
+
+    return [
       {
         id: 'daily-gin-handler',
         title: 'Tuntaskan 1 Bab Koding Gin REST API',
         chip_label: 'GIN REST API',
-        type: 'daily' as const,
         difficulty: 'Pemula',
         xp_reward: 50,
+        gem_reward: 10,
         estimated_minutes: 15,
-        order_index: 1,
-        is_active: true,
-        user_status: claimedD1 ? ('completed' as const) : ('available' as const),
-        user_tests_passed: 1,
-        user_total_tests: 1,
-        created_at: '',
-        updated_at: '',
+        isCompleted: true, // sample finished daily
+        route: '/learn/part-4-routing-dan-jwt-middleware',
       },
       {
         id: 'daily-nihongo-standup',
         title: 'Pelajari 5 Kosakata Business IT Nihongo N3',
         chip_label: 'JLPT N3',
-        type: 'daily' as const,
         difficulty: 'Mudah',
         xp_reward: 30,
+        gem_reward: 5,
         estimated_minutes: 5,
-        order_index: 2,
-        is_active: true,
-        user_status: 'available' as const,
-        user_tests_passed: 0,
-        user_total_tests: 1,
-        created_at: '',
-        updated_at: '',
+        isCompleted: false,
+        route: '/learn/part-3-aisatsu-onboarding-tokyo',
       },
       {
         id: 'daily-pointer-quiz',
         title: 'Selesaikan Kuis Syntax Pointer & Struct Go',
         chip_label: 'KUIS CEPAT',
-        type: 'daily' as const,
         difficulty: 'Mudah',
         xp_reward: 40,
+        gem_reward: 10,
         estimated_minutes: 5,
-        order_index: 3,
-        is_active: true,
-        user_status: 'available' as const,
-        user_tests_passed: 0,
-        user_total_tests: 1,
-        created_at: '',
-        updated_at: '',
+        isCompleted: false,
+        route: '/learn/part-2-pointer-dan-struktur-data',
+      },
+      {
+        id: 'daily-clean-arch-review',
+        title: 'Refactor DTO & Input Validation Model',
+        chip_label: 'CLEAN ARCH',
+        difficulty: 'Menengah',
+        xp_reward: 45,
+        gem_reward: 5,
+        estimated_minutes: 10,
+        isCompleted: false,
+        route: '/learn/part-5-jwt-auth-middleware-guard',
+      },
+    ]
+  }, [dailyQuests])
+
+  // Filter daily quests based on search query
+  const filteredDaily = useMemo(() => {
+    if (!searchQuery.trim()) return canonicalDailyList
+    const q = searchQuery.toLowerCase()
+    return canonicalDailyList.filter(
+      (item) => item.title.toLowerCase().includes(q) || item.chip_label.toLowerCase().includes(q)
+    )
+  }, [canonicalDailyList, searchQuery])
+
+  // Dynamic active main curriculum unit & parts for active track
+  const currentTrackUnits = useMemo(() => {
+    return (
+      CURRICULUM_TRACKS_MAP[activeTrack] ||
+      (activeTrack === 'backend' && CURRICULUM_TRACKS_MAP['golang']) ||
+      (activeTrack === 'react' && CURRICULUM_TRACKS_MAP['frontend']) ||
+      (activeTrack === 'devops_aws' && CURRICULUM_TRACKS_MAP['devops']) ||
+      CURRICULUM_TRACKS_MAP['golang']
+    )
+  }, [activeTrack])
+
+  // Extract main quests from current track
+  const dynamicMainQuests = useMemo(() => {
+    const list = currentTrackUnits.flatMap((u) =>
+      u.parts.map((p) => ({
+        id: p.id,
+        unitTitle: u.title,
+        unitTag: u.tag,
+        unitNumber: u.unitNumber,
+        title: p.title,
+        subtitle: p.subtitle,
+        chip_label: p.chipLabel,
+        difficulty: p.difficulty,
+        xp_reward: p.xpReward,
+        gem_reward: 20,
+        route: p.route,
+        isCompleted: completedQuestsSet.has(p.id),
+      }))
+    )
+
+    if (!searchQuery.trim()) return list.slice(0, 4) // Show top 4 upcoming / relevant parts
+    const q = searchQuery.toLowerCase()
+    return list.filter(
+      (p) =>
+        p.title.toLowerCase().includes(q) ||
+        p.subtitle.toLowerCase().includes(q) ||
+        p.chip_label.toLowerCase().includes(q)
+    )
+  }, [currentTrackUnits, completedQuestsSet, searchQuery])
+
+  // Tokyo Boss & Portfolio Challenges
+  const portfolioChallenges = useMemo(() => {
+    const challenges = [
+      {
+        id: 'boss-worker-pool',
+        title: 'High-Concurrency Worker Pool Engine (Mercari Tokyo Spec)',
+        subtitle: 'Bangun pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
+        tags: ['GOLANG', 'HIGH CONCURRENCY', 'MERCARI SPEC'],
+        difficulty: 'Sulit',
+        xp_reward: 250,
+        gem_reward: 50,
+        sponsorTag: 'KURASI VISA TOKYO 🇯🇵',
+        route: '/learn/part-8-high-concurrency-worker-pool',
+      },
+      {
+        id: 'capstone-clean-arch',
+        title: 'Fullstack Microservices Clean Architecture Capstone',
+        subtitle: 'Implementasi end-to-end RESTful API dengan unit test coverage >80%, OpenAPI documentation, dan Docker image scratch minimalis untuk portofolio rekrutmen Jepang.',
+        tags: ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER', 'OPENAPI'],
+        difficulty: 'Sulit',
+        xp_reward: 500,
+        gem_reward: 100,
+        sponsorTag: 'SPONSOR VISA PRIORITAS 🌟',
+        route: '/learn/part-10-tokyo-capstone-portfolio',
       },
     ]
 
-    if (!searchQuery.trim()) return list
+    if (!searchQuery.trim()) return challenges
     const q = searchQuery.toLowerCase()
-    return list.filter(
-      (item) => item.title.toLowerCase().includes(q) || item.chip_label.toLowerCase().includes(q)
+    return challenges.filter(
+      (c) =>
+        c.title.toLowerCase().includes(q) ||
+        c.subtitle.toLowerCase().includes(q) ||
+        c.tags.some((t) => t.toLowerCase().includes(q))
     )
-  }, [dailyQuests, searchQuery, claimedD1])
+  }, [searchQuery])
 
-  const mainQuests = useMemo(() => {
-    return quests.filter((q) => q.type === 'main')
-  }, [quests])
-
-  const sideQuests = useMemo(() => {
-    return quests.filter((q) => q.type === 'side')
-  }, [quests])
+  // Counts for top bar
+  const totalCount = hookTotalCount || 10
+  const completedCount = hookCompletedCount || 3
+  const progressPercent = Math.min(100, Math.round((completedCount / totalCount) * 100))
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex">
-      {/* ── 1. LEFT NAV RAIL ── */}
+    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
+      {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
       <NavRail />
 
       {/* ── 2. MAIN APP CANVAS (CENTER STAGE + RIGHT SIDEBAR) ── */}
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8">
         {/* ══════ CENTER CONTENT STAGE ══════ */}
         <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 space-y-6">
-          {/* ── 1. HEADER ROW ── */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - GameTopBar) ── */}
+          <GameTopBar
+            activeTrack={activeTrack}
+            onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
+            onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+            completedCount={completedCount}
+            totalCount={totalCount}
+            progressPercent={progressPercent}
+            unitLabel="Misi"
+          />
+
+          {/* Toast Notification Banner */}
+          {toastMessage && (
+            <div className="p-3.5 bg-slate-900 text-white rounded-2xl text-xs font-bold flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+              <div className="flex items-center gap-2">
+                <span>{toastMessage}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setToastMessage(null)}
+                className="text-slate-400 hover:text-white px-2 py-0.5 rounded cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* ── 2. HEADER BANNER & SEARCH ROW ── */}
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-2xs">
             <div className="space-y-1">
               <div className="flex items-center gap-2">
-                <span className="text-xl sm:text-2xl">📜</span>
+                <span className="text-2xl">📜</span>
                 <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
                   Pusat Misi & Tantangan Koding
                 </h1>
@@ -146,159 +477,182 @@ export const QuestLogPage = () => {
 
             <div className="flex items-center gap-3 flex-wrap">
               {/* Search Pill */}
-              <div className="relative w-56 sm:w-64">
-                <MagnifyingGlass weight="bold" className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <div className="relative w-full sm:w-64">
+                <MagnifyingGlass
+                  weight="bold"
+                  className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
+                />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Cari misi harian, kuis, modul..."
-                  className="w-full bg-white text-xs font-semibold pl-9 pr-4 py-2 rounded-2xl border-2 border-slate-200 focus:border-[#2563EB] focus:outline-none transition-all placeholder:text-slate-400 shadow-2xs"
+                  placeholder="Cari misi, kuis, modul..."
+                  className="w-full bg-slate-50 text-xs font-semibold pl-9 pr-4 py-2.5 rounded-2xl border-2 border-slate-200 focus:border-[#2563EB] focus:bg-white focus:outline-none transition-all placeholder:text-slate-400 shadow-2xs"
                 />
               </div>
 
-              {/* Game Status HUD */}
-              <div className="bg-white border-2 border-slate-200 rounded-2xl px-3.5 py-1.5 flex items-center gap-3 shadow-xs">
-                <div className="flex items-center gap-1.5 font-black text-xs text-[#DC2626]">
-                  <DoodleFire className="w-4 h-4" />
-                  <span>{userStreak} Hari</span>
-                </div>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <div className="flex items-center gap-1.5 font-black text-xs text-[#F59E0B]">
-                  <DoodleStar className="w-4 h-4" />
-                  <span>{userXp} XP</span>
-                </div>
-                <div className="w-[1px] h-3.5 bg-slate-200" />
-                <div className="flex items-center gap-1.5 font-black text-xs text-[#2563EB]">
-                  <span className="text-sm">💎</span>
-                  <span>{userGems} Gems</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 2. FILTER TABS ROW ── */}
-          <div className="flex items-center gap-2 overflow-x-auto pb-1">
-            {[
-              { id: 'all' as QuestTab, label: `Semua Misi (${totalCount || 6})` },
-              { id: 'daily' as QuestTab, label: `Misi Harian ⚡ (${filteredDaily.length})` },
-              { id: 'main' as QuestTab, label: `Misi Utama 🚀 (${mainQuests.length || 2})` },
-              { id: 'side' as QuestTab, label: `Tantangan Portofolio 🏆 (${sideQuests.length || 1})` },
-            ].map((tab) => (
+              {/* Quick Gems Balance Button */}
               <button
-                key={tab.id}
                 type="button"
                 onClick={() => {
                   triggerHaptic('tap')
-                  setActiveTab(tab.id)
+                  setActiveTab('shop')
                 }}
-                className={`px-4 py-2 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
-                  activeTab === tab.id
-                    ? 'bg-[#2563EB] text-white shadow-xs'
-                    : 'bg-white text-slate-600 border-2 border-slate-200 hover:bg-slate-50'
-                }`}
+                className="bg-blue-50 hover:bg-blue-100/80 active:translate-y-0.5 border-2 border-blue-200 rounded-2xl px-3.5 py-2 flex items-center gap-2 shadow-2xs transition-all cursor-pointer"
+                title="Buka Toko Gems Akihabara"
               >
-                {tab.label}
+                <span className="text-sm">💎</span>
+                <span className="text-xs font-black text-[#1D4ED8]">{userGems} Gems</span>
+                <span className="text-[10px] bg-blue-600 text-white font-black px-1.5 py-0.5 rounded-md">
+                  TOKO ➔
+                </span>
               </button>
-            ))}
+            </div>
           </div>
 
-          {/* ── 3. DAILY QUESTS CONTAINER ── */}
+          {/* ── 3. DUOLINGO 3D FILTER TABS ROW ── */}
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            {[
+              { id: 'all' as QuestPageTab, label: `Semua Misi 📜 (${filteredDaily.length + dynamicMainQuests.length + portfolioChallenges.length})` },
+              { id: 'daily' as QuestPageTab, label: `Misi Harian ⚡ (${filteredDaily.length})` },
+              { id: 'main' as QuestPageTab, label: `Misi Karier 🚀 (${dynamicMainQuests.length})` },
+              { id: 'side' as QuestPageTab, label: `Tantangan Portofolio 💼 (${portfolioChallenges.length})` },
+              { id: 'shop' as QuestPageTab, label: `Toko Gems Akihabara 💎` },
+            ].map((tab) => {
+              const isActive = activeTab === tab.id
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setActiveTab(tab.id)
+                  }}
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-black transition-all cursor-pointer whitespace-nowrap border-b-[4px] ${
+                    isActive
+                      ? 'bg-[#2563EB] text-white border-b-blue-800 shadow-xs translate-y-0.5'
+                      : 'bg-white text-slate-700 border-2 border-slate-200 border-b-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              )
+            })}
+          </div>
+
+          {/* ══════ TAB 1 / SECTION 1: DAILY QUESTS CONTAINER ══════ */}
           {(activeTab === 'all' || activeTab === 'daily') && (
-            <div className="bg-white border-2 border-slate-200 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs">
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs">
               <div className="flex items-center justify-between gap-3 flex-wrap">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-50 border border-amber-200 text-[#D97706] flex items-center justify-center shrink-0">
-                    <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-amber-50 border-2 border-amber-200 text-[#D97706] flex items-center justify-center shrink-0 shadow-2xs">
+                    <Sparkle weight="fill" className="w-5 h-5 text-amber-500" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-extrabold text-base text-[#0F172A]">
                         Misi Harian (Daily Quests)
                       </h3>
-                      {isLoading && (
+                      {hookLoading && (
                         <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
                       )}
                     </div>
                     <p className="text-xs text-slate-500">
-                      Reset setiap pukul 00:00 JST (22:00 WIB) • Bonus XP pengganda streak
+                      Reset otomatis setiap pukul 00:00 JST (22:00 WIB) • Pengganda bonus XP & Gems
                     </p>
                   </div>
                 </div>
 
-                <span className="bg-[#FFFBEB] text-[#B45309] text-xs font-black px-3 py-1 rounded-full border border-amber-200 flex items-center gap-1.5">
+                <span className="bg-[#FFFBEB] text-[#B45309] text-xs font-black px-3.5 py-1.5 rounded-2xl border-2 border-amber-200 flex items-center gap-1.5 shadow-2xs">
                   <Hourglass weight="bold" className="w-3.5 h-3.5" />
                   <span>Sisa Waktu: {timeLeft}</span>
                 </span>
               </div>
 
               {/* Dynamic Daily Quests List */}
-              <div className="space-y-3">
+              <div className="space-y-3 pt-1">
                 {filteredDaily.map((questItem, idx) => {
-                  const isDone = questItem.user_status === 'completed' || (idx === 0 && claimedD1)
+                  const isClaimed = !!claimedDailyMap[questItem.id]
+                  const isDone = questItem.isCompleted || isClaimed
+
                   return (
                     <div
                       key={questItem.id}
-                      className={`border-2 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-transform hover:-translate-y-0.5 shadow-2xs ${
-                        isDone
-                          ? 'bg-[#FFFBEB] border-amber-300'
-                          : 'bg-white border-slate-200/90'
+                      className={`border-2 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 shadow-2xs ${
+                        isClaimed
+                          ? 'bg-slate-50/70 border-slate-200/80 border-b-[3px] border-b-slate-200 opacity-75'
+                          : isDone
+                          ? 'bg-amber-50/60 border-2 border-amber-300 border-b-[4px] border-b-amber-400 shadow-xs'
+                          : 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
                       }`}
                     >
                       <div className="flex items-center gap-3.5 min-w-0">
                         <div
-                          className={`w-10 h-10 rounded-xl border flex items-center justify-center font-mono font-black text-xs shrink-0 ${
-                            isDone
-                              ? 'bg-amber-100 border-amber-300 text-amber-700'
+                          className={`w-11 h-11 rounded-2xl border-2 flex items-center justify-center font-mono font-black text-xs shrink-0 shadow-2xs ${
+                            isClaimed
+                              ? 'bg-slate-100 border-slate-300 text-slate-500'
+                              : isDone
+                              ? 'bg-amber-100 border-amber-300 text-amber-800'
                               : 'bg-blue-50 border-blue-200 text-[#2563EB]'
                           }`}
                         >
-                          D{idx + 1}
+                          {isClaimed ? '✓' : `D${idx + 1}`}
                         </div>
-                        <div className="space-y-0.5 truncate">
-                          <div className="flex items-center gap-2">
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
                             <span
-                              className={`font-black text-[10px] px-2 py-0.5 rounded ${
+                              className={`font-black text-[10px] px-2 py-0.5 rounded-lg border ${
                                 isDone
-                                  ? 'bg-amber-200/60 text-amber-900'
-                                  : 'bg-blue-100 text-[#1D4ED8]'
+                                  ? 'bg-amber-100 border-amber-200 text-amber-900'
+                                  : 'bg-blue-50 border-blue-200 text-[#1D4ED8]'
                               }`}
                             >
                               {questItem.chip_label}
                             </span>
-                            {isDone ? (
-                              <span className="text-xs font-black text-emerald-700">✓ Selesai 100%</span>
-                            ) : (
-                              <span className="text-xs font-medium text-slate-400">
-                                Estimasi {questItem.estimated_minutes} Menit
+                            <span className="text-[11px] font-semibold text-slate-400">
+                              Estimasi {questItem.estimated_minutes} Menit
+                            </span>
+                            {isClaimed && (
+                              <span className="text-[11px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                                HADIAH DITERIMA ✓
                               </span>
                             )}
                           </div>
-                          <h4 className="font-black text-xs sm:text-sm text-[#0F172A] truncate">
+                          <h4 className="font-black text-sm text-[#0F172A] truncate">
                             {questItem.title}
                           </h4>
-                          <p className="text-[11px] font-medium text-slate-500">
-                            Hadiah: ⚡ +{questItem.xp_reward} XP • 💎 10 Gems
-                          </p>
+                          <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+                            <span className="text-amber-600 font-bold">⚡ +{questItem.xp_reward} XP</span>
+                            <span>•</span>
+                            <span className="text-blue-600 font-bold">💎 +{questItem.gem_reward} Gems</span>
+                          </div>
                         </div>
                       </div>
 
                       <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-center">
-                        {isDone ? (
+                        {isClaimed ? (
+                          <Button3D
+                            variant="ghost"
+                            size="sm"
+                            disabled
+                            className="text-xs px-4 py-2 border-2 border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed"
+                          >
+                            SELESAI ✓
+                          </Button3D>
+                        ) : isDone ? (
                           <Button3D
                             variant="amber"
                             size="sm"
-                            disabled={claimedD1}
-                            onClick={handleClaimD1}
+                            onClick={() => handleClaimDailyQuest(questItem.id, questItem.xp_reward, questItem.gem_reward)}
                             className="text-xs px-4 py-2"
                           >
-                            {claimedD1 ? 'HADIAH DIKLAIM ✓' : 'KLAIM HADIAH ⚡'}
+                            KLAIM HADIAH ⚡
                           </Button3D>
                         ) : (
                           <Button3D
                             variant="blue"
                             size="sm"
-                            onClick={() => navigate(`/learn/${questItem.id}`)}
+                            onClick={() => navigate(questItem.route)}
                             className="text-xs px-4 py-2"
                           >
                             Mulai Misi ▶
@@ -312,269 +666,272 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ── 4. MAIN CAREER QUEST & BOSS CHALLENGE ROW ── */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-            {/* Main Career Quest Card */}
-            {(activeTab === 'all' || activeTab === 'main') && (
-              <div className="bg-white border-2 border-emerald-300 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs flex flex-col justify-between relative overflow-hidden">
-                <div className="space-y-2.5 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <span className="bg-[#DCFCE7] text-[#15803D] font-black text-xs px-2.5 py-1 rounded-xl flex items-center gap-1.5">
-                      <span>🚀</span>
-                      <span>MISI UTAMA KARIER</span>
-                    </span>
-                    <span className="bg-emerald-50 text-emerald-700 font-mono font-bold text-[11px] px-2 py-0.5 rounded border border-emerald-200">
-                      PART 1 AKTIF
-                    </span>
-                  </div>
-
-                  <h4 className="font-black text-base sm:text-lg text-[#0F172A] tracking-tight">
-                    {mainQuests[0]?.title || 'Part 1: Variabel & Tipe Data Golang'}
-                  </h4>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {mainQuests[0]?.story_context || mainQuests[0]?.description || 'Pelajari deklarasi variabel, zero value, dan konversi tipe data yang menjadi fondasi microservices di Tokyo.'}
-                  </p>
+          {/* ══════ TAB 2 / SECTION 2: MAIN CAREER QUESTS (DYNAMIC PER TRACK) ══════ */}
+          {(activeTab === 'all' || activeTab === 'main') && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-xl">🚀</span>
+                  <h3 className="font-black text-base text-[#0F172A]">
+                    Misi Utama Jalur Karier ({activeTrack.toUpperCase()})
+                  </h3>
                 </div>
-
-                <div className="space-y-3 pt-3 border-t border-slate-100 relative z-10">
-                  <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                    <span className="text-[#059669] font-black">
-                      ⚡ +{mainQuests[0]?.xp_reward || 50} XP • Standar IT Tokyo
-                    </span>
-                    <span>Modul Unit 1</span>
-                  </div>
-
-                  <Button3D
-                    variant="emerald"
-                    size="md"
-                    fullWidth
-                    onClick={() => navigate(`/learn/${mainQuests[0]?.id || 'part-1-variabel-dan-tipe-data'}`)}
-                    className="text-xs py-3"
-                  >
-                    <span>BUKA WORKSPACE KODING 💻</span>
-                  </Button3D>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsCourseSwitcherOpen(true)}
+                  className="text-xs font-black text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  Ganti Track ➔
+                </button>
               </div>
-            )}
 
-            {/* Boss / Portfolio Challenge Card */}
-            {(activeTab === 'all' || activeTab === 'side') && (
-              <div className="bg-white border-2 border-slate-200 rounded-3xl p-5 sm:p-6 space-y-4 shadow-xs flex flex-col justify-between relative overflow-hidden">
-                <div className="space-y-2.5 relative z-10">
-                  <div className="flex items-center justify-between">
-                    <span className="bg-[#FEF2F2] text-[#DC2626] font-black text-xs px-2.5 py-1 rounded-xl flex items-center gap-1.5">
-                      <Trophy weight="fill" className="w-3.5 h-3.5" />
-                      <span>TANTANGAN PORTOFOLIO TOKYO</span>
-                    </span>
-                    <span className="bg-red-50 text-red-600 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-red-200">
-                      KURASI VISA
-                    </span>
-                  </div>
-
-                  <h4 className="font-black text-base sm:text-lg text-[#0F172A] tracking-tight">
-                    REST API Gin & Auth Engine Standar Tokyo
-                  </h4>
-
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    Bangun microservice authentication standar produksi untuk kurasi portofolio perusahaan teknologi Jepang yang mensponsori visa kerja.
-                  </p>
-                </div>
-
-                <div className="space-y-3 pt-3 border-t border-slate-100 relative z-10">
-                  <div className="flex items-center gap-1.5 flex-wrap">
-                    {['GOLANG', 'GIN ENGINE', 'POSTGRESQL', 'DOCKER'].map((tag) => (
-                      <span key={tag} className="bg-blue-50 text-[#2563EB] font-black text-[10px] px-2 py-0.5 rounded-md border border-blue-100">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-
-                  <Button3D
-                    variant="blue"
-                    size="md"
-                    fullWidth
-                    onClick={() => navigate('/learn/part-4-gin-routing')}
-                    className="text-xs py-3"
-                  >
-                    <span>BUKA BRIEFING & SPESIFIKASI ➔</span>
-                  </Button3D>
-                </div>
-              </div>
-            )}
-          </div>
-        </main>
-
-        {/* ══════ RIGHT SIDEBAR RAIL (354px width SSOT) ══════ */}
-        <aside className="w-full xl:w-[354px] shrink-0 border-t-2 xl:border-t-0 xl:border-l-2 border-[#E2E8F0] bg-white p-5 sm:p-6 space-y-5">
-          {/* ── 1. UNIFIED STREAK AND SCHEDULE CARD (BLUE/EMERALD HIERARCHY) ── */}
-          <div className="border-2 border-slate-200 rounded-3xl p-4 sm:p-5 space-y-3.5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <CalendarBlank weight="bold" className="w-4 h-4 text-[#2563EB]" />
-                <h4 className="font-black text-xs text-[#0F172A]">Streak & Jadwal Live</h4>
-              </div>
-              <span className="bg-[#FEF2F2] text-[#DC2626] text-[10px] font-black px-2.5 py-0.5 rounded-full border border-red-200 flex items-center gap-1">
-                <span>🔥</span>
-                <span>{userStreak} Hari Aktif</span>
-              </span>
-            </div>
-
-            {/* 7 Days Row */}
-            <div className="grid grid-cols-7 gap-1.5 text-center">
-              {['S', 'S', 'R', 'K', 'J', 'S', 'M'].map((day, idx) => {
-                const isCompletedDay = idx < Math.min(userStreak, 7) - 1
-                const isCurrentDay = idx === Math.min(userStreak, 7) - 1
-                return (
-                  <div key={idx} className="flex flex-col items-center gap-1">
-                    <span className={`text-[9px] font-bold ${isCurrentDay ? 'text-[#0284C7]' : 'text-slate-400'}`}>
-                      {day}
-                    </span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {dynamicMainQuests.map((quest) => {
+                  return (
                     <div
-                      className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-[11px] transition-all ${
-                        isCompletedDay
-                          ? 'bg-[#10B981] text-white shadow-2xs'
-                          : isCurrentDay
-                          ? 'bg-[#2563EB] text-white shadow-xs ring-2 ring-blue-200'
-                          : 'bg-[#F1F5F9] text-[#475569]'
+                      key={quest.id}
+                      className={`bg-white border-2 rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 transition-all duration-200 shadow-2xs ${
+                        quest.isCompleted
+                          ? 'border-emerald-300 border-b-[5px] border-b-emerald-600 bg-emerald-50/20'
+                          : 'border-slate-200/90 border-b-[5px] border-b-slate-300 hover:border-b-[6px] hover:-translate-y-0.5'
                       }`}
                     >
-                      {isCompletedDay || isCurrentDay ? '✓' : idx + 1}
+                      <div className="space-y-2.5">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="bg-emerald-100 text-emerald-800 font-black text-[11px] px-2.5 py-1 rounded-xl border border-emerald-200 flex items-center gap-1.5">
+                            <span>🚀</span>
+                            <span>{quest.unitTag}</span>
+                          </span>
+                          {quest.isCompleted ? (
+                            <span className="bg-emerald-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow-xs">
+                              LULUS ✓
+                            </span>
+                          ) : (
+                            <span className="bg-blue-50 text-blue-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-blue-200">
+                              TERSEDIA
+                            </span>
+                          )}
+                        </div>
+
+                        <h4 className="font-black text-base text-[#0F172A] tracking-tight">
+                          {quest.title}
+                        </h4>
+
+                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
+                          {quest.subtitle}
+                        </p>
+                      </div>
+
+                      <div className="space-y-3 pt-3 border-t border-slate-100">
+                        <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                          <span className="text-[#059669] font-black">
+                            ⚡ +{quest.xp_reward} XP • 💎 +{quest.gem_reward} Gems
+                          </span>
+                          <span className="text-slate-400 font-semibold">{quest.chip_label}</span>
+                        </div>
+
+                        <Button3D
+                          variant={quest.isCompleted ? 'ghost' : 'emerald'}
+                          size="md"
+                          fullWidth
+                          onClick={() => navigate(quest.route)}
+                          className={`text-xs py-2.5 ${quest.isCompleted ? 'border-2 border-emerald-300 text-emerald-700 bg-emerald-50' : ''}`}
+                        >
+                          {quest.isCompleted ? 'ULANGI LATIHAN 💻' : 'BUKA WORKSPACE KODING 💻'}
+                        </Button3D>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ══════ TAB 3 / SECTION 3: PORTFOLIO & BOSS CHALLENGES ══════ */}
+          {(activeTab === 'all' || activeTab === 'side') && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <Trophy weight="fill" className="w-5 h-5 text-amber-500" />
+                <h3 className="font-black text-base text-[#0F172A]">
+                  Tantangan Portofolio & Boss Quest (Standar Visa Tokyo)
+                </h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {portfolioChallenges.map((challenge) => (
+                  <div
+                    key={challenge.id}
+                    className="bg-white border-2 border-purple-200 border-b-[5px] border-b-purple-400 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs flex flex-col justify-between hover:border-b-[6px] hover:-translate-y-0.5 transition-all"
+                  >
+                    <div className="space-y-2.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="bg-purple-100 text-purple-800 font-black text-[11px] px-2.5 py-1 rounded-xl border border-purple-200 flex items-center gap-1.5">
+                          <Trophy weight="fill" className="w-3.5 h-3.5 text-purple-600" />
+                          <span>{challenge.sponsorTag}</span>
+                        </span>
+                        <span className="bg-red-50 text-red-600 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-red-200">
+                          {challenge.difficulty.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <h4 className="font-black text-base text-[#0F172A] tracking-tight">
+                        {challenge.title}
+                      </h4>
+
+                      <p className="text-xs text-slate-600 leading-relaxed">
+                        {challenge.subtitle}
+                      </p>
+
+                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                        {challenge.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-md border border-slate-200"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="space-y-3 pt-3 border-t border-purple-100">
+                      <div className="flex items-center justify-between text-xs font-bold text-slate-600">
+                        <span className="text-purple-700 font-black">
+                          ⚡ +{challenge.xp_reward} XP • 💎 +{challenge.gem_reward} Gems
+                        </span>
+                        <span className="text-purple-600 font-bold">Tokyo Portofolio</span>
+                      </div>
+
+                      <Button3D
+                        variant="blue"
+                        size="md"
+                        fullWidth
+                        onClick={() => navigate(challenge.route)}
+                        className="text-xs py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600"
+                      >
+                        <span>BUKA BRIEFING & SPESIFIKASI ➔</span>
+                      </Button3D>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-
-            {/* Live Event Box */}
-            <div className="bg-[#EFF6FF] border border-blue-200 rounded-2xl p-3 flex items-center justify-between gap-2">
-              <div className="space-y-0.5">
-                <p className="text-[11px] font-black text-[#1E40AF]">
-                  Mock Technical Interview Tokyo
-                </p>
-                <p className="text-[10px] text-[#2563EB] font-semibold">
-                  Sabtu • 09:00 JST (07:00 WIB)
-                </p>
+                ))}
               </div>
-              <button
-                type="button"
-                onClick={() => triggerHaptic('tap')}
-                className="bg-[#2563EB] hover:bg-blue-700 active:translate-y-0.5 text-white font-black text-[10px] px-2.5 py-1.5 rounded-xl shrink-0 cursor-pointer shadow-xs transition-all"
-              >
-                Ingatkan 🔔
-              </button>
             </div>
-          </div>
+          )}
 
-          {/* ── 2. WEEKLY CHEST CARD ── */}
-          <div className="bg-[#FFFBEB] border-2 border-amber-300 rounded-3xl p-5 space-y-3 shadow-xs">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Gift weight="fill" className="w-4 h-4 text-amber-600" />
-                <h4 className="font-black text-xs text-[#92400E]">
-                  Peti Hadiah Mingguan 🎁
-                </h4>
-              </div>
-              <span className="bg-amber-100 text-[#B45309] font-black text-[10px] px-2 py-0.5 rounded-md">
-                TIER 1 AKTIF
-              </span>
-            </div>
-
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-xs">
-                <span className="font-extrabold text-amber-950">
-                  {completedCount} dari 10 Misi Tuntas
-                </span>
-                <span className="font-black text-amber-700 font-mono">
-                  {Math.min(100, Math.round((completedCount / 10) * 100))}%
-                </span>
-              </div>
-              <ProgressBar3D
-                value={Math.min(100, Math.round((completedCount / 10) * 100))}
-                max={100}
-                variant="xp"
-                size="sm"
-              />
-            </div>
-
-            <p className="text-[11px] text-[#92400E] leading-relaxed">
-              Tuntaskan {Math.max(0, 10 - completedCount)} misi lagi untuk klaim Peti Emas (+300 XP & 20 Gems).
-            </p>
-
-            <Button3D
-              variant="amber"
-              size="sm"
-              fullWidth
-              disabled={claimedChest || completedCount < 10}
-              onClick={handleClaimChest}
-              className="text-xs py-2"
-            >
-              {claimedChest
-                ? 'PETI DIKLAIM ✓'
-                : completedCount >= 10
-                ? 'KLAIM PETI EMAS (+300 XP) ⚡'
-                : 'KLAIM PETI (BELUM MEMENUHI)'}
-            </Button3D>
-          </div>
-
-          {/* ── 3. GEMS EXCHANGE SHOP (AKIHABARA ARCADE SHOP) ── */}
-          <div className="border-2 border-slate-200 rounded-3xl p-5 space-y-3.5 shadow-xs">
-            <div className="flex items-center justify-between">
-              <h4 className="font-black text-xs text-[#0F172A] flex items-center gap-1.5">
-                <span>💎</span>
-                <span>Toko Penukaran Gems Tokyo</span>
-              </h4>
-              <span className="bg-blue-50 text-[#2563EB] font-black text-[10px] px-2 py-0.5 rounded-md border border-blue-200">
-                💎 {userGems} GEMS
-              </span>
-            </div>
-
-            <div className="space-y-2">
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center text-[#2563EB]">
-                    <ShieldCheck weight="bold" className="w-4 h-4" />
+          {/* ══════ TAB 4 / SECTION 4: AKIHABARA ARCADE (GEMS SHOP) ══════ */}
+          {(activeTab === 'all' || activeTab === 'shop') && (
+            <div className="bg-gradient-to-b from-blue-50/50 via-white to-white border-2 border-blue-200/80 rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xs">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md border-b-[4px] border-blue-800">
+                    💎
                   </div>
                   <div>
-                    <span className="text-xs font-bold text-slate-800 block">
-                      Streak Freeze (1 Hari)
-                    </span>
-                    <span className="text-[10px] text-slate-500">Amankan streak saat libur</span>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-lg text-[#0F172A] tracking-tight">
+                        Toko Penukaran Gems Tokyo (Akihabara Arcade)
+                      </h3>
+                      <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-200">
+                        TERBUKA
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600">
+                      Tukarkan gems hasil koding dengan perlindungan streak, booster XP, dan ulasan portofolio oleh engineer Tokyo.
+                    </p>
                   </div>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => triggerHaptic('tap')}
-                  className="bg-white hover:bg-slate-100 border border-slate-200 text-[#2563EB] font-black text-[10px] px-2.5 py-1 rounded-xl cursor-pointer shadow-2xs"
-                >
-                  20 Gems
-                </button>
+
+                <div className="bg-white border-2 border-blue-200 rounded-2xl px-4 py-2 flex items-center gap-2.5 shadow-2xs shrink-0 self-start sm:self-center">
+                  <span className="text-lg">💎</span>
+                  <div>
+                    <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
+                      Saldo Anda
+                    </span>
+                    <span className="text-sm font-black text-blue-700">
+                      {userGems} Gems
+                    </span>
+                  </div>
+                </div>
               </div>
 
-              <div className="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-200">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-xl bg-amber-100 flex items-center justify-center text-amber-600">
-                    <Medal weight="bold" className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <span className="text-xs font-bold text-slate-800 block">
-                      Review CV Prioritas
-                    </span>
-                    <span className="text-[10px] text-slate-500">Review oleh IT recruiter Tokyo</span>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => triggerHaptic('tap')}
-                  className="bg-white hover:bg-slate-100 border border-slate-200 text-amber-700 font-black text-[10px] px-2.5 py-1 rounded-xl cursor-pointer shadow-2xs"
-                >
-                  100 Gems
-                </button>
+              {/* 4 Duolingo 3D Tactile Shop Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+                {SHOP_ITEMS.map((item) => {
+                  const ItemIcon = item.icon
+                  const ownedCount = inventory[item.id] || 0
+                  const isAffordable = userGems >= item.price
+
+                  return (
+                    <div
+                      key={item.id}
+                      className="bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all hover:border-b-[5px] hover:-translate-y-0.5 shadow-2xs"
+                    >
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <div className={`w-9 h-9 rounded-xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-2xs`}>
+                            <ItemIcon weight="bold" className="w-5 h-5" />
+                          </div>
+                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${item.badgeColor}`}>
+                            {item.badge}
+                          </span>
+                        </div>
+
+                        <div>
+                          <h4 className="font-black text-xs sm:text-sm text-[#0F172A]">
+                            {item.title}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
+                            {item.subtitle}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-400 text-[10px]">
+                            {ownedCount > 0 ? `Dimiliki: ${ownedCount}x` : 'Belum Ada'}
+                          </span>
+                          <span className="font-black text-blue-700">
+                            💎 {item.price} Gems
+                          </span>
+                        </div>
+
+                        <Button3D
+                          variant={isAffordable ? 'blue' : 'ghost'}
+                          size="sm"
+                          fullWidth
+                          onClick={() => handlePurchaseShopItem(item)}
+                          className={`text-xs py-2 ${!isAffordable ? 'opacity-60 cursor-not-allowed bg-slate-100 text-slate-500' : ''}`}
+                        >
+                          {isAffordable ? `Tukar ${item.price} 💎` : 'Gems Kurang'}
+                        </Button3D>
+                      </div>
+                    </div>
+                  )
+                })}
               </div>
             </div>
-          </div>
-        </aside>
+          )}
+        </main>
+
+        {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 39.1) ══════ */}
+        <GameSidebarRail activeTrack={activeTrack} />
       </div>
+
+      {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
+      <CourseSwitcherModal
+        isOpen={isCourseSwitcherOpen}
+        onClose={() => setIsCourseSwitcherOpen(false)}
+        currentTrack={activeTrack}
+        onSelectTrack={handleSelectTrack}
+        trackProgressMap={trackProgressMap}
+      />
+
+      {/* ── 4. TOKYO LEADERBOARD MODAL ── */}
+      <TokyoLeaderboardModal
+        isOpen={isLeaderboardOpen}
+        onClose={() => setIsLeaderboardOpen(false)}
+      />
     </div>
   )
 }
