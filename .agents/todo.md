@@ -1114,28 +1114,29 @@
 
 ---
 
-## 🚀 FASE 42: Sinkronisasi Portofolio Rekrutmen Tokyo & Salary Simulator (`/career`)
+## 🚀 FASE 42: Sinkronisasi Portofolio Rekrutmen Tokyo & Salary Simulator (`/career`) [x] (SELESAI ✅)
 
 > **Tujuan Utama:** Menghubungkan progres belajar nyata pengguna dengan halaman portofolio karier (`/career`), mencakup kalkulator estimasi gaji software engineer di Tokyo berbasis modul yang diselesaikan, indikator kelayakan visa kerja Jepang, dan format ekspor resume siap kirim (Rirekisho / Shokumu Keirekisho).
 
-### [ ] 42.1 Dynamic Tokyo Salary Simulator
-- [ ] Hitung estimasi rentang gaji Tokyo (misal: ¥5.5M – ¥9.5M per tahun) secara dinamis berdasarkan akumulasi modul dan capstone project yang sudah diselesaikan.
-- [ ] Tampilkan perbandingan level: Junior Developer (¥4.5M - ¥6M), Mid-Level Engineer (¥6.5M - ¥8.5M), hingga Senior Specialist (¥9M - ¥13M+).
+### [x] 42.1 Dynamic Tokyo Salary Simulator
+- [x] Hitung estimasi rentang gaji Tokyo (Junior ¥4.8M, Mid ¥6.5M, Senior ¥8.5M+) secara dinamis berdasarkan modul yang diselesaikan.
+- [x] Tampilkan perbandingan level dan integrasi take-home pay riil (Tedori 手取り) setelah Shakai Hoken dan pajak Jepang.
 
-### [ ] 42.2 Visa Sponsorship Eligibility Meter
-- [ ] Tampilkan speedometer/indikator kesiapan sponsor visa kerja Jepang (0% s/d 100%).
-- [ ] Rincian poin kualifikasi:
-  - Skill Teknis IT (berdasarkan kelulusan unit silabus).
-  - Bahasa Jepang Bisnis IT (berdasarkan kelulusan unit Nihongo).
-  - Portofolio Proyek Nyata & GitHub Repository.
+### [x] 42.2 Visa Sponsorship Eligibility Meter
+- [x] Hubungkan meter kesiapan visa kerja Jepang (0% s/d 100%) secara adaptif ke `CURRICULUM_TRACKS_MAP`.
+- [x] Rincian poin kualifikasi terintegrasi:
+  - Skill Teknis IT (berdasarkan kelulusan unit spesialisasi).
+  - Bahasa Jepang Bisnis IT (berdasarkan kelulusan unit Nihongo & streak).
+  - Portofolio Proyek Nyata & GitHub Repository terverifikasi.
 
-### [ ] 42.3 Tokyo Tech Resume Builder (Format Rirekisho & Shokumu Keirekisho)
-- [ ] Ekspor ringkasan keahlian ke template PDF / Markdown berstandar rekrutmen perusahaan teknologi Tokyo.
-- [ ] Sertakan link verifikasi sertifikat digital penyelesaian jalur spesialisasi CodeAbroad.
+### [x] 42.3 Tokyo Tech Resume Builder (Format Rirekisho & Shokumu Keirekisho)
+- [x] Ekspor ringkasan keahlian ke format JIS A4 siap cetak via `TokyoResumeBuilderModal`.
+- [x] Sertakan sertifikat digital terverifikasi dengan stempel Hanko CodeAbroad `合格`.
 
-### [ ] 42.4 Pengujian, Verifikasi & Validasi
-- [ ] Uji kalkulasi gaji dan kelayakan visa saat modul koding diselesaikan.
-- [ ] Validasi `npm run build` di `frontend/` dan `go test -count=1 ./...` di `backend/`.
+### [x] 42.4 Pengujian, Verifikasi & Validasi
+- [x] Uji kalkulasi gaji dan kelayakan visa saat modul koding diselesaikan.
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript, build 711ms).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 
 
 

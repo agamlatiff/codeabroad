@@ -29,6 +29,7 @@ import {
 } from '@phosphor-icons/react'
 import { TokyoSalarySimulatorCard } from '../components/game/TokyoSalarySimulatorCard'
 import { TokyoResumeBuilderModal } from '../components/game/TokyoResumeBuilderModal'
+import { CURRICULUM_TRACKS_MAP } from '../data/curriculumData'
 
 export const CareerPortfolioPage = () => {
   const { user } = useAuthStore()
@@ -67,22 +68,35 @@ export const CareerPortfolioPage = () => {
   const userStreak = user?.streak || 1
   const userLevel = user?.current_level || 1
 
-  // Dynamic Tokyo Job Readiness Calculation
-  const totalTrackQuests = useMemo(() => {
-    let count = 0
-    roadmap?.stations?.forEach((st) => {
-      st.chapters?.forEach((ch) => {
-        count += ch.quests?.length || 0
-      })
-    })
-    return count > 0 ? count : 12
-  }, [roadmap])
+  // Dynamic Multi-Track Units & Readiness Calculation (SSOT with CURRICULUM_TRACKS_MAP)
+  const trackUnits = useMemo(() => {
+    return (
+      CURRICULUM_TRACKS_MAP[effectiveTrack] ||
+      (effectiveTrack === 'backend' && CURRICULUM_TRACKS_MAP['golang']) ||
+      (effectiveTrack === 'react' && CURRICULUM_TRACKS_MAP['frontend']) ||
+      (effectiveTrack === 'devops_aws' && CURRICULUM_TRACKS_MAP['devops']) ||
+      CURRICULUM_TRACKS_MAP['golang']
+    )
+  }, [effectiveTrack])
 
-  const completedTrackQuests = Math.min(completedQuestsSet.size, totalTrackQuests)
+  const allTrackParts = useMemo(() => trackUnits.flatMap((u) => u.parts), [trackUnits])
+  const totalTrackQuests = allTrackParts.length > 0 ? allTrackParts.length : 10
+  const completedTrackQuests = allTrackParts.filter((p) => completedQuestsSet.has(p.id)).length
   const curriculumScore = Math.round((completedTrackQuests / totalTrackQuests) * 50) // Max 50 pts
   const xpScore = Math.min(30, Math.round((userXp / 500) * 30)) // Max 30 pts
   const streakScore = Math.min(20, Math.round((userStreak / 7) * 20)) // Max 20 pts
   const readinessPercent = Math.min(100, Math.max(35, curriculumScore + xpScore + streakScore))
+
+  // Dynamic estimated Tokyo salary based on completed modules & track level
+  const estimatedSalaryJpy = useMemo(() => {
+    if (completedTrackQuests >= 7) {
+      return 8_500_000 // Senior Specialist
+    } else if (completedTrackQuests >= 3) {
+      return 6_500_000 // Mid-Level
+    } else {
+      return 4_800_000 // Junior Engineer
+    }
+  }, [completedTrackQuests])
 
   const handleShareProfile = () => {
     triggerHaptic('tap')
@@ -100,39 +114,112 @@ export const CareerPortfolioPage = () => {
     }, 800)
   }
 
-  // Verified Project Showcases
-  const portfolioProjects = [
-    {
-      id: 'proj-1',
-      title: 'High-Throughput Go REST API Engine',
-      category: 'Backend & Cloud',
-      techStack: ['Go 1.24', 'Gin Gonic', 'JWT Authentication', 'Pgxpool'],
-      description: 'Microservice API dengan arsitektur Clean Architecture, otorisasi Bearer token, connection pool PostgreSQL, dan graceful shutdown.',
-      status: 'VERIFIED',
-      tokyoContext: 'Digunakan oleh FinTech & E-Commerce di Shibuya untuk menangani 15,000 req/sec.',
-      metrics: '100% Test Coverage • 0 Vulnerabilities',
-    },
-    {
-      id: 'proj-2',
-      title: 'Concurrent Task Processor & Worker Pool',
-      category: 'Concurrency & Systems',
-      techStack: ['Go Concurrency', 'Channels', 'Worker Pool', 'Mutex Sync'],
-      description: 'Pipeline pemrosesan batching async asinkron berbasis Goroutine dan buffered channel dengan backpressure limit.',
-      status: 'VERIFIED',
-      tokyoContext: 'Standar rekrutmen senior backend developer di Roppongi Hills Tech Hub.',
-      metrics: 'Zero Goroutine Leaks • Context Timeout Guard',
-    },
-    {
-      id: 'proj-3',
-      title: 'Interactive Code Learning Sandbox',
-      category: 'Frontend & UI Engineering',
-      techStack: ['React 19', 'TypeScript', 'Tailwind CSS v4', 'Vite'],
-      description: 'Duolingo-inspired interactive code runner dengan real-time test evaluation dan tactile 3D physics feedback.',
-      status: 'VERIFIED',
-      tokyoContext: 'EdTech standard interface untuk persiapan engineer global ke Tokyo.',
-      metrics: 'Sub-second Build • Fully Accessible (WCAG)',
-    },
-  ]
+  // Dynamic Verified Project Showcases per Specialization Track
+  const portfolioProjects = useMemo(() => {
+    if (effectiveTrack === 'frontend' || effectiveTrack === 'react') {
+      return [
+        {
+          id: 'proj-fe-1',
+          title: 'Polymorphic React 19 UI Component System',
+          category: 'Frontend Architecture',
+          techStack: ['React 19', 'TypeScript Strict', 'Tailwind CSS v4', 'WCAG 2.1'],
+          description: 'Sistem komponen UI polimorfik tanpa dependensi berat, zero runtime bug dengan strict TypeScript generics.',
+          status: 'VERIFIED',
+          tokyoContext: 'Standar tim frontend modern di Roppongi Hills & Shibuya.',
+          metrics: '100% Type-Safe • 0 Implicit Any',
+        },
+        {
+          id: 'proj-fe-2',
+          title: 'Custom Hooks Data Fetching & Zod Schema Validation',
+          category: 'API & State Management',
+          techStack: ['Custom Hooks', 'Zod Parsing', 'REST API', 'Zustand'],
+          description: 'Layer isolasi data fetching dan validasi runtime JSON schema sebelum disajikan ke komponen visual.',
+          status: 'VERIFIED',
+          tokyoContext: 'Pola standar FinTech web platform Tokyo.',
+          metrics: 'Zero Runtime Crashes • Automatic Retries',
+        },
+        {
+          id: 'proj-fe-3',
+          title: 'Next.js App Router & SSR Performance Showcase',
+          category: 'Fullstack Web App',
+          techStack: ['Next.js', 'React Server Components', 'Vite', 'Vitest'],
+          description: 'Aplikasi web interaktif dengan Server Components, sub-second TTFB, dan performa Lighthouse >95.',
+          status: 'VERIFIED',
+          tokyoContext: 'Kurasi portofolio senior frontend developer Tokyo.',
+          metrics: 'Sub-second Build • 98 Lighthouse Score',
+        },
+      ]
+    }
+
+    if (effectiveTrack === 'devops' || effectiveTrack === 'devops_aws') {
+      return [
+        {
+          id: 'proj-do-1',
+          title: 'Linux Kernel Systemd & POSIX Bash Automation',
+          category: 'SRE & Systems',
+          techStack: ['Linux Kernel', 'Systemd Daemons', 'Bash POSIX', 'SSH Keys'],
+          description: 'Automasi provisioning server cloud dan daemon process isolation dengan restart otomatis anti-crash.',
+          status: 'VERIFIED',
+          tokyoContext: 'Standar infrastruktur server cloud produksi di Tokyo.',
+          metrics: 'Principle of Least Privilege • Zero Downtime',
+        },
+        {
+          id: 'proj-do-2',
+          title: 'Docker Multi-Stage Build & Scratch Image Hardening',
+          category: 'Container Architecture',
+          techStack: ['Docker Multi-stage', 'Scratch Image', 'Docker Compose', 'Trivy'],
+          description: 'Optimasi image container Go & Node dari 800MB menjadi 15MB dengan audit keamanan 0 celah CVE.',
+          status: 'VERIFIED',
+          tokyoContext: 'Standar security audit perusahaan publik Jepang.',
+          metrics: '15MB Production Image • 0 Vulnerabilities',
+        },
+        {
+          id: 'proj-do-3',
+          title: 'Automated CI/CD Pipeline & AWS ECS Deployment',
+          category: 'Cloud Infrastructure',
+          techStack: ['GitHub Actions', 'AWS ECS', 'Terraform', 'Docker'],
+          description: 'Automasi pipeline testing, docker build, dan deploy container otomatis ke AWS cloud Tokyo region.',
+          status: 'VERIFIED',
+          tokyoContext: 'Infrastruktur cloud Mercari & Line Tokyo.',
+          metrics: '100% Automated Deploy • Blue-Green Rollout',
+        },
+      ]
+    }
+
+    // Default to Golang Backend
+    return [
+      {
+        id: 'proj-1',
+        title: 'High-Throughput Go REST API Engine',
+        category: 'Backend & Cloud',
+        techStack: ['Go 1.24', 'Gin Gonic', 'JWT Authentication', 'Pgxpool'],
+        description: 'Microservice API dengan arsitektur Clean Architecture, otorisasi Bearer token, connection pool PostgreSQL, dan graceful shutdown.',
+        status: 'VERIFIED',
+        tokyoContext: 'Digunakan oleh FinTech & E-Commerce di Shibuya untuk menangani 15,000 req/sec.',
+        metrics: '100% Test Coverage • 0 Vulnerabilities',
+      },
+      {
+        id: 'proj-2',
+        title: 'Concurrent Task Processor & Worker Pool',
+        category: 'Concurrency & Systems',
+        techStack: ['Go Concurrency', 'Channels', 'Worker Pool', 'Mutex Sync'],
+        description: 'Pipeline pemrosesan batching async asinkron berbasis Goroutine dan buffered channel dengan backpressure limit.',
+        status: 'VERIFIED',
+        tokyoContext: 'Standar rekrutmen senior backend developer di Roppongi Hills Tech Hub.',
+        metrics: 'Zero Goroutine Leaks • Context Timeout Guard',
+      },
+      {
+        id: 'proj-3',
+        title: 'Interactive Code Learning Sandbox',
+        category: 'Frontend & UI Engineering',
+        techStack: ['React 19', 'TypeScript', 'Tailwind CSS v4', 'Vite'],
+        description: 'Duolingo-inspired interactive code runner dengan real-time test evaluation dan tactile 3D physics feedback.',
+        status: 'VERIFIED',
+        tokyoContext: 'EdTech standard interface untuk persiapan engineer global ke Tokyo.',
+        metrics: 'Sub-second Build • Fully Accessible (WCAG)',
+      },
+    ]
+  }, [effectiveTrack])
 
   // Official Immigration Requirements for Japan IT Work Visa
   const visaRequirements = [
@@ -738,7 +825,11 @@ export const CareerPortfolioPage = () => {
           {/* ══════ TAB 6: TOKYO NET SALARY & LIVING COST SIMULATOR ══════ */}
           {activeTab === 'simulator' && (
             <div className="space-y-6">
-              <TokyoSalarySimulatorCard />
+              <TokyoSalarySimulatorCard
+                initialSalary={estimatedSalaryJpy}
+                userTrack={effectiveTrack}
+                completedModulesCount={completedTrackQuests}
+              />
             </div>
           )}
         </main>

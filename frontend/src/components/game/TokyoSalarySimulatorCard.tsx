@@ -24,10 +24,18 @@ import doodleProud from '../../assets/kodi/doodle-proud.png'
 
 export interface TokyoSalarySimulatorCardProps {
   className?: string
+  initialSalary?: number
+  userTrack?: string
+  completedModulesCount?: number
 }
 
-export const TokyoSalarySimulatorCard = ({ className = '' }: TokyoSalarySimulatorCardProps) => {
-  const [annualSalary, setAnnualSalary] = useState<number>(6_000_000)
+export const TokyoSalarySimulatorCard = ({
+  className = '',
+  initialSalary = 6_000_000,
+  userTrack,
+  completedModulesCount,
+}: TokyoSalarySimulatorCardProps) => {
+  const [annualSalary, setAnnualSalary] = useState<number>(initialSalary)
   const [location, setLocation] = useState<TokyoHousingLocation>('central')
   const [showTaxBreakdown, setShowTaxBreakdown] = useState<boolean>(false)
 
@@ -77,6 +85,12 @@ export const TokyoSalarySimulatorCard = ({ className = '' }: TokyoSalarySimulato
               <ShieldCheck weight="fill" className="w-3 h-3 text-emerald-600" />
               <span>Resmi Pajak Jepang (Kokuzeicho)</span>
             </span>
+            {userTrack && (
+              <span className="bg-blue-100 text-blue-900 border border-blue-200 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+                <span>{userTrack}</span>
+                {completedModulesCount !== undefined && <span>• {completedModulesCount} Modul Selesai</span>}
+              </span>
+            )}
           </div>
           <h2 className="text-xl sm:text-2xl font-brand font-black text-slate-900">
             Simulasi Gaji Bersih (Tedori 手取り) & Biaya Hidup
