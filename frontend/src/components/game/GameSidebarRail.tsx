@@ -285,10 +285,10 @@ export const GameSidebarRail = ({
   return (
     <>
       <aside
-        className={`w-full xl:w-[354px] shrink-0 border-t xl:border-t-0 xl:border-l border-slate-200/80 bg-white p-5 pb-8 sm:pb-12 space-y-4 select-none xl:sticky xl:top-4 xl:self-start ${className}`}
+        className={`w-full xl:w-[354px] shrink-0 border-t xl:border-t-0 xl:border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto custom-scrollbar xl:self-start ${className}`}
       >
         {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (SEAMLESS SECTION) ── */}
-        <div className="space-y-2.5">
+        <div className="space-y-2">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -330,7 +330,7 @@ export const GameSidebarRail = ({
               triggerHaptic('tap')
               setIsStreakModalOpen(true)
             }}
-            className="grid grid-cols-7 gap-1.5 text-center bg-orange-50/30 hover:bg-orange-50/60 border border-orange-100/80 hover:border-orange-300 rounded-2xl p-2 shadow-2xs cursor-pointer transition-colors"
+            className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center bg-orange-50/30 hover:bg-orange-50/60 border border-orange-100/80 hover:border-orange-300 rounded-2xl p-1.5 sm:p-2 shadow-2xs cursor-pointer transition-colors"
             title="Klik untuk membuka Kalender Kehadiran & Rentetan Lengkap 📅"
           >
             {(
@@ -382,7 +382,7 @@ export const GameSidebarRail = ({
 
                   {isCompleted ? (
                     <div
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-b from-amber-400 via-orange-400 to-orange-500 shadow-[0_2.5px_0_0_#C2410C] flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 group/token cursor-default"
+                      className="w-7 h-7 rounded-xl bg-gradient-to-b from-amber-400 via-orange-400 to-orange-500 shadow-[0_2px_0_0_#C2410C] flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 group/token cursor-default"
                       title={`${item.label}: Hari Aktif Belajar 🔥`}
                     >
                       <Fire
@@ -392,14 +392,14 @@ export const GameSidebarRail = ({
                     </div>
                   ) : isToday ? (
                     <div
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-orange-50 border-2 border-dashed border-orange-400 flex items-center justify-center text-orange-500 shadow-2xs relative"
+                      className="w-7 h-7 rounded-xl bg-orange-50 border-2 border-dashed border-orange-400 flex items-center justify-center text-orange-500 shadow-2xs relative"
                       title="Hari ini: Belajar 1 modul untuk menyalakan api!"
                     >
                       <Fire weight="bold" className="w-3.5 h-3.5 text-orange-500 animate-bounce" />
                     </div>
                   ) : (
                     <div
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-slate-100/80 border border-slate-200/90 flex items-center justify-center text-slate-400"
+                      className="w-7 h-7 rounded-xl bg-slate-100/80 border border-slate-200/90 flex items-center justify-center text-slate-400"
                       title={`${item.label}: Belum Tercapai`}
                     >
                       <span className="w-1.5 h-1.5 rounded-full bg-slate-300" />
@@ -415,7 +415,7 @@ export const GameSidebarRail = ({
         <div className="h-[1px] bg-slate-100" />
 
         {/* ── 2. MISI & TARGET HARIAN (SEAMLESS SECTION) ── */}
-        <div id="daily-quests-section" className="space-y-2.5 scroll-mt-20">
+        <div id="daily-quests-section" className="space-y-2 scroll-mt-20">
           {/* Header with Title & Timer */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -438,7 +438,7 @@ export const GameSidebarRail = ({
           </div>
 
           {/* Duolingo Integrated Progress Track with Golden Chest at End */}
-          <div className="p-2.5 bg-amber-50/30 border border-amber-100/90 rounded-xl space-y-1.5 shadow-2xs">
+          <div className="p-2 bg-amber-50/30 border border-amber-100/90 rounded-xl space-y-1.5 shadow-2xs">
             <div className="flex items-center justify-between text-[10px]">
               <span className="font-brand font-black text-slate-800 flex items-center gap-1">
                 <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
@@ -485,7 +485,7 @@ export const GameSidebarRail = ({
           </div>
 
           {/* Actionable Quests */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {activeQuests.map((quest, idx) => {
               const isDone = quest.user_status === 'completed'
               const questRoute = quest.route || `/learn/${quest.id}`
@@ -497,7 +497,7 @@ export const GameSidebarRail = ({
               return (
                 <div
                   key={quest.id || idx}
-                  className="p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2.5 shadow-2xs hover:shadow-xs transition-all group"
+                  className="p-2 sm:p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-all group"
                 >
                   <div className="flex items-center gap-2.5 min-w-0 flex-1">
                     {/* Contextual 3D Icon Frame */}

@@ -397,3 +397,19 @@ body {
 .animate-pulse-ring {
   animation: pulse-ring 1.2s cubic-bezier(0.24, 0, 0.38, 1);
 }
+
+/* ── SLIM CUSTOM SCROLLBAR FOR DESKTOP SIDEBAR RAILS ── */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #E2E8F0;
+  border-radius: 9999px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background-color: #CBD5E1;
+}
+

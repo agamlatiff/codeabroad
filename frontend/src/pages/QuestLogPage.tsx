@@ -431,9 +431,9 @@ export const QuestLogPage = () => {
       <NavRail />
 
       {/* ── 2. MAIN APP CANVAS (CENTER STAGE + RIGHT SIDEBAR) ── */}
-      <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8">
+      <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
         {/* ══════ CENTER CONTENT STAGE ══════ */}
-        <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 space-y-6">
+        <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 pb-12 space-y-6">
           {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - GameTopBar) ── */}
           <GameTopBar
             activeTrack={activeTrack}

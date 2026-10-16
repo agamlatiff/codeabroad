@@ -160,7 +160,7 @@ export const TechNihongoCard = ({
   }
 
   return (
-    <div id="tech-nihongo-card" className={`space-y-3 select-none scroll-mt-20 pb-3 ${className}`}>
+    <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
       {/* ── CARD HEADER ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -257,10 +257,10 @@ export const TechNihongoCard = ({
         </button>
       </div>
 
-      {/* ── INTERACTIVE TASK ACTION WITH GENEROUS BREATHING ROOM ── */}
-      <div className="pt-2 pb-1 space-y-2">
+      {/* ── INTERACTIVE TASK ACTION WITH CLEAN PUNCHY BUTTON ── */}
+      <div className="pt-1.5 pb-0.5 space-y-1.5">
         {isClaimed ? (
-          <div className="flex items-center justify-between p-2.5 bg-emerald-50/90 border border-emerald-200/90 rounded-xl text-emerald-800 shadow-2xs">
+          <div className="flex items-center justify-between p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-xl text-emerald-800 shadow-2xs">
             <div className="flex items-center gap-1.5">
               <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
               <span className="text-[10px] font-brand font-black">
@@ -272,8 +272,8 @@ export const TechNihongoCard = ({
             </span>
           </div>
         ) : isReviewed ? (
-          <div className="space-y-2 animate-pop">
-            <div className="flex items-center justify-between p-2 bg-amber-50/90 border border-amber-200 rounded-xl text-amber-900 shadow-2xs">
+          <div className="space-y-1.5 animate-pop">
+            <div className="flex items-center justify-between p-1.5 bg-amber-50/90 border border-amber-200 rounded-xl text-amber-900 shadow-2xs">
               <div className="flex items-center gap-1.5">
                 <Sparkle weight="fill" className="w-4 h-4 text-amber-500 shrink-0" />
                 <span className="text-[10px] font-brand font-black">
@@ -308,7 +308,7 @@ export const TechNihongoCard = ({
             className="w-full text-[11px] font-brand font-black flex items-center justify-center gap-2 py-2 shadow-[0_2.5px_0_0_#1D4ED8]"
           >
             <BookOpen weight="bold" className="w-3.5 h-3.5 text-white" />
-            <span>PELAJARI KOSAKATA INI (DENGARKAN & PAHAMI)</span>
+            <span>PELAJARI KOSAKATA (+30 XP) 🎧</span>
           </Button3D>
         )}
       </div>
