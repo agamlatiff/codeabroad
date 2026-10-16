@@ -1,3 +1,4 @@
+import { useState, useMemo } from 'react'
 import {
   BookOpen,
   Code,
@@ -7,11 +8,22 @@ import {
   Play,
   Copy,
   Check,
+  SpeakerSimpleHigh,
+  CheckCircle,
+  XCircle,
+  Sparkle,
 } from '@phosphor-icons/react'
-import { useState } from 'react'
 import { triggerHaptic } from '../../utils/haptics'
 import { soundEngine } from '../../utils/audio'
+import { useAuthStore } from '../../store/authStore'
 import doodleCoding from '../../assets/kodi/doodle-coding.png'
+
+export interface GuidebookQuiz {
+  question: string
+  options: string[]
+  correctIndex: number
+  explanation: string
+}
 
 export interface GuidebookContent {
   unitNumber: number
@@ -24,6 +36,7 @@ export interface GuidebookContent {
   nihongoTerms: { term: string; reading: string; meaning: string }[]
   tokyoIndustryTip: string
   firstPartRoute?: string
+  conceptQuiz?: GuidebookQuiz
 }
 
 export interface UnitGuidebookModalProps {
@@ -39,7 +52,105 @@ export const UnitGuidebookModal = ({
   content,
   onStartUnit,
 }: UnitGuidebookModalProps) => {
+  const { user, updateUser } = useAuthStore()
   const [copiedCode, setCopiedCode] = useState(false)
+  const [speakingTerm, setSpeakingTerm] = useState<string | null>(null)
+
+  // Quiz state
+  const [selectedOption, setSelectedOption] = useState<number | null>(null)
+  const [isAnswered, setIsAnswered] = useState(false)
+  const [quizBonusAwarded, setQuizBonusAwarded] = useState(false)
+
+  // Derive smart concept quiz for the unit
+  const activeQuiz: GuidebookQuiz = useMemo(() => {
+    if (content?.conceptQuiz) return content.conceptQuiz
+
+    const tag = (content?.unitTag || '').toLowerCase()
+    const title = (content?.title || '').toLowerCase()
+
+    if (tag.includes('pointer') || title.includes('pointer') || tag.includes('memori')) {
+      return {
+        question: 'Kapan sebaiknya Anda menggunakan pointer receiver (*Struct) pada method Go di industri Tokyo?',
+        options: [
+          'Agar seluruh data struct selalu di-copy ke CPU stack frame baru.',
+          'Untuk memodifikasi nilai memori asli tanpa overhead duplikasi payload.',
+          'Hanya saat method tidak membutuhkan parameter input apa pun.',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Tepat! Pointer receiver (& dan *) mencegah alokasi memori berlebih saat memanggil method pada struct berukuran besar.',
+      }
+    }
+
+    if (tag.includes('api') || title.includes('gin') || tag.includes('router')) {
+      return {
+        question: 'Apa peran pemanggilan c.AbortWithStatusJSON() pada Gin middleware di Tokyo?',
+        options: [
+          'Menghentikan alur pipeline handler seketika saat autentikasi token gagal.',
+          'Merestart web server secara otomatis untuk membersihkan memori.',
+          'Menghapus seluruh cookie browser pengguna.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Benar! c.AbortWithStatusJSON() mencegah request tidak sah dieksekusi oleh handler controller berikutnya.',
+      }
+    }
+
+    if (tag.includes('concurrency') || title.includes('goroutine') || tag.includes('channel')) {
+      return {
+        question: 'Pola apa yang paling efektif untuk membatasi jumlah goroutine simultan agar tidak terjadi memory leak?',
+        options: [
+          'Menggunakan infinite loop tanpa channel.',
+          'Worker Pool Pattern dengan Buffered Channels.',
+          'Menonaktifkan garbage collection pada CPU.',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Tepat! Worker pool pattern membatasi jumlah worker goroutine aktif sehingga aman dari resource exhaustion.',
+      }
+    }
+
+    if (tag.includes('typescript') || tag.includes('react') || title.includes('react')) {
+      return {
+        question: 'Apa manfaat utama menggunakan discriminated unions pada props komponen React?',
+        options: [
+          'Mempercepat proses kompilasi CSS Tailwind.',
+          'Memastikan type safety ketat tanpa celah bug runtime saat fase kompilasi.',
+          'Menggantikan kebutuhan state management global.',
+        ],
+        correctIndex: 1,
+        explanation:
+          'Benar! Discriminated union membuat TypeScript memeriksa seluruh varian kondisi props secara komprehensif.',
+      }
+    }
+
+    if (tag.includes('devops') || tag.includes('linux') || tag.includes('docker')) {
+      return {
+        question: 'Mengapa Docker Multi-Stage Build sangat dianjurkan untuk deployment produksi?',
+        options: [
+          'Memperkecil ukuran container image drastis dan mengisolasi tools compiler dari image produksi.',
+          'Membuat container berjalan tanpa koneksi internet sama sekali.',
+          'Menghapus kebutuhan izin akses file POSIX.',
+        ],
+        correctIndex: 0,
+        explanation:
+          'Tepat! Multi-stage build menghasilkan container image minimalis (scratch) yang lebih cepat di-deploy dan aman.',
+      }
+    }
+
+    // Default Japanese / Business Etiquette Quiz
+    return {
+      question: 'Kapan salam "お疲れ様です (Otsukaresama desu)" paling tepat diucapkan di kantor Tokyo?',
+      options: [
+        'Hanya saat pertama kali menyapa klien baru di luar kantor.',
+        'Sebagai sapaan apresiasi kerja keras rekan kerja sepanjang hari dan saat berpamitan pulang.',
+        'Hanya saat melaporkan bug server yang sedang darurat.',
+      ],
+      correctIndex: 1,
+      explanation:
+        'Benar! Otsukaresama desu adalah pilar komunikasi esensial di lingkungan engineering Jepang untuk membangun rasa saling menghargai.',
+    }
+  }, [content])
 
   if (!isOpen || !content) return null
 
@@ -48,6 +159,39 @@ export const UnitGuidebookModal = ({
     navigator.clipboard.writeText(content.codeSnippet)
     setCopiedCode(true)
     setTimeout(() => setCopiedCode(false), 2000)
+  }
+
+  const handleSpeakJapanese = (text: string) => {
+    triggerHaptic('tap')
+    setSpeakingTerm(text)
+    soundEngine.speakJapanese(
+      text,
+      () => setSpeakingTerm(null),
+      () => setSpeakingTerm(null)
+    )
+  }
+
+  const handleSelectQuizOption = (idx: number) => {
+    if (isAnswered) return
+    triggerHaptic('tap')
+    setSelectedOption(idx)
+    setIsAnswered(true)
+
+    if (idx === activeQuiz.correctIndex) {
+      triggerHaptic('success')
+      soundEngine.playSuccess()
+
+      if (!quizBonusAwarded) {
+        setQuizBonusAwarded(true)
+        const bonusXp = 10
+        window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: bonusXp } }))
+        if (user) {
+          updateUser({ xp: (user.xp || 0) + bonusXp })
+        }
+      }
+    } else {
+      triggerHaptic('error')
+    }
   }
 
   const handleStart = () => {
@@ -142,36 +286,138 @@ export const UnitGuidebookModal = ({
             </p>
           </div>
 
-          {/* Technical Nihongo Highlights */}
+          {/* Technical Nihongo Highlights with Web Speech TTS */}
           {content.nihongoTerms && content.nihongoTerms.length > 0 && (
-            <div className="space-y-2">
-              <h3 className="font-brand font-black text-xs sm:text-sm text-slate-900 flex items-center gap-2">
-                <Translate weight="bold" className="w-4 h-4 text-rose-500" />
-                <span>Kosakata Bahasa Jepang Kantor (Tech Nihongo)</span>
-              </h3>
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <h3 className="font-brand font-black text-xs sm:text-sm text-slate-900 flex items-center gap-2">
+                  <Translate weight="bold" className="w-4 h-4 text-rose-500" />
+                  <span>Kosakata Bahasa Jepang Kantor (Tech Nihongo)</span>
+                </h3>
+                <span className="text-[10px] text-slate-400 font-bold hidden sm:inline">
+                  Klik 🔊 untuk dengar pelafalan asli
+                </span>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {content.nihongoTerms.map((term, idx) => (
-                  <div
-                    key={idx}
-                    className="p-3 bg-rose-50/50 border border-rose-200/80 rounded-xl space-y-0.5"
-                  >
-                    <div className="flex items-center justify-between">
-                      <span className="font-brand font-black text-xs text-rose-950">
-                        {term.term}
-                      </span>
-                      <span className="text-[10px] font-mono text-rose-700 font-bold">
-                        {term.reading}
-                      </span>
+                {content.nihongoTerms.map((term, idx) => {
+                  const isSpeaking = speakingTerm === term.term
+                  return (
+                    <div
+                      key={idx}
+                      className="p-3 bg-rose-50/50 border border-rose-200/80 rounded-2xl flex items-start justify-between gap-3 shadow-2xs hover:border-rose-300 transition-all"
+                    >
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="font-brand font-black text-sm text-rose-950">
+                            {term.term}
+                          </span>
+                          <span className="text-[10px] font-mono text-rose-700 font-bold">
+                            {term.reading}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 font-medium truncate">
+                          {term.meaning}
+                        </p>
+                      </div>
+
+                      {/* Web Speech TTS Audio Button */}
+                      <button
+                        type="button"
+                        onClick={() => handleSpeakJapanese(term.term)}
+                        title={`Dengarkan pelafalan ${term.term}`}
+                        className={`w-8 h-8 rounded-xl border flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                          isSpeaking
+                            ? 'bg-rose-600 text-white border-rose-700 shadow-sm ring-2 ring-rose-400 animate-pulse'
+                            : 'bg-white hover:bg-rose-100 text-rose-600 border-rose-200 shadow-2xs'
+                        }`}
+                      >
+                        <SpeakerSimpleHigh weight={isSpeaking ? 'fill' : 'bold'} className="w-4 h-4" />
+                      </button>
                     </div>
-                    <p className="text-[11px] text-slate-600 font-medium">{term.meaning}</p>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
           )}
 
+          {/* ── 3. CONCEPT CHECK FLASHCARD QUIZ (Subtask 41.2) ── */}
+          <div className="p-4 sm:p-5 bg-gradient-to-br from-indigo-50/70 via-white to-blue-50/50 border-2 border-indigo-200/80 rounded-2xl space-y-3.5 shadow-2xs">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <Sparkle weight="fill" className="w-4 h-4 text-indigo-600" />
+                <h4 className="font-brand font-black text-xs sm:text-sm text-[#0F172A]">
+                  Mini-Kuis Pemahaman Cepat (Bonus +10 XP)
+                </h4>
+              </div>
+              {quizBonusAwarded && (
+                <span className="bg-emerald-100 text-emerald-800 font-brand font-black text-[10px] px-2 py-0.5 rounded-full border border-emerald-200">
+                  +10 XP DITERIMA ✓
+                </span>
+              )}
+            </div>
+
+            <p className="text-xs font-bold text-slate-800 leading-relaxed">
+              {activeQuiz.question}
+            </p>
+
+            {/* Options List */}
+            <div className="space-y-2">
+              {activeQuiz.options.map((option, idx) => {
+                const isSelected = selectedOption === idx
+                const isCorrect = idx === activeQuiz.correctIndex
+
+                let btnStyles = 'bg-white border-2 border-slate-200 text-slate-700 hover:bg-slate-50'
+                if (isAnswered) {
+                  if (isCorrect) {
+                    btnStyles = 'bg-emerald-50 border-2 border-emerald-400 text-emerald-900 ring-2 ring-emerald-500/10'
+                  } else if (isSelected && !isCorrect) {
+                    btnStyles = 'bg-rose-50 border-2 border-rose-300 text-rose-900'
+                  }
+                }
+
+                return (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => handleSelectQuizOption(idx)}
+                    disabled={isAnswered}
+                    className={`w-full text-left p-3 rounded-xl text-xs font-semibold flex items-center justify-between gap-3 transition-all cursor-pointer ${btnStyles}`}
+                  >
+                    <span>{option}</span>
+                    {isAnswered && (
+                      <span className="shrink-0">
+                        {isCorrect ? (
+                          <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+                        ) : isSelected ? (
+                          <XCircle weight="fill" className="w-4 h-4 text-rose-600" />
+                        ) : null}
+                      </span>
+                    )}
+                  </button>
+                )
+              })}
+            </div>
+
+            {/* Explanation Banner */}
+            {isAnswered && (
+              <div
+                className={`p-3 rounded-xl text-xs font-medium leading-relaxed border ${
+                  selectedOption === activeQuiz.correctIndex
+                    ? 'bg-emerald-100/60 border-emerald-300 text-emerald-950'
+                    : 'bg-rose-100/60 border-rose-300 text-rose-950'
+                }`}
+              >
+                <span className="font-black mr-1">
+                  {selectedOption === activeQuiz.correctIndex ? '🎉 Luar Biasa!' : '✕ Penjelasan:'}
+                </span>
+                {activeQuiz.explanation}
+              </div>
+            )}
+          </div>
+
           {/* Kodi Tokyo Relocation Tip Banner */}
-          <div className="p-4 bg-blue-50/70 border-2 border-blue-200/90 rounded-2xl flex items-center gap-3.5">
+          <div className="p-4 bg-blue-50/70 border-2 border-blue-200/90 rounded-2xl flex items-center gap-3.5 shadow-2xs">
             <img
               src={doodleCoding}
               alt="Kodi Tip"
@@ -191,24 +437,24 @@ export const UnitGuidebookModal = ({
         {/* ── 3. MODAL FOOTER ── */}
         <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between gap-3">
           <span className="text-xs text-slate-500 font-medium hidden sm:inline">
-            Siap mempraktikkan konsep ini?
+            Siap mempraktikkan konsep ini di workspace koding?
           </span>
 
           <div className="flex items-center gap-2.5 ml-auto">
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-xl border border-slate-300 hover:bg-slate-100 text-xs font-brand font-bold text-slate-700 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-100 text-xs font-brand font-bold text-slate-700 cursor-pointer shadow-2xs transition-all"
             >
               Tutup
             </button>
             <button
               type="button"
               onClick={handleStart}
-              className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-brand font-black flex items-center gap-1.5 shadow-[0_2px_0_0_#1D4ED8] cursor-pointer active:translate-y-0.5"
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-brand font-black flex items-center gap-1.5 shadow-[0_3px_0_0_#1D4ED8] cursor-pointer active:translate-y-0.5 transition-all"
             >
               <Play weight="fill" className="w-3.5 h-3.5" />
-              <span>Mulai Sesi Unit Ini ▶</span>
+              <span>MULAI KODING SEKARANG (+50 XP) ▶</span>
             </button>
           </div>
         </div>

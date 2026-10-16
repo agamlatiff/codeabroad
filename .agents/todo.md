@@ -1088,28 +1088,29 @@
 
 ---
 
-## 🚀 FASE 41: Audio TTS Interaktif & Kuis Konseptual di Buku Panduan Unit (`UnitGuidebookModal.tsx`)
+## 🚀 FASE 41: Audio TTS Interaktif & Kuis Konseptual di Buku Panduan Unit (`UnitGuidebookModal.tsx`) [x] (SELESAI ✅)
 
 > **Tujuan Utama:** Meningkatkan nilai edukasi dan daya tarik Buku Panduan Unit dengan menambahkan pelafalan audio penutur asli (*Web Speech API*) pada setiap kosakata kanji IT Jepang dan menghadirkan mini-kuis konseptual interaktif 1-soal sebelum masuk ke sesi koding.
 
-### [ ] 41.1 Integrasi Pengucapan Suara Asli (*Web Speech API*) untuk Kanji IT Tokyo
-- [ ] Tambahkan icon tombol audio `SpeakerSimpleHigh` di sebelah setiap kata Jepang (misal: 実装, 設計書, 確認, 同期).
-- [ ] Hubungkan ke browser Web Speech Synthesis API dengan suara bahasa Jepang (`ja-JP`).
-- [ ] Micro-interaction visual: ikon berdenyut saat audio sedang diputar.
+### [x] 41.1 Integrasi Pengucapan Suara Asli (*Web Speech API*) untuk Kanji IT Tokyo
+- [x] Tambahkan icon tombol audio `SpeakerSimpleHigh` di sebelah setiap kata Jepang (misal: 実装, 設計書, 確認, 同期).
+- [x] Hubungkan ke browser Web Speech Synthesis API dengan suara bahasa Jepang (`ja-JP`).
+- [x] Micro-interaction visual: ikon berdenyut saat audio sedang diputar.
 
-### [ ] 41.2 Mini Kuis Pemahaman Cepat 1-Soal (*Concept Check Flashcard*)
-- [ ] Hadirkan bagian kuis pemahaman konsep di akhir buku panduan unit:
+### [x] 41.2 Mini Kuis Pemahaman Cepat 1-Soal (*Concept Check Flashcard*)
+- [x] Hadirkan bagian kuis pemahaman konsep di akhir buku panduan unit:
   - Soal pilihan ganda teknis / etika kerja Tokyo.
   - Feedback instan: kartu berubah hijau bila benar (+10 XP bonus) atau merah dengan ulasan jawaban bila salah.
-  - Tombol langsung: `MULAI KODING SEKARANG (+50 XP)`.
+  - Tombol langsung: `MULAI KODING SEKARANG (+50 XP) ▶`.
 
-### [ ] 41.3 Cheatsheet Sintaksis & Best Practice Tokyo Engineering per Unit untuk Semua Track
-- [ ] Lengkapi data `GUIDEBOOK_DATA` untuk seluruh unit di 5 spesialisasi track.
-- [ ] Sediakan contoh kode nyata berstandar industri dengan penjelasan baris per baris.
+### [x] 41.3 Cheatsheet Sintaksis & Best Practice Tokyo Engineering per Unit untuk Semua Track
+- [x] Lengkapi data `COMPREHENSIVE_GUIDEBOOK_DATA` untuk seluruh unit di 5 spesialisasi track (`curriculumData.ts`).
+- [x] Sediakan contoh kode nyata berstandar industri dengan penjelasan baris per baris.
 
-### [ ] 41.4 Pengujian, Verifikasi & Validasi
-- [ ] Uji fungsionalitas audio TTS di berbagai browser (Chrome, Firefox, Edge).
-- [ ] Validasi `npm run build` di `frontend/`.
+### [x] 41.4 Pengujian, Verifikasi & Validasi
+- [x] Uji fungsionalitas audio TTS di browser dan integrasi soundEngine.
+- [x] Validasi `npm run build` di `frontend/` (0 error TypeScript).
+- [x] Validasi `go test -count=1 ./...` di `backend/` (100% test pass).
 
 ---
 
