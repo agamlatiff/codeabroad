@@ -31,9 +31,12 @@ import {
   Medal,
   CheckCircle,
   Gift,
+  Code,
+  Translate,
+  ArrowRight,
 } from '@phosphor-icons/react'
 
-export type QuestPageTab = 'all' | 'daily' | 'main' | 'side' | 'shop'
+export type QuestPageTab = 'all' | 'daily' | 'boss' | 'shop'
 
 interface ShopItem {
   id: string
@@ -117,7 +120,7 @@ export const QuestLogPage = () => {
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
 
-  // Active filter tab
+  // Active filter tab (Clean: all, daily, boss, shop)
   const [activeTab, setActiveTab] = useState<QuestPageTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -311,14 +314,17 @@ export const QuestLogPage = () => {
     showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${newGems} Gems.`)
   }
 
-  // Daily quests list (from API or canonical fallback, cleanly checked against SSOT)
+  // 3 Daily Quests (The Core Habit Loop, cleanly checked against SSOT)
   const canonicalDailyList = useMemo(() => {
     if (dailyQuests && dailyQuests.length > 0) {
-      return dailyQuests.map((q) => {
+      return dailyQuests.map((q, idx) => {
         const isDone =
           q.user_status === 'completed' ||
           completedQuestsSet.has(q.id) ||
           !!claimedDailyMap[q.id]
+
+        const defaultIcons = [Code, Translate, Lightning]
+        const QuestIcon = defaultIcons[idx % defaultIcons.length]
 
         return {
           id: q.id,
@@ -330,6 +336,9 @@ export const QuestLogPage = () => {
           estimated_minutes: q.estimated_minutes || 10,
           isCompleted: isDone,
           route: `/learn/${q.id}`,
+          icon: QuestIcon,
+          progressText: isDone ? '1/1 Selesai' : '0/1 Selesai',
+          progressPercent: isDone ? 100 : 0,
         }
       })
     }
@@ -337,8 +346,8 @@ export const QuestLogPage = () => {
     return [
       {
         id: 'daily-gin-handler',
-        title: 'Tuntaskan 1 Bab Koding Gin REST API',
-        chip_label: 'GIN REST API',
+        title: 'Tuntaskan 1 Latihan Koding di Silabus',
+        chip_label: 'KODING GIN API',
         difficulty: 'Pemula',
         xp_reward: 50,
         gem_reward: 10,
@@ -348,11 +357,24 @@ export const QuestLogPage = () => {
           completedQuestsSet.has('part-4-routing-dan-jwt-middleware') ||
           !!claimedDailyMap['daily-gin-handler'],
         route: '/learn/part-4-routing-dan-jwt-middleware',
+        icon: Code,
+        progressText:
+          completedQuestsSet.has('daily-gin-handler') ||
+          completedQuestsSet.has('part-4-routing-dan-jwt-middleware') ||
+          !!claimedDailyMap['daily-gin-handler']
+            ? '1/1 Selesai'
+            : '0/1 Selesai',
+        progressPercent:
+          completedQuestsSet.has('daily-gin-handler') ||
+          completedQuestsSet.has('part-4-routing-dan-jwt-middleware') ||
+          !!claimedDailyMap['daily-gin-handler']
+            ? 100
+            : 0,
       },
       {
         id: 'daily-nihongo-standup',
-        title: 'Pelajari 5 Kosakata Business IT Nihongo N3',
-        chip_label: 'JLPT N3',
+        title: 'Review 5 Kosakata Kantor Tokyo Hari Ini',
+        chip_label: 'JLPT N3 NIHONGO',
         difficulty: 'Mudah',
         xp_reward: 30,
         gem_reward: 5,
@@ -362,11 +384,24 @@ export const QuestLogPage = () => {
           completedQuestsSet.has('part-3-aisatsu-onboarding-tokyo') ||
           !!claimedDailyMap['daily-nihongo-standup'],
         route: '/learn/part-3-aisatsu-onboarding-tokyo',
+        icon: Translate,
+        progressText:
+          completedQuestsSet.has('daily-nihongo-standup') ||
+          completedQuestsSet.has('part-3-aisatsu-onboarding-tokyo') ||
+          !!claimedDailyMap['daily-nihongo-standup']
+            ? '5/5 Selesai'
+            : '0/5 Selesai',
+        progressPercent:
+          completedQuestsSet.has('daily-nihongo-standup') ||
+          completedQuestsSet.has('part-3-aisatsu-onboarding-tokyo') ||
+          !!claimedDailyMap['daily-nihongo-standup']
+            ? 100
+            : 0,
       },
       {
         id: 'daily-pointer-quiz',
-        title: 'Selesaikan Kuis Syntax Pointer & Struct Go',
-        chip_label: 'KUIS CEPAT',
+        title: 'Kumpulkan 50 XP dari Latihan Koding',
+        chip_label: 'TARGET XP HARIAN',
         difficulty: 'Mudah',
         xp_reward: 40,
         gem_reward: 10,
@@ -375,10 +410,23 @@ export const QuestLogPage = () => {
           completedQuestsSet.has('daily-pointer-quiz') ||
           completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
           !!claimedDailyMap['daily-pointer-quiz'],
-        route: '/learn/part-2-pointer-dan-struktur-data',
+        route: '/courses',
+        icon: Lightning,
+        progressText:
+          completedQuestsSet.has('daily-pointer-quiz') ||
+          completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
+          !!claimedDailyMap['daily-pointer-quiz']
+            ? '50/50 XP'
+            : `${Math.min(50, (user?.xp || 0) % 50)}/50 XP`,
+        progressPercent:
+          completedQuestsSet.has('daily-pointer-quiz') ||
+          completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
+          !!claimedDailyMap['daily-pointer-quiz']
+            ? 100
+            : Math.min(100, Math.round((((user?.xp || 0) % 50) / 50) * 100)),
       },
     ]
-  }, [dailyQuests, completedQuestsSet, claimedDailyMap])
+  }, [dailyQuests, completedQuestsSet, claimedDailyMap, user?.xp])
 
   // Filter daily quests based on search query
   const filteredDaily = useMemo(() => {
@@ -388,61 +436,6 @@ export const QuestLogPage = () => {
       (item) => item.title.toLowerCase().includes(q) || item.chip_label.toLowerCase().includes(q)
     )
   }, [canonicalDailyList, searchQuery])
-
-  // Dynamic active main curriculum unit & parts for active track
-  const currentTrackUnits = useMemo(() => {
-    return (
-      CURRICULUM_TRACKS_MAP[activeTrack] ||
-      (activeTrack === 'backend' && CURRICULUM_TRACKS_MAP['golang']) ||
-      (activeTrack === 'react' && CURRICULUM_TRACKS_MAP['frontend']) ||
-      (activeTrack === 'devops_aws' && CURRICULUM_TRACKS_MAP['devops']) ||
-      CURRICULUM_TRACKS_MAP['golang']
-    )
-  }, [activeTrack])
-
-  // Total parts in active track (e.g. 12 parts)
-  const allTrackParts = useMemo(() => {
-    return currentTrackUnits.flatMap((u) =>
-      u.parts.map((p, idx) => ({
-        id: p.id,
-        unitTitle: u.title,
-        unitTag: u.tag,
-        unitNumber: u.unitNumber,
-        partNumber: idx + 1,
-        globalPartNumber: p.globalPartNumber || idx + 1,
-        title: p.title,
-        subtitle: p.subtitle,
-        chip_label: p.chipLabel,
-        difficulty: p.difficulty,
-        xp_reward: p.xpReward,
-        gem_reward: 20,
-        route: p.route,
-        isCompleted: completedQuestsSet.has(p.id),
-      }))
-    )
-  }, [currentTrackUnits, completedQuestsSet])
-
-  // Main quests display list:
-  // If in 'all' tab -> show top 4 upcoming
-  // If in 'main' tab -> show ALL parts in track
-  const dynamicMainQuests = useMemo(() => {
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase()
-      return allTrackParts.filter(
-        (p) =>
-          p.title.toLowerCase().includes(q) ||
-          p.subtitle.toLowerCase().includes(q) ||
-          p.chip_label.toLowerCase().includes(q) ||
-          p.unitTag.toLowerCase().includes(q)
-      )
-    }
-
-    if (activeTab === 'all') {
-      return allTrackParts.slice(0, 4)
-    }
-
-    return allTrackParts
-  }, [allTrackParts, searchQuery, activeTab])
 
   // Tokyo Boss & Portfolio Challenges (Hooked directly to valid curriculum parts)
   const portfolioChallenges = useMemo(() => {
@@ -500,7 +493,7 @@ export const QuestLogPage = () => {
   const totalCount =
     hookTotalCount > 0
       ? hookTotalCount
-      : allTrackParts.length + canonicalDailyList.length + portfolioChallenges.length
+      : canonicalDailyList.length + portfolioChallenges.length
   const completedCount =
     typeof hookCompletedCount === 'number' && hookCompletedCount > 0
       ? hookCompletedCount
@@ -509,13 +502,12 @@ export const QuestLogPage = () => {
 
   // Daily quest completion count
   const dailyDoneCount = canonicalDailyList.filter((d) => d.isCompleted).length
-  const totalDailyTarget = Math.max(3, canonicalDailyList.length)
+  const totalDailyTarget = canonicalDailyList.length
 
   // Determine if search has no results
   const hasNoResults =
     searchQuery.trim().length > 0 &&
     filteredDaily.length === 0 &&
-    dynamicMainQuests.length === 0 &&
     portfolioChallenges.length === 0
 
   return (
@@ -619,23 +611,19 @@ export const QuestLogPage = () => {
 
           {/* ── 3. FILTER TABS & SEARCH ROW ── */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            {/* 3D Tabs */}
+            {/* 3D Tabs (Clean & Focused on Quests) */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
                 {
                   id: 'all' as QuestPageTab,
-                  label: `Semua Misi 📜 (${filteredDaily.length + dynamicMainQuests.length + portfolioChallenges.length})`,
+                  label: `Semua Tantangan 📜 (${filteredDaily.length + portfolioChallenges.length})`,
                 },
                 {
                   id: 'daily' as QuestPageTab,
                   label: `Misi Harian ⚡ (${filteredDaily.length})`,
                 },
                 {
-                  id: 'main' as QuestPageTab,
-                  label: `Misi Karier 🚀 (${allTrackParts.length})`,
-                },
-                {
-                  id: 'side' as QuestPageTab,
+                  id: 'boss' as QuestPageTab,
                   label: `Sayembara Boss 💼 (${portfolioChallenges.length})`,
                 },
                 {
@@ -714,7 +702,7 @@ export const QuestLogPage = () => {
                 Tidak Ada Misi Ditemukan
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                Kata kunci &ldquo;{searchQuery}&rdquo; tidak cocok dengan misi harian, misi karier, atau sayembara boss.
+                Kata kunci &ldquo;{searchQuery}&rdquo; tidak cocok dengan misi harian atau sayembara boss.
               </p>
               <Button3D
                 variant="ghost"
@@ -761,6 +749,7 @@ export const QuestLogPage = () => {
                 {filteredDaily.map((questItem, idx) => {
                   const isClaimed = !!claimedDailyMap[questItem.id]
                   const isDone = questItem.isCompleted || isClaimed
+                  const QuestIcon = questItem.icon
 
                   return (
                     <div
@@ -776,7 +765,7 @@ export const QuestLogPage = () => {
                       {/* Left: Icon & Info */}
                       <div className="flex items-center gap-3.5 min-w-0">
                         <div
-                          className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-mono font-black text-sm shrink-0 shadow-2xs ${
+                          className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-2xs ${
                             isClaimed
                               ? 'bg-slate-100 border-slate-300 text-slate-400'
                               : isDone
@@ -787,7 +776,7 @@ export const QuestLogPage = () => {
                           {isClaimed ? (
                             <CheckCircle weight="fill" className="w-6 h-6 text-emerald-600" />
                           ) : (
-                            `0${idx + 1}`
+                            <QuestIcon weight="bold" className="w-5 h-5" />
                           )}
                         </div>
 
@@ -803,7 +792,7 @@ export const QuestLogPage = () => {
                               {questItem.chip_label}
                             </span>
                             <span className="text-[11px] font-semibold text-slate-400">
-                              • Estimasi {questItem.estimated_minutes} Menit
+                              • Target #{idx + 1}
                             </span>
                             {isClaimed && (
                               <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
@@ -817,17 +806,17 @@ export const QuestLogPage = () => {
                           </h4>
 
                           {/* Progress Line */}
-                          <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <div className="w-24 sm:w-36 h-2 bg-slate-100 rounded-full border border-slate-200 overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-300 ${
                                   isDone ? 'bg-emerald-500' : 'bg-blue-500'
                                 }`}
-                                style={{ width: isDone ? '100%' : '0%' }}
+                                style={{ width: `${questItem.progressPercent}%` }}
                               />
                             </div>
                             <span className="text-[11px] font-bold text-slate-500 font-mono">
-                              {isDone ? '1/1 Selesai' : '0/1 Selesai'}
+                              {questItem.progressText}
                             </span>
                             <span className="text-slate-300">•</span>
                             <span className="text-xs font-bold text-amber-600">
@@ -869,7 +858,7 @@ export const QuestLogPage = () => {
                             onClick={() => navigate(questItem.route)}
                             className="text-xs px-4 py-2"
                           >
-                            MULAI MISI ▶
+                            MULAI ▶
                           </Button3D>
                         )}
                       </div>
@@ -880,116 +869,8 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 2: CAREER PATH CHECKPOINTS (MISI KARIER) ══════ */}
-          {(activeTab === 'all' || activeTab === 'main') && dynamicMainQuests.length > 0 && (
-            <div className="space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div className="space-y-0.5">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">🚀</span>
-                    <h3 className="font-black text-base text-[#0F172A]">
-                      Misi Jalur Karier ({activeTrack.toUpperCase()})
-                    </h3>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    Selesaikan checkpoint keahlian industri untuk memenuhi verifikasi Visa Software Engineer Tokyo.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3">
-                  {activeTab === 'all' && allTrackParts.length > 4 && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        triggerHaptic('tap')
-                        setActiveTab('main')
-                      }}
-                      className="text-xs font-black text-[#2563EB] hover:underline flex items-center gap-1 cursor-pointer"
-                    >
-                      Buka Semua {allTrackParts.length} Modul Karier ➔
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={() => setIsCourseSwitcherOpen(true)}
-                    className="text-xs font-black text-slate-600 hover:text-blue-600 bg-white border border-slate-200 px-3 py-1.5 rounded-xl cursor-pointer shadow-2xs"
-                  >
-                    Ganti Track ➔
-                  </button>
-                </div>
-              </div>
-
-              {/* Responsive 2-Column Grid */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {dynamicMainQuests.map((quest) => {
-                  return (
-                    <div
-                      key={quest.id}
-                      className={`bg-white border-2 rounded-3xl p-5 flex flex-col justify-between space-y-4 transition-all duration-200 shadow-2xs relative overflow-hidden ${
-                        quest.isCompleted
-                          ? 'border-emerald-300 border-b-[5px] border-b-emerald-600 bg-emerald-50/15'
-                          : 'border-slate-200/90 border-b-[5px] border-b-slate-300 hover:border-b-[6px] hover:-translate-y-0.5'
-                      }`}
-                    >
-                      <div className="space-y-2.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <span className="bg-emerald-100 text-emerald-800 font-black text-[10px] px-2.5 py-1 rounded-xl border border-emerald-200 flex items-center gap-1.5 uppercase tracking-wider">
-                            <span>CHECKPOINT #{quest.globalPartNumber}</span>
-                            <span>•</span>
-                            <span className="truncate max-w-[130px]">{quest.unitTag}</span>
-                          </span>
-
-                          {quest.isCompleted ? (
-                            <span className="bg-emerald-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow-2xs">
-                              LULUS ✓
-                            </span>
-                          ) : (
-                            <span className="bg-blue-50 text-blue-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded border border-blue-200">
-                              TERSEDIA
-                            </span>
-                          )}
-                        </div>
-
-                        <h4 className="font-black text-base text-[#0F172A] tracking-tight">
-                          {quest.title}
-                        </h4>
-
-                        <p className="text-xs text-slate-600 leading-relaxed line-clamp-2">
-                          {quest.subtitle}
-                        </p>
-                      </div>
-
-                      <div className="space-y-3 pt-3 border-t border-slate-100">
-                        <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                          <span className="text-[#059669] font-black">
-                            ⚡ +{quest.xp_reward} XP • 💎 +{quest.gem_reward} Gems
-                          </span>
-                          <span className="text-slate-400 font-semibold">{quest.chip_label}</span>
-                        </div>
-
-                        <Button3D
-                          variant={quest.isCompleted ? 'ghost' : 'emerald'}
-                          size="md"
-                          fullWidth
-                          onClick={() => navigate(quest.route)}
-                          className={`text-xs py-2.5 ${
-                            quest.isCompleted
-                              ? 'border-2 border-emerald-300 text-emerald-700 bg-emerald-50'
-                              : ''
-                          }`}
-                        >
-                          {quest.isCompleted ? 'ULANGI LATIHAN 💻' : 'BUKA WORKSPACE KODING 💻'}
-                        </Button3D>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* ══════ SECTION 3: TOKYO BOSS CHALLENGES ══════ */}
-          {(activeTab === 'all' || activeTab === 'side') && portfolioChallenges.length > 0 && (
+          {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES ══════ */}
+          {(activeTab === 'all' || activeTab === 'boss') && portfolioChallenges.length > 0 && (
             <div className="space-y-4">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
@@ -1007,7 +888,7 @@ export const QuestLogPage = () => {
                 {portfolioChallenges.map((challenge) => (
                   <div
                     key={challenge.id}
-                    className="bg-white border-2 border-purple-300 border-b-[5px] border-b-purple-500 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs flex flex-col justify-between hover:border-b-[6px] hover:-translate-y-0.5 transition-all"
+                    className="bg-white border-2 border-purple-200 border-b-[5px] border-b-purple-400 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs flex flex-col justify-between hover:border-b-[6px] hover:-translate-y-0.5 transition-all"
                   >
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between gap-2">
@@ -1055,15 +936,16 @@ export const QuestLogPage = () => {
                         <span className="text-purple-600 font-bold">Tokyo Portofolio</span>
                       </div>
 
-                      <Button3D
-                        variant="blue"
-                        size="md"
-                        fullWidth
-                        onClick={() => navigate(challenge.route)}
-                        className="text-xs py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600"
-                      >
-                        <span>BUKA BRIEFING SPESIFIKASI ➔</span>
-                      </Button3D>
+                      <div className="flex items-center justify-end">
+                        <Button3D
+                          variant="blue"
+                          size="sm"
+                          onClick={() => navigate(challenge.route)}
+                          className="text-xs px-4 py-2"
+                        >
+                          <span>Lihat Briefing ➔</span>
+                        </Button3D>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -1071,7 +953,7 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 4: AKIHABARA GEMS ARCADE (SHOP) ══════ */}
+          {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE (SHOP) ══════ */}
           {(activeTab === 'all' || activeTab === 'shop') && (
             <div className="bg-gradient-to-b from-blue-50/60 via-white to-white border-2 border-blue-200/90 rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -1169,6 +1051,19 @@ export const QuestLogPage = () => {
               </div>
             </div>
           )}
+
+          {/* Quick link banner back to curriculum */}
+          <div className="p-4 bg-slate-100/80 border-2 border-slate-200 rounded-2xl flex items-center justify-between text-xs font-bold text-slate-600">
+            <span>Ingin melanjutkan modul kurikulum utama?</span>
+            <button
+              type="button"
+              onClick={() => navigate('/courses')}
+              className="text-[#2563EB] hover:underline flex items-center gap-1 font-black cursor-pointer"
+            >
+              <span>Buka Silabus Kurikulum</span>
+              <ArrowRight weight="bold" className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </main>
 
         {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 39.1) ══════ */}
