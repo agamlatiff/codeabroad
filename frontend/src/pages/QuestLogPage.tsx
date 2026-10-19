@@ -10,7 +10,6 @@ import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
 import {
   GameTopBar,
-  GameSidebarRail,
   CourseSwitcherModal,
   TokyoLeaderboardModal,
 } from '../components/game'
@@ -30,11 +29,13 @@ import {
   X,
   Medal,
   CheckCircle,
-  Gift,
   Code,
   Translate,
   ArrowRight,
 } from '@phosphor-icons/react'
+import doodleWelcome from '../assets/kodi/doodle-welcome.png'
+import doodleCoding from '../assets/kodi/doodle-coding.png'
+import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
 
 export type QuestPageTab = 'all' | 'daily' | 'boss' | 'shop'
 
@@ -123,6 +124,9 @@ export const QuestLogPage = () => {
   // Active filter tab (Clean: all, daily, boss, shop)
   const [activeTab, setActiveTab] = useState<QuestPageTab>('all')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Floating reward animation state
+  const [floatingReward, setFloatingReward] = useState<string | null>(null)
 
   // Gems state synced with user store & localStorage (Clean SSOT, default 0, no dummy 45)
   const [userGems, setUserGems] = useState<number>(() => {
@@ -265,7 +269,7 @@ export const QuestLogPage = () => {
     }
   }
 
-  // Handle claim daily quest reward
+  // Handle claim daily quest reward with burst animation
   const handleClaimDailyQuest = (questId: string, xpReward: number, gemReward: number) => {
     triggerHaptic('success')
     audioEngine.playPop()
@@ -280,6 +284,10 @@ export const QuestLogPage = () => {
 
     const nextGems = userGems + gemReward
     updateGemsState(nextGems)
+
+    // Trigger floating reward burst
+    setFloatingReward(`+${xpReward} XP • +${gemReward} 💎`)
+    setTimeout(() => setFloatingReward(null), 2000)
 
     // Dispatch XP reward event
     window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: xpReward } }))
@@ -489,6 +497,40 @@ export const QuestLogPage = () => {
     return Math.max(1, lastDay.getDate() - now.getDate())
   }, [])
 
+  // Daily quest completion count
+  const dailyDoneCount = canonicalDailyList.filter((d) => d.isCompleted).length
+  const totalDailyTarget = canonicalDailyList.length
+
+  // Dynamic living companion Kodi state & speech bubble
+  const kodiCompanion = useMemo(() => {
+    const userName = user?.name ? user.name.split(' ')[0] : 'Sobat'
+    if (dailyDoneCount === 0) {
+      return {
+        image: doodleWelcome,
+        badge: 'Semangat Pagi! ⚡',
+        badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
+        speech: `Halo ${userName}! Selesaikan 3 misi hari ini untuk menyalakan api streak 🔥`,
+        alt: 'Kodi Menyapa',
+      }
+    }
+    if (dailyDoneCount < totalDailyTarget) {
+      return {
+        image: doodleCoding,
+        badge: 'Sedang Berjalan 🚀',
+        badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
+        speech: `Keren banget! Tinggal ${totalDailyTarget - dailyDoneCount} misi lagi untuk membuka Peti Emas Akihabara 🎁`,
+        alt: 'Kodi Koding',
+      }
+    }
+    return {
+      image: doodleCelebrate,
+      badge: 'Semua Misi Tuntas! 🎉',
+      badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+      speech: `Luar biasa, ${userName}! Semua misi harian tuntas dan streak Anda aman. Sampai jumpa besok di Tokyo Guild! 🌸`,
+      alt: 'Kodi Merayakan',
+    }
+  }, [dailyDoneCount, totalDailyTarget, user?.name])
+
   // Counts for top bar (Pure SSOT, 0 fake fallbacks)
   const totalCount =
     hookTotalCount > 0
@@ -499,10 +541,6 @@ export const QuestLogPage = () => {
       ? hookCompletedCount
       : totalCompletedCount
   const progressPercent = totalCount > 0 ? Math.min(100, Math.round((completedCount / totalCount) * 100)) : 0
-
-  // Daily quest completion count
-  const dailyDoneCount = canonicalDailyList.filter((d) => d.isCompleted).length
-  const totalDailyTarget = canonicalDailyList.length
 
   // Determine if search has no results
   const hasNoResults =
@@ -515,11 +553,10 @@ export const QuestLogPage = () => {
       {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
       <NavRail />
 
-      {/* ── 2. MAIN APP CANVAS (CENTER STAGE + RIGHT SIDEBAR) ── */}
-      <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
-        {/* ══════ CENTER CONTENT STAGE ══════ */}
-        <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 pb-12 space-y-6">
-          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - GameTopBar) ── */}
+      {/* ── 2. SINGLE-COLUMN SPACIOUS CENTER STAGE (AIRY, ZERO SIDEBAR CLAUSTROPHOBIA) ── */}
+      <div className="flex-1 min-w-0 flex flex-col pb-20 md:pb-12">
+        <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-8 py-6 space-y-7">
+          {/* ── TOP HUD BAR (SSOT) ── */}
           <GameTopBar
             activeTrack={activeTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
@@ -546,72 +583,86 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ── 2. DUOLINGO MONTHLY CHALLENGE HERO CARD (MACRO HABIT HOOK) ── */}
-          <div className="bg-white border-2 border-slate-200/90 border-b-[5px] border-b-slate-300 rounded-3xl p-5 sm:p-6 shadow-2xs space-y-4 relative overflow-hidden">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-4">
-                {/* 3D Tactile Golden Badge Container */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-gradient-to-br from-amber-400 via-yellow-400 to-amber-500 text-white flex items-center justify-center font-black text-2xl shadow-sm border-2 border-white ring-4 ring-amber-300/40 shrink-0">
-                  <Medal weight="fill" className="w-8 h-8 sm:w-9 sm:h-9 text-amber-950 drop-shadow-sm" />
+          {/* Floating Reward Particle Toast */}
+          {floatingReward && (
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
+              <div className="bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-950 font-black text-sm px-4 py-2 rounded-full shadow-lg border-2 border-white ring-4 ring-amber-300/50 flex items-center gap-2">
+                <Sparkle weight="fill" className="w-4 h-4 text-amber-900" />
+                <span>{floatingReward}</span>
+              </div>
+            </div>
+          )}
+
+          {/* ── 1. LIVING HERO BANNER: KODI MASCOT & MONTHLY CHALLENGE ── */}
+          <div className="bg-gradient-to-br from-amber-500/10 via-amber-50/40 to-blue-500/10 border-2 border-amber-300 border-b-[5px] border-b-amber-400 rounded-3xl p-6 sm:p-7 shadow-2xs relative overflow-hidden">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              {/* Left Column: Monthly Challenge Details */}
+              <div className="space-y-3.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2.5 flex-wrap">
+                  <span className={`font-brand font-black text-[11px] px-3 py-1 rounded-full border uppercase tracking-wider ${kodiCompanion.badgeBg}`}>
+                    {kodiCompanion.badge}
+                  </span>
+                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                    <Clock weight="bold" className="w-3.5 h-3.5 text-slate-400" />
+                    <span>Sisa {daysLeftInMonth} Hari di Bulan Ini</span>
+                  </span>
                 </div>
 
                 <div className="space-y-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="bg-amber-100 text-amber-900 font-brand font-black text-[10px] px-2.5 py-0.5 rounded-full border border-amber-300 uppercase tracking-wider">
-                      Tantangan Bulanan Tokyo
-                    </span>
-                    <span className="text-xs font-bold text-slate-400">
-                      • Sisa {daysLeftInMonth} Hari
-                    </span>
-                  </div>
-                  <h1 className="text-base sm:text-lg font-black text-[#0F172A] tracking-tight">
-                    Lencana Emas Roppongi (Tokyo Quest)
+                  <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                    Lencana Emas Roppongi (Oktober 2026)
                   </h1>
-                  <p className="text-xs text-slate-500 font-medium">
+                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
                     Selesaikan 25 misi dan tantangan koding bulan ini untuk membuka lencana emas permanen di profil portofolio Anda.
                   </p>
                 </div>
-              </div>
 
-              {/* Reward Chest Preview */}
-              <div className="bg-amber-50/70 border-2 border-amber-200/90 rounded-2xl px-3.5 py-2 flex items-center gap-2.5 shrink-0 self-start sm:self-center">
-                <Gift weight="fill" className="w-5 h-5 text-amber-600" />
-                <div>
-                  <span className="text-[10px] font-black text-amber-900 uppercase tracking-wider block">
-                    Hadiah Lencana
-                  </span>
-                  <span className="text-xs font-black text-amber-700">
-                    +100 💎 &amp; Badge VIP
-                  </span>
+                {/* Monthly Challenge Progress Track */}
+                <div className="space-y-2 pt-1 max-w-lg">
+                  <div className="flex items-center justify-between text-xs font-brand font-black">
+                    <span className="text-slate-700 flex items-center gap-1.5">
+                      <Medal weight="fill" className="w-4 h-4 text-amber-500" />
+                      <span>{monthlyCompletedCount} / {monthlyTargetCount} Misi Selesai</span>
+                    </span>
+                    <span className="text-amber-700 font-bold">
+                      {monthlyCompletedCount >= monthlyTargetCount
+                        ? '🎉 Lencana Terbuka!'
+                        : `${monthlyTargetCount - monthlyCompletedCount} misi lagi`}
+                    </span>
+                  </div>
+                  <div className="h-3.5 bg-white/90 rounded-full border border-amber-300 p-0.5 shadow-inner overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706]"
+                      style={{ width: `${monthlyProgressPercent}%` }}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Thick Tactile Progress Bar */}
-            <div className="space-y-1.5 pt-1">
-              <div className="flex items-center justify-between text-xs font-brand font-black">
-                <span className="text-slate-700 flex items-center gap-1.5">
-                  <Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />
-                  <span>Progres Tantangan: {monthlyCompletedCount} / {monthlyTargetCount} Misi</span>
-                </span>
-                <span className="text-amber-700 font-bold">
-                  {monthlyCompletedCount >= monthlyTargetCount
-                    ? '🎉 Lencana Terbuka!'
-                    : `${monthlyTargetCount - monthlyCompletedCount} misi lagi`}
-                </span>
-              </div>
-              <div className="h-3.5 bg-slate-100 rounded-full border border-slate-200/90 p-0.5 shadow-inner overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706]"
-                  style={{ width: `${monthlyProgressPercent}%` }}
-                />
+              {/* Right Column: Live Kodi Companion with Speech Bubble */}
+              <div className="flex flex-col items-center sm:items-end justify-center shrink-0 self-center md:self-auto space-y-2">
+                {/* Speech Bubble */}
+                <div className="relative bg-white border-2 border-amber-300 rounded-2xl px-4 py-2.5 shadow-2xs text-xs font-brand font-black text-slate-800 leading-snug max-w-xs text-center sm:text-left">
+                  <span>{kodiCompanion.speech}</span>
+                  <div className="hidden sm:block absolute -bottom-2 right-10 w-3 h-3 bg-white border-b-2 border-r-2 border-amber-300 transform rotate-45" />
+                </div>
+
+                {/* Animated Kodi Illustration Asset */}
+                <div className="w-28 h-28 sm:w-32 sm:h-32 relative group">
+                  <div className="absolute inset-0 bg-amber-400/20 rounded-full filter blur-xl transform group-hover:scale-110 transition-transform" />
+                  <img
+                    src={kodiCompanion.image}
+                    alt={kodiCompanion.alt}
+                    className="w-full h-full object-contain relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300"
+                  />
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ── 3. FILTER TABS & SEARCH ROW ── */}
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-3">
-            {/* 3D Tabs (Clean & Focused on Quests) */}
+          {/* ── 2. FILTER TABS & SEARCH BAR ── */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            {/* 3D Tabs */}
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
                 {
@@ -653,7 +704,7 @@ export const QuestLogPage = () => {
             </div>
 
             {/* Search Pill + Quick Gems Pill */}
-            <div className="flex items-center gap-2.5 shrink-0">
+            <div className="flex items-center gap-2.5 shrink-0 self-start sm:self-auto">
               <div className="relative w-full sm:w-56">
                 <MagnifyingGlass
                   weight="bold"
@@ -715,17 +766,18 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 1: DAILY QUESTS (3 TARGET HARIAN BERPROGRES) ══════ */}
+          {/* ══════ SECTION 1: 3-TIER MILESTONE CHESTS & DAILY QUESTS ══════ */}
           {(activeTab === 'all' || activeTab === 'daily') && filteredDaily.length > 0 && (
-            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs">
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xs">
+              {/* Header with Title & Countdown */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-amber-50 border-2 border-amber-200 text-[#D97706] flex items-center justify-center shrink-0 shadow-2xs">
-                    <Lightning weight="fill" className="w-5 h-5 text-amber-500" />
+                  <div className="w-11 h-11 rounded-2xl bg-amber-50 border-2 border-amber-200 text-[#D97706] flex items-center justify-center shrink-0 shadow-2xs">
+                    <Lightning weight="fill" className="w-6 h-6 text-amber-500" />
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-base text-[#0F172A]">
+                      <h3 className="font-extrabold text-base sm:text-lg text-[#0F172A]">
                         Misi Harian ({dailyDoneCount}/{totalDailyTarget} Selesai)
                       </h3>
                       {hookLoading && (
@@ -733,19 +785,62 @@ export const QuestLogPage = () => {
                       )}
                     </div>
                     <p className="text-xs text-slate-500">
-                      Selesaikan 3 misi harian untuk membuka peti bonus &amp; menjaga rentetan belajar.
+                      Selesaikan 3 misi harian untuk membuka Peti Emas Akihabara &amp; menjaga rentetan streak.
                     </p>
                   </div>
                 </div>
 
-                <span className="bg-[#FFFBEB] text-[#B45309] text-xs font-black px-3 py-1.5 rounded-2xl border-2 border-amber-200 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto">
+                <span className="bg-[#FFFBEB] text-[#B45309] text-xs font-black px-3.5 py-1.5 rounded-2xl border-2 border-amber-200 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto">
                   <Clock weight="bold" className="w-3.5 h-3.5" />
                   <span>Reset dalam: {timeLeft}</span>
                 </span>
               </div>
 
-              {/* Daily Quests Chunky Cards Feed */}
-              <div className="space-y-3 pt-1">
+              {/* 3-Tier Milestone Chests Progress Track */}
+              <div className="bg-amber-50/40 border border-amber-200/90 rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between text-xs font-brand font-black">
+                  <span className="text-amber-900 flex items-center gap-1.5">
+                    <Sparkle weight="fill" className="w-4 h-4 text-amber-600" />
+                    <span>Peti Hadiah Harian: {dailyDoneCount} dari {totalDailyTarget} Misi Tercapai</span>
+                  </span>
+                  <span className="text-amber-700 font-bold">
+                    {dailyDoneCount >= totalDailyTarget
+                      ? '🎉 Peti Emas Terbuka!'
+                      : `${totalDailyTarget - dailyDoneCount} misi lagi untuk Peti Emas`}
+                  </span>
+                </div>
+
+                {/* Progressive 3-Chest Milestones Display */}
+                <div className="grid grid-cols-3 gap-2 pt-1">
+                  {[
+                    { tier: 1, label: 'Peti Perunggu', reward: '+5 💎', icon: '🥉', unlocked: dailyDoneCount >= 1 },
+                    { tier: 2, label: 'Peti Perak', reward: '+10 💎', icon: '🥈', unlocked: dailyDoneCount >= 2 },
+                    { tier: 3, label: 'Peti Emas', reward: '+20 💎 & XP', icon: '👑', unlocked: dailyDoneCount >= 3 },
+                  ].map((chest) => (
+                    <div
+                      key={chest.tier}
+                      className={`p-2.5 rounded-xl border-2 flex items-center gap-2.5 transition-all ${
+                        chest.unlocked
+                          ? 'bg-amber-100/70 border-amber-300 text-amber-900 shadow-2xs scale-[1.02]'
+                          : 'bg-white border-slate-200/80 text-slate-400 opacity-70'
+                      }`}
+                    >
+                      <span className="text-xl">{chest.icon}</span>
+                      <div className="min-w-0">
+                        <span className="text-[10px] font-black uppercase tracking-wider block truncate">
+                          {chest.label}
+                        </span>
+                        <span className="text-xs font-black text-amber-700">
+                          {chest.unlocked ? `${chest.reward} ✓` : chest.reward}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* 3 Daily Quests Chunky Cards Feed */}
+              <div className="space-y-3.5 pt-1">
                 {filteredDaily.map((questItem, idx) => {
                   const isClaimed = !!claimedDailyMap[questItem.id]
                   const isDone = questItem.isCompleted || isClaimed
@@ -754,18 +849,18 @@ export const QuestLogPage = () => {
                   return (
                     <div
                       key={questItem.id}
-                      className={`border-2 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 shadow-2xs ${
+                      className={`border-2 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 shadow-2xs ${
                         isClaimed
                           ? 'bg-slate-50/70 border-slate-200/80 border-b-[3px] border-b-slate-200 opacity-80'
                           : isDone
-                          ? 'bg-amber-50/40 border-2 border-amber-300 border-b-[4px] border-b-amber-400 shadow-xs'
+                          ? 'bg-amber-50/50 border-2 border-amber-300 border-b-[4px] border-b-amber-400 shadow-xs'
                           : 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
                       }`}
                     >
                       {/* Left: Icon & Info */}
-                      <div className="flex items-center gap-3.5 min-w-0">
+                      <div className="flex items-center gap-4 min-w-0">
                         <div
-                          className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-2xs ${
+                          className={`w-13 h-13 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-2xs ${
                             isClaimed
                               ? 'bg-slate-100 border-slate-300 text-slate-400'
                               : isDone
@@ -774,16 +869,16 @@ export const QuestLogPage = () => {
                           }`}
                         >
                           {isClaimed ? (
-                            <CheckCircle weight="fill" className="w-6 h-6 text-emerald-600" />
+                            <CheckCircle weight="fill" className="w-7 h-7 text-emerald-600" />
                           ) : (
-                            <QuestIcon weight="bold" className="w-5 h-5" />
+                            <QuestIcon weight="bold" className="w-6 h-6" />
                           )}
                         </div>
 
                         <div className="space-y-1.5 min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span
-                              className={`font-black text-[10px] px-2 py-0.5 rounded-lg border uppercase tracking-wider ${
+                              className={`font-black text-[10px] px-2.5 py-0.5 rounded-lg border uppercase tracking-wider ${
                                 isDone
                                   ? 'bg-amber-100 border-amber-200 text-amber-900'
                                   : 'bg-blue-50 border-blue-200 text-[#1D4ED8]'
@@ -801,13 +896,13 @@ export const QuestLogPage = () => {
                             )}
                           </div>
 
-                          <h4 className="font-black text-sm text-[#0F172A] truncate">
+                          <h4 className="font-black text-sm sm:text-base text-[#0F172A] truncate">
                             {questItem.title}
                           </h4>
 
                           {/* Progress Line */}
                           <div className="flex items-center gap-3 flex-wrap">
-                            <div className="w-24 sm:w-36 h-2 bg-slate-100 rounded-full border border-slate-200 overflow-hidden">
+                            <div className="w-28 sm:w-40 h-2 bg-slate-100 rounded-full border border-slate-200 overflow-hidden">
                               <div
                                 className={`h-full rounded-full transition-all duration-300 ${
                                   isDone ? 'bg-emerald-500' : 'bg-blue-500'
@@ -847,7 +942,7 @@ export const QuestLogPage = () => {
                             onClick={() =>
                               handleClaimDailyQuest(questItem.id, questItem.xp_reward, questItem.gem_reward)
                             }
-                            className="text-xs px-4 py-2"
+                            className="text-xs px-4 py-2 ring-4 ring-amber-300 animate-pulse"
                           >
                             KLAIM HADIAH ⚡
                           </Button3D>
@@ -869,13 +964,13 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES ══════ */}
+          {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES (STREAMLINED) ══════ */}
           {(activeTab === 'all' || activeTab === 'boss') && portfolioChallenges.length > 0 && (
             <div className="space-y-4">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <Trophy weight="fill" className="w-5 h-5 text-amber-500" />
-                  <h3 className="font-black text-base text-[#0F172A]">
+                  <h3 className="font-black text-base sm:text-lg text-[#0F172A]">
                     Tantangan Portofolio &amp; Boss Quest (Standar Visa Tokyo)
                   </h3>
                 </div>
@@ -953,9 +1048,9 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE (SHOP) ══════ */}
+          {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE (CLEAN & ACCESSIBLE) ══════ */}
           {(activeTab === 'all' || activeTab === 'shop') && (
-            <div className="bg-gradient-to-b from-blue-50/60 via-white to-white border-2 border-blue-200/90 rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xs">
+            <div className="bg-gradient-to-b from-blue-50/60 via-white to-white border-2 border-blue-200/90 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md border-b-[4px] border-blue-800">
@@ -963,7 +1058,7 @@ export const QuestLogPage = () => {
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-lg text-[#0F172A] tracking-tight">
+                      <h3 className="font-extrabold text-base sm:text-lg text-[#0F172A] tracking-tight">
                         Toko Penukaran Gems Tokyo (Akihabara Arcade)
                       </h3>
                       <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-200">
@@ -1065,9 +1160,6 @@ export const QuestLogPage = () => {
             </button>
           </div>
         </main>
-
-        {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 39.1) ══════ */}
-        <GameSidebarRail activeTrack={activeTrack} />
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
