@@ -19,7 +19,6 @@ import {
 import {
   MagnifyingGlass,
   Sparkle,
-  Trophy,
   ShieldCheck,
   Flask,
   FileText,
@@ -36,6 +35,8 @@ import {
 import doodleWelcome from '../assets/kodi/doodle-welcome.png'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
+import doodleOnFire from '../assets/kodi/doodle-on-fire.png'
+import doodleProud from '../assets/kodi/doodle-proud.png'
 
 export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
@@ -451,24 +452,48 @@ export const QuestLogPage = () => {
       {
         id: 'boss-worker-pool',
         title: 'High-Concurrency Worker Pool Engine (Mercari Tokyo Spec)',
-        subtitle: 'Bangun pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
+        subtitle:
+          'Bangun pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
         tags: ['GOLANG', 'HIGH CONCURRENCY', 'MERCARI SPEC'],
-        difficulty: 'Sulit',
+        deliverables: [
+          'Goroutines Worker Pool & Buffered Channels Pipeline',
+          'Context Timeout, Cancellation, & Zero Memory Leak',
+          'Graceful Shutdown dengan OS Signal Interception',
+        ],
+        difficulty: 'S-Rank Sulit',
         xp_reward: 250,
         gem_reward: 50,
-        sponsorTag: 'KURASI VISA TOKYO 🇯🇵',
+        sponsorTag: 'KURASI MERCARI TOKYO LABS 🇯🇵',
+        sponsorBadgeBg: 'bg-red-50 text-red-900 border-red-200',
+        cardBorder: 'border-amber-300 border-b-[5px] border-b-amber-500',
+        cardGlow: 'bg-amber-400/20',
+        illustration: doodleOnFire,
+        illustrationAlt: 'Kodi Mode Concurrency On Fire',
+        buttonLabel: '⚔️ Hadapi Boss Worker Pool',
         route: '/learn/part-7-worker-pool-concurrency',
         isCompleted: completedQuestsSet.has('part-7-worker-pool-concurrency'),
       },
       {
         id: 'capstone-clean-arch',
         title: 'Fullstack Microservices Clean Architecture Capstone',
-        subtitle: 'Implementasi end-to-end RESTful API dengan unit test coverage >80%, OpenAPI documentation, dan Docker image scratch minimalis untuk portofolio rekrutmen Jepang.',
+        subtitle:
+          'Implementasi end-to-end RESTful API dengan unit test coverage >80%, OpenAPI documentation, dan Docker image scratch minimalis untuk portofolio rekrutmen Jepang.',
         tags: ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER', 'OPENAPI'],
-        difficulty: 'Sulit',
+        deliverables: [
+          'Clean Architecture 4-Tier (Domain, UseCase, Repo, Delivery)',
+          'Unit Test Coverage >80% & SQL Mocking Isolation',
+          'Docker Multi-Stage Build Minimal Scratch Image (<25MB)',
+        ],
+        difficulty: 'S-Rank Sulit',
         xp_reward: 500,
         gem_reward: 100,
-        sponsorTag: 'SPONSOR VISA PRIORITAS 🌟',
+        sponsorTag: 'KURASI RAKUTEN SYMPHONY TOKYO 🌟',
+        sponsorBadgeBg: 'bg-purple-50 text-purple-900 border-purple-200',
+        cardBorder: 'border-purple-300 border-b-[5px] border-b-purple-500',
+        cardGlow: 'bg-purple-400/20',
+        illustration: doodleProud,
+        illustrationAlt: 'Kodi Master Architect',
+        buttonLabel: '👑 Ambil Sayembara Capstone',
         route: '/learn/part-11-clean-architecture-repository',
         isCompleted: completedQuestsSet.has('part-11-clean-architecture-repository'),
       },
@@ -960,82 +985,168 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES (STREAMLINED) ══════ */}
+          {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES (DEDICATED SAYEMBARA GUILD BOARD) ══════ */}
           {activeTab === 'boss' && portfolioChallenges.length > 0 && (
-            <div className="space-y-4">
-              <div className="space-y-0.5">
-                <div className="flex items-center gap-2">
-                  <Trophy weight="fill" className="w-5 h-5 text-amber-500" />
-                  <h3 className="font-black text-base sm:text-lg text-[#0F172A]">
-                    Tantangan Portofolio &amp; Boss Quest (Standar Visa Tokyo)
-                  </h3>
+            <div className="space-y-6">
+              {/* Guild Sayembara Header Banner */}
+              <div className="bg-gradient-to-r from-purple-900/10 via-amber-500/10 to-blue-500/10 border-2 border-purple-200 border-b-[5px] border-b-purple-400 rounded-3xl p-6 sm:p-7 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-5">
+                <div className="flex items-start sm:items-center gap-4">
+                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center font-black text-2xl shadow-md border-b-[4px] border-purple-900 shrink-0">
+                    ⛩️
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-extrabold text-lg sm:text-xl text-[#0F172A] tracking-tight">
+                        Papan Sayembara Tokyo Tech Guild (Boss Raids)
+                      </h3>
+                      <span className="bg-purple-100 text-purple-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-purple-200 uppercase tracking-wider">
+                        S-Rank Kurasi Tokyo
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
+                      Tantangan arsitektur skala industri riil sesuai standar rekrutmen engineer Jepang (Mercari &amp; Rakuten Spec). Selesaikan untuk portofolio kurasi diaspora Tokyo.
+                    </p>
+                  </div>
                 </div>
-                <p className="text-xs text-slate-500">
-                  Proyek skala industri tingkat tinggi dengan standar kurasi perusahaan Jepang (Mercari &amp; Rakuten Spec).
-                </p>
+
+                {/* Bounty Overview Pill */}
+                <div className="bg-white/90 border-2 border-purple-200 rounded-2xl p-3 flex items-center gap-4 shadow-2xs shrink-0 self-start md:self-center">
+                  <div>
+                    <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
+                      Total Bounty Tersedia
+                    </span>
+                    <div className="flex items-center gap-2 pt-0.5 font-black text-xs">
+                      <span className="text-amber-600">⚡ +750 XP</span>
+                      <span className="text-slate-300">•</span>
+                      <span className="text-blue-600">💎 +150 Gems</span>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Stack of Rich Horizontal Boss Dossier Cards */}
+              <div className="space-y-5">
                 {portfolioChallenges.map((challenge) => (
                   <div
                     key={challenge.id}
-                    className="bg-white border-2 border-purple-200 border-b-[5px] border-b-purple-400 rounded-3xl p-5 sm:p-6 space-y-4 shadow-2xs flex flex-col justify-between hover:border-b-[6px] hover:-translate-y-0.5 transition-all"
+                    className={`bg-white border-2 ${challenge.cardBorder} rounded-3xl p-6 sm:p-7 shadow-2xs hover:-translate-y-0.5 transition-all relative overflow-hidden`}
                   >
-                    <div className="space-y-2.5">
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="bg-purple-100 text-purple-900 font-black text-[11px] px-2.5 py-1 rounded-xl border border-purple-200 flex items-center gap-1.5">
-                          <Trophy weight="fill" className="w-3.5 h-3.5 text-purple-600" />
-                          <span>{challenge.sponsorTag}</span>
-                        </span>
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+                      {/* Left: Illustration Badge & Mood Avatar */}
+                      <div className="flex items-center sm:items-start gap-4 shrink-0 lg:w-44 flex-col text-center sm:text-left lg:text-center">
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 relative group mx-auto">
+                          <div className={`absolute inset-0 ${challenge.cardGlow} rounded-full filter blur-xl transform group-hover:scale-110 transition-transform`} />
+                          <img
+                            src={challenge.illustration}
+                            alt={challenge.illustrationAlt}
+                            className="w-full h-full object-contain relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300"
+                          />
+                        </div>
 
-                        {challenge.isCompleted ? (
-                          <span className="bg-emerald-600 text-white font-mono font-bold text-[10px] px-2 py-0.5 rounded shadow-2xs">
-                            LULUS ✓
+                        <div className="space-y-1 w-full">
+                          {challenge.isCompleted ? (
+                            <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-black text-[11px] px-3 py-1 rounded-full shadow-2xs inline-block">
+                              DIASPORA VERIFIED ✓
+                            </span>
+                          ) : (
+                            <span className="bg-red-100 text-red-700 font-brand font-black text-[11px] px-3 py-1 rounded-full border border-red-200 inline-block">
+                              ⚡ S-RANK BOUNTY
+                            </span>
+                          )}
+                          <span className="text-[10px] font-bold text-slate-400 block">
+                            Standar Visa Rekrutmen
                           </span>
-                        ) : (
-                          <span className="bg-red-50 text-red-600 font-mono font-black text-[10px] px-2 py-0.5 rounded border border-red-200 uppercase">
-                            SULIT
-                          </span>
-                        )}
+                        </div>
                       </div>
 
-                      <h4 className="font-black text-base text-[#0F172A] tracking-tight">
-                        {challenge.title}
-                      </h4>
+                      {/* Middle: Mission Briefing, Tags & Tech Deliverables */}
+                      <div className="flex-1 min-w-0 space-y-3.5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
+                        <div className="space-y-1.5">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className={`font-brand font-black text-[11px] px-2.5 py-0.5 rounded-lg border ${challenge.sponsorBadgeBg}`}>
+                              {challenge.sponsorTag}
+                            </span>
+                            <span className="text-[11px] font-bold text-slate-400">
+                              • Capstone Portofolio
+                            </span>
+                          </div>
 
-                      <p className="text-xs text-slate-600 leading-relaxed">
-                        {challenge.subtitle}
-                      </p>
+                          <h4 className="font-black text-base sm:text-lg text-[#0F172A] leading-snug">
+                            {challenge.title}
+                          </h4>
 
-                      <div className="flex items-center gap-1.5 flex-wrap pt-1">
-                        {challenge.tags.map((tag) => (
-                          <span
-                            key={tag}
-                            className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2 py-0.5 rounded-md border border-slate-200"
-                          >
-                            {tag}
+                          <p className="text-xs text-slate-600 leading-relaxed">
+                            {challenge.subtitle}
+                          </p>
+                        </div>
+
+                        {/* Deliverables Checklist */}
+                        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-2">
+                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
+                            Target Output Industri (Deliverables):
                           </span>
-                        ))}
-                      </div>
-                    </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700">
+                            {challenge.deliverables.map((item, dIdx) => (
+                              <div key={dIdx} className="flex items-center gap-2">
+                                <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500 shrink-0" />
+                                <span className="truncate">{item}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
 
-                    <div className="space-y-3 pt-3 border-t border-purple-100">
-                      <div className="flex items-center justify-between text-xs font-bold text-slate-600">
-                        <span className="text-purple-700 font-black">
-                          ⚡ +{challenge.xp_reward} XP • 💎 +{challenge.gem_reward} Gems
-                        </span>
-                        <span className="text-purple-600 font-bold">Tokyo Portofolio</span>
+                        {/* Tech tags */}
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {challenge.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md border border-slate-200"
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
                       </div>
 
-                      <div className="flex items-center justify-end">
-                        <Button3D
-                          variant="blue"
-                          size="sm"
-                          onClick={() => navigate(challenge.route)}
-                          className="text-xs px-4 py-2"
-                        >
-                          <span>Lihat Briefing ➔</span>
-                        </Button3D>
+                      {/* Right: Bounty Rewards & Action Button Panel */}
+                      <div className="shrink-0 flex flex-col justify-between items-center sm:items-end lg:items-center bg-slate-50/80 border-2 border-slate-200/80 rounded-2xl p-4 lg:w-48 space-y-3.5 text-center">
+                        <div className="space-y-1 w-full">
+                          <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
+                            Bounty Kelulusan
+                          </span>
+                          <div className="flex flex-col gap-1 items-center justify-center">
+                            <span className="text-sm font-black text-amber-600">
+                              ⚡ +{challenge.xp_reward} XP
+                            </span>
+                            <span className="text-sm font-black text-blue-600">
+                              💎 +{challenge.gem_reward} Gems
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="w-full pt-1">
+                          {challenge.isCompleted ? (
+                            <Button3D
+                              variant="ghost"
+                              size="sm"
+                              fullWidth
+                              onClick={() => navigate(challenge.route)}
+                              className="text-xs py-2 bg-emerald-50 border-emerald-300 text-emerald-700"
+                            >
+                              LIHAT HASIL ✓
+                            </Button3D>
+                          ) : (
+                            <Button3D
+                              variant="blue"
+                              size="sm"
+                              fullWidth
+                              onClick={() => navigate(challenge.route)}
+                              className="text-xs py-2.5 font-black shadow-md"
+                            >
+                              {challenge.buttonLabel} ➔
+                            </Button3D>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
