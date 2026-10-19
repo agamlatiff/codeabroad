@@ -71,9 +71,9 @@ export const GameTopBar = ({
   }, [activeTrack])
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
       {/* ── LEFT: TRACK SWITCHER PILL & LINEAR PROGRESS BAR ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3 w-full sm:w-auto">
+      <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap min-w-0">
         {/* Clickable Track Switcher Pill */}
         <button
           type="button"
@@ -81,77 +81,80 @@ export const GameTopBar = ({
             triggerHaptic('tap')
             onOpenCourseSwitcher()
           }}
-          className="flex items-center gap-2.5 px-3.5 py-2 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0"
+          className="flex items-center gap-2.5 px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0"
           title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
         >
-          <div className="w-6 h-6 rounded-lg bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-4 h-4" />}
-            {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-5 h-3.5" />}
-            {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-4 h-4" />}
-            {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-4 h-4" />}
-            {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-4 h-4" />}
+          <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+            {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-3.5 h-3.5" />}
+            {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-4 h-3" />}
+            {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-3.5 h-3.5" />}
+            {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
+            {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
           </div>
-          <span className="text-xs font-brand font-black text-slate-900 leading-tight">
+          <span className="text-xs font-brand font-black text-slate-900 leading-tight whitespace-nowrap">
             {currentTrackConfig.title}
           </span>
-          <CaretDown weight="bold" className="w-3.5 h-3.5 text-slate-400 group-hover:text-blue-600 transition-colors ml-0.5" />
+          <CaretDown weight="bold" className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-colors ml-0.5 shrink-0" />
         </button>
 
         {/* Track Linear Progress Bar */}
-        <div className="flex items-center gap-2.5 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-2 shadow-2xs">
-          <div className="w-24 sm:w-32 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
+        <div className="flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
+          <div className="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
-          <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0">
+          <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
             {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
           </span>
         </div>
       </div>
 
-      {/* ── RIGHT: GAME STATUS HUD (CLEAN LIGHT MODE) ── */}
-      <div className="bg-white border-2 border-slate-200/80 rounded-2xl px-3.5 py-2 flex items-center gap-3 shadow-2xs self-start sm:self-auto">
-        {/* Streak Fire */}
-        <div className="flex items-center gap-1.5 font-brand font-black text-xs text-orange-500">
-          <Fire weight="fill" className="w-4 h-4 text-orange-500" />
+      {/* ── RIGHT: GAME STATUS HUD (TACTILE DUOLINGO MICRO-CHIPS) ── */}
+      <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1.5 flex items-center gap-1.5 shadow-2xs shrink-0 overflow-x-auto scrollbar-none self-start md:self-auto max-w-full">
+        {/* Streak Fire Chip */}
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
+          title={`Rentetan Belajar: ${userStreak} Hari`}
+        >
+          <Fire weight="fill" className="w-4 h-4 text-orange-500 animate-pulse shrink-0" />
           <span>{userStreak} Hari</span>
         </div>
-        <div className="w-[1px] h-3.5 bg-slate-200" />
 
-        {/* XP Star */}
+        {/* XP Star Chip */}
         <div
-          className={`flex items-center gap-1.5 font-brand font-black text-xs text-amber-500 rounded-lg px-1.5 py-0.5 transition-all ${
-            isXpPulsing ? 'animate-pulse-ring bg-amber-50 scale-105' : ''
+          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
+            isXpPulsing ? 'animate-pulse-ring bg-amber-100 scale-105' : ''
           }`}
+          title={`Total Pengalaman Koding: ${userXp} XP`}
         >
-          <Star weight="fill" className={`w-4 h-4 text-amber-400 ${isXpPulsing ? 'animate-bounce' : ''}`} />
+          <Star weight="fill" className={`w-4 h-4 text-amber-500 shrink-0 ${isXpPulsing ? 'animate-bounce' : ''}`} />
           <span>{userXp} XP</span>
         </div>
-        <div className="w-[1px] h-3.5 bg-slate-200" />
 
-        {/* Kodi Companion Level */}
-        <div className="flex items-center gap-1.5 font-brand font-black text-xs text-blue-600">
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+        {/* Kodi Companion Level Chip */}
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
+          title={`Level Kodi: Tingkat ${userLevel}`}
+        >
+          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
           <span>Tingkat {userLevel}</span>
         </div>
 
-        {/* Tokyo League Leaderboard HUD Button */}
-        <div className="w-[1px] h-3.5 bg-slate-200" />
+        {/* Tokyo League Leaderboard Tactile Button */}
         <button
           type="button"
           onClick={() => {
             triggerHaptic('tap')
             onOpenLeaderboard()
           }}
-          className="flex items-center gap-1 font-brand font-black text-xs text-amber-700 hover:text-amber-800 transition-colors cursor-pointer group"
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
           title="Buka Papan Peringkat Liga Tokyo"
         >
-          <Trophy weight="fill" className="w-4 h-4 text-amber-500 group-hover:scale-110 transition-transform" />
-          <span className="hidden sm:inline">Liga</span>
+          <Trophy weight="fill" className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
+          <span>Liga</span>
         </button>
-
       </div>
     </div>
   )
