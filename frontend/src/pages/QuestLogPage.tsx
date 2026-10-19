@@ -37,7 +37,7 @@ import doodleWelcome from '../assets/kodi/doodle-welcome.png'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
 
-export type QuestPageTab = 'all' | 'daily' | 'boss' | 'shop'
+export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
 interface ShopItem {
   id: string
@@ -121,8 +121,8 @@ export const QuestLogPage = () => {
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
 
-  // Active filter tab (Clean: all, daily, boss, shop)
-  const [activeTab, setActiveTab] = useState<QuestPageTab>('all')
+  // Active filter tab (Dedicated views: daily, boss, shop)
+  const [activeTab, setActiveTab] = useState<QuestPageTab>('daily')
   const [searchQuery, setSearchQuery] = useState('')
 
   // Floating reward animation state
@@ -542,11 +542,11 @@ export const QuestLogPage = () => {
       : totalCompletedCount
   const progressPercent = totalCount > 0 ? Math.min(100, Math.round((completedCount / totalCount) * 100)) : 0
 
-  // Determine if search has no results
+  // Determine if search has no results for the active tab
   const hasNoResults =
     searchQuery.trim().length > 0 &&
-    filteredDaily.length === 0 &&
-    portfolioChallenges.length === 0
+    ((activeTab === 'daily' && filteredDaily.length === 0) ||
+      (activeTab === 'boss' && portfolioChallenges.length === 0))
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -666,20 +666,16 @@ export const QuestLogPage = () => {
             <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
               {[
                 {
-                  id: 'all' as QuestPageTab,
-                  label: `Semua Tantangan 📜 (${filteredDaily.length + portfolioChallenges.length})`,
-                },
-                {
                   id: 'daily' as QuestPageTab,
                   label: `Misi Harian ⚡ (${filteredDaily.length})`,
                 },
                 {
                   id: 'boss' as QuestPageTab,
-                  label: `Sayembara Boss 💼 (${portfolioChallenges.length})`,
+                  label: `Sayembara Boss 🏆 (${portfolioChallenges.length})`,
                 },
                 {
                   id: 'shop' as QuestPageTab,
-                  label: `Toko Gems 💎`,
+                  label: `Toko Akihabara 💎`,
                 },
               ].map((tab) => {
                 const isActive = activeTab === tab.id
@@ -767,7 +763,7 @@ export const QuestLogPage = () => {
           )}
 
           {/* ══════ SECTION 1: 3-TIER MILESTONE CHESTS & DAILY QUESTS ══════ */}
-          {(activeTab === 'all' || activeTab === 'daily') && filteredDaily.length > 0 && (
+          {activeTab === 'daily' && filteredDaily.length > 0 && (
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xs">
               {/* Header with Title & Countdown */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -965,7 +961,7 @@ export const QuestLogPage = () => {
           )}
 
           {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES (STREAMLINED) ══════ */}
-          {(activeTab === 'all' || activeTab === 'boss') && portfolioChallenges.length > 0 && (
+          {activeTab === 'boss' && portfolioChallenges.length > 0 && (
             <div className="space-y-4">
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
@@ -1049,7 +1045,7 @@ export const QuestLogPage = () => {
           )}
 
           {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE (CLEAN & ACCESSIBLE) ══════ */}
-          {(activeTab === 'all' || activeTab === 'shop') && (
+          {activeTab === 'shop' && (
             <div className="bg-gradient-to-b from-blue-50/60 via-white to-white border-2 border-blue-200/90 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3">
