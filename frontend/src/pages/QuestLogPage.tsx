@@ -37,6 +37,7 @@ import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
 import doodleOnFire from '../assets/kodi/doodle-on-fire.png'
 import doodleProud from '../assets/kodi/doodle-proud.png'
+import doodleCoffeeBreak from '../assets/kodi/doodle-coffee-break.png'
 
 export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
@@ -1155,97 +1156,189 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE (CLEAN & ACCESSIBLE) ══════ */}
+          {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE & GACHA SHOP ══════ */}
           {activeTab === 'shop' && (
-            <div className="bg-gradient-to-b from-blue-50/60 via-white to-white border-2 border-blue-200/90 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center font-black text-xl shadow-md border-b-[4px] border-blue-800">
-                    💎
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-base sm:text-lg text-[#0F172A] tracking-tight">
-                        Toko Penukaran Gems Tokyo (Akihabara Arcade)
-                      </h3>
-                      <span className="bg-blue-100 text-blue-700 text-[10px] font-black px-2 py-0.5 rounded-full border border-blue-200">
-                        TERBUKA
+            <div className="space-y-6">
+              {/* ── 1. KODI ARCADE SHOPKEEPER BANNER ── */}
+              <div className="bg-gradient-to-r from-blue-600/10 via-indigo-50/50 to-purple-500/10 border-2 border-blue-300 border-b-[5px] border-b-blue-400 rounded-3xl p-6 sm:p-7 shadow-2xs relative overflow-hidden">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                  {/* Left: Arcade Details */}
+                  <div className="space-y-3 flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-brand font-black text-[11px] px-3 py-1 rounded-full border border-blue-300 bg-blue-100 text-blue-900 uppercase tracking-wider">
+                        AKIHABARA ARCADE &amp; GACHA 🕹️
+                      </span>
+                      <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
+                        <Sparkle weight="fill" className="w-3.5 h-3.5 text-blue-500" />
+                        <span>Toko Resmi Diaspora Tokyo</span>
                       </span>
                     </div>
-                    <p className="text-xs text-slate-600">
-                      Tukarkan gems hasil sayembara koding dengan booster XP, pelindung streak, dan review portofolio diaspora.
-                    </p>
-                  </div>
-                </div>
 
-                <div className="bg-white border-2 border-blue-200 rounded-2xl px-4 py-2 flex items-center gap-2.5 shadow-2xs shrink-0 self-start sm:self-center">
-                  <span className="text-lg">💎</span>
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
-                      Saldo Anda
-                    </span>
-                    <span className="text-sm font-black text-blue-700">
-                      {userGems} Gems
-                    </span>
+                    <div className="space-y-1">
+                      <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
+                        Toko Penukaran Gems &amp; Booster
+                      </h2>
+                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
+                        Tukarkan gems hasil menuntaskan latihan koding dan Boss Quest dengan item proteksi streak, pengganda XP, serta kupon review portofolio diaspora.
+                      </p>
+                    </div>
+
+                    {/* User Gems Vault */}
+                    <div className="flex items-center gap-3 pt-1">
+                      <div className="bg-white border-2 border-blue-300 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-2xs">
+                        <span className="text-2xl">💎</span>
+                        <div>
+                          <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
+                            Brankas Saldo Gems Anda
+                          </span>
+                          <span className="text-base font-black text-blue-700">
+                            {userGems} Gems Tersedia
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right: Kodi Shopkeeper with Speech Bubble */}
+                  <div className="flex flex-col items-center sm:items-end justify-center shrink-0 self-center md:self-auto space-y-2">
+                    <div className="relative bg-white border-2 border-blue-300 rounded-2xl px-4 py-2.5 shadow-2xs text-xs font-brand font-black text-slate-800 leading-snug max-w-xs text-center sm:text-left">
+                      <span>
+                        {userGems >= 20
+                          ? `Irasshaimase! Kamu punya ${userGems} Gems. Mau borong Streak Freeze atau Kupon CV Tokyo hari ini? ✨`
+                          : `Koleksi Gems lebih banyak dengan menyelesaikan Misi Harian & Sayembara Boss ya! 💎`}
+                      </span>
+                      <div className="hidden sm:block absolute -bottom-2 right-10 w-3 h-3 bg-white border-b-2 border-r-2 border-blue-300 transform rotate-45" />
+                    </div>
+
+                    <div className="w-28 h-28 sm:w-32 sm:h-32 relative group">
+                      <div className="absolute inset-0 bg-blue-400/20 rounded-full filter blur-xl transform group-hover:scale-110 transition-transform" />
+                      <img
+                        src={doodleCoffeeBreak}
+                        alt="Kodi Kasir Arcade Akihabara"
+                        className="w-full h-full object-contain relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* 4 Duolingo 3D Tactile Shop Cards Grid */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
+              {/* ── 2. USER INVENTORY QUICK POUCH ── */}
+              <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2">
+                <div className="flex items-center justify-between text-xs font-brand font-black">
+                  <span className="text-slate-700 flex items-center gap-1.5">
+                    <span>🎒</span>
+                    <span>Tas Inventaris Perlengkapan Anda</span>
+                  </span>
+                  <span className="text-slate-400 text-[11px] font-semibold">
+                    Item aktif otomatis saat dibutuhkan
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  {[
+                    { id: 'streak-freeze', label: 'Streak Freeze', icon: '❄️', count: inventory['streak-freeze'] || 0, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                    { id: 'xp-booster', label: 'XP Booster 2x', icon: '🧪', count: inventory['xp-booster'] || 0, color: 'text-amber-700 bg-amber-50 border-amber-200' },
+                    { id: 'cv-review', label: 'Kupon CV Tokyo', icon: '📋', count: inventory['cv-review'] || 0, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+                    { id: 'mock-interview', label: 'VIP Mock Interview', icon: '🎙️', count: inventory['mock-interview'] || 0, color: 'text-purple-700 bg-purple-50 border-purple-200' },
+                  ].map((slot) => (
+                    <div
+                      key={slot.id}
+                      className={`p-2.5 rounded-xl border flex items-center justify-between ${slot.color}`}
+                    >
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-lg">{slot.icon}</span>
+                        <span className="text-[11px] font-black truncate">{slot.label}</span>
+                      </div>
+                      <span className="font-mono font-black text-xs px-2 py-0.5 rounded-md bg-white/80 border border-current shadow-2xs shrink-0">
+                        {slot.count}x
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── 3. MERCHANDISE SHOWCASE (2x2 LEGA & TACTILE) ── */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {SHOP_ITEMS.map((item) => {
                   const ItemIcon = item.icon
                   const ownedCount = inventory[item.id] || 0
                   const isAffordable = userGems >= item.price
+                  const missingGems = item.price - userGems
 
                   return (
                     <div
                       key={item.id}
-                      className="bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 rounded-2xl p-4 flex flex-col justify-between space-y-3 transition-all hover:border-b-[5px] hover:-translate-y-0.5 shadow-2xs"
+                      className={`bg-white border-2 ${
+                        item.id === 'streak-freeze'
+                          ? 'border-blue-200 border-b-[5px] border-b-blue-400'
+                          : item.id === 'xp-booster'
+                          ? 'border-amber-200 border-b-[5px] border-b-amber-400'
+                          : item.id === 'cv-review'
+                          ? 'border-emerald-200 border-b-[5px] border-b-emerald-400'
+                          : 'border-purple-200 border-b-[5px] border-b-purple-400'
+                      } rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-2xs hover:-translate-y-0.5 transition-all`}
                     >
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <div
-                            className={`w-9 h-9 rounded-xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-2xs`}
-                          >
-                            <ItemIcon weight="bold" className="w-5 h-5" />
+                      {/* Top Content */}
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-12 h-12 rounded-2xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-md shrink-0`}
+                            >
+                              <ItemIcon weight="bold" className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md border ${item.badgeColor} uppercase tracking-wider inline-block`}>
+                                {item.badge}
+                              </span>
+                              <h3 className="font-black text-base sm:text-lg text-[#0F172A] mt-0.5">
+                                {item.title}
+                              </h3>
+                            </div>
                           </div>
-                          <span className={`text-[10px] font-black px-2 py-0.5 rounded-md border ${item.badgeColor}`}>
-                            {item.badge}
+
+                          {/* Owned Pill */}
+                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200 shrink-0">
+                            {ownedCount > 0 ? `Dimiliki: ${ownedCount}x` : 'Belum Ada'}
+                          </span>
+                        </div>
+
+                        <p className="text-xs text-slate-600 leading-relaxed">
+                          {item.subtitle}
+                        </p>
+                      </div>
+
+                      {/* Bottom Action Bar */}
+                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-lg">💎</span>
+                          <span className="font-black text-base text-blue-700">
+                            {item.price} <span className="text-xs font-bold text-slate-400 uppercase">Gems</span>
                           </span>
                         </div>
 
                         <div>
-                          <h4 className="font-black text-xs sm:text-sm text-[#0F172A]">
-                            {item.title}
-                          </h4>
-                          <p className="text-[11px] text-slate-500 leading-relaxed mt-1">
-                            {item.subtitle}
-                          </p>
+                          {isAffordable ? (
+                            <Button3D
+                              variant={item.id === 'cv-review' ? 'emerald' : item.id === 'xp-booster' ? 'amber' : 'blue'}
+                              size="sm"
+                              onClick={() => handlePurchaseShopItem(item)}
+                              className="text-xs px-5 py-2 shadow-md animate-pulse hover:animate-none"
+                            >
+                              TUKAR REWARD 💎
+                            </Button3D>
+                          ) : (
+                            <Button3D
+                              variant="ghost"
+                              size="sm"
+                              disabled
+                              className="text-xs px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
+                              title={`Kurang ${missingGems} Gems lagi`}
+                            >
+                              Kurang {missingGems} 💎 Lagi 🔒
+                            </Button3D>
+                          )}
                         </div>
-                      </div>
-
-                      <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                        <div className="flex items-center justify-between text-xs">
-                          <span className="font-bold text-slate-400 text-[10px]">
-                            {ownedCount > 0 ? `Dimiliki: ${ownedCount}x` : 'Belum Ada'}
-                          </span>
-                          <span className="font-black text-blue-700">
-                            💎 {item.price} Gems
-                          </span>
-                        </div>
-
-                        <Button3D
-                          variant={isAffordable ? 'blue' : 'ghost'}
-                          size="sm"
-                          fullWidth
-                          onClick={() => handlePurchaseShopItem(item)}
-                          className={`text-xs py-2 ${
-                            !isAffordable ? 'opacity-60 cursor-not-allowed bg-slate-100 text-slate-500' : ''
-                          }`}
-                        >
-                          {isAffordable ? `Tukar ${item.price} 💎` : 'Gems Kurang'}
-                        </Button3D>
                       </div>
                     </div>
                   )
