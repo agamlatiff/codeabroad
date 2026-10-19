@@ -35,9 +35,6 @@ import {
 import doodleWelcome from '../assets/kodi/doodle-welcome.png'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
-import doodleOnFire from '../assets/kodi/doodle-on-fire.png'
-import doodleProud from '../assets/kodi/doodle-proud.png'
-import doodleCoffeeBreak from '../assets/kodi/doodle-coffee-break.png'
 
 export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
@@ -454,23 +451,13 @@ export const QuestLogPage = () => {
         id: 'boss-worker-pool',
         title: 'High-Concurrency Worker Pool Engine (Mercari Tokyo Spec)',
         subtitle:
-          'Bangun pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
+          'Pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
         tags: ['GOLANG', 'HIGH CONCURRENCY', 'MERCARI SPEC'],
-        deliverables: [
-          'Goroutines Worker Pool & Buffered Channels Pipeline',
-          'Context Timeout, Cancellation, & Zero Memory Leak',
-          'Graceful Shutdown dengan OS Signal Interception',
-        ],
-        difficulty: 'S-Rank Sulit',
+        icon: '🔥',
         xp_reward: 250,
         gem_reward: 50,
-        sponsorTag: 'KURASI MERCARI TOKYO LABS 🇯🇵',
-        sponsorBadgeBg: 'bg-red-50 text-red-900 border-red-200',
-        cardBorder: 'border-amber-300 border-b-[5px] border-b-amber-500',
-        cardGlow: 'bg-amber-400/20',
-        illustration: doodleOnFire,
-        illustrationAlt: 'Kodi Mode Concurrency On Fire',
-        buttonLabel: '⚔️ Hadapi Boss Worker Pool',
+        sponsorTag: 'MERCARI TOKYO LABS 🇯🇵',
+        sponsorBadgeBg: 'bg-red-50 text-red-700 border-red-200',
         route: '/learn/part-7-worker-pool-concurrency',
         isCompleted: completedQuestsSet.has('part-7-worker-pool-concurrency'),
       },
@@ -478,23 +465,13 @@ export const QuestLogPage = () => {
         id: 'capstone-clean-arch',
         title: 'Fullstack Microservices Clean Architecture Capstone',
         subtitle:
-          'Implementasi end-to-end RESTful API dengan unit test coverage >80%, OpenAPI documentation, dan Docker image scratch minimalis untuk portofolio rekrutmen Jepang.',
-        tags: ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER', 'OPENAPI'],
-        deliverables: [
-          'Clean Architecture 4-Tier (Domain, UseCase, Repo, Delivery)',
-          'Unit Test Coverage >80% & SQL Mocking Isolation',
-          'Docker Multi-Stage Build Minimal Scratch Image (<25MB)',
-        ],
-        difficulty: 'S-Rank Sulit',
+          'Implementasi RESTful API end-to-end dengan unit test coverage >80%, OpenAPI spec, dan scratch minimal Docker image.',
+        tags: ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER'],
+        icon: '🏛️',
         xp_reward: 500,
         gem_reward: 100,
-        sponsorTag: 'KURASI RAKUTEN SYMPHONY TOKYO 🌟',
-        sponsorBadgeBg: 'bg-purple-50 text-purple-900 border-purple-200',
-        cardBorder: 'border-purple-300 border-b-[5px] border-b-purple-500',
-        cardGlow: 'bg-purple-400/20',
-        illustration: doodleProud,
-        illustrationAlt: 'Kodi Master Architect',
-        buttonLabel: '👑 Ambil Sayembara Capstone',
+        sponsorTag: 'RAKUTEN SYMPHONY 🌟',
+        sponsorBadgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
         route: '/learn/part-11-clean-architecture-repository',
         isCompleted: completedQuestsSet.has('part-11-clean-architecture-repository'),
       },
@@ -986,168 +963,102 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 2: TOKYO BOSS CHALLENGES (DEDICATED SAYEMBARA GUILD BOARD) ══════ */}
+          {/* ══════ SECTION 2: TOKYO GUILD TERMINAL (TACTILE MISSION SLATS) ══════ */}
           {activeTab === 'boss' && portfolioChallenges.length > 0 && (
-            <div className="space-y-6">
-              {/* Guild Sayembara Header Banner */}
-              <div className="bg-gradient-to-r from-purple-900/10 via-amber-500/10 to-blue-500/10 border-2 border-purple-200 border-b-[5px] border-b-purple-400 rounded-3xl p-6 sm:p-7 shadow-2xs flex flex-col md:flex-row md:items-center justify-between gap-5">
-                <div className="flex items-start sm:items-center gap-4">
-                  <div className="w-13 h-13 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-700 text-white flex items-center justify-center font-black text-2xl shadow-md border-b-[4px] border-purple-900 shrink-0">
-                    ⛩️
-                  </div>
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-extrabold text-lg sm:text-xl text-[#0F172A] tracking-tight">
-                        Papan Sayembara Tokyo Tech Guild (Boss Raids)
-                      </h3>
-                      <span className="bg-purple-100 text-purple-900 text-[10px] font-black px-2.5 py-0.5 rounded-full border border-purple-200 uppercase tracking-wider">
-                        S-Rank Kurasi Tokyo
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 max-w-xl leading-relaxed">
-                      Tantangan arsitektur skala industri riil sesuai standar rekrutmen engineer Jepang (Mercari &amp; Rakuten Spec). Selesaikan untuk portofolio kurasi diaspora Tokyo.
-                    </p>
-                  </div>
+            <div className="space-y-4">
+              {/* Console Header Bar */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+                <div>
+                  <h3 className="font-brand font-black text-base sm:text-lg text-slate-900 flex items-center gap-2">
+                    <span>⚔️</span>
+                    <span>Sayembara Tokyo Tech Guild</span>
+                    <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md border border-purple-200">
+                      S-RANK SPECS
+                    </span>
+                  </h3>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Tantangan portofolio arsitektur riil kurasi engineer diaspora Tokyo (Mercari &amp; Rakuten Spec).
+                  </p>
                 </div>
 
-                {/* Bounty Overview Pill */}
-                <div className="bg-white/90 border-2 border-purple-200 rounded-2xl p-3 flex items-center gap-4 shadow-2xs shrink-0 self-start md:self-center">
-                  <div>
-                    <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
-                      Total Bounty Tersedia
-                    </span>
-                    <div className="flex items-center gap-2 pt-0.5 font-black text-xs">
-                      <span className="text-amber-600">⚡ +750 XP</span>
-                      <span className="text-slate-300">•</span>
-                      <span className="text-blue-600">💎 +150 Gems</span>
-                    </div>
-                  </div>
+                {/* Total Bounty Badge */}
+                <div className="flex items-center gap-2 text-xs font-brand font-black bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-900 shrink-0 self-start sm:self-auto shadow-2xs">
+                  <span>Bounty:</span>
+                  <span className="text-amber-600">⚡ +750 XP</span>
+                  <span>•</span>
+                  <span className="text-blue-600">💎 +150 Gems</span>
                 </div>
               </div>
 
-              {/* Stack of Rich Horizontal Boss Dossier Cards */}
-              <div className="space-y-5">
-                {portfolioChallenges.map((challenge) => (
+              {/* Tactile Mission Slat Cartridges */}
+              <div className="bg-white border-2 border-slate-200/90 rounded-3xl divide-y-2 divide-slate-100 shadow-2xs overflow-hidden">
+                {portfolioChallenges.map((challenge, idx) => (
                   <div
                     key={challenge.id}
-                    className={`bg-white border-2 ${challenge.cardBorder} rounded-3xl p-6 sm:p-7 shadow-2xs hover:-translate-y-0.5 transition-all relative overflow-hidden`}
+                    className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-slate-50/80 transition-colors group"
                   >
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                      {/* Left: Illustration Badge & Mood Avatar */}
-                      <div className="flex items-center sm:items-start gap-4 shrink-0 lg:w-44 flex-col text-center sm:text-left lg:text-center">
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 relative group mx-auto">
-                          <div className={`absolute inset-0 ${challenge.cardGlow} rounded-full filter blur-xl transform group-hover:scale-110 transition-transform`} />
-                          <img
-                            src={challenge.illustration}
-                            alt={challenge.illustrationAlt}
-                            className="w-full h-full object-contain relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300"
-                          />
-                        </div>
-
-                        <div className="space-y-1 w-full">
-                          {challenge.isCompleted ? (
-                            <span className="bg-emerald-100 text-emerald-800 border border-emerald-300 font-mono font-black text-[11px] px-3 py-1 rounded-full shadow-2xs inline-block">
-                              DIASPORA VERIFIED ✓
-                            </span>
-                          ) : (
-                            <span className="bg-red-100 text-red-700 font-brand font-black text-[11px] px-3 py-1 rounded-full border border-red-200 inline-block">
-                              ⚡ S-RANK BOUNTY
-                            </span>
-                          )}
-                          <span className="text-[10px] font-bold text-slate-400 block">
-                            Standar Visa Rekrutmen
-                          </span>
-                        </div>
+                    {/* Left: Indicator & Track Info */}
+                    <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
+                      <div className="w-12 h-12 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-blue-400 transition-all text-2xl shadow-2xs">
+                        {challenge.icon}
                       </div>
 
-                      {/* Middle: Mission Briefing, Tags & Tech Deliverables */}
-                      <div className="flex-1 min-w-0 space-y-3.5 border-t lg:border-t-0 lg:border-l border-slate-100 pt-4 lg:pt-0 lg:pl-6">
-                        <div className="space-y-1.5">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span className={`font-brand font-black text-[11px] px-2.5 py-0.5 rounded-lg border ${challenge.sponsorBadgeBg}`}>
-                              {challenge.sponsorTag}
-                            </span>
-                            <span className="text-[11px] font-bold text-slate-400">
-                              • Capstone Portofolio
-                            </span>
-                          </div>
-
-                          <h4 className="font-black text-base sm:text-lg text-[#0F172A] leading-snug">
-                            {challenge.title}
-                          </h4>
-
-                          <p className="text-xs text-slate-600 leading-relaxed">
-                            {challenge.subtitle}
-                          </p>
-                        </div>
-
-                        {/* Deliverables Checklist */}
-                        <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-3.5 space-y-2">
-                          <span className="text-[10px] font-black text-slate-500 uppercase tracking-wider block">
-                            Target Output Industri (Deliverables):
+                      <div className="space-y-1.5 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-md border uppercase tracking-wider ${challenge.sponsorBadgeBg}`}>
+                            {challenge.sponsorTag}
                           </span>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-semibold text-slate-700">
-                            {challenge.deliverables.map((item, dIdx) => (
-                              <div key={dIdx} className="flex items-center gap-2">
-                                <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500 shrink-0" />
-                                <span className="truncate">{item}</span>
-                              </div>
-                            ))}
-                          </div>
+                          <span className="text-slate-300">•</span>
+                          <span className="text-[11px] font-bold text-slate-400">
+                            S-Rank Capstone
+                          </span>
+                          {challenge.isCompleted && (
+                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                              LULUS KUALIFIKASI ✓
+                            </span>
+                          )}
                         </div>
 
-                        {/* Tech tags */}
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {challenge.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="bg-slate-100 text-slate-700 font-mono font-bold text-[10px] px-2.5 py-0.5 rounded-md border border-slate-200"
-                            >
-                              {tag}
+                        <h4 className="font-black text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors">
+                          {challenge.title}
+                        </h4>
+
+                        <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
+                          {challenge.subtitle}
+                        </p>
+
+                        {/* Tech Tags Minimal Row */}
+                        <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
+                          {challenge.tags.map((t) => (
+                            <span key={t} className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">
+                              {t}
                             </span>
                           ))}
                         </div>
                       </div>
+                    </div>
 
-                      {/* Right: Bounty Rewards & Action Button Panel */}
-                      <div className="shrink-0 flex flex-col justify-between items-center sm:items-end lg:items-center bg-slate-50/80 border-2 border-slate-200/80 rounded-2xl p-4 lg:w-48 space-y-3.5 text-center">
-                        <div className="space-y-1 w-full">
-                          <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
-                            Bounty Kelulusan
-                          </span>
-                          <div className="flex flex-col gap-1 items-center justify-center">
-                            <span className="text-sm font-black text-amber-600">
-                              ⚡ +{challenge.xp_reward} XP
-                            </span>
-                            <span className="text-sm font-black text-blue-600">
-                              💎 +{challenge.gem_reward} Gems
-                            </span>
-                          </div>
+                    {/* Right: Bounty & Tactile Action */}
+                    <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
+                      <div className="text-left md:text-right">
+                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                          Bounty
                         </div>
+                        <div className="flex md:flex-col items-center md:items-end gap-1.5 md:gap-0 font-brand font-black text-xs">
+                          <span className="text-amber-600">⚡ +{challenge.xp_reward} XP</span>
+                          <span className="text-blue-600">💎 +{challenge.gem_reward} Gems</span>
+                        </div>
+                      </div>
 
-                        <div className="w-full pt-1">
-                          {challenge.isCompleted ? (
-                            <Button3D
-                              variant="ghost"
-                              size="sm"
-                              fullWidth
-                              onClick={() => navigate(challenge.route)}
-                              className="text-xs py-2 bg-emerald-50 border-emerald-300 text-emerald-700"
-                            >
-                              LIHAT HASIL ✓
-                            </Button3D>
-                          ) : (
-                            <Button3D
-                              variant="blue"
-                              size="sm"
-                              fullWidth
-                              onClick={() => navigate(challenge.route)}
-                              className="text-xs py-2.5 font-black shadow-md"
-                            >
-                              {challenge.buttonLabel} ➔
-                            </Button3D>
-                          )}
-                        </div>
+                      <div>
+                        <Button3D
+                          variant={challenge.isCompleted ? 'ghost' : idx === 0 ? 'amber' : 'blue'}
+                          size="sm"
+                          onClick={() => navigate(challenge.route)}
+                          className={`text-xs px-4 py-2 ${challenge.isCompleted ? 'border border-emerald-300 bg-emerald-50 text-emerald-700' : ''}`}
+                        >
+                          {challenge.isCompleted ? 'LIHAT HASIL ✓' : 'MULAI SAYEMBARA ➔'}
+                        </Button3D>
                       </div>
                     </div>
                   </div>
@@ -1156,109 +1067,46 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ══════ SECTION 3: AKIHABARA GEMS ARCADE & GACHA SHOP ══════ */}
+          {/* ══════ SECTION 3: AKIHABARA VENDING RACK (UNIFIED KIOSK SHELF) ══════ */}
           {activeTab === 'shop' && (
-            <div className="space-y-6">
-              {/* ── 1. KODI ARCADE SHOPKEEPER BANNER ── */}
-              <div className="bg-gradient-to-r from-blue-600/10 via-indigo-50/50 to-purple-500/10 border-2 border-blue-300 border-b-[5px] border-b-blue-400 rounded-3xl p-6 sm:p-7 shadow-2xs relative overflow-hidden">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                  {/* Left: Arcade Details */}
-                  <div className="space-y-3 flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-brand font-black text-[11px] px-3 py-1 rounded-full border border-blue-300 bg-blue-100 text-blue-900 uppercase tracking-wider">
-                        AKIHABARA ARCADE &amp; GACHA 🕹️
-                      </span>
-                      <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                        <Sparkle weight="fill" className="w-3.5 h-3.5 text-blue-500" />
-                        <span>Toko Resmi Diaspora Tokyo</span>
-                      </span>
-                    </div>
-
-                    <div className="space-y-1">
-                      <h2 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
-                        Toko Penukaran Gems &amp; Booster
-                      </h2>
-                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-xl">
-                        Tukarkan gems hasil menuntaskan latihan koding dan Boss Quest dengan item proteksi streak, pengganda XP, serta kupon review portofolio diaspora.
-                      </p>
-                    </div>
-
-                    {/* User Gems Vault */}
-                    <div className="flex items-center gap-3 pt-1">
-                      <div className="bg-white border-2 border-blue-300 rounded-2xl px-4 py-2 flex items-center gap-3 shadow-2xs">
-                        <span className="text-2xl">💎</span>
-                        <div>
-                          <span className="text-[10px] font-black text-slate-400 block uppercase tracking-wider">
-                            Brankas Saldo Gems Anda
-                          </span>
-                          <span className="text-base font-black text-blue-700">
-                            {userGems} Gems Tersedia
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+            <div className="space-y-4">
+              {/* Vending Console Top HUD */}
+              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-3xl p-5 sm:p-6 shadow-md border-b-[5px] border-b-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center text-2xl shrink-0 backdrop-blur-xs">
+                    🕹️
                   </div>
-
-                  {/* Right: Kodi Shopkeeper with Speech Bubble */}
-                  <div className="flex flex-col items-center sm:items-end justify-center shrink-0 self-center md:self-auto space-y-2">
-                    <div className="relative bg-white border-2 border-blue-300 rounded-2xl px-4 py-2.5 shadow-2xs text-xs font-brand font-black text-slate-800 leading-snug max-w-xs text-center sm:text-left">
-                      <span>
-                        {userGems >= 20
-                          ? `Irasshaimase! Kamu punya ${userGems} Gems. Mau borong Streak Freeze atau Kupon CV Tokyo hari ini? ✨`
-                          : `Koleksi Gems lebih banyak dengan menyelesaikan Misi Harian & Sayembara Boss ya! 💎`}
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-extrabold text-base sm:text-lg tracking-tight">
+                        Akihabara Tech Kiosk &amp; Vending
+                      </h3>
+                      <span className="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase">
+                        AUTO DISPENSE
                       </span>
-                      <div className="hidden sm:block absolute -bottom-2 right-10 w-3 h-3 bg-white border-b-2 border-r-2 border-blue-300 transform rotate-45" />
                     </div>
+                    <p className="text-xs text-blue-100 max-w-md">
+                      Tukarkan gems sayembara dengan proteksi streak, potion pengganda XP, dan kupon karir Tokyo.
+                    </p>
+                  </div>
+                </div>
 
-                    <div className="w-28 h-28 sm:w-32 sm:h-32 relative group">
-                      <div className="absolute inset-0 bg-blue-400/20 rounded-full filter blur-xl transform group-hover:scale-110 transition-transform" />
-                      <img
-                        src={doodleCoffeeBreak}
-                        alt="Kodi Kasir Arcade Akihabara"
-                        className="w-full h-full object-contain relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300"
-                      />
-                    </div>
+                {/* Live Gems Coin Vault */}
+                <div className="bg-white/15 border-2 border-white/20 rounded-2xl px-4 py-2.5 flex items-center gap-3 shrink-0 self-start sm:self-auto backdrop-blur-xs">
+                  <span className="text-2xl animate-bounce">💎</span>
+                  <div>
+                    <span className="text-[10px] font-black text-blue-200 block uppercase tracking-wider">
+                      Saldo Gems Anda
+                    </span>
+                    <span className="text-base font-black text-amber-300">
+                      {userGems} Gems
+                    </span>
                   </div>
                 </div>
               </div>
 
-              {/* ── 2. USER INVENTORY QUICK POUCH ── */}
-              <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-4 shadow-2xs space-y-2">
-                <div className="flex items-center justify-between text-xs font-brand font-black">
-                  <span className="text-slate-700 flex items-center gap-1.5">
-                    <span>🎒</span>
-                    <span>Tas Inventaris Perlengkapan Anda</span>
-                  </span>
-                  <span className="text-slate-400 text-[11px] font-semibold">
-                    Item aktif otomatis saat dibutuhkan
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
-                  {[
-                    { id: 'streak-freeze', label: 'Streak Freeze', icon: '❄️', count: inventory['streak-freeze'] || 0, color: 'text-blue-700 bg-blue-50 border-blue-200' },
-                    { id: 'xp-booster', label: 'XP Booster 2x', icon: '🧪', count: inventory['xp-booster'] || 0, color: 'text-amber-700 bg-amber-50 border-amber-200' },
-                    { id: 'cv-review', label: 'Kupon CV Tokyo', icon: '📋', count: inventory['cv-review'] || 0, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
-                    { id: 'mock-interview', label: 'VIP Mock Interview', icon: '🎙️', count: inventory['mock-interview'] || 0, color: 'text-purple-700 bg-purple-50 border-purple-200' },
-                  ].map((slot) => (
-                    <div
-                      key={slot.id}
-                      className={`p-2.5 rounded-xl border flex items-center justify-between ${slot.color}`}
-                    >
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-lg">{slot.icon}</span>
-                        <span className="text-[11px] font-black truncate">{slot.label}</span>
-                      </div>
-                      <span className="font-mono font-black text-xs px-2 py-0.5 rounded-md bg-white/80 border border-current shadow-2xs shrink-0">
-                        {slot.count}x
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* ── 3. MERCHANDISE SHOWCASE (2x2 LEGA & TACTILE) ── */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Unified Vending Shelf Rack */}
+              <div className="bg-white border-2 border-slate-200/90 rounded-3xl divide-y-2 divide-slate-100 shadow-2xs overflow-hidden">
                 {SHOP_ITEMS.map((item) => {
                   const ItemIcon = item.icon
                   const ownedCount = inventory[item.id] || 0
@@ -1268,76 +1116,62 @@ export const QuestLogPage = () => {
                   return (
                     <div
                       key={item.id}
-                      className={`bg-white border-2 ${
-                        item.id === 'streak-freeze'
-                          ? 'border-blue-200 border-b-[5px] border-b-blue-400'
-                          : item.id === 'xp-booster'
-                          ? 'border-amber-200 border-b-[5px] border-b-amber-400'
-                          : item.id === 'cv-review'
-                          ? 'border-emerald-200 border-b-[5px] border-b-emerald-400'
-                          : 'border-purple-200 border-b-[5px] border-b-purple-400'
-                      } rounded-3xl p-5 sm:p-6 flex flex-col justify-between space-y-4 shadow-2xs hover:-translate-y-0.5 transition-all`}
+                      className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors group"
                     >
-                      {/* Top Content */}
-                      <div className="space-y-3">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-12 h-12 rounded-2xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-md shrink-0`}
-                            >
-                              <ItemIcon weight="bold" className="w-6 h-6" />
-                            </div>
-                            <div>
-                              <span className={`text-[10px] font-black px-2.5 py-0.5 rounded-md border ${item.badgeColor} uppercase tracking-wider inline-block`}>
-                                {item.badge}
-                              </span>
-                              <h3 className="font-black text-base sm:text-lg text-[#0F172A] mt-0.5">
-                                {item.title}
-                              </h3>
-                            </div>
-                          </div>
-
-                          {/* Owned Pill */}
-                          <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-1 rounded-xl border border-slate-200 shrink-0">
-                            {ownedCount > 0 ? `Dimiliki: ${ownedCount}x` : 'Belum Ada'}
-                          </span>
+                      {/* Left Item Token & Info */}
+                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                        <div
+                          className={`w-12 h-12 rounded-2xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-2xs shrink-0 group-hover:scale-105 transition-transform`}
+                        >
+                          <ItemIcon weight="bold" className="w-6 h-6" />
                         </div>
 
-                        <p className="text-xs text-slate-600 leading-relaxed">
-                          {item.subtitle}
-                        </p>
+                        <div className="space-y-0.5 min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-black text-sm sm:text-base text-slate-900">
+                              {item.title}
+                            </h4>
+                            <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${item.badgeColor} uppercase tracking-wider`}>
+                              {item.badge}
+                            </span>
+                          </div>
+
+                          <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                            {item.subtitle}
+                          </p>
+                        </div>
                       </div>
 
-                      {/* Bottom Action Bar */}
-                      <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-lg">💎</span>
-                          <span className="font-black text-base text-blue-700">
-                            {item.price} <span className="text-xs font-bold text-slate-400 uppercase">Gems</span>
+                      {/* Right: Stock Counter & Purchase Button */}
+                      <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                        <div className="text-left sm:text-right">
+                          <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                            Stok Tas
+                          </span>
+                          <span className="font-mono font-black text-xs text-slate-700">
+                            {ownedCount > 0 ? `${ownedCount}x Dimiliki` : 'Belum Ada'}
                           </span>
                         </div>
 
                         <div>
-                          {isAffordable ? (
-                            <Button3D
-                              variant={item.id === 'cv-review' ? 'emerald' : item.id === 'xp-booster' ? 'amber' : 'blue'}
-                              size="sm"
-                              onClick={() => handlePurchaseShopItem(item)}
-                              className="text-xs px-5 py-2 shadow-md animate-pulse hover:animate-none"
-                            >
-                              TUKAR REWARD 💎
-                            </Button3D>
-                          ) : (
-                            <Button3D
-                              variant="ghost"
-                              size="sm"
-                              disabled
-                              className="text-xs px-4 py-2 bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed"
-                              title={`Kurang ${missingGems} Gems lagi`}
-                            >
-                              Kurang {missingGems} 💎 Lagi 🔒
-                            </Button3D>
-                          )}
+                          <Button3D
+                            variant={isAffordable ? 'blue' : 'ghost'}
+                            size="sm"
+                            onClick={() => handlePurchaseShopItem(item)}
+                            disabled={!isAffordable}
+                            className={`text-xs px-4 py-2 min-w-[130px] ${
+                              !isAffordable ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : ''
+                            }`}
+                          >
+                            {isAffordable ? (
+                              <span className="flex items-center gap-1.5">
+                                <span>TUKAR</span>
+                                <span className="font-mono font-black">💎 {item.price}</span>
+                              </span>
+                            ) : (
+                              <span>Kurang {missingGems} 💎</span>
+                            )}
+                          </Button3D>
                         </div>
                       </div>
                     </div>
