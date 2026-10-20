@@ -231,7 +231,7 @@ export const RoadmapPage = () => {
       {/* ── 2. MAIN APP CANVAS (CENTER STAGE + RIGHT SIDEBAR) ── */}
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
         {/* ══════ CENTER CONTENT STAGE ══════ */}
-        <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 pb-12 space-y-6">
+        <main className="flex-1 min-w-0 px-3.5 sm:px-8 py-5 sm:py-6 pb-12 space-y-6">
           {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - GameTopBar) ── */}
           <GameTopBar
             activeTrack={activeTrack}
@@ -280,7 +280,7 @@ export const RoadmapPage = () => {
                 >
                   {/* ── DUOLINGO 3D UNIT BANNER HEADER ── */}
                   <div
-                    className={`p-5 sm:p-6 transition-all ${
+                    className={`p-4 sm:p-6 transition-all ${
                       isUnitCompleted
                         ? 'bg-gradient-to-r from-emerald-600 via-emerald-700 to-teal-800 text-white border-b-[5px] border-emerald-900'
                         : isUnitActive
@@ -288,7 +288,7 @@ export const RoadmapPage = () => {
                         : 'bg-slate-100 text-slate-800 border-b-[4px] border-slate-300'
                     }`}
                   >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
                       <div className="space-y-1.5 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span
@@ -322,7 +322,7 @@ export const RoadmapPage = () => {
                         </div>
 
                         <h3
-                          className={`font-brand font-black text-lg sm:text-xl tracking-tight ${
+                          className={`font-brand font-black text-lg sm:text-xl tracking-tight leading-snug ${
                             isUnitCompleted || isUnitActive ? 'text-white' : 'text-slate-900'
                           }`}
                         >
@@ -337,45 +337,46 @@ export const RoadmapPage = () => {
                         </p>
                       </div>
 
-                      {/* Guidebook Button (Subtask 33.1) */}
-                      <button
-                        type="button"
-                        onClick={() => handleOpenGuidebook(unit)}
-                        className={`self-start sm:self-center px-4 py-2 rounded-xl text-xs font-brand font-bold transition-all flex items-center gap-2 cursor-pointer shrink-0 shadow-2xs ${
-                          isUnitCompleted || isUnitActive
-                            ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25 active:translate-y-0.5'
-                            : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 active:translate-y-0.5'
-                        }`}
-                        title="Buka ringkasan teori, sintaks kode, dan kosakata unit"
-                      >
-                        <BookOpen weight="bold" className="w-4 h-4" />
-                        <span>Buku Panduan Unit</span>
-                      </button>
+                      {/* Action Buttons Row: Guidebook & Collapse toggle together! */}
+                      <div className="flex items-center gap-2 self-stretch sm:self-center shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenGuidebook(unit)}
+                          className={`flex-1 sm:flex-initial px-3.5 sm:px-4 py-2 rounded-xl text-xs font-brand font-bold transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0 shadow-2xs ${
+                            isUnitCompleted || isUnitActive
+                              ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25 active:translate-y-0.5'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 active:translate-y-0.5'
+                          }`}
+                          title="Buka ringkasan teori, sintaks kode, dan kosakata unit"
+                        >
+                          <BookOpen weight="bold" className="w-4 h-4 shrink-0" />
+                          <span>Buku Panduan Unit</span>
+                        </button>
 
-                      {/* Expand / Collapse Button (Subtask 33.3) */}
-                      <button
-                        type="button"
-                        onClick={() => toggleUnitCollapse(unit.id)}
-                        className={`self-start sm:self-center p-2 rounded-xl text-xs transition-all flex items-center justify-center cursor-pointer shrink-0 ${
-                          isUnitCompleted || isUnitActive
-                            ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25'
-                            : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300'
-                        }`}
-                        title={collapsedUnitIds.has(unit.id) ? 'Buka Sesi Unit' : 'Lipat Sesi Unit'}
-                      >
-                        {collapsedUnitIds.has(unit.id) ? (
-                          <CaretDown weight="bold" className="w-4 h-4" />
-                        ) : (
-                          <CaretUp weight="bold" className="w-4 h-4" />
-                        )}
-                      </button>
+                        <button
+                          type="button"
+                          onClick={() => toggleUnitCollapse(unit.id)}
+                          className={`p-2 rounded-xl text-xs transition-all flex items-center justify-center cursor-pointer shrink-0 shadow-2xs ${
+                            isUnitCompleted || isUnitActive
+                              ? 'bg-white/15 hover:bg-white/25 text-white border border-white/25 active:scale-95'
+                              : 'bg-white hover:bg-slate-50 text-slate-700 border border-slate-300 active:scale-95'
+                          }`}
+                          title={collapsedUnitIds.has(unit.id) ? 'Buka Sesi Unit' : 'Lipat Sesi Unit'}
+                        >
+                          {collapsedUnitIds.has(unit.id) ? (
+                            <CaretDown weight="bold" className="w-4 h-4" />
+                          ) : (
+                            <CaretUp weight="bold" className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
                     </div>
 
                     {/* 3D Segmented Progress Bar */}
-                    <div className="mt-4 pt-3 border-t border-white/15 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="mt-3.5 pt-3 border-t border-white/15 flex items-center justify-between gap-3">
                       <div className="flex-1 max-w-md">
                         <div
-                          className={`h-3 rounded-full overflow-hidden p-0.5 border ${
+                          className={`h-2.5 sm:h-3 rounded-full overflow-hidden p-0.5 border ${
                             isUnitCompleted || isUnitActive
                               ? 'bg-black/25 border-white/20'
                               : 'bg-slate-200 border-slate-300'
@@ -394,18 +395,18 @@ export const RoadmapPage = () => {
                         </div>
                       </div>
                       <span
-                        className={`text-xs font-brand font-black shrink-0 ${
+                        className={`text-xs font-brand font-black shrink-0 whitespace-nowrap ${
                           isUnitCompleted || isUnitActive ? 'text-white' : 'text-slate-600'
                         }`}
                       >
-                        {unitCompletedCount}/{unitParts.length} Sesi Selesai ({unitPercent}%)
+                        {unitCompletedCount}/{unitParts.length} Sesi ({unitPercent}%)
                       </span>
                     </div>
                   </div>
 
                   {/* ── SEQUENTIAL PART BREAKDOWN (COLLAPSIBLE - Subtask 33.3) ── */}
                   {!collapsedUnitIds.has(unit.id) && (
-                    <div className="p-4 sm:p-5 space-y-3 bg-white">
+                    <div className="p-3 sm:p-5 space-y-2.5 sm:space-y-3 bg-white">
                       {unitParts.map((part) => {
                         const isCompleted = completedQuestsSet.has(part.id)
                         const isNextActive = part.id === nextActivePart?.id
@@ -414,7 +415,7 @@ export const RoadmapPage = () => {
                         return (
                           <div
                             key={part.id}
-                            className={`p-4 sm:p-4.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 ${
+                            className={`p-3.5 sm:p-4.5 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4 transition-all duration-200 ${
                               isCompleted
                                 ? 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
                                 : isNextActive
@@ -427,29 +428,29 @@ export const RoadmapPage = () => {
                             }`}
                           >
                           {/* Left: 3D Tactile Token Cube + Details */}
-                          <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+                          <div className="flex items-start sm:items-center gap-3 min-w-0">
                             {/* 3D Tactile Token Cube */}
                             <div
-                              className={`w-11 h-11 sm:w-12 sm:h-12 rounded-2xl flex items-center justify-center shrink-0 transition-transform ${
+                              className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center shrink-0 transition-transform ${
                                 isCompleted
-                                  ? 'bg-emerald-500 border-2 border-emerald-300 text-white shadow-[0_3.5px_0_0_#047857]'
+                                  ? 'bg-emerald-500 border-2 border-emerald-300 text-white shadow-[0_3px_0_0_#047857] sm:shadow-[0_3.5px_0_0_#047857]'
                                   : isNextActive
-                                  ? 'bg-blue-600 border-2 border-blue-400 text-white shadow-[0_3.5px_0_0_#1D4ED8] animate-pulse'
+                                  ? 'bg-blue-600 border-2 border-blue-400 text-white shadow-[0_3px_0_0_#1D4ED8] sm:shadow-[0_3.5px_0_0_#1D4ED8] animate-pulse'
                                   : 'bg-slate-100 border-2 border-slate-200 text-slate-400'
                               }`}
                             >
                               {isCompleted ? (
                                 <CheckFat weight="fill" className="w-5 h-5 sm:w-6 sm:h-6 text-white drop-shadow-xs" />
                               ) : isNextActive ? (
-                                <span className="font-brand font-black text-base sm:text-lg text-white">
+                                <span className="font-brand font-black text-sm sm:text-lg text-white">
                                   {part.globalPartNumber}
                                 </span>
                               ) : (
-                                <LockSimple weight="bold" className="w-5 h-5 text-slate-400" />
+                                <LockSimple weight="bold" className="w-4 h-4 sm:w-5 sm:h-5 text-slate-400" />
                               )}
                             </div>
 
-                            <div className="space-y-0.5 min-w-0">
+                            <div className="space-y-0.5 min-w-0 flex-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span
                                   className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md ${
@@ -470,29 +471,29 @@ export const RoadmapPage = () => {
                               </div>
 
                               <h4
-                                className={`text-sm sm:text-base font-brand font-bold tracking-tight truncate ${
+                                className={`text-xs sm:text-base font-brand font-bold tracking-tight leading-snug line-clamp-2 ${
                                   isNextActive ? 'text-blue-950 font-black' : 'text-slate-900'
                                 }`}
                               >
                                 Part {part.globalPartNumber}: {part.title}
                               </h4>
 
-                              <p className="text-xs text-slate-500 font-medium truncate">
+                              <p className="text-[11px] sm:text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">
                                 {part.subtitle} • {part.difficulty} • ⏱️ Estimasi {part.estimatedMinutes} Menit
                               </p>
                             </div>
                           </div>
 
                           {/* Right: XP Chip & Tactile Action */}
-                          <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-                            <span className="bg-amber-50 text-amber-900 border border-amber-300 font-brand font-black text-xs px-2.5 py-1 rounded-xl shadow-2xs flex items-center gap-1">
+                          <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                            <span className="bg-amber-50 text-amber-900 border border-amber-300 font-brand font-black text-[11px] sm:text-xs px-2.5 py-1 rounded-xl shadow-2xs flex items-center gap-1">
                               <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-600" />
                               <span>+{part.xpReward} XP</span>
                             </span>
 
                             {isCompleted ? (
-                              <div className="px-3.5 py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-brand font-black text-xs flex items-center gap-1.5 shadow-[0_2px_0_0_#A7F3D0]">
-                                <CheckFat weight="fill" className="w-4 h-4 text-emerald-600" />
+                              <div className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-brand font-black text-xs flex items-center gap-1.5 shadow-[0_2px_0_0_#A7F3D0]">
+                                <CheckFat weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
                                 <span>SELESAI</span>
                               </div>
                             ) : isUnlocked ? (
@@ -503,7 +504,7 @@ export const RoadmapPage = () => {
                                   triggerHaptic('success')
                                   navigate(part.route)
                                 }}
-                                className="text-xs px-5 py-2.5 shadow-[0_3.5px_0_0_#1D4ED8] font-brand font-black"
+                                className="text-xs px-4 sm:px-5 py-2 sm:py-2.5 shadow-[0_3px_0_0_#1D4ED8] sm:shadow-[0_3.5px_0_0_#1D4ED8] font-brand font-black"
                               >
                                 <div className="flex items-center gap-1.5">
                                   <Play weight="fill" className="w-3.5 h-3.5" />
@@ -514,7 +515,7 @@ export const RoadmapPage = () => {
                               <button
                                 type="button"
                                 onClick={() => handleLockedNodeClick(part.title)}
-                                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+                                className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
                                 title="Modul ini masih terkunci. Klik untuk informasi."
                               >
                                 <LockSimple weight="bold" className="w-3.5 h-3.5" />
