@@ -118,8 +118,8 @@ export const QuestCompletePage = () => {
             </p>
           </div>
 
-          {/* 2. 3 Reward Pills */}
-          <div className="grid grid-cols-3 gap-3">
+          {/* 2. Reward Pills */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
             <div className="p-3 rounded-2xl bg-blue-50 border border-blue-200 flex flex-col items-center justify-center space-y-0.5">
               <Lightning weight="fill" className="w-4 h-4 text-[#2563EB]" />
               <span className="font-mono font-black text-sm sm:text-base text-[#2563EB]">
@@ -129,11 +129,19 @@ export const QuestCompletePage = () => {
             </div>
 
             <div className="p-3 rounded-2xl bg-emerald-50 border border-emerald-200 flex flex-col items-center justify-center space-y-0.5">
-              <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+              <span className="text-sm">💎</span>
               <span className="font-mono font-black text-sm sm:text-base text-emerald-700">
+                +{submitResult?.gems_awarded ?? 10}
+              </span>
+              <span className="text-[10px] font-bold text-emerald-800">Gems Tokyo</span>
+            </div>
+
+            <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 flex flex-col items-center justify-center space-y-0.5">
+              <CheckCircle weight="fill" className="w-4 h-4 text-sky-600" />
+              <span className="font-mono font-black text-sm sm:text-base text-sky-700">
                 100%
               </span>
-              <span className="text-[10px] font-bold text-emerald-800">Semua Tes Lolos</span>
+              <span className="text-[10px] font-bold text-sky-800">Semua Tes Lolos</span>
             </div>
 
             <div className="p-3 rounded-2xl bg-amber-50 border border-amber-200 flex flex-col items-center justify-center space-y-0.5">
@@ -168,6 +176,38 @@ export const QuestCompletePage = () => {
               <span className="font-bold text-[#0F172A]">Tingkat Kesiapan Kerja: {readinessScore}%</span>
               <span>Target Job Ready: 85%</span>
             </div>
+          </div>
+
+          {/* 3.5. Tokyo League Leaderboard Boost */}
+          <div className="p-3.5 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-yellow-500/10 border border-amber-200 text-left flex items-center justify-between gap-3 shadow-2xs">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-brand font-black text-xs shrink-0 shadow-2xs">
+                🏆
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <span className="font-brand font-black text-xs text-amber-950">
+                    Tokyo League: +{xpEarned} XP
+                  </span>
+                  <span className="bg-amber-200/80 text-amber-900 font-mono font-bold text-[9px] px-1.5 py-0.2 rounded">
+                    Weekly Rank
+                  </span>
+                </div>
+                <p className="text-[11px] text-amber-800 font-medium truncate">
+                  XP otomatis dihitung ke klasemen liga mingguan Anda untuk promosi divisi!
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                navigate('/leaderboard')
+              }}
+              className="text-[11px] font-brand font-black text-blue-600 hover:text-blue-700 underline shrink-0 cursor-pointer"
+            >
+              Lihat Klasemen →
+            </button>
           </div>
 
           {/* 4. Nihongo Passport Note */}

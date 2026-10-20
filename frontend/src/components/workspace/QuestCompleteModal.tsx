@@ -94,7 +94,7 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
           <div className="p-3 rounded-2xl bg-[#F0FDF4] border border-emerald-200 flex flex-col items-center justify-center space-y-0.5 shadow-2xs">
             <span className="text-sm">💎</span>
             <span className="font-mono font-black text-sm sm:text-base text-[#059669]">
-              +10 Gems
+              +{submitResult?.gems_awarded ?? 10} Gems
             </span>
             <span className="text-[10px] font-bold text-[#047857]">Gems Tokyo</span>
           </div>
@@ -143,6 +143,38 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
             </span>
             <span>Target Sponsor Visa: 85%</span>
           </div>
+        </div>
+
+        {/* ── 3.5. TOKYO LEAGUE LEADERBOARD BOOST ── */}
+        <div className="p-3 rounded-2xl bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-yellow-500/10 border border-amber-200 text-left flex items-center justify-between gap-3 shadow-2xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-brand font-black text-xs shrink-0 shadow-2xs">
+              🏆
+            </div>
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5">
+                <span className="font-brand font-black text-xs text-amber-950">
+                  Tokyo League: +{xpEarned} XP
+                </span>
+                <span className="bg-amber-200/80 text-amber-900 font-mono font-bold text-[9px] px-1.5 py-0.2 rounded">
+                  Weekly Rank
+                </span>
+              </div>
+              <p className="text-[11px] text-amber-800 font-medium truncate">
+                Mendongkrak peringkat liga mingguan Anda menuju zona promosi!
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onClose()
+              navigate('/leaderboard')
+            }}
+            className="text-[11px] font-brand font-black text-blue-600 hover:text-blue-700 underline shrink-0 cursor-pointer"
+          >
+            Lihat Klasemen →
+          </button>
         </div>
 
         {/* ── 4. NIHONGO VOCABULARY PASSPORT ── */}

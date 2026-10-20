@@ -187,6 +187,37 @@ export const TokyoLeaderboardModal = ({
           </div>
         </div>
 
+        {/* ── 3.5. WEEKLY PRIZE POOL BANNER ── */}
+        <div className="mx-4 sm:mx-6 my-2.5 p-3 bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-yellow-500/10 border border-amber-300/80 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-amber-400 text-amber-950 flex items-center justify-center font-brand font-black text-xs shrink-0 shadow-2xs">
+              <Trophy weight="fill" className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-[11px] font-brand font-black text-amber-950 uppercase tracking-wider flex items-center gap-1.5">
+                <span>Hadiah Musim Minggu #{leaderboard?.season_week ?? 42}</span>
+                <span className="text-[10px] bg-amber-200/80 text-amber-900 px-1.5 py-0.2 rounded-md font-mono">
+                  {leaderboard?.days_remaining ?? 5} Hari Lagi
+                </span>
+              </div>
+              <div className="text-[10px] text-amber-800 font-medium">
+                Selesai Minggu 23:59 JST • Top 3 otomatis dapat bonus Gems Tokyo & promosi divisi!
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] font-mono font-bold shrink-0 self-end sm:self-auto">
+            <span className="bg-amber-100 border border-amber-300 text-amber-900 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs">
+              🥇 +100 💎
+            </span>
+            <span className="bg-slate-100 border border-slate-300 text-slate-800 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs">
+              🥈 +50 💎
+            </span>
+            <span className="bg-amber-50 border border-amber-200 text-amber-800 px-2 py-0.5 rounded-lg flex items-center gap-1 shadow-2xs">
+              🥉 +25 💎
+            </span>
+          </div>
+        </div>
+
         {/* ── 4. LEADERBOARD COMPETITOR LIST ── */}
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-2.5 bg-[#FAFAF9]">
           {loading ? (
@@ -268,13 +299,18 @@ export const TokyoLeaderboardModal = ({
                     </div>
                   </div>
 
-                  {/* Right: XP Score */}
-                  <div className="text-right shrink-0">
+                  {/* Right: XP Score & Reward Badge */}
+                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
                     <div className="flex items-center gap-1 justify-end font-brand font-black text-sm text-slate-900">
                       <Star weight="fill" className="w-3.5 h-3.5 text-amber-400" />
                       <span>{entry.weekly_xp}</span>
                       <span className="text-[10px] font-mono text-slate-400">XP</span>
                     </div>
+                    {isTop3 && (
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
+                        💎 +{entry.rank === 1 ? '100' : entry.rank === 2 ? '50' : '25'}
+                      </span>
+                    )}
                   </div>
                 </div>
               )

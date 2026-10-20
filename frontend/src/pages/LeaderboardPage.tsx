@@ -185,6 +185,42 @@ export const LeaderboardPage = () => {
             </div>
           </div>
 
+          {/* ── WEEKLY SEASON PRIZE POOL BANNER ── */}
+          <div className="bg-gradient-to-r from-amber-500/10 via-amber-400/10 to-yellow-500/10 border-2 border-amber-300/80 rounded-3xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-amber-400 text-amber-950 flex items-center justify-center font-brand font-black text-base shrink-0 shadow-xs">
+                <Trophy weight="fill" className="w-5 h-5" />
+              </div>
+              <div className="space-y-0.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-brand font-black text-amber-950 uppercase tracking-wider">
+                    Pool Hadiah Musim #{leaderboard?.season_week ?? 42}
+                  </span>
+                  <span className="text-[10px] font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">
+                    {leaderboard?.days_remaining ?? 5} Hari Tersisa
+                  </span>
+                </div>
+                <p className="text-xs text-amber-800 font-medium">
+                  Raih Top 3 di akhir pekan untuk memenangkan Gems Tokyo dan tiket promosi otomatis ke divisi berikutnya!
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-mono font-bold shrink-0 self-end sm:self-auto">
+              <div className="flex items-center gap-1 bg-amber-100 border border-amber-300 text-amber-900 px-3 py-1.5 rounded-xl shadow-2xs">
+                <span>🥇</span>
+                <span>+100 💎</span>
+              </div>
+              <div className="flex items-center gap-1 bg-slate-100 border border-slate-300 text-slate-800 px-3 py-1.5 rounded-xl shadow-2xs">
+                <span>🥈</span>
+                <span>+50 💎</span>
+              </div>
+              <div className="flex items-center gap-1 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-xl shadow-2xs">
+                <span>🥉</span>
+                <span>+25 💎</span>
+              </div>
+            </div>
+          </div>
+
           {/* ── LEADERBOARD TABLE ROWS ── */}
           <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-4 sm:p-6 space-y-2.5 shadow-xs">
             {loading ? (
@@ -266,13 +302,18 @@ export const LeaderboardPage = () => {
                       </div>
                     </div>
 
-                    {/* Right: XP Score */}
-                    <div className="text-right shrink-0">
+                    {/* Right: XP Score & Reward Badge */}
+                    <div className="text-right shrink-0 flex flex-col items-end gap-1">
                       <div className="flex items-center gap-1.5 justify-end font-brand font-black text-sm sm:text-base text-slate-900">
                         <Star weight="fill" className="w-4 h-4 text-amber-400" />
                         <span>{entry.weekly_xp}</span>
                         <span className="text-[10px] font-mono text-slate-400">XP</span>
                       </div>
+                      {isTop3 && (
+                        <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
+                          💎 +{entry.rank === 1 ? '100' : entry.rank === 2 ? '50' : '25'} Gems
+                        </span>
+                      )}
                     </div>
                   </div>
                 )
