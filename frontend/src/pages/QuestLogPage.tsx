@@ -756,15 +756,13 @@ export const QuestLogPage = () => {
     let challenges = [
       {
         id: 'boss-worker-pool',
-        title: 'High-Concurrency Worker Pool Engine (Mercari Tokyo Spec)',
+        title: 'High-Concurrency Worker Pool Engine',
         subtitle:
           'Pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
-        tags: ['GOLANG', 'HIGH CONCURRENCY', 'MERCARI SPEC'],
+        tags: ['GOLANG', 'HIGH CONCURRENCY', 'WORKER POOL'],
         icon: '🔥',
         xp_reward: 250,
         gem_reward: 50,
-        sponsorTag: 'MERCARI TOKYO LABS 🇯🇵',
-        sponsorBadgeBg: 'bg-red-50 text-red-700 border-red-200',
         route: '/learn/part-7-worker-pool-concurrency',
         isCompleted:
           completedQuestsSet.has('part-7-worker-pool-concurrency') ||
@@ -779,8 +777,6 @@ export const QuestLogPage = () => {
         icon: '🏛️',
         xp_reward: 500,
         gem_reward: 100,
-        sponsorTag: 'RAKUTEN SYMPHONY 🌟',
-        sponsorBadgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
         route: '/learn/part-11-clean-architecture-repository',
         isCompleted:
           completedQuestsSet.has('part-11-clean-architecture-repository') ||
@@ -802,23 +798,20 @@ export const QuestLogPage = () => {
           completedQuestsSet.has(q.id) ||
           completedQuestsSet.has(curriculumId)
 
+        const cleanTitle = q.title.replace(/\s*\(Mercari Tokyo Spec\)/gi, '')
+
         return {
           id: q.id,
-          title: q.title,
+          title: cleanTitle,
           subtitle:
             q.description ||
-            'Tantangan arsitektur backend berskala tinggi standar perusahaan teknologi Tokyo.',
+            'Tantangan arsitektur backend berskala tinggi standar industri modern.',
           tags: isWorkerPool
-            ? ['GOLANG', 'HIGH CONCURRENCY', 'MERCARI SPEC']
+            ? ['GOLANG', 'HIGH CONCURRENCY', 'WORKER POOL']
             : ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER'],
           icon: isWorkerPool ? '🔥' : '🏛️',
           xp_reward: q.xp_reward,
           gem_reward: Math.round(q.xp_reward / 5),
-          sponsorTag:
-            q.chip_label || (isWorkerPool ? 'MERCARI TOKYO LABS 🇯🇵' : 'RAKUTEN SYMPHONY 🌟'),
-          sponsorBadgeBg: isWorkerPool
-            ? 'bg-red-50 text-red-700 border-red-200'
-            : 'bg-purple-50 text-purple-700 border-purple-200',
           route,
           isCompleted: isDone,
         }
@@ -1428,12 +1421,8 @@ export const QuestLogPage = () => {
 
                       <div className="space-y-1.5 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className={`text-[10px] font-black font-mono px-2 py-0.5 rounded-md border uppercase tracking-wider ${challenge.sponsorBadgeBg}`}>
-                            {challenge.sponsorTag}
-                          </span>
-                          <span className="text-slate-300">•</span>
-                          <span className="text-[11px] font-bold text-slate-400">
-                            S-Rank Capstone
+                          <span className="text-[10px] font-black font-mono px-2.5 py-0.5 rounded-md border border-amber-300 bg-amber-50 text-amber-800 uppercase tracking-wider flex items-center gap-1 shadow-2xs">
+                            🏆 S-Rank Capstone
                           </span>
                           {challenge.isCompleted && (
                             <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
