@@ -398,6 +398,59 @@ body {
   animation: pulse-ring 1.2s cubic-bezier(0.24, 0, 0.38, 1);
 }
 
+/* ── DUOLINGO SPRING SLIDE-OVER DRAWER & BACKDROP ANIMATIONS ── */
+@keyframes drawer-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes drawer-slide-out {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes backdrop-fade-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.animate-drawer-in {
+  animation: drawer-slide-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-drawer-out {
+  animation: drawer-slide-out 0.22s cubic-bezier(0.4, 0, 1, 1) forwards;
+}
+
+.animate-backdrop-in {
+  animation: backdrop-fade-in 0.28s ease-out forwards;
+}
+
+.animate-backdrop-out {
+  animation: backdrop-fade-out 0.22s ease-in forwards;
+}
+
 /* ── SLIM CUSTOM SCROLLBAR FOR DESKTOP SIDEBAR RAILS ── */
 .custom-scrollbar::-webkit-scrollbar {
   width: 5px;

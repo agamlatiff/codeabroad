@@ -633,6 +633,16 @@ export const GameSidebarRail = ({
     </>
   )
 
+  const [isClosingDrawer, setIsClosingDrawer] = useState(false)
+
+  const handleCloseMobileDrawer = () => {
+    setIsClosingDrawer(true)
+    setTimeout(() => {
+      setIsClosingDrawer(false)
+      onCloseMobileDrawer?.()
+    }, 220)
+  }
+
   return (
     <>
       {/* ── DESKTOP STICKY RIGHT RAIL (XL & UP) ── */}
@@ -643,16 +653,22 @@ export const GameSidebarRail = ({
       </aside>
 
       {/* ── MOBILE & TABLET SLIDE-OVER DRAWER (SSOT - PORTAL) ── */}
-      {isMobileDrawerOpen && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-50 flex justify-end animate-fade-in">
+      {(isMobileDrawerOpen || isClosingDrawer) && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 flex justify-end">
           {/* Backdrop blur overlay */}
           <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
-            onClick={onCloseMobileDrawer}
+            className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity ${
+              isClosingDrawer ? 'animate-backdrop-out' : 'animate-backdrop-in'
+            }`}
+            onClick={handleCloseMobileDrawer}
           />
 
           {/* Slide-over Drawer Panel */}
-          <div className="relative w-full max-w-[360px] sm:max-w-[390px] h-full bg-white shadow-2xl flex flex-col z-10 border-l border-slate-200 animate-slide-in-right overflow-hidden">
+          <div
+            className={`relative w-full max-w-[360px] sm:max-w-[390px] h-full bg-white shadow-2xl flex flex-col z-10 border-l border-slate-200 overflow-hidden ${
+              isClosingDrawer ? 'animate-drawer-out' : 'animate-drawer-in'
+            }`}
+          >
             {/* Drawer Header */}
             <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200/90 bg-white shrink-0">
               <div className="flex items-center gap-2">
@@ -672,7 +688,7 @@ export const GameSidebarRail = ({
                 type="button"
                 onClick={() => {
                   triggerHaptic('tap')
-                  onCloseMobileDrawer?.()
+                  handleCloseMobileDrawer()
                 }}
                 className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer transition-colors active:scale-90"
                 aria-label="Tutup Menu Hadiah"

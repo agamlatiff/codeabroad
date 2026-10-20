@@ -132,6 +132,17 @@ export const GameTopBar = ({
     )
   }, [activeTrack])
 
+  // Compact track title for small viewports (Mobile < sm)
+  const shortTrackTitle = useMemo(() => {
+    const t = currentTrackConfig.title
+    if (t.includes('Backend')) return 'Backend Go'
+    if (t.includes('Frontend')) return 'Frontend React'
+    if (t.includes('DevOps')) return 'DevOps AWS'
+    if (t.includes('Fundamental')) return 'Fundamental'
+    if (t.includes('Nihongo')) return 'Tech Nihongo'
+    return t
+  }, [currentTrackConfig.title])
+
   return (
     <div className="flex flex-col gap-2.5 sm:gap-3">
       {/* ── TOP / MAIN ROW: TRACK SWITCHER (LEFT) & GAME HUD CHIPS (RIGHT) ── */}
@@ -154,8 +165,9 @@ export const GameTopBar = ({
               {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
               {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
             </div>
-            <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate max-w-[105px] sm:max-w-[160px] md:max-w-[200px] xl:max-w-none">
-              {currentTrackConfig.title}
+            <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
+              <span className="sm:hidden">{shortTrackTitle}</span>
+              <span className="hidden sm:inline">{currentTrackConfig.title}</span>
             </span>
             <CaretDown weight="bold" className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
           </button>
@@ -211,9 +223,9 @@ export const GameTopBar = ({
             <span>{userGems}</span>
           </div>
 
-          {/* XP Star Chip */}
+          {/* XP Star Chip (Hidden on mobile < sm to keep top bar clean and spacious) */}
           <div
-            className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
+            className={`hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
               isXpPulsing ? 'animate-pulse-ring bg-amber-100 scale-105' : ''
             }`}
             title={`Total Pengalaman Koding: ${userXp} XP`}
@@ -234,14 +246,14 @@ export const GameTopBar = ({
             <span>{userLevel}</span>
           </div>
 
-          {/* Tokyo League Leaderboard Tactile Button */}
+          {/* Tokyo League Leaderboard Tactile Button (Hidden on mobile < md because bottom nav already has Peringkat tab) */}
           <button
             type="button"
             onClick={() => {
               triggerHaptic('tap')
               onOpenLeaderboard()
             }}
-            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+            className="hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
             title="Buka Papan Peringkat Liga Tokyo"
           >
             <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
@@ -256,10 +268,10 @@ export const GameTopBar = ({
                 triggerHaptic('tap')
                 onOpenMobileSidebar()
               }}
-              className="xl:hidden flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 border border-amber-600 border-b-2 border-b-amber-700 active:translate-y-0.5 text-white font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+              className="xl:hidden flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50 hover:bg-amber-100/90 border border-amber-200/90 text-amber-700 active:translate-y-0.5 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
               title="Buka Misi Harian, Rentetan, & Peti Hadiah"
             >
-              <Gift weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-200 group-hover:scale-110 transition-transform shrink-0 animate-pulse" />
+              <Gift weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 group-hover:scale-110 transition-transform shrink-0 animate-bounce" />
               <span className="hidden sm:inline">Peti & Misi</span>
             </button>
           )}
