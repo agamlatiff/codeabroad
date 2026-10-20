@@ -594,40 +594,6 @@ export const RoadmapPage = () => {
           <span className="text-xs font-semibold">{lockedNotification}</span>
         </div>
       )}
-
-      {/* ── 5. MOBILE QUICK-ACCESS FLOATING DOCK (Subtask 43.4) ── */}
-      <div className="xl:hidden fixed bottom-20 right-4 z-30 flex items-center gap-2">
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic('tap')
-            const el = document.getElementById('daily-quests-section')
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-          }}
-          className="px-3.5 py-2 rounded-2xl bg-white/95 backdrop-blur-md border-2 border-slate-300 text-slate-800 shadow-lg text-xs font-brand font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-          title="Lompat ke Misi Harian & Target XP"
-        >
-          <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-500" />
-          <span>Misi Harian</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic('tap')
-            const el = document.getElementById('tech-nihongo-card')
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            }
-          }}
-          className="px-3.5 py-2 rounded-2xl bg-rose-500 border-2 border-rose-600 text-white shadow-lg text-xs font-brand font-black flex items-center gap-1.5 active:scale-95 transition-all cursor-pointer"
-          title="Lompat ke Kosakata Kerja Tokyo"
-        >
-          <span>🌸 Kosakata</span>
-        </button>
-      </div>
     </div>
   )
 }

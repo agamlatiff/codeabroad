@@ -328,7 +328,7 @@ export const GameSidebarRail = ({
   return (
     <>
       <aside
-        className={`w-full xl:w-[354px] shrink-0 border-t xl:border-t-0 xl:border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto custom-scrollbar xl:self-start ${className}`}
+        className={`hidden xl:block w-[354px] shrink-0 border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto custom-scrollbar xl:self-start ${className}`}
       >
         {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (SEAMLESS SECTION) ── */}
         <div className="space-y-2">

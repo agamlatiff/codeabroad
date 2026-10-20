@@ -130,115 +130,134 @@ export const GameTopBar = ({
   }, [activeTrack])
 
   return (
-    <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 sm:gap-4">
-      {/* ── LEFT: TRACK SWITCHER PILL & LINEAR PROGRESS BAR ── */}
-      <div className="flex items-center gap-2.5 flex-wrap sm:flex-nowrap min-w-0">
-        {/* Clickable Track Switcher Pill */}
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic('tap')
-            onOpenCourseSwitcher()
-          }}
-          className="flex items-center gap-2.5 px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0"
-          title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
-        >
-          <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-            {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-3.5 h-3.5" />}
-            {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-4 h-3" />}
-            {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-3.5 h-3.5" />}
-            {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
-            {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
-          </div>
-          <span className="text-xs font-brand font-black text-slate-900 leading-tight whitespace-nowrap">
-            {currentTrackConfig.title}
-          </span>
-          <CaretDown weight="bold" className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-colors ml-0.5 shrink-0" />
-        </button>
+    <div className="flex flex-col gap-2.5 sm:gap-3">
+      {/* ── TOP / MAIN ROW: TRACK SWITCHER (LEFT) & GAME HUD CHIPS (RIGHT) ── */}
+      <div className="flex items-center justify-between gap-2 min-w-0 w-full">
+        {/* Left: Clickable Track Switcher Pill & Inline Progress (XL) */}
+        <div className="flex items-center gap-2.5 min-w-0">
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic('tap')
+              onOpenCourseSwitcher()
+            }}
+            className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0 min-w-0"
+            title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
+          >
+            <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-3.5 h-3.5" />}
+              {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-4 h-3" />}
+              {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-3.5 h-3.5" />}
+              {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
+              {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
+            </div>
+            <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate max-w-[110px] xs:max-w-[140px] sm:max-w-[180px] md:max-w-[240px] xl:max-w-none">
+              {currentTrackConfig.title}
+            </span>
+            <CaretDown weight="bold" className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
+          </button>
 
-        {/* Track Linear Progress Bar */}
-        <div className="flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
-          <div className="w-20 sm:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
-            <div
-              className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
-              style={{ width: `${progressPercent}%` }}
-            />
+          {/* Track Linear Progress Bar (Inline on Desktop XL Only) */}
+          <div className="hidden xl:flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
+            <div className="w-24 2xl:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
+              <div
+                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
+                style={{ width: `${progressPercent}%` }}
+              />
+            </div>
+            <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
+              {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
+            </span>
           </div>
-          <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
-            {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
-          </span>
+        </div>
+
+        {/* ── RIGHT: GAME STATUS HUD (TACTILE DUOLINGO MICRO-CHIPS) ── */}
+        <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0 overflow-x-auto scrollbar-none max-w-[calc(100vw-165px)] sm:max-w-none">
+          {/* Active XP Booster Potion Chip */}
+          {boosterTimeLeft && (
+            <div
+              className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-50 border border-purple-300 text-purple-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs animate-pulse ring-2 ring-purple-200"
+              title="XP Booster Aktif: 2x XP untuk setiap latihan & kuis!"
+            >
+              <Flask weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 animate-bounce shrink-0" />
+              <span>2x ({boosterTimeLeft})</span>
+            </div>
+          )}
+
+          {/* Streak Fire Chip with Freeze Protection Badge */}
+          <div
+            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+            title={`Rentetan Belajar: ${userStreak} Hari${streakFreezeCount > 0 ? ` • ${streakFreezeCount}x Perlindungan Streak Freeze Aktif ❄️` : ''}`}
+          >
+            <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 animate-pulse shrink-0" />
+            <span>{userStreak}</span>
+            <span className="hidden sm:inline">&nbsp;Hari</span>
+            {streakFreezeCount > 0 && (
+              <span className="text-[9px] sm:text-[10px] bg-blue-100 text-blue-800 px-1 py-0.2 rounded font-mono font-bold flex items-center">
+                ❄️{streakFreezeCount}
+              </span>
+            )}
+          </div>
+
+          {/* Gems Diamond Chip */}
+          <div
+            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+            title={`Saldo Permata Tokyo: ${userGems} Gems`}
+          >
+            <span className="text-xs sm:text-sm shrink-0">💎</span>
+            <span>{userGems}</span>
+          </div>
+
+          {/* XP Star Chip */}
+          <div
+            className={`flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
+              isXpPulsing ? 'animate-pulse-ring bg-amber-100 scale-105' : ''
+            }`}
+            title={`Total Pengalaman Koding: ${userXp} XP`}
+          >
+            <Star weight="fill" className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0 ${isXpPulsing ? 'animate-bounce' : ''}`} />
+            <span>{userXp}</span>
+            <span className="hidden sm:inline">&nbsp;XP</span>
+          </div>
+
+          {/* Kodi Companion Level Chip */}
+          <div
+            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+            title={`Level Kodi: Tingkat ${userLevel}`}
+          >
+            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+            <span className="hidden md:inline">Tingkat </span>
+            <span className="md:hidden">Lv.</span>
+            <span>{userLevel}</span>
+          </div>
+
+          {/* Tokyo League Leaderboard Tactile Button */}
+          <button
+            type="button"
+            onClick={() => {
+              triggerHaptic('tap')
+              onOpenLeaderboard()
+            }}
+            className="flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+            title="Buka Papan Peringkat Liga Tokyo"
+          >
+            <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
+            <span className="hidden xs:inline sm:inline">Liga</span>
+          </button>
         </div>
       </div>
 
-      {/* ── RIGHT: GAME STATUS HUD (TACTILE DUOLINGO MICRO-CHIPS) ── */}
-      <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1.5 flex items-center gap-1.5 shadow-2xs shrink-0 overflow-x-auto scrollbar-none self-start md:self-auto max-w-full">
-        {/* Active XP Booster Potion Chip */}
-        {boosterTimeLeft && (
+      {/* ── ROW 2: LINEAR PROGRESS SUB-BAR (MOBILE & TABLET VIEWPORTS ONLY) ── */}
+      <div className="xl:hidden flex items-center justify-between gap-3 bg-white/95 border border-slate-200/90 rounded-2xl px-3.5 py-1.5 shadow-2xs">
+        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
           <div
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-300 text-purple-700 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs animate-pulse ring-2 ring-purple-200"
-            title="XP Booster Aktif: 2x XP untuk setiap latihan & kuis!"
-          >
-            <Flask weight="fill" className="w-4 h-4 text-purple-600 animate-bounce shrink-0" />
-            <span>2x XP ({boosterTimeLeft})</span>
-          </div>
-        )}
-
-        {/* Streak Fire Chip with Freeze Protection Badge */}
-        <div
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
-          title={`Rentetan Belajar: ${userStreak} Hari${streakFreezeCount > 0 ? ` • ${streakFreezeCount}x Perlindungan Streak Freeze Aktif ❄️` : ''}`}
-        >
-          <Fire weight="fill" className="w-4 h-4 text-orange-500 animate-pulse shrink-0" />
-          <span>{userStreak} Hari</span>
-          {streakFreezeCount > 0 && (
-            <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md border border-blue-200 font-mono font-bold flex items-center gap-0.5">
-              ❄️ {streakFreezeCount}
-            </span>
-          )}
+            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
+            style={{ width: `${progressPercent}%` }}
+          />
         </div>
-
-        {/* Gems Diamond Chip */}
-        <div
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
-          title={`Saldo Permata Tokyo: ${userGems} Gems`}
-        >
-          <span className="text-sm shrink-0">💎</span>
-          <span>{userGems}</span>
-        </div>
-
-        {/* XP Star Chip */}
-        <div
-          className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
-            isXpPulsing ? 'animate-pulse-ring bg-amber-100 scale-105' : ''
-          }`}
-          title={`Total Pengalaman Koding: ${userXp} XP`}
-        >
-          <Star weight="fill" className={`w-4 h-4 text-amber-500 shrink-0 ${isXpPulsing ? 'animate-bounce' : ''}`} />
-          <span>{userXp} XP</span>
-        </div>
-
-        {/* Kodi Companion Level Chip */}
-        <div
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
-          title={`Level Kodi: Tingkat ${userLevel}`}
-        >
-          <span className="w-2 h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-          <span>Tingkat {userLevel}</span>
-        </div>
-
-        {/* Tokyo League Leaderboard Tactile Button */}
-        <button
-          type="button"
-          onClick={() => {
-            triggerHaptic('tap')
-            onOpenLeaderboard()
-          }}
-          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
-          title="Buka Papan Peringkat Liga Tokyo"
-        >
-          <Trophy weight="fill" className="w-4 h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
-          <span>Liga</span>
-        </button>
+        <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
+          {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
+        </span>
       </div>
     </div>
   )
