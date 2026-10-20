@@ -42,6 +42,7 @@ export const GameTopBar = ({
   const userXp = typeof user?.xp === 'number' ? user.xp.toLocaleString() : '0'
   const userStreak = typeof user?.streak === 'number' ? user.streak : 0
   const userLevel = typeof user?.current_level === 'number' ? user.current_level : 1
+  const userGems = typeof user?.gems === 'number' ? user.gems : 0
 
   // XP pulse animation state
   const [isXpPulsing, setIsXpPulsing] = useState(false)
@@ -194,6 +195,15 @@ export const GameTopBar = ({
               ❄️ {streakFreezeCount}
             </span>
           )}
+        </div>
+
+        {/* Gems Diamond Chip */}
+        <div
+          className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
+          title={`Saldo Permata Tokyo: ${userGems} Gems`}
+        >
+          <span className="text-sm shrink-0">💎</span>
+          <span>{userGems}</span>
         </div>
 
         {/* XP Star Chip */}
