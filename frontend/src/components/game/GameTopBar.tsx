@@ -4,6 +4,7 @@ import {
   Fire,
   Star,
   Trophy,
+  Flask,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -45,6 +46,17 @@ export const GameTopBar = ({
   // XP pulse animation state
   const [isXpPulsing, setIsXpPulsing] = useState(false)
 
+  // Active XP Booster timer state & Streak Freeze inventory count
+  const [boosterTimeLeft, setBoosterTimeLeft] = useState<string | null>(null)
+  const [streakFreezeCount, setStreakFreezeCount] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('codeabroad_user_inventory')
+      return stored ? JSON.parse(stored)['streak-freeze'] || 0 : 0
+    } catch {
+      return 0
+    }
+  })
+
   // Listen for XP gains to trigger micro-bounce animation
   useEffect(() => {
     const handleXp = () => {
@@ -53,6 +65,52 @@ export const GameTopBar = ({
     }
     window.addEventListener('codeabroad_xp_gained', handleXp)
     return () => window.removeEventListener('codeabroad_xp_gained', handleXp)
+  }, [])
+
+  // Check and countdown XP Booster timer & inventory sync
+  useEffect(() => {
+    const checkBooster = () => {
+      try {
+        const expires = localStorage.getItem('codeabroad_xp_booster_expires_at')
+        if (!expires) {
+          setBoosterTimeLeft(null)
+          return
+        }
+        const diff = parseInt(expires, 10) - Date.now()
+        if (diff <= 0) {
+          localStorage.removeItem('codeabroad_xp_booster_expires_at')
+          setBoosterTimeLeft(null)
+        } else {
+          const m = Math.floor(diff / 60000)
+          const s = Math.floor((diff % 60000) / 1000)
+          setBoosterTimeLeft(`${m}:${s.toString().padStart(2, '0')}`)
+        }
+      } catch {
+        setBoosterTimeLeft(null)
+      }
+    }
+
+    const checkInventory = () => {
+      try {
+        const stored = localStorage.getItem('codeabroad_user_inventory')
+        setStreakFreezeCount(stored ? JSON.parse(stored)['streak-freeze'] || 0 : 0)
+      } catch {
+        // ignore
+      }
+    }
+
+    checkBooster()
+    checkInventory()
+
+    const interval = setInterval(checkBooster, 1000)
+    window.addEventListener('codeabroad_booster_activated', checkBooster)
+    window.addEventListener('codeabroad_inventory_updated', checkInventory)
+
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('codeabroad_booster_activated', checkBooster)
+      window.removeEventListener('codeabroad_inventory_updated', checkInventory)
+    }
   }, [])
 
 
@@ -113,13 +171,29 @@ export const GameTopBar = ({
 
       {/* ── RIGHT: GAME STATUS HUD (TACTILE DUOLINGO MICRO-CHIPS) ── */}
       <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1.5 flex items-center gap-1.5 shadow-2xs shrink-0 overflow-x-auto scrollbar-none self-start md:self-auto max-w-full">
-        {/* Streak Fire Chip */}
+        {/* Active XP Booster Potion Chip */}
+        {boosterTimeLeft && (
+          <div
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-purple-50 border border-purple-300 text-purple-700 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs animate-pulse ring-2 ring-purple-200"
+            title="XP Booster Aktif: 2x XP untuk setiap latihan & kuis!"
+          >
+            <Flask weight="fill" className="w-4 h-4 text-purple-600 animate-bounce shrink-0" />
+            <span>2x XP ({boosterTimeLeft})</span>
+          </div>
+        )}
+
+        {/* Streak Fire Chip with Freeze Protection Badge */}
         <div
           className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-xs shrink-0 whitespace-nowrap shadow-2xs"
-          title={`Rentetan Belajar: ${userStreak} Hari`}
+          title={`Rentetan Belajar: ${userStreak} Hari${streakFreezeCount > 0 ? ` • ${streakFreezeCount}x Perlindungan Streak Freeze Aktif ❄️` : ''}`}
         >
           <Fire weight="fill" className="w-4 h-4 text-orange-500 animate-pulse shrink-0" />
           <span>{userStreak} Hari</span>
+          {streakFreezeCount > 0 && (
+            <span className="text-[10px] bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-md border border-blue-200 font-mono font-bold flex items-center gap-0.5">
+              ❄️ {streakFreezeCount}
+            </span>
+          )}
         </div>
 
         {/* XP Star Chip */}

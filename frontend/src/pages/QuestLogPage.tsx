@@ -14,6 +14,8 @@ import {
   TokyoLeaderboardModal,
   ChestRewardModal,
   MonthlyBadgeModal,
+  CVReviewSubmissionModal,
+  MockInterviewScheduleModal,
 } from '../components/game'
 import {
   CURRICULUM_TRACKS_MAP,
@@ -168,6 +170,20 @@ export const QuestLogPage = () => {
   })
   const [isMonthlyBadgeModalOpen, setIsMonthlyBadgeModalOpen] = useState(false)
 
+  // Active XP Booster state
+  const [xpBoosterExpiresAt, setXpBoosterExpiresAt] = useState<number>(() => {
+    try {
+      const stored = localStorage.getItem('codeabroad_xp_booster_expires_at')
+      return stored ? parseInt(stored, 10) : 0
+    } catch {
+      return 0
+    }
+  })
+
+  // Akihabara coupon modal states
+  const [isCVModalOpen, setIsCVModalOpen] = useState(false)
+  const [isMockModalOpen, setIsMockModalOpen] = useState(false)
+
   // Floating reward animation state
   const [floatingReward, setFloatingReward] = useState<string | null>(null)
 
@@ -312,10 +328,13 @@ export const QuestLogPage = () => {
     }
   }
 
-  // Handle claim daily quest reward with burst animation
+  // Handle claim daily quest reward with burst animation & XP multiplier
   const handleClaimDailyQuest = (questId: string, xpReward: number, gemReward: number) => {
     triggerHaptic('success')
     audioEngine.playPop()
+
+    const isBoosterActive = xpBoosterExpiresAt > Date.now()
+    const finalXp = isBoosterActive ? xpReward * 2 : xpReward
 
     const nextMap = { ...claimedDailyMap, [questId]: true }
     setClaimedDailyMap(nextMap)
@@ -329,12 +348,89 @@ export const QuestLogPage = () => {
     updateGemsState(nextGems)
 
     // Trigger floating reward burst
-    setFloatingReward(`+${xpReward} XP • +${gemReward} 💎`)
-    setTimeout(() => setFloatingReward(null), 2000)
+    setFloatingReward(`+${finalXp} XP ${isBoosterActive ? '(2x XP 🔥) ' : ''}• +${gemReward} 💎`)
+    setTimeout(() => setFloatingReward(null), 2500)
 
     // Dispatch XP reward event
-    window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: xpReward } }))
-    showToast(`🎉 Berhasil klaim +${xpReward} XP & 💎 ${gemReward} Gems!`)
+    window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: finalXp } }))
+    showToast(
+      `🎉 Berhasil klaim +${finalXp} XP ${isBoosterActive ? '(2x XP Booster Aktif!) ' : ''}& 💎 ${gemReward} Gems!`
+    )
+  }
+
+  // Use XP Booster Potion (30 minutes of 2x XP)
+  const handleUseXPBooster = () => {
+    const owned = inventory['xp-booster'] || 0
+    if (owned <= 0) return
+    triggerHaptic('success')
+    audioEngine.playPop()
+
+    const newInventory = {
+      ...inventory,
+      ['xp-booster']: Math.max(0, owned - 1),
+    }
+    setInventory(newInventory)
+    try {
+      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+      window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+    } catch {
+      // ignore
+    }
+
+    const expiresAt = Date.now() + 30 * 60 * 1000
+    setXpBoosterExpiresAt(expiresAt)
+    try {
+      localStorage.setItem('codeabroad_xp_booster_expires_at', String(expiresAt))
+      window.dispatchEvent(new CustomEvent('codeabroad_booster_activated'))
+    } catch {
+      // ignore
+    }
+
+    showToast('🧪 XP Booster Potion Aktif! Anda mendapatkan 2x XP selama 30 menit ke depan.')
+  }
+
+  // Handle CV Review Submission
+  const handleCVSubmitted = (data: { githubUrl: string; resumeUrl: string; targetRole: string; notes: string }) => {
+    const owned = inventory['cv-review'] || 0
+    const newInventory = {
+      ...inventory,
+      ['cv-review']: Math.max(0, owned - 1),
+    }
+    setInventory(newInventory)
+    try {
+      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+      window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+
+      const submissions = JSON.parse(localStorage.getItem('codeabroad_cv_submissions') || '[]')
+      submissions.push({ ...data, submittedAt: new Date().toISOString(), status: 'in_review' })
+      localStorage.setItem('codeabroad_cv_submissions', JSON.stringify(submissions))
+    } catch {
+      // ignore
+    }
+
+    showToast('📋 Kupon CV Review berhasil digunakan. Mentor Tokyo sedang memeriksa berkas Anda!')
+  }
+
+  // Handle Mock Interview Schedule
+  const handleMockScheduled = (data: { language: string; discordHandle: string; focusTopic: string; preferredTime: string }) => {
+    const owned = inventory['mock-interview'] || 0
+    const newInventory = {
+      ...inventory,
+      ['mock-interview']: Math.max(0, owned - 1),
+    }
+    setInventory(newInventory)
+    try {
+      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+      window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+
+      const schedules = JSON.parse(localStorage.getItem('codeabroad_mock_schedules') || '[]')
+      schedules.push({ ...data, scheduledAt: new Date().toISOString(), status: 'confirmed_discord' })
+      localStorage.setItem('codeabroad_mock_schedules', JSON.stringify(schedules))
+    } catch {
+      // ignore
+    }
+
+    showToast('🎙️ Pengajuan Mock Interview VIP berhasil dikirim! Silakan periksa Discord Anda.')
   }
 
   // Open chest modal or show guidance toast
@@ -426,6 +522,7 @@ export const QuestLogPage = () => {
     setInventory(nextInventory)
     try {
       localStorage.setItem('codeabroad_user_inventory', JSON.stringify(nextInventory))
+      window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
     } catch {
       // ignore
     }
@@ -1329,8 +1426,8 @@ export const QuestLogPage = () => {
                         </div>
                       </div>
 
-                      {/* Right: Stock Counter & Purchase Button */}
-                      <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100">
+                      {/* Right: Stock Counter & Purchase/Action Buttons */}
+                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-wrap">
                         <div className="text-left sm:text-right">
                           <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
                             Stok Tas
@@ -1340,13 +1437,67 @@ export const QuestLogPage = () => {
                           </span>
                         </div>
 
+                        {/* Action if owned */}
+                        {ownedCount > 0 && item.id === 'xp-booster' && (
+                          <div>
+                            {xpBoosterExpiresAt > Date.now() ? (
+                              <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1 animate-pulse">
+                                <span>⚡ 2x XP Aktif</span>
+                              </span>
+                            ) : (
+                              <Button3D
+                                variant="amber"
+                                size="sm"
+                                onClick={handleUseXPBooster}
+                                className="text-xs px-3.5 py-2 ring-2 ring-amber-300"
+                              >
+                                GUNAKAN 🧪
+                              </Button3D>
+                            )}
+                          </div>
+                        )}
+
+                        {ownedCount > 0 && item.id === 'cv-review' && (
+                          <Button3D
+                            variant="emerald"
+                            size="sm"
+                            onClick={() => {
+                              triggerHaptic('tap')
+                              setIsCVModalOpen(true)
+                            }}
+                            className="text-xs px-3.5 py-2 border-b-emerald-800"
+                          >
+                            KIRIM BERKAS 📋
+                          </Button3D>
+                        )}
+
+                        {ownedCount > 0 && item.id === 'mock-interview' && (
+                          <Button3D
+                            variant="amber"
+                            size="sm"
+                            onClick={() => {
+                              triggerHaptic('tap')
+                              setIsMockModalOpen(true)
+                            }}
+                            className="text-xs px-3.5 py-2 text-purple-950 bg-gradient-to-r from-purple-300 to-indigo-300 border-b-purple-600"
+                          >
+                            JADWALKAN 🎙️
+                          </Button3D>
+                        )}
+
+                        {ownedCount > 0 && item.id === 'streak-freeze' && (
+                          <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-2xs">
+                            <span>❄️ Proteksi Siap</span>
+                          </span>
+                        )}
+
                         <div>
                           <Button3D
                             variant={isAffordable ? 'blue' : 'ghost'}
                             size="sm"
                             onClick={() => handlePurchaseShopItem(item)}
                             disabled={!isAffordable}
-                            className={`text-xs px-4 py-2 min-w-[130px] ${
+                            className={`text-xs px-4 py-2 min-w-[120px] ${
                               !isAffordable ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : ''
                             }`}
                           >
@@ -1422,6 +1573,20 @@ export const QuestLogPage = () => {
         targetCount={monthlyTargetCount}
         isClaimed={isMonthlyBadgeClaimed}
         onClaim={handleClaimMonthlyBadge}
+      />
+
+      {/* ── 7. CV REVIEW SUBMISSION MODAL ── */}
+      <CVReviewSubmissionModal
+        isOpen={isCVModalOpen}
+        onClose={() => setIsCVModalOpen(false)}
+        onSubmitted={handleCVSubmitted}
+      />
+
+      {/* ── 8. MOCK INTERVIEW SCHEDULE MODAL ── */}
+      <MockInterviewScheduleModal
+        isOpen={isMockModalOpen}
+        onClose={() => setIsMockModalOpen(false)}
+        onScheduled={handleMockScheduled}
       />
     </div>
   )
