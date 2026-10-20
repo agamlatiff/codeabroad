@@ -5,6 +5,7 @@ import {
   Star,
   Trophy,
   Flask,
+  Gift,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -21,6 +22,7 @@ export interface GameTopBarProps {
   activeTrack: string
   onOpenCourseSwitcher: () => void
   onOpenLeaderboard: () => void
+  onOpenMobileSidebar?: () => void
   completedCount: number
   totalCount: number
   progressPercent: number
@@ -31,6 +33,7 @@ export const GameTopBar = ({
   activeTrack,
   onOpenCourseSwitcher,
   onOpenLeaderboard,
+  onOpenMobileSidebar,
   completedCount,
   totalCount,
   progressPercent,
@@ -134,14 +137,14 @@ export const GameTopBar = ({
       {/* ── TOP / MAIN ROW: TRACK SWITCHER (LEFT) & GAME HUD CHIPS (RIGHT) ── */}
       <div className="flex items-center justify-between gap-2 min-w-0 w-full">
         {/* Left: Clickable Track Switcher Pill & Inline Progress (XL) */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2.5 min-w-0 shrink">
           <button
             type="button"
             onClick={() => {
               triggerHaptic('tap')
               onOpenCourseSwitcher()
             }}
-            className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink-0 min-w-0"
+            className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink min-w-0"
             title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
           >
             <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -151,7 +154,7 @@ export const GameTopBar = ({
               {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
               {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
             </div>
-            <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate max-w-[110px] xs:max-w-[140px] sm:max-w-[180px] md:max-w-[240px] xl:max-w-none">
+            <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate max-w-[105px] sm:max-w-[160px] md:max-w-[200px] xl:max-w-none">
               {currentTrackConfig.title}
             </span>
             <CaretDown weight="bold" className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
@@ -172,7 +175,7 @@ export const GameTopBar = ({
         </div>
 
         {/* ── RIGHT: GAME STATUS HUD (TACTILE DUOLINGO MICRO-CHIPS) ── */}
-        <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0 overflow-x-auto scrollbar-none max-w-[calc(100vw-165px)] sm:max-w-none">
+        <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0 max-w-full">
           {/* Active XP Booster Potion Chip */}
           {boosterTimeLeft && (
             <div
@@ -220,9 +223,9 @@ export const GameTopBar = ({
             <span className="hidden sm:inline">&nbsp;XP</span>
           </div>
 
-          {/* Kodi Companion Level Chip */}
+          {/* Kodi Companion Level Chip (Hidden on mobile < sm to keep top bar 100% overlap-free) */}
           <div
-            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+            className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
             title={`Level Kodi: Tingkat ${userLevel}`}
           >
             <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
@@ -238,12 +241,28 @@ export const GameTopBar = ({
               triggerHaptic('tap')
               onOpenLeaderboard()
             }}
-            className="flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
             title="Buka Papan Peringkat Liga Tokyo"
           >
             <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
-            <span className="hidden xs:inline sm:inline">Liga</span>
+            <span className="hidden md:inline">Liga</span>
           </button>
+
+          {/* Mobile/Tablet Right Sidebar Drawer Trigger (Misi, Peti Hadiah & Nihongo) */}
+          {onOpenMobileSidebar && (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                onOpenMobileSidebar()
+              }}
+              className="xl:hidden flex items-center gap-1 px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 border border-amber-600 border-b-2 border-b-amber-700 active:translate-y-0.5 text-white font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+              title="Buka Misi Harian, Rentetan, & Peti Hadiah"
+            >
+              <Gift weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-200 group-hover:scale-110 transition-transform shrink-0 animate-pulse" />
+              <span className="hidden sm:inline">Peti & Misi</span>
+            </button>
+          )}
         </div>
       </div>
 

@@ -26,6 +26,8 @@ import {
 export interface GameSidebarRailProps {
   className?: string
   activeTrack?: string
+  isMobileDrawerOpen?: boolean
+  onCloseMobileDrawer?: () => void
 }
 
 /**
@@ -37,6 +39,8 @@ export interface GameSidebarRailProps {
 export const GameSidebarRail = ({
   className = '',
   activeTrack: propActiveTrack,
+  isMobileDrawerOpen = false,
+  onCloseMobileDrawer,
 }: GameSidebarRailProps) => {
   const navigate = useNavigate()
   const { user, updateUser } = useAuthStore()
@@ -325,12 +329,9 @@ export const GameSidebarRail = ({
     completedQuestsSet,
   ])
 
-  return (
+  const sidebarContent = (
     <>
-      <aside
-        className={`hidden xl:block w-[354px] shrink-0 border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto custom-scrollbar xl:self-start ${className}`}
-      >
-        {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (SEAMLESS SECTION) ── */}
+      {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (SEAMLESS SECTION) ── */}
         <div className="space-y-2">
           {/* Header */}
           <div className="flex items-center justify-between">
@@ -629,7 +630,65 @@ export const GameSidebarRail = ({
             onClaim={(e?: React.MouseEvent) => handleClaimVocabQuest(e)}
           />
         </div>
+    </>
+  )
+
+  return (
+    <>
+      {/* ── DESKTOP STICKY RIGHT RAIL (XL & UP) ── */}
+      <aside
+        className={`hidden xl:block w-[354px] shrink-0 border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto custom-scrollbar xl:self-start ${className}`}
+      >
+        {sidebarContent}
       </aside>
+
+      {/* ── MOBILE & TABLET SLIDE-OVER DRAWER (SSOT - PORTAL) ── */}
+      {isMobileDrawerOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-50 flex justify-end animate-fade-in">
+          {/* Backdrop blur overlay */}
+          <div
+            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity"
+            onClick={onCloseMobileDrawer}
+          />
+
+          {/* Slide-over Drawer Panel */}
+          <div className="relative w-full max-w-[360px] sm:max-w-[390px] h-full bg-white shadow-2xl flex flex-col z-10 border-l border-slate-200 animate-slide-in-right overflow-hidden">
+            {/* Drawer Header */}
+            <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200/90 bg-white shrink-0">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-xl bg-orange-100/80 text-orange-600 flex items-center justify-center font-bold">
+                  <Gift weight="fill" className="w-4 h-4 text-orange-500 animate-bounce" />
+                </div>
+                <div>
+                  <h3 className="font-brand font-black text-sm text-slate-900 leading-none">
+                    Misi & Hadiah Harian
+                  </h3>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Rentetan, target XP & Nihongo kerja
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  onCloseMobileDrawer?.()
+                }}
+                className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer transition-colors active:scale-90"
+                aria-label="Tutup Menu Hadiah"
+              >
+                <X weight="bold" className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Drawer Scrollable Content */}
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
+              {sidebarContent}
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* ── STREAK ATTENDANCE CALENDAR MODAL ── */}
       <StreakCalendarModal

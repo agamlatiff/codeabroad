@@ -49,6 +49,7 @@ export const RoadmapPage = () => {
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
 
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [guidebookModalUnit, setGuidebookModalUnit] = useState<GuidebookContent | null>(null)
   const [collapsedUnitIds, setCollapsedUnitIds] = useState<Set<string>>(new Set())
 
@@ -236,6 +237,7 @@ export const RoadmapPage = () => {
             activeTrack={activeTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
+            onOpenMobileSidebar={() => setIsMobileDrawerOpen(true)}
             completedCount={completedPartsCount}
             totalCount={totalPartsCount}
             progressPercent={curriculumProgressPercent}
@@ -554,7 +556,11 @@ export const RoadmapPage = () => {
         </main>
 
         {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 34.4) ══════ */}
-        <GameSidebarRail activeTrack={activeTrack} />
+        <GameSidebarRail
+          activeTrack={activeTrack}
+          isMobileDrawerOpen={isMobileDrawerOpen}
+          onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
+        />
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}

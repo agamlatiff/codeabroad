@@ -1381,4 +1381,16 @@
 - [x] Validasi `npm run build` di frontend (0 error TypeScript & Vite bundle).
 - [x] Validasi `go test -count=1 ./...` di backend (100% test pass).
 
+### [x] 45.4 Slide-Over Off-Canvas Drawer Sidebar & Formula Anti-Overlap TopBar
+- [x] **Trigger Tombol Hadiah di TopBar Mobile (`[🎁 Peti & Misi]`)**:
+  - Tombol taktil gradien oranye-kuning di jajaran HUD khusus viewport `< xl` yang memicu slide-over drawer dengan animasi pop dan haptic tap.
+- [x] **Slide-Over Drawer Portal (`createPortal`)**:
+  - Backdrop blur overlay transparan dengan penutup saat diklik luar.
+  - Panel drawer dari kanan (`animate-slide-in-right`) memuat konten 4 section `GameSidebarRail` (Streak 7-hari, Target 50 XP & Peti Emas, Misi Harian, Tech Nihongo Card).
+  - Integrasi penuh di `DashboardPage.tsx` dan `RoadmapPage.tsx`.
+- [x] **Eliminasi Total Tabrakan Horizontal (Zero-Overlap SSOT)**:
+  - Tombol switcher jalur belajar kiri menggunakan `min-w-0 shrink flex-1 max-w-fit` dan pemotongan teks adaptif (`truncate max-w-[105px] sm:max-w-[160px] md:max-w-[200px] xl:max-w-none`).
+  - Chip level disembunyikan pada layar HP (`hidden sm:flex`), teks `"Liga"` disingkat menjadi icon trofi `🏆` pada viewport ultra-kompak.
+  - Tabrakan visual atau tumpukan layer putih antar pill 100% tereliminasi pada seluruh resolusi (320px s/d 1440px).
+
 
