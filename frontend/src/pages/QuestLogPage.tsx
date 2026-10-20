@@ -41,6 +41,7 @@ import {
 import doodleWelcome from '../assets/kodi/doodle-welcome.png'
 import doodleCoding from '../assets/kodi/doodle-coding.png'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
+import doodleThinking from '../assets/kodi/doodle-thinking.png'
 
 export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
@@ -1379,6 +1380,36 @@ export const QuestLogPage = () => {
             </div>
           )}
 
+          {/* ── EMPTY STATE FOR DAILY QUESTS ── */}
+          {activeTab === 'daily' && filteredDaily.length === 0 && !hasNoResults && (
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-2xs">
+              <img
+                src={doodleThinking}
+                alt="Misi Harian Selesai"
+                className="w-28 h-28 object-contain mx-auto drop-shadow-xs"
+              />
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
+                  Semua Misi Harian Selesai!
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Kerja luar biasa! Kamu telah menuntaskan target harianmu. Misi baru akan diperbarui secara otomatis besok pukul 00:00 JST.
+                </p>
+              </div>
+              <Button3D
+                variant="blue"
+                size="md"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  navigate('/courses')
+                }}
+                className="text-xs sm:text-sm px-6 py-3 mx-auto"
+              >
+                Lanjutkan Belajar di Kurikulum ▶
+              </Button3D>
+            </div>
+          )}
+
           {/* ══════ SECTION 2: TOKYO GUILD TERMINAL (TACTILE MISSION SLATS) ══════ */}
           {activeTab === 'boss' && portfolioChallenges.length > 0 && (
             <div className="space-y-4">
@@ -1476,6 +1507,36 @@ export const QuestLogPage = () => {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ── EMPTY STATE FOR SAYEMBARA BOSS QUESTS ── */}
+          {activeTab === 'boss' && portfolioChallenges.length === 0 && !hasNoResults && (
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-2xs">
+              <img
+                src={doodleThinking}
+                alt="Sayembara Belum Tersedia"
+                className="w-28 h-28 object-contain mx-auto drop-shadow-xs"
+              />
+              <div className="space-y-1.5 max-w-md mx-auto">
+                <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
+                  Sayembara Capstone Belum Terbuka
+                </h3>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                  Tantangan portofolio S-Rank Tokyo memerlukan penguasaan modul fundamental &amp; intermediate. Selesaikan misi koding kurikulum terlebih dahulu!
+                </p>
+              </div>
+              <Button3D
+                variant="blue"
+                size="md"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  navigate('/courses')
+                }}
+                className="text-xs sm:text-sm px-6 py-3 mx-auto"
+              >
+                Tingkatkan Level di Kurikulum ▶
+              </Button3D>
             </div>
           )}
 

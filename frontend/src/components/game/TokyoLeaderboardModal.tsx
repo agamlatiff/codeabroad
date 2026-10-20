@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Trophy,
   Crown,
@@ -14,7 +15,9 @@ import type { TokyoDivision, WeeklyLeaderboardResponse } from '../../types/leade
 import { leaderboardService } from '../../services/leaderboardService'
 import { triggerHaptic } from '../../utils/haptics'
 import { soundEngine } from '../../utils/audio'
+import { Button3D } from '../ui/Button3D'
 import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
+import doodleThinking from '../../assets/kodi/doodle-thinking.png'
 
 export interface TokyoLeaderboardModalProps {
   isOpen: boolean
@@ -27,6 +30,7 @@ export const TokyoLeaderboardModal = ({
   onClose,
   initialDivision = 'shinjuku',
 }: TokyoLeaderboardModalProps) => {
+  const navigate = useNavigate()
   const [selectedDivision, setSelectedDivision] = useState<TokyoDivision>(initialDivision)
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -227,8 +231,36 @@ export const TokyoLeaderboardModal = ({
                 Memuat klasemen {currentDivConfig.name}...
               </p>
             </div>
+          ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
+            <div className="py-10 px-4 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+              <img
+                src={doodleThinking}
+                alt="Belum Ada Peserta"
+                className="w-24 h-24 object-contain mx-auto drop-shadow-xs"
+              />
+              <div className="space-y-1 max-w-sm mx-auto">
+                <h3 className="font-brand font-black text-sm sm:text-base text-slate-900">
+                  Belum Ada Engineer di Divisi Ini
+                </h3>
+                <p className="text-xs text-slate-500 font-medium leading-relaxed">
+                  Musim #{leaderboard?.season_week ?? 42} baru saja dimulai! Selesaikan tantangan koding hari ini untuk langsung merebut Peringkat #1 dan hadiah 100 💎!
+                </p>
+              </div>
+              <Button3D
+                variant="blue"
+                size="sm"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  onClose()
+                  navigate('/courses')
+                }}
+                className="text-xs px-5 py-2.5 mx-auto"
+              >
+                Mulai Belajar Sekarang ▶
+              </Button3D>
+            </div>
           ) : (
-            leaderboard?.entries.map((entry) => {
+            leaderboard.entries.map((entry) => {
               const isTop3 = entry.rank <= 3
               const isDemotion = entry.rank > 10
               const isUser = entry.is_current_user

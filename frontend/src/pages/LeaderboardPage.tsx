@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { NavRail } from '../components/layout/NavRail'
 import {
   Trophy,
@@ -14,10 +15,13 @@ import type { TokyoDivision, WeeklyLeaderboardResponse } from '../types/leaderbo
 import { leaderboardService } from '../services/leaderboardService'
 import { triggerHaptic } from '../utils/haptics'
 import { soundEngine } from '../utils/audio'
+import { Button3D } from '../components/ui/Button3D'
 import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
 import doodleProud from '../assets/kodi/doodle-proud.png'
+import doodleThinking from '../assets/kodi/doodle-thinking.png'
 
 export const LeaderboardPage = () => {
+  const navigate = useNavigate()
   const [selectedDivision, setSelectedDivision] = useState<TokyoDivision>('shinjuku')
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
@@ -230,8 +234,35 @@ export const LeaderboardPage = () => {
                   Memuat klasemen {currentDivConfig.name}...
                 </p>
               </div>
+            ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
+              <div className="py-16 px-6 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
+                <img
+                  src={doodleThinking}
+                  alt="Klasemen Belum Dimulai"
+                  className="w-28 h-28 object-contain mx-auto drop-shadow-xs"
+                />
+                <div className="space-y-1.5 max-w-md mx-auto">
+                  <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
+                    Klasemen Divisi Belum Dimulai
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
+                    Jadilah yang pertama masuk ke klasemen {currentDivConfig.name} minggu ini! Kumpulkan XP dari kurikulum dan kuis IT Jepang untuk langsung mengamankan posisi Zona Promosi!
+                  </p>
+                </div>
+                <Button3D
+                  variant="blue"
+                  size="md"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    navigate('/courses')
+                  }}
+                  className="text-xs sm:text-sm px-6 py-3 mx-auto"
+                >
+                  Buka Kurikulum &amp; Raih XP ▶
+                </Button3D>
+              </div>
             ) : (
-              leaderboard?.entries.map((entry) => {
+              leaderboard.entries.map((entry) => {
                 const isTop3 = entry.rank <= 3
                 const isDemotion = entry.rank > 10
                 const isUser = entry.is_current_user
