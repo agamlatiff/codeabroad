@@ -10,6 +10,7 @@ import {
   Sparkle,
   ArrowUp,
   CaretDown,
+  Medal,
 } from '@phosphor-icons/react'
 import type { TokyoDivision, WeeklyLeaderboardResponse } from '../types/leaderboard'
 import { leaderboardService } from '../services/leaderboardService'
@@ -26,35 +27,66 @@ export const LeaderboardPage = () => {
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
-  // 4 Official Tokyo League Divisions
-  const DIVISIONS: { id: TokyoDivision; name: string; tier: string; badgeColor: string; description: string }[] = [
+  // 4 Official Tokyo League Divisions with tier badges, icons & XP criteria
+  const DIVISIONS: {
+    id: TokyoDivision
+    name: string
+    tier: string
+    xpRange: string
+    levelLabel: string
+    icon: typeof Medal
+    iconColor: string
+    activeIconColor: string
+    badgeColor: string
+    description: string
+  }[] = [
     {
       id: 'shinjuku',
-      name: 'Divisi Shinjuku',
+      name: 'Liga Perunggu',
       tier: 'Bronze League',
+      xpRange: '0 – 299 XP',
+      levelLabel: 'Pemula',
+      icon: Medal,
+      iconColor: 'text-amber-700',
+      activeIconColor: 'text-amber-600',
       badgeColor: 'border-amber-500 bg-amber-50 text-amber-900',
-      description: 'Zona pemula bagi engineer baru yang memulai jalur kurikulum Tokyo.',
+      description: 'Zona kompetisi bagi engineer baru yang memulai jalur kurikulum Tokyo.',
     },
     {
       id: 'shibuya',
-      name: 'Divisi Shibuya',
+      name: 'Liga Perak',
       tier: 'Silver League',
+      xpRange: '300 – 799 XP',
+      levelLabel: 'Menengah',
+      icon: Star,
+      iconColor: 'text-slate-400',
+      activeIconColor: 'text-slate-500',
       badgeColor: 'border-slate-400 bg-slate-50 text-slate-800',
       description: 'Kompetisi aktif bagi engineer yang menguasai sintaks dasar & REST API.',
     },
     {
       id: 'akihabara',
-      name: 'Divisi Akihabara',
+      name: 'Liga Emas',
       tier: 'Gold League',
+      xpRange: '800 – 1.499 XP',
+      levelLabel: 'Lanjutan',
+      icon: Trophy,
+      iconColor: 'text-amber-500',
+      activeIconColor: 'text-amber-500',
       badgeColor: 'border-amber-400 bg-amber-50/60 text-amber-900',
       description: 'Engineer tingkat lanjut dengan penguasaan concurrency & cloud Docker.',
     },
     {
       id: 'roppongi',
-      name: 'Divisi Roppongi',
+      name: 'Liga Berlian',
       tier: 'Diamond Master',
+      xpRange: '1.500+ XP',
+      levelLabel: 'Master',
+      icon: Crown,
+      iconColor: 'text-cyan-500',
+      activeIconColor: 'text-cyan-500',
       badgeColor: 'border-cyan-500 bg-cyan-50/70 text-cyan-950',
-      description: 'Puncak liga global Tokyo: siap interview dan sponsor visa kerja Jepang.',
+      description: 'Puncak liga global Tokyo: siap interview teknis dan sponsor visa kerja Jepang.',
     },
   ]
 
@@ -139,33 +171,39 @@ export const LeaderboardPage = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {DIVISIONS.map((div) => {
               const isSelected = selectedDivision === div.id
+              const IconComponent = div.icon
               return (
                 <button
                   key={div.id}
                   type="button"
                   onClick={() => handleSelectDivision(div.id)}
-                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                  className={`p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
                     isSelected
                       ? 'bg-blue-50/80 border-blue-600 shadow-[0_3px_0_0_#2563EB]'
                       : 'bg-white border-slate-200 hover:border-slate-300 active:translate-y-0.5'
                   }`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-brand font-black text-xs text-slate-900">
+                    <span className="font-brand font-black text-xs sm:text-sm text-slate-900">
                       {div.name}
                     </span>
-                    <Crown
+                    <IconComponent
                       weight={isSelected ? 'fill' : 'bold'}
-                      className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}
+                      className={`w-5 h-5 ${isSelected ? div.activeIconColor : div.iconColor}`}
                     />
                   </div>
-                  <span
-                    className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md inline-block w-fit ${
-                      isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {div.tier}
-                  </span>
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span
+                      className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded-md inline-block ${
+                        isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-700'
+                      }`}
+                    >
+                      {div.xpRange}
+                    </span>
+                    <span className="text-[10px] font-brand font-bold text-slate-400">
+                      {div.levelLabel}
+                    </span>
+                  </div>
                 </button>
               )
             })}
@@ -243,10 +281,10 @@ export const LeaderboardPage = () => {
                 />
                 <div className="space-y-1.5 max-w-md mx-auto">
                   <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
-                    Klasemen Divisi Belum Dimulai
+                    Belum Ada Peserta di {currentDivConfig.name}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                    Jadilah yang pertama masuk ke klasemen {currentDivConfig.name} minggu ini! Kumpulkan XP dari kurikulum dan kuis IT Jepang untuk langsung mengamankan posisi Zona Promosi!
+                    Jadilah yang pertama masuk ke klasemen {currentDivConfig.name} ({currentDivConfig.xpRange}) minggu ini! Kumpulkan XP dari kurikulum dan kuis IT Jepang untuk langsung mengamankan posisi Zona Promosi!
                   </p>
                 </div>
                 <Button3D

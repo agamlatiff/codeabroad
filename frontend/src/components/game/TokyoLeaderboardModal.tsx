@@ -10,6 +10,7 @@ import {
   Sparkle,
   X,
   ArrowUp,
+  Medal,
 } from '@phosphor-icons/react'
 import type { TokyoDivision, WeeklyLeaderboardResponse } from '../../types/leaderboard'
 import { leaderboardService } from '../../services/leaderboardService'
@@ -35,35 +36,56 @@ export const TokyoLeaderboardModal = ({
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
-  // 4 Official Tokyo League Divisions
-  const DIVISIONS: { id: TokyoDivision; name: string; tier: string; badgeColor: string; iconColor: string }[] = [
+  // 4 Official Tokyo League Divisions with tier badges, icons & XP criteria
+  const DIVISIONS: {
+    id: TokyoDivision
+    name: string
+    tier: string
+    xpRange: string
+    levelLabel: string
+    icon: typeof Medal
+    iconColor: string
+    activeIconColor: string
+  }[] = [
     {
       id: 'shinjuku',
-      name: 'Shinjuku',
-      tier: 'Bronze',
-      badgeColor: 'from-amber-600 to-amber-800 text-amber-100 border-amber-500',
-      iconColor: 'text-amber-600',
+      name: 'Liga Perunggu',
+      tier: 'Bronze League',
+      xpRange: '0 – 299 XP',
+      levelLabel: 'Pemula',
+      icon: Medal,
+      iconColor: 'text-amber-700',
+      activeIconColor: 'text-amber-600',
     },
     {
       id: 'shibuya',
-      name: 'Shibuya',
-      tier: 'Silver',
-      badgeColor: 'from-slate-400 to-slate-600 text-slate-100 border-slate-300',
-      iconColor: 'text-slate-500',
+      name: 'Liga Perak',
+      tier: 'Silver League',
+      xpRange: '300 – 799 XP',
+      levelLabel: 'Menengah',
+      icon: Star,
+      iconColor: 'text-slate-400',
+      activeIconColor: 'text-slate-500',
     },
     {
       id: 'akihabara',
-      name: 'Akihabara',
-      tier: 'Gold',
-      badgeColor: 'from-amber-400 to-yellow-600 text-amber-950 border-amber-300',
+      name: 'Liga Emas',
+      tier: 'Gold League',
+      xpRange: '800 – 1.499 XP',
+      levelLabel: 'Lanjutan',
+      icon: Trophy,
       iconColor: 'text-amber-500',
+      activeIconColor: 'text-amber-500',
     },
     {
       id: 'roppongi',
-      name: 'Roppongi',
-      tier: 'Diamond',
-      badgeColor: 'from-cyan-500 to-blue-700 text-cyan-50 border-cyan-300',
+      name: 'Liga Berlian',
+      tier: 'Diamond Master',
+      xpRange: '1.500+ XP',
+      levelLabel: 'Master',
+      icon: Crown,
       iconColor: 'text-cyan-500',
+      activeIconColor: 'text-cyan-500',
     },
   ]
 
@@ -143,37 +165,43 @@ export const TokyoLeaderboardModal = ({
           </button>
         </div>
 
-        {/* ── 2. 4 TOKYO LEAGUE DIVISION SELECTOR TABS ── */}
-        <div className="px-5 pt-4 pb-2 bg-white border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
+        {/* ── 2. 4 TOKYO LEAGUE SELECTOR TABS ── */}
+        <div className="px-4 sm:px-5 pt-4 pb-2 bg-white border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
           {DIVISIONS.map((div) => {
             const isSelected = selectedDivision === div.id
+            const IconComponent = div.icon
             return (
               <button
                 key={div.id}
                 type="button"
                 onClick={() => handleSelectDivision(div.id)}
-                className={`flex-1 min-w-[120px] p-2.5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                className={`flex-1 min-w-[130px] p-2.5 rounded-2xl border-2 text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
                   isSelected
                     ? 'bg-blue-50/70 border-blue-600 shadow-[0_3px_0_0_#2563EB]'
                     : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600 active:translate-y-0.5'
                 }`}
               >
                 <div className="flex items-center gap-1.5">
-                  <Crown
+                  <IconComponent
                     weight={isSelected ? 'fill' : 'bold'}
-                    className={`w-4 h-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`}
+                    className={`w-4 h-4 ${isSelected ? div.activeIconColor : div.iconColor}`}
                   />
                   <span className="font-brand font-black text-xs text-slate-900">
                     {div.name}
                   </span>
                 </div>
-                <span
-                  className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md ${
-                    isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-500'
-                  }`}
-                >
-                  {div.tier}
-                </span>
+                <div className="flex items-center gap-1">
+                  <span
+                    className={`text-[9px] font-mono font-bold px-1.5 py-0.2 rounded-md ${
+                      isSelected ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {div.xpRange}
+                  </span>
+                  <span className="text-[9px] font-brand font-bold text-slate-400">
+                    {div.levelLabel}
+                  </span>
+                </div>
               </button>
             )
           })}
@@ -205,7 +233,7 @@ export const TokyoLeaderboardModal = ({
                 </span>
               </div>
               <div className="text-[10px] text-amber-800 font-medium">
-                Selesai Minggu 23:59 JST • Top 3 otomatis dapat bonus Gems Tokyo & promosi divisi!
+                Selesai Minggu 23:59 JST • Top 3 otomatis dapat bonus Gems Tokyo &amp; promosi divisi!
               </div>
             </div>
           </div>
@@ -240,10 +268,10 @@ export const TokyoLeaderboardModal = ({
               />
               <div className="space-y-1 max-w-sm mx-auto">
                 <h3 className="font-brand font-black text-sm sm:text-base text-slate-900">
-                  Belum Ada Engineer di Divisi Ini
+                  Belum Ada Peserta di {currentDivConfig.name}
                 </h3>
                 <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                  Musim #{leaderboard?.season_week ?? 42} baru saja dimulai! Selesaikan tantangan koding hari ini untuk langsung merebut Peringkat #1 dan hadiah 100 💎!
+                  Musim #{leaderboard?.season_week ?? 42} baru saja dimulai! Kumpulkan XP ({currentDivConfig.xpRange}) untuk langsung merebut Peringkat #1 dan hadiah 100 💎!
                 </p>
               </div>
               <Button3D

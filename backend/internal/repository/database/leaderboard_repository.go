@@ -28,18 +28,18 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 		daysUntilSunday += 7
 	}
 
-	divisionName := "Divisi Shinjuku"
-	divisionTier := "Bronze League"
+	divisionName := "Liga Perunggu"
+	divisionTier := "Bronze League (0 – 299 XP)"
 	switch division {
 	case domain.DivisionShibuya:
-		divisionName = "Divisi Shibuya"
-		divisionTier = "Silver League"
+		divisionName = "Liga Perak"
+		divisionTier = "Silver League (300 – 799 XP)"
 	case domain.DivisionAkihabara:
-		divisionName = "Divisi Akihabara"
-		divisionTier = "Gold League"
+		divisionName = "Liga Emas"
+		divisionTier = "Gold League (800 – 1.499 XP)"
 	case domain.DivisionRoppongi:
-		divisionName = "Divisi Roppongi"
-		divisionTier = "Diamond Master"
+		divisionName = "Liga Berlian"
+		divisionTier = "Diamond Master (1.500+ XP)"
 	}
 
 	// Query 100% real active users belonging to the requested division tier from PostgreSQL
