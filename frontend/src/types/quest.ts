@@ -34,7 +34,7 @@ export interface QuestSummary {
   chapter_number?: number
   title: string
   chip_label: string
-  type: 'main' | 'side' | 'daily'
+  type: 'main' | 'side' | 'daily' | 'boss'
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string
   xp_reward: number
   estimated_minutes: number
@@ -46,7 +46,7 @@ export interface Quest {
   id: string
   title: string
   description?: string
-  type: 'main' | 'side' | 'daily'
+  type: 'main' | 'side' | 'daily' | 'boss'
   career_path_id?: string
   country_id?: string
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string

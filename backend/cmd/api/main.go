@@ -60,6 +60,7 @@ func main() {
 	userQuestRepo := database.NewUserQuestRepository(pg)
 	vocabRepo := database.NewVocabularyRepository(pg)
 	leaderboardRepo := database.NewLeaderboardRepository(pg)
+	gamificationRepo := database.NewGamificationRepository(pg)
 
 	// 5. Initialize Usecases (Business Logic Layer)
 	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
@@ -68,6 +69,7 @@ func main() {
 	questUsecase := usecase.NewQuestUsecase(questRepo, userQuestRepo, userRepo)
 	vocabUsecase := usecase.NewVocabularyUsecase(vocabRepo)
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, userRepo)
+	gamificationUsecase := usecase.NewGamificationUsecase(gamificationRepo, userRepo)
 
 	// 6. Initialize Handlers & Middlewares (Delivery Layer)
 	healthHandler := handler.NewHealthHandler(pg, rdb)
@@ -77,6 +79,7 @@ func main() {
 	questHandler := handler.NewQuestHandler(questUsecase)
 	vocabHandler := handler.NewVocabularyHandler(vocabUsecase)
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUsecase)
+	gamificationHandler := handler.NewGamificationHandler(gamificationUsecase)
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
 
@@ -89,6 +92,7 @@ func main() {
 		QuestHandler:           questHandler,
 		VocabularyHandler:      vocabHandler,
 		LeaderboardHandler:     leaderboardHandler,
+		GamificationHandler:    gamificationHandler,
 		AuthMiddleware:         authMiddleware,
 		OptionalAuthMiddleware: optionalAuth,
 	})

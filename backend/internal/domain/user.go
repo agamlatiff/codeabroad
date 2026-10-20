@@ -36,6 +36,7 @@ type User struct {
 	XP             int        `json:"xp"`
 	CurrentLevel int        `json:"current_level"`
 	Streak       int        `json:"streak"`
+	Gems         int        `json:"gems"`
 	LastActiveAt *time.Time `json:"last_active_at"`
 	IsOnboarded  bool       `json:"is_onboarded"`
 	CreatedAt    time.Time  `json:"created_at"`
@@ -135,6 +136,7 @@ type UserRepository interface {
 	GetWeeklyActivityLogs(ctx context.Context, userID string) (*UserActivitySummary, error)
 	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error)
 	GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error)
+	AddGems(ctx context.Context, userID string, gems int) (int, error)
 }
 
 // AuthUsecase specifies the business logic contract for authentication

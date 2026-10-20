@@ -175,7 +175,7 @@ func (r *QuestRepository) GetDailyQuests(ctx context.Context, userID string) ([]
 		FROM quests q
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $1
 		WHERE q.type = 'daily' AND q.is_active = TRUE
-		ORDER BY q.order_index ASC
+		ORDER BY ((q.order_index + EXTRACT(DOY FROM CURRENT_DATE)::INT) % 10) ASC
 		LIMIT 3
 	`
 	rows, err := r.db.Pool.Query(ctx, query, userID)

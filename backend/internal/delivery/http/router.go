@@ -16,6 +16,7 @@ type RouterConfig struct {
 	QuestHandler      *handler.QuestHandler
 	VocabularyHandler *handler.VocabularyHandler
 	LeaderboardHandler *handler.LeaderboardHandler
+	GamificationHandler *handler.GamificationHandler
 	AuthMiddleware    gin.HandlerFunc
 	OptionalAuthMiddleware gin.HandlerFunc
 }
@@ -57,6 +58,9 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine {
 		}
 		if cfg.LeaderboardHandler != nil {
 			cfg.LeaderboardHandler.RegisterRoutes(v1, cfg.OptionalAuthMiddleware)
+		}
+		if cfg.GamificationHandler != nil {
+			cfg.GamificationHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 		}
 	}
 	return r

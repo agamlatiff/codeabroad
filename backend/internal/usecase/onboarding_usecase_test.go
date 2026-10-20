@@ -198,6 +198,15 @@ func (m *onboardingMockUserRepo) UpdateGamification(ctx context.Context, userID 
 	return nil
 }
 
+func (m *onboardingMockUserRepo) AddGems(ctx context.Context, userID string, gems int) (int, error) {
+	u := m.users[userID]
+	if u == nil {
+		return 0, domain.ErrUserNotFound
+	}
+	u.Gems += gems
+	return u.Gems, nil
+}
+
 func (m *onboardingMockUserRepo) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
 	u := m.users[userID]
 	if u == nil {

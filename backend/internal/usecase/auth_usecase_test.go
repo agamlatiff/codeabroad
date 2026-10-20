@@ -115,6 +115,15 @@ func (m *mockUserRepository) GetDailyRewardsStatus(ctx context.Context, userID s
 	}, nil
 }
 
+func (m *mockUserRepository) AddGems(ctx context.Context, userID string, gems int) (int, error) {
+	user := m.usersByID[userID]
+	if user == nil {
+		return 0, domain.ErrUserNotFound
+	}
+	user.Gems += gems
+	return user.Gems, nil
+}
+
 // mockSessionRepository implements an in-memory domain.SessionRepository for unit testing
 type mockSessionRepository struct {
 	sessions map[string]string

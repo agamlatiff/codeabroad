@@ -4,6 +4,8 @@ import { NavRail } from '../components/layout/NavRail'
 import { useAuthStore } from '../store/authStore'
 import { authService } from '../services/authService'
 import { questService } from '../services/questService'
+import { gamificationService } from '../services/gamificationService'
+import type { Quest } from '../types/quest'
 import { useQuests } from '../hooks/useQuests'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
@@ -247,6 +249,52 @@ export const QuestLogPage = () => {
     }
   })
 
+  // Real backend Boss Quests (Sayembara Boss from DB)
+  const [backendBossQuests, setBackendBossQuests] = useState<Quest[]>([])
+
+  // Fetch real SSOT gamification status and Boss quests from backend API
+  useEffect(() => {
+    let isMounted = true
+
+    // 1. Fetch gamification status (gems, inventory, chest claims, badges)
+    gamificationService
+      .getStatus()
+      .then((status) => {
+        if (!isMounted) return
+        setUserGems(status.gems)
+        updateUser({ gems: status.gems })
+        setInventory(status.inventory)
+        if (status.claimed_chests && status.claimed_chests.length > 0) {
+          const claimMap: Record<number, boolean> = {}
+          status.claimed_chests.forEach((t) => {
+            claimMap[t] = true
+          })
+          setClaimedDailyChests((prev) => ({ ...prev, ...claimMap }))
+        }
+        if (status.monthly_badge_claimed) {
+          setIsMonthlyBadgeClaimed(true)
+        }
+      })
+      .catch(() => {
+        // Gracefully continue with local state
+      })
+
+    // 2. Fetch real Boss Quests from PostgreSQL
+    questService
+      .listQuests({ type: 'boss' })
+      .then((quests) => {
+        if (!isMounted || !quests || quests.length === 0) return
+        setBackendBossQuests(quests)
+      })
+      .catch(() => {
+        // Fallback to curriculum challenges
+      })
+
+    return () => {
+      isMounted = false
+    }
+  }, [updateUser])
+
   // Fetch real user completed quests from backend API
   useEffect(() => {
     let isMounted = true
@@ -390,44 +438,70 @@ export const QuestLogPage = () => {
   }
 
   // Handle CV Review Submission
-  const handleCVSubmitted = (data: { githubUrl: string; resumeUrl: string; targetRole: string; notes: string }) => {
-    const owned = inventory['cv-review'] || 0
-    const newInventory = {
-      ...inventory,
-      ['cv-review']: Math.max(0, owned - 1),
-    }
-    setInventory(newInventory)
+  const handleCVSubmitted = async (data: { githubUrl: string; resumeUrl: string; targetRole: string; notes: string }) => {
     try {
-      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+      const res = await gamificationService.submitCoaching({
+        type: 'cv-review',
+        github_url: data.githubUrl,
+        resume_url: data.resumeUrl,
+        target_role: data.targetRole,
+        notes: data.notes,
+      })
+      setInventory(res.status.inventory)
+      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(res.status.inventory))
       window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
-
-      const submissions = JSON.parse(localStorage.getItem('codeabroad_cv_submissions') || '[]')
-      submissions.push({ ...data, submittedAt: new Date().toISOString(), status: 'in_review' })
-      localStorage.setItem('codeabroad_cv_submissions', JSON.stringify(submissions))
     } catch {
-      // ignore
+      const owned = inventory['cv-review'] || 0
+      const newInventory = {
+        ...inventory,
+        ['cv-review']: Math.max(0, owned - 1),
+      }
+      setInventory(newInventory)
+      try {
+        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+
+        const submissions = JSON.parse(localStorage.getItem('codeabroad_cv_submissions') || '[]')
+        submissions.push({ ...data, submittedAt: new Date().toISOString(), status: 'in_review' })
+        localStorage.setItem('codeabroad_cv_submissions', JSON.stringify(submissions))
+      } catch {
+        // ignore
+      }
     }
 
     showToast('📋 Kupon CV Review berhasil digunakan. Mentor Tokyo sedang memeriksa berkas Anda!')
   }
 
   // Handle Mock Interview Schedule
-  const handleMockScheduled = (data: { language: string; discordHandle: string; focusTopic: string; preferredTime: string }) => {
-    const owned = inventory['mock-interview'] || 0
-    const newInventory = {
-      ...inventory,
-      ['mock-interview']: Math.max(0, owned - 1),
-    }
-    setInventory(newInventory)
+  const handleMockScheduled = async (data: { language: string; discordHandle: string; focusTopic: string; preferredTime: string }) => {
     try {
-      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+      const res = await gamificationService.submitCoaching({
+        type: 'mock-interview',
+        discord_handle: data.discordHandle,
+        interview_language: data.language,
+        focus_topic: data.focusTopic,
+        preferred_time: data.preferredTime,
+      })
+      setInventory(res.status.inventory)
+      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(res.status.inventory))
       window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
-
-      const schedules = JSON.parse(localStorage.getItem('codeabroad_mock_schedules') || '[]')
-      schedules.push({ ...data, scheduledAt: new Date().toISOString(), status: 'confirmed_discord' })
-      localStorage.setItem('codeabroad_mock_schedules', JSON.stringify(schedules))
     } catch {
-      // ignore
+      const owned = inventory['mock-interview'] || 0
+      const newInventory = {
+        ...inventory,
+        ['mock-interview']: Math.max(0, owned - 1),
+      }
+      setInventory(newInventory)
+      try {
+        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
+        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+
+        const schedules = JSON.parse(localStorage.getItem('codeabroad_mock_schedules') || '[]')
+        schedules.push({ ...data, scheduledAt: new Date().toISOString(), status: 'confirmed_discord' })
+        localStorage.setItem('codeabroad_mock_schedules', JSON.stringify(schedules))
+      } catch {
+        // ignore
+      }
     }
 
     showToast('🎙️ Pengajuan Mock Interview VIP berhasil dikirim! Silakan periksa Discord Anda.')
@@ -454,7 +528,7 @@ export const QuestLogPage = () => {
   }
 
   // Confirm claim chest reward from unboxing modal
-  const handleConfirmClaimChest = () => {
+  const handleConfirmClaimChest = async () => {
     if (!selectedChestForModal) return
     const tier = selectedChestForModal.tier
     const nextChests = { ...claimedDailyChests, [tier]: true }
@@ -465,8 +539,13 @@ export const QuestLogPage = () => {
       // ignore
     }
 
-    const nextGems = userGems + selectedChestForModal.gemReward
-    updateGemsState(nextGems)
+    try {
+      const res = await gamificationService.claimDailyChest(tier)
+      updateGemsState(res.status.gems)
+    } catch {
+      const nextGems = userGems + selectedChestForModal.gemReward
+      updateGemsState(nextGems)
+    }
 
     if (selectedChestForModal.xpReward > 0) {
       window.dispatchEvent(
@@ -483,7 +562,7 @@ export const QuestLogPage = () => {
   }
 
   // Claim Monthly Roppongi Gold Badge
-  const handleClaimMonthlyBadge = () => {
+  const handleClaimMonthlyBadge = async () => {
     setIsMonthlyBadgeClaimed(true)
     try {
       localStorage.setItem(monthlyBadgeKey, 'true')
@@ -491,8 +570,14 @@ export const QuestLogPage = () => {
       // ignore
     }
 
-    const nextGems = userGems + 50
-    updateGemsState(nextGems)
+    try {
+      const res = await gamificationService.claimMonthlyBadge()
+      updateGemsState(res.gems)
+    } catch {
+      const nextGems = userGems + 50
+      updateGemsState(nextGems)
+    }
+
     window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: 150 } }))
 
     setFloatingReward('+150 XP • +50 💎')
@@ -502,7 +587,7 @@ export const QuestLogPage = () => {
   }
 
   // Handle Akihabara Arcade item purchase
-  const handlePurchaseShopItem = (item: ShopItem) => {
+  const handlePurchaseShopItem = async (item: ShopItem) => {
     if (userGems < item.price) {
       triggerHaptic('error')
       showToast(`⚠️ Saldo Gems tidak cukup! Butuh ${item.price} Gems (Saldo: ${userGems}).`)
@@ -512,22 +597,35 @@ export const QuestLogPage = () => {
     triggerHaptic('success')
     audioEngine.playPop()
 
-    const newGems = userGems - item.price
-    updateGemsState(newGems)
-
-    const nextInventory = {
-      ...inventory,
-      [item.id]: (inventory[item.id] || 0) + 1,
-    }
-    setInventory(nextInventory)
     try {
-      localStorage.setItem('codeabroad_user_inventory', JSON.stringify(nextInventory))
-      window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+      const updatedStatus = await gamificationService.buyShopItem(item.id)
+      updateGemsState(updatedStatus.gems)
+      setInventory(updatedStatus.inventory)
+      try {
+        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(updatedStatus.inventory))
+        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+      } catch {
+        // ignore
+      }
+      showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${updatedStatus.gems} Gems.`)
     } catch {
-      // ignore
-    }
+      const newGems = userGems - item.price
+      updateGemsState(newGems)
 
-    showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${newGems} Gems.`)
+      const nextInventory = {
+        ...inventory,
+        [item.id]: (inventory[item.id] || 0) + 1,
+      }
+      setInventory(nextInventory)
+      try {
+        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(nextInventory))
+        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+      } catch {
+        // ignore
+      }
+
+      showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${newGems} Gems.`)
+    }
   }
 
   // 3 Daily Quests (The Core Habit Loop, cleanly checked against SSOT)
@@ -653,9 +751,9 @@ export const QuestLogPage = () => {
     )
   }, [canonicalDailyList, searchQuery])
 
-  // Tokyo Boss & Portfolio Challenges (Hooked directly to valid curriculum parts)
+  // Tokyo Boss & Portfolio Challenges (Hooked directly to PostgreSQL DB & curriculum parts)
   const portfolioChallenges = useMemo(() => {
-    const challenges = [
+    let challenges = [
       {
         id: 'boss-worker-pool',
         title: 'High-Concurrency Worker Pool Engine (Mercari Tokyo Spec)',
@@ -668,7 +766,9 @@ export const QuestLogPage = () => {
         sponsorTag: 'MERCARI TOKYO LABS 🇯🇵',
         sponsorBadgeBg: 'bg-red-50 text-red-700 border-red-200',
         route: '/learn/part-7-worker-pool-concurrency',
-        isCompleted: completedQuestsSet.has('part-7-worker-pool-concurrency'),
+        isCompleted:
+          completedQuestsSet.has('part-7-worker-pool-concurrency') ||
+          completedQuestsSet.has('b1000001-0000-0000-0000-000000000001'),
       },
       {
         id: 'capstone-clean-arch',
@@ -682,9 +782,48 @@ export const QuestLogPage = () => {
         sponsorTag: 'RAKUTEN SYMPHONY 🌟',
         sponsorBadgeBg: 'bg-purple-50 text-purple-700 border-purple-200',
         route: '/learn/part-11-clean-architecture-repository',
-        isCompleted: completedQuestsSet.has('part-11-clean-architecture-repository'),
+        isCompleted:
+          completedQuestsSet.has('part-11-clean-architecture-repository') ||
+          completedQuestsSet.has('b1000002-0000-0000-0000-000000000002'),
       },
     ]
+
+    if (backendBossQuests && backendBossQuests.length > 0) {
+      challenges = backendBossQuests.map((q) => {
+        const isWorkerPool = q.order_index === 1 || q.title.toLowerCase().includes('worker pool')
+        const route = isWorkerPool
+          ? '/learn/part-7-worker-pool-concurrency'
+          : '/learn/part-11-clean-architecture-repository'
+        const curriculumId = isWorkerPool
+          ? 'part-7-worker-pool-concurrency'
+          : 'part-11-clean-architecture-repository'
+        const isDone =
+          q.user_status === 'completed' ||
+          completedQuestsSet.has(q.id) ||
+          completedQuestsSet.has(curriculumId)
+
+        return {
+          id: q.id,
+          title: q.title,
+          subtitle:
+            q.description ||
+            'Tantangan arsitektur backend berskala tinggi standar perusahaan teknologi Tokyo.',
+          tags: isWorkerPool
+            ? ['GOLANG', 'HIGH CONCURRENCY', 'MERCARI SPEC']
+            : ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER'],
+          icon: isWorkerPool ? '🔥' : '🏛️',
+          xp_reward: q.xp_reward,
+          gem_reward: Math.round(q.xp_reward / 5),
+          sponsorTag:
+            q.chip_label || (isWorkerPool ? 'MERCARI TOKYO LABS 🇯🇵' : 'RAKUTEN SYMPHONY 🌟'),
+          sponsorBadgeBg: isWorkerPool
+            ? 'bg-red-50 text-red-700 border-red-200'
+            : 'bg-purple-50 text-purple-700 border-purple-200',
+          route,
+          isCompleted: isDone,
+        }
+      })
+    }
 
     if (!searchQuery.trim()) return challenges
     const q = searchQuery.toLowerCase()
@@ -694,7 +833,7 @@ export const QuestLogPage = () => {
         c.subtitle.toLowerCase().includes(q) ||
         c.tags.some((t) => t.toLowerCase().includes(q))
     )
-  }, [searchQuery, completedQuestsSet])
+  }, [backendBossQuests, completedQuestsSet, searchQuery])
 
   // Monthly Quest Progress Calculation (Authentic Duolingo Monthly Badge Challenge)
   const totalCompletedCount = completedQuestsSet.size

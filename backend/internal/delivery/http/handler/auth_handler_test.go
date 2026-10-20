@@ -56,6 +56,15 @@ func (r *testUserRepo) UpdateGamification(ctx context.Context, userID string, xp
 	return nil
 }
 
+func (r *testUserRepo) AddGems(ctx context.Context, userID string, gems int) (int, error) {
+	u := r.users[userID]
+	if u == nil {
+		return 0, domain.ErrUserNotFound
+	}
+	u.Gems += gems
+	return u.Gems, nil
+}
+
 func (r *testUserRepo) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
 	u := r.users[userID]
 	if u == nil {

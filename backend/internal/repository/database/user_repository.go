@@ -26,9 +26,9 @@ func NewUserRepository(db *postgres.PostgresDB) domain.UserRepository {
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 	query := `
 		INSERT INTO users (
-			name, username, email, password_hash, level, xp, current_level, streak, is_onboarded
+			name, username, email, password_hash, level, xp, current_level, streak, gems, is_onboarded
 		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9
+			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
 		)
 		RETURNING id, created_at, updated_at
 	`
@@ -43,6 +43,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 		user.XP,
 		user.CurrentLevel,
 		user.Streak,
+		user.Gems,
 		user.IsOnboarded,
 	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
 
@@ -56,7 +57,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
 	query := `
 		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, last_active_at, is_onboarded,
+		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, COALESCE(gems, 0), last_active_at, is_onboarded,
 		       created_at, updated_at
 		FROM users
 		WHERE email = $1
@@ -82,6 +83,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 		&user.XP,
 		&user.CurrentLevel,
 		&user.Streak,
+		&user.Gems,
 		&user.LastActiveAt,
 		&user.IsOnboarded,
 		&user.CreatedAt,
@@ -102,7 +104,7 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.
 func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
 	query := `
 		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, last_active_at, is_onboarded,
+		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, COALESCE(gems, 0), last_active_at, is_onboarded,
 		       created_at, updated_at
 		FROM users
 		WHERE username = $1
@@ -129,6 +131,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 		&user.XP,
 		&user.CurrentLevel,
 		&user.Streak,
+		&user.Gems,
 		&user.LastActiveAt,
 		&user.IsOnboarded,
 		&user.CreatedAt,
@@ -148,7 +151,7 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, error) {
 	query := `
 		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, last_active_at, is_onboarded,
+		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, COALESCE(gems, 0), last_active_at, is_onboarded,
 		       created_at, updated_at
 		FROM users
 		WHERE id = $1
@@ -174,6 +177,7 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 		&user.XP,
 		&user.CurrentLevel,
 		&user.Streak,
+		&user.Gems,
 		&user.LastActiveAt,
 		&user.IsOnboarded,
 		&user.CreatedAt,
@@ -230,7 +234,7 @@ func (r *UserRepository) UpdateOnboarding(
 func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
 	query := `
 		SELECT 
-			u.id, u.name, u.username, u.email, u.level, u.xp, u.current_level, u.streak, u.is_onboarded, u.primary_stack, u.target_timeline, u.language_level, u.created_at,
+			u.id, u.name, u.username, u.email, u.level, u.xp, u.current_level, u.streak, COALESCE(u.gems, 0), u.is_onboarded, u.primary_stack, u.target_timeline, u.language_level, u.created_at,
 			c.id, c.code, c.name, c.flag_emoji,
 			cp.id, cp.slug, cp.label
 		FROM users u
@@ -252,6 +256,7 @@ func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID strin
 		&profile.XP,
 		&profile.CurrentLevel,
 		&profile.Streak,
+		&profile.Gems,
 		&profile.IsOnboarded,
 		&profile.PrimaryStack,
 		&profile.TargetTimeline,
@@ -327,7 +332,21 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *
 	return r.GetByID(ctx, userID)
 }
 
-// LogActivity records an explicit learning activity and updates last_active_at
+// AddGems increments or decrements a user's gems balance and returns the new total
+func (r *UserRepository) AddGems(ctx context.Context, userID string, gems int) (int, error) {
+	query := `
+		UPDATE users
+		SET gems = GREATEST(0, gems + $2), updated_at = NOW()
+		WHERE id = $1
+		RETURNING gems
+	`
+	var newTotal int
+	err := r.db.Pool.QueryRow(ctx, query, userID, gems).Scan(&newTotal)
+	if err != nil {
+		return 0, fmt.Errorf("failed to update user gems: %w", err)
+	}
+	return newTotal, nil
+}
 func (r *UserRepository) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
 	var metaJSON []byte
 	if metadata != nil {
