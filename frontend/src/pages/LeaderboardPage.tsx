@@ -27,16 +27,14 @@ export const LeaderboardPage = () => {
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
-  // 4 Official Tokyo League Divisions with tier badges, icons & XP criteria
+  // 4 Official Tokyo League Divisions with uniform Medal icons and solid metallic material colors
   const DIVISIONS: {
     id: TokyoDivision
     name: string
     tier: string
     xpRange: string
     levelLabel: string
-    icon: typeof Medal
     iconColor: string
-    activeIconColor: string
     badgeColor: string
     description: string
   }[] = [
@@ -46,9 +44,7 @@ export const LeaderboardPage = () => {
       tier: 'Bronze League',
       xpRange: '0 – 299 XP',
       levelLabel: 'Pemula',
-      icon: Medal,
-      iconColor: 'text-amber-700',
-      activeIconColor: 'text-amber-600',
+      iconColor: 'text-[#B45309]',
       badgeColor: 'border-amber-500 bg-amber-50 text-amber-900',
       description: 'Zona kompetisi bagi engineer baru yang memulai jalur kurikulum Tokyo.',
     },
@@ -58,9 +54,7 @@ export const LeaderboardPage = () => {
       tier: 'Silver League',
       xpRange: '300 – 799 XP',
       levelLabel: 'Menengah',
-      icon: Star,
-      iconColor: 'text-slate-400',
-      activeIconColor: 'text-slate-500',
+      iconColor: 'text-[#94A3B8]',
       badgeColor: 'border-slate-400 bg-slate-50 text-slate-800',
       description: 'Kompetisi aktif bagi engineer yang menguasai sintaks dasar & REST API.',
     },
@@ -70,9 +64,7 @@ export const LeaderboardPage = () => {
       tier: 'Gold League',
       xpRange: '800 – 1.499 XP',
       levelLabel: 'Lanjutan',
-      icon: Trophy,
-      iconColor: 'text-amber-500',
-      activeIconColor: 'text-amber-500',
+      iconColor: 'text-[#F59E0B]',
       badgeColor: 'border-amber-400 bg-amber-50/60 text-amber-900',
       description: 'Engineer tingkat lanjut dengan penguasaan concurrency & cloud Docker.',
     },
@@ -82,9 +74,7 @@ export const LeaderboardPage = () => {
       tier: 'Diamond Master',
       xpRange: '1.500+ XP',
       levelLabel: 'Master',
-      icon: Crown,
-      iconColor: 'text-cyan-500',
-      activeIconColor: 'text-cyan-500',
+      iconColor: 'text-[#06B6D4]',
       badgeColor: 'border-cyan-500 bg-cyan-50/70 text-cyan-950',
       description: 'Puncak liga global Tokyo: siap interview teknis dan sponsor visa kerja Jepang.',
     },
@@ -171,7 +161,6 @@ export const LeaderboardPage = () => {
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {DIVISIONS.map((div) => {
               const isSelected = selectedDivision === div.id
-              const IconComponent = div.icon
               return (
                 <button
                   key={div.id}
@@ -187,9 +176,9 @@ export const LeaderboardPage = () => {
                     <span className="font-brand font-black text-xs sm:text-sm text-slate-900">
                       {div.name}
                     </span>
-                    <IconComponent
-                      weight={isSelected ? 'fill' : 'bold'}
-                      className={`w-5 h-5 ${isSelected ? div.activeIconColor : div.iconColor}`}
+                    <Medal
+                      weight="fill"
+                      className={`w-5 h-5 shrink-0 drop-shadow-2xs ${div.iconColor}`}
                     />
                   </div>
                   <div className="flex items-center gap-1.5 flex-wrap">

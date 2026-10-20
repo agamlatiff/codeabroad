@@ -36,16 +36,15 @@ export const TokyoLeaderboardModal = ({
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
 
-  // 4 Official Tokyo League Divisions with tier badges, icons & XP criteria
+  // 4 Official Tokyo League Divisions with uniform Medal icons and solid metallic material colors
   const DIVISIONS: {
     id: TokyoDivision
     name: string
     tier: string
     xpRange: string
     levelLabel: string
-    icon: typeof Medal
     iconColor: string
-    activeIconColor: string
+    badgeBg: string
   }[] = [
     {
       id: 'shinjuku',
@@ -53,9 +52,8 @@ export const TokyoLeaderboardModal = ({
       tier: 'Bronze League',
       xpRange: '0 – 299 XP',
       levelLabel: 'Pemula',
-      icon: Medal,
-      iconColor: 'text-amber-700',
-      activeIconColor: 'text-amber-600',
+      iconColor: 'text-[#B45309]',
+      badgeBg: 'bg-amber-50 text-amber-900 border-amber-200',
     },
     {
       id: 'shibuya',
@@ -63,9 +61,8 @@ export const TokyoLeaderboardModal = ({
       tier: 'Silver League',
       xpRange: '300 – 799 XP',
       levelLabel: 'Menengah',
-      icon: Star,
-      iconColor: 'text-slate-400',
-      activeIconColor: 'text-slate-500',
+      iconColor: 'text-[#94A3B8]',
+      badgeBg: 'bg-slate-100 text-slate-800 border-slate-300',
     },
     {
       id: 'akihabara',
@@ -73,9 +70,8 @@ export const TokyoLeaderboardModal = ({
       tier: 'Gold League',
       xpRange: '800 – 1.499 XP',
       levelLabel: 'Lanjutan',
-      icon: Trophy,
-      iconColor: 'text-amber-500',
-      activeIconColor: 'text-amber-500',
+      iconColor: 'text-[#F59E0B]',
+      badgeBg: 'bg-amber-100 text-amber-950 border-amber-300',
     },
     {
       id: 'roppongi',
@@ -83,9 +79,8 @@ export const TokyoLeaderboardModal = ({
       tier: 'Diamond Master',
       xpRange: '1.500+ XP',
       levelLabel: 'Master',
-      icon: Crown,
-      iconColor: 'text-cyan-500',
-      activeIconColor: 'text-cyan-500',
+      iconColor: 'text-[#06B6D4]',
+      badgeBg: 'bg-cyan-50 text-cyan-900 border-cyan-200',
     },
   ]
 
@@ -169,7 +164,6 @@ export const TokyoLeaderboardModal = ({
         <div className="px-4 sm:px-5 pt-4 pb-2 bg-white border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
           {DIVISIONS.map((div) => {
             const isSelected = selectedDivision === div.id
-            const IconComponent = div.icon
             return (
               <button
                 key={div.id}
@@ -182,9 +176,9 @@ export const TokyoLeaderboardModal = ({
                 }`}
               >
                 <div className="flex items-center gap-1.5">
-                  <IconComponent
-                    weight={isSelected ? 'fill' : 'bold'}
-                    className={`w-4 h-4 ${isSelected ? div.activeIconColor : div.iconColor}`}
+                  <Medal
+                    weight="fill"
+                    className={`w-4 h-4 shrink-0 drop-shadow-2xs ${div.iconColor}`}
                   />
                   <span className="font-brand font-black text-xs text-slate-900">
                     {div.name}
