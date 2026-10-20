@@ -155,7 +155,7 @@ export const GameTopBar = ({
               triggerHaptic('tap')
               onOpenCourseSwitcher()
             }}
-            className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink min-w-0"
+            className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink min-w-0"
             title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
           >
             <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -169,7 +169,7 @@ export const GameTopBar = ({
               <span className="sm:hidden">{shortTrackTitle}</span>
               <span className="hidden sm:inline">{currentTrackConfig.title}</span>
             </span>
-            <CaretDown weight="bold" className="w-3 h-3 text-slate-400 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
+            <CaretDown weight="bold" className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
           </button>
 
           {/* Track Linear Progress Bar (Inline on Desktop XL Only) */}
@@ -186,81 +186,84 @@ export const GameTopBar = ({
           </div>
         </div>
 
-        {/* ── RIGHT: GAME STATUS HUD (TACTILE DUOLINGO MICRO-CHIPS) ── */}
-        <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0 max-w-full">
-          {/* Active XP Booster Potion Chip */}
-          {boosterTimeLeft && (
-            <div
-              className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-50 border border-purple-300 text-purple-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs animate-pulse ring-2 ring-purple-200"
-              title="XP Booster Aktif: 2x XP untuk setiap latihan & kuis!"
-            >
-              <Flask weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 animate-bounce shrink-0" />
-              <span>2x ({boosterTimeLeft})</span>
-            </div>
-          )}
-
-          {/* Streak Fire Chip with Freeze Protection Badge */}
-          <div
-            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-            title={`Rentetan Belajar: ${userStreak} Hari${streakFreezeCount > 0 ? ` • ${streakFreezeCount}x Perlindungan Streak Freeze Aktif ❄️` : ''}`}
-          >
-            <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 animate-pulse shrink-0" />
-            <span>{userStreak}</span>
-            <span className="hidden sm:inline">&nbsp;Hari</span>
-            {streakFreezeCount > 0 && (
-              <span className="text-[9px] sm:text-[10px] bg-blue-100 text-blue-800 px-1 py-0.2 rounded font-mono font-bold flex items-center">
-                ❄️{streakFreezeCount}
-              </span>
+        {/* ── RIGHT: GAME STATUS HUD + SEPARATE TACTILE GIFT BUTTON ── */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+          {/* HUD Micro-Chips Container */}
+          <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0">
+            {/* Active XP Booster Potion Chip */}
+            {boosterTimeLeft && (
+              <div
+                className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-50 border border-purple-300 text-purple-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs animate-pulse ring-2 ring-purple-200"
+                title="XP Booster Aktif: 2x XP untuk setiap latihan & kuis!"
+              >
+                <Flask weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-600 animate-bounce shrink-0" />
+                <span>2x ({boosterTimeLeft})</span>
+              </div>
             )}
+
+            {/* Streak Fire Chip with Freeze Protection Badge */}
+            <div
+              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+              title={`Rentetan Belajar: ${userStreak} Hari${streakFreezeCount > 0 ? ` • ${streakFreezeCount}x Perlindungan Streak Freeze Aktif ❄️` : ''}`}
+            >
+              <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 animate-pulse shrink-0" />
+              <span>{userStreak}</span>
+              <span className="hidden sm:inline">&nbsp;Hari</span>
+              {streakFreezeCount > 0 && (
+                <span className="text-[9px] sm:text-[10px] bg-blue-100 text-blue-800 px-1 py-0.2 rounded font-mono font-bold flex items-center">
+                  ❄️{streakFreezeCount}
+                </span>
+              )}
+            </div>
+
+            {/* Gems Diamond Chip */}
+            <div
+              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+              title={`Saldo Permata Tokyo: ${userGems} Gems`}
+            >
+              <span className="text-xs sm:text-sm shrink-0">💎</span>
+              <span>{userGems}</span>
+            </div>
+
+            {/* XP Star Chip (Hidden on mobile < sm to keep top bar clean and spacious) */}
+            <div
+              className={`hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
+                isXpPulsing ? 'animate-pulse-ring bg-amber-100 scale-105' : ''
+              }`}
+              title={`Total Pengalaman Koding: ${userXp} XP`}
+            >
+              <Star weight="fill" className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0 ${isXpPulsing ? 'animate-bounce' : ''}`} />
+              <span>{userXp}</span>
+              <span className="hidden sm:inline">&nbsp;XP</span>
+            </div>
+
+            {/* Kodi Companion Level Chip (Hidden on mobile < sm to keep top bar 100% overlap-free) */}
+            <div
+              className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+              title={`Level Kodi: Tingkat ${userLevel}`}
+            >
+              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
+              <span className="hidden md:inline">Tingkat </span>
+              <span className="md:hidden">Lv.</span>
+              <span>{userLevel}</span>
+            </div>
+
+            {/* Tokyo League Leaderboard Tactile Button (Hidden on mobile < md because bottom nav already has Peringkat tab) */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                onOpenLeaderboard()
+              }}
+              className="hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+              title="Buka Papan Peringkat Liga Tokyo"
+            >
+              <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
+              <span className="hidden md:inline">Liga</span>
+            </button>
           </div>
 
-          {/* Gems Diamond Chip */}
-          <div
-            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-            title={`Saldo Permata Tokyo: ${userGems} Gems`}
-          >
-            <span className="text-xs sm:text-sm shrink-0">💎</span>
-            <span>{userGems}</span>
-          </div>
-
-          {/* XP Star Chip (Hidden on mobile < sm to keep top bar clean and spacious) */}
-          <div
-            className={`hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all ${
-              isXpPulsing ? 'animate-pulse-ring bg-amber-100 scale-105' : ''
-            }`}
-            title={`Total Pengalaman Koding: ${userXp} XP`}
-          >
-            <Star weight="fill" className={`w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0 ${isXpPulsing ? 'animate-bounce' : ''}`} />
-            <span>{userXp}</span>
-            <span className="hidden sm:inline">&nbsp;XP</span>
-          </div>
-
-          {/* Kodi Companion Level Chip (Hidden on mobile < sm to keep top bar 100% overlap-free) */}
-          <div
-            className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-            title={`Level Kodi: Tingkat ${userLevel}`}
-          >
-            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-            <span className="hidden md:inline">Tingkat </span>
-            <span className="md:hidden">Lv.</span>
-            <span>{userLevel}</span>
-          </div>
-
-          {/* Tokyo League Leaderboard Tactile Button (Hidden on mobile < md because bottom nav already has Peringkat tab) */}
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('tap')
-              onOpenLeaderboard()
-            }}
-            className="hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
-            title="Buka Papan Peringkat Liga Tokyo"
-          >
-            <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
-            <span className="hidden md:inline">Liga</span>
-          </button>
-
-          {/* Mobile/Tablet Right Sidebar Drawer Trigger (Misi, Peti Hadiah & Nihongo) */}
+          {/* ── SEPARATE STANDALONE 3D TACTILE GIFT BUTTON (PROMINENT ICON & CLEAR AFFORDANCE) ── */}
           {onOpenMobileSidebar && (
             <button
               type="button"
@@ -268,11 +271,16 @@ export const GameTopBar = ({
                 triggerHaptic('tap')
                 onOpenMobileSidebar()
               }}
-              className="xl:hidden flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50 hover:bg-amber-100/90 border border-amber-200/90 text-amber-700 active:translate-y-0.5 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
+              className="xl:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white shadow-[0_3px_0_0_#B45309] active:shadow-none active:translate-y-0.5 border-2 border-amber-300/90 flex items-center justify-center shrink-0 transition-all cursor-pointer relative group"
               title="Buka Misi Harian, Rentetan, & Peti Hadiah"
+              aria-label="Buka Menu Misi & Peti Hadiah"
             >
-              <Gift weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 group-hover:scale-110 transition-transform shrink-0 animate-bounce" />
-              <span className="hidden sm:inline">Peti & Misi</span>
+              <Gift weight="fill" className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-white drop-shadow-xs transition-transform group-hover:scale-110 animate-bounce" />
+              {/* Active notification indicator dot */}
+              <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-2xs" />
+              </span>
             </button>
           )}
         </div>
