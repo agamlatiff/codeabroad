@@ -12,6 +12,8 @@ import {
   GameTopBar,
   CourseSwitcherModal,
   TokyoLeaderboardModal,
+  ChestRewardModal,
+  MonthlyBadgeModal,
 } from '../components/game'
 import {
   CURRICULUM_TRACKS_MAP,
@@ -123,6 +125,48 @@ export const QuestLogPage = () => {
   // Active filter tab (Dedicated views: daily, boss, shop)
   const [activeTab, setActiveTab] = useState<QuestPageTab>('daily')
   const [searchQuery, setSearchQuery] = useState('')
+
+  // 3-Tier Milestone Chests state for today
+  const todayDateKey = useMemo(() => new Date().toISOString().split('T')[0], [])
+  const [claimedDailyChests, setClaimedDailyChests] = useState<Record<number, boolean>>(() => {
+    try {
+      const todayKey = new Date().toISOString().split('T')[0]
+      const stored = localStorage.getItem(`codeabroad_claimed_daily_chests_${todayKey}`)
+      return stored ? JSON.parse(stored) : {}
+    } catch {
+      return {}
+    }
+  })
+
+  // Selected chest for reward unboxing modal
+  const [selectedChestForModal, setSelectedChestForModal] = useState<{
+    tier: 1 | 2 | 3
+    label: string
+    reward: string
+    gemReward: number
+    xpReward: number
+    icon: string
+    unlocked: boolean
+  } | null>(null)
+  const [isChestModalOpen, setIsChestModalOpen] = useState(false)
+
+  // Monthly challenge dynamic date & claim state
+  const currentMonthYearName = useMemo(() => {
+    return new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
+  }, [])
+  const monthlyBadgeKey = useMemo(() => {
+    const now = new Date()
+    return `codeabroad_monthly_badge_${now.getFullYear()}_${now.getMonth() + 1}`
+  }, [])
+  const [isMonthlyBadgeClaimed, setIsMonthlyBadgeClaimed] = useState<boolean>(() => {
+    try {
+      const now = new Date()
+      return localStorage.getItem(`codeabroad_monthly_badge_${now.getFullYear()}_${now.getMonth() + 1}`) === 'true'
+    } catch {
+      return false
+    }
+  })
+  const [isMonthlyBadgeModalOpen, setIsMonthlyBadgeModalOpen] = useState(false)
 
   // Floating reward animation state
   const [floatingReward, setFloatingReward] = useState<string | null>(null)
@@ -293,6 +337,74 @@ export const QuestLogPage = () => {
     showToast(`🎉 Berhasil klaim +${xpReward} XP & 💎 ${gemReward} Gems!`)
   }
 
+  // Open chest modal or show guidance toast
+  const handleOpenChest = (chest: {
+    tier: 1 | 2 | 3
+    label: string
+    reward: string
+    gemReward: number
+    xpReward: number
+    icon: string
+    unlocked: boolean
+  }) => {
+    if (!chest.unlocked) {
+      triggerHaptic('error')
+      showToast(`⚠️ Selesaikan ${chest.tier - dailyDoneCount} misi harian lagi untuk membuka ${chest.label}!`)
+      return
+    }
+    triggerHaptic('tap')
+    setSelectedChestForModal(chest)
+    setIsChestModalOpen(true)
+  }
+
+  // Confirm claim chest reward from unboxing modal
+  const handleConfirmClaimChest = () => {
+    if (!selectedChestForModal) return
+    const tier = selectedChestForModal.tier
+    const nextChests = { ...claimedDailyChests, [tier]: true }
+    setClaimedDailyChests(nextChests)
+    try {
+      localStorage.setItem(`codeabroad_claimed_daily_chests_${todayDateKey}`, JSON.stringify(nextChests))
+    } catch {
+      // ignore
+    }
+
+    const nextGems = userGems + selectedChestForModal.gemReward
+    updateGemsState(nextGems)
+
+    if (selectedChestForModal.xpReward > 0) {
+      window.dispatchEvent(
+        new CustomEvent('codeabroad_xp_gained', { detail: { amount: selectedChestForModal.xpReward } })
+      )
+    }
+
+    setFloatingReward(
+      `+${selectedChestForModal.xpReward > 0 ? `${selectedChestForModal.xpReward} XP • ` : ''}+${selectedChestForModal.gemReward} 💎`
+    )
+    setTimeout(() => setFloatingReward(null), 2500)
+    showToast(`🎉 ${selectedChestForModal.label} berhasil dibuka! +${selectedChestForModal.gemReward} Gems ditambahkan.`)
+    setIsChestModalOpen(false)
+  }
+
+  // Claim Monthly Roppongi Gold Badge
+  const handleClaimMonthlyBadge = () => {
+    setIsMonthlyBadgeClaimed(true)
+    try {
+      localStorage.setItem(monthlyBadgeKey, 'true')
+    } catch {
+      // ignore
+    }
+
+    const nextGems = userGems + 50
+    updateGemsState(nextGems)
+    window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: 150 } }))
+
+    setFloatingReward('+150 XP • +50 💎')
+    setTimeout(() => setFloatingReward(null), 2500)
+    showToast(`🎉 Lencana Emas Roppongi (${currentMonthYearName}) berhasil disematkan ke portofolio Anda!`)
+    setIsMonthlyBadgeModalOpen(false)
+  }
+
   // Handle Akihabara Arcade item purchase
   const handlePurchaseShopItem = (item: ShopItem) => {
     if (userGems < item.price) {
@@ -424,13 +536,13 @@ export const QuestLogPage = () => {
           completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
           !!claimedDailyMap['daily-pointer-quiz']
             ? '50/50 XP'
-            : `${Math.min(50, (user?.xp || 0) % 50)}/50 XP`,
+            : `${Math.min(50, user?.xp || 0)}/50 XP`,
         progressPercent:
           completedQuestsSet.has('daily-pointer-quiz') ||
           completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
           !!claimedDailyMap['daily-pointer-quiz']
             ? 100
-            : Math.min(100, Math.round((((user?.xp || 0) % 50) / 50) * 100)),
+            : Math.min(100, Math.round(((user?.xp || 0) / 50) * 100)),
       },
     ]
   }, [dailyQuests, completedQuestsSet, claimedDailyMap, user?.xp])
@@ -613,7 +725,7 @@ export const QuestLogPage = () => {
 
                 <div className="space-y-1">
                   <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
-                    Lencana Emas Roppongi (Oktober 2026)
+                    Lencana Emas Roppongi ({currentMonthYearName})
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
                     Selesaikan 25 misi dan tantangan koding bulan ini untuk membuka lencana emas permanen di profil portofolio Anda.
@@ -638,6 +750,42 @@ export const QuestLogPage = () => {
                       className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706]"
                       style={{ width: `${monthlyProgressPercent}%` }}
                     />
+                  </div>
+
+                  {/* Monthly Challenge Action Button */}
+                  <div className="pt-2">
+                    <Button3D
+                      variant={monthlyCompletedCount >= monthlyTargetCount ? 'amber' : 'ghost'}
+                      size="sm"
+                      onClick={() => {
+                        triggerHaptic('tap')
+                        setIsMonthlyBadgeModalOpen(true)
+                      }}
+                      className={`text-xs px-4 py-2 ${
+                        isMonthlyBadgeClaimed
+                          ? 'bg-emerald-50 text-emerald-800 border-2 border-emerald-300'
+                          : monthlyCompletedCount >= monthlyTargetCount
+                          ? 'ring-4 ring-amber-300 animate-pulse shadow-md'
+                          : 'border-2 border-slate-200 bg-white/80 text-slate-700 hover:bg-white'
+                      }`}
+                    >
+                      {isMonthlyBadgeClaimed ? (
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+                          <span>LENCANA EMAS AKTIF DI PROFIL ✓</span>
+                        </span>
+                      ) : monthlyCompletedCount >= monthlyTargetCount ? (
+                        <span className="flex items-center gap-1.5">
+                          <Sparkle weight="fill" className="w-4 h-4 text-amber-950" />
+                          <span>KLAIM LENCANA EMAS BULAN INI (+50 💎)</span>
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <Medal weight="bold" className="w-4 h-4 text-amber-600" />
+                          <span>LIHAT DETAIL LENCANA ROPPONGI ➔</span>
+                        </span>
+                      )}
+                    </Button3D>
                   </div>
                 </div>
               </div>
@@ -809,32 +957,71 @@ export const QuestLogPage = () => {
                   </span>
                 </div>
 
-                {/* Progressive 3-Chest Milestones Display */}
+                {/* Progressive 3-Chest Milestones Display (Tactile 3D Buttons) */}
                 <div className="grid grid-cols-3 gap-2 pt-1">
                   {[
-                    { tier: 1, label: 'Peti Perunggu', reward: '+5 💎', icon: '🥉', unlocked: dailyDoneCount >= 1 },
-                    { tier: 2, label: 'Peti Perak', reward: '+10 💎', icon: '🥈', unlocked: dailyDoneCount >= 2 },
-                    { tier: 3, label: 'Peti Emas', reward: '+20 💎 & XP', icon: '👑', unlocked: dailyDoneCount >= 3 },
-                  ].map((chest) => (
-                    <div
-                      key={chest.tier}
-                      className={`p-2.5 rounded-xl border-2 flex items-center gap-2.5 transition-all ${
-                        chest.unlocked
-                          ? 'bg-amber-100/70 border-amber-300 text-amber-900 shadow-2xs scale-[1.02]'
-                          : 'bg-white border-slate-200/80 text-slate-400 opacity-70'
-                      }`}
-                    >
-                      <span className="text-xl">{chest.icon}</span>
-                      <div className="min-w-0">
-                        <span className="text-[10px] font-black uppercase tracking-wider block truncate">
-                          {chest.label}
-                        </span>
-                        <span className="text-xs font-black text-amber-700">
-                          {chest.unlocked ? `${chest.reward} ✓` : chest.reward}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    {
+                      tier: 1 as const,
+                      label: 'Peti Perunggu',
+                      reward: '+5 💎',
+                      gemReward: 5,
+                      xpReward: 0,
+                      icon: '🥉',
+                      unlocked: dailyDoneCount >= 1,
+                    },
+                    {
+                      tier: 2 as const,
+                      label: 'Peti Perak',
+                      reward: '+10 💎',
+                      gemReward: 10,
+                      xpReward: 0,
+                      icon: '🥈',
+                      unlocked: dailyDoneCount >= 2,
+                    },
+                    {
+                      tier: 3 as const,
+                      label: 'Peti Emas',
+                      reward: '+20 💎 & XP',
+                      gemReward: 20,
+                      xpReward: 50,
+                      icon: '👑',
+                      unlocked: dailyDoneCount >= 3,
+                    },
+                  ].map((chest) => {
+                    const isClaimed = !!claimedDailyChests[chest.tier]
+                    return (
+                      <button
+                        key={chest.tier}
+                        type="button"
+                        onClick={() => handleOpenChest(chest)}
+                        className={`p-2.5 rounded-xl border-2 flex items-center gap-2.5 text-left transition-all cursor-pointer ${
+                          isClaimed
+                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900 border-b-[3px] border-b-emerald-400 opacity-90'
+                            : chest.unlocked
+                            ? 'bg-amber-100/90 border-amber-400 text-amber-950 border-b-[4px] border-b-amber-500 shadow-xs scale-[1.02] ring-2 ring-amber-300 animate-pulse'
+                            : 'bg-white border-slate-200/80 text-slate-400 hover:border-slate-300 active:translate-y-0.5'
+                        }`}
+                      >
+                        <span className="text-xl shrink-0">{chest.icon}</span>
+                        <div className="min-w-0 flex-1">
+                          <span className="text-[10px] font-black uppercase tracking-wider block truncate">
+                            {chest.label}
+                          </span>
+                          <span
+                            className={`text-xs font-black block truncate ${
+                              isClaimed
+                                ? 'text-emerald-700'
+                                : chest.unlocked
+                                ? 'text-amber-800'
+                                : 'text-slate-500'
+                            }`}
+                          >
+                            {isClaimed ? 'DIKLAIM ✓' : chest.unlocked ? 'KLAIM ✨' : chest.reward}
+                          </span>
+                        </div>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
 
@@ -1209,6 +1396,32 @@ export const QuestLogPage = () => {
       <TokyoLeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
+      />
+
+      {/* ── 5. CHEST REWARD UNBOXING MODAL ── */}
+      {selectedChestForModal && (
+        <ChestRewardModal
+          isOpen={isChestModalOpen}
+          onClose={() => setIsChestModalOpen(false)}
+          tier={selectedChestForModal.tier}
+          title={selectedChestForModal.label}
+          gemReward={selectedChestForModal.gemReward}
+          xpReward={selectedChestForModal.xpReward}
+          icon={selectedChestForModal.icon}
+          isClaimed={!!claimedDailyChests[selectedChestForModal.tier]}
+          onClaim={handleConfirmClaimChest}
+        />
+      )}
+
+      {/* ── 6. MONTHLY CHALLENGE BADGE MODAL ── */}
+      <MonthlyBadgeModal
+        isOpen={isMonthlyBadgeModalOpen}
+        onClose={() => setIsMonthlyBadgeModalOpen(false)}
+        monthYearName={currentMonthYearName}
+        completedCount={monthlyCompletedCount}
+        targetCount={monthlyTargetCount}
+        isClaimed={isMonthlyBadgeClaimed}
+        onClaim={handleClaimMonthlyBadge}
       />
     </div>
   )
