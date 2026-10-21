@@ -2,7 +2,7 @@
 .PHONY: help dev dev-backend build-backend test-backend test-coverage lint-backend tidy-backend \
         dev-frontend build-frontend lint-frontend install-frontend \
         docker-up docker-down docker-logs docker-ps docker-restart \
-        db-shell redis-cli
+        db-migrate-up db-migrate-down db-migrate-status db-shell redis-cli
 
 # Default target when running 'make'
 help:
@@ -34,6 +34,9 @@ help:
 	@echo "  make docker-restart       Restart all docker containers"
 	@echo ""
 	@echo "Database & Cache CLI:"
+	@echo "  make db-migrate-up        Run all pending PostgreSQL database migrations"
+	@echo "  make db-migrate-down      Rollback the latest database migration"
+	@echo "  make db-migrate-status    Check current database migration version"
 	@echo "  make db-shell             Connect to PostgreSQL container CLI (psql)"
 	@echo "  make redis-cli            Connect to Redis container CLI (redis-cli)"
 	@echo "=========================================================="
@@ -107,3 +110,17 @@ db-shell:
 
 redis-cli:
 	docker exec -it codeabroad-redis redis-cli
+
+# -----------------------------------------------------------------------------
+# Database Migration Runner (Supports Local & Managed Cloud Databases)
+# -----------------------------------------------------------------------------
+DB_URL ?= postgres://codeabroad:codeabroad_secret@localhost:5432/codeabroad?sslmode=disable
+
+db-migrate-up:
+	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" up
+
+db-migrate-down:
+	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" down 1
+
+db-migrate-status:
+	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" version

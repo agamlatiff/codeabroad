@@ -1,0 +1,72 @@
+name: CodeAbroad CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - staging
+      - 'feature/**'
+  pull_request:
+    branches:
+      - main
+      - staging
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. Backend Lint & Automated Unit Tests
+  # ---------------------------------------------------------------------------
+  backend-ci:
+    name: Backend Lint & Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - name: Checkout CodeAbroad Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: backend/go.mod
+          cache-dependency-path: backend/go.sum
+
+      - name: Install Go Dependencies
+        run: go mod download
+
+      - name: Run Go Static Analysis (go vet)
+        run: go vet ./...
+
+      - name: Execute Automated Backend Tests
+        run: go test -v -count=1 ./...
+
+  # ---------------------------------------------------------------------------
+  # 2. Frontend Lint & Production Bundle Verification
+  # ---------------------------------------------------------------------------
+  frontend-ci:
+    name: Frontend Lint & Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout CodeAbroad Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install Frontend Dependencies
+        run: npm ci
+
+      - name: Run ESLint Quality Check
+        run: npx eslint .
+
+      - name: Build Production Frontend SPA
+        run: npm run build
+        env:
+          VITE_API_URL: /api/v1
