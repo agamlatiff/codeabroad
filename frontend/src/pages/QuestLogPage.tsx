@@ -202,11 +202,11 @@ export const QuestLogPage = () => {
   })
 
   // Sync userGems when user.gems in authStore updates
-  useEffect(() => {
-    if (typeof user?.gems === 'number') {
-      setUserGems(user.gems)
-    }
-  }, [user?.gems])
+  const [prevUserGems, setPrevUserGems] = useState<number | null | undefined>(user?.gems)
+  if (typeof user?.gems === 'number' && user.gems !== prevUserGems) {
+    setPrevUserGems(user.gems)
+    setUserGems(user.gems)
+  }
 
   // User inventory state for Akihabara Arcade items (clean SSOT: all start at 0)
   const [inventory, setInventory] = useState<Record<string, number>>(() => {

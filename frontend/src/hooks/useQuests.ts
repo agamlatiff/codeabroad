@@ -31,8 +31,31 @@ export const useQuests = () => {
   }, [])
 
   useEffect(() => {
-    fetchQuests()
-  }, [fetchQuests])
+    let ignore = false
+    void (async () => {
+      try {
+        const [questsData, dailyData] = await Promise.all([
+          questService.listQuests(),
+          questService.getDailyQuests(),
+        ])
+        if (ignore) return
+        setAllQuests(questsData)
+        setDailyQuests(dailyData)
+      } catch (err: unknown) {
+        if (ignore) return
+        const msg = err instanceof Error ? err.message : 'Gagal memuat daftar misi'
+        setError(msg)
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      ignore = true
+    }
+  }, [])
 
   // Countdown timer to midnight JST / WIB
   useEffect(() => {

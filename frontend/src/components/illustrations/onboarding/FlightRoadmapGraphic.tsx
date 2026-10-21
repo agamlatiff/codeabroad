@@ -29,6 +29,15 @@ export const FlightRoadmapGraphic = ({
   const planeRef = useRef<SVGGElement | null>(null)
   const activeTrailRef = useRef<SVGPathElement | null>(null)
   const [hasLanded, setHasLanded] = useState(false)
+  const [planeTransform, setPlaneTransform] = useState('translate(95, 160) rotate(-52)')
+  const [prevIsLanding, setPrevIsLanding] = useState(isLanding)
+  if (!isLanding && prevIsLanding) {
+    setPrevIsLanding(false)
+    setHasLanded(false)
+    setPlaneTransform('translate(95, 160) rotate(-52)')
+  } else if (isLanding && !prevIsLanding) {
+    setPrevIsLanding(true)
+  }
   // Track last transform string so React reconciliation does not snap the plane back
   const lastTransformRef = useRef<string>('translate(95, 160) rotate(-52)')
 
@@ -63,7 +72,6 @@ export const FlightRoadmapGraphic = ({
 
     // While not landing: plane remains 100% grounded at Jakarta runway (dist = 0)
     if (!isLanding) {
-      setHasLanded(false)
       setPlaneAtDistance(0)
       return
     }
@@ -89,6 +97,7 @@ export const FlightRoadmapGraphic = ({
       if (rawProgress < 1) {
         animId = requestAnimationFrame(animateFlight)
       } else {
+        setPlaneTransform(lastTransformRef.current)
         setHasLanded(true)
       }
     }
@@ -368,7 +377,7 @@ export const FlightRoadmapGraphic = ({
         <g
           ref={planeRef}
           filter="url(#planeShadow)"
-          transform={lastTransformRef.current}
+          transform={planeTransform}
         >
           {/* Aerodynamic Contrail Stream behind Tail */}
           <line x1="-42" y1="0" x2="-18" y2="0" stroke="url(#contrailGrad)" strokeWidth="2.5" strokeLinecap="round" />

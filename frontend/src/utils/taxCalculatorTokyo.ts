@@ -98,7 +98,7 @@ function calculateEmploymentDeduction(grossAnnual: number): number {
 function calculateNationalIncomeTax(taxableAnnualIncome: number): number {
   if (taxableAnnualIncome <= 0) return 0
 
-  let baseTax = 0
+  let baseTax: number
   if (taxableAnnualIncome <= 1_950_000) {
     baseTax = taxableAnnualIncome * 0.05
   } else if (taxableAnnualIncome <= 3_300_000) {

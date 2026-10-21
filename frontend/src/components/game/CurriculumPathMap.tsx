@@ -814,12 +814,15 @@ export const CurriculumPathMap = ({
       })
     }
     // 2. From localStorage
+    void questCompletionTick // trigger re-evaluation when storage tick updates
     try {
       const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
       if (Array.isArray(stored)) {
         stored.forEach((id: string) => set.add(id))
       }
-    } catch {}
+    } catch {
+      /* ignore invalid storage format */
+    }
     return set
   }, [roadmap, questCompletionTick])
 
@@ -860,7 +863,7 @@ export const CurriculumPathMap = ({
               ch.quests.forEach((q) => {
                 const partNum = globalPartCounter++
                 const isQuestCompleted = q.status === 'completed' || completedSet.has(q.id)
-                let questStatus: 'completed' | 'active' | 'locked' = 'locked'
+                let questStatus: 'completed' | 'active' | 'locked'
                 if (isQuestCompleted) {
                   questStatus = 'completed'
                 } else if (!hasFoundActiveQuest) {
@@ -884,7 +887,7 @@ export const CurriculumPathMap = ({
               })
             } else {
               const partNum = globalPartCounter++
-              let chapterStatus: 'completed' | 'active' | 'locked' = 'locked'
+              let chapterStatus: 'completed' | 'active' | 'locked'
               if (ch.is_completed) {
                 chapterStatus = 'completed'
               } else if (!hasFoundActiveQuest) {
@@ -909,7 +912,7 @@ export const CurriculumPathMap = ({
         }
 
         if (stationQuests.length === 0) {
-          let stStatus: 'completed' | 'active' | 'locked' = 'locked'
+          let stStatus: 'completed' | 'active' | 'locked'
           if (st.is_completed) {
             stStatus = 'completed'
           } else if (!hasFoundActiveQuest) {
@@ -970,7 +973,7 @@ export const CurriculumPathMap = ({
           completedSet.has(`part-${p.number}`) ||
           (typeof currentPart === 'number' && p.number < currentPart)
 
-        let partStatus: 'completed' | 'active' | 'locked' = 'locked'
+        let partStatus: 'completed' | 'active' | 'locked'
         if (isCompleted) {
           partStatus = 'completed'
         } else if (!hasFoundActiveFallback) {
@@ -1005,7 +1008,7 @@ export const CurriculumPathMap = ({
           : ('locked' as const),
       }
     })
-  }, [roadmap, trackSlug, currentPart])
+  }, [roadmap, trackSlug, currentPart, completedSet])
 
   const [activeGuidebook, setActiveGuidebook] = useState<{
     unitTitle: string

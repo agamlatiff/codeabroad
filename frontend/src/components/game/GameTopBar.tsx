@@ -14,7 +14,7 @@ import {
   FundamentalLogo,
   TechNihongoLogo,
 } from '../ui/BrandLogos'
-import { CAREER_TRACKS } from './CourseSwitcherModal'
+import { CAREER_TRACKS } from '../../data/careerTracks'
 import { useAuthStore } from '../../store/authStore'
 import { triggerHaptic } from '../../utils/haptics'
 

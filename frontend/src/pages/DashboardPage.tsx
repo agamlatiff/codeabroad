@@ -45,12 +45,15 @@ export const DashboardPage = () => {
         if (q.user_status === 'completed') set.add(q.id)
       })
     }
+    void questCompletionTick // trigger re-evaluation when storage tick updates
     try {
       const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
       if (Array.isArray(stored)) {
         stored.forEach((id: string) => set.add(id))
       }
-    } catch {}
+    } catch {
+      /* ignore invalid storage format */
+    }
     return set
   }, [dailyQuests, questCompletionTick])
 
@@ -91,13 +94,12 @@ export const DashboardPage = () => {
   }, [roadmap, activeTrack, completedQuestsSet])
 
   // Synchronize activeTrack when user profile arrives from backend
-  useEffect(() => {
-    if (user?.primary_stack) {
-      setActiveTrack(user.primary_stack)
-    } else if (user?.career_path?.slug) {
-      setActiveTrack(user.career_path.slug)
-    }
-  }, [user?.primary_stack, user?.career_path?.slug])
+  const userTrack = user?.primary_stack || user?.career_path?.slug
+  const [prevUserTrack, setPrevUserTrack] = useState(userTrack)
+  if (userTrack && userTrack !== prevUserTrack) {
+    setPrevUserTrack(userTrack)
+    setActiveTrack(userTrack)
+  }
 
   const handleSelectTrack = async (newTrack: string) => {
     triggerHaptic('tap')

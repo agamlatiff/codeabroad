@@ -444,7 +444,7 @@ export const evaluateWorkspaceCode = (quest: Quest, userCode: string): RunTestsR
   // Heuristic evaluation: check if code has substantive implementation
   const criteriaResults = criteria.map((c, idx) => {
     // If user has written more than 30 non-empty characters, criteria 1 passes
-    let passed = false
+    let passed: boolean
     if (idx === 0) {
       passed = userCode.trim().length > 25
     } else if (idx === 1) {

@@ -107,11 +107,11 @@ export const RoadmapPage = () => {
   const [lockedNotification, setLockedNotification] = useState<string | null>(null)
 
   // Sync track when route parameter changes
-  useEffect(() => {
-    if (routeTrack && routeTrack !== activeTrack) {
-      setActiveTrack(routeTrack)
-    }
-  }, [routeTrack, activeTrack])
+  const [prevRouteTrack, setPrevRouteTrack] = useState(routeTrack)
+  if (routeTrack && routeTrack !== prevRouteTrack) {
+    setPrevRouteTrack(routeTrack)
+    setActiveTrack(routeTrack)
+  }
 
   const { isLoading } = useRoadmap(activeTrack)
 

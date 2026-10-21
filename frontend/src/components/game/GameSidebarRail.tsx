@@ -212,12 +212,15 @@ export const GameSidebarRail = ({
         if (q.user_status === 'completed') set.add(q.id)
       })
     }
+    void questCompletionTick // trigger re-evaluation when storage tick updates
     try {
       const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
       if (Array.isArray(stored)) {
         stored.forEach((id: string) => set.add(id))
       }
-    } catch {}
+    } catch {
+      /* ignore invalid storage format */
+    }
     return set
   }, [dailyQuests, questCompletionTick])
 

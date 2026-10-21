@@ -27,13 +27,12 @@ export const LearnWorkspacePage = () => {
   const [activeTab, setActiveTab] = useState<'briefing' | 'nihongo' | 'discuss'>('briefing')
   const primaryFilename = quest?.starter_code?.filename || 'main.go'
   const [activeFile, setActiveFile] = useState<string>(primaryFilename)
+  const [prevFilename, setPrevFilename] = useState(quest?.starter_code?.filename)
+  if (quest?.starter_code?.filename && quest.starter_code.filename !== prevFilename) {
+    setPrevFilename(quest.starter_code.filename)
+    setActiveFile(quest.starter_code.filename)
+  }
   const [showHint, setShowHint] = useState(false)
-
-  useEffect(() => {
-    if (quest?.starter_code?.filename) {
-      setActiveFile(quest.starter_code.filename)
-    }
-  }, [quest?.starter_code?.filename])
 
   const criteriaList = quest?.acceptance_criteria || []
   const criteriaCount = criteriaList.length > 0 ? criteriaList.length : 1

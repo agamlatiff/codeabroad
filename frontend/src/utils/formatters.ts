@@ -42,10 +42,11 @@ export const formatTechStack = (
       return withEmoji ? '☁️ GCP Cloud Native' : 'GCP Cloud Native'
     case 'devops_terraform':
       return withEmoji ? '🟣 Terraform & GitOps' : 'Terraform & GitOps'
-    default:
+    default: {
       if (!slug) return withEmoji ? '🐹 Go (Gin Framework)' : 'Go (Gin Framework)'
       const cleaned = slug.replace(/_/g, ' ')
       return withEmoji ? cleaned.toUpperCase() : cleaned
+    }
   }
 }
 
@@ -108,7 +109,7 @@ export const formatStackBadge = (badge?: string, isActive?: boolean): string => 
   if (!badge) return isActive ? 'Tersedia' : 'Coming Soon'
   const cleaned = badge
     .replace(/\s*\(Rakuten\)/gi, '')
-    .replace(/^[\?\s\uFFFD]+/, '')
+    .replace(/^[?\s\uFFFD]+/, '')
     .trim()
   return cleaned || (isActive ? 'Tersedia' : 'Coming Soon')
 }

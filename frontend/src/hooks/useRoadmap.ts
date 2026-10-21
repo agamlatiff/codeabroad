@@ -41,8 +41,39 @@ export const useRoadmap = (explicitTrack?: string) => {
   }, [effectiveTrack])
 
   useEffect(() => {
-    fetchRoadmap()
-  }, [fetchRoadmap])
+    let ignore = false
+    void (async () => {
+      try {
+        const data = effectiveTrack
+          ? await roadmapService.getTrackRoadmap(effectiveTrack)
+          : await roadmapService.getActiveRoadmap()
+        if (ignore) return
+        setRoadmap(data)
+
+        if (data.stations && data.stations.length > 0) {
+          const activeStation =
+            data.stations.find((s) => s.is_unlocked && !s.is_completed) || data.stations[0]
+          setSelectedStationId(activeStation.id)
+
+          if (activeStation.chapters && activeStation.chapters.length > 0) {
+            setOpenChapterIds(new Set([activeStation.chapters[0].id]))
+          }
+        }
+      } catch (err: unknown) {
+        if (ignore) return
+        const message = err instanceof Error ? err.message : 'Gagal memuat silabus roadmap'
+        setError(message)
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      ignore = true
+    }
+  }, [effectiveTrack])
 
   const toggleChapter = (chapterId: string) => {
     setOpenChapterIds((prev) => {

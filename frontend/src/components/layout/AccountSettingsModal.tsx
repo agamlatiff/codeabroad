@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { FC } from 'react'
 import {
@@ -36,24 +36,26 @@ export const AccountSettingsModal: FC<AccountSettingsModalProps> = ({
   onAvatarStyleChange,
   onProfileUpdated,
 }) => {
-  const [name, setName] = useState('')
-  const [bio, setBio] = useState('')
-  const [primaryStack, setPrimaryStack] = useState('golang')
+  const [name, setName] = useState(user?.name || '')
+  const [bio, setBio] = useState(user?.bio || '')
+  const [primaryStack, setPrimaryStack] = useState(user?.primary_stack || 'golang')
   const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  useEffect(() => {
-    if (user) {
-      setName(user.name || '')
-      setBio(user.bio || '')
-      setPrimaryStack(user.primary_stack || 'golang')
-      setSelectedAvatarStyle(avatarStyle)
-      setSaveSuccess(false)
-      setErrorMessage(null)
-    }
-  }, [user, avatarStyle, isOpen])
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
+  if (isOpen && !prevIsOpen) {
+    setPrevIsOpen(true)
+    setName(user?.name || '')
+    setBio(user?.bio || '')
+    setPrimaryStack(user?.primary_stack || 'golang')
+    setSelectedAvatarStyle(avatarStyle)
+    setSaveSuccess(false)
+    setErrorMessage(null)
+  } else if (!isOpen && prevIsOpen) {
+    setPrevIsOpen(false)
+  }
 
   if (!isOpen) return null
 

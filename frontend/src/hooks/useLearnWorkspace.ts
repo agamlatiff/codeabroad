@@ -36,45 +36,47 @@ export const useLearnWorkspace = () => {
   const user = useAuthStore((s) => s.user)
   const updateUser = useAuthStore((s) => s.updateUser)
 
-  const fetchQuest = useCallback(async () => {
-    if (!id) return
-    setIsLoading(true)
-    setError(null)
-    try {
-      const data = await questService.getQuestDetails(id)
-      if (data && (!data.acceptance_criteria || data.acceptance_criteria.length === 0 || !data.starter_code)) {
-        const fallback = getWorkspaceQuestFallback(id)
-        setQuest({
-          ...fallback,
-          ...data,
-          acceptance_criteria:
-            data.acceptance_criteria && data.acceptance_criteria.length > 0
-              ? data.acceptance_criteria
-              : fallback.acceptance_criteria,
-          starter_code: data.starter_code || fallback.starter_code,
-          nihongo_notes: data.nihongo_notes || fallback.nihongo_notes,
-        })
-      } else {
-        setQuest(data)
-      }
-    } catch {
-      // Gracefully fallback to rich workspace catalog so any curriculum track is fully playable
-      const fallback = getWorkspaceQuestFallback(id)
-      setQuest(fallback)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [id, setQuest, setError])
-
   useEffect(() => {
-    fetchQuest()
+    let ignore = false
+    if (!id) return
+
+    void (async () => {
+      try {
+        const data = await questService.getQuestDetails(id)
+        if (ignore) return
+        if (data && (!data.acceptance_criteria || data.acceptance_criteria.length === 0 || !data.starter_code)) {
+          const fallback = getWorkspaceQuestFallback(id)
+          setQuest({
+            ...fallback,
+            ...data,
+            acceptance_criteria:
+              data.acceptance_criteria && data.acceptance_criteria.length > 0
+                ? data.acceptance_criteria
+                : fallback.acceptance_criteria,
+            starter_code: data.starter_code || fallback.starter_code,
+            nihongo_notes: data.nihongo_notes || fallback.nihongo_notes,
+          })
+        } else {
+          setQuest(data)
+        }
+      } catch {
+        if (ignore) return
+        const fallback = getWorkspaceQuestFallback(id)
+        setQuest(fallback)
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    })()
+
     return () => {
-      // Don't wipe submitResult if we are navigating to completion screen
+      ignore = true
     }
-  }, [fetchQuest])
+  }, [id, setQuest])
 
   // Run automated unit tests in the sandbox
-  const handleRunTests = async () => {
+  const handleRunTests = useCallback(async () => {
     if (!id || isRunningTests) return
     setIsRunningTests(true)
     setError(null)
@@ -113,7 +115,7 @@ export const useLearnWorkspace = () => {
     } finally {
       setIsRunningTests(false)
     }
-  }
+  }, [id, isRunningTests, userCode, currentQuest, setError, setTestResult, setIsRunningTests])
 
   // Submit final verified code solution
   const handleSubmit = async () => {

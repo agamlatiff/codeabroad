@@ -38,7 +38,7 @@ export interface AuthResponse {
 
 export type ApiResponse<T> = 
   | { success: true; message?: string; data: T; error?: never }
-  | { success: false; error: string; code: string; details?: Record<string, any>; data?: never }
+  | { success: false; error: string; code: string; details?: Record<string, unknown>; data?: never }
 
 export interface LoginPayload {
     email: string
