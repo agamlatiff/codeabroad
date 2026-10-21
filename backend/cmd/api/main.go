@@ -95,6 +95,7 @@ func main() {
 		GamificationHandler:    gamificationHandler,
 		AuthMiddleware:         authMiddleware,
 		OptionalAuthMiddleware: optionalAuth,
+		CORSAllowedOrigins:     cfg.CORSAllowedOrigins,
 	})
 
 	// 8. Configure HTTP server

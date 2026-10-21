@@ -17,17 +17,23 @@ type RouterConfig struct {
 	VocabularyHandler *handler.VocabularyHandler
 	LeaderboardHandler *handler.LeaderboardHandler
 	GamificationHandler *handler.GamificationHandler
-	AuthMiddleware    gin.HandlerFunc
+	AuthMiddleware         gin.HandlerFunc
 	OptionalAuthMiddleware gin.HandlerFunc
+	CORSAllowedOrigins     []string
 }
 
 // SetupRouter initializes the Gin engine and configures API v1 routes
 func SetupRouter(cfg *RouterConfig) *gin.Engine {
 	r := gin.Default()
 
+	origins := cfg.CORSAllowedOrigins
+	if len(origins) == 0 {
+		origins = []string{"http://localhost:5173", "http://localhost:3000", "http://localhost"}
+	}
+
 	// CORS configuration for frontend integration
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:5173", "http://localhost:3000"},
+		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
 		ExposeHeaders:    []string{"Content-Length"},
