@@ -1,4 +1,4 @@
-# CodeAbroad Design System Specification (v3.0 - Clean Light Mode)
+# CodeAbroad Design System Specification (v3.1 - Clean Light Mode & Tactile 3D)
 
 > **Visual Philosophy:** 90% Duolingo Tactile 3D Taste (Clean Light Mode) + 10% CodeAbroad Electric Blue Identity  
 > **Color Mode:** Clean Light Mode (`#FAFAF9` canvas, `#FFFFFF` crisp cards, Slate text `#0F172A`)  
@@ -12,16 +12,16 @@
 ## 🎨 1. Core Visual Principles & Anti-AI Slop Manifesto
 
 ### 1.1 The Duolingo Tactile 3D Taste (Clean Light Mode)
-- **Radiant Light Canvas:** Latar belakang canvas putih-hangat (`#FAFAF9`), kartu putih bersih (`#FFFFFF`), dengan garis batas halus berkualitas tinggi (`#E2E8F0` / `#CBD5E1`).
+- **Radiant Warm-White Canvas:** Canvas latar belakang putih-hangat (`#FAFAF9`), kartu putih bersih (`#FFFFFF`), dengan garis batas halus berkualitas tinggi (`#E2E8F0` / `#CBD5E1`).
 - **Deep Slate Typography:** Teks menggunakan kontras tinggi dengan warna slate gelap (`#0F172A` untuk heading, `#475569` untuk body) agar sangat mudah dan nyaman dibaca.
 - **Physical 3D Tactile Physics:** Tombol dan kartu interaktif memiliki kedalaman bayangan fisik tebal 4px–6px di bagian bawah yang amblas saat diklik/tap (`active:translate-y-1 active:shadow-none`).
 - **Comfortable Friendly Geometry:** Sudut membulat yang ramah dan organik (`rounded-2xl` dan `rounded-3xl`).
-- **Focused Gamified Stages:** Setiap layar, step, dan kartu memiliki **satu objektif utama yang jelas**.
+- **Focused Gamified Stages:** Setiap layar, step, dan kartu memiliki **satu objektif interaksi utama yang jelas**.
 - **Tactile Haptic Feedback:** Interaksi sentuh pada perangkat mobile memicu getaran taktil fisik (`triggerHaptic`).
 
 ### 1.2 The 10% CodeAbroad Soul
 - **Electric Tech Blue / Cobalt Palette:** Menggantikan hijau neon Duolingo dengan **Electric Blue** (`#2563EB`, `#3B82F6`) dan **Neon Cyan** (`#38BDF8`), menciptakan kesan modern khas teknologi penerbangan dan hub engineering global.
-- **Kodi Mascot Integration:** Maskot Kodi menemani pengguna di setiap pencapaian, panduan, dan selebrasi level.
+- **Kodi Mascot Integration:** Maskot Kodi menemani pengguna di setiap pencapaian, panduan, dan selebrasi level (`<KodiMascot>`).
 - **Global Flight Metaphor:** Alur belajar disimulasikan sebagai tahapan boarding penerbangan internasional (`CGK ➔ NRT/HND/BER/SIN`), visa kerja, dan tiket keberangkatan.
 
 ### 1.3 Anti-AI Slop Manifesto
@@ -30,7 +30,7 @@ Untuk menjaga kualitas visual premium dan menghindari tampilan template generik:
 - ❌ **NO Arbitrary Gray Icon Boxes:** Dilarang meletakkan kotak icon abu-abu acak sebagai hiasan kosong.
 - ❌ **NO Cluttered Multi-Column Widgets:** Dilarang menumpuk banyak widget dashboard yang membingungkan fokus pengguna.
 - ❌ **NO Lazy Responsive Stacking:** Jangan sekadar menumpuk 2 kolom desktop menjadi kolom vertikal panjang di mobile. Terapkan task-first UX dengan target sentuh min 44px.
-- ❌ **NO Matcha Green Logos:** Logo `codeabroad` wajib selalu menggunakan **Slate Obsidian (`variant="slate"`)** atau **Electric Blue (`variant="blue"`)**, tidak pernah hijau.
+- ❌ **NO Matcha Green Logos:** Logo `codeabroad` wajib selalu menggunakan **Slate Obsidian (`variant="slate"`)** atau **Electric Blue (`variant="blue"`)**, DILARANG KERAS menggunakan warna hijau matcha.
 - ❌ **NO Neo-Brutalist Harsh Black Shadows:** Gunakan colored 3D bevel shadows (`shadow-[0_4px_0_0_#CBD5E1]` atau `#1D4ED8`), bukan kotak hitam pekat `4px 4px 0 0 #0F172A`.
 
 ---
@@ -72,17 +72,19 @@ Source of Truth: `frontend/src/tokens/index.ts` (`TOKENS.colors`)
 
 ## 🧱 3. Daftar Komponen Primitif UI (`components/ui/`)
 
+Always import and use these single-source-of-truth primitives:
+
 | Komponen | Kegunaan | Props Kunci |
 |---|---|---|
-| **`<Button3D>`** | Tombol fisik membal dengan bevel bayangan 3D | `variant` (`blue`, `cyan`, `white`, `emerald`, `amber`, `rose`, `ghost`), `size` (`sm`, `md`, `lg`), `loading` |
+| **`<Button3D>`** | Tombol fisik membal dengan bevel bayangan 3D tebal | `variant` (`blue`, `cyan`, `white`, `emerald`, `amber`, `rose`, `ghost`), `size` (`sm`, `md`, `lg`), `loading` |
 | **`<Card3D>`** | Kartu putih bersih dengan sudut `rounded-3xl` dan bevel tactile | `variant` (`white`, `slate`, `blue`), `glow` |
-| **`<RoadmapNode3D>`** | Node pohon kurikulum ala Duolingo | `status` (`completed`, `active`, `locked`), `number`, `title`, `xp`, `popoverText` |
-| **`<Modal3D>`** | Dialog popover Clean Light Mode dengan aksi taktil | `isOpen`, `onClose`, `title`, `subtitle`, `footer`, `maxWidth` |
-| **`<Skeleton3D>`** | Loading placeholder rounded dengan animasi pulse | `variant` (`card`, `text`, `circle`, `button`, `metric`) |
+| **`<RoadmapNode3D>`**| Gamified numbered learning node (1, 2, 3...) ala Duolingo | `status` (`completed`, `active`, `locked`), `number`, `title`, `xp`, `popoverText` |
+| **`<Modal3D>`** | Dialog popover Clean Light Mode dengan aksi taktil & ESC listener | `isOpen`, `onClose`, `title`, `subtitle`, `footer`, `maxWidth` |
+| **`<Skeleton3D>`** | Loading placeholder rounded dengan animasi tactile pulse | `variant` (`card`, `text`, `circle`, `button`, `metric`) |
 | **`<Input>`** | Form field berlatar putih dengan ring Electric Blue | `label`, `icon`, `isPassword`, `error` |
 | **`<BadgePill>`** | Kapsul status kontras tinggi Clean Light Mode | `variant` (`blue`, `xp`, `streak`, `verified`, `neutral`, `error`), `size` |
 | **`<MetricTile>`** | Kotak stat 2x2 scannable untuk dashboard | `label`, `value`, `subtitle`, `variant`, `surface: 'light'` |
-| **`<ProgressBar3D>`** | Bar progres rounded dengan track groove dan gloss shine | `value`, `max`, `size`, `variant`, `showLabel` |
+| **`<ProgressBar3D>`**| Bar progres rounded dengan track groove dan gloss shine | `value`, `max`, `size`, `variant`, `showLabel` |
 | **`<KodiMascot>`** | Maskot Kodi dengan emosi, aura, dan balon dialog | `emotion` (`welcome`, `celebrate`, `coding`, `proud`), `speechText` |
 | **`<SpeechBubble>`** | Balon dialog komik Duolingo dengan ekor terarah | `direction`, `variant: 'light'` |
 | **`<Logo>`** | Logo resmi CodeAbroad | `variant: 'blue' \| 'slate' \| 'white'`, `size` |
@@ -98,28 +100,30 @@ import {
   Card3D, 
   RoadmapNode3D, 
   Modal3D, 
-  Skeleton3D,
-  ProgressBar3D 
+  KodiMascot,
+  BadgePill 
 } from '@/components/ui'
 
-// 1. Tombol 3D Primary
-<Button3D variant="blue" size="md">
-  Mulai Belajar Sekarang
+// 1. Chunky 3D Duolingo Button:
+<Button3D variant="blue" size="lg" onClick={handleNext}>
+  LANJUTKAN (+50 XP)
 </Button3D>
 
-// 2. Node Roadmap Duolingo
-<RoadmapNode3D
-  status="active"
-  number={1}
-  title="Clean Architecture & Gin"
-  xp={80}
-  popoverText="Mulai Quest"
-  onClick={() => handleStartLesson(1)}
+// 2. Interactive Roadmap Node with 3 States:
+<RoadmapNode3D 
+  number={4}
+  title="Routing & JWT Middleware"
+  xp={50}
+  status="active" // 'completed' | 'active' | 'locked'
+  popoverText="Part 4: Routing & JWT Middleware • LANJUTKAN"
+  onClick={() => navigate('/learn/golang-part-4')}
 />
 
-// 3. Kartu Kontainer 3D
-<Card3D variant="white">
-  <h3 className="text-lg font-black text-slate-900">Kurikulum Tokyo</h3>
-  <ProgressBar3D value={60} max={100} variant="blue" showLabel />
+// 3. Tactile 3D Container Card:
+<Card3D variant="white" className="p-6">
+  <div className="flex items-center justify-between">
+    <BadgePill variant="streak">🔥 5 HARI</BadgePill>
+    <KodiMascot emotion="celebrate" size="sm" />
+  </div>
 </Card3D>
 ```

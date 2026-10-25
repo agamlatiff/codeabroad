@@ -1,7 +1,0 @@
-# 📋 MASTER TODO: CodeAbroad Platform & Learning Path System
-
-> **File Lokasi:** `c:\Projects\codeabroad\.agents\todo` (Pointer ke [todo.md](file:///c:/Projects/codeabroad/.agents/todo.md))  
-> **Status:** Single Source of Truth (SSOT) Master Todo — Disimpan permanen di repository workspace agar tidak terhapus.  
-> **Arah Desain Terbaru:** Angka langsung per-part di jalur belajar (1, 2, 3, 4, 5...), unit kurikulum teknis nyata (BUKAN nama stasiun), 3 state pengerjaan part, Peti Hadiah 3D pengganti Tolok Ukur, dan sidebar ringkas.
-
-Seluruh isi detail lengkap dan riwayat pengerjaan tersedia di file [c:\Projects\codeabroad\.agents\todo.md](file:///c:/Projects/codeabroad/.agents/todo.md).

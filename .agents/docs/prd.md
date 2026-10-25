@@ -1,183 +1,93 @@
-# Product Requirements Document (PRD)
-# CodeAbroad
-
-**Version:** 1.1  
-**Status:** In Development (v0.2.0 released)  
-**Last Updated:** 2026-10-08
+# Product Requirements Document (PRD) - CodeAbroad
+**Version:** 2.0 (Duolingo 3D Tactile Roadmap & Modular Architecture)  
+**Status:** In Active Development (v0.3.0)  
+**Last Updated:** 2026-10-24  
 
 ---
 
-## 1. Overview
+## 🧭 1. Executive Summary & Vision
 
-### 1.1 Product Summary
-CodeAbroad is a gamified IT learning platform designed specifically for Indonesian developers who aspire to work abroad. It combines structured programming roadmaps with country-specific career guidance, wrapped in a game-like quest system to keep users engaged and on track.
+### 1.1 Product Mission
+**CodeAbroad** is an open-source, gamified IT learning platform engineered specifically for Indonesian software engineers targeting overseas tech careers in **Tokyo 🇯🇵**, **Berlin 🇩🇪**, and **Singapore 🇸🇬**.
 
-### 1.2 Problem Statement
-Indonesian IT professionals who want to work abroad face several challenges:
-- No single platform addresses both technical skills AND country-specific requirements
-- Existing platforms (Udemy, Coursera) are generic and not tailored for the "work abroad" goal
-- No structured, step-by-step roadmap from beginner to "job-ready abroad"
-- Country-specific knowledge (visa, culture, language, salary) is scattered across the internet
-- Lack of motivation and accountability without a structured system
-
-### 1.3 Solution
-A single platform that acts as a **personal career GPS** — telling users exactly what to learn, in what order, for their specific target country and career path, gamified to keep them motivated.
+Unlike generic video platforms (Udemy, Coursera), CodeAbroad acts as a **Career RPG and International Developer GPS**:
+- **Structured Vertical Milestones:** Sequential units and numbered parts (1, 2, 3...) with zero filler content.
+- **Interactive In-Browser Workspace:** Real code editing (Monaco Editor) with automated test runners and Tokyo workplace Japanese vocabulary (*Nihongo Notes*).
+- **Gamified Duolingo 3D Tactile Physics:** Chunky physical 3D buttons, pulsating milestone nodes, streak tracking, golden chests, and companion mascot (**Kodi**).
+- **Country-Specific Career Intelligence:** Realistic tech stack alignment (Golang for Tokyo high-concurrency microservices, React/TypeScript for global frontends).
 
 ---
 
-## 2. Goals & Success Metrics
+## 🎯 2. Target Personas & Success Metrics
 
-### 2.1 Business Goals
-- Build a well-known open-source project in the Indonesian dev community
-- Serve as a strong portfolio piece demonstrating full-stack + system design skills
-- Help Indonesian developers successfully land IT jobs abroad
+### 2.1 Personas
+1. **Primary: Farhan, 23 (Indonesian Backend Dev / Fresh Grad)**
+   - Wants to work in Tokyo or Singapore. Knows basic Go/REST APIs, but lacks production confidence, Docker skills, and Japanese tech vocabulary.
+   - Motivated by streaks, level-ups, and concrete proof-of-work.
+2. **Secondary: Sarah, 27 (Career Switcher / Mid-Level Frontend Dev)**
+   - Transitioning to international tech hubs. Needs structured guidance on system design and global CV standards.
 
-### 2.2 Success Metrics (MVP)
-| Metric | Target |
-|--------|--------|
-| GitHub Stars | 100+ within 3 months of launch |
-| Registered users | 500+ within 3 months |
-| Daily Active Users (DAU) | 50+ |
-| Quest completion rate | > 40% |
-| Average session duration | > 10 minutes |
-
----
-
-## 3. Target Users
-
-### Primary User
-**Persona: Rizki, 22, Fresh Graduate**
-- Just graduated from an IT/computer science university in Indonesia
-- Wants to work as a backend developer in Singapore or Japan
-- Knows basic programming but lacks direction on what to learn next
-- Motivated but easily loses focus without structure
-
-### Secondary User
-**Persona: Dinda, 27, Career Switcher**
-- Currently working in a non-IT field
-- Self-learning programming for 6 months
-- Wants a clear roadmap to transition into tech and eventually work abroad
+### 2.2 Core Product Metrics
+| Metric | Target | Measurement |
+| :--- | :--- | :--- |
+| **Daily Habit Retention (7-Day Streak)** | > 45% of registered users | Redis streak sessions & daily presence logs |
+| **Unit Lesson Completion Rate** | > 60% per unit | Node progress completions in `user_quests` |
+| **Interactive Workspace Submission** | > 75% first-pass pass rate | Go unit test runner completions |
+| **Boarding Pass Onboarding Conversion**| > 85% completion | User onboarding wizard completions |
 
 ---
 
-## 4. Features
+## 🎮 3. Core Features & System Breakdown
 
-### 4.1 MVP Features (v1.0)
+### 3.1 Authentication & The 3-Pillar Architecture (v2.1)
+- **Stateless Access Token (JWT):** 15-minute lifespan for high security.
+- **Stateful Rotated Refresh Token (Redis):** 30-day session (Remember Me) or 24-hour temporary session. Instant token revocation on logout.
+- **Auto-Login on Registration:** Seamless UX transitioning directly from sign-up into the onboarding flight wizard.
+- **The 3-Pillar Normalized Architecture (v2.1):**
+  1. **Pillar 1 (`users`):** Auth Core murni (ID, Email, Password Hash). Zero Data Leakage pada query profil publik.
+  2. **Pillar 2 (`user_profiles`):** Data diri publik, bio, target negara (Tokyo/Berlin), track karir, dan level onboarding.
+  3. **Pillar 3 (`user_gamification`):** Engine gamifikasi terisolasi (XP, Level, Streak, Gems, Last Active At) untuk high-concurrency write loop.
 
-#### Authentication
-- User registration with email & password
-- User login with JWT (access + refresh token)
-- Refresh token rotation stored in Redis
-- "Remember me" support
-- Secure server-side logout (session invalidation)
+### 3.2 Global Developer Onboarding Wizard
+- **Step 1 — Target Destination:** Tokyo 🇯🇵 (Active), Berlin 🇩🇪 & Singapore 🇸🇬 (Roadmap).
+- **Step 2 — Engineering Track & Primary Stack:** Go Backend, React Frontend, Cloud DevOps.
+- **Step 3 — Self-Assessment & Departure Timeline:** Level, timeline (6–12 months), Japanese level (N5 to N1 / Conversational).
+- **Step 4 — 3D Boarding Pass Ticket:** Tactile boarding pass (`CGK ✈️ NRT`) granting +50 XP welcome milestone bonus.
 
-#### Onboarding
-- Step 1 — Target country: Japan 🇯🇵 (active), Germany 🇩🇪 / Singapore 🇸🇬 (coming soon)
-- Step 2 — Career mindset (Specialist / Generalist) → track → primary tech stack
-  - Specialist: Frontend / Backend / DevOps
-  - Generalist: Fullstack (FE + BE combo), Product Engineer & Solutions Architect (coming soon)
-- Step 3 — Readiness: level (Beginner / Intermediate), target timeline
-  (6 months / 1 year / exploring), language level (none / basic / conversational / fluent)
-- Step 4 — Developer Boarding Pass (CGK ✈️ NRT) with +50 XP welcome bonus
+### 3.3 Curriculum Path System (The Learning Path)
+Replaces generic station names with **direct industrial curriculum modules**:
+- **Sequential Unit Breakdown:**
+  - **Unit 1: Golang Dasar** (Part 1 - Variabel & Tipe Data, Part 2 - Pointer & Structs).
+  - **Unit 2: Golang REST API & Middleware** (Part 3 - Gin Engine, Part 4 - JWT Middleware, Part 5 - Database Connection Pool).
+  - **Unit 3: Golang Concurrency & Channels** (Part 6 - Worker Pool & Concurrency).
+- **Direct 3D Numbered Nodes (1, 2, 3, 4, 5...):** Clear embossed numbers eliminating ambiguous icons.
+- **Three Strict Node Interaction States:**
+  1. ✅ **Completed (`sudah selesai dikerjakan`):** Emerald green 3D button with checkmark badge `✓`. Replayable anytime.
+  2. ⚡ **Available / Active (`sudah bisa dikerjakan`):** Electric Blue 3D button with pulsating outer ring, floating popover CTA (*"Part X: [Judul] • LANJUTKAN (+50 XP)"*), and cheering Kodi mascot.
+  3. 🔒 **Locked (`belum bisa dikerjakan`):** Tactile slate-gray button showing embossed part number with padlock badge `🔒`.
+- **Vertical Bezier Flow:** Smooth SVG S-curves with ample breathing room (~180px vertical distance per node) preventing UI overlap.
 
-#### Quest System
-- **Main Quest** — Sequential, locked until previous is completed
-- **Side Quest** — Optional, unlocked based on progress
-- **Daily Quest** — 3 quests per day, resets every midnight (via Kafka)
-- Each quest contains: title, description, resource links, XP reward, estimated time
+### 3.4 Interactive Coding Workspace (`LearnWorkspacePage.tsx`)
+- **Split-Pane Architecture:** Split layout with curriculum brief on the left and interactive Monaco code editor on the right.
+- **Story Context & Workplace Nihongo Notes:** Integrated Japanese workplace idioms (e.g., *Hensuu*, *Kansuu*, *Maji-koodo*) with readings and translations.
+- **Live Test Runner:** Simulates industrial Go unit test execution with passed/failed test assertion feedback.
+- **Milestone Celebration:** Modal celebration upon passing tests with XP and Gems rewards.
 
-#### Progression System
-- XP gained per quest completion
-- Level system (Level 1–50) with increasing XP thresholds
-- Streak tracking (consecutive days active)
-- Readiness Score per country (0–100%)
-
-#### Achievements
-- Milestone-based badges (e.g., "First Quest", "7-Day Streak", "Level 10")
-- Achievement notifications
-
-#### Dashboard
-- Active quests overview
-- XP & level progress bar
-- Streak counter
-- Readiness score per country
-- Recent achievements
-
-#### Learning Content
-- Hard skill roadmaps (Frontend, Backend, DevOps, Fullstack)
-- Soft skill modules (interviews, communication, teamwork)
-- Mindset modules (growth mindset, imposter syndrome)
-- Country guides: visa process, CV format, work culture, salary range
-
-### 4.2 Future Features (v2.0+)
-- Google / GitHub OAuth login
-- Community forum & peer support
-- Mentor matching system
-- Job board (IT jobs abroad)
-- Mock interview simulator
-- AI-powered personalized recommendations
-- Mobile app (React Native)
-- Leaderboard
-
-### 4.3 Release Roadmap
-
-| Version | Feature | Status |
-|---------|---------|--------|
-| v0.1.0 | Auth & Session Management | ✅ Released |
-| v0.2.0 | Onboarding & Boarding Pass | ✅ Released |
-| v0.3.0 | Quest System & Roadmap Engine | 🚧 Next |
-| v0.4.0 | Progression (XP, Level, Streak) & Achievements | Planned |
-| v0.5.0 | Learning Content & Country Guides | Planned |
+### 3.5 Gamification & Habit Loop
+- **Daily 7-Day Streak Tracker 🔥:** Synced via Redis and PostgreSQL activity logs.
+- **Golden Chest & Daily 50 XP Goal 🎁:** Replaces rigid milestone widgets with interactive 3D chest progress.
+- **Akihabara Arcade Inventory & Shop:** Virtual shop to redeem earned gems for streak freezes, XP boosters, and portfolio review submissions.
+- **Leaderboard:** Weekly developer rankings driving peer motivation.
+- **Tokyo Office Vocab:** Compact vocabulary cards with pronunciation audio/reading for daily office survival.
 
 ---
 
-## 5. User Flows
+## 🛠️ 4. Technical Architecture Stack
 
-### 5.1 New User Flow
-```
-Landing Page → Register → Onboarding (Country → Mindset/Track/Stack
-→ Level/Timeline/Language) → Boarding Pass (+50 XP)
-→ Dashboard → Start First Main Quest → Complete Quest → Gain XP
-→ Level Up → Unlock Next Quest
-```
-
-### 5.2 Returning User Flow
-```
-Login → Dashboard → Check Daily Quests → Complete Quests
-→ Check Progress → Explore Side Quests
-```
-
-### 5.3 Quest Completion Flow
-```
-User clicks "Mark as Complete" → Backend validates
-→ Emit quest.completed event (Kafka)
-→ XP Service: add XP, check level up
-→ Achievement Service: check unlocked achievements
-→ Streak Service: update streak
-→ Response returned to user with updated stats
-```
-
----
-
-## 6. Non-Functional Requirements
-
-| Requirement | Target |
-|-------------|--------|
-| API response time | < 300ms (p95) |
-| Uptime | > 99% |
-| Mobile responsive | Yes (all screen sizes) |
-| Browser support | Chrome, Firefox, Safari (latest 2 versions) |
-| Security | OWASP Top 10 compliance |
-| Touch targets | Min 44px on mobile |
-| Design system | Duolingo-inspired tactile UI, shared tokens (`frontend/src/tokens`) |
-
----
-
-## 7. Out of Scope (MVP)
-
-- Payment / monetization features
-- Video content production
-- Native mobile apps
-- Real-time features (WebSocket)
-- AI/ML recommendations
-- Multi-language UI (Indonesian UI copy only for MVP)
+| Layer | Technology | Architecture Pattern |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, TypeScript 5, Vite, Tailwind CSS v4, Lucide & Phosphor Icons | **Headless Hook Pattern** (Zero logic in JSX; state managed via custom hooks) + Zustand + TanStack Query |
+| **Backend** | Golang 1.23+, Gin Web Framework | **Strict Clean Architecture** (`delivery/http` ➔ `usecase` ➔ `repository` ➔ `domain`) |
+| **Database** | PostgreSQL 16 (`pgcrypto`), Redis 7 | Normalized relational tables (1-to-1 `users` ➔ `user_gamification`) |
+| **Event Streaming** | Apache Kafka | Async background events (daily quest resets, activity auditing) |
+| **Design System** | Vanilla CSS + Tailwind v4 (`TOKENS`) | **90% Duolingo 3D Tactile Taste (Clean Light Mode) + 10% CodeAbroad Electric Blue** |
