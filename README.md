@@ -20,12 +20,12 @@ A gamified career RPG & IT learning platform for Indonesian developers targeting
 
 ## 📖 About CodeAbroad
 
-**CodeAbroad** is an open-source, gamified IT learning platform engineered specifically for Indonesian software engineers. Think of it as a **Career RPG and International Developer GPS** — complete industrial coding quests, earn XP, maintain daily login streaks, unlock Tokyo arcade items, and track your readiness to land high-paying engineering roles overseas.
+**CodeAbroad** is an open-source, gamified IT learning platform engineered specifically for Indonesian software engineers. Think of it as a **Career RPG and International Developer GPS** — complete industrial coding quests, earn XP, maintain daily login streaks, unlock arcade items, and track your readiness to land high-paying engineering roles overseas.
 
 ### Why CodeAbroad?
 - 🎯 **A Clear End Goal:** Not just generic coding theory, but getting hired in Tokyo, Berlin, or Singapore.
 - 🗺️ **Direct Industrial Curriculum Units:** Sequential learning path with numbered milestone nodes (Part 1, 2, 3...) with zero filler content.
-- 💻 **In-Browser Coding Workspace:** Interactive Monaco code editor with real Go unit test assertions and Tokyo workplace Japanese (*Nihongo Notes*).
+- 💻 **In-Browser Coding Workspace:** Interactive Monaco code editor with real Go unit test assertions and workplace Japanese (*Nihongo Notes*).
 - 🎮 **Tactile 3D Gamification:** 90% Duolingo tactile 3D physics (Clean Light Mode `#FAFAF9`, 4px physical bevel shadows that amblas when clicked, native haptics) + 10% CodeAbroad Electric Blue.
 - 🦊 **Kodi Mascot Companion:** Kodi the friendly mascot cheers your progress, celebrates milestones, and provides guidance.
 
@@ -35,14 +35,15 @@ A gamified career RPG & IT learning platform for Indonesian developers targeting
 
 | Feature | Description |
 | :--- | :--- |
-| 🧭 **Curriculum Learning Path** | Sequential units (Golang Dasar, REST API & Middleware, Concurrency) with clear numbered parts (1, 2, 3...) |
-| ⚡ **3 Interaction Node States** | ✅ Completed (Emerald 3D), ⚡ Active (Electric Blue 3D with pulsating ring + popover CTA + Kodi), 🔒 Locked (Slate 3D) |
-| 💻 **Interactive Code Workspace** | Split-pane editor (Monaco Editor) with Go unit test runner and Nihongo workplace notes |
+| 🧭 **Modular Curriculum Learning Path** | Normalized units (`tech_stacks` ➔ `modules` ➔ `chapters` ➔ `quests`) with clear numbered parts (1, 2, 3...) |
+| ⚡ **Multi-Format Quest Nodes** | Concept Quizzes, Fill-in-the-blank, in-browser Monaco Coding challenges, Daily habit reviews, and Boss milestones |
+| 🎮 **3 Interaction Node States** | ✅ Completed (Emerald 3D), ⚡ Active (Electric Blue 3D with pulsating ring + popover CTA + Kodi), 🔒 Locked (Slate 3D) |
+| 💻 **Interactive Code Workspace** | Split-pane editor (Monaco Editor) with Go unit test runner and workplace communication notes |
 | 🔥 **Daily Streak Engine** | Real 7-day streak consistency tracking backed by Redis and PostgreSQL presence logs |
 | 🎁 **Golden Chest & Daily 50 XP** | Interactive 3D reward chest tracking your daily habit milestones |
-| 💎 **Akihabara Arcade Shop** | Virtual shop to spend earned blue gems on Streak Freezes, XP Boosters, and CV Review requests |
-| 🇯🇵 **Tokyo Office Vocab** | Compact workplace Japanese flashcards with pronunciation and developer context |
-| 🎫 **3D Boarding Pass Onboarding** | Interactive 4-step wizard generating your `CGK ✈️ NRT` developer boarding pass |
+| 💎 **Akihabara Arcade Shop** | Virtual shop to spend earned blue gems on Streak Freezes and XP Boosters |
+| 🇯🇵 **Multi-Country Workplace Vocab** | 150 JLPT vocabulary bank (N5–N1) with structured native pronunciation audio and CEFR support |
+| 🎫 **3D Boarding Pass Onboarding** | Interactive 4-step wizard generating your `CGK ✈️ NRT` or `CGK ✈️ BER` developer boarding pass |
 | 📊 **Leaderboard** | Weekly developer league rankings driving healthy peer motivation |
 
 ---
@@ -70,7 +71,7 @@ A gamified career RPG & IT learning platform for Indonesian developers targeting
 
 ---
 
-## 🗄️ Database Architecture & ERD (v2.1)
+## 🗄️ Database Architecture & ERD (v2.2)
 
 CodeAbroad menerapkan **The 3-Pillar Normalized Architecture** untuk memisahkan domain secara ketat sesuai prinsip *Single Responsibility Principle* (SRP) dan *Zero-Leak Security*:
 
@@ -86,17 +87,26 @@ CodeAbroad menerapkan **The 3-Pillar Normalized Architecture** untuk memisahkan 
 │  PILLAR 2: PROFIL & KARIR    │ │  PILLAR 3: GAME LOOP ENGINE  │
 │  user_profiles               │ │  user_gamification           │
 │  - Name, Username, Bio       │ │  - XP, Level, Streak, Gems   │
-│  - Career Path & Country IDs │ │  - Last Active Timestamp     │
-│  - Primary Stack & Level     │ └──────────────┬───────────────┘
+│  - Country & Career Path FKs │ │  - Last Active Timestamp     │
+│  - Normalized Tech Stack ID  │ └──────────────┬───────────────┘
 │  - Onboarding Status         │                │
 └──────────────────────────────┘                │ (1-to-Many FK user_id)
         ┌───────────────────────────────────────┴───────────────────────┐
         ▼                                       ▼                       ▼
   user_inventories                     user_activity_logs       daily_chest_claims
-   (Arcade Items)                      (7-Day Consistency)      (Milestone Chests)
+   (Player Bag)                        (7-Day Consistency)      (Milestone Chests)
+
+┌────────────────────────────────────────────────────────────────────────┐
+│                CURRICULUM & MULTI-COUNTRY WORKSPACE                    │
+│  countries ──(FK)──> vocabularies (JLPT N5-N1 & CEFR with audio)       │
+│  career_paths ──(FK)──> tech_stacks ──(FK)──> modules ──> chapters     │
+│                                                            │           │
+│                                                            ▼           │
+│                                                 quests ──> user_quests │
+└────────────────────────────────────────────────────────────────────────┘
 ```
 
-> 💡 **Visualisasi Interaktif:** Skrip DBML lengkap versi 2.1 siap di-copy-paste langsung ke **[dbdiagram.io](https://dbdiagram.io)** pada dokumen [`.agents/docs/erd.md`](.agents/docs/erd.md).
+> 💡 **Visualisasi Interaktif:** Skrip DBML lengkap versi 2.2 siap di-copy-paste langsung ke **[dbdiagram.io](https://dbdiagram.io)** pada dokumen [`.agents/docs/erd.md`](.agents/docs/erd.md).
 
 ---
 
@@ -107,8 +117,8 @@ codeabroad/
 ├── .agents/                    # 🧠 Master AI Agent & Engineering Central
 │   └── docs/
 │       ├── SKILL.md            # Master Autonomous Engineering Workflow (SSOT)
-│       ├── erd.md              # Database Schema (v2.1 Normalized) & DBML
-│       ├── prd.md              # Product Requirements Document (v2.0)
+│       ├── erd.md              # Database Schema (v2.2 Normalized) & DBML
+│       ├── prd.md              # Product Requirements Document (v2.2)
 │       └── design-system.md    # Duolingo 3D Design System Specification (v3.1)
 │
 ├── frontend/                   # React 18 + TypeScript Client
@@ -124,126 +134,66 @@ codeabroad/
 │       └── types/              # Strict TypeScript interfaces & DTOs (Zero 'any')
 │
 ├── backend/                    # Go 1.23+ Clean Architecture API
-│   ├── cmd/                    # Entry point (main.go & dependency wiring)
-│   ├── internal/
-│   │   ├── domain/             # Entities, request/response DTOs, repository interfaces
-│   │   ├── usecase/            # Pure business logic (depends only on domain)
-│   │   ├── repository/         # Database persistence implementations
-│   │   │   ├── database/       # PostgreSQL queries via pgx/v5
-│   │   │   └── session/        # Redis session & streak cache
-│   │   ├── delivery/http/      # Gin HTTP handlers, middlewares & response envelopes
-│   │   └── infrastructure/     # DB pools, Redis client, Kafka producer
-│   └── migrations/             # SQL Migrations: 000001 to 000008 (Normalized schema)
+│   ├── cmd/api/                # Main entrypoint
+│   └── internal/
+│       ├── config/             # Environment configs
+│       ├── delivery/http/      # Gin HTTP controllers, routes & middleware
+│       ├── domain/             # Pure entities, domain interfaces & business errors
+│       ├── repository/         # Postgres & Redis persistence implementations
+│       └── usecase/            # Pure business workflows
 │
-├── nginx/                      # Nginx reverse proxy configuration
-└── docker-compose.yml          # Local infra orchestration
+└── docker-compose.yml          # Local infra orchestration (Postgres, Redis, Kafka)
 ```
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Quickstart
 
 ### Prerequisites
-- [Go 1.23+](https://golang.org/dl/)
-- [Node.js 20+](https://nodejs.org/)
-- [Docker & Docker Compose](https://docs.docker.com/get-docker/)
-- [Git](https://git-scm.com/)
+- Docker & Docker Compose
+- Node.js 20+ & npm
+- Go 1.23+
 
-### 1. Clone the Repository
+### 1. Clone & Setup Environment
 ```bash
-git clone https://github.com/YOUR_USERNAME/codeabroad.git
+git clone https://github.com/agamlatiff/codeabroad.git
 cd codeabroad
-```
 
-### 2. Setup Environment Variables
-```bash
-# Backend
 cp backend/.env.example backend/.env
-
-# Frontend
 cp frontend/.env.example frontend/.env
 ```
 
-### 3. Start Infrastructure (Docker)
+### 2. Start Infrastructure
 ```bash
-docker-compose up -d
+docker compose up -d postgres redis kafka zookeeper
 ```
-Starts: PostgreSQL 16, Redis 7, Kafka, and Zookeeper.
 
-### 4. Run the Backend API
+### 3. Run Backend API
 ```bash
 cd backend
-go mod download
-go run cmd/main.go
+go run cmd/api/main.go
 ```
-Backend API will be live at `http://localhost:8080/api/v1`
 
-### 5. Run the Frontend App
+### 4. Run Frontend App
 ```bash
 cd frontend
 npm install
 npm run dev
 ```
-Frontend App will be live at `http://localhost:5173`
+
+Visit `http://localhost:5173` to start your developer journey abroad!
 
 ---
 
-## 📡 API Endpoints Overview
+## 📜 Engineering Standards & Policies
 
-Base URL: `http://localhost:8080/api/v1`
-
-| Module | Method | Endpoint | Description |
-| :--- | :--- | :--- | :--- |
-| **Auth** | `POST` | `/auth/register` | Register new account (auto-login enabled) |
-| **Auth** | `POST` | `/auth/login` | Login with credentials & update login streak |
-| **Auth** | `POST` | `/auth/refresh` | Auto-refresh access token via Redis session |
-| **Auth** | `POST` | `/auth/logout` | Revoke session from Redis |
-| **User** | `GET` | `/users/me` | Fetch active user profile |
-| **User** | `PATCH` | `/users/me` | Update profile fields |
-| **User** | `GET` | `/users/me/activity-logs` | Fetch 7-day weekly activity history |
-| **Onboarding** | `POST` | `/onboarding` | Submit 4-step wizard & claim welcome bonus |
-| **Roadmap** | `GET` | `/roadmap` | Fetch active learning path units and parts |
-| **Quest** | `GET` | `/quests` | List curriculum quests with filter |
-| **Quest** | `POST` | `/quests/:id/submit` | Submit code solution & run unit tests |
-| **Gamification**| `GET` | `/gamification/status` | Fetch gems, inventory, and chest status |
-| **Gamification**| `POST` | `/gamification/daily-chest` | Claim daily milestone golden chest |
-| **Gamification**| `POST` | `/gamification/shop/buy` | Buy items in Akihabara arcade shop |
-| **Leaderboard** | `GET` | `/leaderboard` | Get weekly developer league rankings |
-| **Vocabulary** | `GET` | `/vocabulary` | Get Tokyo office workplace Japanese cards |
+1. **Zero `any` TypeScript:** All frontend code must use strict types. Type casting to `any` is strictly prohibited.
+2. **Headless Hook Pattern:** Components in `frontend/src/pages` and `frontend/src/components` must remain presentational. All state, API calls, and lifecycle logic live in dedicated custom hooks.
+3. **Strict Clean Architecture:** Domain entities and repository interfaces live in `backend/internal/domain`. HTTP handlers never communicate directly with repositories; they strictly call `usecase`.
+4. **Duolingo 3D Tactile Design Standard:** All buttons, cards, and modal surfaces must follow the tactile 3D physical depth token system defined in [`design-system.md`](.agents/docs/design-system.md).
 
 ---
 
-## 📚 Master Engineering Documentation
+## 📄 License
 
-All architectural standards and documentation are centralized in [`.agents/docs/`](.agents/docs/):
-
-| Document | Purpose |
-| :--- | :--- |
-| **[Master Workflow Skill](.agents/docs/SKILL.md)** | Autonomous development rules, Clean Architecture laws, Headless Hook patterns, and zero-any policy. |
-| **[ERD & DBML Specification](.agents/docs/erd.md)** | Normalized database schema (v2.0) with interactive dbdiagram.io code. |
-| **[Product Requirements (PRD)](.agents/docs/prd.md)** | Product vision, curriculum learning path specs, and gamification mechanics. |
-| **[Design System Spec](.agents/docs/design-system.md)** | 90% Duolingo 3D Tactile design tokens, component primitives, and Anti-AI Slop manifesto. |
-
----
-
-## 🌿 Git Branching & Conventional Commits
-
-```text
-main       → Production-ready, stable releases
-staging    → Integration and walkthrough testing
-feature/*  → Isolated feature development (e.g. feature/normalize-user-gamification)
-```
-
-Format commits with **Conventional Commits** in **English**:
-```text
-feat(auth): normalize user gamification 1-to-1 table
-fix(roadmap): resolve 3d node pulsating ring z-index
-docs(skill): update master autonomous development guidelines
-```
-
----
-
-## 📄 License & Community
-
-This project is licensed under the **MIT License** — see [LICENSE](LICENSE) for details.  
-Built with ❤️ for Indonesian developers aiming to conquer global tech engineering hubs.
+CodeAbroad is licensed under the [MIT License](LICENSE).

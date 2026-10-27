@@ -1,13 +1,13 @@
 # Entity Relationship Diagram (ERD) - CodeAbroad
-**Version:** 2.1 (The 3-Pillar Normalized Architecture)  
-**Last Updated:** 2026-10-25  
+**Version:** 2.2 (Multi-Country Normalized Architecture & Modular Tech Stacks)  
+**Last Updated:** 2026-10-27  
 **Database:** PostgreSQL 16 (`pgcrypto`)  
 
 ---
 
 ## 🗺️ 1. Conceptual Architecture & Bounded Contexts
 
-CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login (Auth Core), profil publik & target karir (Profile Domain), serta mesin progresi gamifikasi (Gamification Engine):
+CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login (Auth Core), profil publik & target karir (Profile Domain), serta mesin progresi gamifikasi (Gamification Engine), yang terintegrasi secara modular dengan kurikulum koding dan bank bahasa multi-country:
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -22,20 +22,25 @@ CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login 
 ┌───────────────────────────┐      ┌───────────────────────────┐ ┌─────────────────────────────┐
 │  PILLAR 2: user_profiles  │      │PILLAR 3: user_gamification│ │     user_inventories        │
 │ (Name, Username, Bio,     │      │(XP, Level, Streak, Gems,  │ │ (Streak Freeze, Boosters)   │
-│  Socials, Career Targets) │      │ Last Active At)           │ │                             │
-└───────────────────────────┘      └───────────────────────────┘ └─────────────────────────────┘
+│  Career, Country, Stack)  │      │ Last Active At)           │ │                             │
+└─────────────┬─────────────┘      └───────────────────────────┘ └─────────────────────────────┘
               │                                  │                       │
               ├──────────────────────────────────┴───────────────────────┘
               ▼
-┌───────────────────────────┐      ┌───────────────────────────┐ ┌─────────────────────────────┐
-│    user_activity_logs     │      │    daily_chest_claims     │ │    coaching_submissions   │
-│ (Daily presence, 7-day)   │      │ (Golden Chest Claims)     │ │ (CV Review, Mock Interview) │
-└───────────────────────────┘      └───────────────────────────┘ └─────────────────────────────┘
-              │
-              ▼
+┌───────────────────────────┐      ┌───────────────────────────┐
+│    user_activity_logs     │      │  user_daily_chest_claims  │
+│ (Daily presence, 7-day)   │      │ (Golden Chest Claims)     │
+└───────────────────────────┘      └───────────────────────────┘
+
 ┌────────────────────────────────────────────────────────────────────────┐
-│                    CURRICULUM & INTERACTIVE WORKSPACE                  │
-│  career_paths ──> roadmaps ──> stations ──> chapters ──> quests        │
+│                 CURRICULUM & MULTI-COUNTRY WORKSPACE                   │
+│                                                                        │
+│  countries ──(FK)──> vocabularies (N5-N1 / A1-C2 with audio)           │
+│                                                                        │
+│  career_paths ──(FK)──> tech_stacks ──(FK)──> modules ──> chapters     │
+│                                                            │           │
+│                                                            ▼           │
+│                                                          quests        │
 │                                                            │           │
 │                                                            ▼           │
 │                                                       user_quests      │
@@ -64,18 +69,17 @@ CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login 
 #### `user_profiles` (1-to-1 with `users`)
 | Column | Type | Constraints | Description | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Unique profile ID | Target Mig 009 |
-| `user_id` | UUID | UNIQUE, NOT NULL, FK → `users.id` ON DELETE CASCADE | Associated user ID | Target Mig 009 |
-| `name` | VARCHAR(100) | NOT NULL | User's full name | Target Mig 009 |
-| `username` | VARCHAR(50) | UNIQUE, NOT NULL | Unique platform username | Target Mig 009 |
-| `bio` | TEXT | NULL | Short developer bio | Target Mig 009 |
-| `career_path_id`| UUID | FK → `career_paths.id`, NULL | Selected target career path | Target Mig 009 |
-| `country_id` | UUID | FK → `countries.id`, NULL | Selected target country (JP, DE, SG) | Target Mig 009 |
-| `primary_stack` | VARCHAR(50) | NULL | Main programming stack (golang, react) | Target Mig 009 |
-| `level` | VARCHAR(20) | DEFAULT 'beginner' | Self-assessed onboarding level | Target Mig 009 |
-| `is_onboarded` | BOOLEAN | NOT NULL, DEFAULT FALSE | Onboarding completion flag | Target Mig 009 |
-| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile creation timestamp | Target Mig 009 |
-| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile update timestamp | Target Mig 009 |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Unique profile ID | Active (Mig 001) |
+| `user_id` | UUID | UNIQUE, NOT NULL, FK → `users.id` ON DELETE CASCADE | Associated user ID | Active (Mig 001) |
+| `name` | VARCHAR(100) | NOT NULL | User's full name | Active (Mig 001) |
+| `username` | VARCHAR(50) | UNIQUE, NOT NULL | Unique platform username | Active (Mig 001) |
+| `bio` | TEXT | NULL | Short developer bio | Active (Mig 001) |
+| `career_path_id`| UUID | FK → `career_paths.id` ON DELETE SET NULL, NULL | Selected target career track (backend, frontend, etc.) | Active (Mig 001) |
+| `country_id` | VARCHAR(2) | FK → `countries.code` ON DELETE SET NULL, NULL | Selected target country (JP, DE, SG) | Active (Mig 001) |
+| `tech_stack_id` | UUID | FK → `tech_stacks.id` ON DELETE SET NULL, NULL | Selected primary tech stack (golang, react, etc.) | Active (Mig 001) |
+| `is_onboarded` | BOOLEAN | NOT NULL, DEFAULT FALSE | Onboarding completion flag | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile creation timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile update timestamp | Active (Mig 001) |
 
 ---
 
@@ -94,95 +98,167 @@ CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login 
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active (Mig 008) |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Last stats update timestamp | Active (Mig 008) |
 
-#### `user_inventories` (Akihabara Arcade Shop Items)
+#### `user_inventories` (Player Bag / Owned Items)
+> Katalog item (`streak-freeze` 20 gems, `xp-booster` 35 gems) **tidak disimpan di tabel**. Harga & efek di-hardcode di Go (`BuyShopItem`) dan metadata UI di React (`SHOP_ITEMS`). `item_id` diperlakukan sebagai application-level enum.
+
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, gen_random_uuid() | Inventory item record ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | Item owner |
-| `item_id` | VARCHAR(50) | NOT NULL (`streak-freeze`, `xp-booster`, `cv-review`, `mock-interview`) | Purchased item SKU |
-| `quantity` | INTEGER | NOT NULL, DEFAULT 0 | Quantity remaining |
+| `item_id` | VARCHAR(50) | NOT NULL (enum: `streak-freeze`, `xp-booster`) | Purchased item SKU (validated in Go) |
+| `quantity` | INTEGER | NOT NULL, DEFAULT 0 | Quantity remaining in bag |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Purchase timestamp |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Consumption timestamp |
 | *Index* | UNIQUE(`user_id`, `item_id`) | | One row per item SKU per user |
 
-#### `user_badges` (Monthly Milestones & Badges)
+#### `user_badges` (Monthly Milestones & Badges - Slim Junction)
+> Judul, deskripsi, dan ikon lencana **tidak disimpan per baris**. Di-resolve di kode dari `badge_key` (contoh: `codeabroad_monthly_badge_2026_10`).
+
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, gen_random_uuid() | Badge award ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | Badge recipient |
 | `badge_key` | VARCHAR(100)| NOT NULL | Unique badge identifier |
-| `title` | VARCHAR(200)| NOT NULL | Display badge title |
-| `description` | TEXT | NULL | Badge achievement narrative |
-| `icon` | VARCHAR(50) | NULL | Icon identifier |
 | `awarded_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Award timestamp |
+| *Index* | UNIQUE(`user_id`, `badge_key`) | | One award per badge per user |
 
-#### `daily_chest_claims` (Golden Chest Milestone Rewards)
+#### `user_daily_chest_claims` (Golden Chest Milestone Rewards)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, gen_random_uuid() | Claim ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | Claimant user |
-| `claim_date` | VARCHAR(10) | NOT NULL (YYYY-MM-DD) | Date of claim |
-| `tier` | INTEGER | NOT NULL (1, 2, or 3) | Chest tier milestone |
+| `claim_date` | DATE | NOT NULL | Date of claim |
+| `tier` | INTEGER | NOT NULL, CHECK IN (1, 2, 3) | Chest tier milestone |
 | `gems_awarded` | INTEGER | NOT NULL | Gems received |
 | `xp_awarded` | INTEGER | NOT NULL | XP received |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Timestamp |
+| *Index* | UNIQUE(`user_id`, `claim_date`, `tier`) | | Anti double-claim lock (ACID) |
 
 #### `user_activity_logs` (Daily Tracking & 7-Day History)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, gen_random_uuid() | Activity entry ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | User ID |
-| `activity_type` | VARCHAR(50) | NOT NULL (`daily_login`, `quest_completed`, `daily_vocab_quest_claim`, `daily_golden_chest_claim`) | Activity type |
+| `activity_type` | VARCHAR(50) | NOT NULL, CHECK IN (`daily_login`, `quest_completed`, `daily_vocab_quest_claim`, `daily_golden_chest_claim`) | Activity type |
 | `xp_earned` | INTEGER | NOT NULL, DEFAULT 0 | XP awarded |
 | `metadata` | JSONB | NULL | Dynamic context (dates, details) |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Log timestamp |
+| *Index* | (`user_id`, `created_at`) | | Speeds up 7-day calendar, streak & leaderboard queries |
 
 ---
 
-### 2.4 Curriculum, Roadmap & Workspace Domain
+### 2.4 Curriculum & Workspace Domain
 
-#### `countries`
+#### `countries` (Multi-Country Destinations)
 | Column | Type | Constraints | Description | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Country ID | Active |
-| `code` | VARCHAR(10) | UNIQUE, NOT NULL | Country code (JP, DE, SG) | Active |
-| `name` | VARCHAR(100)| NOT NULL | Country name | Active |
-| `flag_emoji` | VARCHAR(10) | NOT NULL | Emoji icon (🇯🇵, 🇩🇪, 🇸🇬) | Active |
-| `badge` | VARCHAR(50) | NULL | Display badge text | Active |
-| `is_active` | BOOLEAN | DEFAULT TRUE | Availability status | Active |
+| `code` | VARCHAR(2) | PRIMARY KEY | Country ISO code (`JP`, `DE`, `SG`) | Active (Mig 001) |
+| `name` | VARCHAR(100)| NOT NULL | Country display name (Japan, Germany, Singapore) | Active (Mig 001) |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Country availability flag | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Registration timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
 
-#### `career_paths`
-| Column | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Career path ID |
-| `slug` | VARCHAR(50) | UNIQUE, NOT NULL | Path slug (frontend, backend, devops) |
-| `label` | VARCHAR(100)| NOT NULL | Display title |
-| `description` | TEXT | NULL | Path summary |
-| `stacks` | JSONB | NULL | Available tech stacks |
+#### `career_paths` (High-Level Engineering Tracks)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Career path ID | Active (Mig 001) |
+| `slug` | VARCHAR(50) | UNIQUE, NOT NULL | Track slug (`backend`, `frontend`, `devops`, `fullstack`, etc.) | Active (Mig 001) |
+| `label` | VARCHAR(100)| NOT NULL | Track title (Backend Engineer, Frontend Engineer) | Active (Mig 001) |
+| `description` | TEXT | NULL | Track overview description | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
 
-#### `roadmaps` ➔ `stations` ➔ `chapters` ➔ `quests`
-| Table | Key Columns | Description |
-| :--- | :--- | :--- |
-| **`roadmaps`** | `id`, `career_path_id` (FK), `title`, `is_active` | Root learning track per career path |
-| **`stations`** | `id`, `roadmap_id` (FK), `station_number`, `title`, `chip_label` | High-level curriculum station / unit |
-| **`chapters`** | `id`, `station_id` (FK), `chapter_number`, `title` | Sub-chapter within a station |
-| **`quests`** | `id`, `chapter_id` (FK), `title`, `description`, `xp_reward`, `estimated_minutes`, `story_context`, `nihongo_notes`, `acceptance_criteria`, `starter_code`, `test_suite` | Interactive coding challenge / lesson |
-| **`user_quests`** | `id`, `user_id` (FK), `quest_id` (FK), `status` (locked/available/completed), `code_submission`, `tests_passed`, `total_tests`, `completed_at` | User progress and code submissions |
+#### `tech_stacks` (Normalized Technology Stacks & Foundation)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Tech stack ID | Active (Mig 001) |
+| `career_path_id`| UUID | FK → `career_paths.id` ON DELETE SET NULL, NULLABLE | Parent career track (`NULL` for Universal Foundation) | Active (Mig 001) |
+| `slug` | VARCHAR(50) | UNIQUE, NOT NULL | Stack slug (`golang`, `react`, `web_fundamental`, etc.) | Active (Mig 001) |
+| `label` | VARCHAR(100)| NOT NULL | Display label (Go Gin, React & Next.js) | Active (Mig 001) |
+| `badge` | VARCHAR(50) | NULL | UI badge (`Recommended`, `Foundation`, `Popular`) | Active (Mig 001) |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Availability status flag | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
 
-#### `vocabularies` (Tokyo Office Vocab Bank)
-| Column | Type | Constraints | Description |
-| :--- | :--- | :--- | :--- |
-| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Vocab ID |
-| `career_path_id`| UUID | FK → `career_paths.id`, NULL | Optional role association |
-| `term` | VARCHAR(100)| NOT NULL | Japanese term in Kanji/Katakana |
-| `reading` | VARCHAR(150)| NOT NULL | Romaji / Hiragana pronunciation |
-| `meaning` | VARCHAR(255)| NOT NULL | Indonesian translation |
-| `category` | VARCHAR(100)| NOT NULL | Category (Etika Kantor, Git, Code Review) |
-| `example_ja` | TEXT | NOT NULL | Japanese usage example |
-| `example_id` | TEXT | NOT NULL | Indonesian translation of example |
-| `difficulty_level`| VARCHAR(20) | DEFAULT 'N3' | JLPT difficulty level (N5 - N2) |
-| `order_index` | INT | DEFAULT 0 | Display sequence order |
-| `created_at` | TIMESTAMPTZ | DEFAULT NOW() | Timestamp |
+#### `modules` (Sequential Learning Units per Tech Stack)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Module ID | Active (Mig 001) |
+| `tech_stack_id` | UUID | NOT NULL, FK → `tech_stacks.id` ON DELETE CASCADE | Associated tech stack | Active (Mig 001) |
+| `module_number` | INT | NOT NULL | Unit sequence order (1, 2, 3...) | Active (Mig 001) |
+| `title` | VARCHAR(255)| NOT NULL | Module title (Go Syntax & Concurrency Core) | Active (Mig 001) |
+| `description` | TEXT | NULL | Module curriculum syllabus | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
+| *Constraint* | UNIQUE(`tech_stack_id`, `module_number`) | | Ensures numbered sequence integrity | Active (Mig 001) |
+
+#### `chapters` (Sub-Chapters in a Module)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Chapter ID | Active (Mig 001) |
+| `module_id` | UUID | NOT NULL, FK → `modules.id` ON DELETE CASCADE | Parent module ID | Active (Mig 001) |
+| `chapter_number`| INT | NOT NULL | Chapter sequence order (1, 2, 3...) | Active (Mig 001) |
+| `title` | VARCHAR(255)| NOT NULL | Chapter title | Active (Mig 001) |
+| `description` | TEXT | NULL | Chapter summary | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
+| *Constraint* | UNIQUE(`module_id`, `chapter_number`) | | Prevents duplicate chapter ordering | Active (Mig 001) |
+
+#### `quests` (Duolingo-style Interactive Learning Nodes)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Quest ID | Active (Mig 001) |
+| `chapter_id` | UUID | NOT NULL, FK → `chapters.id` ON DELETE CASCADE | Parent chapter ID | Active (Mig 001) |
+| `title` | VARCHAR(255)| NOT NULL | Node title | Active (Mig 001) |
+| `description` | TEXT | NULL | Problem statement and instructions | Active (Mig 001) |
+| `type` | VARCHAR(50) | NOT NULL, CHECK IN (`main`, `boss`, `daily`) | Quest milestone tier | Active (Mig 001) |
+| `format` | VARCHAR(50) | NOT NULL, CHECK IN (`code`, `quiz`, `fill_blank`) | Interactive interface format | Active (Mig 001) |
+| `difficulty` | VARCHAR(20) | NOT NULL, DEFAULT `'easy'`, CHECK IN (`easy`, `medium`, `hard`) | Challenge difficulty | Active (Mig 001) |
+| `xp_reward` | INT | NOT NULL, DEFAULT 10 | Experience Points awarded upon completion | Active (Mig 001) |
+| `gems_reward` | INT | NOT NULL, DEFAULT 5 | Blue Gems awarded upon completion | Active (Mig 001) |
+| `estimated_minutes` | INT | NOT NULL, DEFAULT 5 | Expected time to solve | Active (Mig 001) |
+| `order_index` | INT | NOT NULL | Sequential roadmap node position (1, 2, 3...) | Active (Mig 001) |
+| `starter_code` | TEXT | NULL | Initial boilerplate code in Monaco editor | Active (Mig 001) |
+| `test_suite` | JSONB | NULL | Unit test assertions schema | Active (Mig 001) |
+| `solution_code`| TEXT | NULL | Official reference solution | Active (Mig 001) |
+| `quiz_data` | JSONB | NULL | Multiple-choice questions, options & explanation | Active (Mig 001) |
+| `hints` | JSONB | NULL | Hint snippets array | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
+| *Constraint* | UNIQUE(`chapter_id`, `order_index`) | | Guarantees ordered progression on map | Active (Mig 001) |
+
+#### `user_quests` (User Node Progress State)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Record ID | Active (Mig 001) |
+| `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | Associated user | Active (Mig 001) |
+| `quest_id` | UUID | NOT NULL, FK → `quests.id` ON DELETE CASCADE | Associated quest | Active (Mig 001) |
+| `status` | VARCHAR(20) | NOT NULL, DEFAULT `'locked'`, CHECK IN (`locked`, `available`, `completed`) | 3D Node state | Active (Mig 001) |
+| `code_submission`| TEXT | NULL | Last submitted user code | Active (Mig 001) |
+| `tests_passed` | INT | NOT NULL, DEFAULT 0 | Number of test cases passed | Active (Mig 001) |
+| `total_tests` | INT | NOT NULL, DEFAULT 0 | Total test cases in test suite | Active (Mig 001) |
+| `completed_at` | TIMESTAMPTZ | NULL | Timestamp of quest victory | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Record created timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Last attempt timestamp | Active (Mig 001) |
+| *Constraint* | UNIQUE(`user_id`, `quest_id`) | | One state record per user per quest | Active (Mig 001) |
+
+#### `vocabularies` (Multi-Country Workplace Vocabulary Bank)
+| Column | Type | Constraints | Description | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Vocabulary ID | Active (Mig 001) |
+| `country_id` | VARCHAR(2) | NOT NULL, FK → `countries.code` ON DELETE CASCADE | Target country (`JP`, `DE`, `SG`) | Active (Mig 001) |
+| `term` | VARCHAR(100)| NOT NULL | Term in native script (Kanji, German, etc.) | Active (Mig 001) |
+| `reading` | VARCHAR(150)| NOT NULL | Pronunciation guide (Romaji / Phonetic) | Active (Mig 001) |
+| `meaning` | VARCHAR(255)| NOT NULL | Indonesian translation & office context | Active (Mig 001) |
+| `category` | VARCHAR(100)| NOT NULL | Category (`greetings`, `courtesy`, `office_basics`, etc.) | Active (Mig 001) |
+| `audio_url` | VARCHAR(255)| NULL | Structured static audio path (`/audio/vocab/jp/n5/...`) | Active (Mig 001) |
+| `example_sentence` | TEXT | NOT NULL | Natural workplace sentence in target language | Active (Mig 001) |
+| `example_translation` | TEXT | NOT NULL | Indonesian translation of example sentence | Active (Mig 001) |
+| `difficulty_level` | VARCHAR(20) | NOT NULL, DEFAULT `'A1'` | Level (`N5`-`N1` for JP, `A1`-`C2` for DE/SG) | Active (Mig 001) |
+| `position` | INT | NOT NULL, DEFAULT 0 | Sequence display position | Active (Mig 001) |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Timestamp | Active (Mig 001) |
+| `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Timestamp | Active (Mig 001) |
+| *Index* | (`country_id`, `category`) | | Composite index for lightning-fast localized filtering | Active (Mig 001) |
 
 ---
 
@@ -195,7 +271,8 @@ Berdasarkan audit statis di seluruh kode Go dan React, item-item berikut telah *
 | **`achievements`** (table) | Mig 000001 | Digantikan oleh `user_badges` di Mig 000007. **0 query di Go & TS**. | ❌ Pruned |
 | **`user_achievements`** (table)| Mig 000001 | Digantikan oleh `user_badges` di Mig 000007. **0 query di Go & TS**. | ❌ Pruned |
 | **`xp_logs`** (table) | Mig 000001 | Digantikan oleh `user_activity_logs` di Mig 000006. **0 query di Go & TS**. | ❌ Pruned |
-| `user_profiles.github_url` | Mig 000001 | Tidak ada input di settings/onboarding. Cukup disimpan di `coaching_submissions`. | ❌ Pruned |
+| **`coaching_submissions`** (table) | Mig 000007 | Black-hole table (hanya INSERT, 0 query SELECT di backend & 0 halaman di frontend). Item career coaching dipangkas agar inventory fokus ke game consumable. | ❌ Pruned |
+| `user_profiles.github_url` | Mig 000001 | Tidak ada input di settings/onboarding (100% dead data). | ❌ Pruned |
 | `user_profiles.linkedin_url` | Mig 000001 | Tidak pernah diinput atau dirender di UI mana pun (100% dead data). | ❌ Pruned |
 | `user_profiles.avatar_url` | Mig 000001 | UI menghasilkan SVG avatar secara dinamis via DiceBear dari username. | ❌ Pruned |
 | `user_profiles.target_timeline`| Mig 000003 | Input di onboarding, namun tidak pernah dipakai di filter/rekomendasi mana pun. | ❌ Pruned |
@@ -205,6 +282,12 @@ Berdasarkan audit statis di seluruh kode Go dan React, item-item berikut telah *
 | `countries.work_culture` | Mig 000001 | Disederhanakan. Data disimpan tapi tidak pernah dirender di frontend. | ❌ Pruned |
 | `quests.resource_url` | Mig 000001 | Usang. Semua quest sekarang in-browser Monaco, bukan link luar. | ❌ Pruned |
 | `quests.prerequisites` | Mig 000001 | Tidak pernah di-SELECT dalam query. Progresi diatur sekuensial by chapter. | ❌ Pruned |
+| **`roadmaps`** (table) | Mig 000004 | Relasi 1-to-1 kaku dengan `career_paths` (title/description duplikat). `stations` kini langsung FK ke `career_paths`, hemat 1 tabel & 1 JOIN. | ❌ Pruned |
+| **`shop_items`** (table) | Draft ERD (tidak pernah di-migrate) | Hanya 2 item statis yang harga/efeknya di-hardcode di Go & React. `item_id` cukup application-level enum. | ❌ Pruned |
+| `quests.career_path_id` | Mig 000001 | Redundan: sudah tercakup via chapter ➔ station ➔ career_path. 0 query di Go. | ❌ Pruned |
+| `quests.country_id` | Mig 000001 | Dead: materi tidak pernah difilter per negara. 0 query di Go & TS. | ❌ Pruned |
+| `vocabularies.career_path_id` | Mig 000005 | Dead: seluruh nilai NULL, kosakata bersifat universal untuk semua track. | ❌ Pruned |
+| `user_badges.title` / `description` / `icon` | Mig 000007 | Teks identik diulang per user. Cukup `badge_key`, sisanya di-resolve di kode. | ❌ Pruned |
 
 ---
 
@@ -254,14 +337,13 @@ Table user_profiles {
   username varchar(50) [unique, not null]
   bio text
   career_path_id uuid
-  country_id uuid
-  primary_stack varchar(50)
-  level varchar(20) [default: 'beginner']
+  country_id varchar(2)
+  tech_stack_id uuid
   is_onboarded boolean [not null, default: false]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 
-  Note: 'Clean public profile and career onboarding goals. Pruned of dead URLs and unused levels.'
+  Note: 'Clean public profile and career onboarding goals.'
 }
 
 // ----------------------------------------------------------------------------
@@ -284,7 +366,7 @@ Table user_gamification {
 Table user_inventories {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  item_id varchar(50) [not null, note: 'streak-freeze, xp-booster, cv-review, mock-interview']
+  item_id varchar(50) [not null, note: 'App-level enum: streak-freeze, xp-booster']
   quantity integer [not null, default: 0]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
@@ -297,145 +379,133 @@ Table user_inventories {
 Table user_badges {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  badge_key varchar(100) [not null]
-  title varchar(200) [not null]
-  description text
-  icon varchar(50)
+  badge_key varchar(100) [not null, note: 'Title, description & icon resolved in application code by badge_key']
   awarded_at timestamptz [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (user_id, badge_key) [unique]
+  }
 }
 
-Table daily_chest_claims {
+Table user_daily_chest_claims {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  claim_date varchar(10) [not null, note: 'YYYY-MM-DD']
-  tier integer [not null, note: '1, 2, or 3']
+  claim_date date [not null]
+  tier integer [not null, note: 'CHECK IN (1, 2, 3)']
   gems_awarded integer [not null]
   xp_awarded integer [not null]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (user_id, claim_date, tier) [unique]
+  }
 }
 
 Table user_activity_logs {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  activity_type varchar(50) [not null, note: 'daily_login, quest_completed, daily_golden_chest_claim']
+  activity_type varchar(50) [not null, note: 'CHECK IN (daily_login, quest_completed, daily_vocab_quest_claim, daily_golden_chest_claim)']
   xp_earned integer [not null, default: 0]
   metadata jsonb
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
-}
 
-Table coaching_submissions {
-  id uuid [pk, default: `gen_random_uuid()`]
-  user_id uuid [not null]
-  type varchar(50) [not null, note: 'cv-review or mock-interview']
-  target_role varchar(100)
-  github_url varchar(255)
-  resume_url varchar(255)
-  discord_handle varchar(100)
-  interview_language varchar(50)
-  focus_topic text
-  preferred_time varchar(100)
-  notes text
-  status varchar(50) [not null, default: 'in_review']
-  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
-  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  indexes {
+    (user_id, created_at) [name: 'idx_activity_user_created']
+  }
 }
 
 // ----------------------------------------------------------------------------
-// 3. TARGET DESTINATIONS & CAREER PATHS
+// 4. TARGET DESTINATIONS & CAREER PATHS
 // ----------------------------------------------------------------------------
 Table countries {
-  id uuid [pk, default: `gen_random_uuid()`]
-  code varchar(10) [unique, not null, note: 'JP, DE, SG']
+  code varchar(2) [pk, note: 'JP, DE, SG']
   name varchar(100) [not null]
-  flag_emoji varchar(10) [not null]
-  badge varchar(50)
-  is_active boolean [default: true]
+  is_active boolean [not null, default: true]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 }
 
 Table career_paths {
   id uuid [pk, default: `gen_random_uuid()`]
-  slug varchar(50) [unique, not null, note: 'frontend, backend, devops']
+  slug varchar(50) [unique, not null, note: 'backend, frontend, devops, fullstack']
   label varchar(100) [not null]
   description text
-  stacks jsonb
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 }
 
-// ----------------------------------------------------------------------------
-// 4. CURRICULUM ROADMAP & WORKSPACE LESSONS
-// ----------------------------------------------------------------------------
-Table roadmaps {
+Table tech_stacks {
   id uuid [pk, default: `gen_random_uuid()`]
-  career_path_id uuid [unique, not null]
-  title varchar(255) [not null]
-  description text
+  career_path_id uuid [null, note: 'NULL for universal foundations (HTML/CSS, CS fundamentals)']
+  slug varchar(50) [unique, not null, note: 'golang, react, devops_aws, web_fundamental']
+  label varchar(100) [not null]
+  badge varchar(50)
   is_active boolean [not null, default: true]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 }
 
-Table stations {
+// ----------------------------------------------------------------------------
+// 5. CURRICULUM & INTERACTIVE WORKSPACE
+// ----------------------------------------------------------------------------
+Table modules {
   id uuid [pk, default: `gen_random_uuid()`]
-  roadmap_id uuid [not null]
-  station_number int [not null]
+  tech_stack_id uuid [not null]
+  module_number int [not null]
   title varchar(255) [not null]
-  chip_label varchar(50) [not null]
   description text
-  order_index int [not null]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 
   indexes {
-    (roadmap_id, station_number) [unique]
+    (tech_stack_id, module_number) [unique]
   }
 }
 
 Table chapters {
   id uuid [pk, default: `gen_random_uuid()`]
-  station_id uuid [not null]
+  module_id uuid [not null]
   chapter_number int [not null]
   title varchar(255) [not null]
   description text
-  order_index int [not null]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 
   indexes {
-    (station_id, chapter_number) [unique]
+    (module_id, chapter_number) [unique]
   }
 }
 
 Table quests {
   id uuid [pk, default: `gen_random_uuid()`]
-  chapter_id uuid
-  career_path_id uuid
-  country_id uuid
+  chapter_id uuid [not null]
   title varchar(255) [not null]
   description text
-  type varchar(20) [not null, note: 'main, side, daily']
-  difficulty varchar(20) [not null, default: 'beginner']
-  xp_reward integer [not null, default: 50]
-  estimated_minutes integer [not null, default: 30]
-  chip_label varchar(50)
-  story_context text
-  nihongo_notes jsonb
-  acceptance_criteria jsonb
-  starter_code jsonb
+  type varchar(50) [not null, note: 'CHECK IN (main, boss, daily)']
+  format varchar(50) [not null, note: 'CHECK IN (code, quiz, fill_blank)']
+  difficulty varchar(20) [not null, default: 'easy', note: 'CHECK IN (easy, medium, hard)']
+  xp_reward integer [not null, default: 10]
+  gems_reward integer [not null, default: 5]
+  estimated_minutes integer [not null, default: 5]
+  order_index integer [not null]
+  starter_code text
   test_suite jsonb
-  order_index integer [not null, default: 0]
-  is_active boolean [not null, default: true]
+  solution_code text
+  quiz_data jsonb
+  hints jsonb
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (chapter_id, order_index) [unique]
+  }
 }
 
 Table user_quests {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
   quest_id uuid [not null]
-  status varchar(20) [not null, note: 'locked, available, completed']
+  status varchar(20) [not null, default: 'locked', note: 'CHECK IN (locked, available, completed)']
   code_submission text
   tests_passed int [default: 0]
   total_tests int [default: 0]
@@ -450,16 +520,22 @@ Table user_quests {
 
 Table vocabularies {
   id uuid [pk, default: `gen_random_uuid()`]
-  career_path_id uuid
+  country_id varchar(2) [not null, note: 'FK -> countries.code (JP, DE, SG)']
   term varchar(100) [not null]
   reading varchar(150) [not null]
   meaning varchar(255) [not null]
   category varchar(100) [not null]
-  example_ja text [not null]
-  example_id text [not null]
-  difficulty_level varchar(20) [default: 'N3']
-  order_index int [default: 0]
+  audio_url varchar(255)
+  example_sentence text [not null]
+  example_translation text [not null]
+  difficulty_level varchar(20) [not null, default: 'A1', note: 'N5-N1 (JP) / A1-C2 (DE/SG)']
+  position int [not null, default: 0]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+  updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
+
+  indexes {
+    (country_id, category) [name: 'idx_vocab_country_cat']
+  }
 }
 
 // ----------------------------------------------------------------------------
@@ -469,22 +545,21 @@ Ref: user_profiles.user_id - users.id [delete: cascade] // 1-to-1 Normalized (Pi
 Ref: user_gamification.user_id - users.id [delete: cascade] // 1-to-1 Normalized (Pillar 3)
 Ref: user_inventories.user_id > users.id [delete: cascade]
 Ref: user_badges.user_id > users.id [delete: cascade]
-Ref: daily_chest_claims.user_id > users.id [delete: cascade]
+Ref: user_daily_chest_claims.user_id > users.id [delete: cascade]
 Ref: user_activity_logs.user_id > users.id [delete: cascade]
-Ref: coaching_submissions.user_id > users.id [delete: cascade]
 
-Ref: user_profiles.country_id > countries.id [delete: set null]
+Ref: user_profiles.country_id > countries.code [delete: set null]
 Ref: user_profiles.career_path_id > career_paths.id [delete: set null]
+Ref: user_profiles.tech_stack_id > tech_stacks.id [delete: set null]
 
-Ref: roadmaps.career_path_id - career_paths.id [delete: cascade]
-Ref: stations.roadmap_id > roadmaps.id [delete: cascade]
-Ref: chapters.station_id > stations.id [delete: cascade]
-Ref: quests.chapter_id > chapters.id [delete: set null]
-Ref: quests.career_path_id > career_paths.id [delete: cascade]
-Ref: quests.country_id > countries.id [delete: set null]
+Ref: tech_stacks.career_path_id > career_paths.id [delete: set null]
+Ref: modules.tech_stack_id > tech_stacks.id [delete: cascade]
+Ref: chapters.module_id > modules.id [delete: cascade]
+Ref: quests.chapter_id > chapters.id [delete: cascade]
 
 Ref: user_quests.user_id > users.id [delete: cascade]
 Ref: user_quests.quest_id > quests.id [delete: cascade]
 
-Ref: vocabularies.career_path_id > career_paths.id [delete: set null]
+Ref: vocabularies.country_id > countries.code [delete: cascade]
+
 ```
