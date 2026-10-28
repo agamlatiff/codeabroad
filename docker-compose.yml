@@ -14,13 +14,6 @@ services:
       - "${DB_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./backend/migrations/000001_init_schema.up.sql:/docker-entrypoint-initdb.d/01_init_schema.sql:ro
-      - ./backend/migrations/000002_seed_and_enhance_onboarding.up.sql:/docker-entrypoint-initdb.d/02_seed_and_enhance_onboarding.sql:ro
-      - ./backend/migrations/000003_add_timeline_and_language_to_users.up.sql:/docker-entrypoint-initdb.d/03_add_timeline_and_language_to_users.sql:ro
-      - ./backend/migrations/000004_create_quest_and_roadmap_engine.up.sql:/docker-entrypoint-initdb.d/04_create_quest_and_roadmap_engine.sql:ro
-      - ./backend/migrations/000005_create_vocabularies_table.up.sql:/docker-entrypoint-initdb.d/05_create_vocabularies_table.sql:ro
-      - ./backend/migrations/000006_create_user_activity_logs.up.sql:/docker-entrypoint-initdb.d/06_create_user_activity_logs.sql:ro
-      - ./backend/migrations/000007_add_gems_inventory_and_gamification.up.sql:/docker-entrypoint-initdb.d/07_add_gems_inventory_and_gamification.sql:ro
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-codeabroad} -d ${DB_NAME:-codeabroad}" ]
       interval: 5s

@@ -42,7 +42,7 @@ ON CONFLICT (slug) DO NOTHING;
 -- 3. TECH STACKS
 INSERT INTO tech_stacks (career_path_id, slug, label, badge, is_active) VALUES
     (NULL, 'web_fundamental', 'Web Fundamental (HTML/CSS/JS)', 'Foundation', TRUE),
-    (NULL, 'cs_fundamental', 'Computer Science & Algorithm', 'Foundation', TRUE),
+    (NULL, 'cs_fundamental', 'Computer Science & Algorithm', 'Foundation', TRUE)
 ON CONFLICT (slug) DO NOTHING;
 
 -- Backend Stacks

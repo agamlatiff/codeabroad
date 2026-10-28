@@ -165,16 +165,22 @@ cp frontend/.env.example frontend/.env
 
 ### 2. Start Infrastructure
 ```bash
-docker compose up -d postgres redis kafka zookeeper
+docker compose up -d postgres redis kafka
 ```
 
-### 3. Run Backend API
+### 3. Run Database Migrations
+Apply all normalized schema tables, master data, JLPT audio vocabs, and modular curriculum seeds:
+```bash
+make db-migrate-up
+```
+
+### 4. Run Backend API
 ```bash
 cd backend
 go run cmd/api/main.go
 ```
 
-### 4. Run Frontend App
+### 5. Run Frontend App
 ```bash
 cd frontend
 npm install

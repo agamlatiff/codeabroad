@@ -114,7 +114,7 @@ redis-cli:
 # -----------------------------------------------------------------------------
 # Database Migration Runner (Supports Local & Managed Cloud Databases)
 # -----------------------------------------------------------------------------
-DB_URL ?= postgres://codeabroad:codeabroad_secret@localhost:5432/codeabroad?sslmode=disable
+DB_URL ?= postgres://codeabroad:codeabroad_secret@localhost:5434/codeabroad?sslmode=disable
 
 db-migrate-up:
 	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" up
