@@ -2,11 +2,10 @@ import type { QuestSummary } from './quest'
 
 export interface Chapter {
   id: string
-  station_id: string
+  module_id: string
   chapter_number: number
   title: string
   description?: string
-  order_index: number
   is_unlocked: boolean
   is_completed: boolean
   quests?: QuestSummary[]
@@ -14,14 +13,12 @@ export interface Chapter {
   updated_at: string
 }
 
-export interface Station {
+export interface Module {
   id: string
-  roadmap_id: string
-  station_number: number
+  tech_stack_id: string
+  module_number: number
   title: string
-  chip_label: string
   description?: string
-  order_index: number
   is_unlocked: boolean
   is_completed: boolean
   progress_rate: number
@@ -30,13 +27,18 @@ export interface Station {
   updated_at: string
 }
 
+// Backward compatibility type alias
+export type Station = Module
+
 export interface Roadmap {
   id: string
   career_path_id: string
+  slug?: string
   title: string
   description?: string
   is_active: boolean
-  stations?: Station[]
+  modules?: Module[]
+  stations?: Module[] // Compatibility alias
   created_at: string
   updated_at: string
 }

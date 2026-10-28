@@ -102,10 +102,6 @@ type CoachingSubmissionRequest struct {
 
 // GamificationRepository interface defines persistence contracts for gamification
 type GamificationRepository interface {
-	GetByUserID(ctx context.Context, userID string) (*UserGamification, error)
-	CreateInitial(ctx context.Context, userID string) error
-	UpdateStats(ctx context.Context, userID string, xp int, level int, streak int, lastActiveAt *time.Time) error
-	AddGems(ctx context.Context, userID string, gems int) (int, error)
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
 	ClaimDailyChest(ctx context.Context, userID string, tier int, gemsAwarded int, xpAwarded int) error
 	BuyShopItem(ctx context.Context, userID string, itemID string, price int) (int, map[string]int, error)

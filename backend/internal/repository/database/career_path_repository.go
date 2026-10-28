@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// CareerPathRepository implements domain.CareerPathRepository using PostgreSQL
+// CareerPathRepository implements domain.CareerPathRepository using PostgreSQL v2.2 schema
 type CareerPathRepository struct {
 	db *postgres.PostgresDB
 }
@@ -21,12 +21,28 @@ func NewCareerPathRepository(db *postgres.PostgresDB) domain.CareerPathRepositor
 	return &CareerPathRepository{db: db}
 }
 
-// GetAll retrieves all career paths ordered by creation time
+// GetAll retrieves all career paths with their associated tech stacks
 func (r *CareerPathRepository) GetAll(ctx context.Context) ([]domain.CareerPath, error) {
 	query := `
-		SELECT id, slug, label, description, stacks, created_at, updated_at
-		FROM career_paths
-		ORDER BY created_at ASC
+		SELECT 
+			cp.id, cp.slug, cp.label, cp.description, cp.created_at, cp.updated_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', ts.id,
+						'career_path_id', ts.career_path_id,
+						'slug', ts.slug,
+						'label', ts.label,
+						'badge', ts.badge,
+						'is_active', ts.is_active
+					) ORDER BY ts.created_at ASC
+				) FILTER (WHERE ts.id IS NOT NULL),
+				'[]'
+			) as stacks
+		FROM career_paths cp
+		LEFT JOIN tech_stacks ts ON cp.id = ts.career_path_id
+		GROUP BY cp.id
+		ORDER BY cp.created_at ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
@@ -43,9 +59,9 @@ func (r *CareerPathRepository) GetAll(ctx context.Context) ([]domain.CareerPath,
 			&cp.Slug,
 			&cp.Label,
 			&cp.Description,
-			&rawStacks,
 			&cp.CreatedAt,
 			&cp.UpdatedAt,
+			&rawStacks,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan career path: %w", err)
@@ -69,12 +85,28 @@ func (r *CareerPathRepository) GetAll(ctx context.Context) ([]domain.CareerPath,
 	return paths, nil
 }
 
-// GetByID retrieves a single career path by its UUID
+// GetByID retrieves a single career path by its UUID with its associated tech stacks
 func (r *CareerPathRepository) GetByID(ctx context.Context, id string) (*domain.CareerPath, error) {
 	query := `
-		SELECT id, slug, label, description, stacks, created_at, updated_at
-		FROM career_paths
-		WHERE id = $1
+		SELECT 
+			cp.id, cp.slug, cp.label, cp.description, cp.created_at, cp.updated_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', ts.id,
+						'career_path_id', ts.career_path_id,
+						'slug', ts.slug,
+						'label', ts.label,
+						'badge', ts.badge,
+						'is_active', ts.is_active
+					) ORDER BY ts.created_at ASC
+				) FILTER (WHERE ts.id IS NOT NULL),
+				'[]'
+			) as stacks
+		FROM career_paths cp
+		LEFT JOIN tech_stacks ts ON cp.id = ts.career_path_id
+		WHERE cp.id = $1
+		GROUP BY cp.id
 	`
 	var cp domain.CareerPath
 	var rawStacks []byte
@@ -83,9 +115,9 @@ func (r *CareerPathRepository) GetByID(ctx context.Context, id string) (*domain.
 		&cp.Slug,
 		&cp.Label,
 		&cp.Description,
-		&rawStacks,
 		&cp.CreatedAt,
 		&cp.UpdatedAt,
+		&rawStacks,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -105,12 +137,28 @@ func (r *CareerPathRepository) GetByID(ctx context.Context, id string) (*domain.
 	return &cp, nil
 }
 
-// GetBySlug retrieves a single career path by its slug (e.g., "backend", "devops", "frontend")
+// GetBySlug retrieves a single career path by its slug with its associated tech stacks
 func (r *CareerPathRepository) GetBySlug(ctx context.Context, slug string) (*domain.CareerPath, error) {
 	query := `
-		SELECT id, slug, label, description, stacks, created_at, updated_at
-		FROM career_paths
-		WHERE slug = $1
+		SELECT 
+			cp.id, cp.slug, cp.label, cp.description, cp.created_at, cp.updated_at,
+			COALESCE(
+				json_agg(
+					json_build_object(
+						'id', ts.id,
+						'career_path_id', ts.career_path_id,
+						'slug', ts.slug,
+						'label', ts.label,
+						'badge', ts.badge,
+						'is_active', ts.is_active
+					) ORDER BY ts.created_at ASC
+				) FILTER (WHERE ts.id IS NOT NULL),
+				'[]'
+			) as stacks
+		FROM career_paths cp
+		LEFT JOIN tech_stacks ts ON cp.id = ts.career_path_id
+		WHERE cp.slug = $1
+		GROUP BY cp.id
 		LIMIT 1
 	`
 	var cp domain.CareerPath
@@ -120,9 +168,9 @@ func (r *CareerPathRepository) GetBySlug(ctx context.Context, slug string) (*dom
 		&cp.Slug,
 		&cp.Label,
 		&cp.Description,
-		&rawStacks,
 		&cp.CreatedAt,
 		&cp.UpdatedAt,
+		&rawStacks,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {

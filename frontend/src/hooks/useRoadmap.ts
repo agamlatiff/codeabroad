@@ -1,35 +1,44 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { roadmapService } from '../services/roadmapService'
-import type { Roadmap, Station } from '../types/roadmap'
+import type { Roadmap, Module } from '../types/roadmap'
 
 export const useRoadmap = (explicitTrack?: string) => {
   const { track: routeTrack } = useParams<{ track?: string }>()
   const effectiveTrack = explicitTrack || routeTrack
   const [roadmap, setRoadmap] = useState<Roadmap | null>(null)
-  const [selectedStationId, setSelectedStationId] = useState<string | null>(null)
+  const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null)
   const [openChapterIds, setOpenChapterIds] = useState<Set<string>>(new Set())
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
+
+  const normalizeRoadmap = (data: Roadmap): Roadmap => {
+    const modules = data.modules || data.stations || []
+    return {
+      ...data,
+      modules,
+      stations: modules,
+    }
+  }
 
   const fetchRoadmap = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const data = effectiveTrack
+      const rawData = effectiveTrack
         ? await roadmapService.getTrackRoadmap(effectiveTrack)
         : await roadmapService.getActiveRoadmap()
+      const data = normalizeRoadmap(rawData)
       setRoadmap(data)
 
-      // Auto-select the first active (unlocked but not completed) or first station
-      if (data.stations && data.stations.length > 0) {
-        const activeStation =
-          data.stations.find((s) => s.is_unlocked && !s.is_completed) || data.stations[0]
-        setSelectedStationId(activeStation.id)
+      const modules = data.modules || []
+      if (modules.length > 0) {
+        const activeModule =
+          modules.find((m) => m.is_unlocked && !m.is_completed) || modules[0]
+        setSelectedModuleId(activeModule.id)
 
-        // Automatically expand the first chapter of that station
-        if (activeStation.chapters && activeStation.chapters.length > 0) {
-          setOpenChapterIds(new Set([activeStation.chapters[0].id]))
+        if (activeModule.chapters && activeModule.chapters.length > 0) {
+          setOpenChapterIds(new Set([activeModule.chapters[0].id]))
         }
       }
     } catch (err: unknown) {
@@ -44,19 +53,21 @@ export const useRoadmap = (explicitTrack?: string) => {
     let ignore = false
     void (async () => {
       try {
-        const data = effectiveTrack
+        const rawData = effectiveTrack
           ? await roadmapService.getTrackRoadmap(effectiveTrack)
           : await roadmapService.getActiveRoadmap()
         if (ignore) return
+        const data = normalizeRoadmap(rawData)
         setRoadmap(data)
 
-        if (data.stations && data.stations.length > 0) {
-          const activeStation =
-            data.stations.find((s) => s.is_unlocked && !s.is_completed) || data.stations[0]
-          setSelectedStationId(activeStation.id)
+        const modules = data.modules || []
+        if (modules.length > 0) {
+          const activeModule =
+            modules.find((m) => m.is_unlocked && !m.is_completed) || modules[0]
+          setSelectedModuleId(activeModule.id)
 
-          if (activeStation.chapters && activeStation.chapters.length > 0) {
-            setOpenChapterIds(new Set([activeStation.chapters[0].id]))
+          if (activeModule.chapters && activeModule.chapters.length > 0) {
+            setOpenChapterIds(new Set([activeModule.chapters[0].id]))
           }
         }
       } catch (err: unknown) {
@@ -87,23 +98,29 @@ export const useRoadmap = (explicitTrack?: string) => {
     })
   }
 
-  const selectedStation: Station | undefined = useMemo(() => {
-    if (!roadmap?.stations) return undefined
-    return roadmap.stations.find((s) => s.id === selectedStationId) || roadmap.stations[0]
-  }, [roadmap, selectedStationId])
+  const selectedModule: Module | undefined = useMemo(() => {
+    const modules = roadmap?.modules || []
+    if (modules.length === 0) return undefined
+    return modules.find((m) => m.id === selectedModuleId) || modules[0]
+  }, [roadmap, selectedModuleId])
 
   // Overall roadmap progress percentage
   const overallProgress = useMemo(() => {
-    if (!roadmap?.stations || roadmap.stations.length === 0) return 0
-    const totalRate = roadmap.stations.reduce((acc, s) => acc + (s.progress_rate || 0), 0)
-    return Math.round(totalRate / roadmap.stations.length)
+    const modules = roadmap?.modules || []
+    if (modules.length === 0) return 0
+    const totalRate = modules.reduce((acc, m) => acc + (m.progress_rate || 0), 0)
+    return Math.round(totalRate / modules.length)
   }, [roadmap])
 
   return {
     roadmap,
-    selectedStation,
-    selectedStationId,
-    setSelectedStationId,
+    selectedModule,
+    selectedModuleId,
+    setSelectedModuleId,
+    // Aliases for compatibility
+    selectedStation: selectedModule,
+    selectedStationId: selectedModuleId,
+    setSelectedStationId: setSelectedModuleId,
     openChapterIds,
     toggleChapter,
     overallProgress,

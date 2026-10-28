@@ -30,6 +30,7 @@ export interface TestSuite {
 export interface QuestSummary {
   id: string
   chapter_id?: string
+  module_number?: number
   station_number?: number
   chapter_number?: number
   title: string

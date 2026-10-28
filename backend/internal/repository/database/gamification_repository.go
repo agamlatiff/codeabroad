@@ -25,7 +25,7 @@ func NewGamificationRepository(db *postgres.PostgresDB) domain.GamificationRepos
 func (r *GamificationRepository) GetStatus(ctx context.Context, userID string) (*domain.GamificationStatus, error) {
 	status := &domain.GamificationStatus{
 		Inventory: map[string]int{
-			"streak-freeze":  0,
+			"streak-freeze":  0,	
 			"xp-booster":     0,
 			"cv-review":      0,
 			"mock-interview": 0,

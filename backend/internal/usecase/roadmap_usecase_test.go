@@ -8,20 +8,20 @@ import (
 )
 
 type mockRoadmapRepository struct {
-	roadmapsByCareerPathID map[string]*domain.Roadmap
-	roadmapsBySlug         map[string]*domain.Roadmap
-	fullSyllabus           map[string]*domain.Roadmap
+	roadmapsByCareerPathID map[string]*domain.RoadmapResponse
+	roadmapsBySlug         map[string]*domain.RoadmapResponse
+	fullSyllabus           map[string]*domain.RoadmapResponse
 }
 
 func newMockRoadmapRepository() *mockRoadmapRepository {
 	return &mockRoadmapRepository{
-		roadmapsByCareerPathID: make(map[string]*domain.Roadmap),
-		roadmapsBySlug:         make(map[string]*domain.Roadmap),
-		fullSyllabus:           make(map[string]*domain.Roadmap),
+		roadmapsByCareerPathID: make(map[string]*domain.RoadmapResponse),
+		roadmapsBySlug:         make(map[string]*domain.RoadmapResponse),
+		fullSyllabus:           make(map[string]*domain.RoadmapResponse),
 	}
 }
 
-func (m *mockRoadmapRepository) GetByCareerPathID(ctx context.Context, careerPathID string) (*domain.Roadmap, error) {
+func (m *mockRoadmapRepository) GetByCareerPathID(ctx context.Context, careerPathID string) (*domain.RoadmapResponse, error) {
 	rm, ok := m.roadmapsByCareerPathID[careerPathID]
 	if !ok {
 		return nil, domain.ErrRoadmapNotFound
@@ -29,7 +29,7 @@ func (m *mockRoadmapRepository) GetByCareerPathID(ctx context.Context, careerPat
 	return rm, nil
 }
 
-func (m *mockRoadmapRepository) GetByCareerPathSlug(ctx context.Context, slug string) (*domain.Roadmap, error) {
+func (m *mockRoadmapRepository) GetByCareerPathSlug(ctx context.Context, slug string) (*domain.RoadmapResponse, error) {
 	rm, ok := m.roadmapsBySlug[slug]
 	if !ok {
 		return nil, domain.ErrRoadmapNotFound
@@ -37,7 +37,7 @@ func (m *mockRoadmapRepository) GetByCareerPathSlug(ctx context.Context, slug st
 	return rm, nil
 }
 
-func (m *mockRoadmapRepository) GetFullSyllabus(ctx context.Context, roadmapID string, userID string) (*domain.Roadmap, error) {
+func (m *mockRoadmapRepository) GetFullSyllabus(ctx context.Context, roadmapID string, userID string) (*domain.RoadmapResponse, error) {
 	rm, ok := m.fullSyllabus[roadmapID]
 	if !ok {
 		return nil, domain.ErrRoadmapNotFound
@@ -51,13 +51,14 @@ func TestRoadmapUsecase_GetTrackRoadmap(t *testing.T) {
 	cpRepo := newMockCareerPathRepository()
 	userRepo := newOnboardingMockUserRepo()
 
-	rm := &domain.Roadmap{
+	cpSlugID := "cp-1"
+	rm := &domain.RoadmapResponse{
 		ID:           "rm-1",
-		CareerPathID: "cp-1",
+		CareerPathID: &cpSlugID,
 		Title:        "Go Backend Developer",
 		IsActive:     true,
-		Stations: []domain.Station{
-			{ID: "st-1", StationNumber: 1, Title: "Go Foundations", ChipLabel: "GO // 01", IsUnlocked: true},
+		Modules: []domain.ModuleResponse{
+			{ID: "mod-1", ModuleNumber: 1, Title: "Go Foundations", IsUnlocked: true},
 		},
 	}
 	rmRepo.roadmapsBySlug["backend"] = rm
@@ -73,8 +74,8 @@ func TestRoadmapUsecase_GetTrackRoadmap(t *testing.T) {
 	if res.Title != "Go Backend Developer" {
 		t.Errorf("expected title 'Go Backend Developer', got %s", res.Title)
 	}
-	if len(res.Stations) != 1 {
-		t.Errorf("expected 1 station, got %d", len(res.Stations))
+	if len(res.Modules) != 1 {
+		t.Errorf("expected 1 module, got %d", len(res.Modules))
 	}
 
 	// Error path: not found slug
@@ -97,9 +98,9 @@ func TestRoadmapUsecase_GetActiveUserRoadmap(t *testing.T) {
 	}
 	_ = userRepo.Create(ctx, user)
 
-	rm := &domain.Roadmap{
+	rm := &domain.RoadmapResponse{
 		ID:           "rm-1",
-		CareerPathID: cpID,
+		CareerPathID: &cpID,
 		Title:        "Go Backend Developer",
 		IsActive:     true,
 	}

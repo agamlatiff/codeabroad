@@ -44,6 +44,18 @@ func (m *mockCountryRepository) GetByID(ctx context.Context, id string) (*domain
 	return c, nil
 }
 
+func (m *mockCountryRepository) GetByCode(ctx context.Context, code string) (*domain.Country, error) {
+	if m.err != nil {
+		return nil, m.err
+	}
+	for _, c := range m.countries {
+		if c.Code == code {
+			return c, nil
+		}
+	}
+	return nil, domain.ErrCountryNotFound
+}
+
 // mockCareerPathRepository implements domain.CareerPathRepository for testing
 type mockCareerPathRepository struct {
 	paths map[string]*domain.CareerPath

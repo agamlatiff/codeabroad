@@ -941,8 +941,8 @@ export const CurriculumPathMap = ({
 
         return {
           id: st.id,
-          unitNumber: st.station_number || stIdx + 1,
-          tag: `UNIT ${st.station_number || stIdx + 1}`,
+          unitNumber: st.module_number || stIdx + 1,
+          tag: `UNIT ${st.module_number || stIdx + 1}`,
           title: st.title,
           description: st.description || '',
           statusBadge: isStationCompleted

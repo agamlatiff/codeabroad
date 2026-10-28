@@ -105,7 +105,10 @@ func (r *UserQuestRepository) CountCompletedByCareerPath(ctx context.Context, us
 		SELECT COUNT(DISTINCT uq.quest_id)
 		FROM user_quests uq
 		JOIN quests q ON uq.quest_id = q.id
-		WHERE uq.user_id = $1 AND uq.status = 'completed' AND q.career_path_id = $2
+		JOIN chapters c ON q.chapter_id = c.id
+		JOIN modules m ON c.module_id = m.id
+		JOIN tech_stacks ts ON m.tech_stack_id = ts.id
+		WHERE uq.user_id = $1 AND uq.status = 'completed' AND (ts.career_path_id::text = $2 OR ts.id::text = $2)
 	`
 	var count int
 	err := r.db.Pool.QueryRow(ctx, query, userID, careerPathID).Scan(&count)
@@ -118,9 +121,12 @@ func (r *UserQuestRepository) CountCompletedByCareerPath(ctx context.Context, us
 // CountTotalByCareerPath counts total active quests available in a track
 func (r *UserQuestRepository) CountTotalByCareerPath(ctx context.Context, careerPathID string) (int, error) {
 	query := `
-		SELECT COUNT(id)
-		FROM quests
-		WHERE career_path_id = $1 AND is_active = TRUE
+		SELECT COUNT(q.id)
+		FROM quests q
+		JOIN chapters c ON q.chapter_id = c.id
+		JOIN modules m ON c.module_id = m.id
+		JOIN tech_stacks ts ON m.tech_stack_id = ts.id
+		WHERE (ts.career_path_id::text = $1 OR ts.id::text = $1)
 	`
 	var count int
 	err := r.db.Pool.QueryRow(ctx, query, careerPathID).Scan(&count)

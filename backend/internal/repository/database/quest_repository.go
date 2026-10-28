@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-// QuestRepository implements domain.QuestRepository using PostgreSQL
+// QuestRepository implements domain.QuestRepository using PostgreSQL v2.2 schema
 type QuestRepository struct {
 	db *postgres.PostgresDB
 }
@@ -24,54 +24,40 @@ func NewQuestRepository(db *postgres.PostgresDB) domain.QuestRepository {
 // GetByID retrieves a quest by its ID, merging user submission state if available
 func (r *QuestRepository) GetByID(ctx context.Context, id string, userID string) (*domain.Quest, error) {
 	query := `
-		SELECT q.id, q.title, q.description, q.type, q.career_path_id, q.country_id,
-		       q.difficulty, q.xp_reward, q.estimated_minutes, q.resource_url,
-		       q.order_index, q.is_active, q.chapter_id, COALESCE(q.chip_label, 'QUEST'),
-		       q.story_context, q.nihongo_notes, q.acceptance_criteria, q.starter_code, q.test_suite,
-		       q.created_at, q.updated_at,
+		SELECT q.id, q.chapter_id, q.title, q.description, q.type, q.format,
+		       q.difficulty, q.xp_reward, q.gems_reward, q.estimated_minutes,
+		       q.order_index, q.starter_code, q.test_suite, q.solution_code,
+		       q.quiz_data, q.hints, q.created_at, q.updated_at,
 		       COALESCE(uq.status, 'available') as user_status,
 		       COALESCE(uq.tests_passed, 0) as tests_passed,
 		       COALESCE(uq.total_tests, 0) as total_tests,
 		       uq.code_submission
 		FROM quests q
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $2
-		WHERE (
-			q.id::text = $1
-			OR q.id = CASE
-				WHEN $1 IN ('part-1-variabel-dan-tipe-data', 'part-1', 'GO 01') THEN 'd1000001-0000-0000-0000-000000000001'::uuid
-				WHEN $1 IN ('part-2-pointer-dan-struktur-data', 'part-2', 'GO 02') THEN 'd1000001-0000-0000-0000-000000000001'::uuid
-				WHEN $1 IN ('part-3-gin-routing-engine', 'part-4-routing-dan-jwt-middleware', 'station-3-jwt-middleware', 'GIN 01', 'GIN 02') THEN 'd1000001-0000-0000-0000-000000000001'::uuid
-				WHEN $1 IN ('docker-multi-stage', 'part-docker', 'DOCKER 01', 'DOCKER 02') THEN 'd2000001-0000-0000-0000-000000000001'::uuid
-				WHEN $1 IN ('react-accordion', 'part-react', 'REACT 01', 'REACT 02') THEN 'd3000001-0000-0000-0000-000000000001'::uuid
-				ELSE NULL
-			END
-		)
+		WHERE q.id::text = $1
 		LIMIT 1
 	`
 
 	var q domain.Quest
-	var rawNotes, rawCriteria, rawStarter, rawTests []byte
+	var rawQuiz, rawHints []byte
 
 	err := r.db.Pool.QueryRow(ctx, query, id, userID).Scan(
 		&q.ID,
+		&q.ChapterID,
 		&q.Title,
 		&q.Description,
 		&q.Type,
-		&q.CareerPathID,
-		&q.CountryID,
+		&q.Format,
 		&q.Difficulty,
 		&q.XPReward,
+		&q.GemsReward,
 		&q.EstimatedMinutes,
-		&q.ResourceURL,
 		&q.OrderIndex,
-		&q.IsActive,
-		&q.ChapterID,
-		&q.ChipLabel,
-		&q.StoryContext,
-		&rawNotes,
-		&rawCriteria,
-		&rawStarter,
-		&rawTests,
+		&q.StarterCode,
+		&q.TestSuite,
+		&q.SolutionCode,
+		&rawQuiz,
+		&rawHints,
 		&q.CreatedAt,
 		&q.UpdatedAt,
 		&q.UserStatus,
@@ -86,45 +72,39 @@ func (r *QuestRepository) GetByID(ctx context.Context, id string, userID string)
 		return nil, fmt.Errorf("failed to get quest by id: %w", err)
 	}
 
-	// Unmarshal JSONB fields safely
-	if len(rawNotes) > 0 {
-		var n domain.NihongoNote
-		if err := json.Unmarshal(rawNotes, &n); err == nil {
-			q.NihongoNotes = &n
+	q.IsActive = true
+	q.ChipLabel = fmt.Sprintf("QUEST %02d", q.OrderIndex)
+
+	if len(rawQuiz) > 0 {
+		var qData any
+		if err := json.Unmarshal(rawQuiz, &qData); err == nil {
+			q.QuizData = qData
 		}
 	}
-	if len(rawCriteria) > 0 {
-		_ = json.Unmarshal(rawCriteria, &q.AcceptanceCriteria)
-	}
-	if len(rawStarter) > 0 {
-		var s domain.StarterCode
-		if err := json.Unmarshal(rawStarter, &s); err == nil {
-			q.StarterCode = &s
-		}
-	}
-	if len(rawTests) > 0 {
-		var t domain.TestSuite
-		if err := json.Unmarshal(rawTests, &t); err == nil {
-			q.TestSuite = &t
+	if len(rawHints) > 0 {
+		var hData any
+		if err := json.Unmarshal(rawHints, &hData); err == nil {
+			q.Hints = hData
 		}
 	}
 
 	return &q, nil
 }
 
-// GetByChapterID retrieves all active quests in a specific chapter
+// GetByChapterID retrieves all quests in a specific chapter
 func (r *QuestRepository) GetByChapterID(ctx context.Context, chapterID string, userID string) ([]domain.Quest, error) {
 	query := `
-		SELECT q.id, q.title, q.description, q.type, q.career_path_id, q.country_id,
-		       q.difficulty, q.xp_reward, q.estimated_minutes, q.resource_url,
-		       q.order_index, q.is_active, q.chapter_id, COALESCE(q.chip_label, 'QUEST'),
-		       q.story_context, q.created_at, q.updated_at,
+		SELECT q.id, q.chapter_id, q.title, q.description, q.type, q.format,
+		       q.difficulty, q.xp_reward, q.gems_reward, q.estimated_minutes,
+		       q.order_index, q.starter_code, q.test_suite, q.solution_code,
+		       q.quiz_data, q.hints, q.created_at, q.updated_at,
 		       COALESCE(uq.status, 'available') as user_status,
 		       COALESCE(uq.tests_passed, 0) as tests_passed,
-		       COALESCE(uq.total_tests, 0) as total_tests
+		       COALESCE(uq.total_tests, 0) as total_tests,
+		       uq.code_submission
 		FROM quests q
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $2
-		WHERE q.chapter_id = $1 AND q.is_active = TRUE
+		WHERE q.chapter_id = $1
 		ORDER BY q.order_index ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, chapterID, userID)
@@ -136,29 +116,46 @@ func (r *QuestRepository) GetByChapterID(ctx context.Context, chapterID string, 
 	var quests []domain.Quest
 	for rows.Next() {
 		var q domain.Quest
+		var rawQuiz, rawHints []byte
 		if err := rows.Scan(
 			&q.ID,
+			&q.ChapterID,
 			&q.Title,
 			&q.Description,
 			&q.Type,
-			&q.CareerPathID,
-			&q.CountryID,
+			&q.Format,
 			&q.Difficulty,
 			&q.XPReward,
+			&q.GemsReward,
 			&q.EstimatedMinutes,
-			&q.ResourceURL,
 			&q.OrderIndex,
-			&q.IsActive,
-			&q.ChapterID,
-			&q.ChipLabel,
-			&q.StoryContext,
+			&q.StarterCode,
+			&q.TestSuite,
+			&q.SolutionCode,
+			&rawQuiz,
+			&rawHints,
 			&q.CreatedAt,
 			&q.UpdatedAt,
 			&q.UserStatus,
 			&q.UserTestsPassed,
 			&q.UserTotalTests,
+			&q.UserCodeSubmission,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan quest: %w", err)
+		}
+		q.IsActive = true
+		q.ChipLabel = fmt.Sprintf("QUEST %02d", q.OrderIndex)
+		if len(rawQuiz) > 0 {
+			var qData any
+			if err := json.Unmarshal(rawQuiz, &qData); err == nil {
+				q.QuizData = qData
+			}
+		}
+		if len(rawHints) > 0 {
+			var hData any
+			if err := json.Unmarshal(rawHints, &hData); err == nil {
+				q.Hints = hData
+			}
 		}
 		quests = append(quests, q)
 	}
@@ -168,13 +165,14 @@ func (r *QuestRepository) GetByChapterID(ctx context.Context, chapterID string, 
 // GetDailyQuests retrieves the active rotating daily quests pool (3 quests)
 func (r *QuestRepository) GetDailyQuests(ctx context.Context, userID string) ([]domain.Quest, error) {
 	query := `
-		SELECT q.id, q.title, q.description, q.type, q.difficulty,
-		       q.xp_reward, q.estimated_minutes, q.order_index, q.is_active,
-		       COALESCE(q.chip_label, 'DAILY'), q.created_at, q.updated_at,
+		SELECT q.id, q.chapter_id, q.title, q.description, q.type, q.format,
+		       q.difficulty, q.xp_reward, q.gems_reward, q.estimated_minutes,
+		       q.order_index, q.starter_code, q.test_suite, q.solution_code,
+		       q.quiz_data, q.hints, q.created_at, q.updated_at,
 		       COALESCE(uq.status, 'available') as user_status
 		FROM quests q
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $1
-		WHERE q.type = 'daily' AND q.is_active = TRUE
+		WHERE q.type = 'daily'
 		ORDER BY ((q.order_index + EXTRACT(DOY FROM CURRENT_DATE)::INT) % 10) ASC
 		LIMIT 3
 	`
@@ -187,49 +185,123 @@ func (r *QuestRepository) GetDailyQuests(ctx context.Context, userID string) ([]
 	var quests []domain.Quest
 	for rows.Next() {
 		var q domain.Quest
+		var rawQuiz, rawHints []byte
 		if err := rows.Scan(
 			&q.ID,
+			&q.ChapterID,
 			&q.Title,
 			&q.Description,
 			&q.Type,
+			&q.Format,
 			&q.Difficulty,
 			&q.XPReward,
+			&q.GemsReward,
 			&q.EstimatedMinutes,
 			&q.OrderIndex,
-			&q.IsActive,
-			&q.ChipLabel,
+			&q.StarterCode,
+			&q.TestSuite,
+			&q.SolutionCode,
+			&rawQuiz,
+			&rawHints,
 			&q.CreatedAt,
 			&q.UpdatedAt,
 			&q.UserStatus,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan daily quest: %w", err)
 		}
+		q.IsActive = true
+		q.ChipLabel = "DAILY"
+		if len(rawQuiz) > 0 {
+			_ = json.Unmarshal(rawQuiz, &q.QuizData)
+		}
+		if len(rawHints) > 0 {
+			_ = json.Unmarshal(rawHints, &q.Hints)
+		}
 		quests = append(quests, q)
 	}
+
+	// Fallback: If no explicit 'daily' quests exist, pick 3 easy quests from the library
+	if len(quests) == 0 {
+		fallbackQuery := `
+			SELECT q.id, q.chapter_id, q.title, q.description, q.type, q.format,
+			       q.difficulty, q.xp_reward, q.gems_reward, q.estimated_minutes,
+			       q.order_index, q.starter_code, q.test_suite, q.solution_code,
+			       q.quiz_data, q.hints, q.created_at, q.updated_at,
+			       COALESCE(uq.status, 'available') as user_status
+			FROM quests q
+			LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $1
+			WHERE q.difficulty = 'easy'
+			ORDER BY q.created_at ASC
+			LIMIT 3
+		`
+		fRows, err := r.db.Pool.Query(ctx, fallbackQuery, userID)
+		if err == nil {
+			defer fRows.Close()
+			for fRows.Next() {
+				var q domain.Quest
+				var rawQuiz, rawHints []byte
+				if err := fRows.Scan(
+					&q.ID,
+					&q.ChapterID,
+					&q.Title,
+					&q.Description,
+					&q.Type,
+					&q.Format,
+					&q.Difficulty,
+					&q.XPReward,
+					&q.GemsReward,
+					&q.EstimatedMinutes,
+					&q.OrderIndex,
+					&q.StarterCode,
+					&q.TestSuite,
+					&q.SolutionCode,
+					&rawQuiz,
+					&rawHints,
+					&q.CreatedAt,
+					&q.UpdatedAt,
+					&q.UserStatus,
+				); err == nil {
+					q.IsActive = true
+					q.ChipLabel = "DAILY"
+					quests = append(quests, q)
+				}
+			}
+		}
+	}
+
 	return quests, nil
 }
 
 // ListQuests retrieves quests by filter criteria
 func (r *QuestRepository) ListQuests(ctx context.Context, filter domain.QuestFilter, userID string) ([]domain.Quest, error) {
 	query := `
-		SELECT q.id, q.title, q.description, q.type, q.difficulty,
-		       q.xp_reward, q.estimated_minutes, q.order_index, q.is_active,
-		       COALESCE(q.chip_label, 'QUEST'), q.created_at, q.updated_at,
+		SELECT q.id, q.chapter_id, q.title, q.description, q.type, q.format,
+		       q.difficulty, q.xp_reward, q.gems_reward, q.estimated_minutes,
+		       q.order_index, q.starter_code, q.test_suite, q.solution_code,
+		       q.quiz_data, q.hints, q.created_at, q.updated_at,
 		       COALESCE(uq.status, 'available') as user_status
 		FROM quests q
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $1
-		WHERE q.is_active = TRUE
+		LEFT JOIN chapters c ON q.chapter_id = c.id
+		LEFT JOIN modules m ON c.module_id = m.id
+		LEFT JOIN tech_stacks ts ON m.tech_stack_id = ts.id
+		WHERE 1=1
 	`
 	args := []any{userID}
 	argIdx := 2
 
+	if filter.ChapterID != nil && *filter.ChapterID != "" {
+		query += fmt.Sprintf(" AND q.chapter_id = $%d", argIdx)
+		args = append(args, *filter.ChapterID)
+		argIdx++
+	}
 	if filter.Type != nil && *filter.Type != "" && *filter.Type != "all" {
 		query += fmt.Sprintf(" AND q.type = $%d", argIdx)
 		args = append(args, *filter.Type)
 		argIdx++
 	}
 	if filter.CareerPathID != nil && *filter.CareerPathID != "" {
-		query += fmt.Sprintf(" AND (q.career_path_id = $%d OR q.career_path_id IS NULL)", argIdx)
+		query += fmt.Sprintf(" AND (ts.career_path_id = $%d OR ts.id = $%d)", argIdx, argIdx)
 		args = append(args, *filter.CareerPathID)
 		argIdx++
 	}
@@ -245,53 +317,63 @@ func (r *QuestRepository) ListQuests(ctx context.Context, filter domain.QuestFil
 	var quests []domain.Quest
 	for rows.Next() {
 		var q domain.Quest
+		var rawQuiz, rawHints []byte
 		if err := rows.Scan(
 			&q.ID,
+			&q.ChapterID,
 			&q.Title,
 			&q.Description,
 			&q.Type,
+			&q.Format,
 			&q.Difficulty,
 			&q.XPReward,
+			&q.GemsReward,
 			&q.EstimatedMinutes,
 			&q.OrderIndex,
-			&q.IsActive,
-			&q.ChipLabel,
+			&q.StarterCode,
+			&q.TestSuite,
+			&q.SolutionCode,
+			&rawQuiz,
+			&rawHints,
 			&q.CreatedAt,
 			&q.UpdatedAt,
 			&q.UserStatus,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan filtered quest: %w", err)
 		}
+		q.IsActive = true
+		q.ChipLabel = fmt.Sprintf("QUEST %02d", q.OrderIndex)
 		quests = append(quests, q)
 	}
 	return quests, nil
 }
 
 // GetNextSequentialQuest finds the next quest in the learning track
-func (r *QuestRepository) GetNextSequentialQuest(ctx context.Context, currentQuestID string, userID string) (*domain.QuestSummary, error) {
+func (r *QuestRepository) GetNextSequentialQuest(ctx context.Context, currentQuestID string, userID string) (*domain.QuestSummaryResponse, error) {
 	query := `
 		WITH current_q AS (
 			SELECT chapter_id, order_index FROM quests WHERE id = $1
 		)
-		SELECT q.id, q.chapter_id, q.title, COALESCE(q.chip_label, 'QUEST'), q.type,
-		       q.difficulty, q.xp_reward, q.estimated_minutes, q.order_index,
+		SELECT q.id, q.chapter_id, q.title, q.type, q.format,
+		       q.difficulty, q.xp_reward, q.gems_reward, q.estimated_minutes, q.order_index,
 		       COALESCE(uq.status, 'available') as status
 		FROM quests q
 		CROSS JOIN current_q cq
 		LEFT JOIN user_quests uq ON q.id = uq.quest_id AND uq.user_id = $2
-		WHERE q.chapter_id = cq.chapter_id AND q.order_index > cq.order_index AND q.is_active = TRUE
+		WHERE q.chapter_id = cq.chapter_id AND q.order_index > cq.order_index
 		ORDER BY q.order_index ASC
 		LIMIT 1
 	`
-	var qs domain.QuestSummary
+	var qs domain.QuestSummaryResponse
 	err := r.db.Pool.QueryRow(ctx, query, currentQuestID, userID).Scan(
 		&qs.ID,
 		&qs.ChapterID,
 		&qs.Title,
-		&qs.ChipLabel,
 		&qs.Type,
+		&qs.Format,
 		&qs.Difficulty,
 		&qs.XPReward,
+		&qs.GemsReward,
 		&qs.EstimatedMinutes,
 		&qs.OrderIndex,
 		&qs.Status,
@@ -302,5 +384,6 @@ func (r *QuestRepository) GetNextSequentialQuest(ctx context.Context, currentQue
 		}
 		return nil, fmt.Errorf("failed to find next sequential quest: %w", err)
 	}
+	qs.ChipLabel = fmt.Sprintf("QUEST %02d", qs.OrderIndex)
 	return &qs, nil
 }

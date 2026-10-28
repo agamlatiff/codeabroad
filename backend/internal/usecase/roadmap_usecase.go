@@ -26,7 +26,7 @@ func NewRoadmapUsecase(
 }
 
 // GetTrackRoadmap retrieves the syllabus tree for a specific career track slug
-func (u *roadmapUsecase) GetTrackRoadmap(ctx context.Context, slug string, userID string) (*domain.Roadmap, error) {
+func (u *roadmapUsecase) GetTrackRoadmap(ctx context.Context, slug string, userID string) (*domain.RoadmapResponse, error) {
 	if slug == "" || slug == "active" {
 		return u.GetActiveUserRoadmap(ctx, userID)
 	}
@@ -40,7 +40,7 @@ func (u *roadmapUsecase) GetTrackRoadmap(ctx context.Context, slug string, userI
 }
 
 // GetActiveUserRoadmap retrieves the syllabus tree for the logged-in user's chosen career track
-func (u *roadmapUsecase) GetActiveUserRoadmap(ctx context.Context, userID string) (*domain.Roadmap, error) {
+func (u *roadmapUsecase) GetActiveUserRoadmap(ctx context.Context, userID string) (*domain.RoadmapResponse, error) {
 	user, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get user: %w", err)

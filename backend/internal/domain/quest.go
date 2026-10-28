@@ -57,44 +57,53 @@ type TestSuite struct {
 	TestCases []TestCase `json:"test_cases,omitempty"`
 }
 
-// QuestSummary represents a compact preview of a quest for lists and accordion items
-type QuestSummary struct {
+// QuestSummaryResponse represents a compact preview of a quest for lists, accordion items, and roadmap nodes
+type QuestSummaryResponse struct {
 	ID               string  `json:"id"`
 	ChapterID        *string `json:"chapter_id,omitempty"`
-	StationNumber    int     `json:"station_number,omitempty"`
+	ModuleNumber     int     `json:"module_number,omitempty"`
 	ChapterNumber    int     `json:"chapter_number,omitempty"`
 	Title            string  `json:"title"`
 	ChipLabel        string  `json:"chip_label"`
-	Type             string  `json:"type"` // main, side, daily
+	Type             string  `json:"type"`   // main, boss, daily
+	Format           string  `json:"format"` // code, quiz, fill_blank
 	Difficulty       string  `json:"difficulty"`
 	XPReward         int     `json:"xp_reward"`
+	GemsReward       int     `json:"gems_reward"`
 	EstimatedMinutes int     `json:"estimated_minutes"`
 	OrderIndex       int     `json:"order_index"`
 	Status           string  `json:"status"` // locked, available, completed
 }
+
+// QuestSummary is an alias for QuestSummaryResponse for backward compatibility
+type QuestSummary = QuestSummaryResponse
 
 // Quest represents the complete entity for interactive coding challenges
 type Quest struct {
 	ID                 string                `json:"id"`
 	Title              string                `json:"title"`
 	Description        *string               `json:"description,omitempty"`
-	Type               string                `json:"type"` // main, side, daily
-	CareerPathID       *string               `json:"career_path_id,omitempty"`
-	CountryID          *string               `json:"country_id,omitempty"`
+	Type               string                `json:"type"`   // main, boss, daily
+	Format             string                `json:"format"` // code, quiz, fill_blank
 	Difficulty         string                `json:"difficulty"`
 	XPReward           int                   `json:"xp_reward"`
+	GemsReward         int                   `json:"gems_reward"`
 	EstimatedMinutes   int                   `json:"estimated_minutes"`
-	ResourceURL        *string               `json:"resource_url,omitempty"`
 	OrderIndex         int                   `json:"order_index"`
-	Prerequisites      []string              `json:"prerequisites,omitempty"`
+	StarterCode        *string               `json:"starter_code,omitempty"`
+	TestSuite          *string               `json:"test_suite,omitempty"`
+	SolutionCode       *string               `json:"solution_code,omitempty"`
+	QuizData           any                   `json:"quiz_data,omitempty"`
+	Hints              any                   `json:"hints,omitempty"`
 	IsActive           bool                  `json:"is_active"`
 	ChapterID          *string               `json:"chapter_id,omitempty"`
 	ChipLabel          string                `json:"chip_label"`
 	StoryContext       *string               `json:"story_context,omitempty"`
 	NihongoNotes       *NihongoNote          `json:"nihongo_notes,omitempty"`
 	AcceptanceCriteria []AcceptanceCriterion `json:"acceptance_criteria,omitempty"`
-	StarterCode        *StarterCode          `json:"starter_code,omitempty"`
-	TestSuite          *TestSuite            `json:"test_suite,omitempty"`
+	CareerPathID       *string               `json:"career_path_id,omitempty"`
+	CountryID          *string               `json:"country_id,omitempty"`
+	ResourceURL        *string               `json:"resource_url,omitempty"`
 	UserStatus         string                `json:"user_status"` // locked, available, completed
 	UserTestsPassed    int                   `json:"user_tests_passed"`
 	UserTotalTests     int                   `json:"user_total_tests"`
@@ -157,8 +166,8 @@ type SubmitQuestResponse struct {
 	StreakExtended        bool          `json:"streak_extended"`
 	ReadinessIncrease     float64       `json:"readiness_increase"`
 	CurrentReadinessScore float64       `json:"current_readiness_score"`
-	UnlockedVocab         *NihongoNote  `json:"unlocked_vocab,omitempty"`
-	NextQuest             *QuestSummary `json:"next_quest,omitempty"`
+	UnlockedVocab         *NihongoNote          `json:"unlocked_vocab,omitempty"`
+	NextQuest             *QuestSummaryResponse `json:"next_quest,omitempty"`
 }
 
 // QuestRepository defines data persistence operations for quests
@@ -167,7 +176,7 @@ type QuestRepository interface {
 	GetByChapterID(ctx context.Context, chapterID string, userID string) ([]Quest, error)
 	GetDailyQuests(ctx context.Context, userID string) ([]Quest, error)
 	ListQuests(ctx context.Context, filter QuestFilter, userID string) ([]Quest, error)
-	GetNextSequentialQuest(ctx context.Context, currentQuestID string, userID string) (*QuestSummary, error)
+	GetNextSequentialQuest(ctx context.Context, currentQuestID string, userID string) (*QuestSummaryResponse, error)
 }
 
 // UserQuestRepository defines data persistence operations for user quest progress

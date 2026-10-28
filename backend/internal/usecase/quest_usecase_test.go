@@ -48,8 +48,8 @@ func (m *mockQuestRepository) ListQuests(ctx context.Context, filter domain.Ques
 	return list, nil
 }
 
-func (m *mockQuestRepository) GetNextSequentialQuest(ctx context.Context, currentQuestID string, userID string) (*domain.QuestSummary, error) {
-	return &domain.QuestSummary{
+func (m *mockQuestRepository) GetNextSequentialQuest(ctx context.Context, currentQuestID string, userID string) (*domain.QuestSummaryResponse, error) {
+	return &domain.QuestSummaryResponse{
 		ID:    "next-q",
 		Title: "Next Sequential Quest",
 	}, nil
