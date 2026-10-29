@@ -5,6 +5,7 @@ import (
 	"codeabroad/backend/internal/repository/database"
 	"codeabroad/backend/internal/repository/session"
 	"codeabroad/backend/internal/usecase"
+	roadmapUsecasePkg "codeabroad/backend/internal/usecase/roadmap"
 	"context"
 	"errors"
 	"log"
@@ -16,6 +17,7 @@ import (
 
 	deliveryHttp "codeabroad/backend/internal/delivery/http"
 	"codeabroad/backend/internal/delivery/http/handler"
+	roadmapHandlerPkg "codeabroad/backend/internal/delivery/http/handler/roadmap"
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"codeabroad/backend/internal/infrastructure/postgres"
 	"codeabroad/backend/internal/infrastructure/redis"
@@ -65,7 +67,7 @@ func main() {
 	// 5. Initialize Usecases (Business Logic Layer)
 	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
 	onboardingUsecase := usecase.NewOnboardingUsecase(countryRepo, careerPathRepo, userRepo)
-	roadmapUsecase := usecase.NewRoadmapUsecase(roadmapRepo, careerPathRepo, userRepo)
+	roadmapUsecase := roadmapUsecasePkg.New(roadmapRepo, careerPathRepo, userRepo)
 	questUsecase := usecase.NewQuestUsecase(questRepo, userQuestRepo, userRepo)
 	vocabUsecase := usecase.NewVocabularyUsecase(vocabRepo)
 	leaderboardUsecase := usecase.NewLeaderboardUsecase(leaderboardRepo, userRepo)
@@ -75,7 +77,7 @@ func main() {
 	healthHandler := handler.NewHealthHandler(pg, rdb)
 	authHandler := handler.NewAuthHandler(authUsecase)
 	onboardingHandler := handler.NewOnboardingHandler(onboardingUsecase)
-	roadmapHandler := handler.NewRoadmapHandler(roadmapUsecase)
+	roadmapHandler := roadmapHandlerPkg.New(roadmapUsecase)
 	questHandler := handler.NewQuestHandler(questUsecase)
 	vocabHandler := handler.NewVocabularyHandler(vocabUsecase)
 	leaderboardHandler := handler.NewLeaderboardHandler(leaderboardUsecase)

@@ -2,21 +2,21 @@ package http
 
 import (
 	"codeabroad/backend/internal/delivery/http/handler"
-	"github.com/gin-contrib/cors"
+	roadmapHandlerPkg "codeabroad/backend/internal/delivery/http/handler/roadmap"
+	"codeabroad/backend/internal/delivery/http/middleware"
 	"github.com/gin-gonic/gin"
-	"time"
 )
 
 // RouterConfig holds all handler dependencies required by the router
 type RouterConfig struct {
-	HealthHandler     *handler.HealthHandler
-	AuthHandler       *handler.AuthHandler
-	OnboardingHandler *handler.OnboardingHandler
-	RoadmapHandler    *handler.RoadmapHandler
-	QuestHandler      *handler.QuestHandler
-	VocabularyHandler *handler.VocabularyHandler
-	LeaderboardHandler *handler.LeaderboardHandler
-	GamificationHandler *handler.GamificationHandler
+	HealthHandler          *handler.HealthHandler
+	AuthHandler            *handler.AuthHandler
+	OnboardingHandler      *handler.OnboardingHandler
+	RoadmapHandler         *roadmapHandlerPkg.Handler
+	QuestHandler           *handler.QuestHandler
+	VocabularyHandler      *handler.VocabularyHandler
+	LeaderboardHandler     *handler.LeaderboardHandler
+	GamificationHandler    *handler.GamificationHandler
 	AuthMiddleware         gin.HandlerFunc
 	OptionalAuthMiddleware gin.HandlerFunc
 	CORSAllowedOrigins     []string
@@ -26,20 +26,7 @@ type RouterConfig struct {
 func SetupRouter(cfg *RouterConfig) *gin.Engine {
 	r := gin.Default()
 
-	origins := cfg.CORSAllowedOrigins
-	if len(origins) == 0 {
-		origins = []string{"http://localhost:5173", "http://localhost:3000", "http://localhost"}
-	}
-
-	// CORS configuration for frontend integration
-	r.Use(cors.New(cors.Config{
-		AllowOrigins:     origins,
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
-		AllowCredentials: true,
-		MaxAge:           12 * time.Hour,
-	}))
+	r.Use(middleware.CORSMiddleware(cfg.CORSAllowedOrigins))
 
 	// API version 1 route group
 	v1 := r.Group("/api/v1")

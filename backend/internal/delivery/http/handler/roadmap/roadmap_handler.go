@@ -1,4 +1,4 @@
-package handler
+package roadmap
 
 import (
 	"net/http"
@@ -8,18 +8,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// RoadmapHandler handles HTTP requests for roadmaps and curriculum syllabus
-type RoadmapHandler struct {
+// Handler handles HTTP requests for roadmaps and curriculum syllabus
+type Handler struct {
 	roadmapUsecase domain.RoadmapUsecase
 }
 
-// NewRoadmapHandler creates a new RoadmapHandler instance
-func NewRoadmapHandler(roadmapUsecase domain.RoadmapUsecase) *RoadmapHandler {
-	return &RoadmapHandler{roadmapUsecase: roadmapUsecase}
+// New creates a new Roadmap Handler instance
+func New(roadmapUsecase domain.RoadmapUsecase) *Handler {
+	return &Handler{roadmapUsecase: roadmapUsecase}
 }
 
 // GetActiveRoadmap handles GET /api/v1/roadmaps/active
-func (h *RoadmapHandler) GetActiveRoadmap(c *gin.Context) {
+func (h *Handler) GetActiveRoadmap(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
 		response.Error(c, domain.ErrUnauthorized)
@@ -36,7 +36,7 @@ func (h *RoadmapHandler) GetActiveRoadmap(c *gin.Context) {
 }
 
 // GetTrackRoadmap handles GET /api/v1/roadmaps/:track_slug
-func (h *RoadmapHandler) GetTrackRoadmap(c *gin.Context) {
+func (h *Handler) GetTrackRoadmap(c *gin.Context) {
 	userID := c.GetString("userID")
 	slug := c.Param("track_slug")
 
@@ -50,7 +50,7 @@ func (h *RoadmapHandler) GetTrackRoadmap(c *gin.Context) {
 }
 
 // RegisterRoutes registers the roadmap routes under the provided router group
-func (h *RoadmapHandler) RegisterRoutes(r *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+func (h *Handler) RegisterRoutes(r *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	roadmaps := r.Group("/roadmaps")
 	roadmaps.Use(authMiddleware)
 	{

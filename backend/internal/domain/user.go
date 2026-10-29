@@ -27,8 +27,9 @@ type User struct {
 	Bio          *string    `json:"bio"`
 	GithubURL    *string    `json:"github_url"`
 	LinkedinURL  *string    `json:"linkedin_url"`
-	CareerPathID *string    `json:"career_path_id"`
-	CountryID    *string    `json:"country_id"`
+	CareerPathID   *string    `json:"career_path_id"`
+	CountryID      *string    `json:"country_id"`
+	TechStackID    *string    `json:"tech_stack_id,omitempty"`
 	PrimaryStack   *string    `json:"primary_stack"`
 	Level          string     `json:"level"`
 	TargetTimeline *string    `json:"target_timeline"`

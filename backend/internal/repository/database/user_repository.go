@@ -22,122 +22,126 @@ func NewUserRepository(db *postgres.PostgresDB) domain.UserRepository {
 	return &UserRepository{db: db}
 }
 
-// Create inserts a new user record into the postgres
-func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
-	query := `
-		INSERT INTO users (
-			name, username, email, password_hash, level, xp, current_level, streak, gems, is_onboarded
-		) VALUES (
-			$1, $2, $3, $4, $5, $6, $7, $8, $9, $10
-		)
-		RETURNING id, created_at, updated_at
-	`
-	err := r.db.Pool.QueryRow(
-		ctx,
-		query,
-		user.Name,
-		user.Username,
-		user.Email,
-		user.PasswordHash,
-		user.Level,
-		user.XP,
-		user.CurrentLevel,
-		user.Streak,
-		user.Gems,
-		user.IsOnboarded,
-	).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+const userSelectColumns = `
+	u.id, 
+	COALESCE(up.name, ''), 
+	COALESCE(up.username, ''), 
+	u.email, 
+	u.password_hash, 
+	up.bio, 
+	up.career_path_id, 
+	up.country_id, 
+	up.tech_stack_id, 
+	COALESCE(up.is_onboarded, FALSE),
+	COALESCE(ug.xp, 0), 
+	COALESCE(ug.current_level, 1), 
+	COALESCE(ug.streak, 0), 
+	COALESCE(ug.gems, 0), 
+	ug.last_active_at,
+	u.created_at, 
+	u.updated_at
+`
 
-	if err != nil {
-		return fmt.Errorf("failed to create user: %w", err)
-	}
-	return nil
-}
+const userFromClause = `
+	FROM users u
+	LEFT JOIN user_profiles up ON u.id = up.user_id
+	LEFT JOIN user_gamification ug ON u.id = ug.user_id
+`
 
-// GetByEmail retrieves a user by their unique email address
-func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
-	query := `
-		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, COALESCE(gems, 0), last_active_at, is_onboarded,
-		       created_at, updated_at
-		FROM users
-		WHERE email = $1
-	`
-
-	var user domain.User
-	err := r.db.Pool.QueryRow(ctx, query, email).Scan(
+func scanUser(row pgx.Row, user *domain.User) error {
+	var careerPathIDVal, countryIDVal, techStackIDVal *string
+	err := row.Scan(
 		&user.ID,
 		&user.Name,
 		&user.Username,
 		&user.Email,
 		&user.PasswordHash,
-		&user.AvatarURL,
 		&user.Bio,
-		&user.GithubURL,
-		&user.LinkedinURL,
-		&user.CareerPathID,
-		&user.CountryID,
-		&user.PrimaryStack,
-		&user.Level,
-		&user.TargetTimeline,
-		&user.LanguageLevel,
+		&careerPathIDVal,
+		&countryIDVal,
+		&techStackIDVal,
+		&user.IsOnboarded,
 		&user.XP,
 		&user.CurrentLevel,
 		&user.Streak,
 		&user.Gems,
 		&user.LastActiveAt,
-		&user.IsOnboarded,
 		&user.CreatedAt,
 		&user.UpdatedAt,
 	)
+	if err != nil {
+		return err
+	}
+	user.CareerPathID = careerPathIDVal
+	user.CountryID = countryIDVal
+	user.TechStackID = techStackIDVal
+	return nil
+}
 
+// Create inserts a new user across the 3-pillar normalized schema (users, user_profiles, user_gamification)
+func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin user creation transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// Pillar 1: Insert into users (auth core)
+	userQuery := `
+		INSERT INTO users (email, password_hash)
+		VALUES ($1, $2)
+		RETURNING id, created_at, updated_at
+	`
+	err = tx.QueryRow(ctx, userQuery, user.Email, user.PasswordHash).Scan(&user.ID, &user.CreatedAt, &user.UpdatedAt)
+	if err != nil {
+		return fmt.Errorf("failed to insert auth user: %w", err)
+	}
+
+	// Pillar 2: Insert into user_profiles (profile metadata)
+	profileQuery := `
+		INSERT INTO user_profiles (user_id, name, username, is_onboarded)
+		VALUES ($1, $2, $3, $4)
+	`
+	_, err = tx.Exec(ctx, profileQuery, user.ID, user.Name, user.Username, user.IsOnboarded)
+	if err != nil {
+		return fmt.Errorf("failed to insert user profile: %w", err)
+	}
+
+	// Pillar 3: Insert into user_gamification (game stats)
+	gamificationQuery := `
+		INSERT INTO user_gamification (user_id, xp, current_level, streak, gems)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	_, err = tx.Exec(ctx, gamificationQuery, user.ID, user.XP, user.CurrentLevel, user.Streak, user.Gems)
+	if err != nil {
+		return fmt.Errorf("failed to insert user gamification: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit user creation transaction: %w", err)
+	}
+	return nil
+}
+
+// GetByEmail retrieves a user by their unique email address across all 3 pillars
+func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
+	query := `SELECT ` + userSelectColumns + userFromClause + ` WHERE u.email = $1`
+	var user domain.User
+	err := scanUser(r.db.Pool.QueryRow(ctx, query, email), &user)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil // Return nil if user is not found
 		}
 		return nil, fmt.Errorf("failed to get user by email: %w", err)
 	}
-
 	return &user, nil
 }
 
-// GetByUsername retrieves a user by their unique username handle
+// GetByUsername retrieves a user by their unique username handle across all 3 pillars
 func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
-	query := `
-		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, COALESCE(gems, 0), last_active_at, is_onboarded,
-		       created_at, updated_at
-		FROM users
-		WHERE username = $1
-	`
-
+	query := `SELECT ` + userSelectColumns + userFromClause + ` WHERE up.username = $1`
 	var user domain.User
-
-	err := r.db.Pool.QueryRow(ctx, query, username).Scan(
-		&user.ID,
-		&user.Name,
-		&user.Username,
-		&user.Email,
-		&user.PasswordHash,
-		&user.AvatarURL,
-		&user.Bio,
-		&user.GithubURL,
-		&user.LinkedinURL,
-		&user.CareerPathID,
-		&user.CountryID,
-		&user.PrimaryStack,
-		&user.Level,
-		&user.TargetTimeline,
-		&user.LanguageLevel,
-		&user.XP,
-		&user.CurrentLevel,
-		&user.Streak,
-		&user.Gems,
-		&user.LastActiveAt,
-		&user.IsOnboarded,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-
+	err := scanUser(r.db.Pool.QueryRow(ctx, query, username), &user)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -147,43 +151,11 @@ func (r *UserRepository) GetByUsername(ctx context.Context, username string) (*d
 	return &user, nil
 }
 
-// GetByID retrieves a user by their unique UUID
+// GetByID retrieves a user by their unique UUID across all 3 pillars
 func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, error) {
-	query := `
-		SELECT id, name, username, email, password_hash, avatar_url, bio, github_url, linkedin_url,
-		       career_path_id, country_id, primary_stack, level, target_timeline, language_level, xp, current_level, streak, COALESCE(gems, 0), last_active_at, is_onboarded,
-		       created_at, updated_at
-		FROM users
-		WHERE id = $1
-	`
-
+	query := `SELECT ` + userSelectColumns + userFromClause + ` WHERE u.id = $1`
 	var user domain.User
-	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
-		&user.ID,
-		&user.Name,
-		&user.Username,
-		&user.Email,
-		&user.PasswordHash,
-		&user.AvatarURL,
-		&user.Bio,
-		&user.GithubURL,
-		&user.LinkedinURL,
-		&user.CareerPathID,
-		&user.CountryID,
-		&user.PrimaryStack,
-		&user.Level,
-		&user.TargetTimeline,
-		&user.LanguageLevel,
-		&user.XP,
-		&user.CurrentLevel,
-		&user.Streak,
-		&user.Gems,
-		&user.LastActiveAt,
-		&user.IsOnboarded,
-		&user.CreatedAt,
-		&user.UpdatedAt,
-	)
-
+	err := scanUser(r.db.Pool.QueryRow(ctx, query, id), &user)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
@@ -205,62 +177,86 @@ func (r *UserRepository) UpdateOnboarding(
 	languageLevel string,
 	bonusXP int,
 ) error {
-	query := `
-		UPDATE users
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin onboarding transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	profileQuery := `
+		UPDATE user_profiles
 		SET country_id = $1,
 		    career_path_id = $2,
-		    primary_stack = $3,
-		    level = $4,
-		    target_timeline = $5,
-		    language_level = $6,
-		    xp = xp + $7,
-		    streak = CASE WHEN streak = 0 THEN 1 ELSE streak END,
+		    tech_stack_id = (SELECT id FROM tech_stacks WHERE slug = $3 LIMIT 1),
 		    is_onboarded = TRUE,
-		    last_active_at = CURRENT_TIMESTAMP,
-		    updated_at = CURRENT_TIMESTAMP
-		WHERE id = $8
+		    updated_at = NOW()
+		WHERE user_id = $4
 	`
-	tag, err := r.db.Pool.Exec(ctx, query, countryID, careerPathID, primaryStack, level, targetTimeline, languageLevel, bonusXP, userID)
+	tag, err := tx.Exec(ctx, profileQuery, countryID, careerPathID, primaryStack, userID)
 	if err != nil {
-		return fmt.Errorf("failed to update user onboarding: %w", err)
+		return fmt.Errorf("failed to update user profile onboarding: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return domain.ErrUserNotFound
 	}
-	return nil
+
+	gamificationQuery := `
+		UPDATE user_gamification
+		SET xp = xp + $1,
+		    streak = CASE WHEN streak = 0 THEN 1 ELSE streak END,
+		    last_active_at = NOW(),
+		    updated_at = NOW()
+		WHERE user_id = $2
+	`
+	if _, err := tx.Exec(ctx, gamificationQuery, bonusXP, userID); err != nil {
+		return fmt.Errorf("failed to update user gamification onboarding: %w", err)
+	}
+
+	return tx.Commit(ctx)
 }
 
 // GetProfileWithDetails retrieves a user profile joined with Country and CareerPath details
 func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
 	query := `
 		SELECT 
-			u.id, u.name, u.username, u.email, u.level, u.xp, u.current_level, u.streak, COALESCE(u.gems, 0), u.is_onboarded, u.primary_stack, u.target_timeline, u.language_level, u.created_at,
+			u.id, 
+			COALESCE(up.name, ''), 
+			COALESCE(up.username, ''), 
+			u.email, 
+			COALESCE(ug.xp, 0), 
+			COALESCE(ug.current_level, 1), 
+			COALESCE(ug.streak, 0), 
+			COALESCE(ug.gems, 0), 
+			COALESCE(up.is_onboarded, FALSE), 
+			COALESCE(ts.slug, ''), 
+			u.created_at,
 			c.id, c.code, c.name, c.flag_emoji,
 			cp.id, cp.slug, cp.label
 		FROM users u
-		LEFT JOIN countries c ON u.country_id = c.id
-		LEFT JOIN career_paths cp ON u.career_path_id = cp.id
+		LEFT JOIN user_profiles up ON u.id = up.user_id
+		LEFT JOIN user_gamification ug ON u.id = ug.user_id
+		LEFT JOIN tech_stacks ts ON up.tech_stack_id = ts.id
+		LEFT JOIN countries c ON up.country_id = c.id
+		LEFT JOIN career_paths cp ON up.career_path_id = cp.id
 		WHERE u.id = $1
 	`
 
 	var profile domain.OnboardingProfileResponse
 	var countryID, countryCode, countryName, countryFlag *string
 	var cpID, cpSlug, cpLabel *string
+	var primaryStackSlug string
 
 	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(
 		&profile.ID,
 		&profile.Name,
 		&profile.Username,
 		&profile.Email,
-		&profile.Level,
 		&profile.XP,
 		&profile.CurrentLevel,
 		&profile.Streak,
 		&profile.Gems,
 		&profile.IsOnboarded,
-		&profile.PrimaryStack,
-		&profile.TargetTimeline,
-		&profile.LanguageLevel,
+		&primaryStackSlug,
 		&profile.CreatedAt,
 		&countryID,
 		&countryCode,
@@ -276,6 +272,10 @@ func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID strin
 			return nil, domain.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to get user profile with details: %w", err)
+	}
+
+	if primaryStackSlug != "" {
+		profile.PrimaryStack = &primaryStackSlug
 	}
 
 	if countryID != nil && countryCode != nil && countryName != nil && countryFlag != nil {
@@ -301,9 +301,9 @@ func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID strin
 // UpdateGamification updates a user's XP, level, streak counter, and last active timestamp
 func (r *UserRepository) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
 	query := `
-		UPDATE users
+		UPDATE user_gamification
 		SET xp = $2, current_level = $3, streak = $4, last_active_at = $5, updated_at = NOW()
-		WHERE id = $1
+		WHERE user_id = $1
 	`
 	_, err := r.db.Pool.Exec(ctx, query, userID, xp, currentLevel, streak, lastActiveAt)
 	if err != nil {
@@ -315,17 +315,14 @@ func (r *UserRepository) UpdateGamification(ctx context.Context, userID string, 
 // UpdateProfile updates user profile fields such as name, primary stack, career path, bio, and social links
 func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
 	query := `
-		UPDATE users
+		UPDATE user_profiles
 		SET name = COALESCE($2, name),
-		    primary_stack = COALESCE($3, primary_stack),
-		    career_path_id = COALESCE($4, career_path_id),
-		    bio = COALESCE($5, bio),
-		    github_url = COALESCE($6, github_url),
-		    linkedin_url = COALESCE($7, linkedin_url),
+		    career_path_id = COALESCE($3, career_path_id),
+		    bio = COALESCE($4, bio),
 		    updated_at = NOW()
-		WHERE id = $1
+		WHERE user_id = $1
 	`
-	_, err := r.db.Pool.Exec(ctx, query, userID, req.Name, req.PrimaryStack, req.CareerPathID, req.Bio, req.GithubURL, req.LinkedinURL)
+	_, err := r.db.Pool.Exec(ctx, query, userID, req.Name, req.CareerPathID, req.Bio)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user profile: %w", err)
 	}
@@ -335,9 +332,9 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *
 // AddGems increments or decrements a user's gems balance and returns the new total
 func (r *UserRepository) AddGems(ctx context.Context, userID string, gems int) (int, error) {
 	query := `
-		UPDATE users
+		UPDATE user_gamification
 		SET gems = GREATEST(0, gems + $2), updated_at = NOW()
-		WHERE id = $1
+		WHERE user_id = $1
 		RETURNING gems
 	`
 	var newTotal int
@@ -360,7 +357,7 @@ func (r *UserRepository) LogActivity(ctx context.Context, userID string, activit
 	_, _ = r.db.Pool.Exec(ctx, query, userID, activityType, xpEarned, metaJSON)
 
 	now := time.Now()
-	_, _ = r.db.Pool.Exec(ctx, `UPDATE users SET last_active_at = $2, updated_at = NOW() WHERE id = $1`, userID, now)
+	_, _ = r.db.Pool.Exec(ctx, `UPDATE user_gamification SET last_active_at = $2, updated_at = NOW() WHERE user_id = $1`, userID, now)
 	return nil
 }
 
@@ -582,14 +579,14 @@ func (r *UserRepository) ClaimDailyReward(ctx context.Context, userID string, re
 		return nil, domain.ErrDailyRewardAlreadyClaimed
 	}
 
-	// 2. Update user XP and level atomically
+	// 2. Update user XP and level atomically in user_gamification
 	updateQuery := `
-		UPDATE users
+		UPDATE user_gamification
 		SET xp = xp + $2,
 		    current_level = ((xp + $2) / 100) + 1,
 		    last_active_at = NOW(),
 		    updated_at = NOW()
-		WHERE id = $1
+		WHERE user_id = $1
 		RETURNING xp, current_level, streak
 	`
 	var currentXP, currentLevel, streak int

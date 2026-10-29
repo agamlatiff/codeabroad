@@ -76,7 +76,7 @@ type RoadmapResponse struct {
 	CareerPathID *string          `json:"career_path_id,omitempty"`
 	Slug         string           `json:"slug"`
 	Title        string           `json:"title"`
-	Description  *string          `json:"description,omitempty"`
+	Badge        *string          `json:"badge,omitempty"`
 	IsActive     bool             `json:"is_active"`
 	Modules      []ModuleResponse `json:"modules,omitempty"`
 	CreatedAt    time.Time        `json:"created_at"`
@@ -88,7 +88,7 @@ type Roadmap = RoadmapResponse
 
 // RoadmapRepository defines data persistence operations for roadmaps and syllabus tree
 type RoadmapRepository interface {
-	GetByCareerPathID(ctx context.Context, careerPathID string) (*RoadmapResponse, error)
+	GetByTechStackID(ctx context.Context, techStackID string) (*RoadmapResponse, error)
 	GetByCareerPathSlug(ctx context.Context, slug string) (*RoadmapResponse, error)
 	GetFullSyllabus(ctx context.Context, roadmapID string, userID string) (*RoadmapResponse, error)
 }

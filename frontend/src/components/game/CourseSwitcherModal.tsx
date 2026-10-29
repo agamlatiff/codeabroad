@@ -57,11 +57,7 @@ export const CourseSwitcherModal = ({
   }
 
   const renderTrackCard = (track: CareerTrackItem) => {
-    const isCurrent =
-      track.slug === currentTrack ||
-      (currentTrack === 'backend' && track.slug === 'golang') ||
-      (currentTrack === 'react' && track.slug === 'frontend') ||
-      (currentTrack === 'devops_aws' && track.slug === 'devops')
+    const isCurrent = track.slug === currentTrack
     const stats = trackProgressMap?.[track.slug]
     const completed = stats ? stats.completed : track.partsCompleted
     const dynamicTotal = CURRICULUM_TRACKS_MAP[track.slug]?.flatMap((u) => u.parts).length || track.totalParts

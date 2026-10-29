@@ -161,13 +161,7 @@ export const RoadmapPage = () => {
 
   // Dynamic Sequential Units for Active Track
   const units: SequentialCurriculumUnit[] = useMemo(() => {
-    return (
-      CURRICULUM_TRACKS_MAP[activeTrack] ||
-      (activeTrack === 'backend' && CURRICULUM_TRACKS_MAP['golang']) ||
-      (activeTrack === 'react' && CURRICULUM_TRACKS_MAP['frontend']) ||
-      (activeTrack === 'devops_aws' && CURRICULUM_TRACKS_MAP['devops']) ||
-      CURRICULUM_TRACKS_MAP['golang']
-    )
+    return CURRICULUM_TRACKS_MAP[activeTrack] || CURRICULUM_TRACKS_MAP['golang']
   }, [activeTrack])
 
   // Compute metrics across all parts of current active track
@@ -259,12 +253,7 @@ export const RoadmapPage = () => {
               const isUnitActive = !isUnitCompleted && unitParts.some((p) => p.id === nextActivePart?.id)
               const unitPercent =
                 unitParts.length > 0 ? Math.round((unitCompletedCount / unitParts.length) * 100) : 0
-              const trackThemes =
-                TRACK_UNIT_THEMES[activeTrack] ||
-                (activeTrack === 'backend' && TRACK_UNIT_THEMES['golang']) ||
-                (activeTrack === 'react' && TRACK_UNIT_THEMES['frontend']) ||
-                (activeTrack === 'devops_aws' && TRACK_UNIT_THEMES['devops']) ||
-                TRACK_UNIT_THEMES['golang']
+              const trackThemes = TRACK_UNIT_THEMES[activeTrack] || TRACK_UNIT_THEMES['golang']
               const theme = trackThemes[unit.unitNumber] || trackThemes[1]
 
               return (

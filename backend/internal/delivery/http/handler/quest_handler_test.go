@@ -7,13 +7,31 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	deliveryHttp "codeabroad/backend/internal/delivery/http"
 	"codeabroad/backend/internal/delivery/http/handler"
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"codeabroad/backend/internal/domain"
+	"codeabroad/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v5"
 )
+
+func generateRoadmapTestToken(secret, userID string) string {
+	claims := &usecase.JWTClaims{
+		UserID:   userID,
+		Email:    "test@example.com",
+		Username: "testuser",
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
+		},
+	}
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signed, _ := token.SignedString([]byte(secret))
+	return signed
+}
 
 type mockQuestUsecase struct {
 	quest       *domain.Quest

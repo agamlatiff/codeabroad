@@ -902,10 +902,12 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
 export const CURRICULUM_TRACKS_MAP: Record<string, SequentialCurriculumUnit[]> = {
   golang: GOLANG_CURRICULUM_UNITS,
   backend: GOLANG_CURRICULUM_UNITS,
-  frontend: FRONTEND_CURRICULUM_UNITS,
   react: FRONTEND_CURRICULUM_UNITS,
-  devops: DEVOPS_CURRICULUM_UNITS,
+  frontend: FRONTEND_CURRICULUM_UNITS,
   devops_aws: DEVOPS_CURRICULUM_UNITS,
+  devops: DEVOPS_CURRICULUM_UNITS,
+  cs_fundamental: FUNDAMENTAL_CURRICULUM_UNITS,
+  web_fundamental: FUNDAMENTAL_CURRICULUM_UNITS,
   fundamental: FUNDAMENTAL_CURRICULUM_UNITS,
   nihongo: NIHONGO_CURRICULUM_UNITS,
 }
@@ -1067,6 +1069,10 @@ export const TRACK_UNIT_THEMES: Record<string, Record<number, UnitTheme>> = {
     },
   },
 }
+
+TRACK_UNIT_THEMES['react'] = TRACK_UNIT_THEMES['frontend']
+TRACK_UNIT_THEMES['devops_aws'] = TRACK_UNIT_THEMES['devops']
+TRACK_UNIT_THEMES['cs_fundamental'] = TRACK_UNIT_THEMES['fundamental']
 
 // ── 8. COMPREHENSIVE GUIDEBOOK DATA PER UNIT ─────────────────────────────────
 export const COMPREHENSIVE_GUIDEBOOK_DATA: Record<string, GuidebookContent> = {

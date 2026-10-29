@@ -121,15 +121,7 @@ export const GameTopBar = ({
 
   // Active track configuration from CAREER_TRACKS
   const currentTrackConfig = useMemo(() => {
-    return (
-      CAREER_TRACKS.find(
-        (t) =>
-          t.slug === activeTrack ||
-          (activeTrack === 'backend' && t.slug === 'golang') ||
-          (activeTrack === 'devops_aws' && t.slug === 'devops') ||
-          (activeTrack === 'react' && t.slug === 'frontend')
-      ) || CAREER_TRACKS[0]
-    )
+    return CAREER_TRACKS.find((t) => t.slug === activeTrack) || CAREER_TRACKS[0]
   }, [activeTrack])
 
   // Compact track title for small viewports (Mobile < sm)
