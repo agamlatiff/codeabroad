@@ -22,6 +22,9 @@ export const NavRail = () => {
   const { avatar, actions } = useDashboard()
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
 
+  const userTrack = user?.primary_stack || user?.career_path?.slug || 'golang'
+  const roadmapHref = `/roadmap/${userTrack}`
+
   const navItems = [
     {
       label: 'Belajar',
@@ -30,9 +33,9 @@ export const NavRail = () => {
       icon: SquaresFour,
     },
     {
-      label: 'Silabus',
-      tooltip: 'Silabus • Kurikulum & Modul',
-      href: '/courses',
+      label: 'Roadmap',
+      tooltip: 'Roadmap • Kurikulum & Modul',
+      href: roadmapHref,
       icon: Books,
     },
     {
@@ -88,8 +91,9 @@ export const NavRail = () => {
               const Icon = item.icon
               const isActive =
                 location.pathname === item.href ||
-                (item.href === '/courses' &&
+                (item.label === 'Roadmap' &&
                   (location.pathname.startsWith('/roadmap') ||
+                    location.pathname.startsWith('/courses') ||
                     location.pathname.startsWith('/learn')))
 
               return (
@@ -203,8 +207,9 @@ export const NavRail = () => {
           const Icon = item.icon
           const isActive =
             location.pathname === item.href ||
-            (item.href === '/courses' &&
+            (item.label === 'Roadmap' &&
               (location.pathname.startsWith('/roadmap') ||
+                location.pathname.startsWith('/courses') ||
                 location.pathname.startsWith('/learn')))
 
           return (

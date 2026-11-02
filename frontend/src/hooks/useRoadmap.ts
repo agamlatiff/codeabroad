@@ -12,23 +12,14 @@ export const useRoadmap = (explicitTrack?: string) => {
   const [isLoading, setIsLoading] = useState<boolean>(true)
   const [error, setError] = useState<string | null>(null)
 
-  const normalizeRoadmap = (data: Roadmap): Roadmap => {
-    const modules = data.modules || data.stations || []
-    return {
-      ...data,
-      modules,
-      stations: modules,
-    }
-  }
-
   const fetchRoadmap = useCallback(async () => {
     setIsLoading(true)
     setError(null)
     try {
-      const rawData = effectiveTrack
+      const data = effectiveTrack
         ? await roadmapService.getTrackRoadmap(effectiveTrack)
         : await roadmapService.getActiveRoadmap()
-      const data = normalizeRoadmap(rawData)
+
       setRoadmap(data)
 
       const modules = data.modules || []
@@ -50,40 +41,7 @@ export const useRoadmap = (explicitTrack?: string) => {
   }, [effectiveTrack])
 
   useEffect(() => {
-    let ignore = false
-    void (async () => {
-      try {
-        const rawData = effectiveTrack
-          ? await roadmapService.getTrackRoadmap(effectiveTrack)
-          : await roadmapService.getActiveRoadmap()
-        if (ignore) return
-        const data = normalizeRoadmap(rawData)
-        setRoadmap(data)
-
-        const modules = data.modules || []
-        if (modules.length > 0) {
-          const activeModule =
-            modules.find((m) => m.is_unlocked && !m.is_completed) || modules[0]
-          setSelectedModuleId(activeModule.id)
-
-          if (activeModule.chapters && activeModule.chapters.length > 0) {
-            setOpenChapterIds(new Set([activeModule.chapters[0].id]))
-          }
-        }
-      } catch (err: unknown) {
-        if (ignore) return
-        const message = err instanceof Error ? err.message : 'Gagal memuat silabus roadmap'
-        setError(message)
-      } finally {
-        if (!ignore) {
-          setIsLoading(false)
-        }
-      }
-    })()
-
-    return () => {
-      ignore = true
-    }
+    fetchRoadmap()
   }, [effectiveTrack])
 
   const toggleChapter = (chapterId: string) => {
@@ -104,7 +62,6 @@ export const useRoadmap = (explicitTrack?: string) => {
     return modules.find((m) => m.id === selectedModuleId) || modules[0]
   }, [roadmap, selectedModuleId])
 
-  // Overall roadmap progress percentage
   const overallProgress = useMemo(() => {
     const modules = roadmap?.modules || []
     if (modules.length === 0) return 0
@@ -114,13 +71,10 @@ export const useRoadmap = (explicitTrack?: string) => {
 
   return {
     roadmap,
+    modules: roadmap?.modules || [],
     selectedModule,
     selectedModuleId,
     setSelectedModuleId,
-    // Aliases for compatibility
-    selectedStation: selectedModule,
-    selectedStationId: selectedModuleId,
-    setSelectedStationId: setSelectedModuleId,
     openChapterIds,
     toggleChapter,
     overallProgress,

@@ -12,6 +12,14 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 
+import { useAuthStore } from './store/authStore'
+
+function RoadmapRedirect() {
+  const { user } = useAuthStore()
+  const track = user?.primary_stack || user?.career_path?.slug || 'golang'
+  return <Navigate to={`/roadmap/${track}`} replace />
+}
+
 function App() {
   return (
     <ErrorBoundary>
@@ -31,9 +39,9 @@ function App() {
           {/* Protected App Routes (Requires completed onboarding) */}
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/courses" element={<RoadmapPage />} />
-            <Route path="/roadmap" element={<Navigate to="/courses" replace />} />
+            <Route path="/roadmap" element={<RoadmapRedirect />} />
             <Route path="/roadmap/:track" element={<RoadmapPage />} />
+            <Route path="/courses" element={<RoadmapRedirect />} />
             <Route path="/quests" element={<QuestLogPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/learn/:id" element={<LearnWorkspacePage />} />
