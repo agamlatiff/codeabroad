@@ -18,7 +18,7 @@ import { CAREER_TRACKS } from '../../data/careerTracks'
 import { useAuthStore } from '../../store/authStore'
 import { triggerHaptic } from '../../utils/haptics'
 
-export interface GameTopBarProps {
+export interface AppTopBarProps {
   activeTrack: string
   onOpenCourseSwitcher: () => void
   onOpenLeaderboard: () => void
@@ -29,7 +29,7 @@ export interface GameTopBarProps {
   unitLabel?: string
 }
 
-export const GameTopBar = ({
+export const AppTopBar = ({
   activeTrack,
   onOpenCourseSwitcher,
   onOpenLeaderboard,
@@ -38,7 +38,7 @@ export const GameTopBar = ({
   totalCount,
   progressPercent,
   unitLabel = 'Modul',
-}: GameTopBarProps) => {
+}: AppTopBarProps) => {
   const { user } = useAuthStore()
 
   // Dynamic user gamification stats

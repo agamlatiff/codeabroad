@@ -17,7 +17,7 @@ import {
 import { CAREER_TRACKS, type CareerTrackItem } from '../../data/careerTracks'
 import { CURRICULUM_TRACKS_MAP } from '../../data/curriculumData'
 
-export interface CourseSwitcherModalProps {
+export interface RoadmapTrackSwitcherModalProps {
   isOpen: boolean
   onClose: () => void
   currentTrack: string
@@ -25,13 +25,13 @@ export interface CourseSwitcherModalProps {
   trackProgressMap?: Record<string, { completed: number; total: number }>
 }
 
-export const CourseSwitcherModal = ({
+export const RoadmapTrackSwitcherModal = ({
   isOpen,
   onClose,
   currentTrack,
   onSelectTrack,
   trackProgressMap,
-}: CourseSwitcherModalProps) => {
+}: RoadmapTrackSwitcherModalProps) => {
   if (!isOpen) return null
   if (typeof document === 'undefined') return null
 

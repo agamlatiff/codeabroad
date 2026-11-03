@@ -39,19 +39,19 @@ export interface GuidebookContent {
   conceptQuiz?: GuidebookQuiz
 }
 
-export interface UnitGuidebookModalProps {
+export interface RoadmapGuidebookModalProps {
   isOpen: boolean
   onClose: () => void
   content?: GuidebookContent | null
   onStartUnit?: () => void
 }
 
-export const UnitGuidebookModal = ({
+export const RoadmapGuidebookModal = ({
   isOpen,
   onClose,
   content,
   onStartUnit,
-}: UnitGuidebookModalProps) => {
+}: RoadmapGuidebookModalProps) => {
   const { user, updateUser } = useAuthStore()
   const [copiedCode, setCopiedCode] = useState(false)
   const [speakingTerm, setSpeakingTerm] = useState<string | null>(null)

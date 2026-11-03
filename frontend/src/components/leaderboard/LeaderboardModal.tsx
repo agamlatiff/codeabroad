@@ -20,17 +20,17 @@ import { Button3D } from '../ui/Button3D'
 import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
 import doodleThinking from '../../assets/kodi/doodle-thinking.png'
 
-export interface TokyoLeaderboardModalProps {
+export interface LeaderboardModalProps {
   isOpen: boolean
   onClose: () => void
   initialDivision?: TokyoDivision
 }
 
-export const TokyoLeaderboardModal = ({
+export const LeaderboardModal = ({
   isOpen,
   onClose,
   initialDivision = 'shinjuku',
-}: TokyoLeaderboardModalProps) => {
+}: LeaderboardModalProps) => {
   const navigate = useNavigate()
   const [selectedDivision, setSelectedDivision] = useState<TokyoDivision>(initialDivision)
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)

@@ -10,15 +10,13 @@ import { useQuests } from '../hooks/useQuests'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
-import {
-  GameTopBar,
-  CourseSwitcherModal,
-  TokyoLeaderboardModal,
-  ChestRewardModal,
-  MonthlyBadgeModal,
-  CVReviewSubmissionModal,
-  MockInterviewScheduleModal,
-} from '../components/game'
+import { AppTopBar } from '../components/layout/AppTopBar'
+import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
+import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
+import { ChestRewardModal } from '../components/game/ChestRewardModal'
+import { MonthlyBadgeModal } from '../components/game/MonthlyBadgeModal'
+import { CVReviewSubmissionModal } from '../components/game/CVReviewSubmissionModal'
+import { MockInterviewScheduleModal } from '../components/game/MockInterviewScheduleModal'
 import {
   CURRICULUM_TRACKS_MAP,
 } from '../data/curriculumData'
@@ -339,7 +337,7 @@ export const QuestLogPage = () => {
     }
   }, [])
 
-  // Multi-track progress map for CourseSwitcherModal
+  // Multi-track progress map for RoadmapTrackSwitcherModal
   const trackProgressMap = useMemo(() => {
     const progressMap: Record<string, { completed: number; total: number }> = {}
     Object.entries(CURRICULUM_TRACKS_MAP).forEach(([trackSlug, trackUnits]) => {
@@ -353,7 +351,7 @@ export const QuestLogPage = () => {
     return progressMap
   }, [completedQuestsSet])
 
-  // Handle track switch from CourseSwitcherModal
+  // Handle track switch from RoadmapTrackSwitcherModal
   const handleSelectTrack = async (trackSlug: string) => {
     triggerHaptic('success')
     setActiveTrack(trackSlug)
@@ -902,7 +900,7 @@ export const QuestLogPage = () => {
       <div className="flex-1 min-w-0 flex flex-col pb-20 md:pb-12">
         <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-8 py-6 space-y-7">
           {/* ── TOP HUD BAR (SSOT) ── */}
-          <GameTopBar
+          <AppTopBar
             activeTrack={activeTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
@@ -1724,7 +1722,7 @@ export const QuestLogPage = () => {
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
-      <CourseSwitcherModal
+      <RoadmapTrackSwitcherModal
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
@@ -1733,7 +1731,7 @@ export const QuestLogPage = () => {
       />
 
       {/* ── 4. TOKYO LEADERBOARD MODAL ── */}
-      <TokyoLeaderboardModal
+      <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
       />

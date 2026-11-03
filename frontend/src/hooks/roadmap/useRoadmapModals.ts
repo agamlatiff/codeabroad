@@ -5,7 +5,7 @@ import {
   COMPREHENSIVE_GUIDEBOOK_DATA,
   type SequentialCurriculumUnit,
 } from '../../data/curriculumData'
-import type { GuidebookContent } from '../../components/game/UnitGuidebookModal'
+import type { GuidebookContent } from '../../components/roadmap/RoadmapGuidebookModal'
 
 export const useRoadmapModals = () => {
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)

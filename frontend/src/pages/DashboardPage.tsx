@@ -4,14 +4,12 @@ import { useQuests } from '../hooks/useQuests'
 import { useRoadmap } from '../hooks/roadmap/useRoadmap'
 import { authService } from '../services/authService'
 import { NavRail } from '../components/layout/NavRail'
-import {
-  CurriculumPathMap,
-  CourseSwitcherModal,
-  GameSidebarRail,
-  GameTopBar,
-} from '../components/game'
+import { AppTopBar } from '../components/layout/AppTopBar'
+import { AppRightSidebar } from '../components/layout/AppRightSidebar'
+import { CurriculumPathMap } from '../components/game/CurriculumPathMap'
+import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
+import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
 import { triggerHaptic } from '../utils/haptics'
-import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
 
 export const DashboardPage = () => {
   const { profile, actions } = useDashboard()
@@ -129,8 +127,8 @@ export const DashboardPage = () => {
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
         {/* ══════ CENTER CONTENT STAGE (flex-1) ══════ */}
         <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 pb-12 space-y-6">
-          {/* ── 1. CLEAN TOP CONTEXTUAL BAR (SSOT - GameTopBar) ── */}
-          <GameTopBar
+          {/* ── 1. CLEAN TOP CONTEXTUAL BAR (SSOT - AppTopBar) ── */}
+          <AppTopBar
             activeTrack={activeTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
@@ -149,7 +147,7 @@ export const DashboardPage = () => {
         </main>
 
         {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 34.3) ══════ */}
-        <GameSidebarRail
+        <AppRightSidebar
           activeTrack={activeTrack}
           isMobileDrawerOpen={isMobileDrawerOpen}
           onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
@@ -157,7 +155,7 @@ export const DashboardPage = () => {
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
-      <CourseSwitcherModal
+      <RoadmapTrackSwitcherModal
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
@@ -166,7 +164,7 @@ export const DashboardPage = () => {
       />
 
       {/* ── TOKYO LEADERBOARD MODAL ── */}
-      <TokyoLeaderboardModal
+      <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
       />

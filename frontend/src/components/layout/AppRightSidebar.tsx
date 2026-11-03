@@ -5,8 +5,8 @@ import { useQuests } from '../../hooks/useQuests'
 import { useAuthStore } from '../../store/authStore'
 import { authService } from '../../services/authService'
 import type { UserActivitySummary } from '../../types/auth'
-import { TechNihongoCard } from './TechNihongoCard'
-import { StreakCalendarModal } from './StreakCalendarModal'
+import { TechNihongoCard } from '../game/TechNihongoCard'
+import { StreakCalendarModal } from '../game/StreakCalendarModal'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
 import { audioEngine } from '../../utils/audio'
@@ -23,7 +23,7 @@ import {
   X,
 } from '@phosphor-icons/react'
 
-export interface GameSidebarRailProps {
+export interface AppRightSidebarProps {
   className?: string
   activeTrack?: string
   isMobileDrawerOpen?: boolean
@@ -31,17 +31,17 @@ export interface GameSidebarRailProps {
 }
 
 /**
- * GameSidebarRail (SSOT)
+ * AppRightSidebar (SSOT)
  * Standardized right-rail gamification sidebar for CodeAbroad.
  * Seamless Sectional Duolingo Layout (Zero Card-itis), Sticky 100vh Positioning,
  * Dynamic 7-Day Streak, Adaptive Multi-Track Quests, and Golden Chest Portal.
  */
-export const GameSidebarRail = ({
+export const AppRightSidebar = ({
   className = '',
   activeTrack: propActiveTrack,
   isMobileDrawerOpen = false,
   onCloseMobileDrawer,
-}: GameSidebarRailProps) => {
+}: AppRightSidebarProps) => {
   const navigate = useNavigate()
   const { user, updateUser } = useAuthStore()
   const { dailyQuests, timeLeft } = useQuests()

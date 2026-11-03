@@ -1,4 +1,4 @@
-import type { GuidebookContent } from '../components/game/UnitGuidebookModal'
+import type { GuidebookContent } from '../components/roadmap/RoadmapGuidebookModal'
 
 export interface SequentialPartItem {
   id: string

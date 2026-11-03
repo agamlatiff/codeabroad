@@ -1,14 +1,14 @@
 import { useNavigate, useParams } from 'react-router-dom'
 import { NavRail } from '../components/layout/NavRail'
+import { AppTopBar } from '../components/layout/AppTopBar'
+import { AppRightSidebar } from '../components/layout/AppRightSidebar'
 import { useQuestProgress } from '../hooks/roadmap/useQuestProgress'
 import { useRoadmapData } from '../hooks/roadmap/useRoadmapData'
 import { useRoadmapModals } from '../hooks/roadmap/useRoadmapModals'
-import { CourseSwitcherModal } from '../components/game/CourseSwitcherModal'
-import { GameSidebarRail } from '../components/game/GameSidebarRail'
-import { GameTopBar } from '../components/game/GameTopBar'
 import { RoadmapUnitCard } from '../components/roadmap/RoadmapUnitCard'
-import { UnitGuidebookModal } from '../components/game/UnitGuidebookModal'
-import { TokyoLeaderboardModal } from '../components/game/TokyoLeaderboardModal'
+import { RoadmapGuidebookModal } from '../components/roadmap/RoadmapGuidebookModal'
+import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
+import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
 import { LockSimple } from '@phosphor-icons/react'
 import { triggerHaptic } from '../utils/haptics'
 
@@ -65,8 +65,8 @@ export const RoadmapPage = () => {
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
         {/* ══════ CENTER CONTENT STAGE ══════ */}
         <main className="flex-1 min-w-0 px-3.5 sm:px-8 py-5 sm:py-6 pb-12 space-y-6">
-          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - GameTopBar) ── */}
-          <GameTopBar
+          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - AppTopBar) ── */}
+          <AppTopBar
             activeTrack={currentTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
@@ -116,7 +116,7 @@ export const RoadmapPage = () => {
         </main>
 
         {/* ══════ RIGHT SIDEBAR RAIL ══════ */}
-        <GameSidebarRail
+        <AppRightSidebar
           activeTrack={currentTrack}
           isMobileDrawerOpen={isMobileDrawerOpen}
           onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
@@ -124,7 +124,7 @@ export const RoadmapPage = () => {
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
-      <CourseSwitcherModal
+      <RoadmapTrackSwitcherModal
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={currentTrack}
@@ -133,14 +133,14 @@ export const RoadmapPage = () => {
       />
 
       {/* ── 4. TECHNICAL UNIT GUIDEBOOK MODAL ── */}
-      <UnitGuidebookModal
+      <RoadmapGuidebookModal
         isOpen={guidebookModalUnit !== null}
         onClose={() => setGuidebookModalUnit(null)}
         content={guidebookModalUnit}
       />
 
       {/* ── 5. TOKYO LEADERBOARD MODAL ── */}
-      <TokyoLeaderboardModal
+      <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
       />
