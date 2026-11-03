@@ -5,7 +5,7 @@ import { Step1Destination } from '../components/onboarding/Step1Destination'
 import { Step2CareerTracks } from '../components/onboarding/Step2CareerTracks'
 import { Step3Readiness } from '../components/onboarding/Step3Readiness'
 import { Step4BoardingPass } from '../components/onboarding/Step4BoardingPass'
-import { useOnboardingWizard } from '../hooks'
+import { useOnboardingWizard } from '../hooks/useOnboardingWizard'
 
 export const OnboardingPage = () => {
   // Categorized headless wizard state

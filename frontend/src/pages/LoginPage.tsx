@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useLogin } from '../hooks'
+import { useLogin } from '../hooks/useLogin'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthField } from '../components/auth/AuthField'

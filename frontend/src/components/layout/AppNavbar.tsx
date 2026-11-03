@@ -2,7 +2,7 @@ import { useLocation, Link, useNavigate } from 'react-router-dom'
 import { Logo } from '../ui/Logo'
 import { UserAvatar } from '../ui/UserAvatar'
 import { useAuthStore } from '../../store/authStore'
-import { useDashboard } from '../../hooks'
+import { useDashboard } from '../../hooks/useDashboard'
 import {
   Fire,
   Sparkle,

@@ -10,7 +10,7 @@ import {
   Sparkle,
 } from '@phosphor-icons/react'
 import { useAuthStore } from '../../store/authStore'
-import { useDashboard } from '../../hooks'
+import { useDashboard } from '../../hooks/useDashboard'
 import { UserAvatar } from '../ui/UserAvatar'
 import { triggerHaptic } from '../../utils/haptics'
 import { AccountSettingsModal } from './AccountSettingsModal'

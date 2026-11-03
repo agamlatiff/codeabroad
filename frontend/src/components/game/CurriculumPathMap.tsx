@@ -22,7 +22,7 @@ import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
 import doodleProud from '../../assets/kodi/doodle-proud.png'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
-import { useRoadmap } from '../../hooks/useRoadmap'
+import { useRoadmap } from '../../hooks/roadmap/useRoadmap'
 
 export interface CurriculumPartNode {
   id: string

@@ -11,6 +11,9 @@ export interface SequentialPartItem {
   estimatedMinutes: number
   xpReward: number
   route: string
+  is_unlocked?: boolean
+  is_completed?: boolean
+  isNextActive?: boolean
 }
 
 export interface SequentialCurriculumUnit {
@@ -20,6 +23,13 @@ export interface SequentialCurriculumUnit {
   title: string
   description: string
   totalXp: number
+  progressRate?: number
+  isUnlocked?: boolean
+  isCompleted?: boolean
+  isActive?: boolean
+  progressPercent?: number
+  completedCount?: number
+  theme?: UnitTheme
   parts: SequentialPartItem[]
 }
 

@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { useRegister } from '../hooks'
+import { useRegister } from '../hooks/useRegister'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { AuthField } from '../components/auth/AuthField'
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'

@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
-import { useDashboard, useQuests } from '../hooks'
-import { useRoadmap } from '../hooks/useRoadmap'
+import { useDashboard } from '../hooks/useDashboard'
+import { useQuests } from '../hooks/useQuests'
+import { useRoadmap } from '../hooks/roadmap/useRoadmap'
 import { authService } from '../services/authService'
 import { NavRail } from '../components/layout/NavRail'
 import {

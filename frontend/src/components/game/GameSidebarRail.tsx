@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { useQuests } from '../../hooks'
+import { useQuests } from '../../hooks/useQuests'
 import { useAuthStore } from '../../store/authStore'
 import { authService } from '../../services/authService'
 import type { UserActivitySummary } from '../../types/auth'

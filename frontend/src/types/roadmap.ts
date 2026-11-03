@@ -27,6 +27,9 @@ export interface Module {
   updated_at?: string
 }
 
+// Backward compatibility type alias
+export type Station = Module
+
 export interface Roadmap {
   id: string
   career_path_id?: string
@@ -36,6 +39,7 @@ export interface Roadmap {
   description?: string
   is_active: boolean
   modules?: Module[]
+  stations?: Module[] // Compatibility alias
   created_at?: string
   updated_at?: string
 }
