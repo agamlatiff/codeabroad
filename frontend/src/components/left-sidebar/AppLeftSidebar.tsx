@@ -1,63 +1,31 @@
-import { useState } from 'react'
-import { useLocation, Link, useNavigate } from 'react-router-dom'
+import { Link } from 'react-router-dom'
 import {
-  SquaresFour,
-  Books,
-  Target,
-  Trophy,
   GearSix,
   SignOut,
   Sparkle,
 } from '@phosphor-icons/react'
-import { useAuthStore } from '../../store/authStore'
-import { useDashboard } from '../../hooks/useDashboard'
 import { UserAvatar } from '../ui/UserAvatar'
 import { triggerHaptic } from '../../utils/haptics'
-import { AccountSettingsModal } from './AccountSettingsModal'
+import { useAppLeftSidebar } from '../../hooks/left-sidebar/useAppLeftSidebar'
+import { LeftSidebarSettingsModal } from './LeftSidebarSettingsModal'
 
-export const NavRail = () => {
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { user } = useAuthStore()
-  const { avatar, actions } = useDashboard()
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-
-  const userTrack = user?.primary_stack || user?.career_path?.slug || 'golang'
-  const roadmapHref = `/roadmap/${userTrack}`
-
-  const navItems = [
-    {
-      label: 'Belajar',
-      tooltip: 'Belajar • Dashboard Utama',
-      href: '/dashboard',
-      icon: SquaresFour,
-    },
-    {
-      label: 'Roadmap',
-      tooltip: 'Roadmap • Kurikulum & Modul',
-      href: roadmapHref,
-      icon: Books,
-    },
-    {
-      label: 'Misi',
-      tooltip: 'Misi • Hadiah Harian & XP',
-      href: '/quests',
-      icon: Target,
-      hasBadge: true,
-    },
-    {
-      label: 'Peringkat',
-      tooltip: 'Peringkat • Liga Tokyo',
-      href: '/leaderboard',
-      icon: Trophy,
-    },
-  ]
-
-  const handleLogout = () => {
-    triggerHaptic('tap')
-    actions.logout()
-    navigate('/login')
-  }
+/**
+ * AppLeftSidebar (SSOT)
+ * Pure declarative left navigation rail (desktop) and bottom bar (mobile) for CodeAbroad.
+ * Powered 1:1 by useAppLeftSidebar.
+ */
+export const AppLeftSidebar = () => {
+  const {
+    user,
+    navItems,
+    avatarStyle,
+    isSettingsOpen,
+    handleAvatarStyleChange,
+    handleOpenSettings,
+    handleCloseSettings,
+    handleProfileUpdated,
+    handleLogout,
+  } = useAppLeftSidebar()
 
   return (
     <>
@@ -89,12 +57,6 @@ export const NavRail = () => {
           <nav className="flex flex-col items-center gap-3">
             {navItems.map((item) => {
               const Icon = item.icon
-              const isActive =
-                location.pathname === item.href ||
-                (item.label === 'Roadmap' &&
-                  (location.pathname.startsWith('/roadmap') ||
-                    location.pathname.startsWith('/courses') ||
-                    location.pathname.startsWith('/learn')))
 
               return (
                 <Link
@@ -102,20 +64,20 @@ export const NavRail = () => {
                   to={item.href}
                   onClick={() => triggerHaptic('tap')}
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative group ${
-                    isActive
+                    item.isActive
                       ? 'bg-gradient-to-b from-blue-50 via-blue-100/70 to-blue-100/90 text-blue-600 border-2 border-blue-400 shadow-[0_3px_0_0_#93C5FD] scale-105'
                       : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100/80 border-2 border-transparent hover:border-slate-200/70 hover:scale-105 active:scale-95'
                   }`}
                 >
                   <Icon
-                    weight={isActive ? 'duotone' : 'bold'}
+                    weight={item.isActive ? 'duotone' : 'bold'}
                     className={`w-6 h-6 transition-transform ${
-                      isActive ? 'scale-105 text-blue-600' : 'group-hover:scale-110'
+                      item.isActive ? 'scale-105 text-blue-600' : 'group-hover:scale-110'
                     }`}
                   />
 
                   {/* Active 3D Left Indicator Pill */}
-                  {isActive && (
+                  {item.isActive && (
                     <span className="absolute -left-2.5 w-1.5 h-6 bg-blue-600 rounded-r-full shadow-xs" />
                   )}
 
@@ -146,10 +108,7 @@ export const NavRail = () => {
           {/* Settings Button */}
           <button
             type="button"
-            onClick={() => {
-              triggerHaptic('tap')
-              setIsSettingsOpen(true)
-            }}
+            onClick={handleOpenSettings}
             className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-slate-100/80 hover:border-slate-300 text-slate-500 hover:text-slate-800 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
             title="Pengaturan"
           >
@@ -180,14 +139,11 @@ export const NavRail = () => {
 
           {/* User Profile Avatar with Online Dot */}
           <div
-            onClick={() => {
-              triggerHaptic('tap')
-              setIsSettingsOpen(true)
-            }}
+            onClick={handleOpenSettings}
             className="relative group cursor-pointer mt-1"
           >
             <div className="ring-2 ring-slate-200 hover:ring-blue-400 rounded-full transition-all hover:scale-105">
-              <UserAvatar user={user} size="sm" style={avatar.style} />
+              <UserAvatar user={user} size="sm" style={avatarStyle} />
             </div>
             {/* Online Active Indicator Dot */}
             <span className="w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full absolute -bottom-0.5 -right-0.5 shadow-2xs" />
@@ -205,12 +161,6 @@ export const NavRail = () => {
       <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t-2 border-slate-200/90 px-4 py-2 z-40 flex items-center justify-around shadow-sm">
         {navItems.map((item) => {
           const Icon = item.icon
-          const isActive =
-            location.pathname === item.href ||
-            (item.label === 'Roadmap' &&
-              (location.pathname.startsWith('/roadmap') ||
-                location.pathname.startsWith('/courses') ||
-                location.pathname.startsWith('/learn')))
 
           return (
             <Link
@@ -218,10 +168,10 @@ export const NavRail = () => {
               to={item.href}
               onClick={() => triggerHaptic('tap')}
               className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all relative ${
-                isActive ? 'text-blue-600 font-bold' : 'text-slate-500'
+                item.isActive ? 'text-blue-600 font-bold' : 'text-slate-500'
               }`}
             >
-              <Icon weight={isActive ? 'duotone' : 'bold'} className="w-5 h-5" />
+              <Icon weight={item.isActive ? 'duotone' : 'bold'} className="w-5 h-5" />
               <span className="text-[10px] font-brand">{item.label}</span>
               {item.hasBadge && (
                 <span className="absolute top-1 right-2 w-2 h-2 bg-amber-500 rounded-full" />
@@ -232,15 +182,14 @@ export const NavRail = () => {
       </div>
 
       {/* ── DUOLINGO 3D ACCOUNT SETTINGS MODAL ── */}
-      <AccountSettingsModal
+      <LeftSidebarSettingsModal
         isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
+        onClose={handleCloseSettings}
         user={user}
-        avatarStyle={avatar.style}
-        onAvatarStyleChange={avatar.setStyle}
-        onProfileUpdated={actions.refetchProfile}
+        avatarStyle={avatarStyle}
+        onAvatarStyleChange={handleAvatarStyleChange}
+        onProfileUpdated={handleProfileUpdated}
       />
     </>
   )
 }
-

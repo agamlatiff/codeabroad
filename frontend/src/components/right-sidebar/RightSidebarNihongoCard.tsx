@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import type { FC } from 'react'
 import {
   Translate,
   Copy,
@@ -12,11 +12,9 @@ import {
 } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
-import { audioEngine } from '../../utils/audio'
-import { useAuthStore } from '../../store/authStore'
-import { vocabularyService } from '../../services/vocabularyService'
+import { useRightSidebarNihongoCard } from '../../hooks/right-sidebar/useRightSidebarNihongoCard'
 
-export interface TechNihongoCardProps {
+export interface RightSidebarNihongoCardProps {
   className?: string
   isReviewed?: boolean
   isClaimed?: boolean
@@ -24,140 +22,28 @@ export interface TechNihongoCardProps {
   onClaim?: (e?: React.MouseEvent) => void
 }
 
-export const TechNihongoCard = ({
+/**
+ * RightSidebarNihongoCard (SSOT)
+ * Pure declarative daily Tokyo IT vocabulary review card in AppRightSidebar.
+ * Powered 1:1 by useRightSidebarNihongoCard.
+ */
+export const RightSidebarNihongoCard: FC<RightSidebarNihongoCardProps> = ({
   className = '',
   isReviewed = false,
   isClaimed = false,
   onReview,
   onClaim,
-}: TechNihongoCardProps) => {
-  const { user } = useAuthStore()
-  const developerName = user?.name ? user.name.split(' ')[0] : user?.username || 'developer'
-
-  /**
-   * Curated progressive Tokyo vocabularies fallback for offline use
-   */
-  const defaultVocabList = useMemo(
-    () => [
-      {
-        level: 'LEVEL 1 • SAPAAN HARIAN',
-        romaji: 'Aisatsu',
-        kanji: '挨拶',
-        kana: 'あいさつ',
-        arti: 'Sapaan Pagi & Etika Kantor',
-        contoh: 'Minasan, ohayou gozaimasu! Kyou mo yoroshiku onegaishimasu.',
-        terjemahan: 'Selamat pagi semuanya! Mohon kerja samanya hari ini juga.',
-      },
-      {
-        level: 'LEVEL 1 • PERKENALAN DIRI',
-        romaji: 'Jikoshoukai',
-        kanji: '自己紹介',
-        kana: 'じこしょうかい',
-        arti: 'Perkenalan Diri Developer',
-        contoh: `Hajimemashite, Indonesia kara kimashita ${developerName} to moushimasu.`,
-        terjemahan: `Salam kenal, saya ${developerName} dari Indonesia. Senang berkenalan dengan Anda.`,
-      },
-      {
-        level: 'LEVEL 2 • MORNING STANDUP',
-        romaji: 'Asakai',
-        kanji: '朝会',
-        kana: 'あさかい',
-        arti: 'Standup Harian IT',
-        contoh: 'Kinou wa Gin API wo jissou shimashita. Kyou wa unit test wo kakimasu.',
-        terjemahan: 'Kemarin saya implementasi Gin API. Hari ini saya tulis unit test.',
-      },
-      {
-        level: 'LEVEL 3 • CODE REVIEW',
-        romaji: 'Fuguai',
-        kanji: '不具合',
-        kana: 'ふぐあい',
-        arti: 'Bug / Isu Teknis',
-        contoh: 'Login endpoint de fuguai ga hassei shimashita node, shuusei chuu desu.',
-        terjemahan: 'Terjadi bug pada endpoint login, saat ini sedang dalam perbaikan.',
-      },
-      {
-        level: 'LEVEL 3 • IMPLEMENTASI FITUR',
-        romaji: 'Jissou',
-        kanji: '実装',
-        kana: 'じっそう',
-        arti: 'Implementasi Fitur',
-        contoh: 'Kinou no PR wa mou jissou shimashita.',
-        terjemahan: 'PR kemarin sudah selesai saya implementasikan.',
-      },
-    ],
-    [developerName]
-  )
-
-  const [apiVocabs, setApiVocabs] = useState<typeof defaultVocabList | null>(null)
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    // Seed with day of year so each calendar day opens with a fresh Tokyo IT vocab
-    const dayOfYear = Math.floor(Date.now() / 86400000)
-    return dayOfYear % 5
-  })
-  const [copied, setCopied] = useState(false)
-  const [isPlayingAudio, setIsPlayingAudio] = useState(false)
-
-  useEffect(() => {
-    let isMounted = true
-    vocabularyService
-      .getDailyVocabularies()
-      .then((items) => {
-        if (!isMounted || !items || items.length === 0) return
-        const mapped = items.map((v) => {
-          const parts = v.reading ? v.reading.split('•').map((s) => s.trim()) : []
-          const kana = parts[0] || v.reading || ''
-          const romaji = parts[1] || ''
-          return {
-            level: `${v.difficulty_level || 'N3'} • ${v.category.toUpperCase()}`,
-            romaji,
-            kanji: v.term,
-            kana,
-            arti: v.meaning,
-            contoh: v.example_ja,
-            terjemahan: v.example_id,
-          }
-        })
-        setApiVocabs(mapped)
-      })
-      .catch((err) => {
-        // Graceful fallback to default offline vocabularies
-        console.warn('Using offline Tokyo vocabularies fallback:', err)
-      })
-
-    return () => {
-      isMounted = false
-    }
-  }, [])
-
-  const vocabList = apiVocabs && apiVocabs.length > 0 ? apiVocabs : defaultVocabList
-  const currentVocab = vocabList[currentIndex % vocabList.length]
-
-  const handleNextVocab = () => {
-    triggerHaptic('tap')
-    setCurrentIndex((prev) => (prev + 1) % vocabList.length)
-  }
-
-  const handleCopy = () => {
-    triggerHaptic('tap')
-    const romajiPart = currentVocab.romaji ? ` (${currentVocab.romaji})` : ''
-    navigator.clipboard.writeText(
-      `${currentVocab.kanji}${romajiPart} - ${currentVocab.arti}`
-    )
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-  }
-
-  const handleSpeak = (textToSpeak?: string) => {
-    triggerHaptic('tap')
-    setIsPlayingAudio(true)
-    onReview?.()
-    const phrase = typeof textToSpeak === 'string' && textToSpeak ? textToSpeak : (currentVocab.kana || currentVocab.kanji)
-    audioEngine.speakJapanese(
-      phrase,
-      () => setIsPlayingAudio(false),
-      () => setIsPlayingAudio(false)
-    )
-  }
+}) => {
+  const {
+    currentVocab,
+    activeStepNumber,
+    totalVocabsCount,
+    copied,
+    isPlayingAudio,
+    handleNextVocab,
+    handleCopy,
+    handleSpeak,
+  } = useRightSidebarNihongoCard({ onReview })
 
   return (
     <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
@@ -185,7 +71,9 @@ export const TechNihongoCard = ({
           title="Lihat kosakata berikutnya"
         >
           <ArrowsClockwise weight="bold" className="w-2.5 h-2.5 text-slate-500" />
-          <span>GANTI ({(currentIndex % vocabList.length) + 1}/{vocabList.length})</span>
+          <span>
+            GANTI ({activeStepNumber}/{totalVocabsCount})
+          </span>
         </button>
       </div>
 
@@ -196,7 +84,8 @@ export const TechNihongoCard = ({
             {currentVocab.kanji}
           </span>
           <span className="bg-white text-rose-800 border border-rose-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-lg shadow-2xs">
-            {currentVocab.kana}{currentVocab.romaji ? ` • ${currentVocab.romaji}` : ''}
+            {currentVocab.kana}
+            {currentVocab.romaji ? ` • ${currentVocab.romaji}` : ''}
           </span>
           <span className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-md shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />

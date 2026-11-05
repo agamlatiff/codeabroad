@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { NavRail } from '../components/layout/NavRail'
+import { AppLeftSidebar } from '../components/left-sidebar/AppLeftSidebar'
 import { useAuthStore } from '../store/authStore'
 import { authService } from '../services/authService'
 import { questService } from '../services/questService'
@@ -894,7 +894,7 @@ export const QuestLogPage = () => {
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
-      <NavRail />
+      <AppLeftSidebar />
 
       {/* ── 2. SINGLE-COLUMN SPACIOUS CENTER STAGE (AIRY, ZERO SIDEBAR CLAUSTROPHOBIA) ── */}
       <div className="flex-1 min-w-0 flex flex-col pb-20 md:pb-12">

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { NavRail } from '../components/layout/NavRail'
+import { AppLeftSidebar } from '../components/left-sidebar/AppLeftSidebar'
 import {
   Trophy,
   Crown,
@@ -113,7 +113,7 @@ export const LeaderboardPage = () => {
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. COMPACT NAV RAIL ── */}
-      <NavRail />
+      <AppLeftSidebar />
 
       {/* ── 2. MAIN LEADERBOARD CANVAS ── */}
       <div className="flex-1 min-w-0 pb-20 md:pb-12">

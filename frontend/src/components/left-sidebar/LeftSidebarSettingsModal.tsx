@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { createPortal } from 'react-dom'
 import type { FC } from 'react'
 import {
@@ -15,117 +14,46 @@ import {
 import { Button3D } from '../ui/Button3D'
 import { UserAvatar } from '../ui/UserAvatar'
 import { triggerHaptic } from '../../utils/haptics'
-import { authService } from '../../services/authService'
-import type { User } from '../../types/auth'
-import type { AvatarStyle } from '../../utils/avatar'
+import {
+  useLeftSidebarSettingsModal,
+  type UseLeftSidebarSettingsModalOptions,
+} from '../../hooks/left-sidebar/useLeftSidebarSettingsModal'
 
-export interface AccountSettingsModalProps {
-  isOpen: boolean
-  onClose: () => void
-  user?: User | null
-  avatarStyle: AvatarStyle
-  onAvatarStyleChange: (style: AvatarStyle) => void
-  onProfileUpdated?: () => void
+export type LeftSidebarSettingsModalProps = UseLeftSidebarSettingsModalOptions
+
+const resolveStackIcon = (slug: string) => {
+  const lower = slug.toLowerCase()
+  if (lower.includes('frontend') || lower.includes('react')) return DeviceMobile
+  if (lower.includes('devops') || lower.includes('cloud')) return Cpu
+  return Code
 }
 
-export const AccountSettingsModal: FC<AccountSettingsModalProps> = ({
-  isOpen,
-  onClose,
-  user,
-  avatarStyle,
-  onAvatarStyleChange,
-  onProfileUpdated,
-}) => {
-  const [name, setName] = useState(user?.name || '')
-  const [bio, setBio] = useState(user?.bio || '')
-  const [primaryStack, setPrimaryStack] = useState(user?.primary_stack || 'golang')
-  const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [saveSuccess, setSaveSuccess] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+/**
+ * LeftSidebarSettingsModal (SSOT)
+ * Pure declarative account settings modal for AppLeftSidebar.
+ * Powered 1:1 by useLeftSidebarSettingsModal.
+ */
+export const LeftSidebarSettingsModal: FC<LeftSidebarSettingsModalProps> = (props) => {
+  const { isOpen, onClose, user } = props
 
-  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
-  if (isOpen && !prevIsOpen) {
-    setPrevIsOpen(true)
-    setName(user?.name || '')
-    setBio(user?.bio || '')
-    setPrimaryStack(user?.primary_stack || 'golang')
-    setSelectedAvatarStyle(avatarStyle)
-    setSaveSuccess(false)
-    setErrorMessage(null)
-  } else if (!isOpen && prevIsOpen) {
-    setPrevIsOpen(false)
-  }
+  const {
+    name,
+    setName,
+    bio,
+    setBio,
+    primaryStack,
+    selectedAvatarStyle,
+    stackOptions,
+    avatarStyles,
+    isSubmitting,
+    saveSuccess,
+    errorMessage,
+    handleAvatarSelect,
+    handleStackSelect,
+    handleSubmit,
+  } = useLeftSidebarSettingsModal(props)
 
-  if (!isOpen) return null
-
-  const handleAvatarSelect = (style: AvatarStyle) => {
-    triggerHaptic('tap')
-    setSelectedAvatarStyle(style)
-    onAvatarStyleChange(style)
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsSubmitting(true)
-    setErrorMessage(null)
-    setSaveSuccess(false)
-    triggerHaptic('tap')
-
-    try {
-      await authService.updateProfile({
-        name: name.trim() || undefined,
-        bio: bio.trim() || undefined,
-        primary_stack: primaryStack,
-      })
-      setSaveSuccess(true)
-      triggerHaptic('success')
-      if (onProfileUpdated) {
-        onProfileUpdated()
-      }
-      setTimeout(() => {
-        onClose()
-      }, 900)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal memperbarui profil pengguna'
-      setErrorMessage(msg)
-      triggerHaptic('error')
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
-
-  const stackOptions = [
-    {
-      id: 'golang',
-      label: 'Golang Backend',
-      desc: 'Gin, Postgres & Microservices',
-      icon: Code,
-      badgeColor: 'border-blue-400 bg-blue-50 text-blue-700',
-    },
-    {
-      id: 'frontend',
-      label: 'React & TypeScript',
-      desc: 'Components, Hooks & Web Apps',
-      icon: DeviceMobile,
-      badgeColor: 'border-cyan-400 bg-cyan-50 text-cyan-700',
-    },
-    {
-      id: 'devops',
-      label: 'DevOps & Cloud',
-      desc: 'Docker, Linux & AWS CI/CD',
-      icon: Cpu,
-      badgeColor: 'border-amber-400 bg-amber-50 text-amber-700',
-    },
-  ]
-
-  const avatarStyles: { id: AvatarStyle; label: string; desc: string }[] = [
-    { id: 'adventurer', label: 'Petualang Tokyo', desc: 'Gaya modern kasual' },
-    { id: 'bottts', label: 'Cyber Mech', desc: 'Robot tech futuristik' },
-    { id: 'lorelei', label: 'Manga Anime', desc: 'Ilustrasi elegan khas Jepang' },
-  ]
-
-  if (typeof document === 'undefined') return null
+  if (!isOpen || typeof document === 'undefined') return null
 
   return createPortal(
     <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
@@ -290,52 +218,51 @@ export const AccountSettingsModal: FC<AccountSettingsModalProps> = ({
           </div>
 
           {/* Pilihan Target Spesialisasi */}
-          <div className="space-y-2">
-            <label className="text-xs font-brand font-black text-slate-700 block">
-              Peminatan Karier Utama
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              {stackOptions.map((stk) => {
-                const Icon = stk.icon
-                const isSelected = primaryStack === stk.id
+          {stackOptions.length > 0 && (
+            <div className="space-y-2">
+              <label className="text-xs font-brand font-black text-slate-700 block">
+                Peminatan Karier Utama
+              </label>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                {stackOptions.map((stk) => {
+                  const Icon = resolveStackIcon(stk.slug)
+                  const isSelected = primaryStack === stk.slug
 
-                return (
-                  <button
-                    key={stk.id}
-                    type="button"
-                    onClick={() => {
-                      triggerHaptic('tap')
-                      setPrimaryStack(stk.id)
-                    }}
-                    className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between w-full">
-                      <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
-                        <Icon weight="bold" className="w-3.5 h-3.5" />
-                      </div>
-                      {isSelected && (
-                        <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                          <Check weight="bold" className="w-2.5 h-2.5" />
+                  return (
+                    <button
+                      key={stk.slug}
+                      type="button"
+                      onClick={() => handleStackSelect(stk.slug)}
+                      className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
+                        isSelected
+                          ? 'border-blue-500 bg-blue-50/70 shadow-xs'
+                          : 'border-slate-200 hover:border-slate-300 bg-white'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between w-full">
+                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
+                          <Icon weight="bold" className="w-3.5 h-3.5" />
                         </div>
-                      )}
-                    </div>
-                    <div>
-                      <span className="font-brand font-black text-xs text-slate-900 block">
-                        {stk.label}
-                      </span>
-                      <span className="text-[9px] text-slate-500 block font-medium mt-0.5">
-                        {stk.desc}
-                      </span>
-                    </div>
-                  </button>
-                )
-              })}
+                        {isSelected && (
+                          <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
+                            <Check weight="bold" className="w-2.5 h-2.5" />
+                          </div>
+                        )}
+                      </div>
+                      <div>
+                        <span className="font-brand font-black text-xs text-slate-900 block">
+                          {stk.shortTitle || stk.title}
+                        </span>
+                        <span className="text-[9px] text-slate-500 block font-medium mt-0.5 line-clamp-2">
+                          {stk.subtitle}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Footer Buttons */}
           <div className="pt-2 flex items-center justify-end gap-3">
