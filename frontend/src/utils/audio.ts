@@ -229,9 +229,9 @@ class SoundEngine {
   }
 
   /**
-   * speakJapanese: Speaks text using native Web Speech Synthesis with ja-JP voice.
+   * speakLanguage: Speaks text using native Web Speech Synthesis with specified language voice.
    */
-  public speakJapanese(text: string, onEnd?: () => void, onError?: () => void): void {
+  public speakLanguage(text: string, lang = 'ja-JP', onEnd?: () => void, onError?: () => void): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       onEnd?.()
       return
@@ -240,15 +240,18 @@ class SoundEngine {
     try {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = 'ja-JP'
+      utterance.lang = lang
       utterance.rate = 0.88
       utterance.pitch = 1.05
 
-      // Attempt to find dedicated Japanese voice
+      // Attempt to find dedicated native language voice
       const voices = window.speechSynthesis.getVoices()
-      const jaVoice = voices.find((v) => v.lang.startsWith('ja') || v.lang.includes('JP'))
-      if (jaVoice) {
-        utterance.voice = jaVoice
+      const langPrefix = lang.split('-')[0].toLowerCase()
+      const matchedVoice = voices.find(
+        (v) => v.lang.toLowerCase().startsWith(langPrefix) || v.lang.toLowerCase().includes(lang.toLowerCase())
+      )
+      if (matchedVoice) {
+        utterance.voice = matchedVoice
       }
 
       utterance.onend = () => onEnd?.()
@@ -258,6 +261,13 @@ class SoundEngine {
     } catch {
       onError?.()
     }
+  }
+
+  /**
+   * speakJapanese: Speaks text using native Web Speech Synthesis with ja-JP voice.
+   */
+  public speakJapanese(text: string, onEnd?: () => void, onError?: () => void): void {
+    this.speakLanguage(text, 'ja-JP', onEnd, onError)
   }
 }
 

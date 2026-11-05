@@ -25,19 +25,19 @@ export interface SidebarDailyQuestItem {
 }
 
 export interface UseQuestsSectionOptions {
-  isNihongoReviewed: boolean
-  onFocusNihongoCard: () => void
+  isLanguageReviewed: boolean
+  onFocusLanguageCard: () => void
   onClaimChestReward: (e?: React.MouseEvent) => void
 }
 
 /**
  * 1:1 Headless controller hook for QuestsSection in AppRightSidebar.
- * Isolates the 1-second JST countdown timer so only this section re-renders every second,
+ * Isolates the 1-second WIB countdown timer so only this section re-renders every second,
  * and computes daily XP progress, actionable quests, and ChestModal state.
  */
 export const useQuestsSection = ({
-  isNihongoReviewed,
-  onFocusNihongoCard,
+  isLanguageReviewed,
+  onFocusLanguageCard,
   onClaimChestReward,
 }: UseQuestsSectionOptions) => {
   const navigate = useNavigate()
@@ -109,17 +109,19 @@ export const useQuestsSection = ({
   const isChestUnlocked = todayEarnedXp >= DAILY_TARGET_XP
   const remainingXp = Math.max(0, DAILY_TARGET_XP - todayEarnedXp)
 
+  const targetDestination = user?.country?.name || 'Tokyo'
+
   const activeQuests: SidebarDailyQuestItem[] = useMemo(() => {
-    const nihongoMission: SidebarDailyQuestItem = {
-      id: 'nihongo-daily-vocab',
-      title: 'Review 1 Kosakata Standup Tokyo',
-      chipLabel: 'STANDUP IT',
-      route: '#tech-nihongo-card',
+    const languageMission: SidebarDailyQuestItem = {
+      id: 'language-daily-vocab',
+      title: `Review 1 Kosakata Kerja ${targetDestination}`,
+      chipLabel: 'KOSAKATA KERJA',
+      route: '#daily-language-card',
       xpReward: VOCAB_QUEST_REWARD_XP,
       isLanguage: true,
       status: isVocabQuestClaimed
         ? 'completed'
-        : isNihongoReviewed
+        : isLanguageReviewed
           ? 'ready_to_claim'
           : 'available',
     }
@@ -128,8 +130,9 @@ export const useQuestsSection = ({
       const lowerTitle = q.title.toLowerCase()
       const isLang =
         q.id.includes('nihongo') ||
+        q.id.includes('language') ||
         lowerTitle.includes('kosakata') ||
-        lowerTitle.includes('jepang')
+        lowerTitle.includes('bahasa')
 
       return {
         id: q.id,
@@ -142,8 +145,8 @@ export const useQuestsSection = ({
       }
     })
 
-    return [...mappedApiQuests, nihongoMission]
-  }, [dailyQuests, isVocabQuestClaimed, isNihongoReviewed])
+    return [...mappedApiQuests, languageMission]
+  }, [dailyQuests, isVocabQuestClaimed, isLanguageReviewed, targetDestination])
 
   const handleOpenChestModal = useCallback(() => {
     triggerHaptic('tap')
@@ -167,12 +170,12 @@ export const useQuestsSection = ({
     (quest: SidebarDailyQuestItem) => {
       triggerHaptic('tap')
       if (quest.isLanguage) {
-        onFocusNihongoCard()
+        onFocusLanguageCard()
       } else {
         navigate(quest.route)
       }
     },
-    [navigate, onFocusNihongoCard]
+    [navigate, onFocusLanguageCard]
   )
 
   return {
@@ -191,4 +194,3 @@ export const useQuestsSection = ({
     handleQuestAction,
   }
 }
-

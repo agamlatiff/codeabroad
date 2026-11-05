@@ -45,11 +45,11 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   })
 
   const [isClosingDrawer, setIsClosingDrawer] = useState(false)
-  const [reviewedNihongoSession, setReviewedNihongoSession] = useState(false)
-  const [isNihongoHighlighted, setIsNihongoHighlighted] = useState(false)
+  const [reviewedLanguageSession, setReviewedLanguageSession] = useState(false)
+  const [isLanguageHighlighted, setIsLanguageHighlighted] = useState(false)
   const [floatingRewards, setFloatingRewards] = useState<FloatingRewardItem[]>([])
 
-  const nihongoSectionRef = useRef<HTMLDivElement | null>(null)
+  const languageSectionRef = useRef<HTMLDivElement | null>(null)
   const rewardTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
   const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const drawerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -65,7 +65,7 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
 
   const isVocabQuestClaimed = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
   const isChestClaimedToday = Boolean(dailyRewardsStatus?.golden_chest_claimed)
-  const isNihongoReviewed = isVocabQuestClaimed || reviewedNihongoSession
+  const isLanguageReviewed = isVocabQuestClaimed || reviewedLanguageSession
 
   const spawnFloatingReward = useCallback((amount: number, clientX?: number, clientY?: number) => {
     const x = typeof clientX === 'number' && clientX > 0 ? clientX : window.innerWidth / 2
@@ -96,12 +96,12 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     },
   })
 
-  const handleVocabReview = useCallback(() => {
-    if (!isNihongoReviewed) {
-      setReviewedNihongoSession(true)
+  const handleLanguageReview = useCallback(() => {
+    if (!isLanguageReviewed) {
+      setReviewedLanguageSession(true)
       triggerHaptic('success')
     }
-  }, [isNihongoReviewed])
+  }, [isLanguageReviewed])
 
   const handleClaimVocabQuest = useCallback(
     (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
@@ -125,12 +125,12 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     [isChestClaimedToday, claimRewardMutation, spawnFloatingReward]
   )
 
-  const handleFocusNihongoCard = useCallback(() => {
-    nihongoSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setIsNihongoHighlighted(true)
+  const handleFocusLanguageCard = useCallback(() => {
+    languageSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setIsLanguageHighlighted(true)
     if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
     highlightTimerRef.current = setTimeout(() => {
-      setIsNihongoHighlighted(false)
+      setIsLanguageHighlighted(false)
     }, HIGHLIGHT_DURATION_MS)
   }, [])
 
@@ -144,17 +144,16 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   }, [onCloseMobileDrawer])
 
   return {
-    isNihongoReviewed,
+    isLanguageReviewed,
     isVocabQuestClaimed,
-    isNihongoHighlighted,
-    nihongoSectionRef,
+    isLanguageHighlighted,
+    languageSectionRef,
     isClosingDrawer,
     floatingRewards,
-    handleVocabReview,
+    handleLanguageReview,
     handleClaimVocabQuest,
     handleClaimChest,
-    handleFocusNihongoCard,
+    handleFocusLanguageCard,
     handleCloseMobileDrawer,
   }
 }
-

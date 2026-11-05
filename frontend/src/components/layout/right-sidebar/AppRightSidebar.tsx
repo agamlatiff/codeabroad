@@ -4,7 +4,7 @@ import { triggerHaptic } from '../../../utils/haptics'
 import { useAppRightSidebar } from '../../../hooks/layout/right-sidebar/useAppRightSidebar'
 import { StreakSection } from './StreakSection'
 import { QuestsSection } from './QuestsSection'
-import { NihongoCard } from './NihongoCard'
+import { DailyLanguageCard } from './DailyLanguageCard'
 
 export interface AppRightSidebarProps {
   className?: string
@@ -24,16 +24,16 @@ export const AppRightSidebar = ({
   onCloseMobileDrawer,
 }: AppRightSidebarProps) => {
   const {
-    isNihongoReviewed,
+    isLanguageReviewed,
     isVocabQuestClaimed,
-    isNihongoHighlighted,
-    nihongoSectionRef,
+    isLanguageHighlighted,
+    languageSectionRef,
     isClosingDrawer,
     floatingRewards,
-    handleVocabReview,
+    handleLanguageReview,
     handleClaimVocabQuest,
     handleClaimChest,
-    handleFocusNihongoCard,
+    handleFocusLanguageCard,
     handleCloseMobileDrawer,
   } = useAppRightSidebar({ onCloseMobileDrawer })
 
@@ -47,26 +47,26 @@ export const AppRightSidebar = ({
 
       {/* ── 2. MISI & TARGET HARIAN (1:1 Hook) ── */}
       <QuestsSection
-        isNihongoReviewed={isNihongoReviewed}
+        isLanguageReviewed={isLanguageReviewed}
         onClaimVocabQuest={(e) => handleClaimVocabQuest(e)}
         onClaimChestReward={(e) => handleClaimChest(e)}
-        onFocusNihongoCard={handleFocusNihongoCard}
+        onFocusLanguageCard={handleFocusLanguageCard}
       />
 
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
-      {/* ── 3. KOSAKATA KANTOR TOKYO (1:1 Hook) ── */}
+      {/* ── 3. KOSAKATA KERJA HARIAN SESUAI DESTINASI (1:1 Hook) ── */}
       <div
-        ref={nihongoSectionRef}
+        ref={languageSectionRef}
         className={`transition-all rounded-2xl ${
-          isNihongoHighlighted ? 'ring-4 ring-blue-400' : ''
+          isLanguageHighlighted ? 'ring-4 ring-blue-400' : ''
         }`}
       >
-        <NihongoCard
-          isReviewed={isNihongoReviewed}
+        <DailyLanguageCard
+          isReviewed={isLanguageReviewed}
           isClaimed={isVocabQuestClaimed}
-          onReview={handleVocabReview}
+          onReview={handleLanguageReview}
           onClaim={(e) => handleClaimVocabQuest(e)}
         />
       </div>
@@ -112,7 +112,7 @@ export const AppRightSidebar = ({
                       Misi & Hadiah Harian
                     </h3>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      Rentetan, target XP & Nihongo kerja
+                      Rentetan, target XP & bahasa kerja
                     </span>
                   </div>
                 </div>
@@ -159,4 +159,3 @@ export const AppRightSidebar = ({
     </>
   )
 }
-

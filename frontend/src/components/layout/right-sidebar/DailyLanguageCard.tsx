@@ -12,9 +12,9 @@ import {
 } from '@phosphor-icons/react'
 import { Button3D } from '../../ui/Button3D'
 import { triggerHaptic } from '../../../utils/haptics'
-import { useNihongoCard } from '../../../hooks/layout/right-sidebar/useNihongoCard'
+import { useDailyLanguageCard } from '../../../hooks/layout/right-sidebar/useDailyLanguageCard'
 
-export interface NihongoCardProps {
+export interface DailyLanguageCardProps {
   className?: string
   isReviewed?: boolean
   isClaimed?: boolean
@@ -23,11 +23,12 @@ export interface NihongoCardProps {
 }
 
 /**
- * NihongoCard (SSOT)
- * Pure declarative daily Tokyo IT vocabulary review card in AppRightSidebar.
- * Powered 1:1 by useNihongoCard.
+ * DailyLanguageCard (SSOT)
+ * Pure declarative daily workplace vocabulary card in AppRightSidebar.
+ * Adapts dynamically to the user's targeted career destination (Tokyo 🇯🇵, Berlin 🇩🇪, Singapore 🇸🇬, London 🇬🇧).
+ * Powered 1:1 by useDailyLanguageCard.
  */
-export const NihongoCard: FC<NihongoCardProps> = ({
+export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
   className = '',
   isReviewed = false,
   isClaimed = false,
@@ -35,6 +36,7 @@ export const NihongoCard: FC<NihongoCardProps> = ({
   onClaim,
 }) => {
   const {
+    languageMeta,
     isLoading,
     currentVocab,
     activeStepNumber,
@@ -44,11 +46,11 @@ export const NihongoCard: FC<NihongoCardProps> = ({
     handleNextVocab,
     handleCopy,
     handleSpeak,
-  } = useNihongoCard({ onReview })
+  } = useDailyLanguageCard({ onReview })
 
   if (isLoading || !currentVocab) {
     return (
-      <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
+      <div id="daily-language-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 animate-pulse" />
@@ -67,16 +69,20 @@ export const NihongoCard: FC<NihongoCardProps> = ({
   }
 
   return (
-    <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
-      {/* ── CARD HEADER ── */}
+    <div id="daily-language-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
+      {/* ── CARD HEADER (DYNAMIC TO DESTINATION COUNTRY) ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0">
-            <Translate weight="bold" className="w-4 h-4 text-rose-600" />
+          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 text-xs">
+            {languageMeta.flagEmoji ? (
+              <span className="text-sm leading-none">{languageMeta.flagEmoji}</span>
+            ) : (
+              <Translate weight="bold" className="w-4 h-4 text-rose-600" />
+            )}
           </div>
           <div>
             <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
-              Bahasa Jepang Tokyo
+              {languageMeta.languageTitle}
             </h4>
             <span className="text-[9px] text-slate-400 font-medium">
               {currentVocab.level}
@@ -128,7 +134,7 @@ export const NihongoCard: FC<NihongoCardProps> = ({
                 ? 'bg-rose-500 border-rose-600 text-white scale-105'
                 : 'bg-white border-slate-200 hover:border-rose-400 text-slate-700 hover:text-rose-600'
             }`}
-            title="Dengarkan Pengucapan Asli (ja-JP)"
+            title={`Dengarkan Pengucapan Asli (${languageMeta.ttsLangCode})`}
           >
             <SpeakerHigh
               weight="fill"
@@ -233,3 +239,4 @@ export const NihongoCard: FC<NihongoCardProps> = ({
     </div>
   )
 }
+

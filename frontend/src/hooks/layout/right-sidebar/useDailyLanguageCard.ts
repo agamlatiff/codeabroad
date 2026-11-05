@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '../../../store/authStore'
 import { vocabularyService } from '../../../services/vocabularyService'
 import { triggerHaptic } from '../../../utils/haptics'
 import { audioEngine } from '../../../utils/audio'
@@ -7,7 +8,7 @@ import { audioEngine } from '../../../utils/audio'
 export const DAILY_VOCABULARIES_QUERY_KEY = ['daily-vocabularies'] as const
 const COPY_FEEDBACK_DURATION_MS = 2000
 
-export interface NihongoVocabItem {
+export interface LanguageVocabItem {
   id: string
   level: string
   romaji: string
@@ -18,23 +19,86 @@ export interface NihongoVocabItem {
   terjemahan: string
 }
 
-export interface UseNihongoCardOptions {
+export interface DestinationLanguageMeta {
+  countryCode: string
+  countryName: string
+  targetCity: string
+  languageTitle: string
+  ttsLangCode: string
+  flagEmoji: string
+}
+
+export interface UseDailyLanguageCardOptions {
   onReview?: () => void
 }
 
+const DESTINATION_LANGUAGE_MAP: Record<string, DestinationLanguageMeta> = {
+  JP: {
+    countryCode: 'JP',
+    countryName: 'Jepang',
+    targetCity: 'Tokyo',
+    languageTitle: 'Bahasa Jepang Tokyo',
+    ttsLangCode: 'ja-JP',
+    flagEmoji: '🇯🇵',
+  },
+  DE: {
+    countryCode: 'DE',
+    countryName: 'Jerman',
+    targetCity: 'Berlin',
+    languageTitle: 'Bahasa Jerman Kerja',
+    ttsLangCode: 'de-DE',
+    flagEmoji: '🇩🇪',
+  },
+  SG: {
+    countryCode: 'SG',
+    countryName: 'Singapura',
+    targetCity: 'Singapura',
+    languageTitle: 'Bahasa Inggris Bisnis',
+    ttsLangCode: 'en-SG',
+    flagEmoji: '🇸🇬',
+  },
+  UK: {
+    countryCode: 'UK',
+    countryName: 'Inggris',
+    targetCity: 'London',
+    languageTitle: 'Bahasa Inggris Bisnis',
+    ttsLangCode: 'en-GB',
+    flagEmoji: '🇬🇧',
+  },
+}
+
 /**
- * 1:1 Headless controller hook for NihongoCard in AppRightSidebar.
- * Fetches daily IT Japanese vocabularies from PostgreSQL via TanStack Query
- * and manages card rotation, clipboard copying, and native ja-JP pronunciation.
+ * 1:1 Headless controller hook for DailyLanguageCard in AppRightSidebar.
+ * Adapts vocabulary metadata dynamically to the user's targeted career destination country
+ * (Tokyo 🇯🇵, Berlin 🇩🇪, Singapore 🇸🇬, London 🇬🇧), pulls daily vocabularies from PostgreSQL,
+ * and manages pronunciation via native Web Speech synthesis.
  */
-export const useNihongoCard = ({ onReview }: UseNihongoCardOptions = {}) => {
+export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions = {}) => {
+  const { user } = useAuthStore()
+
+  // Resolve target country & language metadata dynamically
+  const languageMeta: DestinationLanguageMeta = useMemo(() => {
+    const rawCode = user?.country?.code?.toUpperCase() || 'JP'
+    if (DESTINATION_LANGUAGE_MAP[rawCode]) {
+      return DESTINATION_LANGUAGE_MAP[rawCode]
+    }
+    return {
+      countryCode: rawCode,
+      countryName: user?.country?.name || 'Tujuan Global',
+      targetCity: user?.country?.name || 'Global',
+      languageTitle: `Bahasa Kerja ${user?.country?.name || 'Global'}`,
+      ttsLangCode: 'en-US',
+      flagEmoji: user?.country?.flag_emoji || '🌐',
+    }
+  }, [user?.country])
+
   const { data: rawVocabs = [], isLoading } = useQuery({
     queryKey: DAILY_VOCABULARIES_QUERY_KEY,
     queryFn: () => vocabularyService.getDailyVocabularies(),
     staleTime: 1000 * 60 * 10,
   })
 
-  const vocabList: NihongoVocabItem[] = useMemo(() => {
+  const vocabList: LanguageVocabItem[] = useMemo(() => {
     if (!rawVocabs || rawVocabs.length === 0) return []
     return rawVocabs.map((v) => {
       const parts = v.reading ? v.reading.split('•').map((s) => s.trim()) : []
@@ -103,16 +167,18 @@ export const useNihongoCard = ({ onReview }: UseNihongoCardOptions = {}) => {
         typeof textToSpeak === 'string' && textToSpeak
           ? textToSpeak
           : currentVocab.kana || currentVocab.kanji
-      audioEngine.speakJapanese(
+      audioEngine.speakLanguage(
         phrase,
+        languageMeta.ttsLangCode,
         () => setIsPlayingAudio(false),
         () => setIsPlayingAudio(false)
       )
     },
-    [currentVocab, onReview]
+    [currentVocab, onReview, languageMeta.ttsLangCode]
   )
 
   return {
+    languageMeta,
     isLoading,
     currentVocab,
     activeStepNumber,
@@ -124,3 +190,4 @@ export const useNihongoCard = ({ onReview }: UseNihongoCardOptions = {}) => {
     handleSpeak,
   }
 }
+

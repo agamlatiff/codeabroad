@@ -13,10 +13,10 @@ import { useQuestsSection } from '../../../hooks/layout/right-sidebar/useQuestsS
 import { ChestModal } from './ChestModal'
 
 export interface QuestsSectionProps {
-  isNihongoReviewed: boolean
+  isLanguageReviewed: boolean
   onClaimVocabQuest: (e?: React.MouseEvent) => void
   onClaimChestReward: (e?: React.MouseEvent) => void
-  onFocusNihongoCard: () => void
+  onFocusLanguageCard: () => void
 }
 
 /**
@@ -25,10 +25,10 @@ export interface QuestsSectionProps {
  * Powered 1:1 by useQuestsSection.
  */
 export const QuestsSection: FC<QuestsSectionProps> = ({
-  isNihongoReviewed,
+  isLanguageReviewed,
   onClaimVocabQuest,
   onClaimChestReward,
-  onFocusNihongoCard,
+  onFocusLanguageCard,
 }) => {
   const {
     timeLeft,
@@ -45,8 +45,8 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
     handleConfirmClaimChest,
     handleQuestAction,
   } = useQuestsSection({
-    isNihongoReviewed,
-    onFocusNihongoCard,
+    isLanguageReviewed,
+    onFocusLanguageCard,
     onClaimChestReward,
   })
 
@@ -203,4 +203,3 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
     </>
   )
 }
-
