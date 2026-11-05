@@ -25,7 +25,6 @@ export const AppRightSidebar = ({
 }: AppRightSidebarProps) => {
   const {
     isLanguageReviewed,
-    isVocabQuestClaimed,
     isLanguageHighlighted,
     languageSectionRef,
     isClosingDrawer,
@@ -64,10 +63,7 @@ export const AppRightSidebar = ({
         }`}
       >
         <DailyLanguageCard
-          isReviewed={isLanguageReviewed}
-          isClaimed={isVocabQuestClaimed}
           onReview={handleLanguageReview}
-          onClaim={(e) => handleClaimVocabQuest(e)}
         />
       </div>
     </>

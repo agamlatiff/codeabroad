@@ -5,21 +5,12 @@ import {
   Check,
   SpeakerHigh,
   ArrowsClockwise,
-  BookOpen,
-  CheckCircle,
-  Sparkle,
-  Lightning,
 } from '@phosphor-icons/react'
-import { Button3D } from '../../ui/Button3D'
-import { triggerHaptic } from '../../../utils/haptics'
 import { useDailyLanguageCard } from '../../../hooks/layout/right-sidebar/useDailyLanguageCard'
 
 export interface DailyLanguageCardProps {
   className?: string
-  isReviewed?: boolean
-  isClaimed?: boolean
   onReview?: () => void
-  onClaim?: (e?: React.MouseEvent) => void
 }
 
 /**
@@ -30,10 +21,7 @@ export interface DailyLanguageCardProps {
  */
 export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
   className = '',
-  isReviewed = false,
-  isClaimed = false,
   onReview,
-  onClaim,
 }) => {
   const {
     languageMeta,
@@ -180,62 +168,6 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
           </button>
         </div>
       )}
-
-      {/* ── INTERACTIVE TASK ACTION ── */}
-      <div className="pt-1.5 pb-0.5 space-y-1.5">
-        {isClaimed ? (
-          <div className="flex items-center justify-between p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-xl text-emerald-800 shadow-2xs">
-            <div className="flex items-center gap-1.5">
-              <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
-              <span className="text-[10px] font-brand font-black">
-                Misi Selesai (+30 XP) ✓
-              </span>
-            </div>
-            <span className="text-[9px] font-bold text-emerald-700 bg-emerald-100/90 px-1.5 py-0.5 rounded">
-              BESOK KOSAKATA BARU
-            </span>
-          </div>
-        ) : isReviewed ? (
-          <div className="space-y-1.5 animate-pop">
-            <div className="flex items-center justify-between p-1.5 bg-amber-50/90 border border-amber-200 rounded-xl text-amber-900 shadow-2xs">
-              <div className="flex items-center gap-1.5">
-                <Sparkle weight="fill" className="w-4 h-4 text-amber-500 shrink-0" />
-                <span className="text-[10px] font-brand font-black">
-                  Kosakata Telah Dipelajari!
-                </span>
-              </div>
-              <span className="text-[9px] font-bold text-amber-800 bg-amber-200/90 px-1.5 py-0.5 rounded">
-                SIAP KLAIM
-              </span>
-            </div>
-            <Button3D
-              variant="amber"
-              size="sm"
-              onClick={(e) => {
-                triggerHaptic('success')
-                onClaim?.(e)
-              }}
-              className="w-full text-[11px] font-brand font-black flex items-center justify-center gap-1.5 py-2 shadow-[0_2.5px_0_0_#B45309]"
-            >
-              <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-950" />
-              <span>KLAIM +30 XP SEKARANG ⚡</span>
-            </Button3D>
-          </div>
-        ) : (
-          <Button3D
-            variant="blue"
-            size="sm"
-            onClick={() => {
-              handleSpeak()
-              onReview?.()
-            }}
-            className="w-full text-[11px] font-brand font-black flex items-center justify-center gap-2 py-2 shadow-[0_2.5px_0_0_#1D4ED8]"
-          >
-            <BookOpen weight="bold" className="w-3.5 h-3.5 text-white" />
-            <span>PELAJARI KOSAKATA (+30 XP) 🎧</span>
-          </Button3D>
-        )}
-      </div>
     </div>
   )
 }
