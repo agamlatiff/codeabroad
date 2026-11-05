@@ -35,6 +35,7 @@ export const NihongoCard: FC<NihongoCardProps> = ({
   onClaim,
 }) => {
   const {
+    isLoading,
     currentVocab,
     activeStepNumber,
     totalVocabsCount,
@@ -44,6 +45,26 @@ export const NihongoCard: FC<NihongoCardProps> = ({
     handleCopy,
     handleSpeak,
   } = useNihongoCard({ onReview })
+
+  if (isLoading || !currentVocab) {
+    return (
+      <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 animate-pulse" />
+            <div className="space-y-1">
+              <div className="w-24 h-3 bg-slate-200 rounded animate-pulse" />
+              <div className="w-16 h-2 bg-slate-100 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="w-16 h-5 bg-slate-100 rounded-full animate-pulse" />
+        </div>
+        <div className="h-16 bg-rose-50/40 border border-rose-100 rounded-2xl animate-pulse" />
+        <div className="h-12 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
+        <div className="h-8 bg-blue-50 border border-blue-100 rounded-xl animate-pulse" />
+      </div>
+    )
+  }
 
   return (
     <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
@@ -64,17 +85,19 @@ export const NihongoCard: FC<NihongoCardProps> = ({
         </div>
 
         {/* Rotate to Next Vocab Pill */}
-        <button
-          type="button"
-          onClick={handleNextVocab}
-          className="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[9px] font-brand font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs transition-all cursor-pointer active:scale-95"
-          title="Lihat kosakata berikutnya"
-        >
-          <ArrowsClockwise weight="bold" className="w-2.5 h-2.5 text-slate-500" />
-          <span>
-            GANTI ({activeStepNumber}/{totalVocabsCount})
-          </span>
-        </button>
+        {totalVocabsCount > 1 && (
+          <button
+            type="button"
+            onClick={handleNextVocab}
+            className="bg-slate-50 hover:bg-slate-100 text-slate-600 border border-slate-200 text-[9px] font-brand font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow-2xs transition-all cursor-pointer active:scale-95"
+            title="Lihat kosakata berikutnya"
+          >
+            <ArrowsClockwise weight="bold" className="w-2.5 h-2.5 text-slate-500" />
+            <span>
+              GANTI ({activeStepNumber}/{totalVocabsCount})
+            </span>
+          </button>
+        )}
       </div>
 
       {/* ── VOCABULARY PILL ROW (CLEAN SEAMLESS ROW) ── */}
@@ -83,10 +106,12 @@ export const NihongoCard: FC<NihongoCardProps> = ({
           <span className="font-brand font-black text-2xl text-slate-900 tracking-wider">
             {currentVocab.kanji}
           </span>
-          <span className="bg-white text-rose-800 border border-rose-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-lg shadow-2xs">
-            {currentVocab.kana}
-            {currentVocab.romaji ? ` • ${currentVocab.romaji}` : ''}
-          </span>
+          {currentVocab.kana && (
+            <span className="bg-white text-rose-800 border border-rose-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-lg shadow-2xs">
+              {currentVocab.kana}
+              {currentVocab.romaji ? ` • ${currentVocab.romaji}` : ''}
+            </span>
+          )}
           <span className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-md shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
             <span>{currentVocab.arti}</span>
@@ -127,24 +152,28 @@ export const NihongoCard: FC<NihongoCardProps> = ({
       </div>
 
       {/* ── CONVERSATION DIALOGUE ── */}
-      <div className="flex items-start justify-between gap-2 p-2 bg-slate-50 border border-slate-200/60 rounded-xl">
-        <div className="text-[10px] space-y-0.5 min-w-0">
-          <p className="font-brand font-bold italic text-slate-800 leading-snug">
-            "{currentVocab.contoh}"
-          </p>
-          <p className="text-slate-500 font-medium leading-snug">
-            "{currentVocab.terjemahan}"
-          </p>
+      {currentVocab.contoh && (
+        <div className="flex items-start justify-between gap-2 p-2 bg-slate-50 border border-slate-200/60 rounded-xl">
+          <div className="text-[10px] space-y-0.5 min-w-0">
+            <p className="font-brand font-bold italic text-slate-800 leading-snug">
+              "{currentVocab.contoh}"
+            </p>
+            {currentVocab.terjemahan && (
+              <p className="text-slate-500 font-medium leading-snug">
+                "{currentVocab.terjemahan}"
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => handleSpeak(currentVocab.contoh)}
+            className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 hover:border-rose-400 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer shadow-2xs active:translate-y-0.5"
+            title="Dengarkan Contoh Kalimat Percakapan"
+          >
+            <SpeakerHigh weight="bold" className="w-3.5 h-3.5" />
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={() => handleSpeak(currentVocab.contoh)}
-          className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 hover:border-rose-400 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer shadow-2xs active:translate-y-0.5"
-          title="Dengarkan Contoh Kalimat Percakapan"
-        >
-          <SpeakerHigh weight="bold" className="w-3.5 h-3.5" />
-        </button>
-      </div>
+      )}
 
       {/* ── INTERACTIVE TASK ACTION ── */}
       <div className="pt-1.5 pb-0.5 space-y-1.5">
@@ -204,4 +233,3 @@ export const NihongoCard: FC<NihongoCardProps> = ({
     </div>
   )
 }
-
