@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { AppLeftSidebar } from '../components/left-sidebar/AppLeftSidebar'
+import { AppLeftSidebar } from '../components/layout/left-sidebar/AppLeftSidebar'
 import {
   Trophy,
   Crown,

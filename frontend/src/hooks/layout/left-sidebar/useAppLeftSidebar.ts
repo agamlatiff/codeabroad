@@ -8,11 +8,11 @@ import {
   Trophy,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
-import { useAuthStore } from '../../store/authStore'
-import { authService } from '../../services/authService'
-import { triggerHaptic } from '../../utils/haptics'
-import type { AvatarStyle } from '../../utils/avatar'
-import { PROFILE_QUERY_KEY } from '../layout/useAppTopBar'
+import { useAuthStore } from '../../../store/authStore'
+import { authService } from '../../../services/authService'
+import { triggerHaptic } from '../../../utils/haptics'
+import type { AvatarStyle } from '../../../utils/avatar'
+import { PROFILE_QUERY_KEY } from '../top-bar/useAppTopBar'
 
 export interface LeftSidebarNavItem {
   label: string
@@ -114,3 +114,4 @@ export const useAppLeftSidebar = () => {
     handleLogout,
   }
 }
+

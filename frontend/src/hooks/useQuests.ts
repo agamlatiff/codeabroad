@@ -62,10 +62,10 @@ export const useQuests = () => {
     const updateCountdown = () => {
       const now = new Date()
       // Midnight in JST (UTC+9)
-      const jstNow = new Date(now.getTime() + (9 * 60 + now.getTimezoneOffset()) * 60 * 1000)
-      const jstMidnight = new Date(jstNow)
-      jstMidnight.setHours(24, 0, 0, 0)
-      const diffMs = jstMidnight.getTime() - jstNow.getTime()
+      const wibNow = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60 * 1000)
+      const wibMidnight = new Date(wibNow)
+      wibMidnight.setHours(24, 0, 0, 0)
+      const diffMs = wibMidnight.getTime() - wibNow.getTime()
 
       const hours = Math.floor(diffMs / (1000 * 60 * 60))
       const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))

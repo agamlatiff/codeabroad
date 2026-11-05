@@ -1,12 +1,10 @@
 import { createPortal } from 'react-dom'
 import { Gift, Lightning, X } from '@phosphor-icons/react'
-import { triggerHaptic } from '../../utils/haptics'
-import { useAppRightSidebar } from '../../hooks/right-sidebar/useAppRightSidebar'
-import { RightSidebarStreakSection } from './RightSidebarStreakSection'
-import { RightSidebarQuestsSection } from './RightSidebarQuestsSection'
-import { RightSidebarNihongoCard } from './RightSidebarNihongoCard'
-import { RightSidebarStreakModal } from './RightSidebarStreakModal'
-import { RightSidebarChestModal } from './RightSidebarChestModal'
+import { triggerHaptic } from '../../../utils/haptics'
+import { useAppRightSidebar } from '../../../hooks/layout/right-sidebar/useAppRightSidebar'
+import { StreakSection } from './StreakSection'
+import { QuestsSection } from './QuestsSection'
+import { NihongoCard } from './NihongoCard'
 
 export interface AppRightSidebarProps {
   className?: string
@@ -26,71 +24,46 @@ export const AppRightSidebar = ({
   onCloseMobileDrawer,
 }: AppRightSidebarProps) => {
   const {
-    userStreak,
-    timeLeft,
-    dailyTargetXp,
-    todayEarnedXp,
-    dailyProgressPercent,
-    isChestUnlocked,
-    isChestClaimedToday,
-    remainingXp,
-    weeklyStreakDays,
-    calendarActiveDates,
-    activeQuests,
     isNihongoReviewed,
     isVocabQuestClaimed,
     isNihongoHighlighted,
     nihongoSectionRef,
-    isChestModalOpen,
-    setIsChestModalOpen,
-    isStreakModalOpen,
-    setIsStreakModalOpen,
     isClosingDrawer,
     floatingRewards,
     handleVocabReview,
     handleClaimVocabQuest,
     handleClaimChest,
-    handleQuestAction,
+    handleFocusNihongoCard,
     handleCloseMobileDrawer,
   } = useAppRightSidebar({ onCloseMobileDrawer })
 
   const sidebarContent = (
     <>
-      {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER ── */}
-      <RightSidebarStreakSection
-        userStreak={userStreak}
-        weeklyStreakDays={weeklyStreakDays}
-        onOpenStreakModal={() => setIsStreakModalOpen(true)}
-      />
+      {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (1:1 Hook) ── */}
+      <StreakSection />
 
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
-      {/* ── 2. MISI & TARGET HARIAN ── */}
-      <RightSidebarQuestsSection
-        timeLeft={timeLeft}
-        dailyTargetXp={dailyTargetXp}
-        todayEarnedXp={todayEarnedXp}
-        dailyProgressPercent={dailyProgressPercent}
-        isChestUnlocked={isChestUnlocked}
-        remainingXp={remainingXp}
-        activeQuests={activeQuests}
-        onOpenChestModal={() => setIsChestModalOpen(true)}
+      {/* ── 2. MISI & TARGET HARIAN (1:1 Hook) ── */}
+      <QuestsSection
+        isNihongoReviewed={isNihongoReviewed}
         onClaimVocabQuest={(e) => handleClaimVocabQuest(e)}
-        onQuestAction={handleQuestAction}
+        onClaimChestReward={(e) => handleClaimChest(e)}
+        onFocusNihongoCard={handleFocusNihongoCard}
       />
 
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
-      {/* ── 3. KOSAKATA KANTOR TOKYO ── */}
+      {/* ── 3. KOSAKATA KANTOR TOKYO (1:1 Hook) ── */}
       <div
         ref={nihongoSectionRef}
         className={`transition-all rounded-2xl ${
           isNihongoHighlighted ? 'ring-4 ring-blue-400' : ''
         }`}
       >
-        <RightSidebarNihongoCard
+        <NihongoCard
           isReviewed={isNihongoReviewed}
           isClaimed={isVocabQuestClaimed}
           onReview={handleVocabReview}
@@ -165,14 +138,6 @@ export const AppRightSidebar = ({
           document.body
         )}
 
-      {/* ── STREAK ATTENDANCE CALENDAR MODAL ── */}
-      <RightSidebarStreakModal
-        isOpen={isStreakModalOpen}
-        onClose={() => setIsStreakModalOpen(false)}
-        currentStreak={userStreak}
-        activeDates={calendarActiveDates}
-      />
-
       {/* ── FLOATING XP BURST REWARDS ── */}
       {typeof document !== 'undefined' &&
         createPortal(
@@ -191,17 +156,7 @@ export const AppRightSidebar = ({
           </div>,
           document.body
         )}
-
-      {/* ── CELEBRATION MODAL FOR DAILY GOLDEN CHEST ── */}
-      <RightSidebarChestModal
-        isOpen={isChestModalOpen}
-        onClose={() => setIsChestModalOpen(false)}
-        dailyTargetXp={dailyTargetXp}
-        remainingXp={remainingXp}
-        isChestUnlocked={isChestUnlocked}
-        isChestClaimedToday={isChestClaimedToday}
-        onClaimChest={(e) => handleClaimChest(e)}
-      />
     </>
   )
 }
+

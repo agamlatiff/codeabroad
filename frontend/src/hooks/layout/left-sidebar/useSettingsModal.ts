@@ -1,13 +1,13 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { authService } from '../../services/authService'
-import { onboardingService } from '../../services/onboardingService'
-import { useAuthStore } from '../../store/authStore'
-import { triggerHaptic } from '../../utils/haptics'
-import { mapCareerPathsToTrackOptions } from '../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../layout/useAppTopBar'
-import type { User } from '../../types/auth'
-import type { AvatarStyle } from '../../utils/avatar'
+import { authService } from '../../../services/authService'
+import { onboardingService } from '../../../services/onboardingService'
+import { useAuthStore } from '../../../store/authStore'
+import { triggerHaptic } from '../../../utils/haptics'
+import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
+import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../top-bar/useAppTopBar'
+import type { User } from '../../../types/auth'
+import type { AvatarStyle } from '../../../utils/avatar'
 
 const CLOSE_AFTER_SAVE_MS = 900
 
@@ -17,7 +17,7 @@ export const AVATAR_STYLE_OPTIONS: { id: AvatarStyle; label: string; desc: strin
   { id: 'lorelei', label: 'Manga Anime', desc: 'Ilustrasi elegan khas Jepang' },
 ]
 
-export interface UseLeftSidebarSettingsModalOptions {
+export interface UseSettingsModalOptions {
   isOpen: boolean
   onClose: () => void
   user?: User | null
@@ -27,18 +27,18 @@ export interface UseLeftSidebarSettingsModalOptions {
 }
 
 /**
- * 1:1 Headless controller hook for LeftSidebarSettingsModal.
+ * 1:1 Headless controller hook for SettingsModal in AppLeftSidebar.
  * Manages profile update mutation, dynamic career track options from PostgreSQL,
  * and avatar style selection.
  */
-export const useLeftSidebarSettingsModal = ({
+export const useSettingsModal = ({
   isOpen,
   onClose,
   user,
   avatarStyle,
   onAvatarStyleChange,
   onProfileUpdated,
-}: UseLeftSidebarSettingsModalOptions) => {
+}: UseSettingsModalOptions) => {
   const queryClient = useQueryClient()
   const { updateUser } = useAuthStore()
 
@@ -51,7 +51,6 @@ export const useLeftSidebarSettingsModal = ({
 
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Synchronize local form fields when modal opens
   const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
   if (isOpen && !prevIsOpen) {
     setPrevIsOpen(true)
@@ -73,7 +72,6 @@ export const useLeftSidebarSettingsModal = ({
     }
   }, [])
 
-  // Fetch career paths from PostgreSQL via TanStack Query
   const { data: careerPaths = [] } = useQuery({
     queryKey: CAREER_PATHS_QUERY_KEY,
     queryFn: () => onboardingService.getCareerPaths(),
@@ -155,3 +153,4 @@ export const useLeftSidebarSettingsModal = ({
     handleSubmit,
   }
 }
+

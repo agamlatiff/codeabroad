@@ -10,11 +10,11 @@ import {
   Sparkle,
   Lightning,
 } from '@phosphor-icons/react'
-import { Button3D } from '../ui/Button3D'
-import { triggerHaptic } from '../../utils/haptics'
-import { useRightSidebarNihongoCard } from '../../hooks/right-sidebar/useRightSidebarNihongoCard'
+import { Button3D } from '../../ui/Button3D'
+import { triggerHaptic } from '../../../utils/haptics'
+import { useNihongoCard } from '../../../hooks/layout/right-sidebar/useNihongoCard'
 
-export interface RightSidebarNihongoCardProps {
+export interface NihongoCardProps {
   className?: string
   isReviewed?: boolean
   isClaimed?: boolean
@@ -23,11 +23,11 @@ export interface RightSidebarNihongoCardProps {
 }
 
 /**
- * RightSidebarNihongoCard (SSOT)
+ * NihongoCard (SSOT)
  * Pure declarative daily Tokyo IT vocabulary review card in AppRightSidebar.
- * Powered 1:1 by useRightSidebarNihongoCard.
+ * Powered 1:1 by useNihongoCard.
  */
-export const RightSidebarNihongoCard: FC<RightSidebarNihongoCardProps> = ({
+export const NihongoCard: FC<NihongoCardProps> = ({
   className = '',
   isReviewed = false,
   isClaimed = false,
@@ -43,7 +43,7 @@ export const RightSidebarNihongoCard: FC<RightSidebarNihongoCardProps> = ({
     handleNextVocab,
     handleCopy,
     handleSpeak,
-  } = useRightSidebarNihongoCard({ onReview })
+  } = useNihongoCard({ onReview })
 
   return (
     <div id="tech-nihongo-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
@@ -126,7 +126,7 @@ export const RightSidebarNihongoCard: FC<RightSidebarNihongoCardProps> = ({
         </div>
       </div>
 
-      {/* ── CONVERSATION DIALOGUE (NATURAL SUBTLE TYPOGRAPHY) ── */}
+      {/* ── CONVERSATION DIALOGUE ── */}
       <div className="flex items-start justify-between gap-2 p-2 bg-slate-50 border border-slate-200/60 rounded-xl">
         <div className="text-[10px] space-y-0.5 min-w-0">
           <p className="font-brand font-bold italic text-slate-800 leading-snug">
@@ -146,7 +146,7 @@ export const RightSidebarNihongoCard: FC<RightSidebarNihongoCardProps> = ({
         </button>
       </div>
 
-      {/* ── INTERACTIVE TASK ACTION WITH CLEAN PUNCHY BUTTON ── */}
+      {/* ── INTERACTIVE TASK ACTION ── */}
       <div className="pt-1.5 pb-0.5 space-y-1.5">
         {isClaimed ? (
           <div className="flex items-center justify-between p-2 bg-emerald-50/90 border border-emerald-200/90 rounded-xl text-emerald-800 shadow-2xs">
@@ -204,3 +204,4 @@ export const RightSidebarNihongoCard: FC<RightSidebarNihongoCardProps> = ({
     </div>
   )
 }
+

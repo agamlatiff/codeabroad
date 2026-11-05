@@ -1,9 +1,9 @@
 import { createPortal } from 'react-dom'
 import type { FC } from 'react'
 import { Gift, Lightning, X } from '@phosphor-icons/react'
-import { Button3D } from '../ui/Button3D'
+import { Button3D } from '../../ui/Button3D'
 
-export interface RightSidebarChestModalProps {
+export interface ChestModalProps {
   isOpen: boolean
   onClose: () => void
   dailyTargetXp: number
@@ -14,10 +14,10 @@ export interface RightSidebarChestModalProps {
 }
 
 /**
- * RightSidebarChestModal
+ * ChestModal
  * Pure presentational celebration & claim modal for the Daily Golden Chest in AppRightSidebar.
  */
-export const RightSidebarChestModal: FC<RightSidebarChestModalProps> = ({
+export const ChestModal: FC<ChestModalProps> = ({
   isOpen,
   onClose,
   dailyTargetXp,
@@ -82,3 +82,4 @@ export const RightSidebarChestModal: FC<RightSidebarChestModalProps> = ({
     document.body
   )
 }
+

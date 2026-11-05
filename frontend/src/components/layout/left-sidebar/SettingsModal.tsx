@@ -11,15 +11,15 @@ import {
   Cpu,
   DeviceMobile,
 } from '@phosphor-icons/react'
-import { Button3D } from '../ui/Button3D'
-import { UserAvatar } from '../ui/UserAvatar'
-import { triggerHaptic } from '../../utils/haptics'
+import { Button3D } from '../../ui/Button3D'
+import { UserAvatar } from '../../ui/UserAvatar'
+import { triggerHaptic } from '../../../utils/haptics'
 import {
-  useLeftSidebarSettingsModal,
-  type UseLeftSidebarSettingsModalOptions,
-} from '../../hooks/left-sidebar/useLeftSidebarSettingsModal'
+  useSettingsModal,
+  type UseSettingsModalOptions,
+} from '../../../hooks/layout/left-sidebar/useSettingsModal'
 
-export type LeftSidebarSettingsModalProps = UseLeftSidebarSettingsModalOptions
+export type SettingsModalProps = UseSettingsModalOptions
 
 const resolveStackIcon = (slug: string) => {
   const lower = slug.toLowerCase()
@@ -29,11 +29,11 @@ const resolveStackIcon = (slug: string) => {
 }
 
 /**
- * LeftSidebarSettingsModal (SSOT)
+ * SettingsModal (SSOT)
  * Pure declarative account settings modal for AppLeftSidebar.
- * Powered 1:1 by useLeftSidebarSettingsModal.
+ * Powered 1:1 by useSettingsModal.
  */
-export const LeftSidebarSettingsModal: FC<LeftSidebarSettingsModalProps> = (props) => {
+export const SettingsModal: FC<SettingsModalProps> = (props) => {
   const { isOpen, onClose, user } = props
 
   const {
@@ -51,7 +51,7 @@ export const LeftSidebarSettingsModal: FC<LeftSidebarSettingsModalProps> = (prop
     handleAvatarSelect,
     handleStackSelect,
     handleSubmit,
-  } = useLeftSidebarSettingsModal(props)
+  } = useSettingsModal(props)
 
   if (!isOpen || typeof document === 'undefined') return null
 
@@ -301,3 +301,4 @@ export const LeftSidebarSettingsModal: FC<LeftSidebarSettingsModalProps> = (prop
     document.body
   )
 }
+

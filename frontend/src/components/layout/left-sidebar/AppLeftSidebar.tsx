@@ -4,10 +4,10 @@ import {
   SignOut,
   Sparkle,
 } from '@phosphor-icons/react'
-import { UserAvatar } from '../ui/UserAvatar'
-import { triggerHaptic } from '../../utils/haptics'
-import { useAppLeftSidebar } from '../../hooks/left-sidebar/useAppLeftSidebar'
-import { LeftSidebarSettingsModal } from './LeftSidebarSettingsModal'
+import { UserAvatar } from '../../ui/UserAvatar'
+import { triggerHaptic } from '../../../utils/haptics'
+import { useAppLeftSidebar } from '../../../hooks/layout/left-sidebar/useAppLeftSidebar'
+import { SettingsModal } from './SettingsModal'
 
 /**
  * AppLeftSidebar (SSOT)
@@ -182,7 +182,7 @@ export const AppLeftSidebar = () => {
       </div>
 
       {/* ── DUOLINGO 3D ACCOUNT SETTINGS MODAL ── */}
-      <LeftSidebarSettingsModal
+      <SettingsModal
         isOpen={isSettingsOpen}
         onClose={handleCloseSettings}
         user={user}
@@ -193,3 +193,4 @@ export const AppLeftSidebar = () => {
     </>
   )
 }
+

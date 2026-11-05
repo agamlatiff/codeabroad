@@ -10,11 +10,11 @@ import {
   X,
   Sparkle,
 } from '@phosphor-icons/react'
-import { Button3D } from '../ui/Button3D'
-import { triggerHaptic } from '../../utils/haptics'
-import { useRightSidebarStreakModal } from '../../hooks/right-sidebar/useRightSidebarStreakModal'
+import { Button3D } from '../../ui/Button3D'
+import { triggerHaptic } from '../../../utils/haptics'
+import { useStreakModal } from '../../../hooks/layout/right-sidebar/useStreakModal'
 
-export interface RightSidebarStreakModalProps {
+export interface StreakModalProps {
   isOpen: boolean
   onClose: () => void
   currentStreak: number
@@ -22,11 +22,11 @@ export interface RightSidebarStreakModalProps {
 }
 
 /**
- * RightSidebarStreakModal (SSOT)
+ * StreakModal (SSOT)
  * Pure declarative streak attendance calendar modal for AppRightSidebar.
- * Powered 1:1 by useRightSidebarStreakModal.
+ * Powered 1:1 by useStreakModal.
  */
-export const RightSidebarStreakModal: FC<RightSidebarStreakModalProps> = ({
+export const StreakModal: FC<StreakModalProps> = ({
   isOpen,
   onClose,
   currentStreak,
@@ -43,7 +43,7 @@ export const RightSidebarStreakModal: FC<RightSidebarStreakModalProps> = ({
     handlePrevMonth,
     handleNextMonth,
     handleResetToToday,
-  } = useRightSidebarStreakModal({ currentStreak, activeDates })
+  } = useStreakModal({ currentStreak, activeDates })
 
   if (!isOpen || typeof document === 'undefined') return null
 
@@ -181,7 +181,6 @@ export const RightSidebarStreakModal: FC<RightSidebarStreakModalProps> = ({
 
         {/* ── CALENDAR GRID ── */}
         <div className="space-y-1.5 p-3 bg-white border border-slate-200/90 rounded-2xl shadow-inner">
-          {/* Day of Week Labels */}
           <div className="grid grid-cols-7 gap-1 text-center pb-1">
             {dayLabels.map((lbl, idx) => (
               <span
@@ -195,14 +194,11 @@ export const RightSidebarStreakModal: FC<RightSidebarStreakModalProps> = ({
             ))}
           </div>
 
-          {/* Day Cells Grid */}
           <div className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center">
-            {/* Empty slots before first day */}
             {Array.from({ length: startOffset }).map((_, idx) => (
               <div key={`offset-${idx}`} className="h-9 sm:h-10 rounded-xl" />
             ))}
 
-            {/* Actual Days */}
             {daysList.map((item) => (
               <div
                 key={item.dateStr}
@@ -228,7 +224,7 @@ export const RightSidebarStreakModal: FC<RightSidebarStreakModalProps> = ({
                     className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-orange-50 border-2 border-dashed border-orange-400 flex flex-col items-center justify-center text-orange-600 shadow-2xs"
                     title="Hari Ini: Belajar untuk menyalakan api!"
                   >
-                    <Fire weight="bold" className="w-3 h-3 text-orange-500 animate-bounce" />
+                    <Fire weight="bold" className="w-3 h-3 text-orange-500" />
                     <span className="font-brand font-black text-[9px] leading-none mt-0.5">
                       {item.dayNumber}
                     </span>
@@ -286,3 +282,4 @@ export const RightSidebarStreakModal: FC<RightSidebarStreakModalProps> = ({
     document.body
   )
 }
+

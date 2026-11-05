@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from 'react'
-import { triggerHaptic } from '../../utils/haptics'
-import { soundEngine } from '../../utils/audio'
+import { triggerHaptic } from '../../../utils/haptics'
+import { soundEngine } from '../../../utils/audio'
 
 export const MONTH_NAMES = [
   'Januari',
@@ -34,19 +34,19 @@ export interface CalendarDayCell {
   isFuture: boolean
 }
 
-export interface UseRightSidebarStreakModalOptions {
+export interface UseStreakModalOptions {
   currentStreak: number
   activeDates?: string[]
 }
 
 /**
- * 1:1 Headless controller hook for RightSidebarStreakModal.
+ * 1:1 Headless controller hook for StreakModal in AppRightSidebar.
  * Computes calendar grid cells, real streak statistics, and month navigation.
  */
-export const useRightSidebarStreakModal = ({
+export const useStreakModal = ({
   currentStreak,
   activeDates = [],
-}: UseRightSidebarStreakModalOptions) => {
+}: UseStreakModalOptions) => {
   const today = useMemo(() => new Date(), [])
   const [currentViewDate, setCurrentViewDate] = useState(() => new Date())
 
@@ -109,7 +109,6 @@ export const useRightSidebarStreakModal = ({
     [daysList]
   )
 
-  // Real longest streak based on actual logged dates and current streak (no dummy hardcoded 14)
   const longestStreak = Math.max(currentStreak, activeDateSet.size)
 
   const handlePrevMonth = useCallback(() => {
@@ -143,3 +142,4 @@ export const useRightSidebarStreakModal = ({
     handleResetToToday,
   }
 }
+

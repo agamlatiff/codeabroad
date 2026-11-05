@@ -1,9 +1,9 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '../../store/authStore'
-import { vocabularyService } from '../../services/vocabularyService'
-import { triggerHaptic } from '../../utils/haptics'
-import { audioEngine } from '../../utils/audio'
+import { useAuthStore } from '../../../store/authStore'
+import { vocabularyService } from '../../../services/vocabularyService'
+import { triggerHaptic } from '../../../utils/haptics'
+import { audioEngine } from '../../../utils/audio'
 
 export const DAILY_VOCABULARIES_QUERY_KEY = ['daily-vocabularies'] as const
 const COPY_FEEDBACK_DURATION_MS = 2000
@@ -18,18 +18,16 @@ export interface NihongoVocabItem {
   terjemahan: string
 }
 
-export interface UseRightSidebarNihongoCardOptions {
+export interface UseNihongoCardOptions {
   onReview?: () => void
 }
 
 /**
- * 1:1 Headless controller hook for RightSidebarNihongoCard.
+ * 1:1 Headless controller hook for NihongoCard in AppRightSidebar.
  * Fetches daily IT Japanese vocabularies from PostgreSQL via TanStack Query
  * and manages card rotation, clipboard copying, and native ja-JP pronunciation.
  */
-export const useRightSidebarNihongoCard = ({
-  onReview,
-}: UseRightSidebarNihongoCardOptions = {}) => {
+export const useNihongoCard = ({ onReview }: UseNihongoCardOptions = {}) => {
   const { user } = useAuthStore()
   const developerName = user?.name ? user.name.split(' ')[0] : user?.username || 'developer'
 
@@ -174,3 +172,4 @@ export const useRightSidebarNihongoCard = ({
     handleSpeak,
   }
 }
+
