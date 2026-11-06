@@ -10,13 +10,14 @@ import {
   Cpu,
   Check,
   Lightning,
+  Diamond,
 } from '@phosphor-icons/react'
 import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import doodleThinking from '../../../assets/kodi/doodle-thinking.png'
 import doodleCelebrate from '../../../assets/kodi/doodle-celebrate.png'
 import doodleProud from '../../../assets/kodi/doodle-proud.png'
 import { Button3D } from '../../ui/Button3D'
-import type { PathMapNode } from '../../../data/roadmapMapFallback'
+import type { PathMapNode } from '../../../types/roadmap'
 import { resolveMapCategoryTokens } from '../../../tokens/roadmapTokens'
 
 export interface RoadmapNodeDetailModalProps {
@@ -183,7 +184,12 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
             <Lightning weight="fill" className="w-4 h-4 text-amber-500" />
             <span>+{node.xpReward} XP Reward</span>
           </span>
-          {node.isChest && <span className="text-amber-600">+20 💎 Permata</span>}
+          {node.isChest && (
+            <span className="flex items-center gap-1 text-cyan-700 font-brand font-black">
+              <Diamond weight="fill" className="w-3.5 h-3.5 text-cyan-500" />
+              <span>+20 Permata</span>
+            </span>
+          )}
         </div>
 
         {node.status === 'locked' ? (
@@ -201,6 +207,8 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
             variant={
               node.status === 'completed'
                 ? 'emerald'
+                : node.isChest || node.isTrophy
+                ? 'amber'
                 : catTokens.activeButtonVariant
             }
             size="md"
@@ -208,9 +216,17 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
             onClick={handleAction}
             className="text-xs py-2.5 shadow-[0_3px_0_0_#047857]"
           >
-            {node.status === 'completed'
+            {node.isChest
+              ? node.status === 'completed'
+                ? 'PETI SUDAH DIBUKA'
+                : 'KLAIM PETI HADIAH'
+              : node.isTrophy
+              ? node.status === 'completed'
+                ? 'ULANGI TANTANGAN PRAKTIK'
+                : 'IKUTI TANTANGAN PRAKTIK'
+              : node.status === 'completed'
               ? 'KODING ULANG (LATIHAN)'
-              : 'MULAI KODING SEKARANG (+50 XP)'}
+              : `MULAI KODING SEKARANG (+${node.xpReward} XP)`}
           </Button3D>
         )}
       </div>

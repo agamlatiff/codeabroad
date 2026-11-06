@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import type { FC } from 'react'
 import { Check, LockSimple, Sparkle } from '@phosphor-icons/react'
-import type { CurriculumUnitData, PathMapNode } from '../../../data/roadmapMapFallback'
+import type { CurriculumUnitData, PathMapNode } from '../../../types/roadmap'
 import { assembleUnitNodes } from './roadmapMapLayout'
 import { RoadmapPathNode } from './RoadmapPathNode'
 
@@ -160,3 +160,4 @@ export const RoadmapMapUnitSection: FC<RoadmapMapUnitSectionProps> = ({
     </section>
   )
 }
+

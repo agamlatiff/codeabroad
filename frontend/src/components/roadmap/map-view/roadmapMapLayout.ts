@@ -1,5 +1,5 @@
 import { MAP_GEOMETRY, MAP_MILESTONE_REWARDS } from '../../../tokens/roadmapTokens'
-import type { CurriculumUnitData, PathMapNode } from '../../../data/roadmapMapFallback'
+import type { CurriculumUnitData, PathMapNode } from '../../../types/roadmap'
 
 export interface UnitLayoutAssembly {
   allNodes: PathMapNode[]
@@ -52,11 +52,11 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
   // Node Milestone 1: Peti Emas Hadiah
   allNodes.push({
     id: `${unit.id}-chest`,
-    title: `Peti Emas Hadiah ${unit.title.split(',')[0]}`,
-    subtitle: 'Klaim bonus permata dan pelindung streak untuk penyelesaian modul unit.',
+    title: `Peti Hadiah Unit ${unit.unitNumber}`,
+    subtitle: `Klaim bonus ${MAP_MILESTONE_REWARDS.chestXp} XP dan permata untuk penyelesaian unit.`,
     xpReward: MAP_MILESTONE_REWARDS.chestXp,
     status: isUnitCompleted ? 'completed' : isUnitActive ? 'active' : 'locked',
-    route: '/dashboard',
+    route: '/quests',
     isChest: true,
   })
 
@@ -67,7 +67,7 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
     subtitle: 'Uji pemahaman koding secara komprehensif untuk membuka unit berikutnya.',
     xpReward: MAP_MILESTONE_REWARDS.trophyXp,
     status: isUnitCompleted ? 'completed' : 'locked',
-    route: '/courses',
+    route: '/quests',
     isTrophy: true,
   })
 
@@ -91,3 +91,4 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
     isUnitActive,
   }
 }
+

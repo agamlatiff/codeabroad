@@ -1,41 +1,11 @@
-export interface CurriculumPartNode {
-  id: string
-  number: number
-  title: string
-  subtitle: string
-  status: 'completed' | 'active' | 'locked'
-  route: string
-  xpReward: number
-  category?: 'code' | 'nihongo' | 'integration' | 'devops'
-  badgeLabel?: string
-}
+import type {
+  CurriculumPartNode,
+  CurriculumUnitData,
+  PathMapNode,
+  MapNodeCategory,
+} from '../types/roadmap'
 
-export interface CurriculumUnitData {
-  id: string
-  unitNumber: number
-  tag: string
-  title: string
-  description: string
-  statusBadge: string
-  badgeType: 'completed' | 'active' | 'locked'
-  bannerGradient: string
-  bannerBorder: string
-  parts: CurriculumPartNode[]
-}
-
-export interface PathMapNode {
-  id: string
-  title: string
-  subtitle: string
-  number?: number
-  xpReward: number
-  status: 'completed' | 'active' | 'locked'
-  route: string
-  category?: 'code' | 'nihongo' | 'integration' | 'devops'
-  badgeLabel?: string
-  isChest?: boolean
-  isTrophy?: boolean
-}
+export type { CurriculumPartNode, CurriculumUnitData, PathMapNode, MapNodeCategory }
 
 export interface RawTrackConfig {
   defaultActivePart: number

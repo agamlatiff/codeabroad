@@ -13,7 +13,7 @@ import {
 } from '@phosphor-icons/react'
 import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import { Button3D } from '../../ui/Button3D'
-import type { PathMapNode } from '../../../data/roadmapMapFallback'
+import type { PathMapNode } from '../../../types/roadmap'
 import { resolveMapCategoryTokens, MAP_GEOMETRY } from '../../../tokens/roadmapTokens'
 
 export interface RoadmapPathNodeProps {
