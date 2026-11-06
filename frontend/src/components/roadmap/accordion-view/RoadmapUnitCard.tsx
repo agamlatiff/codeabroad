@@ -143,8 +143,9 @@ export const RoadmapUnitCard = ({
               </span>
             </div>
           </div>
-          <span className="bg-emerald-600 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-xl shadow-xs">
-            TERVERIFIKASI ✓
+          <span className="bg-emerald-600 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-xl shadow-xs flex items-center gap-1">
+            <CheckFat weight="fill" className="w-3 h-3 text-emerald-100" />
+            <span>TERVERIFIKASI</span>
           </span>
         </div>
       )}
