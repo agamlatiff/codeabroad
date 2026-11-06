@@ -41,7 +41,7 @@ export const useAppLeftSidebar = () => {
       {
         label: 'Belajar',
         tooltip: 'Belajar • Peta & Silabus',
-        href: '/dashboard',
+        href: '/roadmap',
         icon: SquaresFour,
       },
       {
@@ -63,7 +63,7 @@ export const useAppLeftSidebar = () => {
       ...item,
       isActive:
         location.pathname === item.href ||
-        (item.href === '/dashboard' &&
+        (item.href === '/roadmap' &&
           (location.pathname === '/dashboard' || location.pathname.startsWith('/roadmap'))),
     }))
   }, [location.pathname])

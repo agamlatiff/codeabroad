@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
-import { DashboardPage } from './pages/DashboardPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { RoadmapPage } from './pages/RoadmapPage'
 import { QuestLogPage } from './pages/QuestLogPage'
@@ -11,10 +10,6 @@ import { LeaderboardPage } from './pages/LeaderboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
-
-function RoadmapRedirect() {
-  return <Navigate to="/dashboard?view=syllabus" replace />
-}
 
 function App() {
   return (
@@ -34,19 +29,19 @@ function App() {
 
           {/* Protected App Routes (Requires completed onboarding) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/roadmap" element={<RoadmapRedirect />} />
+            <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/roadmap/:track" element={<RoadmapPage />} />
-            <Route path="/courses" element={<RoadmapRedirect />} />
+            <Route path="/dashboard" element={<Navigate to="/roadmap" replace />} />
+            <Route path="/courses" element={<Navigate to="/roadmap" replace />} />
             <Route path="/quests" element={<QuestLogPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/learn/:id" element={<LearnWorkspacePage />} />
             <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
-            <Route path="/career" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/career" element={<Navigate to="/roadmap" replace />} />
           </Route>
 
           {/* Default Fallback */}
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/roadmap" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>
