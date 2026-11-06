@@ -16,6 +16,7 @@ import type { PathMapNode } from '../../../types/roadmap'
 import {
   resolveMapCategoryTokens,
   MAP_MODAL_TOKENS,
+  MAP_MILESTONE_REWARDS,
 } from '../../../tokens/roadmapTokens'
 import { RoadmapModalNodeIcon } from './RoadmapNodeIcon'
 
@@ -126,10 +127,10 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
             <Lightning weight="fill" className="w-4 h-4 text-amber-500" />
             <span>+{node.xpReward} XP Reward</span>
           </span>
-          {node.isChest && (
+          {(node.isChest || (node.gemsReward && node.gemsReward > 0)) && (
             <span className="flex items-center gap-1 text-cyan-700 font-brand font-black">
               <Diamond weight="fill" className="w-3.5 h-3.5 text-cyan-500" />
-              <span>+20 Permata</span>
+              <span>+{node.gemsReward ?? MAP_MILESTONE_REWARDS.chestGems} Permata</span>
             </span>
           )}
         </div>

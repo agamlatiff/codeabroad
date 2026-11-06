@@ -78,12 +78,12 @@ export const useRoadmapMapView = ({
       return roadmap.modules.map((st: Module, stIdx: number) => {
         const palette = resolveMapUnitPalette(stIdx)
         const stationQuests: CurriculumPartNode[] = []
+        let unitBossQuest: CurriculumPartNode | undefined = undefined
 
         if (st.chapters && st.chapters.length > 0) {
           st.chapters.forEach((ch: Chapter) => {
             if (ch.quests && ch.quests.length > 0) {
               ch.quests.forEach((q: QuestSummary) => {
-                const partNum = globalPartCounter++
                 const isQuestCompleted = q.status === 'completed' || completedSet.has(q.id)
                 let questStatus: 'completed' | 'active' | 'locked'
                 if (isQuestCompleted) {
@@ -95,6 +95,23 @@ export const useRoadmapMapView = ({
                   questStatus = 'locked'
                 }
 
+                // If quest is a boss/capstone exam, route it to the unit Trophy Milestone directly
+                if (q.type === 'boss') {
+                  unitBossQuest = {
+                    id: q.id,
+                    number: 0,
+                    title: q.title,
+                    subtitle: q.chip_label ? `${q.chip_label} • ${q.difficulty}` : (q.difficulty || 'Tantangan Praktik'),
+                    status: questStatus,
+                    route: `/learn/${q.id}`,
+                    xpReward: q.xp_reward || 250,
+                    gemsReward: q.gems_reward || 30,
+                    isBoss: true,
+                  }
+                  return
+                }
+
+                const partNum = globalPartCounter++
                 stationQuests.push({
                   id: q.id,
                   number: partNum,
@@ -103,6 +120,7 @@ export const useRoadmapMapView = ({
                   status: questStatus,
                   route: `/learn/${q.id}`,
                   xpReward: q.xp_reward || MAP_MILESTONE_REWARDS.defaultQuestXp,
+                  gemsReward: q.gems_reward,
                   category:
                     (q.type as string) === 'nihongo' || (q.type as string) === 'language'
                       ? 'language'
@@ -183,6 +201,7 @@ export const useRoadmapMapView = ({
           bannerGradient: palette.gradient,
           bannerBorder: palette.border,
           parts: stationQuests,
+          bossQuest: unitBossQuest,
         }
       })
     }

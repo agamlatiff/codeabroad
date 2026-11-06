@@ -215,7 +215,9 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         >
           <Gift weight="fill" className="w-3 h-3 text-amber-700" />
           <span className="font-brand font-black text-[10px]">
-            {node.status === 'completed' ? 'Diklaim (+30 XP)' : 'Peti Hadiah (+30 XP)'}
+            {node.status === 'completed'
+              ? `Diklaim (+${node.xpReward} XP)`
+              : `Peti Hadiah (+${node.xpReward} XP)`}
           </span>
         </div>
       ) : node.isTrophy ? (
@@ -224,7 +226,9 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         >
           <Trophy weight="fill" className="w-3 h-3 text-yellow-700" />
           <span className="font-brand font-black text-[10px]">
-            {node.status === 'completed' ? 'Lulus (+50 XP)' : 'Ujian Praktik (+50 XP)'}
+            {node.status === 'completed'
+              ? `Lulus (+${node.xpReward} XP)`
+              : `Ujian Praktik (+${node.xpReward} XP)`}
           </span>
         </div>
       ) : node.status !== 'active' ? (

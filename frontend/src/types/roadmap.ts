@@ -108,8 +108,10 @@ export interface CurriculumPartNode {
   status: 'completed' | 'active' | 'locked'
   route: string
   xpReward: number
+  gemsReward?: number
   category?: MapNodeCategory
   badgeLabel?: string
+  isBoss?: boolean
 }
 
 export interface CurriculumUnitData {
@@ -123,6 +125,7 @@ export interface CurriculumUnitData {
   bannerGradient: string
   bannerBorder: string
   parts: CurriculumPartNode[]
+  bossQuest?: CurriculumPartNode
 }
 
 export interface PathMapNode {
@@ -131,6 +134,7 @@ export interface PathMapNode {
   subtitle: string
   number?: number
   xpReward: number
+  gemsReward?: number
   status: 'completed' | 'active' | 'locked'
   route: string
   category?: MapNodeCategory

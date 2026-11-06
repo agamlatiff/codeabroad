@@ -38,6 +38,7 @@ export interface QuestSummary {
   type: 'main' | 'side' | 'daily' | 'boss'
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string
   xp_reward: number
+  gems_reward?: number
   estimated_minutes: number
   order_index: number
   status: 'locked' | 'available' | 'completed'
@@ -52,6 +53,7 @@ export interface Quest {
   country_id?: string
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string
   xp_reward: number
+  gems_reward?: number
   estimated_minutes: number
   resource_url?: string
   order_index: number
