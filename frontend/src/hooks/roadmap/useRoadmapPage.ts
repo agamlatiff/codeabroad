@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
@@ -15,10 +15,10 @@ export type CurriculumViewMode = 'map' | 'syllabus'
 const TOAST_DURATION_MS = 3200
 
 /**
- * 1:1 Headless controller hook for RoadmapPage and DashboardPage.
+ * 1:1 Headless controller hook for RoadmapPage.
  * Orchestrates backend syllabus synchronization via TanStack Query,
  * career track switching, unit accordion state, view mode (Map vs Syllabus),
- * and modal dialog visibility.
+ * optimistic state updates with rollback on network failure, and modal visibility.
  */
 export const useRoadmapPage = (explicitTrack?: string) => {
   const navigate = useNavigate()
@@ -26,9 +26,12 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { track: routeTrack } = useParams<{ track?: string }>()
-  const { user } = useAuthStore()
 
-  // 0. Curriculum View Mode (Peta RPG vs Silabus Modul)
+  // Reactive selector for auth store
+  const user = useAuthStore((s) => s.user)
+  const updateUser = useAuthStore((s) => s.updateUser)
+
+  // ── 0. CURRICULUM VIEW MODE (Peta RPG vs Silabus Modul) ──
   const [viewMode, setViewModeState] = useState<CurriculumViewMode>(() => {
     const queryView = searchParams.get('view')
     if (queryView === 'map' || queryView === 'syllabus') {
@@ -48,6 +51,14 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     return 'map'
   })
 
+  // Synchronize viewMode if URL query param changes dynamically
+  useEffect(() => {
+    const queryView = searchParams.get('view')
+    if ((queryView === 'map' || queryView === 'syllabus') && queryView !== viewMode) {
+      setViewModeState(queryView)
+    }
+  }, [searchParams, viewMode])
+
   const setViewMode = useCallback((mode: CurriculumViewMode) => {
     triggerHaptic('tap')
     setViewModeState(mode)
@@ -58,11 +69,11 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     }
   }, [])
 
-  // 1. Resolve requested track from explicit prop, URL route, or user's registered stack
+  // ── 1. RESOLVE REQUESTED TRACK ──
   const userRegisteredTrack = user?.primary_stack || user?.career_path?.slug || undefined
   const requestedTrack = explicitTrack || routeTrack || userRegisteredTrack || ''
 
-  // 2. Fetch career track syllabus and progress from backend PostgreSQL via TanStack Query
+  // ── 2. FETCH SYLLABUS & PROGRESS VIA TANSTACK QUERY (SSOT) ──
   const {
     data: roadmap = null,
     isLoading,
@@ -80,20 +91,14 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const currentTrack = roadmap?.slug || requestedTrack
   const error = queryError instanceof Error ? queryError.message : null
 
-  // 3. Transform database modules into decorated sequential units
-  const units: SequentialCurriculumUnit[] = useMemo(
-    () => mapModulesToSequentialUnits(roadmap?.modules),
-    [roadmap]
-  )
-
-  const allParts = useMemo(() => units.flatMap((u) => u.parts), [units])
+  // ── 3. DERIVED METRICS (LIGHTWEIGHT DIRECT COMPUTATION) ──
+  // No excessive useMemo chains needed for small arrays (~5 modules, ~15 quests)
+  const units: SequentialCurriculumUnit[] = mapModulesToSequentialUnits(roadmap?.modules)
+  const allParts = units.flatMap((u) => u.parts)
   const totalPartsCount = allParts.length
-  const completedPartsCount = useMemo(
-    () => allParts.filter((p) => p.is_completed).length,
-    [allParts]
-  )
+  const completedPartsCount = allParts.filter((p) => p.is_completed).length
 
-  const overallProgress = useMemo(() => {
+  const overallProgress = (() => {
     const modules = roadmap?.modules || []
     if (modules.length > 0) {
       const totalRate = modules.reduce((acc, m) => acc + (m.progress_rate || 0), 0)
@@ -101,19 +106,18 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     }
     if (totalPartsCount === 0) return 0
     return Math.min(100, Math.round((completedPartsCount / totalPartsCount) * 100))
-  }, [roadmap, totalPartsCount, completedPartsCount])
+  })()
 
-  const trackProgressMap = useMemo(() => {
-    if (!currentTrack) return {}
-    return {
-      [currentTrack]: {
-        completed: completedPartsCount,
-        total: totalPartsCount,
-      },
-    }
-  }, [currentTrack, completedPartsCount, totalPartsCount])
+  const trackProgressMap = currentTrack
+    ? {
+        [currentTrack]: {
+          completed: completedPartsCount,
+          total: totalPartsCount,
+        },
+      }
+    : {}
 
-  // 4. Page UI & Modal visibility states
+  // ── 4. PAGE UI & MODAL VISIBILITY STATES ──
   const [isTrackSwitcherOpen, setIsTrackSwitcherOpen] = useState(false)
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
@@ -130,42 +134,70 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     }
   }, [])
 
-  // 4b. Auto-open curriculum intro modal if user has never seen the tour in database
+  const showNotification = useCallback((message: string, isError = false) => {
+    triggerHaptic(isError ? 'error' : 'tap')
+    setLockedNotification(message)
+
+    if (toastTimerRef.current) {
+      clearTimeout(toastTimerRef.current)
+    }
+
+    toastTimerRef.current = setTimeout(() => {
+      setLockedNotification(null)
+      toastTimerRef.current = null
+    }, TOAST_DURATION_MS)
+  }, [])
+
+  // ── 4b. DATABASE-BACKED FIRST-TIME TOUR ONBOARDING ──
+  const hasSeenTour = user?.has_seen_roadmap_tour
   const hasTriggeredTourRef = useRef(false)
+
   useEffect(() => {
-    if (user && user.has_seen_roadmap_tour === false && !hasTriggeredTourRef.current) {
+    if (hasSeenTour === false && !hasTriggeredTourRef.current) {
       hasTriggeredTourRef.current = true
       setIsTrackSwitcherOpen(true)
     }
-  }, [user])
+  }, [hasSeenTour])
 
   const markTourSeen = useCallback(async () => {
-    if (user && user.has_seen_roadmap_tour === false) {
-      useAuthStore.getState().updateUser({ has_seen_roadmap_tour: true })
+    if (hasSeenTour === false) {
+      // Optimistic update
+      updateUser({ has_seen_roadmap_tour: true })
       try {
         await authService.updateProfile({ has_seen_roadmap_tour: true })
         await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       } catch (err: unknown) {
-        console.warn('Failed to persist has_seen_roadmap_tour to backend:', err)
+        // Rollback state on failure
+        updateUser({ has_seen_roadmap_tour: false })
+        console.error('Failed to persist has_seen_roadmap_tour to backend:', err)
       }
     }
-  }, [user, queryClient])
+  }, [hasSeenTour, updateUser, queryClient])
 
-  // 5. Action handlers
+  // ── 5. ACTION HANDLERS WITH ROLLBACK ON ERROR ──
+  const currentStack = user?.primary_stack
   const handleSelectTrack = useCallback(
     async (trackSlug: string) => {
       triggerHaptic('success')
+      const previousStack = currentStack
       navigate(`/roadmap/${trackSlug}`)
       void markTourSeen()
-      useAuthStore.getState().updateUser({ primary_stack: trackSlug })
+
+      // Optimistic client update
+      updateUser({ primary_stack: trackSlug })
       try {
         await authService.updateProfile({ primary_stack: trackSlug })
         await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       } catch (err: unknown) {
-        console.warn('Failed to persist selected track to backend profile:', err)
+        // Rollback on network failure
+        if (previousStack) {
+          updateUser({ primary_stack: previousStack })
+        }
+        showNotification('Gagal menyimpan preferensi kurikulum ke server', true)
+        console.error('Failed to persist selected track to backend profile:', err)
       }
     },
-    [navigate, queryClient, markTourSeen]
+    [currentStack, navigate, markTourSeen, updateUser, queryClient, showNotification]
   )
 
   const handleCloseTrackSwitcher = useCallback(() => {
@@ -196,19 +228,12 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     })
   }, [])
 
-  const handleLockedNodeClick = useCallback((title: string) => {
-    triggerHaptic('error')
-    setLockedNotification(`Selesaikan sesi sebelumnya untuk membuka "${title}"`)
-
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current)
-    }
-
-    toastTimerRef.current = setTimeout(() => {
-      setLockedNotification(null)
-      toastTimerRef.current = null
-    }, TOAST_DURATION_MS)
-  }, [])
+  const handleLockedNodeClick = useCallback(
+    (title: string) => {
+      showNotification(`Selesaikan sesi sebelumnya untuk membuka "${title}"`, true)
+    },
+    [showNotification]
+  )
 
   const handleStartQuest = useCallback(
     (route: string) => {
@@ -217,6 +242,10 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     },
     [navigate]
   )
+
+  const handleRefetch = useCallback(() => {
+    void refetch()
+  }, [refetch])
 
   return {
     currentTrack,
@@ -228,9 +257,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     trackProgressMap,
     isLoading,
     error,
-    refetch: () => {
-      void refetch()
-    },
+    refetch: handleRefetch,
     isTrackSwitcherOpen,
     setIsTrackSwitcherOpen,
     handleCloseTrackSwitcher,
@@ -248,4 +275,3 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     setViewMode,
   }
 }
-
