@@ -78,6 +78,7 @@ CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login 
 | `country_id` | VARCHAR(2) | FK → `countries.code` ON DELETE SET NULL, NULL | Selected target country (JP, DE, SG) | Active (Mig 001) |
 | `tech_stack_id` | UUID | FK → `tech_stacks.id` ON DELETE SET NULL, NULL | Selected primary tech stack (golang, react, etc.) | Active (Mig 001) |
 | `is_onboarded` | BOOLEAN | NOT NULL, DEFAULT FALSE | Onboarding completion flag | Active (Mig 001) |
+| `has_seen_roadmap_tour` | BOOLEAN | NOT NULL, DEFAULT FALSE | First-time roadmap curriculum tour completion flag | Active (Mig 001) |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile creation timestamp | Active (Mig 001) |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile update timestamp | Active (Mig 001) |
 
@@ -340,6 +341,7 @@ Table user_profiles {
   country_id varchar(2)
   tech_stack_id uuid
   is_onboarded boolean [not null, default: false]
+  has_seen_roadmap_tour boolean [not null, default: false]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 
