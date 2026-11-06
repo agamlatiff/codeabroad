@@ -1,3 +1,13 @@
+/**
+ * [DOMAIN: ROADMAP SERPENTINE & STATIONS]
+ * Single Source of Truth khusus untuk visualisasi peta jalur kereta Yamanote (3D Serpentine Path):
+ * geometri koordinat SVG, warna stasiun per unit, token modal node detail, dan segmented view switch.
+ *
+ * NOTE:
+ * - Palet warna umum aplikasi berada di colorTokens.ts
+ * - Aturan umum gamifikasi (XP/Streak) berada di gamificationTokens.ts
+ */
+
 import type {
   UnitTheme,
   TrackIconType,

@@ -1,5 +1,11 @@
 /**
- * Single-responsibility token definitions for font families and typographic scale.
+ * [DOMAIN: TYPOGRAPHY & TEXT SCALE]
+ * Single Source of Truth untuk tata huruf visual aplikasi: font-family (brand Nunito,
+ * sans Plus Jakarta Sans, mono JetBrains Mono) dan skala ukuran teks (display s.d. micro).
+ *
+ * NOTE:
+ * - Warna teks merujuk ke colorTokens.ts
+ * - Spacing layout & radius sudut berada di layoutTokens.ts
  */
 
 export const TYPOGRAPHY_TOKENS = {

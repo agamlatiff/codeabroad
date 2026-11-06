@@ -1,6 +1,14 @@
+import { COLOR_TOKENS } from './colorTokens'
+
 /**
+ * [DOMAIN: GAMIFICATION RULES & KODI MASCOT]
  * Single-responsibility token definitions for Duolingo gamification mechanics:
- * progress bars, economy rules, Kodi mascot emotions, speech bubbles, SFX, and destinations.
+ * economy rules, XP reward systems, streak milestones, league tiers,
+ * Kodi mascot emotions/sizes, and speech bubbles.
+ *
+ * NOTE:
+ * - Sound effects & BGM belong strictly in soundTokens.ts
+ * - Color palettes belong strictly in colorTokens.ts
  */
 
 export const PROGRESS_BAR_TOKENS = {
@@ -9,14 +17,14 @@ export const PROGRESS_BAR_TOKENS = {
     md: '14px',        // Standard quest & lesson tracker
     lg: '20px',        // Hero chunky milestone bar
   },
-  trackBg: '#E2E8F0',  // Recessed light groove
-  trackBorder: '#CBD5E1',
+  trackBg: COLOR_TOKENS.surface.border,      // Recessed light groove (#E2E8F0)
+  trackBorder: COLOR_TOKENS.surface.borderHover, // (#CBD5E1)
   colors: {
-    blue: '#2563EB',
-    cyan: '#38BDF8',
-    xp: '#F59E0B',
-    streak: '#FB923C',
-    emerald: '#10B981',
+    blue: COLOR_TOKENS.brand[600],           // (#2563EB)
+    cyan: COLOR_TOKENS.cyan[400],            // (#38BDF8)
+    xp: COLOR_TOKENS.gamified.xp,            // (#F5B942)
+    streak: COLOR_TOKENS.gamified.streak,    // (#FB923C)
+    emerald: COLOR_TOKENS.gamified.verified, // (#10B981)
   },
   glow: {
     blue: '0 0 12px rgba(37, 99, 235, 0.35)',
@@ -68,70 +76,3 @@ export const SPEECH_BUBBLE_TOKENS = {
   radius: '1.25rem',  // 20px
   shadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
 } as const
-
-export const SFX_TOKENS = {
-  buttonTap: '/sounds/button-tap.mp3',
-  stampSlam: '/sounds/stamp-slam.mp3',
-  streakFlame: '/sounds/streak-flame.mp3',
-  xpGain: '/sounds/xp-gain.mp3',
-  airportChime: '/sounds/airport-chime.mp3',
-  questComplete: '/sounds/quest-complete.mp3',
-  errorWobble: '/sounds/error-wobble.mp3',
-} as const
-
-export const DESTINATION_TOKENS = {
-  origin: {
-    code: 'CGK',
-    city: 'Jakarta',
-    country: 'Indonesia',
-    flag: '🇮🇩',
-    airport: 'Soekarno-Hatta Int Airport',
-  },
-  targets: {
-    JP: {
-      code: 'HND',
-      city: 'Tokyo',
-      country: 'Jepang',
-      flag: '🇯🇵',
-      airport: 'Haneda International Airport',
-      currency: 'JPY',
-      visa: 'Engineer / Specialist in Humanities',
-      flightNumber: 'CA-2026',
-      timezoneOffset: '+09:00',
-    },
-    DE: {
-      code: 'BER',
-      city: 'Berlin',
-      country: 'Jerman',
-      flag: '🇩🇪',
-      airport: 'Berlin Brandenburg Airport',
-      currency: 'EUR',
-      visa: 'EU Blue Card',
-      flightNumber: 'CA-2026',
-      timezoneOffset: '+02:00',
-    },
-    SG: {
-      code: 'SIN',
-      city: 'Singapore',
-      country: 'Singapura',
-      flag: '🇸🇬',
-      airport: 'Changi International Airport',
-      currency: 'SGD',
-      visa: 'Employment Pass (EP)',
-      flightNumber: 'CA-2026',
-      timezoneOffset: '+08:00',
-    },
-    UK: {
-      code: 'LHR',
-      city: 'London',
-      country: 'Inggris',
-      flag: '🇬🇧',
-      airport: 'Heathrow International Airport',
-      currency: 'GBP',
-      visa: 'Skilled Worker Visa',
-      flightNumber: 'CA-2026',
-      timezoneOffset: '+01:00',
-    },
-  },
-} as const
-

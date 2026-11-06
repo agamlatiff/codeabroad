@@ -1,6 +1,11 @@
 /**
- * Single-responsibility token definitions for mobile haptic vibration patterns,
- * tactile animation timing curves, and micro-interaction keyframes.
+ * [DOMAIN: HAPTIC VIBRATION & TACTILE MOTION]
+ * Single Source of Truth untuk pola getaran hardware sentuh (navigator.vibrate)
+ * dan kurva timing animasi mikrotaktil tombol (spring easing & keyframes).
+ *
+ * NOTE:
+ * - Efek suara audio synthesizer berada di soundTokens.ts
+ * - Ketinggian bayangan fisik tombol berada di elevationTokens.ts
  */
 
 export const HAPTIC_PATTERNS = {

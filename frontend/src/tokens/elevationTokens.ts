@@ -1,6 +1,11 @@
 /**
- * Single-responsibility token definitions for 3D tactile physics shadows,
- * glassmorphism blur presets, and z-index stacking hierarchy.
+ * [DOMAIN: ELEVATION, 3D DEPTH & STACKING]
+ * Single Source of Truth untuk Sumbu Z: bayangan fisik 3D tombol Duolingo (tactile resting,
+ * hover, pressed active state, glow), efek kaca frosted glass, dan urutan tumpukan z-index layer.
+ *
+ * NOTE:
+ * - Warna bayangan merujuk ke colorTokens.ts
+ * - Ukuran tombol & border radius berada di layoutTokens.ts
  */
 
 export const SHADOW_TOKENS = {

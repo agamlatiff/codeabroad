@@ -1,6 +1,12 @@
 /**
- * Single-responsibility token definitions for layout breakpoints, container geometry,
- * border radii, and form input controls.
+ * [DOMAIN: LAYOUT GEOMETRY & CORNER RADII]
+ * Single Source of Truth untuk tata letak geometris: batas lebar maksimal kontainer,
+ * responsive breakpoints (mobile/tablet/desktop), border radius kebulatan sudut (RADIUS_TOKENS),
+ * dan ukuran kontrol formulir input.
+ *
+ * NOTE:
+ * - Warna background/border formulir merujuk ke colorTokens.ts
+ * - Ketinggian bayangan tombol berada di elevationTokens.ts
  */
 
 export const LAYOUT_TOKENS = {

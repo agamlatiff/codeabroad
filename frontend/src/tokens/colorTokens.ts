@@ -1,6 +1,11 @@
 /**
- * Single-responsibility token definitions for surfaces, brand palettes,
- * gamified semantic colors, typography colors, and curated gradients.
+ * [DOMAIN: COLORING & SURFACES]
+ * Single Source of Truth untuk seluruh palet warna: surfaces/canvas, brand electric blue,
+ * cyan flight accents, semantic gamified colors (streak, xp, verified, hanko), dan alert system.
+ *
+ * NOTE:
+ * - Font & text scale belong in typographyTokens.ts
+ * - 3D shadows & depth belong in elevationTokens.ts
  */
 
 export const COLOR_TOKENS = {

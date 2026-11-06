@@ -1,6 +1,11 @@
 /**
- * Single source of truth for sound effects (SFX) tokens,
- * procedural Web Audio synthesis configurations, and sound settings.
+ * [DOMAIN: PROCEDURAL SOUND & SFX]
+ * Single Source of Truth untuk efek suara auditori (SFX), tangga nada BGM ambient
+ * budaya (Universal Lo-Fi Focus vs Japan Zen Pentatonic), dan preset synthesizer.
+ *
+ * NOTE:
+ * - Getaran hardware sentuh berada di hapticTokens.ts
+ * - Logika aturan game & reward XP berada di gamificationTokens.ts
  */
 
 export type SoundEffectType =
