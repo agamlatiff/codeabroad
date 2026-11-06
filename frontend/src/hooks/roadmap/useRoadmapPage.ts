@@ -19,6 +19,9 @@ const isViewMode = (value: string | null): value is CurriculumViewMode =>
   value === 'map' || value === 'syllabus'
 
 const readStoredViewMode = (): CurriculumViewMode => {
+  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
+    return DEFAULT_VIEW_MODE
+  }
   try {
     const stored = localStorage.getItem(CURRICULUM_VIEW_STORAGE_KEY)
     if (isViewMode(stored)) return stored
@@ -104,12 +107,17 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const currentTrack = roadmap?.slug || requestedTrack
   const error = queryError instanceof Error ? queryError.message : null
 
-  // ── 3. DERIVED METRICS (LIGHTWEIGHT DIRECT COMPUTATION) ──
-  // No excessive useMemo chains needed for small arrays (~5 modules, ~15 quests)
+  // ── 3. DERIVED METRICS (SINGLE-PASS O(N) LINEAR COMPUTATION) ──
+  // Compute total and completed counts in one pass without intermediate array allocation
   const units: SequentialCurriculumUnit[] = mapModulesToSequentialUnits(roadmap?.modules)
-  const allParts = units.flatMap((u) => u.parts)
-  const totalPartsCount = allParts.length
-  const completedPartsCount = allParts.filter((p) => p.is_completed).length
+  let totalPartsCount = 0
+  let completedPartsCount = 0
+  for (const u of units) {
+    for (const p of u.parts) {
+      totalPartsCount++
+      if (p.is_completed) completedPartsCount++
+    }
+  }
 
   // Single source of truth: progress is derived from completed parts so the
   // percentage always matches the "completed / total" counter shown in the UI.
