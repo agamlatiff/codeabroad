@@ -1,154 +1,117 @@
-import { useState, useEffect, useMemo } from 'react'
-import { useDashboard } from '../hooks/useDashboard'
-import { useQuests } from '../hooks/useQuests'
-import { useRoadmap } from '../hooks/roadmap/useRoadmap'
-import { authService } from '../services/authService'
-import { NavRail } from '../components/layout/NavRail'
-import { AppTopBar } from '../components/layout/AppTopBar'
-import { AppRightSidebar } from '../components/layout/AppRightSidebar'
+import { AppLeftSidebar } from '../components/layout/left-sidebar/AppLeftSidebar'
+import { AppTopBar } from '../components/layout/top-bar/AppTopBar'
+import { AppRightSidebar } from '../components/layout/right-sidebar/AppRightSidebar'
 import { CurriculumPathMap } from '../components/game/CurriculumPathMap'
+import { RoadmapUnitCard } from '../components/roadmap/RoadmapUnitCard'
+import { CurriculumViewToggle } from '../components/roadmap/CurriculumViewToggle'
 import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
 import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
-import { triggerHaptic } from '../utils/haptics'
+import { useRoadmapPage } from '../hooks/roadmap/useRoadmapPage'
+import { LockSimple } from '@phosphor-icons/react'
 
 export const DashboardPage = () => {
-  const { profile, actions } = useDashboard()
-  const { user } = profile
-  const { dailyQuests } = useQuests()
-
-  const [activeTrack, setActiveTrack] = useState(() => {
-    return user?.primary_stack || user?.career_path?.slug || 'golang'
-  })
-  const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
-  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
-  const { roadmap } = useRoadmap(activeTrack)
-  const [questCompletionTick, setQuestCompletionTick] = useState(0)
-
-  // Listen for real-time quest completions across the application
-  useEffect(() => {
-    const handler = () => setQuestCompletionTick((prev) => prev + 1)
-    window.addEventListener('codeabroad_quest_completed', handler)
-    window.addEventListener('storage', handler)
-    return () => {
-      window.removeEventListener('codeabroad_quest_completed', handler)
-      window.removeEventListener('storage', handler)
-    }
-  }, [])
-
-  // Aggregated set of all completed quest IDs
-  const completedQuestsSet = useMemo(() => {
-    const set = new Set<string>()
-    if (dailyQuests) {
-      dailyQuests.forEach((q) => {
-        if (q.user_status === 'completed') set.add(q.id)
-      })
-    }
-    void questCompletionTick // trigger re-evaluation when storage tick updates
-    try {
-      const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
-      if (Array.isArray(stored)) {
-        stored.forEach((id: string) => set.add(id))
-      }
-    } catch {
-      /* ignore invalid storage format */
-    }
-    return set
-  }, [dailyQuests, questCompletionTick])
-
-  // Dynamic career track progress aggregation (completed vs total modules)
-  const trackProgressMap = useMemo(() => {
-    let completed = 0
-    let total = 0
-
-    if (roadmap?.stations && roadmap.stations.length > 0) {
-      roadmap.stations.forEach((st) => {
-        if (st.chapters && st.chapters.length > 0) {
-          st.chapters.forEach((ch) => {
-            if (ch.quests && ch.quests.length > 0) {
-              total += ch.quests.length
-              completed += ch.quests.filter((q) => q.status === 'completed' || completedQuestsSet.has(q.id)).length
-            } else {
-              total += 1
-              if (ch.is_completed || completedQuestsSet.has(ch.id)) completed += 1
-            }
-          })
-        } else {
-          total += 1
-          if (st.is_completed || completedQuestsSet.has(st.id)) completed += 1
-        }
-      })
-    }
-
-    const localCount = completedQuestsSet.size
-    const effectiveCompleted = Math.max(completed, localCount)
-    const effectiveTotal = total > 0 ? total : 10
-
-    return {
-      [activeTrack]: {
-        completed: Math.min(effectiveCompleted, effectiveTotal),
-        total: effectiveTotal,
-      },
-    }
-  }, [roadmap, activeTrack, completedQuestsSet])
-
-  // Synchronize activeTrack when user profile arrives from backend
-  const userTrack = user?.primary_stack || user?.career_path?.slug
-  const [prevUserTrack, setPrevUserTrack] = useState(userTrack)
-  if (userTrack && userTrack !== prevUserTrack) {
-    setPrevUserTrack(userTrack)
-    setActiveTrack(userTrack)
-  }
-
-  const handleSelectTrack = async (newTrack: string) => {
-    triggerHaptic('tap')
-    setActiveTrack(newTrack)
-    try {
-      await authService.updateProfile({ primary_stack: newTrack })
-      actions.refetchProfile()
-    } catch {
-      // Gracefully continue with local state if backend update fails
-    }
-  }
-
-  // Active Career Track progress stats for top bar
-  const activeTrackStats = trackProgressMap[activeTrack] || { completed: 0, total: 10 }
-  const activeTrackPercent =
-    activeTrackStats.total > 0
-      ? Math.min(100, Math.round((activeTrackStats.completed / activeTrackStats.total) * 100))
-      : 0
+  const {
+    currentTrack,
+    units,
+    totalPartsCount,
+    completedPartsCount,
+    overallProgress,
+    trackProgressMap,
+    isLoading,
+    error,
+    refetch,
+    isTrackSwitcherOpen,
+    setIsTrackSwitcherOpen,
+    handleCloseTrackSwitcher,
+    isLeaderboardOpen,
+    setIsLeaderboardOpen,
+    isMobileDrawerOpen,
+    setIsMobileDrawerOpen,
+    isUnitCollapsed,
+    toggleUnitCollapse,
+    lockedNotification,
+    handleLockedNodeClick,
+    handleSelectTrack,
+    handleStartQuest,
+    viewMode,
+    setViewMode,
+  } = useRoadmapPage()
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. LEFT 76PX COMPACT NAV RAIL (SSOT) ── */}
-      <NavRail />
+      <AppLeftSidebar />
 
       {/* ── 2. MAIN APP CANVAS (CENTER STAGE + RIGHT SIDEBAR) ── */}
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
         {/* ══════ CENTER CONTENT STAGE (flex-1) ══════ */}
-        <main className="flex-1 min-w-0 px-4 sm:px-8 py-6 pb-12 space-y-6">
-          {/* ── 1. CLEAN TOP CONTEXTUAL BAR (SSOT - AppTopBar) ── */}
+        <main className="flex-1 min-w-0 px-3.5 sm:px-8 py-5 sm:py-6 pb-12 space-y-6">
+          {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - AppTopBar) ── */}
           <AppTopBar
-            activeTrack={activeTrack}
-            onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
+            activeTrack={currentTrack}
+            onOpenCourseSwitcher={() => setIsTrackSwitcherOpen(true)}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
             onOpenMobileSidebar={() => setIsMobileDrawerOpen(true)}
-            completedCount={activeTrackStats.completed}
-            totalCount={activeTrackStats.total}
-            progressPercent={activeTrackPercent}
+            completedCount={completedPartsCount}
+            totalCount={totalPartsCount}
+            progressPercent={overallProgress}
             unitLabel="Modul"
           />
 
-
-          {/* ── 2. THE SEQUENTIAL NUMBERED LEARNING PATH (PANGGUNG UTAMA) ── */}
-          <CurriculumPathMap
-            trackSlug={activeTrack}
+          {/* ── 2. DUAL VIEW MODE TOGGLE (PETA RPG VS SILABUS MODUL) ── */}
+          <CurriculumViewToggle
+            viewMode={viewMode}
+            onChangeViewMode={setViewMode}
+            totalUnitsCount={units.length}
           />
+
+          {/* ── 3. NETWORK ERROR BANNER ── */}
+          {error && (
+            <div className="bg-rose-50 border-2 border-rose-300 rounded-3xl p-5 text-rose-800 flex items-center justify-between shadow-xs">
+              <div className="flex items-center gap-2.5">
+                <span className="text-lg">⚠️</span>
+                <span className="text-xs font-semibold">{error}</span>
+              </div>
+              <button
+                type="button"
+                onClick={refetch}
+                className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+              >
+                Coba Lagi
+              </button>
+            </div>
+          )}
+
+          {/* ── 4. CONDITIONAL VIEW: PETA RPG vs SILABUS MODUL ── */}
+          {viewMode === 'map' ? (
+            /* ── A. THE SEQUENTIAL NUMBERED LEARNING PATH (PANGGUNG UTAMA RPG) ── */
+            <CurriculumPathMap trackSlug={currentTrack} />
+          ) : (
+            /* ── B. DIRECT SEQUENTIAL TECHNICAL UNIT CARDS (ACCORDION VIEW) ── */
+            <div className="space-y-6 pt-1">
+              {isLoading && (
+                <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center text-slate-500 text-xs font-semibold animate-pulse">
+                  Memuat silabus kurikulum spesialisasi...
+                </div>
+              )}
+
+              {units.map((unit) => (
+                <RoadmapUnitCard
+                  key={unit.id}
+                  unit={unit}
+                  isCollapsed={isUnitCollapsed(unit)}
+                  onToggleCollapse={() => toggleUnitCollapse(unit)}
+                  onLockedClick={handleLockedNodeClick}
+                  onStartQuest={handleStartQuest}
+                />
+              ))}
+            </div>
+          )}
         </main>
 
-        {/* ══════ RIGHT SIDEBAR RAIL (SSOT - Subtask 34.3) ══════ */}
+        {/* ══════ RIGHT SIDEBAR RAIL (SSOT) ══════ */}
         <AppRightSidebar
-          activeTrack={activeTrack}
+          activeTrack={currentTrack}
           isMobileDrawerOpen={isMobileDrawerOpen}
           onCloseMobileDrawer={() => setIsMobileDrawerOpen(false)}
         />
@@ -156,18 +119,28 @@ export const DashboardPage = () => {
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
       <RoadmapTrackSwitcherModal
-        isOpen={isCourseSwitcherOpen}
-        onClose={() => setIsCourseSwitcherOpen(false)}
-        currentTrack={activeTrack}
+        isOpen={isTrackSwitcherOpen}
+        onClose={handleCloseTrackSwitcher}
+        currentTrack={currentTrack}
         onSelectTrack={handleSelectTrack}
         trackProgressMap={trackProgressMap}
       />
 
-      {/* ── TOKYO LEADERBOARD MODAL ── */}
+      {/* ── 4. TOKYO LEADERBOARD MODAL ── */}
       <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}
       />
+
+      {/* ── 5. TOAST NOTIFICATION FOR LOCKED NODES ── */}
+      {lockedNotification && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200">
+          <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
+            <LockSimple weight="bold" className="w-4 h-4" />
+          </div>
+          <span className="text-sm font-semibold">{lockedNotification}</span>
+        </div>
+      )}
     </div>
   )
 }

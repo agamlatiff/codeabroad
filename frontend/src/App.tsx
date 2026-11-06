@@ -12,12 +12,8 @@ import { NotFoundPage } from './pages/NotFoundPage'
 import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
 import { ErrorBoundary } from './components/common/ErrorBoundary'
 
-import { useAuthStore } from './store/authStore'
-
 function RoadmapRedirect() {
-  const { user } = useAuthStore()
-  const track = user?.primary_stack || user?.career_path?.slug || 'golang'
-  return <Navigate to={`/roadmap/${track}`} replace />
+  return <Navigate to="/dashboard?view=syllabus" replace />
 }
 
 function App() {

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef, useEffect } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import { roadmapService } from '../../services/roadmapService'
@@ -10,18 +10,53 @@ import { mapModulesToSequentialUnits } from '../../utils/roadmapMapper'
 import { PROFILE_QUERY_KEY } from '../layout/top-bar/useAppTopBar'
 
 export const ROADMAP_QUERY_KEY = 'roadmap' as const
+export const CURRICULUM_VIEW_STORAGE_KEY = 'codeabroad_curriculum_view' as const
+export type CurriculumViewMode = 'map' | 'syllabus'
 const TOAST_DURATION_MS = 3200
 
 /**
- * 1:1 Headless controller hook for RoadmapPage.
+ * 1:1 Headless controller hook for RoadmapPage and DashboardPage.
  * Orchestrates backend syllabus synchronization via TanStack Query,
- * career track switching, unit accordion state, and modal dialog visibility.
+ * career track switching, unit accordion state, view mode (Map vs Syllabus),
+ * and modal dialog visibility.
  */
 export const useRoadmapPage = (explicitTrack?: string) => {
   const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { track: routeTrack } = useParams<{ track?: string }>()
   const { user } = useAuthStore()
+
+  // 0. Curriculum View Mode (Peta RPG vs Silabus Modul)
+  const [viewMode, setViewModeState] = useState<CurriculumViewMode>(() => {
+    const queryView = searchParams.get('view')
+    if (queryView === 'map' || queryView === 'syllabus') {
+      return queryView
+    }
+    if (location.pathname.startsWith('/roadmap')) {
+      return 'syllabus'
+    }
+    try {
+      const stored = localStorage.getItem(CURRICULUM_VIEW_STORAGE_KEY)
+      if (stored === 'map' || stored === 'syllabus') {
+        return stored
+      }
+    } catch {
+      /* ignore storage failure */
+    }
+    return 'map'
+  })
+
+  const setViewMode = useCallback((mode: CurriculumViewMode) => {
+    triggerHaptic('tap')
+    setViewModeState(mode)
+    try {
+      localStorage.setItem(CURRICULUM_VIEW_STORAGE_KEY, mode)
+    } catch {
+      /* ignore storage failure */
+    }
+  }, [])
 
   // 1. Resolve requested track from explicit prop, URL route, or user's registered stack
   const userRegisteredTrack = user?.primary_stack || user?.career_path?.slug || undefined
@@ -209,6 +244,8 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     handleLockedNodeClick,
     handleSelectTrack,
     handleStartQuest,
+    viewMode,
+    setViewMode,
   }
 }
 

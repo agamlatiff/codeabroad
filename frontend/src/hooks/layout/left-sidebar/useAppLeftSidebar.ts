@@ -3,7 +3,6 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   SquaresFour,
-  Books,
   Target,
   Trophy,
 } from '@phosphor-icons/react'
@@ -37,22 +36,13 @@ export const useAppLeftSidebar = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>('adventurer')
 
-  const userTrack = user?.primary_stack || user?.career_path?.slug || 'golang'
-  const roadmapHref = `/roadmap/${userTrack}`
-
   const navItems: LeftSidebarNavItem[] = useMemo(() => {
     const rawItems = [
       {
         label: 'Belajar',
-        tooltip: 'Belajar • Dashboard Utama',
+        tooltip: 'Belajar • Peta & Silabus',
         href: '/dashboard',
         icon: SquaresFour,
-      },
-      {
-        label: 'Roadmap',
-        tooltip: 'Roadmap • Kurikulum & Modul',
-        href: roadmapHref,
-        icon: Books,
       },
       {
         label: 'Misi',
@@ -73,9 +63,10 @@ export const useAppLeftSidebar = () => {
       ...item,
       isActive:
         location.pathname === item.href ||
-        (item.label === 'Roadmap' && location.pathname.startsWith('/roadmap')),
+        (item.href === '/dashboard' &&
+          (location.pathname === '/dashboard' || location.pathname.startsWith('/roadmap'))),
     }))
-  }, [location.pathname, roadmapHref])
+  }, [location.pathname])
 
   const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
     setAvatarStyleState(style)
