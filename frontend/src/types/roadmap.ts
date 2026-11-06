@@ -55,7 +55,7 @@ export interface SequentialPartItem {
   title: string
   subtitle: string
   chipLabel: string
-  category: 'code' | 'nihongo' | 'boss'
+  category: 'code' | 'language' | 'boss'
   difficulty: 'Pemula' | 'Menengah' | 'Sulit'
   estimatedMinutes: number
   xpReward: number
@@ -98,7 +98,7 @@ export interface CareerTrackOption {
   group?: 'foundation' | 'career'
 }
 
-export type MapNodeCategory = 'code' | 'nihongo'
+export type MapNodeCategory = 'code' | 'language'
 
 export interface CurriculumPartNode {
   id: string

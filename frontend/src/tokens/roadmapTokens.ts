@@ -157,7 +157,7 @@ export const PART_CATEGORY_TOKENS: Record<
     chip: 'bg-slate-100 text-slate-700 border border-slate-200',
     lockedCardAccent: '',
   },
-  nihongo: {
+  language: {
     chip: 'bg-rose-100 text-rose-700 border border-rose-200',
     lockedCardAccent: 'bg-rose-50/40 border-rose-200/60',
   },
@@ -291,12 +291,12 @@ export interface MapCategoryStyleTokens {
 }
 
 export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens> = {
-  nihongo: {
+  language: {
     popoverBorder: 'border-rose-400',
     popoverLabelColor: 'text-rose-600',
     badgeClass: 'bg-rose-50 text-rose-600 border border-rose-200',
     activeButtonVariant: 'rose',
-    activeButtonText: 'MULAI NIHONGO',
+    activeButtonText: 'MULAI MATERI BAHASA',
     discCompleted: 'bg-rose-500 shadow-[0_5px_0_0_#9F1239]',
     discActive: 'bg-rose-500 shadow-[0_6px_0_0_#BE123C] ring-8 ring-rose-100',
     modalIconBgActive: 'bg-rose-500 border-rose-600 text-white shadow-[0_3px_0_0_#9F1239]',
@@ -318,7 +318,7 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
 }
 
 export const resolveMapNodeCategory = (category?: string): MapNodeCategory =>
-  category === 'nihongo' ? 'nihongo' : 'code'
+  category === 'language' || category === 'nihongo' ? 'language' : 'code'
 
 export const resolveMapCategoryTokens = (category?: string): MapCategoryStyleTokens =>
   MAP_CATEGORY_TOKENS[resolveMapNodeCategory(category)]

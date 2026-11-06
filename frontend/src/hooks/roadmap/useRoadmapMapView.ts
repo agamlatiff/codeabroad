@@ -103,7 +103,10 @@ export const useRoadmapMapView = ({
                   status: questStatus,
                   route: `/learn/${q.id}`,
                   xpReward: q.xp_reward || MAP_MILESTONE_REWARDS.defaultQuestXp,
-                  category: (q.type as string) === 'nihongo' ? 'nihongo' : 'code',
+                  category:
+                    (q.type as string) === 'nihongo' || (q.type as string) === 'language'
+                      ? 'language'
+                      : 'code',
                   badgeLabel: (q.type as string) === 'nihongo' ? 'NIHONGO' : undefined,
                 })
               })

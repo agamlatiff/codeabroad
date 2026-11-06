@@ -27,13 +27,21 @@ export const mapModulesToSequentialUnits = (
       m.chapters.forEach((ch) => {
         if (ch.quests && ch.quests.length > 0) {
           ch.quests.forEach((q) => {
+            const isLang =
+              (q.type as string) === 'language' ||
+              (q.type as string) === 'nihongo' ||
+              q.chip_label?.toLowerCase().includes('nihongo') ||
+              q.chip_label?.toLowerCase().includes('bahasa') ||
+              q.title.toLowerCase().includes('kosakata') ||
+              q.title.toLowerCase().includes('mensetsu')
+
             parts.push({
               id: q.id,
               globalPartNumber: partCounter++,
               title: q.title,
               subtitle: ch.title,
               chipLabel: q.chip_label || `S-${m.module_number}.${ch.chapter_number}`,
-              category: q.type === 'boss' ? 'boss' : 'code',
+              category: q.type === 'boss' ? 'boss' : isLang ? 'language' : 'code',
               difficulty: (q.difficulty as 'Pemula' | 'Menengah' | 'Sulit') || 'Pemula',
               estimatedMinutes: q.estimated_minutes || 10,
               xpReward: q.xp_reward || 50,

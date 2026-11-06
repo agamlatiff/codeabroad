@@ -1,12 +1,10 @@
-import type { GuidebookContent } from '../components/roadmap/RoadmapGuidebookModal'
-
 export interface SequentialPartItem {
   id: string
   globalPartNumber: number
   title: string
   subtitle: string
   chipLabel: string
-  category: 'code' | 'nihongo' | 'capstone'
+  category: 'code' | 'language' | 'capstone'
   difficulty: 'Pemula' | 'Menengah' | 'Sulit'
   estimatedMinutes: number
   xpReward: number
@@ -42,7 +40,7 @@ export interface UnitTheme {
   btnGuideBg: string
 }
 
-// ── 1. GOLANG BACKEND ENGINEERING CURRICULUM ────────────────────────────────
+// â”€â”€ 1. GOLANG BACKEND ENGINEERING CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'unit-1-fondasi-go',
@@ -82,8 +80,8 @@ export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 3,
         title: 'Aisatsu & Etika Code Review Tim Engineering',
         subtitle: 'Salam pagi standup, perkenalan diri & budaya Pull Request tim engineering',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -127,10 +125,10 @@ export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'part-6-asakai-standup-meeting',
         globalPartNumber: 6,
-        title: 'Asakai (朝会) Standup & Laporan Tiket Jira',
+        title: 'Asakai (æœä¼š) Standup & Laporan Tiket Jira',
         subtitle: 'Format laporan harian Jepang: kinou, kyou, kadai & blockers',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 12,
         xpReward: 50,
@@ -164,7 +162,7 @@ export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 8,
         title: 'Multi-Stage Dockerfile Go Binary (< 25MB)',
         subtitle: 'Kemas binary Go tanpa compiler overhead siap produksi cloud',
-        chipLabel: '⚙️ DOCKER',
+        chipLabel: 'âš™ï¸ DOCKER',
         category: 'code',
         difficulty: 'Menengah',
         estimatedMinutes: 15,
@@ -176,8 +174,8 @@ export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 9,
         title: 'Shougai Houkoku & Incident Report Server',
         subtitle: 'Komunikasi tanggap darurat downtime & penulisan post-mortem Jepang',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -223,8 +221,8 @@ export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 12,
         title: 'Simulasi Wawancara Kerja Tokyo (Mensetsu Final)',
         subtitle: 'Live coding explanation, pitching arsitektur & negosiasi gaji Tokyo',
-        chipLabel: '🌸 MENSETSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ MENSETSU',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 30,
         xpReward: 100,
@@ -234,7 +232,7 @@ export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   },
 ]
 
-// ── 2. REACT & TYPESCRIPT FRONTEND CURRICULUM ───────────────────────────────
+// â”€â”€ 2. REACT & TYPESCRIPT FRONTEND CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const FRONTEND_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'fe-unit-1-ts-react',
@@ -274,8 +272,8 @@ export const FRONTEND_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 3,
         title: 'Aisatsu & Jikoshoukai di Tim Frontend Tokyo',
         subtitle: 'Salam pagi standup, perkenalan diri engineer web & budaya review PR',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -319,10 +317,10 @@ export const FRONTEND_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'fe-part-6-asakai-ui-bugs',
         globalPartNumber: 6,
-        title: 'Asakai (朝会) & Komunikasi Bug UI/UX',
+        title: 'Asakai (æœä¼š) & Komunikasi Bug UI/UX',
         subtitle: 'Menjelaskan ticket UI bug, browser compatibility, dan blocker dalam bahasa Jepang',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 12,
         xpReward: 50,
@@ -366,10 +364,10 @@ export const FRONTEND_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'fe-part-9-sekkeisho-ui-spec',
         globalPartNumber: 9,
-        title: 'Dokumen Sekkeisho (設計書) & Review Figma UI',
+        title: 'Dokumen Sekkeisho (è¨­è¨ˆæ›¸) & Review Figma UI',
         subtitle: 'Membaca spesifikasi teknis UI dan koordinasi dengan Product Designer Tokyo',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -415,8 +413,8 @@ export const FRONTEND_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 12,
         title: 'Simulasi Wawancara Kerja Tokyo Frontend (Mensetsu)',
         subtitle: 'Presentasi arsitektur web, live coding React & negosiasi penawaran kerja Tokyo',
-        chipLabel: '🌸 MENSETSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ MENSETSU',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 30,
         xpReward: 100,
@@ -426,7 +424,7 @@ export const FRONTEND_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   },
 ]
 
-// ── 3. DEVOPS & CLOUD INFRASTRUCTURE CURRICULUM ─────────────────────────────
+// â”€â”€ 3. DEVOPS & CLOUD INFRASTRUCTURE CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const DEVOPS_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'devops-unit-1-linux-automation',
@@ -466,8 +464,8 @@ export const DEVOPS_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 3,
         title: 'Aisatsu & Etika Onboarding Sysadmin Tokyo',
         subtitle: 'Salam pagi, etika eskalasi hak akses root & perkenalan diri tim infra',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -511,10 +509,10 @@ export const DEVOPS_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'devops-part-6-shougai-houkoku-infra',
         globalPartNumber: 6,
-        title: 'Shougai Houkoku (障害報告) & Komunikasi Insiden Server',
+        title: 'Shougai Houkoku (éšœå®³å ±å‘Š) & Komunikasi Insiden Server',
         subtitle: 'Menulis post-mortem downtime, root cause analysis & komunikasi darurat di Slack',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 12,
         xpReward: 50,
@@ -560,8 +558,8 @@ export const DEVOPS_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 9,
         title: 'Review Dokumen Sekkeisho & SLA 99.99%',
         subtitle: 'Membaca spesifikasi SLA ketersediaan server dan koordinasi jadwal maintenance',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -607,8 +605,8 @@ export const DEVOPS_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 12,
         title: 'Simulasi Wawancara Kerja Tokyo SRE/Cloud (Mensetsu)',
         subtitle: 'Troubleshooting arsitektur skenario outage & wawancara bilingual tim infra Tokyo',
-        chipLabel: '🌸 MENSETSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ MENSETSU',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 30,
         xpReward: 100,
@@ -618,7 +616,7 @@ export const DEVOPS_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   },
 ]
 
-// ── 4. FUNDAMENTAL PROGRAMMING CURRICULUM ────────────────────────────────────
+// â”€â”€ 4. FUNDAMENTAL PROGRAMMING CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const FUNDAMENTAL_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'fund-unit-1-cpu-memory',
@@ -658,8 +656,8 @@ export const FUNDAMENTAL_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 3,
         title: 'Aisatsu & Jikoshoukai Dasar Kantor Tokyo',
         subtitle: 'Salam pagi, perkenalan diri junior engineer & budaya kerja tim Tokyo',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -703,10 +701,10 @@ export const FUNDAMENTAL_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'fund-part-6-asakai-daily-standup',
         globalPartNumber: 6,
-        title: 'Asakai (朝会) Standup Meeting & Laporan Tiket',
+        title: 'Asakai (æœä¼š) Standup Meeting & Laporan Tiket',
         subtitle: 'Melaporkan progres tiket koding dan kendala teknis dalam bahasa Jepang',
-        chipLabel: '🌸 NIHONGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ NIHONGO',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 12,
         xpReward: 50,
@@ -752,8 +750,8 @@ export const FUNDAMENTAL_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 9,
         title: 'Simulasi Wawancara Fondasi IT Tokyo (Mensetsu)',
         subtitle: 'Pertanyaan logika dasar koding, pemahaman pointer & motivasi kerja di Tokyo',
-        chipLabel: '🌸 MENSETSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ MENSETSU',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 25,
         xpReward: 100,
@@ -763,7 +761,7 @@ export const FUNDAMENTAL_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   },
 ]
 
-// ── 5. TECH NIHONGO (BAHASA JEPANG IT TOKYO) CURRICULUM ─────────────────────
+// â”€â”€ 5. TECH NIHONGO (BAHASA JEPANG IT TOKYO) CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   {
     id: 'nihongo-unit-1-survival-onboarding',
@@ -779,8 +777,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 1,
         title: 'Aisatsu & Salam Hormat Kantor IT',
         subtitle: 'Ohayou gozaimasu, Otsukaresama desu, Osaki ni shitsurei shimasu',
-        chipLabel: '🌸 AISATSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ AISATSU',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 10,
         xpReward: 50,
@@ -791,8 +789,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 2,
         title: 'Jikoshoukai Profil Software Engineer',
         subtitle: 'Memperkenalkan tech stack, pengalaman koding & latar belakang dari Indonesia',
-        chipLabel: '🌸 PROFIL',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ PROFIL',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 12,
         xpReward: 50,
@@ -803,8 +801,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 3,
         title: 'Navigasi Kereta Yamanote, Suica & Konbini',
         subtitle: 'Beli kartu transportasi, tanya arah platform stasiun, dan pesan makanan',
-        chipLabel: '🌸 SEIKATSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ SEIKATSU',
+        category: 'language',
         difficulty: 'Pemula',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -826,8 +824,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 4,
         title: 'Pola Laporan Asakai Standup (Kinou/Kyou/Kadai)',
         subtitle: 'Lancar menyampaikan 3 poin: yang selesai kemarin, target hari ini, dan blocker',
-        chipLabel: '🌸 ASAKAI',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ ASAKAI',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -838,8 +836,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 5,
         title: 'Istilah Teknis Slack: Jissou, Fuguai & Kakunin',
         subtitle: 'Chatting profesional di Slack: laporan bug, konfirmasi spec & release announcement',
-        chipLabel: '🌸 SLACK IT',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ SLACK IT',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -850,8 +848,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 6,
         title: 'Review Pull Request & Etika Git Review',
         subtitle: 'Komentar PR sopan: saran refactoring, apresiasi kode, dan LGTM approval',
-        chipLabel: '🌸 GIT KEIGO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ GIT KEIGO',
+        category: 'language',
         difficulty: 'Menengah',
         estimatedMinutes: 15,
         xpReward: 50,
@@ -871,10 +869,10 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
       {
         id: 'nihongo-part-7-membaca-sekkeisho',
         globalPartNumber: 7,
-        title: 'Membaca Dokumen Sekkeisho (設計書) & Spec API',
+        title: 'Membaca Dokumen Sekkeisho (è¨­è¨ˆæ›¸) & Spec API',
         subtitle: 'Kuasai kosakata requirement: Youken Teigi, Kihon Sekkei, Shousai Sekkei',
-        chipLabel: '🌸 SEKKEISHO',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ SEKKEISHO',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 20,
         xpReward: 50,
@@ -885,8 +883,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 8,
         title: 'Menjelaskan Logika Kode saat Live Coding',
         subtitle: 'Frasa Jepang untuk menjelaskan algorithmic approach, complexity & trade-off',
-        chipLabel: '🌸 LIVE CODE',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ LIVE CODE',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 20,
         xpReward: 50,
@@ -897,8 +895,8 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
         globalPartNumber: 9,
         title: 'Simulasi Wawancara Kerja Tokyo (Mensetsu Final)',
         subtitle: 'Tanya jawab Shibou Douki, etika wawancara formal & negosiasi sponsor visa',
-        chipLabel: '🌸 MENSETSU',
-        category: 'nihongo',
+        chipLabel: 'ðŸŒ¸ MENSETSU',
+        category: 'language',
         difficulty: 'Sulit',
         estimatedMinutes: 30,
         xpReward: 100,
@@ -908,7 +906,7 @@ export const NIHONGO_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [
   },
 ]
 
-// ── 6. CURRICULUM TRACKS MAP (SSOT) ─────────────────────────────────────────
+// â”€â”€ 6. CURRICULUM TRACKS MAP (SSOT) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const CURRICULUM_TRACKS_MAP: Record<string, SequentialCurriculumUnit[]> = {
   golang: GOLANG_CURRICULUM_UNITS,
   backend: GOLANG_CURRICULUM_UNITS,
@@ -922,7 +920,7 @@ export const CURRICULUM_TRACKS_MAP: Record<string, SequentialCurriculumUnit[]> =
   nihongo: NIHONGO_CURRICULUM_UNITS,
 }
 
-// ── 7. DUOLINGO 3D TACTILE THEMES PER TRACK ─────────────────────────────────
+// â”€â”€ 7. DUOLINGO 3D TACTILE THEMES PER TRACK â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const TRACK_UNIT_THEMES: Record<string, Record<number, UnitTheme>> = {
   golang: {
     1: {
@@ -1083,178 +1081,3 @@ export const TRACK_UNIT_THEMES: Record<string, Record<number, UnitTheme>> = {
 TRACK_UNIT_THEMES['react'] = TRACK_UNIT_THEMES['frontend']
 TRACK_UNIT_THEMES['devops_aws'] = TRACK_UNIT_THEMES['devops']
 TRACK_UNIT_THEMES['cs_fundamental'] = TRACK_UNIT_THEMES['fundamental']
-
-// ── 8. COMPREHENSIVE GUIDEBOOK DATA PER UNIT ─────────────────────────────────
-export const COMPREHENSIVE_GUIDEBOOK_DATA: Record<string, GuidebookContent> = {
-  // Golang Guidebooks
-  'unit-1-fondasi-go': {
-    unitNumber: 1,
-    unitTag: 'SINTAKS DASAR & MEMORI POINTER',
-    title: 'Unit 1: Fondasi Sintaks Go & Memory Pointer',
-    summary:
-      'Go mengalokasikan variabel pada stack secara default dan memindahkannya ke heap hanya saat lolos analisis escape (escape analysis). Memahami pointer (& dan *) sangat penting untuk menghindari alokasi payload berlebih saat memanggil fungsi atau method.',
-    codeSnippetTitle: 'Manipulasi Pointer & Alokasi Memori Tanpa Copy',
-    codeSnippet: `package main\n\nimport "fmt"\n\ntype TokyoEngineer struct {\n    Name  string\n    Track string\n    Level int\n}\n\nfunc promoteLevel(eng *TokyoEngineer) {\n    // Dereferencing pointer langsung memodifikasi nilai memori asli\n    eng.Level++\n}\n\nfunc main() {\n    dev := TokyoEngineer{Name: "Kodi", Track: "Go Backend", Level: 1}\n    promoteLevel(&dev)\n    fmt.Println(dev.Level) // Output: 2 (zero payload copy)\n}`,
-    codeExplanation:
-      'Dengan meneruskan address &dev ke fungsi promoteLevel, kita menghindari overhead copy struct pada memori stack CPU.',
-    nihongoTerms: [
-      { term: '朝会 (Asakai)', reading: 'あさかい', meaning: 'Daily Standup Meeting pagi hari' },
-      { term: '実装 (Jissou)', reading: 'じっそう', meaning: 'Implementasi / Coding fitur' },
-      { term: '修正 (Shuusei)', reading: 'しゅうせい', meaning: 'Perbaikan bug / Revisi kode' },
-    ],
-    tokyoIndustryTip:
-      'Di code review perusahaan Tokyo (seperti Mercari atau Rakuten), selalu utamakan pointer receiver untuk method yang memodifikasi state struct atau struct berukuran besar.',
-  },
-  'unit-2-gin-rest-api': {
-    unitNumber: 2,
-    unitTag: 'REST API & CLEAN ARCHITECTURE',
-    title: 'Unit 2: Gin REST API & Middleware Engine',
-    summary:
-      'Gin menggunakan Radix Tree Routing berkecepatan tinggi dengan memory footprint yang minimal. Middleware chaining memungkinkan authentication guard JWT dan graceful error recovery sebelum request sampai ke controller layer.',
-    codeSnippetTitle: 'Standard Gin Router & JWT Auth Middleware',
-    codeSnippet: `func AuthGuard(secret string) gin.HandlerFunc {\n    return func(c *gin.Context) {\n        auth := c.GetHeader("Authorization")\n        if !strings.HasPrefix(auth, "Bearer ") {\n            c.AbortWithStatusJSON(401, gin.H{"error": "Unauthorized"})\n            return\n        }\n        token := strings.TrimPrefix(auth, "Bearer ")\n        claims, err := parseJWT(token, secret)\n        if err != nil {\n            c.AbortWithStatusJSON(401, gin.H{"error": "Invalid Token"})\n            return\n        }\n        c.Set("userID", claims.UserID)\n        c.Next()\n    }\n}`,
-    codeExplanation:
-      'Fungsi c.AbortWithStatusJSON() menghentikan pipeline middleware seketika, mencegah unauthorized request menyentuh logic handler.',
-    nihongoTerms: [
-      { term: '本番環境 (Honban Kankyou)', reading: 'ほんばんかんきょう', meaning: 'Production Environment' },
-      { term: '不具合 (Fuguai)', reading: 'ふぐあい', meaning: 'Bug / Defect sistem' },
-      { term: '確認 (Kakunin)', reading: 'かくにん', meaning: 'Konfirmasi / Verification' },
-    ],
-    tokyoIndustryTip:
-      'Selalu gunakan standard response envelope (success, message, data, error) agar mudah diintegrasikan dengan frontend TypeScript web app.',
-  },
-  'unit-3-concurrency': {
-    unitNumber: 3,
-    unitTag: 'GOROUTINE & CHANNEL PIPELINE',
-    title: 'Unit 3: Goroutine, Channel & Concurrency Patterns',
-    summary:
-      'Concurrency di Go menganut prinsip CSP (Communicating Sequential Processes): Jangan berkomunikasi dengan membagi memori, melainkan bagikan memori dengan berkomunikasi melalui Channels.',
-    codeSnippetTitle: 'Worker Pool Pattern dengan Buffered Channels',
-    codeSnippet: `func worker(id int, jobs <-chan int, results chan<- int) {\n    for j := range jobs {\n        results <- j * 2\n    }\n}\n\nfunc main() {\n    jobs := make(chan int, 100)\n    results := make(chan int, 100)\n    for w := 1; w <= 3; w++ {\n        go worker(w, jobs, results)\n    }\n}`,
-    codeExplanation:
-      'Buffered channel mencegah blocking yang tidak diinginkan dan membatasi jumlah goroutine simultan agar tidak terjadi memory leak.',
-    nihongoTerms: [
-      { term: '共有 (Kyouyuu)', reading: 'きょうゆう', meaning: 'Share / Berbagi informasi' },
-      { term: '同期 (Douki)', reading: 'どうき', meaning: 'Synchronous' },
-      { term: '非同期 (Hidouki)', reading: 'ひどうき', meaning: 'Asynchronous' },
-    ],
-    tokyoIndustryTip:
-      'Tes wawancara teknis senior backend di Tokyo kerap menguji penanganan context.Context timeout dan pencegahan goroutine leak.',
-  },
-  'unit-4-postgres-dan-pgx': {
-    unitNumber: 4,
-    unitTag: 'POSTGRESQL & PGX CONNECTION POOL',
-    title: 'Unit 4: Database Pooling Pgx & Clean Architecture',
-    summary:
-      'Menggunakan pgxpool untuk mengelola koneksi database secara efisien dengan prepared statements, database migrations, dan pemisahan layer Entity, Repository, Usecase, dan Handler.',
-    codeSnippetTitle: 'Clean Architecture Repository Interface & Pgxpool',
-    codeSnippet: `type UserRepository interface {\n    GetByID(ctx context.Context, id string) (*domain.User, error)\n}\n\ntype pgUserRepo struct {\n    pool *pgxpool.Pool\n}\n\nfunc (r *pgUserRepo) GetByID(ctx context.Context, id string) (*domain.User, error) {\n    var u domain.User\n    err := r.pool.QueryRow(ctx, "SELECT id, name FROM users WHERE id=$1", id).Scan(&u.ID, &u.Name)\n    return &u, err\n}`,
-    codeExplanation:
-      'Interface repository mengisolasi business logic usecase dari query SQL mentah sehingga mudah diuji coba dengan unit test mock.',
-    nihongoTerms: [
-      { term: '設計書 (Sekkeisho)', reading: 'せっけいしょ', meaning: 'Dokumen Spesifikasi Desain' },
-      { term: '要件定義 (Youken Teigi)', reading: 'ようけんていぎ', meaning: 'Definisi Kebutuhan Sistem' },
-      { term: '面接 (Mensetsu)', reading: 'めんせつ', meaning: 'Wawancara Kerja Tokyo' },
-    ],
-    tokyoIndustryTip:
-      'Saat wawancara kerja di Tokyo, recruiter sangat mengapresiasi pemahaman Clean Architecture dan arsitektur anti-tight-coupling.',
-  },
-
-  // Frontend React Guidebooks
-  'fe-unit-1-ts-react': {
-    unitNumber: 1,
-    unitTag: 'TYPESCRIPT & COMPONENT ARCHITECTURE',
-    title: 'Unit 1: Strict TypeScript & Component Decoupling',
-    summary:
-      'TypeScript strict typing mencegah bug runtime pada fase kompilasi. Dengan generic constraints dan type unions, Anda membangun arsitektur komponen React yang reusable tanpa dependensi kaku.',
-    codeSnippetTitle: 'Generic Props Component & Discriminated Union',
-    codeSnippet: `type ButtonProps<T extends React.ElementType> = {\n  as?: T\n  variant: 'primary' | 'secondary' | 'danger'\n  children: React.ReactNode\n} & React.ComponentPropsWithoutRef<T>\n\nexport const TactileButton = <T extends React.ElementType = 'button'>({\n  as,\n  variant,\n  children,\n  ...props\n}: ButtonProps<T>) => {\n  const Component = as || 'button'\n  return <Component className={\`btn btn-\${variant}\`} {...props}>{children}</Component>\n}`,
-    codeExplanation:
-      'Polymorphic component memungkinkan button dirender sebagai tag <button> atau <Link> dengan full type safety.',
-    nihongoTerms: [
-      { term: '画面 (Gamen)', reading: 'がめん', meaning: 'Screen / UI Tampilan' },
-      { term: '共通化 (Kyoutsuuka)', reading: 'きょうつうか', meaning: 'Standardisasi / Komponen Bersama' },
-      { term: '仕様 (Shiyou)', reading: 'しよう', meaning: 'Spesifikasi Fitur' },
-    ],
-    tokyoIndustryTip:
-      'Tim frontend Tokyo sangat menghargai zero-warning strict TypeScript config (noImplicitAny, strictNullChecks).',
-  },
-  'fe-unit-2-custom-hooks-api': {
-    unitNumber: 2,
-    unitTag: 'CUSTOM HOOKS & REST API INTEGRATION',
-    title: 'Unit 2: Custom Hooks, Form State & REST API',
-    summary:
-      'Pisahkan logika bisnis dan data fetching dari tampilan JSX dengan Custom Hooks. Padukan dengan Zod schema parsing untuk memvalidasi JSON response sebelum dikonsumsi state komponen.',
-    codeSnippetTitle: 'Type-Safe Data Fetching Custom Hook',
-    codeSnippet: `export const useUserQuests = (userId: string) => {\n  const [quests, setQuests] = useState<Quest[]>([])\n  const [isLoading, setIsLoading] = useState(true)\n\n  useEffect(() => {\n    const fetchQuests = async () => {\n      try {\n        const res = await api.get(\`/users/\${userId}/quests\`)\n        const validated = QuestListSchema.parse(res.data)\n        setQuests(validated)\n      } finally {\n        setIsLoading(false)\n      }\n    }\n    fetchQuests()\n  }, [userId])\n\n  return { quests, isLoading }\n}`,
-    codeExplanation:
-      'Zod schema parsing memverifikasi bahwa struktur data dari backend 100% cocok dengan type contract yang diharapkan frontend.',
-    nihongoTerms: [
-      { term: '通信 (Tsuushin)', reading: 'つうしん', meaning: 'Koneksi / Data Communication' },
-      { term: '取得 (Shutoku)', reading: 'しゅとく', meaning: 'Fetch / Mengambil Data' },
-      { term: '更新 (Koushin)', reading: 'こうしん', meaning: 'Update / Memperbarui State' },
-    ],
-    tokyoIndustryTip:
-      'Gunakan custom hook untuk setiap modul domain utama agar UI komponen tetap bersih dan berfokus murni pada layout dan accessibility.',
-  },
-
-  // DevOps Guidebooks
-  'devops-unit-1-linux-automation': {
-    unitNumber: 1,
-    unitTag: 'LINUX OS & AUTOMATION SCRIPTING',
-    title: 'Unit 1: Linux Kernel, Systemd & Bash Automation',
-    summary:
-      'Server cloud di Tokyo berjalan di atas Linux (Debian/Ubuntu/RHEL). Menguasai izin akses POSIX, automasi Bash shell, dan pengelolaan daemon process via systemd adalah syarat mutlak SRE dan DevOps engineer.',
-    codeSnippetTitle: 'Systemd Service Unit & Bash Automation',
-    codeSnippet: `[Unit]\nDescription=CodeAbroad Production API Daemon\nAfter=network.target postgresql.service\n\n[Service]\nType=simple\nUser=deploy\nWorkingDirectory=/opt/codeabroad\nExecStart=/opt/codeabroad/api\nRestart=always\nRestartSec=5\nEnvironmentFile=/etc/codeabroad/api.env\n\n[Install]\nWantedBy=multi-user.target`,
-    codeExplanation:
-      'Systemd otomatis me-restart aplikasi jika terjadi panic atau crash, serta mengisolasi eksekusi di bawah user non-root.',
-    nihongoTerms: [
-      { term: '障害 (Shougai)', reading: 'しょうがい', meaning: 'Outage / Incident Server' },
-      { term: '保守 (Hoshu)', reading: 'ほしゅ', meaning: 'Maintenance / Pemeliharaan' },
-      { term: '権限 (Kengen)', reading: 'けんげん', meaning: 'Permission / Hak Akses' },
-    ],
-    tokyoIndustryTip:
-      'Selalu patuhi prinsip Least Privilege saat mengatur sudoers dan SSH keys di infrastruktur server perusahaan Jepang.',
-  },
-
-  // Fundamental Guidebooks
-  'fund-unit-1-cpu-memory': {
-    unitNumber: 1,
-    unitTag: 'CPU ARCHITECTURE & MEMORY POINTERS',
-    title: 'Unit 1: Arsitektur CPU, Stack vs Heap & Pointers',
-    summary:
-      'Memahami bagaimana instruksi program dieksekusi di register CPU dan bagaimana memori fisik dialokasikan (stack untuk alokasi cepat otomatis, heap untuk alokasi dinamis). Fondasi ini membedakan engineer kelas dunia dari sekadar pengetik kode.',
-    codeSnippetTitle: 'Stack vs Heap Memory Visualization',
-    codeSnippet: `// Stack Allocation (Fixed size, auto-reclaimed)\nfunc calculateArea(width, height int) int {\n    area := width * height // Dialokasikan di CPU Stack frame\n    return area\n}\n\n// Heap Allocation (Dynamic size, persistent across frames)\nfunc createBuffer(size int) *[]byte {\n    buf := make([]byte, size) // Lolos escape analysis -> pindah ke Heap\n    return &buf\n}`,
-    codeExplanation:
-      'Stack frame dibersihkan otomatis seketika saat fungsi selesai, sedangkan Heap memerlukan garbage collection atau manual deallocation.',
-    nihongoTerms: [
-      { term: '基本 (Kihon)', reading: 'きほん', meaning: 'Dasar / Fundamental' },
-      { term: '理解 (Rikai)', reading: 'りかい', meaning: 'Pemahaman Konseptual' },
-      { term: '挨拶 (Aisatsu)', reading: 'あいさつ', meaning: 'Salam Sapaan' },
-    ],
-    tokyoIndustryTip:
-      'Wawancara teknis perusahaan teknologi top Tokyo selalu menguji pemahaman memori komputer di putaran pertama.',
-  },
-
-  // Tech Nihongo Guidebooks
-  'nihongo-unit-1-survival-onboarding': {
-    unitNumber: 1,
-    unitTag: 'SURVIVAL TOKYO & ONBOARDING KANTOR',
-    title: 'Unit 1: Aisatsu, Jikoshoukai & Kehidupan di Tokyo',
-    summary:
-      'Etika kerja dan salam sapaan adalah gerbang utama adaptasi budaya di Tokyo. Menyapa rekan kerja dengan sopan membangun rasa percaya (shinrai) yang sangat dihargai di lingkungan engineering Jepang.',
-    codeSnippetTitle: 'Pola Jikoshoukai (Perkenalan Diri) Software Engineer',
-    codeSnippet: `Hajimemashite. Agam to moushimasu.\nIndonesia kara mairimashita.\nKore made wa Golang to React wo tsukatte, Web sabisu no kaihatsu wo shiteorimashita.\nTokyo de minasan to issho ni hataraku koto ga dekite, totemo kouei desu.\nSeiippai ganbarimasu node, douzo yoroshiku onegai itashimasu.`,
-    codeExplanation:
-      'Pola ini menggunakan bahasa sopan (Keigo/Kenjougo) yang menyatakan nama, asal negara, spesialisasi teknis, dan komitmen bekerja keras.',
-    nihongoTerms: [
-      { term: 'よろしくお願いします', reading: 'よろしくおねがいします', meaning: 'Mohon bimbingan dan kerja samanya' },
-      { term: 'お疲れ様です', reading: 'おつかれさまです', meaning: 'Terima kasih atas kerja kerasnya' },
-      { term: '失礼します', reading: 'しつれいします', meaning: 'Permisi / Mohon maaf mengganggu' },
-    ],
-    tokyoIndustryTip:
-      'Ucapkan "Ohayou gozaimasu" saat tiba di kantor terlepas jam berapa Anda masuk kerja.',
-  },
-}

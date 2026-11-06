@@ -77,7 +77,7 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
                 <span
                   className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${catTokens.badgeClass}`}
                 >
-                  {node.category === 'nihongo' && (
+                  {node.category === 'language' && (
                     <Translate weight="bold" className="w-2.5 h-2.5" />
                   )}
                   <span>{node.badgeLabel}</span>
@@ -233,7 +233,7 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
             <span
               className={`text-[9px] font-brand font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mb-0.5 ${catTokens.badgeClass}`}
             >
-              {node.category === 'nihongo' && (
+              {node.category === 'language' && (
                 <Translate weight="bold" className="w-2.5 h-2.5" />
               )}
               <span>{node.badgeLabel}</span>

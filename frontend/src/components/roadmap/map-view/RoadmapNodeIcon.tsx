@@ -13,7 +13,7 @@ import { MAP_MODAL_TOKENS } from '../../../tokens/roadmapTokens'
  * Renders the symbol or number inside the 3D map node disc.
  */
 export const renderNodeSymbol = (node: PathMapNode, iconClass: string): ReactNode => {
-  if (node.category === 'nihongo') {
+  if (node.category === 'language') {
     return <Translate weight="bold" className={iconClass} />
   }
   return <span>{node.number}</span>
@@ -23,7 +23,7 @@ export const renderNodeSymbol = (node: PathMapNode, iconClass: string): ReactNod
  * Renders the action icon inside the active popover CTA button.
  */
 export const renderActionIcon = (category?: MapNodeCategory): ReactNode => {
-  if (category === 'nihongo') {
+  if (category === 'language') {
     return <Translate weight="bold" className="w-3.5 h-3.5" />
   }
   return <Code weight="bold" className="w-3.5 h-3.5" />
@@ -57,7 +57,7 @@ export const RoadmapModalNodeIcon: FC<RoadmapModalNodeIconProps> = ({
     )
   }
 
-  if (node.category === 'nihongo') {
+  if (node.category === 'language') {
     return (
       <div className={`${MAP_MODAL_TOKENS.iconContainerBase} ${modalIconBg}`}>
         <Translate weight="bold" className="w-6 h-6" />
@@ -75,3 +75,4 @@ export const RoadmapModalNodeIcon: FC<RoadmapModalNodeIconProps> = ({
     </div>
   )
 }
+

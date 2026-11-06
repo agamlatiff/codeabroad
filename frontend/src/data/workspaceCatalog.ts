@@ -363,7 +363,10 @@ export const getWorkspaceQuestFallback = (partId: string): Quest => {
           p.route === `/learn/${partId}`
       )
       if (matchPart) {
-        const isNihongo = matchPart.category === 'nihongo' || matchPart.id.includes('nihongo')
+        const isNihongo =
+          matchPart.category === 'language' ||
+          (matchPart.category as string) === 'nihongo' ||
+          matchPart.id.includes('nihongo')
         const isFrontend =
           matchPart.route.includes('fe-') ||
           matchPart.id.includes('fe-') ||
