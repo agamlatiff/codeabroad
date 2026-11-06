@@ -1,6 +1,13 @@
-import type { Roadmap, Module, CurriculumUnitData, CurriculumPartNode } from '../types/roadmap'
+import type {
+  Roadmap,
+  Module,
+  CurriculumUnitData,
+  CurriculumPartNode,
+  SequentialCurriculumUnit,
+} from '../types/roadmap'
 import { resolveMapUnitPalette, MAP_MILESTONE_REWARDS } from '../tokens/roadmapTokens'
 import { TRACK_CURRICULA } from '../data/roadmapMapFallback'
+import { mapModulesToSequentialUnits } from './roadmapMapper'
 
 /**
  * Builds an aggregated lookup Set of completed quest IDs from backend and local storage.
@@ -252,3 +259,52 @@ export const transformFallbackToMapUnits = (
     }
   })
 }
+
+export interface RoadmapPageMetrics {
+  units: SequentialCurriculumUnit[]
+  totalPartsCount: number
+  completedPartsCount: number
+  overallProgress: number
+  trackProgressMap: Record<string, { completed: number; total: number }>
+}
+
+/**
+ * Computes derived curriculum metrics in a single-pass O(N) loop
+ * without allocating redundant intermediary arrays.
+ */
+export const computeRoadmapPageMetrics = (
+  modules?: Module[],
+  currentTrack?: string
+): RoadmapPageMetrics => {
+  const units = mapModulesToSequentialUnits(modules)
+  let totalPartsCount = 0
+  let completedPartsCount = 0
+
+  for (const u of units) {
+    for (const p of u.parts) {
+      totalPartsCount++
+      if (p.is_completed) completedPartsCount++
+    }
+  }
+
+  const overallProgress =
+    totalPartsCount === 0 ? 0 : Math.round((completedPartsCount / totalPartsCount) * 100)
+
+  const trackProgressMap = currentTrack
+    ? {
+        [currentTrack]: {
+          completed: completedPartsCount,
+          total: totalPartsCount,
+        },
+      }
+    : {}
+
+  return {
+    units,
+    totalPartsCount,
+    completedPartsCount,
+    overallProgress,
+    trackProgressMap,
+  }
+}
+

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from 'react'
+import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
@@ -6,7 +6,7 @@ import { roadmapService } from '../../services/roadmapService'
 import { authService } from '../../services/authService'
 import { triggerHaptic } from '../../utils/haptics'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
-import { mapModulesToSequentialUnits } from '../../utils/roadmapMapper'
+import { computeRoadmapPageMetrics } from '../../utils/roadmapMapTransformer'
 import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 
 export const ROADMAP_QUERY_KEY = 'roadmap' as const
@@ -107,31 +107,19 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const currentTrack = roadmap?.slug || requestedTrack
   const error = queryError instanceof Error ? queryError.message : null
 
-  // ── 3. DERIVED METRICS (SINGLE-PASS O(N) LINEAR COMPUTATION) ──
-  // Compute total and completed counts in one pass without intermediate array allocation
-  const units: SequentialCurriculumUnit[] = mapModulesToSequentialUnits(roadmap?.modules)
-  let totalPartsCount = 0
-  let completedPartsCount = 0
-  for (const u of units) {
-    for (const p of u.parts) {
-      totalPartsCount++
-      if (p.is_completed) completedPartsCount++
-    }
-  }
-
-  // Single source of truth: progress is derived from completed parts so the
-  // percentage always matches the "completed / total" counter shown in the UI.
-  const overallProgress =
-    totalPartsCount === 0 ? 0 : Math.round((completedPartsCount / totalPartsCount) * 100)
-
-  const trackProgressMap = currentTrack
-    ? {
-        [currentTrack]: {
-          completed: completedPartsCount,
-          total: totalPartsCount,
-        },
-      }
-    : {}
+  // ── 3. DERIVED METRICS (SINGLE-PASS O(N) MEMOIZED COMPUTATION) ──
+  // Compute total, completed counts, and unit data in one pass, memoized
+  // to avoid redundant layout recalculations on UI modal toggles.
+  const {
+    units,
+    totalPartsCount,
+    completedPartsCount,
+    overallProgress,
+    trackProgressMap,
+  } = useMemo(
+    () => computeRoadmapPageMetrics(roadmap?.modules, currentTrack),
+    [roadmap?.modules, currentTrack]
+  )
 
   // ── 4. PAGE UI & MODAL VISIBILITY STATES ──
   const [isTrackSwitcherOpen, setIsTrackSwitcherOpen] = useState(false)
