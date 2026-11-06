@@ -12,7 +12,7 @@ import {
   SolutionsArchitectIllustration,
   TechIcon,
 } from '../illustrations/onboarding'
-import { TRACK_BADGES, STACK_DESCRIPTIONS } from '../../static/onboarding'
+import { TRACK_BADGES, STACK_DESCRIPTIONS } from '../../utils/onboardingConfig'
 import { formatStackBadge } from '../../utils/formatters'
 import { BadgePill } from '../ui'
 import { triggerHaptic } from '../../utils/haptics'

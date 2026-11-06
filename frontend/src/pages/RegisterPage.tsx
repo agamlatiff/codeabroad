@@ -6,7 +6,6 @@ import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthDivider } from '../components/auth/AuthDivider'
 import { Button3D } from '../components/ui/Button3D'
-import doodleCoding from '../assets/kodi/doodle-coding.png'
 import { User, At, EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
 
 export const RegisterPage = () => {
@@ -18,7 +17,7 @@ export const RegisterPage = () => {
       subtitle="Lengkapi data di bawah ini untuk memulai petualangan karir tech global."
       heroTitle="Mulai Langkah Karir Global Impianmu"
       heroSubtitle="Bergabung bersama ribuan developer Indonesia untuk menembus coding interview ke Jepang, Jerman, dan Singapura."
-      heroImage={doodleCoding}
+      heroEmotion="coding"
       speechBubble="Yuk mulai petualangan coding globalmu bareng aku! ✨"
     >
       {/* Error Alert */}
@@ -124,4 +123,3 @@ export const RegisterPage = () => {
     </AuthLayout>
   )
 }
-

@@ -1,5 +1,5 @@
 import { Briefcase, CheckCircle, CircleDashed } from '@phosphor-icons/react'
-import doodleProud from '../../assets/kodi/doodle-proud.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 import type { User } from '../../types/auth'
 
 export interface TokyoCompetencyCardProps {
@@ -60,11 +60,9 @@ export const TokyoCompetencyCard = ({
 
       {/* ── KODI PROUD MENTOR BANNER ── */}
       <div className="flex items-center gap-3 p-3 bg-blue-50/60 border border-blue-100 rounded-2xl">
-        <img
-          src={doodleProud}
-          alt="Kodi Bangga"
-          className="w-13 h-13 object-contain shrink-0"
-        />
+        <div className="shrink-0 flex items-center justify-center">
+          <KodiCharacter emotion="onFire" size={54} />
+        </div>
         <div className="space-y-0.5 min-w-0">
           <p className="font-brand font-black text-xs text-slate-900">
             {readinessPercentage}% Kesiapan Portofolio

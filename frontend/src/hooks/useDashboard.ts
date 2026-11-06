@@ -5,7 +5,7 @@ import { useAuthStore } from '../store/authStore'
 import { authService } from '../services/authService'
 import type { AvatarStyle } from '../utils/avatar'
 import type { KodiPose } from '../components/ui/MascotCard'
-import { getKodiPoseMessage } from '../static/dashboard'
+import { getKodiPoseMessage } from '../utils/kodi'
 import { formatTimezoneClock } from '../utils/date'
 
 const AVATAR_STYLE_STORAGE_KEY = 'codeabroad_avatar_style'

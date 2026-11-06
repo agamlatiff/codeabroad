@@ -3,7 +3,7 @@ import { Modal3D } from '../ui/Modal3D'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
 import { audioEngine } from '../../utils/audio'
-import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 
 export interface ChestRewardModalProps {
   isOpen: boolean
@@ -82,15 +82,11 @@ export const ChestRewardModal = ({
           {/* Ambient Glow */}
           <div className="absolute w-36 h-36 bg-amber-300/30 rounded-full blur-2xl animate-pulse" />
 
-          {/* Kodi Illustration */}
-          <div className="relative z-10 w-32 h-32 flex items-center justify-center">
-            <img
-              src={doodleCelebrate}
-              alt="Kodi Merayakan"
-              className="w-full h-full object-contain drop-shadow-md animate-bounce"
-            />
+          {/* Living Kodi Character (Chiikawa Neko Golden Master) */}
+          <div className="relative z-10 flex items-center justify-center">
+            <KodiCharacter emotion="celebrate" size={110} interactive />
             {/* Chest Icon Overlap Badge */}
-            <div className="absolute -bottom-2 -right-1 w-14 h-14 bg-white rounded-2xl border-2 border-amber-300 shadow-md flex items-center justify-center text-3xl">
+            <div className="absolute -bottom-2 -right-4 w-12 h-12 bg-white rounded-2xl border-2 border-amber-300 shadow-md flex items-center justify-center text-2xl z-20">
               {icon}
             </div>
           </div>

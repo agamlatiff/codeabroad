@@ -16,7 +16,7 @@ import {
   LEVEL_OPTIONS,
   TIMELINE_OPTIONS,
   LANGUAGE_OPTIONS,
-} from '../../static/onboarding'
+} from '../../utils/onboardingConfig'
 import { getTargetLandingDate } from '../../utils/date'
 import { BadgePill } from '../ui'
 import { triggerHaptic } from '../../utils/haptics'

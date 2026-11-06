@@ -4,7 +4,7 @@ import { useAuthStore } from '../store/authStore'
 import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
-import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
+import { KodiCharacter } from '../components/ui/KodiCharacter'
 import {
   Fire,
   Star,
@@ -101,11 +101,9 @@ export const QuestCompletePage = () => {
           {/* 1. Mascot / Trophy */}
           <div className="relative flex flex-col items-center justify-center">
             <div className="w-28 h-8 bg-amber-200/50 rounded-[50%] absolute -bottom-1 z-0 blur-[2px]" />
-            <img
-              src={doodleCelebrate}
-              alt="Kodi Celebrate"
-              className="w-28 h-28 object-contain relative z-10 select-none drop-shadow-sm animate-bounce"
-            />
+            <div className="relative z-10 select-none drop-shadow-sm animate-bounce">
+              <KodiCharacter emotion="celebrate" size={110} />
+            </div>
           </div>
 
           <div className="space-y-1.5">

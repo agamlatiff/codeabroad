@@ -36,7 +36,7 @@ const readLocalCompletedQuests = (): string[] => {
  * Coordinates real-time quest sync, unit data derivation, and modal state.
  */
 export const useRoadmapMapView = ({
-  trackSlug = 'golang',
+  trackSlug = '',
   roadmap = null,
   currentPart,
 }: UseRoadmapMapViewProps) => {
@@ -66,7 +66,8 @@ export const useRoadmapMapView = ({
     if (roadmap?.modules && roadmap.modules.length > 0) {
       return transformRoadmapToMapUnits(roadmap, completedSet)
     }
-    return transformFallbackToMapUnits(trackSlug, completedSet, currentPart)
+    const effectiveTrack = trackSlug || roadmap?.slug || ''
+    return transformFallbackToMapUnits(effectiveTrack, completedSet, currentPart)
   }, [roadmap, trackSlug, currentPart, completedSet])
 
   const handleNodeClick = useCallback((node: PathMapNode) => {

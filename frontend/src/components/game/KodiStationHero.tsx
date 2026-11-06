@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { Clock, Sparkle } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
 import { SpeechBubble } from '../ui/SpeechBubble'
-import doodleWelcome from '../../assets/kodi/doodle-welcome.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 import type { User } from '../../types/auth'
 
 export interface KodiStationHeroProps {
@@ -42,11 +42,9 @@ export const KodiStationHero = ({
         {/* Living Mascot on Soft Base */}
         <div className="relative flex flex-col items-center justify-center shrink-0 group">
           <div className="w-24 sm:w-28 h-6 bg-slate-200/60 rounded-[50%] absolute -bottom-1 z-0 blur-xs" />
-          <img
-            src={doodleWelcome}
-            alt="Kodi Menyapa"
-            className="w-24 h-24 sm:w-28 sm:h-28 object-contain relative z-10 drop-shadow-sm select-none transition-transform duration-300 group-hover:-translate-y-1.5 animate-float"
-          />
+          <div className="relative z-10 select-none transition-transform duration-300 group-hover:-translate-y-1.5 animate-float">
+            <KodiCharacter emotion="welcome" size={110} />
+          </div>
         </div>
 
         {/* Comic Dialogue & Module Information */}

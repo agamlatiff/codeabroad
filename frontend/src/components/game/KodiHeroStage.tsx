@@ -2,7 +2,7 @@ import { useNavigate } from 'react-router-dom'
 import { ArrowCounterClockwise, Clock, Sparkle } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
 import { SpeechBubble } from '../ui/SpeechBubble'
-import doodleCoding from '../../assets/kodi/doodle-coding.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 import type { User } from '../../types/auth'
 
 export interface KodiHeroStageProps {
@@ -46,11 +46,9 @@ export const KodiHeroStage = ({
           <div className="w-20 sm:w-24 h-6 bg-cyan-500/20 rounded-[50%] absolute -bottom-1 z-0 blur-xs" />
 
           {/* Kodi Character */}
-          <img
-            src={doodleCoding}
-            alt="Kodi Coding in Tokyo"
-            className="w-24 h-24 sm:w-28 sm:h-28 object-contain relative z-10 drop-shadow-md select-none transition-transform duration-300 group-hover:-translate-y-1"
-          />
+          <div className="relative z-10 select-none transition-transform duration-300 group-hover:-translate-y-1">
+            <KodiCharacter emotion="coding" size={110} />
+          </div>
         </div>
 
         {/* Narrative, Greeting & Module Information */}

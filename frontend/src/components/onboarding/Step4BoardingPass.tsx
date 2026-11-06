@@ -3,7 +3,7 @@ import type { User } from '../../types/auth'
 import { Airplane, Sparkle, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
 import { DoodleHanko } from '../illustrations/doodles'
 import { Button3D, MetricTile, BadgePill } from '../ui'
-import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 import {
   formatTechStack,
   formatExperienceLevelText,
@@ -50,6 +50,9 @@ const getAirportInfo = (countryCode?: string) => {
     case 'SG': return { code: 'SIN', city: 'Singapore', country: 'Singapura' }
     case 'UK':
     case 'GB': return { code: 'LHR', city: 'London', country: 'Inggris' }
+    case 'US': return { code: 'SFO', city: 'San Francisco', country: 'Amerika Serikat' }
+    case 'AU': return { code: 'SYD', city: 'Sydney', country: 'Australia' }
+    case 'CA': return { code: 'YVR', city: 'Vancouver', country: 'Kanada' }
     default: return { code: 'HND', city: 'Tokyo', country: 'Jepang' }
   }
 }
@@ -75,15 +78,7 @@ export const Step4BoardingPass = ({
       {/* ── TOP HERO: KODI CELEBRATION STAGE (LIGHT THEME) ── */}
       <div className="relative z-10 flex flex-col items-center text-center mb-5 sm:mb-6">
         <div className="relative mb-2">
-          {/* Subtle glow aura behind Kodi */}
-          <div className="absolute inset-0 bg-blue-500/15 rounded-full blur-xl transform scale-110" />
-          <div className="w-24 h-24 sm:w-28 sm:h-28 flex items-center justify-center relative z-10 drop-shadow-[0_8px_16px_rgba(37,99,235,0.2)]">
-            <img
-              src={doodleCelebrate}
-              alt="Kodi Celebrate"
-              className="w-full h-full object-contain select-none hover:scale-105 transition-transform duration-300"
-            />
-          </div>
+          <KodiCharacter emotion="celebrate" size={110} interactive />
         </div>
 
         {/* Celebratory Speech Pill */}
@@ -167,15 +162,12 @@ export const Step4BoardingPass = ({
 
         {/* 2. PERFORATED NOTCH DIVIDER (SEAMLESS WITH PAGE BACKGROUND #FAFAF9) */}
         <div className="relative flex items-center justify-between bg-white py-0.5">
-          {/* Left Notch */}
           <div className="w-5 h-7 bg-[#FAFAF9] rounded-r-full border border-l-0 border-slate-200 -ml-[1px] z-10 shrink-0" />
-          {/* Dashed Tear Line */}
           <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-          {/* Right Notch */}
           <div className="w-5 h-7 bg-[#FAFAF9] rounded-l-full border border-r-0 border-slate-200 -mr-[1px] z-10 shrink-0" />
         </div>
 
-        {/* 3. 2x2 METRIC GRID (LIGHT SURFACE TACTILE TILES) */}
+        {/* 3. 2x2 METRIC GRID */}
         <div className="p-5 sm:p-6 bg-white">
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
             <MetricTile
@@ -206,10 +198,9 @@ export const Step4BoardingPass = ({
           </div>
         </div>
 
-        {/* 4. TICKET STUB FOOTER (BARCODE & OFFICIAL STAMP) */}
+        {/* 4. TICKET STUB FOOTER */}
         <div className="px-5 sm:px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3.5">
-            {/* Official Hanko Stamp with Physical Impact Animation */}
             <div className="shrink-0 animate-stamp-slam">
               <DoodleHanko text="合格" className="w-11 h-11" />
             </div>
@@ -234,7 +225,7 @@ export const Step4BoardingPass = ({
 
       </div>
 
-      {/* ── DUOLINGO-STYLE TACTILE 3D BUTTON (ELECTRIC BLUE) & SECONDARY BACK ── */}
+      {/* ── DUOLINGO-STYLE TACTILE 3D BUTTON & SECONDARY BACK ── */}
       <div className="w-full mt-6 relative z-10 flex flex-col items-center gap-2.5">
         {onContinue && (
           <Button3D

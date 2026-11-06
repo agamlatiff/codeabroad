@@ -17,9 +17,7 @@ import { leaderboardService } from '../services/leaderboardService'
 import { triggerHaptic } from '../utils/haptics'
 import { soundEngine } from '../utils/audio'
 import { Button3D } from '../components/ui/Button3D'
-import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
-import doodleProud from '../assets/kodi/doodle-proud.png'
-import doodleThinking from '../assets/kodi/doodle-thinking.png'
+import { KodiCharacter } from '../components/ui/KodiCharacter'
 
 export const LeaderboardPage = () => {
   const navigate = useNavigate()
@@ -114,8 +112,6 @@ export const LeaderboardPage = () => {
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. COMPACT NAV RAIL ── */}
       <AppLeftSidebar />
-
-      {/* ── 2. MAIN LEADERBOARD CANVAS ── */}
       <div className="flex-1 min-w-0 pb-20 md:pb-12">
         <main className="max-w-4xl mx-auto px-4 sm:px-8 py-6 space-y-6">
           {/* ── TOP CONTEXTUAL HEADER ── */}
@@ -141,11 +137,9 @@ export const LeaderboardPage = () => {
 
             {/* Kodi Mascot Visual */}
             <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3">
-              <img
-                src={doodleProud}
-                alt="Kodi League Mascot"
-                className="w-14 h-14 object-contain"
-              />
+              <div className="shrink-0 flex items-center justify-center">
+                <KodiCharacter emotion="onFire" size={56} />
+              </div>
               <div className="space-y-0.5">
                 <span className="text-[10px] font-brand font-black text-blue-800 uppercase block">
                   Liga Musim #{leaderboard?.season_week ?? 42}
@@ -263,11 +257,9 @@ export const LeaderboardPage = () => {
               </div>
             ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
               <div className="py-16 px-6 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                <img
-                  src={doodleThinking}
-                  alt="Klasemen Belum Dimulai"
-                  className="w-28 h-28 object-contain mx-auto drop-shadow-xs"
-                />
+                <div className="flex items-center justify-center mx-auto">
+                  <KodiCharacter emotion="thinking" size={110} />
+                </div>
                 <div className="space-y-1.5 max-w-md mx-auto">
                   <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
                     Belum Ada Peserta di {currentDivConfig.name}
@@ -381,11 +373,9 @@ export const LeaderboardPage = () => {
 
           {/* ── KODI CHEERING FOOTER ── */}
           <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 flex items-center gap-4 shadow-xs">
-            <img
-              src={doodleCelebrate}
-              alt="Kodi Cheer"
-              className="w-16 h-16 object-contain shrink-0 drop-shadow-xs"
-            />
+            <div className="shrink-0 flex items-center justify-center">
+              <KodiCharacter emotion="celebrate" size={64} />
+            </div>
             <div className="space-y-1">
               <h4 className="font-brand font-black text-xs text-slate-900 flex items-center gap-1">
                 <Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />

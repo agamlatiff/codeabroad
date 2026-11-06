@@ -17,8 +17,7 @@ import { leaderboardService } from '../../services/leaderboardService'
 import { triggerHaptic } from '../../utils/haptics'
 import { soundEngine } from '../../utils/audio'
 import { Button3D } from '../ui/Button3D'
-import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
-import doodleThinking from '../../assets/kodi/doodle-thinking.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 
 export interface LeaderboardModalProps {
   isOpen: boolean
@@ -255,11 +254,9 @@ export const LeaderboardModal = ({
             </div>
           ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
             <div className="py-10 px-4 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-              <img
-                src={doodleThinking}
-                alt="Belum Ada Peserta"
-                className="w-24 h-24 object-contain mx-auto drop-shadow-xs"
-              />
+              <div className="flex items-center justify-center mx-auto">
+                <KodiCharacter emotion="thinking" size={96} />
+              </div>
               <div className="space-y-1 max-w-sm mx-auto">
                 <h3 className="font-brand font-black text-sm sm:text-base text-slate-900">
                   Belum Ada Peserta di {currentDivConfig.name}
@@ -374,11 +371,9 @@ export const LeaderboardModal = ({
 
         {/* ── 5. KODI CHEERING FOOTER BANNER ── */}
         <div className="p-4 bg-white border-t border-slate-200 flex items-center gap-3">
-          <img
-            src={doodleCelebrate}
-            alt="Kodi Cheer"
-            className="w-12 h-12 object-contain shrink-0 drop-shadow-xs"
-          />
+          <div className="shrink-0 flex items-center justify-center">
+            <KodiCharacter emotion="celebrate" size={54} />
+          </div>
           <div className="space-y-0.5">
             <h4 className="font-brand font-black text-xs text-slate-900 flex items-center gap-1">
               <Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />

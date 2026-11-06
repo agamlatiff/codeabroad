@@ -9,7 +9,7 @@ import {
   getOnboardingStepPrompt,
   getOnboardingStepTitle,
   getOnboardingStepSubtitle,
-} from '../static/onboarding'
+} from '../utils/onboardingConfig'
 
 /**
  * Headless controller hook managing state machine, form mutations, and validations

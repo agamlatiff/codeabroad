@@ -30,13 +30,50 @@ export const buildSvgPath = (coords: { x: number; y: number }[]): string => {
 /**
  * Assembles unit nodes (including golden chest and exam trophy milestones),
  * computes their Serpentine S-Curve coordinates, and generates the SVG line path.
+ * 100% Pure & Declarative (Zero in-place mutations).
  */
 export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly => {
   const isUnitCompleted = unit.parts.every((p) => p.status === 'completed')
   const isUnitActive = unit.parts.some((p) => p.status === 'active')
 
+  // Node Milestone 1: Peti Emas Hadiah
+  const chestNode: PathMapNode = {
+    id: `${unit.id}-chest`,
+    title: `Peti Hadiah Unit ${unit.unitNumber}`,
+    subtitle: `Klaim bonus ${MAP_MILESTONE_REWARDS.chestXp} XP dan ${MAP_MILESTONE_REWARDS.chestGems} permata untuk penyelesaian unit.`,
+    xpReward: MAP_MILESTONE_REWARDS.chestXp,
+    gemsReward: MAP_MILESTONE_REWARDS.chestGems,
+    status: isUnitCompleted ? 'completed' : isUnitActive ? 'active' : 'locked',
+    route: '/quests',
+    isChest: true,
+  }
+
+  // Node Milestone 2: Trofi Ujian Praktik (Mengambil data real Boss Quest dari DB bila tersedia)
+  const trophyNode: PathMapNode = unit.bossQuest
+    ? {
+        id: unit.bossQuest.id,
+        title: unit.bossQuest.title,
+        subtitle: unit.bossQuest.subtitle,
+        xpReward: unit.bossQuest.xpReward,
+        gemsReward: unit.bossQuest.gemsReward,
+        status: unit.bossQuest.status,
+        route: unit.bossQuest.route,
+        isTrophy: true,
+      }
+    : {
+        id: `${unit.id}-trophy`,
+        title: `Tantangan Praktik Unit ${unit.unitNumber}`,
+        subtitle: 'Uji pemahaman koding secara komprehensif untuk membuka unit berikutnya.',
+        xpReward: MAP_MILESTONE_REWARDS.trophyXp,
+        gemsReward: 0,
+        status: isUnitCompleted ? 'completed' : 'locked',
+        route: '/quests',
+        isTrophy: true,
+      }
+
+  // Unified sequence: lesson stepping stones -> milestone golden chest -> final unit trophy
   const allNodes: PathMapNode[] = [
-    ...unit.parts.map((p) => ({
+    ...unit.parts.map((p): PathMapNode => ({
       id: p.id,
       title: `Part ${p.number}: ${p.title}`,
       subtitle: p.subtitle,
@@ -47,44 +84,9 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
       category: p.category,
       badgeLabel: p.badgeLabel,
     })),
+    chestNode,
+    trophyNode,
   ]
-
-  // Node Milestone 1: Peti Emas Hadiah
-  allNodes.push({
-    id: `${unit.id}-chest`,
-    title: `Peti Hadiah Unit ${unit.unitNumber}`,
-    subtitle: `Klaim bonus ${MAP_MILESTONE_REWARDS.chestXp} XP dan ${MAP_MILESTONE_REWARDS.chestGems} permata untuk penyelesaian unit.`,
-    xpReward: MAP_MILESTONE_REWARDS.chestXp,
-    gemsReward: MAP_MILESTONE_REWARDS.chestGems,
-    status: isUnitCompleted ? 'completed' : isUnitActive ? 'active' : 'locked',
-    route: '/quests',
-    isChest: true,
-  })
-
-  // Node Milestone 2: Trofi Ujian Praktik (Mengambil data real Boss Quest dari DB bila tersedia)
-  if (unit.bossQuest) {
-    allNodes.push({
-      id: unit.bossQuest.id,
-      title: unit.bossQuest.title,
-      subtitle: unit.bossQuest.subtitle,
-      xpReward: unit.bossQuest.xpReward,
-      gemsReward: unit.bossQuest.gemsReward,
-      status: unit.bossQuest.status,
-      route: unit.bossQuest.route,
-      isTrophy: true,
-    })
-  } else {
-    allNodes.push({
-      id: `${unit.id}-trophy`,
-      title: `Tantangan Praktik Unit ${unit.unitNumber}`,
-      subtitle: 'Uji pemahaman koding secara komprehensif untuk membuka unit berikutnya.',
-      xpReward: MAP_MILESTONE_REWARDS.trophyXp,
-      gemsReward: 0,
-      status: isUnitCompleted ? 'completed' : 'locked',
-      route: '/quests',
-      isTrophy: true,
-    })
-  }
 
   // S-Curve Coordinates
   const { xSequence, verticalSpacing, startY, bottomPadding } = MAP_GEOMETRY
@@ -106,4 +108,3 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
     isUnitActive,
   }
 }
-

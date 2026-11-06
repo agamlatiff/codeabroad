@@ -4,6 +4,7 @@ import { useRoadmapMapView } from '../../../hooks/roadmap/useRoadmapMapView'
 import { MAP_STAGE_TOKENS } from '../../../tokens/roadmapTokens'
 import { RoadmapNodeDetailModal } from './RoadmapNodeDetailModal'
 import { RoadmapMapUnitSection } from './RoadmapMapUnitSection'
+import { useAuthStore } from '../../../store/authStore'
 
 export interface RoadmapMapViewProps {
   className?: string
@@ -20,18 +21,22 @@ export interface RoadmapMapViewProps {
  */
 export const RoadmapMapView: FC<RoadmapMapViewProps> = ({
   className = '',
-  trackSlug = 'golang',
+  trackSlug,
   roadmap = null,
   currentPart,
   onStartQuest,
 }) => {
+  const user = useAuthStore((s) => s.user)
+  // Priority 1: prop trackSlug -> Priority 2: roadmap.slug -> Priority 3: user's primary stack
+  const effectiveTrack = trackSlug || roadmap?.slug || user?.primary_stack || user?.career_path?.slug || ''
+
   const {
     units,
     activeModalNode,
     handleNodeClick,
     handleCloseModal,
   } = useRoadmapMapView({
-    trackSlug,
+    trackSlug: effectiveTrack,
     roadmap,
     currentPart,
   })

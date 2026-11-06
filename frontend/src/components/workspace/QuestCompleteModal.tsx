@@ -5,7 +5,7 @@ import type { SubmitQuestResponse, Quest } from '../../types/quest'
 import { useAuthStore } from '../../store/authStore'
 import { Button3D } from '../ui/Button3D'
 import { DoodleHanko } from '../illustrations/doodles'
-import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 
 export interface QuestCompleteModalProps {
   isOpen: boolean
@@ -60,11 +60,9 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
         <div className="relative flex flex-col items-center justify-center pt-2">
           {/* Subtle Stepped Glass Base */}
           <div className="w-28 h-8 bg-blue-200/50 rounded-[50%] absolute bottom-0 z-0 blur-[1px]" />
-          <img
-            src={doodleCelebrate}
-            alt="Kodi Celebrating"
-            className="w-28 h-28 sm:w-32 sm:h-32 object-contain relative z-10 select-none drop-shadow-md animate-bounce"
-          />
+          <div className="relative z-10 select-none drop-shadow-md animate-bounce">
+            <KodiCharacter emotion="celebrate" size={110} />
+          </div>
         </div>
 
         <div className="space-y-1">

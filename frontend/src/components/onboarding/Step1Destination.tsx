@@ -6,7 +6,7 @@ import {
   SingaporeFlagIllustration,
   GermanyFlagIllustration,
 } from '../illustrations/onboarding'
-import { COUNTRY_DESCRIPTIONS } from '../../static/onboarding'
+import { COUNTRY_DESCRIPTIONS } from '../../utils/onboardingConfig'
 import { BadgePill } from '../ui'
 import { triggerHaptic } from '../../utils/haptics'
 

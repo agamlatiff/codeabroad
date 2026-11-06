@@ -3,7 +3,7 @@ import { Modal3D } from '../ui/Modal3D'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
 import { audioEngine } from '../../utils/audio'
-import doodleCelebrate from '../../assets/kodi/doodle-celebrate.png'
+import { KodiCharacter } from '../ui/KodiCharacter'
 
 export interface MonthlyBadgeModalProps {
   isOpen: boolean
@@ -55,16 +55,12 @@ export const MonthlyBadgeModal = ({
           {/* Radiant Aura */}
           <div className="absolute w-44 h-44 bg-gradient-to-tr from-amber-300/40 via-yellow-200/30 to-blue-300/30 rounded-full blur-2xl animate-pulse" />
 
-          {/* Kodi Illustration */}
-          <div className="relative z-10 w-36 h-36 flex items-center justify-center">
-            <img
-              src={doodleCelebrate}
-              alt="Kodi Merayakan Lencana"
-              className="w-full h-full object-contain drop-shadow-lg"
-            />
+          {/* Living Kodi Character (Chiikawa Neko Golden Master) */}
+          <div className="relative z-10 flex items-center justify-center">
+            <KodiCharacter emotion="celebrate" size={120} interactive />
             {/* Medallion Floating Badge */}
-            <div className="absolute -bottom-2 -right-2 w-16 h-16 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 border-3 border-white shadow-xl flex items-center justify-center text-white">
-              <Medal weight="fill" className="w-9 h-9 text-amber-950 drop-shadow-sm" />
+            <div className="absolute -bottom-2 -right-4 w-14 h-14 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 border-3 border-white shadow-xl flex items-center justify-center text-white z-20">
+              <Medal weight="fill" className="w-8 h-8 text-amber-950 drop-shadow-sm" />
             </div>
           </div>
         </div>

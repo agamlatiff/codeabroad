@@ -38,10 +38,7 @@ import {
   Translate,
   ArrowRight,
 } from '@phosphor-icons/react'
-import doodleWelcome from '../assets/kodi/doodle-welcome.png'
-import doodleCoding from '../assets/kodi/doodle-coding.png'
-import doodleCelebrate from '../assets/kodi/doodle-celebrate.png'
-import doodleThinking from '../assets/kodi/doodle-thinking.png'
+import { KodiCharacter, type KodiEmotion } from '../components/ui/KodiCharacter'
 
 export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
@@ -851,7 +848,7 @@ export const QuestLogPage = () => {
     const userName = user?.name ? user.name.split(' ')[0] : 'Sobat'
     if (dailyDoneCount === 0) {
       return {
-        image: doodleWelcome,
+        emotion: 'welcome' as KodiEmotion,
         badge: 'Semangat Pagi! ⚡',
         badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
         speech: `Halo ${userName}! Selesaikan 3 misi hari ini untuk menyalakan api streak 🔥`,
@@ -860,7 +857,7 @@ export const QuestLogPage = () => {
     }
     if (dailyDoneCount < totalDailyTarget) {
       return {
-        image: doodleCoding,
+        emotion: 'coding' as KodiEmotion,
         badge: 'Sedang Berjalan 🚀',
         badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
         speech: `Keren banget! Tinggal ${totalDailyTarget - dailyDoneCount} misi lagi untuk membuka Peti Emas Akihabara 🎁`,
@@ -868,7 +865,7 @@ export const QuestLogPage = () => {
       }
     }
     return {
-      image: doodleCelebrate,
+      emotion: 'celebrate' as KodiEmotion,
       badge: 'Semua Misi Tuntas! 🎉',
       badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
       speech: `Luar biasa, ${userName}! Semua misi harian tuntas dan streak Anda aman. Sampai jumpa besok di Tokyo Guild! 🌸`,
@@ -1029,13 +1026,11 @@ export const QuestLogPage = () => {
                 </div>
 
                 {/* Animated Kodi Illustration Asset */}
-                <div className="w-28 h-28 sm:w-32 sm:h-32 relative group">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 relative group flex items-center justify-center">
                   <div className="absolute inset-0 bg-amber-400/20 rounded-full filter blur-xl transform group-hover:scale-110 transition-transform" />
-                  <img
-                    src={kodiCompanion.image}
-                    alt={kodiCompanion.alt}
-                    className="w-full h-full object-contain relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300"
-                  />
+                  <div className="relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300">
+                    <KodiCharacter emotion={kodiCompanion.emotion} size={110} />
+                  </div>
                 </div>
               </div>
             </div>
@@ -1396,11 +1391,9 @@ export const QuestLogPage = () => {
           {/* ── EMPTY STATE FOR DAILY QUESTS ── */}
           {activeTab === 'daily' && filteredDaily.length === 0 && !hasNoResults && (
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-2xs">
-              <img
-                src={doodleThinking}
-                alt="Misi Harian Selesai"
-                className="w-28 h-28 object-contain mx-auto drop-shadow-xs"
-              />
+              <div className="flex items-center justify-center mx-auto">
+                <KodiCharacter emotion="thinking" size={100} />
+              </div>
               <div className="space-y-1.5 max-w-md mx-auto">
                 <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
                   Semua Misi Harian Selesai!
@@ -1534,11 +1527,9 @@ export const QuestLogPage = () => {
           {/* ── EMPTY STATE FOR SAYEMBARA BOSS QUESTS ── */}
           {activeTab === 'boss' && portfolioChallenges.length === 0 && !hasNoResults && (
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-2xs">
-              <img
-                src={doodleThinking}
-                alt="Sayembara Belum Tersedia"
-                className="w-28 h-28 object-contain mx-auto drop-shadow-xs"
-              />
+              <div className="flex items-center justify-center mx-auto">
+                <KodiCharacter emotion="thinking" size={100} />
+              </div>
               <div className="space-y-1.5 max-w-md mx-auto">
                 <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
                   Sayembara Capstone Belum Terbuka

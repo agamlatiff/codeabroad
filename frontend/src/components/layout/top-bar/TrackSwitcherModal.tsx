@@ -9,7 +9,7 @@ import {
   ListChecks,
   RocketLaunch,
 } from '@phosphor-icons/react'
-import doodleCoding from '../../../assets/kodi/doodle-coding.png'
+import { KodiCharacter } from '../../ui/KodiCharacter'
 import {
   GolangLogo,
   ReactLogo,
@@ -358,11 +358,9 @@ export const TrackSwitcherModal = ({
         {/* Footer: Kodi Tip & Primary Action Button */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 text-xs text-slate-600 font-medium min-w-0 flex-1">
-            <img
-              src={doodleCoding}
-              alt="Kodi Companion"
-              className="w-9 h-9 object-contain shrink-0"
-            />
+            <div className="shrink-0 flex items-center justify-center">
+              <KodiCharacter emotion="coding" size={38} />
+            </div>
             <p className="line-clamp-2">
               <span className="font-bold text-slate-900">Tips Kodi:</span> Kuasai Fondasi CS & Web, lalu selesaikan Spesialisasi Karier Anda!
             </p>
