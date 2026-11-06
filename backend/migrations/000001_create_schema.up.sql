@@ -53,6 +53,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     country_id UUID REFERENCES countries(id) ON DELETE SET NULL,
     tech_stack_id UUID REFERENCES tech_stacks(id) ON DELETE SET NULL,
     is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
+    has_seen_roadmap_tour BOOLEAN NOT NULL DEFAULT FALSE,
     
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
