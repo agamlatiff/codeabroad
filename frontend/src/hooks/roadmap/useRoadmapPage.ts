@@ -5,7 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import { roadmapService } from '../../services/roadmapService'
 import { authService } from '../../services/authService'
 import { triggerHaptic } from '../../utils/haptics'
-import { playSound } from '../../utils/sound'
+import { playSound, playBgm, stopBgm } from '../../utils/sound'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
 import { computeRoadmapPageMetrics } from '../../utils/roadmapMapTransformer'
 import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
@@ -69,7 +69,11 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const setViewMode = useCallback(
     (mode: CurriculumViewMode) => {
       triggerHaptic('tap')
-      playSound('view_switch')
+      if (mode === 'map') {
+        playSound('yamanote_jingle')
+      } else {
+        playSound('view_switch')
+      }
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -108,6 +112,20 @@ export const useRoadmapPage = (explicitTrack?: string) => {
 
   const currentTrack = roadmap?.slug || requestedTrack
   const error = queryError instanceof Error ? queryError.message : null
+
+  // ── 2b. SOUNDSCAPE & CULTURAL BGM SYNCHRONIZATION ──
+  useEffect(() => {
+    const isJapanTrack =
+      currentTrack === 'tech-nihongo' ||
+      currentTrack.includes('nihongo') ||
+      currentTrack.includes('japan')
+
+    playBgm(isJapanTrack ? 'japan' : 'universal')
+
+    return () => {
+      stopBgm()
+    }
+  }, [currentTrack])
 
   // ── 3. DERIVED METRICS (SINGLE-PASS O(N) MEMOIZED COMPUTATION) ──
   // Compute total, completed counts, and unit data in one pass, memoized

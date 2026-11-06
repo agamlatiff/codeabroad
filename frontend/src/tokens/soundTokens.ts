@@ -5,6 +5,7 @@
 
 export type SoundEffectType =
   | 'node_tap'
+  | 'node_hover'
   | 'modal_open'
   | 'modal_close'
   | 'quest_start'
@@ -12,10 +13,15 @@ export type SoundEffectType =
   | 'view_switch'
   | 'trophy_tap'
   | 'track_change'
+  | 'yamanote_jingle'
+  | 'zen_bell'
   // Forward-compatible gamification SFX
   | 'quest_complete'
   | 'gem_collect'
   | 'streak_ignite'
+
+export type SoundscapeTrack = 'universal' | 'japan'
+export type AudioPlaybackMode = 'all' | 'sfx_only' | 'muted'
 
 export interface ToneStep {
   freq: number
@@ -35,9 +41,38 @@ export interface SoundConfig {
 export const SOUND_STORAGE_KEYS = {
   muted: 'codeabroad_sound_muted',
   volume: 'codeabroad_sound_volume',
+  audioMode: 'codeabroad_audio_mode',
+  bgmVolume: 'codeabroad_bgm_volume',
 } as const
 
 export const DEFAULT_MASTER_VOLUME = 0.65
+export const DEFAULT_BGM_VOLUME = 0.12
+
+/**
+ * Universal Lo-Fi chill chords (Fmaj7 -> Em7 -> Dm7 -> Cmaj7)
+ * Synthesized through warm 400Hz low-pass filters for focus coding.
+ */
+export const UNIVERSAL_SOUNDSCAPE_CHORDS: number[][] = [
+  [174.61, 261.63, 329.63, 440.0], // Fmaj7 (F3, C4, E4, A4)
+  [164.81, 246.94, 293.66, 392.0], // Em7 (E3, B3, D4, G4)
+  [146.83, 220.0, 261.63, 349.23], // Dm7 (D3, A3, C4, F4)
+  [130.81, 196.0, 246.94, 329.63], // Cmaj7 (C3, G3, B3, E4)
+]
+
+/**
+ * Traditional Japanese pentatonic scale (Insen & Yo scale notes: D, Eb, G, A, C, D)
+ * Synthesizes organic koto-like acoustic plucked tones and Tokyo temple atmosphere.
+ */
+export const JAPAN_SOUNDSCAPE_SCALE: number[] = [
+  293.66, // D4
+  311.13, // Eb4
+  392.0,  // G4
+  440.0,  // A4
+  523.25, // C5
+  587.33, // D5
+  659.25, // E5
+  783.99, // G5
+]
 
 export const SOUND_PRESETS: Record<SoundEffectType, SoundConfig> = {
   // 1. Cheerful popping bubble tap on interactive roadmap nodes
@@ -50,6 +85,21 @@ export const SOUND_PRESETS: Record<SoundEffectType, SoundConfig> = {
         type: 'sine',
         duration: 0.08,
         gain: 0.4,
+        rampType: 'exponential',
+      },
+    ],
+  },
+
+  // 1b. Tactile micro-tick when hovering nodes (gentle spatial feedback)
+  node_hover: {
+    volume: 0.1,
+    steps: [
+      {
+        freq: 1400,
+        targetFreq: 1800,
+        type: 'sine',
+        duration: 0.025,
+        gain: 0.25,
         rampType: 'exponential',
       },
     ],
@@ -169,7 +219,28 @@ export const SOUND_PRESETS: Record<SoundEffectType, SoundConfig> = {
     ],
   },
 
-  // 9. Forward-compatible: quest victory celebration
+  // 9. Tokyo Yamanote Line Station Departure Jingle (JR East melodic chime)
+  yamanote_jingle: {
+    volume: 0.35,
+    steps: [
+      { freq: 659.25, type: 'triangle', duration: 0.12, gain: 0.35, delay: 0 },     // E5
+      { freq: 830.61, type: 'triangle', duration: 0.12, gain: 0.35, delay: 0.09 },  // G#5
+      { freq: 987.77, type: 'triangle', duration: 0.14, gain: 0.4, delay: 0.18 },   // B5
+      { freq: 1318.51, type: 'sine', duration: 0.32, gain: 0.45, delay: 0.28 },    // E6
+    ],
+  },
+
+  // 10. Serene Japanese Temple Bell / Koto acoustic pluck
+  zen_bell: {
+    volume: 0.3,
+    steps: [
+      { freq: 440.0, type: 'sine', duration: 0.4, gain: 0.35, delay: 0 },
+      { freq: 659.25, type: 'sine', duration: 0.5, gain: 0.3, delay: 0.08 },
+      { freq: 880.0, type: 'sine', duration: 0.7, gain: 0.25, delay: 0.15 },
+    ],
+  },
+
+  // 11. Forward-compatible: quest victory celebration
   quest_complete: {
     volume: 0.5,
     steps: [
@@ -180,7 +251,7 @@ export const SOUND_PRESETS: Record<SoundEffectType, SoundConfig> = {
     ],
   },
 
-  // 10. Forward-compatible: coin / gem pickup ding
+  // 12. Forward-compatible: coin / gem pickup ding
   gem_collect: {
     volume: 0.35,
     steps: [
@@ -195,7 +266,7 @@ export const SOUND_PRESETS: Record<SoundEffectType, SoundConfig> = {
     ],
   },
 
-  // 11. Forward-compatible: streak flame ignite
+  // 13. Forward-compatible: streak flame ignite
   streak_ignite: {
     volume: 0.4,
     steps: [

@@ -11,6 +11,7 @@ import {
 import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import { Button3D } from '../../ui/Button3D'
 import type { PathMapNode } from '../../../types/roadmap'
+import { playSound } from '../../../utils/sound'
 import {
   resolveMapCategoryTokens,
   MAP_GEOMETRY,
@@ -59,6 +60,7 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         top: `${topPx}px`,
       }}
       onClick={() => onClick(node)}
+      onMouseEnter={() => playSound('node_hover')}
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
