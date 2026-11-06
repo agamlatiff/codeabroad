@@ -8,7 +8,7 @@ import {
   Trophy,
   Translate,
 } from '@phosphor-icons/react'
-import doodleCoding from '../../../assets/kodi/doodle-coding.png'
+import { KodiCharacter } from '../../ui/KodiCharacter'
 import { Button3D } from '../../ui/Button3D'
 import type { PathMapNode } from '../../../types/roadmap'
 import { playSound } from '../../../utils/sound'
@@ -108,21 +108,20 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         </div>
       )}
 
-      {/* ── KODI CHEERING COMPANION BESIDE ACTIVE LESSON ── */}
-      {node.status === 'active' && (
+      {/* ── LIVING KODI COMPANION BESIDE ACTIVE LESSON ── */}
+      {node.status === 'active' && !node.isChest && !node.isTrophy && (
         <div
           className={`absolute ${
             coord.x > 200 ? '-left-32 sm:-left-36' : '-right-32 sm:-right-36'
-          } top-2 hidden md:flex flex-col items-center select-none z-20 pointer-events-none`}
+          } -top-2 hidden md:flex flex-col items-center select-none z-20`}
         >
-          <div className="relative flex flex-col items-center animate-bounce-subtle">
-            <img
-              src={doodleCoding}
-              alt="Kodi Ngoding"
-              className="w-16 h-16 object-contain drop-shadow-md transition-transform hover:-translate-y-1"
-            />
-            <div className="w-14 h-2.5 bg-slate-300/60 rounded-[50%] blur-2xs -mt-1" />
-          </div>
+          <KodiCharacter
+            emotion="coding"
+            size={72}
+            interactive
+            showSpeechBubble
+            speechText="Ayo lanjut!"
+          />
         </div>
       )}
 

@@ -7,11 +7,8 @@ import {
   Lightning,
   Diamond,
 } from '@phosphor-icons/react'
-import doodleCoding from '../../../assets/kodi/doodle-coding.png'
-import doodleThinking from '../../../assets/kodi/doodle-thinking.png'
-import doodleCelebrate from '../../../assets/kodi/doodle-celebrate.png'
-import doodleProud from '../../../assets/kodi/doodle-proud.png'
 import { Button3D } from '../../ui/Button3D'
+import { KodiCharacter, type KodiEmotion } from '../../ui/KodiCharacter'
 import type { PathMapNode } from '../../../types/roadmap'
 import {
   resolveMapCategoryTokens,
@@ -27,13 +24,13 @@ export interface RoadmapNodeDetailModalProps {
 }
 
 /**
- * Resolves Kodi mascot emotion asset based on node state and milestone type.
+ * Resolves modular Kodi mascot emotion based on node state and milestone type.
  */
-const resolveMascotImage = (node: PathMapNode): string => {
-  if (node.isChest || node.isTrophy) return doodleCelebrate
-  if (node.status === 'locked') return doodleThinking
-  if (node.status === 'completed') return doodleProud
-  return doodleCoding
+const resolveMascotEmotion = (node: PathMapNode): KodiEmotion => {
+  if (node.isChest || node.isTrophy) return 'celebrate'
+  if (node.status === 'locked') return 'thinking'
+  if (node.status === 'completed') return 'happy'
+  return 'coding'
 }
 
 export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
@@ -48,7 +45,7 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
   }
 
   const catTokens = resolveMapCategoryTokens(node.category)
-  const mascotSrc = resolveMascotImage(node)
+  const mascotEmotion = resolveMascotEmotion(node)
 
   const modalIconBg =
     node.status === 'completed'
@@ -82,12 +79,12 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
           <X weight="bold" className="w-4 h-4" />
         </button>
 
-        {/* Mascot Character Expression */}
-        <div className="flex items-center justify-center py-1">
-          <img
-            src={mascotSrc}
-            alt="Kodi Maskot"
-            className="w-20 h-20 object-contain drop-shadow-md animate-bounce-subtle"
+        {/* Living Mascot Character Expression */}
+        <div className="flex items-center justify-center py-0.5">
+          <KodiCharacter
+            emotion={mascotEmotion}
+            size={90}
+            interactive
           />
         </div>
 
