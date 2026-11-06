@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import type { FC } from 'react'
+import type { FC, ReactNode } from 'react'
 import {
   X,
   Gift,
@@ -17,11 +17,75 @@ import doodleCelebrate from '../../../assets/kodi/doodle-celebrate.png'
 import doodleProud from '../../../assets/kodi/doodle-proud.png'
 import { Button3D } from '../../ui/Button3D'
 import type { PathMapNode } from '../../../data/roadmapMapFallback'
+import { resolveMapCategoryTokens } from '../../../tokens/roadmapTokens'
 
 export interface RoadmapNodeDetailModalProps {
   node: PathMapNode | null
   onClose: () => void
   onStartQuest?: (route: string) => void
+}
+
+/**
+ * Resolves Kodi mascot emotion asset based on node state and milestone type.
+ */
+const resolveMascotImage = (node: PathMapNode): string => {
+  if (node.isChest || node.isTrophy) return doodleCelebrate
+  if (node.status === 'locked') return doodleThinking
+  if (node.status === 'completed') return doodleProud
+  return doodleCoding
+}
+
+/**
+ * Renders the leading icon for the modal node summary.
+ */
+const renderModalNodeIcon = (
+  node: PathMapNode,
+  modalIconBg: string
+): ReactNode => {
+  if (node.isChest) {
+    return (
+      <div className="w-12 h-12 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs">
+        <Gift weight="fill" className="w-6 h-6" />
+      </div>
+    )
+  }
+  if (node.isTrophy) {
+    return (
+      <div className="w-12 h-12 rounded-2xl bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center text-yellow-700 shadow-2xs">
+        <Trophy weight="fill" className="w-6 h-6" />
+      </div>
+    )
+  }
+  if (node.category === 'nihongo') {
+    return (
+      <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
+        <Translate weight="bold" className="w-6 h-6" />
+      </div>
+    )
+  }
+  if (node.category === 'integration') {
+    return (
+      <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
+        <ArrowsLeftRight weight="bold" className="w-6 h-6" />
+      </div>
+    )
+  }
+  if (node.category === 'devops') {
+    return (
+      <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
+        <Cpu weight="fill" className="w-6 h-6" />
+      </div>
+    )
+  }
+  return (
+    <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
+      {node.status === 'completed' ? (
+        <Check weight="bold" className="w-6 h-6 text-emerald-600" />
+      ) : (
+        node.number
+      )}
+    </div>
+  )
 }
 
 export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
@@ -34,6 +98,16 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
   if (!node || typeof document === 'undefined') {
     return null
   }
+
+  const catTokens = resolveMapCategoryTokens(node.category)
+  const mascotSrc = resolveMascotImage(node)
+
+  const modalIconBg =
+    node.status === 'completed'
+      ? catTokens.modalIconBgCompleted
+      : node.status === 'active'
+      ? catTokens.modalIconBgActive
+      : 'bg-slate-100 border-slate-300 text-slate-500'
 
   const handleAction = () => {
     onClose()
@@ -63,82 +137,14 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
         {/* Mascot Character Expression */}
         <div className="flex items-center justify-center py-1">
           <img
-            src={
-              node.isChest || node.isTrophy
-                ? doodleCelebrate
-                : node.status === 'locked'
-                ? doodleThinking
-                : node.status === 'completed'
-                ? doodleProud
-                : doodleCoding
-            }
+            src={mascotSrc}
             alt="Kodi Maskot"
             className="w-20 h-20 object-contain drop-shadow-md animate-bounce-subtle"
           />
         </div>
 
         <div className="flex items-center gap-3">
-          {node.isChest ? (
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs">
-              <Gift weight="fill" className="w-6 h-6" />
-            </div>
-          ) : node.isTrophy ? (
-            <div className="w-12 h-12 rounded-2xl bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center text-yellow-700 shadow-2xs">
-              <Trophy weight="fill" className="w-6 h-6" />
-            </div>
-          ) : node.category === 'nihongo' ? (
-            <div
-              className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${
-                node.status === 'completed'
-                  ? 'bg-rose-100 border-rose-300 text-rose-700'
-                  : node.status === 'active'
-                  ? 'bg-rose-500 border-rose-600 text-white shadow-[0_3px_0_0_#9F1239]'
-                  : 'bg-slate-100 border-slate-300 text-slate-500'
-              }`}
-            >
-              <Translate weight="bold" className="w-6 h-6" />
-            </div>
-          ) : node.category === 'integration' ? (
-            <div
-              className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${
-                node.status === 'completed'
-                  ? 'bg-cyan-100 border-cyan-300 text-cyan-700'
-                  : node.status === 'active'
-                  ? 'bg-cyan-600 border-cyan-700 text-white shadow-[0_3px_0_0_#0E7490]'
-                  : 'bg-slate-100 border-slate-300 text-slate-500'
-              }`}
-            >
-              <ArrowsLeftRight weight="bold" className="w-6 h-6" />
-            </div>
-          ) : node.category === 'devops' ? (
-            <div
-              className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${
-                node.status === 'completed'
-                  ? 'bg-amber-100 border-amber-300 text-amber-700'
-                  : node.status === 'active'
-                  ? 'bg-amber-600 border-amber-700 text-white shadow-[0_3px_0_0_#B45309]'
-                  : 'bg-slate-100 border-slate-300 text-slate-500'
-              }`}
-            >
-              <Cpu weight="fill" className="w-6 h-6" />
-            </div>
-          ) : (
-            <div
-              className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${
-                node.status === 'completed'
-                  ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                  : node.status === 'active'
-                  ? 'bg-blue-100 border-blue-300 text-blue-700'
-                  : 'bg-slate-100 border-slate-300 text-slate-500'
-              }`}
-            >
-              {node.status === 'completed' ? (
-                <Check weight="bold" className="w-6 h-6 text-emerald-600" />
-              ) : (
-                node.number
-              )}
-            </div>
-          )}
+          {renderModalNodeIcon(node, modalIconBg)}
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -151,15 +157,7 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
               </span>
               {node.badgeLabel && (
                 <span
-                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded ${
-                    node.category === 'nihongo'
-                      ? 'bg-rose-100 text-rose-700 border border-rose-200'
-                      : node.category === 'integration'
-                      ? 'bg-cyan-100 text-cyan-800 border border-cyan-200'
-                      : node.category === 'devops'
-                      ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                      : 'bg-slate-100 text-slate-700 border border-slate-200'
-                  }`}
+                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded ${catTokens.badgeClass}`}
                 >
                   {node.badgeLabel}
                 </span>
@@ -200,11 +198,7 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
             variant={
               node.status === 'completed'
                 ? 'emerald'
-                : node.category === 'nihongo'
-                ? 'rose'
-                : node.category === 'integration'
-                ? 'cyan'
-                : 'blue'
+                : catTokens.activeButtonVariant
             }
             size="md"
             fullWidth

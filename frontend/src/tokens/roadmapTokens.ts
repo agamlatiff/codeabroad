@@ -272,4 +272,79 @@ export const MAP_MILESTONE_REWARDS = {
   chestGems: 20,
 } as const
 
+/**
+ * 7. Map Node Category & Status Visual Tokens
+ */
+export type MapNodeCategory = 'nihongo' | 'integration' | 'devops' | 'code'
+
+export interface MapCategoryStyleTokens {
+  popoverBorder: string
+  popoverLabelColor: string
+  badgeClass: string
+  activeButtonVariant: 'rose' | 'cyan' | 'amber' | 'blue'
+  activeButtonText: string
+  discCompleted: string
+  discActive: string
+  modalIconBgActive: string
+  modalIconBgCompleted: string
+}
+
+export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens> = {
+  nihongo: {
+    popoverBorder: 'border-rose-400',
+    popoverLabelColor: 'text-rose-600',
+    badgeClass: 'bg-rose-50 text-rose-600 border border-rose-200',
+    activeButtonVariant: 'rose',
+    activeButtonText: 'MULAI NIHONGO 🌸',
+    discCompleted: 'bg-rose-500 shadow-[0_5px_0_0_#9F1239]',
+    discActive: 'bg-rose-500 shadow-[0_6px_0_0_#BE123C] ring-8 ring-rose-100',
+    modalIconBgActive: 'bg-rose-500 border-rose-600 text-white shadow-[0_3px_0_0_#9F1239]',
+    modalIconBgCompleted: 'bg-rose-100 border-rose-300 text-rose-700',
+  },
+  integration: {
+    popoverBorder: 'border-cyan-400',
+    popoverLabelColor: 'text-cyan-600',
+    badgeClass: 'bg-cyan-50 text-cyan-700 border border-cyan-200',
+    activeButtonVariant: 'cyan',
+    activeButtonText: 'HANDSHAKE FITUR 🔗',
+    discCompleted: 'bg-cyan-600 shadow-[0_5px_0_0_#0E7490]',
+    discActive: 'bg-cyan-600 shadow-[0_6px_0_0_#0E7490] ring-8 ring-cyan-100',
+    modalIconBgActive: 'bg-cyan-600 border-cyan-700 text-white shadow-[0_3px_0_0_#0E7490]',
+    modalIconBgCompleted: 'bg-cyan-100 border-cyan-300 text-cyan-700',
+  },
+  devops: {
+    popoverBorder: 'border-amber-400',
+    popoverLabelColor: 'text-amber-600',
+    badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
+    activeButtonVariant: 'amber',
+    activeButtonText: 'LANJUTKAN KODING 💻',
+    discCompleted: 'bg-amber-600 shadow-[0_5px_0_0_#B45309]',
+    discActive: 'bg-amber-600 shadow-[0_6px_0_0_#B45309] ring-8 ring-amber-100',
+    modalIconBgActive: 'bg-amber-600 border-amber-700 text-white shadow-[0_3px_0_0_#B45309]',
+    modalIconBgCompleted: 'bg-amber-100 border-amber-300 text-amber-700',
+  },
+  code: {
+    popoverBorder: 'border-blue-400',
+    popoverLabelColor: 'text-blue-600',
+    badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
+    activeButtonVariant: 'blue',
+    activeButtonText: 'LANJUTKAN KODING 💻',
+    discCompleted: 'bg-emerald-500 shadow-[0_5px_0_0_#047857]',
+    discActive: 'bg-blue-600 shadow-[0_6px_0_0_#1D4ED8] ring-8 ring-blue-100',
+    modalIconBgActive: 'bg-blue-100 border-blue-300 text-blue-700',
+    modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
+  },
+}
+
+export const resolveMapNodeCategory = (category?: string): MapNodeCategory => {
+  if (category === 'nihongo') return 'nihongo'
+  if (category === 'integration') return 'integration'
+  if (category === 'devops') return 'devops'
+  return 'code'
+}
+
+export const resolveMapCategoryTokens = (category?: string): MapCategoryStyleTokens =>
+  MAP_CATEGORY_TOKENS[resolveMapNodeCategory(category)]
+
+
 
