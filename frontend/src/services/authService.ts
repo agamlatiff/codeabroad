@@ -49,6 +49,7 @@ export const authService = {
     github_url?: string
     linkedin_url?: string
     has_seen_roadmap_tour?: boolean
+    preferred_roadmap_view?: 'map' | 'syllabus'
   }): Promise<User> {
     const response = await api.patch<ApiResponse<User>>('/users/me', payload)
     if (!response.data.success || !response.data.data) {

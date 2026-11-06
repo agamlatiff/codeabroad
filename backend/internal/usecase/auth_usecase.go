@@ -240,6 +240,16 @@ func (u *authUsecase) UpdateProfile(ctx context.Context, userID string, req *dom
 	if userID == "" {
 		return nil, domain.ErrUnauthorized
 	}
+	if req.PreferredRoadmapView != nil {
+		view := *req.PreferredRoadmapView
+		if view != "map" && view != "syllabus" {
+			return nil, domain.NewBadRequestError(
+				"INVALID_ROADMAP_VIEW",
+				"preferred_roadmap_view harus bernilai 'map' atau 'syllabus'",
+				nil,
+			)
+		}
+	}
 	return u.userRepo.UpdateProfile(ctx, userID, req)
 }
 

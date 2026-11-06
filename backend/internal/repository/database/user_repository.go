@@ -34,6 +34,7 @@ const userSelectColumns = `
 	up.tech_stack_id, 
 	COALESCE(up.is_onboarded, FALSE),
 	COALESCE(up.has_seen_roadmap_tour, FALSE),
+	COALESCE(up.preferred_roadmap_view, 'map'),
 	COALESCE(ug.xp, 0), 
 	COALESCE(ug.current_level, 1), 
 	COALESCE(ug.streak, 0), 
@@ -63,6 +64,7 @@ func scanUser(row pgx.Row, user *domain.User) error {
 		&techStackIDVal,
 		&user.IsOnboarded,
 		&user.HasSeenRoadmapTour,
+		&user.PreferredRoadmapView,
 		&user.XP,
 		&user.CurrentLevel,
 		&user.Streak,
@@ -231,6 +233,7 @@ func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID strin
 			COALESCE(ug.gems, 0), 
 			COALESCE(up.is_onboarded, FALSE), 
 			COALESCE(up.has_seen_roadmap_tour, FALSE),
+			COALESCE(up.preferred_roadmap_view, 'map'),
 			COALESCE(ts.slug, ''), 
 			u.created_at,
 			c.id, c.code, c.name, c.flag_emoji,
@@ -260,6 +263,7 @@ func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID strin
 		&profile.Gems,
 		&profile.IsOnboarded,
 		&profile.HasSeenRoadmapTour,
+		&profile.PreferredRoadmapView,
 		&primaryStackSlug,
 		&profile.CreatedAt,
 		&countryID,
@@ -324,10 +328,11 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *
 		    career_path_id = COALESCE($3, career_path_id),
 		    bio = COALESCE($4, bio),
 		    has_seen_roadmap_tour = COALESCE($5, has_seen_roadmap_tour),
+		    preferred_roadmap_view = COALESCE($6, preferred_roadmap_view),
 		    updated_at = NOW()
 		WHERE user_id = $1
 	`
-	_, err := r.db.Pool.Exec(ctx, query, userID, req.Name, req.CareerPathID, req.Bio, req.HasSeenRoadmapTour)
+	_, err := r.db.Pool.Exec(ctx, query, userID, req.Name, req.CareerPathID, req.Bio, req.HasSeenRoadmapTour, req.PreferredRoadmapView)
 	if err != nil {
 		return nil, fmt.Errorf("failed to update user profile: %w", err)
 	}

@@ -16,6 +16,7 @@ export interface User {
     gems?: number | null
     is_onboarded: boolean
     has_seen_roadmap_tour?: boolean
+    preferred_roadmap_view?: 'map' | 'syllabus' | null
     primary_stack?: string | null
     country?: {
         id: string

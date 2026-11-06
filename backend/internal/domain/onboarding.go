@@ -62,7 +62,8 @@ type OnboardingProfileResponse struct {
 	Streak         int                `json:"streak"`
 	Gems           int                `json:"gems"`
 	IsOnboarded        bool               `json:"is_onboarded"`
-	HasSeenRoadmapTour bool               `json:"has_seen_roadmap_tour"`
+	HasSeenRoadmapTour   bool               `json:"has_seen_roadmap_tour"`
+	PreferredRoadmapView string             `json:"preferred_roadmap_view"`
 	PrimaryStack   *string            `json:"primary_stack"`
 	TargetTimeline *string            `json:"target_timeline"`
 	LanguageLevel  *string            `json:"language_level"`

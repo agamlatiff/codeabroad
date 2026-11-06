@@ -64,7 +64,12 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   // URL `?view=` is the source of truth; localStorage is only the fallback preference.
   const [storedViewMode] = useState(readStoredViewMode)
   const queryView = searchParams.get('view')
-  const viewMode: CurriculumViewMode = isViewMode(queryView) ? queryView : storedViewMode
+  const userDbView = user?.preferred_roadmap_view && isViewMode(user.preferred_roadmap_view)
+    ? user.preferred_roadmap_view
+    : null
+  const viewMode: CurriculumViewMode = isViewMode(queryView)
+    ? queryView
+    : (userDbView || storedViewMode)
 
   const setViewMode = useCallback(
     (mode: CurriculumViewMode) => {
@@ -87,8 +92,14 @@ export const useRoadmapPage = (explicitTrack?: string) => {
       } catch (error: unknown) {
         console.warn('[useRoadmapPage] Failed to persist view preference to localStorage:', error)
       }
+
+      // Optimistically update auth store and sync to backend user profile
+      updateUser({ preferred_roadmap_view: mode })
+      authService.updateProfile({ preferred_roadmap_view: mode }).catch((err) => {
+        console.warn('[useRoadmapPage] Failed to persist view mode to backend profile:', err)
+      })
     },
-    [setSearchParams]
+    [setSearchParams, updateUser]
   )
 
   // ── 1. RESOLVE REQUESTED TRACK ──

@@ -40,7 +40,8 @@ type User struct {
 	Gems         int        `json:"gems"`
 	LastActiveAt *time.Time `json:"last_active_at"`
 	IsOnboarded        bool       `json:"is_onboarded"`
-	HasSeenRoadmapTour bool       `json:"has_seen_roadmap_tour"`
+	HasSeenRoadmapTour   bool       `json:"has_seen_roadmap_tour"`
+	PreferredRoadmapView string     `json:"preferred_roadmap_view"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
@@ -73,7 +74,8 @@ type UpdateProfileRequest struct {
 	Bio          *string `json:"bio"`
 	GithubURL    *string `json:"github_url"`
 	LinkedinURL        *string `json:"linkedin_url"`
-	HasSeenRoadmapTour *bool   `json:"has_seen_roadmap_tour"`
+	HasSeenRoadmapTour   *bool   `json:"has_seen_roadmap_tour"`
+	PreferredRoadmapView *string `json:"preferred_roadmap_view" binding:"omitempty,oneof=map syllabus"`
 }
 
 // AuthResponse defines the payload returned upon successful authentication

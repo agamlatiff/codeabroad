@@ -54,6 +54,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     tech_stack_id UUID REFERENCES tech_stacks(id) ON DELETE SET NULL,
     is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
     has_seen_roadmap_tour BOOLEAN NOT NULL DEFAULT FALSE,
+    preferred_roadmap_view VARCHAR(20) NOT NULL DEFAULT 'map' CHECK (preferred_roadmap_view IN ('map', 'syllabus')),
     
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
