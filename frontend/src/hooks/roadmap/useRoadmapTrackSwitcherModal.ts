@@ -1,4 +1,4 @@
-import { useMemo, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useAuthStore } from '../../store/authStore'
 import { authService } from '../../services/authService'
 import { useQuery } from '@tanstack/react-query'
@@ -27,7 +27,6 @@ export const useRoadmapTrackSwitcherModal = ({
     staleTime: 1000 * 60 * 10, // 10 minutes cache
   })
 
-  // Memoized due to nested loops in mapCareerPathsToTrackOptions
   const { user: storeUser } = useAuthStore()
   const { data: profileUser } = useQuery({
     queryKey: PROFILE_QUERY_KEY,
@@ -36,10 +35,8 @@ export const useRoadmapTrackSwitcherModal = ({
   })
   const user = profileUser || storeUser
 
-  const trackOptions: CareerTrackOption[] = useMemo(
-    () => mapCareerPathsToTrackOptions(careerPaths, user),
-    [careerPaths, user]
-  )
+  // Direct lightweight computation (~5 career paths, simple filter and find)
+  const trackOptions: CareerTrackOption[] = mapCareerPathsToTrackOptions(careerPaths, user)
 
   const handleSelect = useCallback(
     (track: CareerTrackOption) => {
