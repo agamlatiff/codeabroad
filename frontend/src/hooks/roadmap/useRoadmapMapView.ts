@@ -104,7 +104,7 @@ export const useRoadmapMapView = ({
                   route: `/learn/${q.id}`,
                   xpReward: q.xp_reward || MAP_MILESTONE_REWARDS.defaultQuestXp,
                   category: (q.type as string) === 'nihongo' ? 'nihongo' : 'code',
-                  badgeLabel: (q.type as string) === 'nihongo' ? '🌸 NIHONGO' : undefined,
+                  badgeLabel: (q.type as string) === 'nihongo' ? 'NIHONGO' : undefined,
                 })
               })
             } else {
@@ -249,3 +249,4 @@ export const useRoadmapMapView = ({
     handleCloseModal,
   }
 }
+

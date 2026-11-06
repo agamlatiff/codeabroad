@@ -282,7 +282,7 @@ func NewBuffer(size int) *[]byte {
   'nihongo-part-1-aisatsu': {
     id: 'nihongo-part-1-aisatsu',
     title: 'Aisatsu, Jikoshoukai & Etika Kerja Kantor Tokyo',
-    chip_label: '🌸 NIHONGO',
+    chip_label: 'NIHONGO',
     difficulty: 'Mudah',
     xp_reward: 50,
     estimated_minutes: 10,

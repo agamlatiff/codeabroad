@@ -9,6 +9,7 @@ import {
   Translate,
   ArrowsLeftRight,
   Cpu,
+  Code,
 } from '@phosphor-icons/react'
 import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import { Button3D } from '../../ui/Button3D'
@@ -36,6 +37,22 @@ const renderNodeSymbol = (node: PathMapNode, iconClass: string): ReactNode => {
     return <Cpu weight="fill" className={iconClass} />
   }
   return <span>{node.number}</span>
+}
+
+/**
+ * Helper to render the appropriate action icon inside the active popover CTA button.
+ */
+const renderActionIcon = (category?: string): ReactNode => {
+  if (category === 'nihongo') {
+    return <Translate weight="bold" className="w-3.5 h-3.5" />
+  }
+  if (category === 'integration') {
+    return <ArrowsLeftRight weight="bold" className="w-3.5 h-3.5" />
+  }
+  if (category === 'devops') {
+    return <Cpu weight="fill" className="w-3.5 h-3.5" />
+  }
+  return <Code weight="bold" className="w-3.5 h-3.5" />
 }
 
 export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
@@ -87,9 +104,12 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
               </span>
               {node.badgeLabel && (
                 <span
-                  className={`text-[9px] font-brand font-black uppercase px-1 py-0.2 rounded ${catTokens.badgeClass}`}
+                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${catTokens.badgeClass}`}
                 >
-                  {node.badgeLabel}
+                  {node.category === 'nihongo' && (
+                    <Translate weight="bold" className="w-2.5 h-2.5" />
+                  )}
+                  <span>{node.badgeLabel}</span>
                 </span>
               )}
             </div>
@@ -100,6 +120,7 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
               variant={catTokens.activeButtonVariant}
               size="sm"
               fullWidth
+              icon={renderActionIcon(node.category)}
               onClick={handleActiveButtonClick}
               className="text-[10px] py-1.5"
             >
@@ -231,9 +252,12 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         <div className="mt-2 z-20 max-w-[170px] bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-xl px-2.5 py-1 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
           {node.badgeLabel && (
             <span
-              className={`text-[9px] font-brand font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md inline-block mb-0.5 ${catTokens.badgeClass}`}
+              className={`text-[9px] font-brand font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mb-0.5 ${catTokens.badgeClass}`}
             >
-              {node.badgeLabel}
+              {node.category === 'nihongo' && (
+                <Translate weight="bold" className="w-2.5 h-2.5" />
+              )}
+              <span>{node.badgeLabel}</span>
             </span>
           )}
           <h5 className="font-brand font-black text-[11px] text-slate-900 leading-snug line-clamp-2">

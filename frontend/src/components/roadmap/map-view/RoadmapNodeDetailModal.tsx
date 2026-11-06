@@ -157,9 +157,12 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
               </span>
               {node.badgeLabel && (
                 <span
-                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded ${catTokens.badgeClass}`}
+                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${catTokens.badgeClass}`}
                 >
-                  {node.badgeLabel}
+                  {node.category === 'nihongo' && (
+                    <Translate weight="bold" className="w-2.5 h-2.5" />
+                  )}
+                  <span>{node.badgeLabel}</span>
                 </span>
               )}
             </div>
