@@ -283,8 +283,8 @@ export const TRACK_CURRICULA: Record<string, RawTrackConfig> = {
             subtitle: 'Kemas binary Go ke image Docker ringan < 25MB siap deploy produksi',
             route: '/courses',
             xpReward: 50,
-            category: 'devops',
-            badgeLabel: '⚙️ DEVOPS',
+            category: 'code',
+            badgeLabel: 'DOCKER',
           },
           {
             id: 'part-11',

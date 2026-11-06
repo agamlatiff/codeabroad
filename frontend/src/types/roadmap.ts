@@ -98,7 +98,7 @@ export interface CareerTrackOption {
   group?: 'foundation' | 'career'
 }
 
-export type MapNodeCategory = 'nihongo' | 'integration' | 'devops' | 'code'
+export type MapNodeCategory = 'code' | 'nihongo'
 
 export interface CurriculumPartNode {
   id: string

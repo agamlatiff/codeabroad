@@ -1,14 +1,9 @@
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import type { FC, ReactNode } from 'react'
+import type { FC } from 'react'
 import {
   X,
-  Gift,
-  Trophy,
   Translate,
-  ArrowsLeftRight,
-  Cpu,
-  Check,
   Lightning,
   Diamond,
 } from '@phosphor-icons/react'
@@ -18,7 +13,11 @@ import doodleCelebrate from '../../../assets/kodi/doodle-celebrate.png'
 import doodleProud from '../../../assets/kodi/doodle-proud.png'
 import { Button3D } from '../../ui/Button3D'
 import type { PathMapNode } from '../../../types/roadmap'
-import { resolveMapCategoryTokens } from '../../../tokens/roadmapTokens'
+import {
+  resolveMapCategoryTokens,
+  MAP_MODAL_TOKENS,
+} from '../../../tokens/roadmapTokens'
+import { RoadmapModalNodeIcon } from './RoadmapNodeIcon'
 
 export interface RoadmapNodeDetailModalProps {
   node: PathMapNode | null
@@ -34,59 +33,6 @@ const resolveMascotImage = (node: PathMapNode): string => {
   if (node.status === 'locked') return doodleThinking
   if (node.status === 'completed') return doodleProud
   return doodleCoding
-}
-
-/**
- * Renders the leading icon for the modal node summary.
- */
-const renderModalNodeIcon = (
-  node: PathMapNode,
-  modalIconBg: string
-): ReactNode => {
-  if (node.isChest) {
-    return (
-      <div className="w-12 h-12 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs">
-        <Gift weight="fill" className="w-6 h-6" />
-      </div>
-    )
-  }
-  if (node.isTrophy) {
-    return (
-      <div className="w-12 h-12 rounded-2xl bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center text-yellow-700 shadow-2xs">
-        <Trophy weight="fill" className="w-6 h-6" />
-      </div>
-    )
-  }
-  if (node.category === 'nihongo') {
-    return (
-      <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
-        <Translate weight="bold" className="w-6 h-6" />
-      </div>
-    )
-  }
-  if (node.category === 'integration') {
-    return (
-      <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
-        <ArrowsLeftRight weight="bold" className="w-6 h-6" />
-      </div>
-    )
-  }
-  if (node.category === 'devops') {
-    return (
-      <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
-        <Cpu weight="fill" className="w-6 h-6" />
-      </div>
-    )
-  }
-  return (
-    <div className={`w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs ${modalIconBg}`}>
-      {node.status === 'completed' ? (
-        <Check weight="bold" className="w-6 h-6 text-emerald-600" />
-      ) : (
-        node.number
-      )}
-    </div>
-  )
 }
 
 export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
@@ -108,7 +54,7 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
       ? catTokens.modalIconBgCompleted
       : node.status === 'active'
       ? catTokens.modalIconBgActive
-      : 'bg-slate-100 border-slate-300 text-slate-500'
+      : catTokens.modalIconBgLocked
 
   const handleAction = () => {
     onClose()
@@ -145,16 +91,12 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {renderModalNodeIcon(node, modalIconBg)}
+          <RoadmapModalNodeIcon node={node} modalIconBg={modalIconBg} />
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400">
-                {node.status === 'completed'
-                  ? 'Selesai 100%'
-                  : node.status === 'active'
-                  ? 'Sedang Berjalan'
-                  : 'Modul Terkunci'}
+                {MAP_MODAL_TOKENS.statusBadge[node.status]}
               </span>
               {node.badgeLabel && (
                 <span
@@ -175,7 +117,7 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
 
         <p className="text-xs text-slate-600 font-medium leading-relaxed">
           {node.status === 'locked'
-            ? 'Materi ini masih terkunci. Selesaikan modul koding sebelumnya terlebih dahulu agar pemahaman teknismu berurutan dan solid.'
+            ? MAP_MODAL_TOKENS.lockedDescription
             : node.subtitle}
         </p>
 

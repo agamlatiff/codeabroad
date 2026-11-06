@@ -3,6 +3,7 @@ import type {
   TrackIconType,
   SequentialCurriculumUnit,
   SequentialPartItem,
+  MapNodeCategory,
 } from '../types/roadmap'
 
 export type RoadmapNodeStatus = 'completed' | 'active' | 'locked'
@@ -276,18 +277,17 @@ export const MAP_MILESTONE_REWARDS = {
 /**
  * 7. Map Node Category & Status Visual Tokens
  */
-export type MapNodeCategory = 'nihongo' | 'integration' | 'devops' | 'code'
-
 export interface MapCategoryStyleTokens {
   popoverBorder: string
   popoverLabelColor: string
   badgeClass: string
-  activeButtonVariant: 'rose' | 'cyan' | 'amber' | 'blue'
+  activeButtonVariant: 'rose' | 'blue'
   activeButtonText: string
   discCompleted: string
   discActive: string
   modalIconBgActive: string
   modalIconBgCompleted: string
+  modalIconBgLocked: string
 }
 
 export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens> = {
@@ -301,28 +301,7 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     discActive: 'bg-rose-500 shadow-[0_6px_0_0_#BE123C] ring-8 ring-rose-100',
     modalIconBgActive: 'bg-rose-500 border-rose-600 text-white shadow-[0_3px_0_0_#9F1239]',
     modalIconBgCompleted: 'bg-rose-100 border-rose-300 text-rose-700',
-  },
-  integration: {
-    popoverBorder: 'border-cyan-400',
-    popoverLabelColor: 'text-cyan-600',
-    badgeClass: 'bg-cyan-50 text-cyan-700 border border-cyan-200',
-    activeButtonVariant: 'cyan',
-    activeButtonText: 'HANDSHAKE FITUR',
-    discCompleted: 'bg-cyan-600 shadow-[0_5px_0_0_#0E7490]',
-    discActive: 'bg-cyan-600 shadow-[0_6px_0_0_#0E7490] ring-8 ring-cyan-100',
-    modalIconBgActive: 'bg-cyan-600 border-cyan-700 text-white shadow-[0_3px_0_0_#0E7490]',
-    modalIconBgCompleted: 'bg-cyan-100 border-cyan-300 text-cyan-700',
-  },
-  devops: {
-    popoverBorder: 'border-amber-400',
-    popoverLabelColor: 'text-amber-600',
-    badgeClass: 'bg-amber-100 text-amber-800 border border-amber-200',
-    activeButtonVariant: 'amber',
-    activeButtonText: 'LANJUTKAN KODING',
-    discCompleted: 'bg-amber-600 shadow-[0_5px_0_0_#B45309]',
-    discActive: 'bg-amber-600 shadow-[0_6px_0_0_#B45309] ring-8 ring-amber-100',
-    modalIconBgActive: 'bg-amber-600 border-amber-700 text-white shadow-[0_3px_0_0_#B45309]',
-    modalIconBgCompleted: 'bg-amber-100 border-amber-300 text-amber-700',
+    modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
   },
   code: {
     popoverBorder: 'border-blue-400',
@@ -334,21 +313,39 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     discActive: 'bg-blue-600 shadow-[0_6px_0_0_#1D4ED8] ring-8 ring-blue-100',
     modalIconBgActive: 'bg-blue-100 border-blue-300 text-blue-700',
     modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
+    modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
   },
 }
 
-export const resolveMapNodeCategory = (category?: string): MapNodeCategory => {
-  if (category === 'nihongo') return 'nihongo'
-  if (category === 'integration') return 'integration'
-  if (category === 'devops') return 'devops'
-  return 'code'
-}
+export const resolveMapNodeCategory = (category?: string): MapNodeCategory =>
+  category === 'nihongo' ? 'nihongo' : 'code'
 
 export const resolveMapCategoryTokens = (category?: string): MapCategoryStyleTokens =>
   MAP_CATEGORY_TOKENS[resolveMapNodeCategory(category)]
 
 /**
- * 8. Map Track Geometry & SVG Stroke Palettes
+ * 8. Modal Node Detail Visual & Copy Tokens
+ */
+export const MAP_MODAL_TOKENS = {
+  iconContainerBase:
+    'w-12 h-12 rounded-2xl border-2 flex items-center justify-center font-brand font-black text-xl shadow-2xs',
+  milestones: {
+    chest:
+      'w-12 h-12 rounded-2xl bg-amber-100 border-2 border-amber-300 flex items-center justify-center text-amber-700 shadow-2xs',
+    trophy:
+      'w-12 h-12 rounded-2xl bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center text-yellow-700 shadow-2xs',
+  },
+  statusBadge: {
+    completed: 'Selesai 100%',
+    active: 'Sedang Berjalan',
+    locked: 'Modul Terkunci',
+  },
+  lockedDescription:
+    'Materi ini masih terkunci. Selesaikan modul koding sebelumnya terlebih dahulu agar pemahaman teknismu berurutan dan solid.',
+} as const
+
+/**
+ * 9. Map Track Geometry & SVG Stroke Palettes
  */
 export const MAP_STAGE_TOKENS = {
   canvasContainer:

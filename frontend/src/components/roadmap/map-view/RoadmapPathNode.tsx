@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import type { FC, ReactNode } from 'react'
+import type { FC } from 'react'
 import {
   Check,
   LockSimple,
@@ -7,9 +7,6 @@ import {
   Gift,
   Trophy,
   Translate,
-  ArrowsLeftRight,
-  Cpu,
-  Code,
 } from '@phosphor-icons/react'
 import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import { Button3D } from '../../ui/Button3D'
@@ -20,44 +17,13 @@ import {
   MAP_MILESTONE_DISC_TOKENS,
   MAP_MILESTONE_PILL_TOKENS,
 } from '../../../tokens/roadmapTokens'
+import { renderNodeSymbol, renderActionIcon } from './RoadmapNodeIcon'
 
 export interface RoadmapPathNodeProps {
   node: PathMapNode
   coord: { x: number; y: number }
   onClick: (node: PathMapNode) => void
   onStartQuest?: (route: string) => void
-}
-
-/**
- * Helper to render the appropriate category symbol or number inside the 3D disc.
- */
-const renderNodeSymbol = (node: PathMapNode, iconClass: string): ReactNode => {
-  if (node.category === 'nihongo') {
-    return <Translate weight="bold" className={iconClass} />
-  }
-  if (node.category === 'integration') {
-    return <ArrowsLeftRight weight="bold" className={iconClass} />
-  }
-  if (node.category === 'devops') {
-    return <Cpu weight="fill" className={iconClass} />
-  }
-  return <span>{node.number}</span>
-}
-
-/**
- * Helper to render the appropriate action icon inside the active popover CTA button.
- */
-const renderActionIcon = (category?: string): ReactNode => {
-  if (category === 'nihongo') {
-    return <Translate weight="bold" className="w-3.5 h-3.5" />
-  }
-  if (category === 'integration') {
-    return <ArrowsLeftRight weight="bold" className="w-3.5 h-3.5" />
-  }
-  if (category === 'devops') {
-    return <Cpu weight="fill" className="w-3.5 h-3.5" />
-  }
-  return <Code weight="bold" className="w-3.5 h-3.5" />
 }
 
 export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
