@@ -4,7 +4,6 @@ import {
   Check,
   LockSimple,
   Sparkle,
-  BookOpen,
 } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../../utils/haptics'
 import type { Roadmap, Module, Chapter } from '../../../types/roadmap'
@@ -15,7 +14,6 @@ import {
   type CurriculumUnitData,
   type PathMapNode,
 } from '../../../data/roadmapMapFallback'
-import { RoadmapGuidebookModal, type GuidebookActiveUnit } from './RoadmapGuidebookModal'
 import { RoadmapNodeDetailModal } from './RoadmapNodeDetailModal'
 import { RoadmapPathNode } from './RoadmapPathNode'
 
@@ -40,7 +38,6 @@ export const RoadmapMapView: FC<RoadmapMapViewProps> = ({
   onStartQuest,
 }) => {
   const [activeModalNode, setActiveModalNode] = useState<PathMapNode | null>(null)
-  const [activeGuidebook, setActiveGuidebook] = useState<GuidebookActiveUnit | null>(null)
   const [questCompletionTick, setQuestCompletionTick] = useState(0)
 
   // Listen for real-time quest completions across the application
@@ -272,15 +269,6 @@ export const RoadmapMapView: FC<RoadmapMapViewProps> = ({
     setActiveModalNode(node)
   }
 
-  const handleGuidebookClick = (unit: CurriculumUnitData) => {
-    triggerHaptic('tap')
-    setActiveGuidebook({
-      unitTitle: unit.title,
-      unitNumber: unit.unitNumber,
-      tag: unit.tag,
-    })
-  }
-
   // ── GENERATOR JALUR SERPENTINE BEZIER MULUS ──
   const buildSvgPath = (coords: { x: number; y: number }[]) => {
     if (coords.length === 0) return ''
@@ -298,13 +286,6 @@ export const RoadmapMapView: FC<RoadmapMapViewProps> = ({
 
   return (
     <div className={`space-y-12 sm:space-y-16 select-none ${className}`}>
-      {/* ── BUKU PANDUAN BAB MODAL (GUIDEBOOK CHEATSHEET) ── */}
-      <RoadmapGuidebookModal
-        activeGuidebook={activeGuidebook}
-        trackSlug={trackSlug}
-        onClose={() => setActiveGuidebook(null)}
-      />
-
       {/* ── INTERACTIVE LESSON MODAL / POPOVER ── */}
       <RoadmapNodeDetailModal
         node={activeModalNode}
@@ -415,15 +396,6 @@ export const RoadmapMapView: FC<RoadmapMapViewProps> = ({
                   </h2>
                 </div>
 
-                <button
-                  type="button"
-                  onClick={() => handleGuidebookClick(unit)}
-                  className="shrink-0 bg-white/15 hover:bg-white/25 active:scale-95 text-white font-brand font-black text-xs px-3.5 py-2 rounded-xl border border-white/30 flex items-center gap-1.5 transition-all cursor-pointer backdrop-blur-xs shadow-2xs relative z-10"
-                >
-                  <BookOpen weight="bold" className="w-4 h-4 text-white" />
-                  <span className="hidden sm:inline">BUKU PANDUAN</span>
-                  <span className="sm:hidden">PANDUAN</span>
-                </button>
               </div>
 
               {/* ── SERPENTINE SNAKE PATH (OPEN WORLD CANVAS) ── */}
