@@ -2,12 +2,12 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { MapPin, Medal, Gift, LockSimple, Sparkle, CheckCircle } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../utils/haptics'
-import type { Station } from '../../types/roadmap'
+import type { Module } from '../../types/roadmap'
 
 export interface YamanoteRailTrackProps {
   className?: string
   currentStation?: number
-  stations?: Station[]
+  stations?: Module[]
   onNavigateToRoadmap?: () => void
 }
 
@@ -227,7 +227,14 @@ export const YamanoteRailTrack = ({
                 : 'bg-amber-500 hover:bg-amber-400 text-slate-950 shadow-[0_2px_10px_rgba(245,185,66,0.3)]'
             }`}
           >
-            {claimedReward ? 'SUDAH DIKLAIM ✓' : 'KLAIM +300 XP ⚡'}
+            {claimedReward ? (
+              <span className="flex items-center justify-center gap-1">
+                <CheckCircle weight="fill" className="w-3.5 h-3.5 text-emerald-400" />
+                <span>SUDAH DIKLAIM</span>
+              </span>
+            ) : (
+              'KLAIM +300 XP ⚡'
+            )}
           </button>
         </div>
 

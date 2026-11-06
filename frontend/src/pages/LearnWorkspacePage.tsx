@@ -4,7 +4,7 @@ import { useLearnWorkspace } from '../hooks/useLearnWorkspace'
 import { useAuthStore } from '../store/authStore'
 import { QuestCompleteModal } from '../components/workspace/QuestCompleteModal'
 import { Button3D } from '../components/ui/Button3D'
-import { ArrowCounterClockwise } from '@phosphor-icons/react'
+import { ArrowCounterClockwise, Check, CheckFat, X as XIcon } from '@phosphor-icons/react'
 
 export const LearnWorkspacePage = () => {
   const navigate = useNavigate()
@@ -231,7 +231,7 @@ export const LearnWorkspacePage = () => {
                             : 'bg-slate-100 text-slate-400'
                         }`}
                       >
-                        {failed ? '✕' : passed ? '✓' : '○'}
+                        {failed ? <XIcon weight="bold" className="w-3 h-3" /> : passed ? <Check weight="bold" className="w-3 h-3" /> : '○'}
                       </span>
                       <span
                         className={`font-medium ${
@@ -465,7 +465,14 @@ export const LearnWorkspacePage = () => {
                 disabled={isSubmitting}
                 className="text-xs px-6 py-3"
               >
-                {isSubmitting ? 'Mengirim...' : 'PERIKSA & SELESAIKAN MISI ✓'}
+                {isSubmitting ? (
+                  'Mengirim...'
+                ) : (
+                  <span className="flex items-center gap-1.5">
+                    <span>PERIKSA & SELESAIKAN MISI</span>
+                    <CheckFat weight="fill" className="w-3.5 h-3.5" />
+                  </span>
+                )}
               </Button3D>
             </>
           ) : (

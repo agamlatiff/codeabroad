@@ -131,7 +131,7 @@ export const MonthlyBadgeModal = ({
               className="text-xs py-2.5 border-2 border-slate-200 bg-slate-100 text-slate-500"
             >
               <Check weight="bold" className="w-4 h-4 mr-1 text-emerald-600" />
-              LENCANA SUDAH DIMILIKI DI PROFIL ✓
+              LENCANA SUDAH DIMILIKI DI PROFIL
             </Button3D>
           ) : isEligible ? (
             <Button3D

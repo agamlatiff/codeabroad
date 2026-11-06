@@ -92,7 +92,7 @@ export const TokyoPassportWidget = ({
       <div className="space-y-2 text-xs relative z-10">
         <div className="flex items-center gap-2 text-[#F1F5F9]">
           <CheckCircle weight="fill" className="w-4 h-4 text-[#10B981] shrink-0" />
-          <span className="font-medium text-[11px]">Sintaks Go & Strict Typing (Lulus ✓)</span>
+          <span className="font-medium text-[11px]">Sintaks Go & Strict Typing (Lulus)</span>
         </div>
         <div className="flex items-center gap-2 text-[#F1F5F9]">
           <CheckCircle weight="fill" className="w-4 h-4 text-[#10B981] shrink-0" />

@@ -32,6 +32,8 @@ import {
   X,
   Medal,
   CheckCircle,
+  Check,
+
   Code,
   Translate,
   ArrowRight,
@@ -1000,7 +1002,7 @@ export const QuestLogPage = () => {
                       {isMonthlyBadgeClaimed ? (
                         <span className="flex items-center gap-1.5">
                           <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
-                          <span>LENCANA EMAS AKTIF DI PROFIL ✓</span>
+                          <span>LENCANA EMAS AKTIF DI PROFIL</span>
                         </span>
                       ) : monthlyCompletedCount >= monthlyTargetCount ? (
                         <span className="flex items-center gap-1.5">
@@ -1244,7 +1246,16 @@ export const QuestLogPage = () => {
                                 : 'text-slate-500'
                             }`}
                           >
-                            {isClaimed ? 'DIKLAIM ✓' : chest.unlocked ? 'KLAIM ✨' : chest.reward}
+                            {isClaimed ? (
+                              <span className="inline-flex items-center gap-0.5">
+                                <Check weight="bold" className="w-2.5 h-2.5 text-emerald-600" />
+                                <span>DIKLAIM</span>
+                              </span>
+                            ) : chest.unlocked ? (
+                              'KLAIM ✨'
+                            ) : (
+                              chest.reward
+                            )}
                           </span>
                         </div>
                       </button>
@@ -1304,8 +1315,9 @@ export const QuestLogPage = () => {
                               • Target #{idx + 1}
                             </span>
                             {isClaimed && (
-                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                                HADIAH DITERIMA ✓
+                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 inline-flex items-center gap-1">
+                                <Check weight="bold" className="w-3 h-3 text-emerald-600" />
+                                <span>HADIAH DITERIMA</span>
                               </span>
                             )}
                           </div>
@@ -1347,7 +1359,10 @@ export const QuestLogPage = () => {
                             disabled
                             className="text-xs px-4 py-2 border-2 border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
                           >
-                            SELESAI ✓
+                            <span className="inline-flex items-center gap-1">
+                              <Check weight="bold" className="w-3.5 h-3.5 text-slate-400" />
+                              <span>SELESAI</span>
+                            </span>
                           </Button3D>
                         ) : isDone ? (
                           <Button3D
@@ -1454,8 +1469,9 @@ export const QuestLogPage = () => {
                             🏆 S-Rank Capstone
                           </span>
                           {challenge.isCompleted && (
-                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                              LULUS KUALIFIKASI ✓
+                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-1">
+                              <Check weight="bold" className="w-3 h-3 text-emerald-600" />
+                              <span>LULUS KUALIFIKASI</span>
                             </span>
                           )}
                         </div>
@@ -1498,7 +1514,14 @@ export const QuestLogPage = () => {
                           onClick={() => navigate(challenge.route)}
                           className={`text-xs px-4 py-2 ${challenge.isCompleted ? 'border border-emerald-300 bg-emerald-50 text-emerald-700' : ''}`}
                         >
-                          {challenge.isCompleted ? 'LIHAT HASIL ✓' : 'MULAI SAYEMBARA ➔'}
+                          {challenge.isCompleted ? (
+                            <span className="inline-flex items-center gap-1">
+                              <Check weight="bold" className="w-3.5 h-3.5 text-emerald-600" />
+                              <span>LIHAT HASIL</span>
+                            </span>
+                          ) : (
+                            'MULAI SAYEMBARA ➔'
+                          )}
                         </Button3D>
                       </div>
                     </div>

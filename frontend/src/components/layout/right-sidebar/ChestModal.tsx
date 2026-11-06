@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import type { FC } from 'react'
-import { Gift, Lightning, X } from '@phosphor-icons/react'
+import { Gift, Lightning, X, CheckFat } from '@phosphor-icons/react'
 import { Button3D } from '../../ui/Button3D'
 
 export interface ChestModalProps {
@@ -71,11 +71,16 @@ export const ChestModal: FC<ChestModalProps> = ({
           onClick={(e) => onClaimChest(e)}
           className="py-2.5 font-black text-xs shadow-[0_3px_0_0_#B45309]"
         >
-          {isChestClaimedToday
-            ? 'HADIAH PETI SUDAH DIKLAIM ✓'
-            : isChestUnlocked
-              ? 'KLAIM HADIAH & LANJUTKAN 🎁'
-              : `SELESAIKAN TARGET ${dailyTargetXp} XP (TERKUNCI)`}
+          {isChestClaimedToday ? (
+            <span className="flex items-center justify-center gap-1.5">
+              <CheckFat weight="fill" className="w-4 h-4" />
+              <span>HADIAH PETI SUDAH DIKLAIM</span>
+            </span>
+          ) : isChestUnlocked ? (
+            'KLAIM HADIAH & LANJUTKAN 🎁'
+          ) : (
+            `SELESAIKAN TARGET ${dailyTargetXp} XP (TERKUNCI)`
+          )}
         </Button3D>
       </div>
     </div>,

@@ -9,6 +9,7 @@ import {
   Fire,
   Star,
   CheckCircle,
+  CheckFat,
   Lightning,
   ArrowRight,
   ArrowCounterClockwise,
@@ -77,8 +78,9 @@ export const QuestCompletePage = () => {
           </span>
         </div>
 
-        <span className="hidden sm:inline-block bg-emerald-50 text-emerald-700 font-black text-xs px-3 py-1 rounded-full border border-emerald-200">
-          ✓ LULUS (100% PASS)
+        <span className="hidden sm:inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 font-black text-xs px-3 py-1 rounded-full border border-emerald-200">
+          <CheckFat weight="fill" className="w-3.5 h-3.5 text-emerald-600" />
+          <span>LULUS (100% PASS)</span>
         </span>
 
         <div className="flex items-center gap-2.5">
