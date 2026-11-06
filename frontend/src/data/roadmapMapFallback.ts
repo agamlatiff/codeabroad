@@ -1,0 +1,734 @@
+export interface CurriculumPartNode {
+  id: string
+  number: number
+  title: string
+  subtitle: string
+  status: 'completed' | 'active' | 'locked'
+  route: string
+  xpReward: number
+  category?: 'code' | 'nihongo' | 'integration' | 'devops'
+  badgeLabel?: string
+}
+
+export interface CurriculumUnitData {
+  id: string
+  unitNumber: number
+  tag: string
+  title: string
+  description: string
+  statusBadge: string
+  badgeType: 'completed' | 'active' | 'locked'
+  bannerGradient: string
+  bannerBorder: string
+  parts: CurriculumPartNode[]
+}
+
+export interface PathMapNode {
+  id: string
+  title: string
+  subtitle: string
+  number?: number
+  xpReward: number
+  status: 'completed' | 'active' | 'locked'
+  route: string
+  category?: 'code' | 'nihongo' | 'integration' | 'devops'
+  badgeLabel?: string
+  isChest?: boolean
+  isTrophy?: boolean
+}
+
+export interface RawTrackConfig {
+  defaultActivePart: number
+  units: {
+    id: string
+    unitNumber: number
+    tag: string
+    title: string
+    description: string
+    statusBadge: string
+    badgeType: 'completed' | 'active' | 'locked'
+    bannerGradient: string
+    bannerBorder: string
+    parts: Omit<CurriculumPartNode, 'status'>[]
+  }[]
+}
+
+export const TRACK_CURRICULA: Record<string, RawTrackConfig> = {
+  fundamental: {
+    defaultActivePart: 1,
+    units: [
+      {
+        id: 'fund-unit-1',
+        unitNumber: 1,
+        tag: 'UNIT 1 • FONDASI LOGIKA CPU & ALOKASI MEMORI',
+        title: 'Arsitektur Komputer, Heap vs Stack & Pointer Referensi',
+        description: 'Pahami cara CPU dan RAM bekerja, referensi pointer, dan etika sapaan Aisatsu hari pertama.',
+        statusBadge: 'SEDANG BERJALAN',
+        badgeType: 'active',
+        bannerGradient: 'bg-gradient-to-r from-indigo-600 via-blue-600 to-indigo-700',
+        bannerBorder: 'border-indigo-500/40',
+        parts: [
+          {
+            id: 'fund-part-1',
+            number: 1,
+            title: 'Memori Stack vs Heap & Pointer',
+            subtitle: 'Alokasi memori komputer dan referensi pointer',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fund-part-2',
+            number: 2,
+            title: 'Tipe Data Primitif & Struct',
+            subtitle: 'Data types, memory alignment & composite struct',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fund-part-3',
+            number: 3,
+            title: 'Aisatsu & Jikoshoukai di Kantor',
+            subtitle: 'Salam pagi, perkenalan diri & etika onboarding engineering Tokyo',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+      {
+        id: 'fund-unit-2',
+        unitNumber: 2,
+        tag: 'UNIT 2 • STRUKTUR DATA, BIG-O & CALL STACK',
+        title: 'Hash Map, Kompleksitas Algoritma & Asakai Standup',
+        description: 'Kuasai struktur data kunci, analisis Big-O, dan komunikasi progres tiket koding di standup.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-blue-600 via-cyan-600 to-teal-700',
+        bannerBorder: 'border-blue-500/40',
+        parts: [
+          {
+            id: 'fund-part-4',
+            number: 4,
+            title: 'Dynamic Array & Hash Map',
+            subtitle: 'Collision handling, lookup time & key-value indexing',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fund-part-5',
+            number: 5,
+            title: 'Looping, Recursion & Call Stack',
+            subtitle: 'Eksekusi recursive call & stack overflow guard',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fund-part-6',
+            number: 6,
+            title: 'Asakai (朝会) Standup Meeting',
+            subtitle: 'Lapor progres tiket Jira & blocker harian dalam bahasa Jepang',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+      {
+        id: 'fund-unit-3',
+        unitNumber: 3,
+        tag: 'UNIT 3 • PROTOKOL JARINGAN HTTP & GIT COLLABORATIVE',
+        title: 'Client-Server Request, REST Handshake & Git Branching',
+        description: 'Alat kerja wajib software engineer: Terminal Linux, Git PR review, dan protokol HTTP/REST.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-slate-700 via-slate-800 to-indigo-900',
+        bannerBorder: 'border-slate-500/40',
+        parts: [
+          {
+            id: 'fund-part-7',
+            number: 7,
+            title: 'Git Collaborative & Pull Request',
+            subtitle: 'Branch, Pull Request, merge conflict & review PR bilingual',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fund-part-8',
+            number: 8,
+            title: 'Protokol Client-Server & HTTP Request',
+            subtitle: 'Cara kerja HTTP GET/POST, status code 200/404 & format payload JSON',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fund-part-9',
+            number: 9,
+            title: 'Simulasi Wawancara Fondasi (Mensetsu)',
+            subtitle: 'Tanya jawab logika koding & motivasi karir global di Tokyo',
+            route: '/courses',
+            xpReward: 100,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+    ],
+  },
+
+  golang: {
+    defaultActivePart: 1,
+    units: [
+      {
+        id: 'unit-1',
+        unitNumber: 1,
+        tag: 'UNIT 1 • ARSITEKTUR MEMORI & LOGIKA EKSEKUSI (GOLANG)',
+        title: 'Manajemen Heap/Stack, Pointer & Salam Kantor Tokyo',
+        description: 'Pahami cara CPU & memori bekerja, alokasi pointer statis Go, dan etika sapaan Aisatsu hari pertama.',
+        statusBadge: 'SEDANG BERJALAN',
+        badgeType: 'active',
+        bannerGradient: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700',
+        bannerBorder: 'border-emerald-500/40',
+        parts: [
+          {
+            id: 'part-1',
+            number: 1,
+            title: 'Variabel & Tipe Data',
+            subtitle: 'Strict typing dan alokasi memori Go',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'part-2',
+            number: 2,
+            title: 'Pointer & Struktur Data',
+            subtitle: 'Pengelolaan referensi memori & Struct',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'part-3',
+            number: 3,
+            title: 'Aisatsu & Jikoshoukai di Kantor',
+            subtitle: 'Salam pagi, perkenalan diri & etika onboarding engineering Tokyo',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+      {
+        id: 'unit-2',
+        unitNumber: 2,
+        tag: 'UNIT 2 • DESAIN SISTEM REST API & KONTRAK DATA',
+        title: 'Gin Routing Engine, JWT Auth, Database & Asakai Standup',
+        description: 'Bangun API backend Go berstandar internasional, query database PostgreSQL, dan lapor di Asakai.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-700',
+        bannerBorder: 'border-blue-500/40',
+        parts: [
+          {
+            id: 'part-4',
+            number: 4,
+            title: 'Gin Routing Engine',
+            subtitle: 'HTTP method, path parameter & handler',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'part-5',
+            number: 5,
+            title: 'Routing & JWT Middleware',
+            subtitle: 'Autentikasi token claims & context guard',
+            route: '/learn/station-3-jwt-middleware',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'part-6',
+            number: 6,
+            title: 'Asakai (朝会) Standup Meeting',
+            subtitle: 'Lapor progres tiket Jira & blocker harian dalam bahasa Jepang',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+          {
+            id: 'part-7',
+            number: 7,
+            title: 'Format Response JSON & Standar API',
+            subtitle: 'Desain format response JSON yang konsisten, CORS & HTTP error codes',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'part-8',
+            number: 8,
+            title: 'Pgxpool Database Transaction',
+            subtitle: 'Integrasi connection pool PostgreSQL, CRUD & ACID isolation',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+        ],
+      },
+      {
+        id: 'unit-3',
+        unitNumber: 3,
+        tag: 'UNIT 3 • HIGH-THROUGHPUT CONCURRENCY & DOCKER',
+        title: 'Worker Pool, Multi-Stage Container & Wawancara Tokyo',
+        description: 'Optimalkan konkurensi asinkronus, kemas container Docker, dan taklukkan wawancara kerja.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-indigo-700 via-purple-700 to-violet-800',
+        bannerBorder: 'border-purple-500/40',
+        parts: [
+          {
+            id: 'part-9',
+            number: 9,
+            title: 'Worker Pool & Concurrency',
+            subtitle: 'Goroutine, buffered channel & sync.WaitGroup',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'part-10',
+            number: 10,
+            title: 'Multi-Stage Docker Packaging',
+            subtitle: 'Kemas binary Go ke image Docker ringan < 25MB siap deploy produksi',
+            route: '/courses',
+            xpReward: 50,
+            category: 'devops',
+            badgeLabel: '⚙️ DEVOPS',
+          },
+          {
+            id: 'part-11',
+            number: 11,
+            title: 'Simulasi Wawancara Kerja Tokyo (Mensetsu)',
+            subtitle: 'Pitching arsitektur Go, live coding & etika wawancara bilingual',
+            route: '/courses',
+            xpReward: 100,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+    ],
+  },
+
+  frontend: {
+    defaultActivePart: 1,
+    units: [
+      {
+        id: 'fe-unit-1',
+        unitNumber: 1,
+        tag: 'UNIT 1 • ARSITEKTUR KOMPONEN & TYPE SAFETY (REACT)',
+        title: 'Strict Generics, Component Decoupling & Salam Kantor',
+        description: 'Kuasai TypeScript generics, arsitektur komponen React, dan salam perkenalan kantor Tokyo.',
+        statusBadge: 'SEDANG BERJALAN',
+        badgeType: 'active',
+        bannerGradient: 'bg-gradient-to-r from-cyan-600 via-teal-600 to-blue-700',
+        bannerBorder: 'border-cyan-500/40',
+        parts: [
+          {
+            id: 'fe-part-1',
+            number: 1,
+            title: 'TypeScript Type & Interface',
+            subtitle: 'Strict generics dan type safety komponen',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fe-part-2',
+            number: 2,
+            title: 'Arsitektur Komponen React',
+            subtitle: 'Clean JSX, props decoupling & atomic layout',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fe-part-3',
+            number: 3,
+            title: 'Aisatsu & Jikoshoukai di Kantor',
+            subtitle: 'Salam pagi, perkenalan diri & etika onboarding engineering Tokyo',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+      {
+        id: 'fe-unit-2',
+        unitNumber: 2,
+        tag: 'UNIT 2 • STATE CONTROLLER & KONSUMSI REST API',
+        title: 'Custom Hooks, Integrasi REST API & Asakai Standup',
+        description: 'Hubungkan React UI dengan REST API, validasi data Zod, dan lapor di Asakai standup.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-sky-700',
+        bannerBorder: 'border-blue-500/40',
+        parts: [
+          {
+            id: 'fe-part-4',
+            number: 4,
+            title: 'Custom Hooks & State Logic',
+            subtitle: 'Modular state controller & reactive event handling',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fe-part-5',
+            number: 5,
+            title: 'Fetch & Integrasi REST API',
+            subtitle: 'Mengambil data API, handle error response & autentikasi JWT token',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fe-part-6',
+            number: 6,
+            title: 'Asakai (朝会) Standup Meeting',
+            subtitle: 'Lapor progres tiket Jira & blocker harian dalam bahasa Jepang',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+          {
+            id: 'fe-part-7',
+            number: 7,
+            title: 'TanStack Query State Cache',
+            subtitle: 'Server state caching, optimistic updates & refetch',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+        ],
+      },
+      {
+        id: 'fe-unit-3',
+        unitNumber: 3,
+        tag: 'UNIT 3 • PRODUCTION RENDERING & CLOUD DEPLOY',
+        title: 'Next.js SSR Streaming, Deploy Web & Wawancara Tokyo',
+        description: 'Kuasai Next.js App Router, deploy web ke server cloud, dan hadapi wawancara kerja Tokyo.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-indigo-700 via-purple-700 to-violet-800',
+        bannerBorder: 'border-purple-500/40',
+        parts: [
+          {
+            id: 'fe-part-8',
+            number: 8,
+            title: 'Next.js Server Actions & SSR',
+            subtitle: 'Fullstack React production architecture & Web Vitals',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fe-part-9',
+            number: 9,
+            title: 'Build Produksi & Deploy Web ke Cloud',
+            subtitle: 'Optimasi bundle produksi, Dockerfile Nginx & hosting cloud siap pakai',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'fe-part-10',
+            number: 10,
+            title: 'Simulasi Wawancara Kerja Tokyo (Mensetsu)',
+            subtitle: 'Presentasi portofolio UI/UX, code review & tanya jawab bilingual',
+            route: '/courses',
+            xpReward: 100,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+    ],
+  },
+
+  devops: {
+    defaultActivePart: 1,
+    units: [
+      {
+        id: 'devops-unit-1',
+        unitNumber: 1,
+        tag: 'UNIT 1 • ARSITEKTUR SISTEM OPERASI & AUTOMASI',
+        title: 'Linux Kernel Permissions, Systemd & Salam Kantor',
+        description: 'Kuasai terminal Linux, izin file, systemd service, dan etika sapaan Aisatsu hari pertama.',
+        statusBadge: 'SEDANG BERJALAN',
+        badgeType: 'active',
+        bannerGradient: 'bg-gradient-to-r from-orange-600 via-amber-600 to-amber-700',
+        bannerBorder: 'border-orange-500/40',
+        parts: [
+          {
+            id: 'devops-part-1',
+            number: 1,
+            title: 'Linux Permissions & Systemd',
+            subtitle: 'User access control, service daemon & env',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'devops-part-2',
+            number: 2,
+            title: 'Shell Scripting & Automasi',
+            subtitle: 'Pipes, filters & cron job automation',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'devops-part-3',
+            number: 3,
+            title: 'Aisatsu & Jikoshoukai di Kantor',
+            subtitle: 'Salam pagi, perkenalan diri & etika onboarding engineering Tokyo',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+      {
+        id: 'devops-unit-2',
+        unitNumber: 2,
+        tag: 'UNIT 2 • CONTAINERIZATION & MULTI-SERVICE ORKESTRASI',
+        title: 'Multi-Stage Dockerfile, Compose & Laporan Insiden',
+        description: 'Paketkan app Go & React dalam multi-container, dan tulis laporan insiden Shougai Houkoku.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-teal-700',
+        bannerBorder: 'border-blue-500/40',
+        parts: [
+          {
+            id: 'devops-part-4',
+            number: 4,
+            title: 'Multi-Stage Dockerfile',
+            subtitle: 'Optimasi ukuran image < 30MB & security audit',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'devops-part-5',
+            number: 5,
+            title: 'Docker Compose Multi-Container',
+            subtitle: 'Menjalankan backend API, frontend web, dan database dalam 1 jaringan',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'devops-part-6',
+            number: 6,
+            title: 'Shougai Houkoku (障害報告) Insiden Server',
+            subtitle: 'Menulis post-mortem downtime & komunikasi darurat bahasa Jepang',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+          {
+            id: 'devops-part-7',
+            number: 7,
+            title: 'Automated CI/CD Pipeline',
+            subtitle: 'GitHub Actions workflow & automated testing gate',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+        ],
+      },
+      {
+        id: 'devops-unit-3',
+        unitNumber: 3,
+        tag: 'UNIT 3 • CLUSTER RELIABILITY & OBSERVABILITY',
+        title: 'Kubernetes Mesh, Prometheus SLO & Wawancara Tokyo',
+        description: 'Kelola microservice di Kubernetes, pantau Prometheus metrics, dan hadapi wawancara SRE.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-indigo-700 via-purple-700 to-violet-800',
+        bannerBorder: 'border-purple-500/40',
+        parts: [
+          {
+            id: 'devops-part-8',
+            number: 8,
+            title: 'Kubernetes Pod & Service Mesh',
+            subtitle: 'K8s manifest, ingress routing & autoscaling',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'devops-part-9',
+            number: 9,
+            title: 'Prometheus & Grafana Observability',
+            subtitle: 'SLO, error budget tracking & alert manager',
+            route: '/courses',
+            xpReward: 50,
+            category: 'code',
+          },
+          {
+            id: 'devops-part-10',
+            number: 10,
+            title: 'Simulasi Wawancara Kerja Tokyo (Mensetsu)',
+            subtitle: 'Studi kasus troubleshooting outage, infra design & wawancara bilingual',
+            route: '/courses',
+            xpReward: 100,
+            category: 'nihongo',
+            badgeLabel: '🌸 NIHONGO',
+          },
+        ],
+      },
+    ],
+  },
+
+  nihongo: {
+    defaultActivePart: 1,
+    units: [
+      {
+        id: 'nihongo-unit-1',
+        unitNumber: 1,
+        tag: 'UNIT 1 • SURVIVAL SEHARIAN & ONBOARDING KANTOR',
+        title: 'Aisatsu, Jikoshoukai & Kehidupan di Tokyo',
+        description: 'Kuasai salam harian, perkenalan diri engineer, pesan makanan konbini & naik kereta Yamanote.',
+        statusBadge: 'SEDANG BERJALAN',
+        badgeType: 'active',
+        bannerGradient: 'bg-gradient-to-r from-rose-600 via-pink-600 to-rose-700',
+        bannerBorder: 'border-rose-500/40',
+        parts: [
+          {
+            id: 'nihongo-part-1',
+            number: 1,
+            title: 'Aisatsu & Salam Sehari-hari',
+            subtitle: 'Ohayou gozaimasu, Otsukaresama desu & etika sapaan kantor',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 SURVIVAL',
+          },
+          {
+            id: 'nihongo-part-2',
+            number: 2,
+            title: 'Jikoshoukai Perkenalan Diri',
+            subtitle: 'Memperkenalkan diri sebagai software engineer dari Indonesia',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 SURVIVAL',
+          },
+          {
+            id: 'nihongo-part-3',
+            number: 3,
+            title: 'Navigasi Kereta Tokyo & Konbini',
+            subtitle: 'Beli Suica/Pasmo, tanya arah stasiun & pesan makanan',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 SEIKATSU',
+          },
+        ],
+      },
+      {
+        id: 'nihongo-unit-2',
+        unitNumber: 2,
+        tag: 'UNIT 2 • KOMUNIKASI TIM IT & STANDUP ASAKAI',
+        title: 'Daily Standup, Kosakata Bug & Review PR',
+        description: 'Latih kelancaran saat morning standup Asakai, tiket Jira, istilah jissou & fuguai, serta komentar PR.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-amber-600 via-orange-600 to-rose-700',
+        bannerBorder: 'border-amber-500/40',
+        parts: [
+          {
+            id: 'nihongo-part-4',
+            number: 4,
+            title: 'Pola Laporan Asakai (Standup)',
+            subtitle: 'Pola: Kinou yatta koto, Kyou yaru koto, Kadai/Blocker',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 BISNIS IT',
+          },
+          {
+            id: 'nihongo-part-5',
+            number: 5,
+            title: 'Istilah Teknis: Jissou & Fuguai',
+            subtitle: 'Komunikasi bug, feature update & spec requirement di Slack',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 BISNIS IT',
+          },
+          {
+            id: 'nihongo-part-6',
+            number: 6,
+            title: 'Review Pull Request & Etika Git',
+            subtitle: 'Menulis komentar PR yang sopan & saran refactor kode',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 BISNIS IT',
+          },
+        ],
+      },
+      {
+        id: 'nihongo-unit-3',
+        unitNumber: 3,
+        tag: 'UNIT 3 • WAWANCARA KERJA & LIVE CODING TOKYO',
+        title: 'Persiapan Mensetsu & Live Coding Bilingual',
+        description: 'Kuasai teknik menjawab pertanyaan teknis wawancara kerja, motivasi masuk & live coding.',
+        statusBadge: 'TERKUNCI',
+        badgeType: 'locked',
+        bannerGradient: 'bg-gradient-to-r from-indigo-700 via-purple-700 to-rose-800',
+        bannerBorder: 'border-purple-500/40',
+        parts: [
+          {
+            id: 'nihongo-part-7',
+            number: 7,
+            title: 'Shibou Douki (Motivasi Kerja)',
+            subtitle: 'Mengapa ingin berkarir di Jepang & visi engineering 3 tahun ke depan',
+            route: '/courses',
+            xpReward: 50,
+            category: 'nihongo',
+            badgeLabel: '🌸 MENSETSU',
+          },
+          {
+            id: 'nihongo-part-8',
+            number: 8,
+            title: 'Simulasi Wawancara Teknis (Mensetsu)',
+            subtitle: 'Tanya-jawab portofolio, arsitektur & live coding bilingual',
+            route: '/courses',
+            xpReward: 100,
+            category: 'nihongo',
+            badgeLabel: '🌸 MENSETSU',
+          },
+        ],
+      },
+    ],
+  },
+}

@@ -18,6 +18,7 @@ import { LockSimple } from '@phosphor-icons/react'
 export const RoadmapPage = () => {
   const {
     currentTrack,
+    roadmap,
     units,
     totalPartsCount,
     completedPartsCount,
@@ -91,7 +92,11 @@ export const RoadmapPage = () => {
           {/* ── 4. CONDITIONAL VIEW: PETA RPG vs SILABUS MODUL ── */}
           {viewMode === 'map' ? (
             /* ── A. THE DUOLINGO 3D SERPENTINE MAP VIEW ── */
-            <RoadmapMapView trackSlug={currentTrack} />
+            <RoadmapMapView
+              trackSlug={currentTrack}
+              roadmap={roadmap}
+              onStartQuest={handleStartQuest}
+            />
           ) : (
             /* ── B. DIRECT SEQUENTIAL TECHNICAL UNIT CARDS (ACCORDION VIEW) ── */
             <RoadmapAccordionView
