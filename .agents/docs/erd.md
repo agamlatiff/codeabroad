@@ -75,10 +75,11 @@ CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login 
 | `username` | VARCHAR(50) | UNIQUE, NOT NULL | Unique platform username | Active (Mig 001) |
 | `bio` | TEXT | NULL | Short developer bio | Active (Mig 001) |
 | `career_path_id`| UUID | FK → `career_paths.id` ON DELETE SET NULL, NULL | Selected target career track (backend, frontend, etc.) | Active (Mig 001) |
-| `country_id` | VARCHAR(2) | FK → `countries.code` ON DELETE SET NULL, NULL | Selected target country (JP, DE, SG) | Active (Mig 001) |
+| `country_id` | UUID | FK → `countries.id` ON DELETE SET NULL, NULL | Selected target country (JP, DE, SG) | Active (Mig 001) |
 | `tech_stack_id` | UUID | FK → `tech_stacks.id` ON DELETE SET NULL, NULL | Selected primary tech stack (golang, react, etc.) | Active (Mig 001) |
 | `is_onboarded` | BOOLEAN | NOT NULL, DEFAULT FALSE | Onboarding completion flag | Active (Mig 001) |
 | `has_seen_roadmap_tour` | BOOLEAN | NOT NULL, DEFAULT FALSE | First-time roadmap curriculum tour completion flag | Active (Mig 001) |
+| `preferred_roadmap_view` | VARCHAR(20) | NOT NULL, DEFAULT 'map', CHECK (`preferred_roadmap_view` IN ('map', 'syllabus')) | Persisted curriculum view preference across devices | Active (Mig 001) |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile creation timestamp | Active (Mig 001) |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile update timestamp | Active (Mig 001) |
 
@@ -153,9 +154,10 @@ CodeAbroad mengadopsi **The 3-Pillar Architecture** memisahkan kredensial login 
 #### `countries` (Multi-Country Destinations)
 | Column | Type | Constraints | Description | Status |
 | :--- | :--- | :--- | :--- | :--- |
-| `code` | VARCHAR(2) | PRIMARY KEY | Country ISO code (`JP`, `DE`, `SG`) | Active (Mig 001) |
+| `id` | UUID | PRIMARY KEY, gen_random_uuid() | Unique country ID | Active (Mig 001) |
+| `code` | VARCHAR(10) | UNIQUE, NOT NULL | Country ISO code (`JP`, `DE`, `SG`) | Active (Mig 001) |
 | `name` | VARCHAR(100)| NOT NULL | Country display name (Japan, Germany, Singapore) | Active (Mig 001) |
-| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Country availability flag | Active (Mig 001) |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT FALSE | Country availability flag | Active (Mig 001) |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Registration timestamp | Active (Mig 001) |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Update timestamp | Active (Mig 001) |
 
@@ -338,14 +340,15 @@ Table user_profiles {
   username varchar(50) [unique, not null]
   bio text
   career_path_id uuid
-  country_id varchar(2)
+  country_id uuid
   tech_stack_id uuid
   is_onboarded boolean [not null, default: false]
   has_seen_roadmap_tour boolean [not null, default: false]
+  preferred_roadmap_view varchar(20) [not null, default: 'map', note: 'map | syllabus']
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 
-  Note: 'Clean public profile and career onboarding goals.'
+  Note: 'Clean public profile and career onboarding goals with cross-device roadmap view preference.'
 }
 
 // ----------------------------------------------------------------------------
@@ -420,9 +423,10 @@ Table user_activity_logs {
 // 4. TARGET DESTINATIONS & CAREER PATHS
 // ----------------------------------------------------------------------------
 Table countries {
-  code varchar(2) [pk, note: 'JP, DE, SG']
+  id uuid [pk, default: `gen_random_uuid()`]
+  code varchar(10) [unique, not null, note: 'JP, DE, SG']
   name varchar(100) [not null]
-  is_active boolean [not null, default: true]
+  is_active boolean [not null, default: false]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 }
@@ -550,7 +554,7 @@ Ref: user_badges.user_id > users.id [delete: cascade]
 Ref: user_daily_chest_claims.user_id > users.id [delete: cascade]
 Ref: user_activity_logs.user_id > users.id [delete: cascade]
 
-Ref: user_profiles.country_id > countries.code [delete: set null]
+Ref: user_profiles.country_id > countries.id [delete: set null]
 Ref: user_profiles.career_path_id > career_paths.id [delete: set null]
 Ref: user_profiles.tech_stack_id > tech_stacks.id [delete: set null]
 

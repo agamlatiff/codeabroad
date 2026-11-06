@@ -45,7 +45,7 @@ Unlike generic video platforms (Udemy, Coursera), CodeAbroad acts as a **Career 
 - **Auto-Login on Registration:** Seamless UX transitioning directly from sign-up into the onboarding flight wizard.
 - **The 3-Pillar Normalized Architecture (v2.2):**
   1. **Pillar 1 (`users`):** Auth Core murni (ID, Email, Password Hash). Zero Data Leakage pada query profil publik.
-  2. **Pillar 2 (`user_profiles`):** Data diri publik, bio, target negara (`country_id`), track karir (`career_path_id`), tech stack pilihan (`tech_stack_id`), status onboarding wizard (`is_onboarded`), dan status tour kurikulum roadmap (`has_seen_roadmap_tour`).
+  2. **Pillar 2 (`user_profiles`):** Data diri publik, bio, target negara (`country_id`), track karir (`career_path_id`), tech stack pilihan (`tech_stack_id`), status onboarding wizard (`is_onboarded`), status tour kurikulum roadmap (`has_seen_roadmap_tour`), dan preferensi tampilan roadmap (`preferred_roadmap_view`: `'map'` | `'syllabus'`).
   3. **Pillar 3 (`user_gamification`):** Engine gamifikasi terisolasi (XP, Level, Streak, Gems, Last Active At) untuk high-concurrency write loop.
 
 ### 3.2 Global Developer Onboarding Wizard
@@ -62,6 +62,10 @@ Organized via clean normalized hierarchy: **`tech_stacks` ➔ `modules` ➔ `cha
 - **First-Time Roadmap Onboarding Tour UX:**
   - Saat pengguna baru pertama kali membuka roadmap (`has_seen_roadmap_tour: false`), modal kurikulum otomatis terbuka untuk mengorientasikan struktur fondasi dan spesialisasi karir.
   - Setelah modal ditutup atau track dipilih, status `has_seen_roadmap_tour: true` langsung dipersist ke database PostgreSQL via `PATCH /api/v1/users/me` (anti-reset lintas perangkat & refresh).
+- **Dual View Mode (Peta RPG Serpentine vs Silabus Akordion):**
+  - **Mode Peta 3D (Default: `'map'`):** Tampilan visual interaktif bergaya Duolingo dengan alur S-curve bezier vertikal, node quest 3D bernomor (Part 1, 2, ...), pulsing outer ring pada quest aktif, dan maskot Kodi yang menyemangati progres.
+  - **Mode Silabus (`'syllabus'`):** Tampilan silabus akordion hierarkis berbasis modul dan bab untuk developer yang menginginkan overview cepat, pemetaan materi terstruktur, dan navigasi langsung ke quest.
+  - **Cross-Device Persistence:** Pilihan mode otomatis tersimpan ke PostgreSQL (`user_profiles.preferred_roadmap_view`) via `PATCH /api/v1/users/me` saat user menekan toggle, mencegah reset saat reload atau berpindah gadget.
 - **Sequential Unit Breakdown:**
   - **Module 1: Go Syntax & Concurrency Core**
     - Chapter 1: Go Basics & Goroutines Initiation

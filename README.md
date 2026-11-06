@@ -35,7 +35,7 @@ A gamified career RPG & IT learning platform for Indonesian developers targeting
 
 | Feature | Description |
 | :--- | :--- |
-| 🧭 **Modular Curriculum Learning Path** | Two-tier curriculum (Universal Foundations: CS & Web + Dynamic Career Specializations: Go, React, DevOps) with database-backed first-time onboarding tour |
+| 🧭 **Curriculum & Dual View Mode** | Two-tier curriculum (Universal Foundations + Dynamic Career Specializations) with database-persisted dual view mode (3D RPG Serpentine Map vs Accordion Syllabus) and onboarding tour |
 | ⚡ **Multi-Format Quest Nodes** | Concept Quizzes, Fill-in-the-blank, in-browser Monaco Coding challenges, Daily habit reviews, and Boss milestones |
 | 🎮 **3 Interaction Node States** | ✅ Completed (Emerald 3D), ⚡ Active (Electric Blue 3D with pulsating ring + popover CTA + Kodi), 🔒 Locked (Slate 3D) |
 | 💻 **Interactive Code Workspace** | Split-pane editor (Monaco Editor) with Go unit test runner and workplace communication notes |
@@ -90,6 +90,7 @@ CodeAbroad menerapkan **The 3-Pillar Normalized Architecture** untuk memisahkan 
 │  - Country & Career Path FKs │ │  - Last Active Timestamp     │
 │  - Normalized Tech Stack ID  │ └──────────────┬───────────────┘
 │  - Onboarding & Tour Flags   │                │
+│  - Roadmap View Preference   │                │
 └──────────────────────────────┘                │ (1-to-Many FK user_id)
         ┌───────────────────────────────────────┴───────────────────────┐
         ▼                                       ▼                       ▼
