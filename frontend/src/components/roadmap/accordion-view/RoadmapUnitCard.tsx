@@ -8,7 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { RoadmapPartItem } from './RoadmapPartItem'
 import type { SequentialCurriculumUnit } from '../../../types/roadmap'
-import { resolveUnitCardTokens } from '../../../tokens/roadmapTokens'
+import { resolveUnitCardTokens, ACCORDION_ACTION_TOKENS } from '../../../tokens/roadmapTokens'
 
 export interface RoadmapUnitCardProps {
   unit: SequentialCurriculumUnit
@@ -129,9 +129,9 @@ export const RoadmapUnitCard = ({
 
       {/* Unit Milestone Trophy Badge */}
       {isUnitCompleted && (
-        <div className="p-3.5 sm:p-4 bg-emerald-50/80 border-t-2 border-emerald-100 flex items-center justify-between gap-3">
+        <div className={ACCORDION_ACTION_TOKENS.completionBanner}>
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs">
+            <div className={ACCORDION_ACTION_TOKENS.trophyIconBox}>
               <Trophy weight="fill" className="w-4 h-4 text-amber-200" />
             </div>
             <div className="flex flex-col min-w-0">
@@ -143,7 +143,7 @@ export const RoadmapUnitCard = ({
               </span>
             </div>
           </div>
-          <span className="bg-emerald-600 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-xl shadow-xs flex items-center gap-1">
+          <span className={ACCORDION_ACTION_TOKENS.verifiedBadge}>
             <CheckFat weight="fill" className="w-3 h-3 text-emerald-100" />
             <span>TERVERIFIKASI</span>
           </span>

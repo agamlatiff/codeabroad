@@ -263,6 +263,7 @@ export const MAP_GEOMETRY = {
   startY: 135,
   viewboxWidth: 400,
   bottomPadding: 70,
+  nodeDiscRadius: 36,
 } as const
 
 export const MAP_MILESTONE_REWARDS = {
@@ -345,6 +346,109 @@ export const resolveMapNodeCategory = (category?: string): MapNodeCategory => {
 
 export const resolveMapCategoryTokens = (category?: string): MapCategoryStyleTokens =>
   MAP_CATEGORY_TOKENS[resolveMapNodeCategory(category)]
+
+/**
+ * 8. Map Track Geometry & SVG Stroke Palettes
+ */
+export const MAP_STAGE_TOKENS = {
+  canvasContainer:
+    'max-w-2xl mx-auto w-full bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-7 relative overflow-visible space-y-12 sm:space-y-16 bg-[radial-gradient(#E2E8F0_1.2px,transparent_1.2px)] [background-size:24px_24px]',
+} as const
+
+export const MAP_TRACK_TOKENS = {
+  glow: {
+    stroke: '#93C5FD',
+    strokeWidth: 20,
+    opacity: 0.35,
+  },
+  base: {
+    stroke: '#E2E8F0',
+    strokeWidth: 12,
+  },
+  dash: {
+    strokeWidth: 4,
+    dashArray: '10 12',
+    completed: {
+      stroke: '#10B981',
+      opacity: 0.75,
+    },
+    active: {
+      stroke: '#2563EB',
+      opacity: 0.75,
+    },
+    locked: {
+      stroke: '#94A3B8',
+      opacity: 0.4,
+    },
+  },
+} as const
+
+/**
+ * 9. Map Biome Ambient Spotlight Aura
+ */
+export const MAP_BIOME_AURA_TOKENS = {
+  completed: 'bg-emerald-400',
+  active: 'bg-blue-400',
+  locked: 'bg-indigo-400',
+} as const
+
+/**
+ * 10. Map Milestone 3D Stepping Stone Nodes (Chest, Trophy, Locked)
+ */
+export const MAP_MILESTONE_DISC_TOKENS = {
+  chest: {
+    completed:
+      'bg-gradient-to-b from-amber-300 to-amber-500 border-amber-600 shadow-[0_5px_0_0_#92400E]',
+    active:
+      'bg-gradient-to-b from-amber-400 to-orange-500 border-amber-600 ring-4 ring-amber-200 shadow-[0_5px_0_0_#B45309] animate-pulse',
+    locked: 'bg-slate-100 border-slate-300 shadow-[0_4px_0_0_#CBD5E1]',
+  },
+  trophy: {
+    completed:
+      'bg-gradient-to-b from-yellow-300 to-amber-500 border-yellow-600 shadow-[0_5px_0_0_#A16207]',
+    locked: 'bg-slate-100 border-slate-300 shadow-[0_4px_0_0_#CBD5E1]',
+  },
+  lockedLesson:
+    'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 shadow-[0_4px_0_0_#CBD5E1]',
+} as const
+
+export const MAP_MILESTONE_PILL_TOKENS = {
+  chest: 'bg-amber-50 border border-amber-200/90 text-amber-800',
+  trophy: 'bg-yellow-50 border border-yellow-200/90 text-yellow-800',
+} as const
+
+/**
+ * 11. View Toggle Segmented Control 3D Tokens
+ */
+export const VIEW_TOGGLE_TOKENS = {
+  container:
+    'bg-slate-200/90 p-1 rounded-2xl border-2 border-slate-300 flex items-center gap-1 shadow-2xs',
+  buttonActive:
+    'bg-white text-blue-700 font-brand font-black border-2 border-blue-400 shadow-[0_2.5px_0_0_#93C5FD] translate-y-0',
+  buttonInactive:
+    'text-slate-600 hover:text-slate-900 font-brand font-bold border-2 border-transparent hover:bg-white/50',
+  badgeActive: 'bg-blue-100 text-blue-800 font-black',
+  badgeInactive: 'bg-slate-300/70 text-slate-700 font-bold',
+} as const
+
+/**
+ * 12. Accordion View Actions & Completion Banner Tokens
+ */
+export const ACCORDION_ACTION_TOKENS = {
+  completionBanner:
+    'p-3.5 sm:p-4 bg-emerald-50/80 border-t-2 border-emerald-100 flex items-center justify-between gap-3',
+  trophyIconBox:
+    'w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-xs',
+  verifiedBadge:
+    'bg-emerald-600 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-xl shadow-xs flex items-center gap-1',
+  xpChip:
+    'bg-amber-50 text-amber-900 border border-amber-300 font-brand font-black text-[11px] sm:text-xs px-2.5 py-1 rounded-xl shadow-2xs flex items-center gap-1',
+  completedPill:
+    'px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-brand font-black text-xs flex items-center gap-1.5 shadow-[0_2px_0_0_#A7F3D0]',
+  lockedButton:
+    'px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer',
+} as const
+
 
 
 

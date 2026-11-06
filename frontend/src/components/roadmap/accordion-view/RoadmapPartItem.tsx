@@ -4,10 +4,11 @@ import {
   Lightning,
   Play,
   CheckFat,
+  Clock,
 } from '@phosphor-icons/react'
 import { Button3D } from '../../ui/Button3D'
 import type { SequentialPartItem } from '../../../types/roadmap'
-import { resolvePartTokens } from '../../../tokens/roadmapTokens'
+import { resolvePartTokens, ACCORDION_ACTION_TOKENS } from '../../../tokens/roadmapTokens'
 
 export interface RoadmapPartItemProps {
   part: SequentialPartItem
@@ -67,21 +68,28 @@ export const RoadmapPartItem = ({
             Part {part.globalPartNumber}: {part.title}
           </h4>
 
-          <p className="text-[11px] sm:text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed">
-            {part.subtitle} • {part.difficulty} • ⏱️ Estimasi {part.estimatedMinutes} Menit
+          <p className="text-[11px] sm:text-xs text-slate-500 font-medium line-clamp-2 leading-relaxed flex items-center gap-1.5 flex-wrap">
+            <span>{part.subtitle}</span>
+            <span>•</span>
+            <span>{part.difficulty}</span>
+            <span>•</span>
+            <span className="inline-flex items-center gap-1">
+              <Clock weight="bold" className="w-3 h-3 text-slate-400" />
+              <span>Estimasi {part.estimatedMinutes} Menit</span>
+            </span>
           </p>
         </div>
       </div>
 
       {/* Right: XP Chip & Tactile Action */}
       <div className="flex items-center justify-between sm:justify-end gap-2.5 shrink-0 pt-2.5 sm:pt-0 border-t sm:border-t-0 border-slate-100">
-        <span className="bg-amber-50 text-amber-900 border border-amber-300 font-brand font-black text-[11px] sm:text-xs px-2.5 py-1 rounded-xl shadow-2xs flex items-center gap-1">
+        <span className={ACCORDION_ACTION_TOKENS.xpChip}>
           <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-600" />
           <span>+{part.xpReward} XP</span>
         </span>
 
         {isCompleted ? (
-          <div className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-brand font-black text-xs flex items-center gap-1.5 shadow-[0_2px_0_0_#A7F3D0]">
+          <div className={ACCORDION_ACTION_TOKENS.completedPill}>
             <CheckFat weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600" />
             <span>SELESAI</span>
           </div>
@@ -101,7 +109,7 @@ export const RoadmapPartItem = ({
           <button
             type="button"
             onClick={() => onLockedClick(part.title)}
-            className="px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            className={ACCORDION_ACTION_TOKENS.lockedButton}
             title="Modul ini masih terkunci. Klik untuk informasi."
           >
             <LockSimple weight="bold" className="w-3.5 h-3.5" />

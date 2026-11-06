@@ -2,6 +2,11 @@ import { useMemo } from 'react'
 import type { FC } from 'react'
 import { Check, LockSimple, Sparkle } from '@phosphor-icons/react'
 import type { CurriculumUnitData, PathMapNode } from '../../../types/roadmap'
+import {
+  MAP_GEOMETRY,
+  MAP_TRACK_TOKENS,
+  MAP_BIOME_AURA_TOKENS,
+} from '../../../tokens/roadmapTokens'
 import { assembleUnitNodes } from './roadmapMapLayout'
 import { RoadmapPathNode } from './RoadmapPathNode'
 
@@ -78,10 +83,10 @@ export const RoadmapMapUnitSection: FC<RoadmapMapUnitSectionProps> = ({
         <div
           className={`absolute top-6 left-1/2 -translate-x-1/2 w-80 sm:w-[440px] h-[450px] -z-10 pointer-events-none rounded-full blur-3xl opacity-30 ${
             isUnitCompleted
-              ? 'bg-emerald-400'
+              ? MAP_BIOME_AURA_TOKENS.completed
               : isUnitActive
-              ? 'bg-blue-400'
-              : 'bg-indigo-400'
+              ? MAP_BIOME_AURA_TOKENS.active
+              : MAP_BIOME_AURA_TOKENS.locked
           }`}
         />
 
@@ -106,7 +111,7 @@ export const RoadmapMapUnitSection: FC<RoadmapMapUnitSectionProps> = ({
           {/* ── CONTINUOUS SERPENTINE SVG TRACK ── */}
           <svg
             className="absolute inset-0 w-full h-full pointer-events-none"
-            viewBox={`0 0 400 ${totalHeight}`}
+            viewBox={`0 0 ${MAP_GEOMETRY.viewboxWidth} ${totalHeight}`}
             preserveAspectRatio="none"
             fill="none"
           >
@@ -114,35 +119,39 @@ export const RoadmapMapUnitSection: FC<RoadmapMapUnitSectionProps> = ({
             {isUnitActive && (
               <path
                 d={svgPathString}
-                stroke="#93C5FD"
-                strokeWidth="20"
+                stroke={MAP_TRACK_TOKENS.glow.stroke}
+                strokeWidth={MAP_TRACK_TOKENS.glow.strokeWidth}
                 strokeLinecap="round"
-                opacity="0.35"
+                opacity={MAP_TRACK_TOKENS.glow.opacity}
               />
             )}
 
             {/* Thick Base Foundation Track */}
             <path
               d={svgPathString}
-              stroke="#E2E8F0"
-              strokeWidth="12"
+              stroke={MAP_TRACK_TOKENS.base.stroke}
+              strokeWidth={MAP_TRACK_TOKENS.base.strokeWidth}
               strokeLinecap="round"
             />
             {/* Inner Active / Completed Dashed Line */}
-            <path
-              d={svgPathString}
-              stroke={
-                isUnitCompleted
-                  ? '#10B981'
-                  : isUnitActive
-                  ? '#2563EB'
-                  : '#94A3B8'
-              }
-              strokeWidth="4"
-              strokeDasharray="10 12"
-              strokeLinecap="round"
-              opacity={isUnitCompleted || isUnitActive ? '0.75' : '0.4'}
-            />
+            {(() => {
+              const dashConfig = isUnitCompleted
+                ? MAP_TRACK_TOKENS.dash.completed
+                : isUnitActive
+                ? MAP_TRACK_TOKENS.dash.active
+                : MAP_TRACK_TOKENS.dash.locked
+
+              return (
+                <path
+                  d={svgPathString}
+                  stroke={dashConfig.stroke}
+                  strokeWidth={MAP_TRACK_TOKENS.dash.strokeWidth}
+                  strokeDasharray={MAP_TRACK_TOKENS.dash.dashArray}
+                  strokeLinecap="round"
+                  opacity={dashConfig.opacity}
+                />
+              )
+            })()}
           </svg>
 
           {/* ── STEPPING STONE NODES ── */}

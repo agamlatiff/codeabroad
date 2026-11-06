@@ -14,7 +14,12 @@ import {
 import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import { Button3D } from '../../ui/Button3D'
 import type { PathMapNode } from '../../../types/roadmap'
-import { resolveMapCategoryTokens, MAP_GEOMETRY } from '../../../tokens/roadmapTokens'
+import {
+  resolveMapCategoryTokens,
+  MAP_GEOMETRY,
+  MAP_MILESTONE_DISC_TOKENS,
+  MAP_MILESTONE_PILL_TOKENS,
+} from '../../../tokens/roadmapTokens'
 
 export interface RoadmapPathNodeProps {
   node: PathMapNode
@@ -64,7 +69,7 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
   const navigate = useNavigate()
   const catTokens = resolveMapCategoryTokens(node.category)
   const leftPercent = (coord.x / MAP_GEOMETRY.viewboxWidth) * 100
-  const topPx = coord.y - 36 // Center the 72px disc
+  const topPx = coord.y - MAP_GEOMETRY.nodeDiscRadius
 
   const handleActiveButtonClick = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -158,12 +163,12 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         {node.isChest ? (
           /* 3D Milestone Chest Node */
           <div
-            className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all shadow-[0_5px_0_0_#B45309] active:shadow-none active:translate-y-1 border-2 ${
+            className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
               node.status === 'completed'
-                ? 'bg-gradient-to-b from-amber-300 to-amber-500 border-amber-600 shadow-[0_5px_0_0_#92400E]'
+                ? MAP_MILESTONE_DISC_TOKENS.chest.completed
                 : node.status === 'active'
-                ? 'bg-gradient-to-b from-amber-400 to-orange-500 border-amber-600 ring-4 ring-amber-200 animate-pulse'
-                : 'bg-slate-100 border-slate-300 shadow-[0_4px_0_0_#CBD5E1]'
+                ? MAP_MILESTONE_DISC_TOKENS.chest.active
+                : MAP_MILESTONE_DISC_TOKENS.chest.locked
             }`}
             title={node.title}
           >
@@ -182,10 +187,10 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         ) : node.isTrophy ? (
           /* 3D Milestone Trophy Node */
           <div
-            className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all shadow-[0_5px_0_0_#CA8A04] active:shadow-none active:translate-y-1 border-2 ${
+            className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
               node.status === 'completed'
-                ? 'bg-gradient-to-b from-yellow-300 to-amber-500 border-yellow-600 shadow-[0_5px_0_0_#A16207]'
-                : 'bg-slate-100 border-slate-300 shadow-[0_4px_0_0_#CBD5E1]'
+                ? MAP_MILESTONE_DISC_TOKENS.trophy.completed
+                : MAP_MILESTONE_DISC_TOKENS.trophy.locked
             }`}
             title={node.title}
           >
@@ -225,7 +230,9 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
         ) : (
           /* 3D Locked Lesson Node */
           <div className="relative">
-            <div className="w-16 h-16 rounded-full bg-slate-100 hover:bg-slate-200 active:translate-y-1 text-slate-400 font-brand font-black text-2xl border-2 border-slate-200 shadow-[0_4px_0_0_#CBD5E1] active:shadow-none flex items-center justify-center transition-all">
+            <div
+              className={`w-16 h-16 rounded-full active:translate-y-1 text-slate-400 font-brand font-black text-2xl active:shadow-none flex items-center justify-center transition-all ${MAP_MILESTONE_DISC_TOKENS.lockedLesson}`}
+            >
               {renderNodeSymbol(node, 'w-7 h-7 text-slate-400')}
             </div>
             <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-slate-600 shadow-2xs">
@@ -237,15 +244,21 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
 
       {/* ── COLLISION-FREE PILLS & LABELS ── */}
       {node.isChest ? (
-        <div className="mt-2.5 z-20 bg-amber-50 border border-amber-200/90 rounded-full px-3 py-0.5 text-center shadow-2xs">
-          <span className="font-brand font-black text-[10px] text-amber-800">
-            {node.status === 'completed' ? '🎁 Diklaim (+30 XP)' : '🎁 Peti Hadiah (+30 XP)'}
+        <div
+          className={`mt-2.5 z-20 rounded-full px-2.5 py-0.5 text-center shadow-2xs inline-flex items-center gap-1 ${MAP_MILESTONE_PILL_TOKENS.chest}`}
+        >
+          <Gift weight="fill" className="w-3 h-3 text-amber-700" />
+          <span className="font-brand font-black text-[10px]">
+            {node.status === 'completed' ? 'Diklaim (+30 XP)' : 'Peti Hadiah (+30 XP)'}
           </span>
         </div>
       ) : node.isTrophy ? (
-        <div className="mt-2.5 z-20 bg-yellow-50 border border-yellow-200/90 rounded-full px-3 py-0.5 text-center shadow-2xs">
-          <span className="font-brand font-black text-[10px] text-yellow-800">
-            {node.status === 'completed' ? '🏆 Lulus (+50 XP)' : '🏆 Ujian Praktik (+50 XP)'}
+        <div
+          className={`mt-2.5 z-20 rounded-full px-2.5 py-0.5 text-center shadow-2xs inline-flex items-center gap-1 ${MAP_MILESTONE_PILL_TOKENS.trophy}`}
+        >
+          <Trophy weight="fill" className="w-3 h-3 text-yellow-700" />
+          <span className="font-brand font-black text-[10px]">
+            {node.status === 'completed' ? 'Lulus (+50 XP)' : 'Ujian Praktik (+50 XP)'}
           </span>
         </div>
       ) : node.status !== 'active' ? (
