@@ -1,65 +1,42 @@
-import { useNavigate, useParams } from 'react-router-dom'
-import { NavRail } from '../components/layout/NavRail'
-import { AppTopBar } from '../components/layout/AppTopBar'
-import { AppRightSidebar } from '../components/layout/AppRightSidebar'
-import { useQuestProgress } from '../hooks/roadmap/useQuestProgress'
-import { useRoadmapData } from '../hooks/roadmap/useRoadmapData'
-import { useRoadmapModals } from '../hooks/roadmap/useRoadmapModals'
+import { AppLeftSidebar } from '../components/layout/left-sidebar/AppLeftSidebar'
+import { AppTopBar } from '../components/layout/top-bar/AppTopBar'
+import { AppRightSidebar } from '../components/layout/right-sidebar/AppRightSidebar'
+import { useRoadmapPage } from '../hooks/roadmap/useRoadmapPage'
 import { RoadmapUnitCard } from '../components/roadmap/RoadmapUnitCard'
-import { RoadmapGuidebookModal } from '../components/roadmap/RoadmapGuidebookModal'
 import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
 import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
 import { LockSimple } from '@phosphor-icons/react'
-import { triggerHaptic } from '../utils/haptics'
 
 export const RoadmapPage = () => {
-  const navigate = useNavigate()
-  const { track: routeTrack } = useParams<{ track?: string }>()
-
-  // 1. User Quest Progress (Event Synchronization & Cache)
-  const { completedQuestsSet } = useQuestProgress()
-
-  // 2. Curriculum Syllabus Data & Backend Progress
   const {
     currentTrack,
     units,
     totalPartsCount,
     completedPartsCount,
-    curriculumProgressPercent,
     overallProgress,
     trackProgressMap,
-    handleSelectTrack,
     isLoading,
     error,
     refetch,
-  } = useRoadmapData({ explicitTrack: routeTrack, completedQuestsSet })
-
-  // 3. UI Interactions, Modal Dialogs & Locked Node Notifications
-  const {
-    isCourseSwitcherOpen,
-    setIsCourseSwitcherOpen,
+    isTrackSwitcherOpen,
+    setIsTrackSwitcherOpen,
+    handleCloseTrackSwitcher,
     isLeaderboardOpen,
     setIsLeaderboardOpen,
     isMobileDrawerOpen,
     setIsMobileDrawerOpen,
-    guidebookModalUnit,
-    setGuidebookModalUnit,
-    handleOpenGuidebook,
-    collapsedUnitIds,
+    isUnitCollapsed,
     toggleUnitCollapse,
     lockedNotification,
     handleLockedNodeClick,
-  } = useRoadmapModals()
-
-  const handleStartQuest = (route: string) => {
-    triggerHaptic('success')
-    navigate(route)
-  }
+    handleSelectTrack,
+    handleStartQuest,
+  } = useRoadmapPage()
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
-      <NavRail />
+      <AppLeftSidebar />
 
       {/* ── 2. MAIN APP CANVAS (CENTER STAGE + RIGHT SIDEBAR) ── */}
       <div className="flex-1 min-w-0 flex flex-col xl:flex-row pb-20 md:pb-8 xl:pb-0">
@@ -68,12 +45,12 @@ export const RoadmapPage = () => {
           {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - AppTopBar) ── */}
           <AppTopBar
             activeTrack={currentTrack}
-            onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
+            onOpenCourseSwitcher={() => setIsTrackSwitcherOpen(true)}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
             onOpenMobileSidebar={() => setIsMobileDrawerOpen(true)}
             completedCount={completedPartsCount}
             totalCount={totalPartsCount}
-            progressPercent={overallProgress > 0 ? overallProgress : curriculumProgressPercent}
+            progressPercent={overallProgress}
             unitLabel="Modul"
           />
 
@@ -105,9 +82,8 @@ export const RoadmapPage = () => {
               <RoadmapUnitCard
                 key={unit.id}
                 unit={unit}
-                isCollapsed={collapsedUnitIds.has(unit.id)}
-                onToggleCollapse={() => toggleUnitCollapse(unit.id)}
-                onOpenGuidebook={() => handleOpenGuidebook(unit)}
+                isCollapsed={isUnitCollapsed(unit)}
+                onToggleCollapse={() => toggleUnitCollapse(unit)}
                 onLockedClick={handleLockedNodeClick}
                 onStartQuest={handleStartQuest}
               />
@@ -125,21 +101,14 @@ export const RoadmapPage = () => {
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
       <RoadmapTrackSwitcherModal
-        isOpen={isCourseSwitcherOpen}
-        onClose={() => setIsCourseSwitcherOpen(false)}
+        isOpen={isTrackSwitcherOpen}
+        onClose={handleCloseTrackSwitcher}
         currentTrack={currentTrack}
         onSelectTrack={handleSelectTrack}
         trackProgressMap={trackProgressMap}
       />
 
-      {/* ── 4. TECHNICAL UNIT GUIDEBOOK MODAL ── */}
-      <RoadmapGuidebookModal
-        isOpen={guidebookModalUnit !== null}
-        onClose={() => setGuidebookModalUnit(null)}
-        content={guidebookModalUnit}
-      />
-
-      {/* ── 5. TOKYO LEADERBOARD MODAL ── */}
+      {/* ── 4. TOKYO LEADERBOARD MODAL ── */}
       <LeaderboardModal
         isOpen={isLeaderboardOpen}
         onClose={() => setIsLeaderboardOpen(false)}

@@ -48,6 +48,7 @@ export const authService = {
     bio?: string
     github_url?: string
     linkedin_url?: string
+    has_seen_roadmap_tour?: boolean
   }): Promise<User> {
     const response = await api.patch<ApiResponse<User>>('/users/me', payload)
     if (!response.data.success || !response.data.data) {

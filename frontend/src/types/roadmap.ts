@@ -27,9 +27,6 @@ export interface Module {
   updated_at?: string
 }
 
-// Backward compatibility type alias
-export type Station = Module
-
 export interface Roadmap {
   id: string
   career_path_id?: string
@@ -39,7 +36,64 @@ export interface Roadmap {
   description?: string
   is_active: boolean
   modules?: Module[]
-  stations?: Module[] // Compatibility alias
   created_at?: string
   updated_at?: string
+}
+
+export interface UnitTheme {
+  gradientBg: string
+  border3D: string
+  tagBg: string
+  tagText: string
+  accentGlow: string
+  btnGuideBg: string
+}
+
+export interface SequentialPartItem {
+  id: string
+  globalPartNumber: number
+  title: string
+  subtitle: string
+  chipLabel: string
+  category: 'code' | 'nihongo' | 'boss'
+  difficulty: 'Pemula' | 'Menengah' | 'Sulit'
+  estimatedMinutes: number
+  xpReward: number
+  route: string
+  is_unlocked?: boolean
+  is_completed?: boolean
+  isNextActive?: boolean
+}
+
+export interface SequentialCurriculumUnit {
+  id: string
+  unitNumber: number
+  tag: string
+  title: string
+  description: string
+  totalXp: number
+  progressRate?: number
+  isUnlocked?: boolean
+  isCompleted?: boolean
+  isActive?: boolean
+  progressPercent?: number
+  completedCount?: number
+  theme?: UnitTheme
+  parts: SequentialPartItem[]
+}
+
+export type TrackIconType = 'fundamental' | 'golang' | 'frontend' | 'devops' | 'nihongo'
+
+export interface CareerTrackOption {
+  id: string
+  slug: string
+  title: string
+  shortTitle: string
+  subtitle: string
+  category: 'coding' | 'language'
+  iconType: TrackIconType
+  badgeLabel: string
+  badgeVariant: 'active' | 'available' | 'featured'
+  isActive: boolean
+  group?: 'foundation' | 'career'
 }

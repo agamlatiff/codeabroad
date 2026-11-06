@@ -42,8 +42,8 @@ export const useAppTopBar = (activeTrack: string) => {
 
   // Map database career paths into selectable track options
   const trackOptions: CareerTrackOption[] = useMemo(
-    () => mapCareerPathsToTrackOptions(careerPaths),
-    [careerPaths]
+    () => mapCareerPathsToTrackOptions(careerPaths, activeUser),
+    [careerPaths, activeUser]
   )
 
   // Resolve active career track configuration from memoized options

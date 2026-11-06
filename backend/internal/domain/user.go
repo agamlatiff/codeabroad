@@ -39,7 +39,8 @@ type User struct {
 	Streak       int        `json:"streak"`
 	Gems         int        `json:"gems"`
 	LastActiveAt *time.Time `json:"last_active_at"`
-	IsOnboarded  bool       `json:"is_onboarded"`
+	IsOnboarded        bool       `json:"is_onboarded"`
+	HasSeenRoadmapTour bool       `json:"has_seen_roadmap_tour"`
 	CreatedAt    time.Time  `json:"created_at"`
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
@@ -71,7 +72,8 @@ type UpdateProfileRequest struct {
 	CareerPathID *string `json:"career_path_id"`
 	Bio          *string `json:"bio"`
 	GithubURL    *string `json:"github_url"`
-	LinkedinURL  *string `json:"linkedin_url"`
+	LinkedinURL        *string `json:"linkedin_url"`
+	HasSeenRoadmapTour *bool   `json:"has_seen_roadmap_tour"`
 }
 
 // AuthResponse defines the payload returned upon successful authentication

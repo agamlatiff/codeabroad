@@ -15,6 +15,7 @@ export interface User {
     streak: number
     gems?: number | null
     is_onboarded: boolean
+    has_seen_roadmap_tour?: boolean
     primary_stack?: string | null
     country?: {
         id: string

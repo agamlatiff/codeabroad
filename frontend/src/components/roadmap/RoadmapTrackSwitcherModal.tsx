@@ -6,7 +6,6 @@ import {
   X,
 } from '@phosphor-icons/react'
 import doodleCoding from '../../assets/kodi/doodle-coding.png'
-import { triggerHaptic } from '../../utils/haptics'
 import {
   GolangLogo,
   ReactLogo,
@@ -14,8 +13,8 @@ import {
   FundamentalLogo,
   TechNihongoLogo,
 } from '../ui/BrandLogos'
-import { CAREER_TRACKS, type CareerTrackItem } from '../../data/careerTracks'
-import { CURRICULUM_TRACKS_MAP } from '../../data/curriculumData'
+import type { CareerTrackOption } from '../../types/roadmap'
+import { useRoadmapTrackSwitcherModal } from '../../hooks/roadmap/useRoadmapTrackSwitcherModal'
 
 export interface RoadmapTrackSwitcherModalProps {
   isOpen: boolean
@@ -32,16 +31,15 @@ export const RoadmapTrackSwitcherModal = ({
   onSelectTrack,
   trackProgressMap,
 }: RoadmapTrackSwitcherModalProps) => {
+  const { trackOptions, handleSelect } = useRoadmapTrackSwitcherModal({
+    onSelectTrack,
+    onClose,
+  })
+
   if (!isOpen) return null
   if (typeof document === 'undefined') return null
 
-  const handleSelect = (track: CareerTrackItem) => {
-    triggerHaptic('success')
-    onSelectTrack(track.slug)
-    onClose()
-  }
-
-  const renderBrandIcon = (type: CareerTrackItem['iconType']) => {
+  const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
     switch (type) {
       case 'fundamental':
         return <FundamentalLogo className="w-6 h-6" />
@@ -56,12 +54,11 @@ export const RoadmapTrackSwitcherModal = ({
     }
   }
 
-  const renderTrackCard = (track: CareerTrackItem) => {
+  const renderTrackCard = (track: CareerTrackOption) => {
     const isCurrent = track.slug === currentTrack
     const stats = trackProgressMap?.[track.slug]
-    const completed = stats ? stats.completed : track.partsCompleted
-    const dynamicTotal = CURRICULUM_TRACKS_MAP[track.slug]?.flatMap((u) => u.parts).length || track.totalParts
-    const total = stats?.total || dynamicTotal
+    const completed = stats?.completed ?? 0
+    const total = stats?.total ?? 0
     const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0
 
     return (
@@ -112,20 +109,22 @@ export const RoadmapTrackSwitcherModal = ({
                 {track.subtitle}
               </p>
 
-              {/* Progress Bar */}
-              <div className="mt-2.5 flex items-center gap-3">
-                <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                  <div
-                    className={`h-full rounded-full transition-all ${
-                      isCurrent ? 'bg-blue-600' : 'bg-slate-300'
-                    }`}
-                    style={{ width: `${percent}%` }}
-                  />
+              {/* Progress Bar (shown when progress stats are available) */}
+              {total > 0 && (
+                <div className="mt-2.5 flex items-center gap-3">
+                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                    <div
+                      className={`h-full rounded-full transition-all ${
+                        isCurrent ? 'bg-blue-600' : 'bg-slate-300'
+                      }`}
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                  <span className="text-[11px] font-bold text-slate-600 shrink-0">
+                    {completed}/{total} Sesi ({percent}%)
+                  </span>
                 </div>
-                <span className="text-[11px] font-bold text-slate-600 shrink-0">
-                  {completed}/{total} Modul ({percent}%)
-                </span>
-              </div>
+              )}
             </div>
           </div>
 
@@ -152,10 +151,10 @@ export const RoadmapTrackSwitcherModal = ({
             </div>
             <div>
               <h3 className="font-brand font-black text-base text-slate-900">
-                Pilih Program Karier Tokyo
+                Pilih Kurikulum Belajar
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Pilih peran spesialisasi Anda. Sudah All-in-One (Dasar IT, Koding & Bahasa Jepang Kerja).
+                Fondasi Teknik Global & Program Spesialisasi Karier Anda.
               </p>
             </div>
           </div>
@@ -169,9 +168,39 @@ export const RoadmapTrackSwitcherModal = ({
           </button>
         </div>
 
-        {/* 3 Unified Career Programs List */}
-        <div className="p-4 sm:p-5 space-y-3 flex-1 overflow-y-auto custom-scrollbar">
-          {CAREER_TRACKS.map(renderTrackCard)}
+        {/* Structured Track Lists: Universal Foundations & Active Career */}
+        <div className="p-4 sm:p-5 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
+          {/* ── 1. FONDASI UTAMA (UNIVERSAL) ── */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-brand font-black text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                <span>🧠</span>
+                <span>FONDASI UTAMA (UNIVERSAL)</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Wajib untuk semua engineer
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {trackOptions.filter((t) => t.group === 'foundation').map(renderTrackCard)}
+            </div>
+          </div>
+
+          {/* ── 2. SPESIALISASI KARIER ANDA ── */}
+          <div className="space-y-2.5 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                <span>🎯</span>
+                <span>SPESIALISASI KARIER ANDA</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Dapat diubah di Pengaturan
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {trackOptions.filter((t) => t.group === 'career').map(renderTrackCard)}
+            </div>
+          </div>
         </div>
 
         {/* Kodi Motivational Footer Tip */}
@@ -182,7 +211,7 @@ export const RoadmapTrackSwitcherModal = ({
             className="w-9 h-9 object-contain shrink-0"
           />
           <p>
-            <span className="font-bold text-slate-900">Tips Kodi:</span> Setiap program sudah mencakup Dasar Komputer, Koding & Bahasa Jepang kerja sampai siap kerja di Tokyo!
+            <span className="font-bold text-slate-900">Tips Kodi:</span> Pelajari Fondasi CS & Web terlebih dahulu, lalu tuntaskan Spesialisasi Karier Anda hingga siap kerja di luar negeri!
           </p>
         </div>
       </div>
