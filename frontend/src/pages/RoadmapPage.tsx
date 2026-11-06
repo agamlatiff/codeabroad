@@ -27,8 +27,8 @@ export const RoadmapPage = () => {
     error,
     refetch,
     isTrackSwitcherOpen,
-    setIsTrackSwitcherOpen,
-    handleCloseTrackSwitcher,
+    openTrackSwitcher,
+    closeTrackSwitcher,
     isLeaderboardOpen,
     setIsLeaderboardOpen,
     isMobileDrawerOpen,
@@ -55,7 +55,7 @@ export const RoadmapPage = () => {
           {/* ── 1. CLEAN CONTEXTUAL TOP BAR (SSOT - AppTopBar) ── */}
           <AppTopBar
             activeTrack={currentTrack}
-            onOpenCourseSwitcher={() => setIsTrackSwitcherOpen(true)}
+            onOpenCourseSwitcher={openTrackSwitcher}
             onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
             onOpenMobileSidebar={() => setIsMobileDrawerOpen(true)}
             completedCount={completedPartsCount}
@@ -116,7 +116,7 @@ export const RoadmapPage = () => {
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
       <TrackSwitcherModal
         isOpen={isTrackSwitcherOpen}
-        onClose={handleCloseTrackSwitcher}
+        onClose={closeTrackSwitcher}
         currentTrack={currentTrack}
         onSelectTrack={handleSelectTrack}
         trackProgressMap={trackProgressMap}

@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useParams, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import { roadmapService } from '../../services/roadmapService'
@@ -7,12 +7,30 @@ import { authService } from '../../services/authService'
 import { triggerHaptic } from '../../utils/haptics'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
 import { mapModulesToSequentialUnits } from '../../utils/roadmapMapper'
-import { PROFILE_QUERY_KEY } from '../layout/top-bar/useAppTopBar'
+import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 
 export const ROADMAP_QUERY_KEY = 'roadmap' as const
 export const CURRICULUM_VIEW_STORAGE_KEY = 'codeabroad_curriculum_view' as const
 export type CurriculumViewMode = 'map' | 'syllabus'
 const TOAST_DURATION_MS = 3200
+const DEFAULT_VIEW_MODE: CurriculumViewMode = 'syllabus'
+
+const isViewMode = (value: string | null): value is CurriculumViewMode =>
+  value === 'map' || value === 'syllabus'
+
+const readStoredViewMode = (): CurriculumViewMode => {
+  try {
+    const stored = localStorage.getItem(CURRICULUM_VIEW_STORAGE_KEY)
+    if (isViewMode(stored)) return stored
+  } catch (error: unknown) {
+    console.warn('[useRoadmapPage] Failed to read view preference from localStorage:', error)
+  }
+  return DEFAULT_VIEW_MODE
+}
+
+/** Locked units (not active, not completed) start collapsed unless the user toggles them. */
+const isCollapsedByDefault = (unit: SequentialCurriculumUnit): boolean =>
+  !unit.isActive && !unit.isCompleted
 
 /**
  * 1:1 Headless controller hook for RoadmapPage.
@@ -22,8 +40,7 @@ const TOAST_DURATION_MS = 3200
  */
 export const useRoadmapPage = (explicitTrack?: string) => {
   const navigate = useNavigate()
-  const location = useLocation()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const queryClient = useQueryClient()
   const { track: routeTrack } = useParams<{ track?: string }>()
 
@@ -32,45 +49,33 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const updateUser = useAuthStore((s) => s.updateUser)
 
   // ── 0. CURRICULUM VIEW MODE (Peta RPG vs Silabus Modul) ──
-  const [viewMode, setViewModeState] = useState<CurriculumViewMode>(() => {
-    const queryView = searchParams.get('view')
-    if (queryView === 'map' || queryView === 'syllabus') {
-      return queryView
-    }
-    if (location.pathname.startsWith('/roadmap')) {
-      return 'syllabus'
-    }
-    try {
-      const stored = localStorage.getItem(CURRICULUM_VIEW_STORAGE_KEY)
-      if (stored === 'map' || stored === 'syllabus') {
-        return stored
+  // URL `?view=` is the source of truth; localStorage is only the fallback preference.
+  const [storedViewMode] = useState(readStoredViewMode)
+  const queryView = searchParams.get('view')
+  const viewMode: CurriculumViewMode = isViewMode(queryView) ? queryView : storedViewMode
+
+  const setViewMode = useCallback(
+    (mode: CurriculumViewMode) => {
+      triggerHaptic('tap')
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          next.set('view', mode)
+          return next
+        },
+        { replace: true }
+      )
+      try {
+        localStorage.setItem(CURRICULUM_VIEW_STORAGE_KEY, mode)
+      } catch (error: unknown) {
+        console.warn('[useRoadmapPage] Failed to persist view preference to localStorage:', error)
       }
-    } catch (error: unknown) {
-      console.warn('[useRoadmapPage] Failed to read view preference from localStorage:', error)
-    }
-    return 'map'
-  })
-
-  // Synchronize viewMode if URL query param changes dynamically
-  useEffect(() => {
-    const queryView = searchParams.get('view')
-    if ((queryView === 'map' || queryView === 'syllabus') && queryView !== viewMode) {
-      setViewModeState(queryView)
-    }
-  }, [searchParams, viewMode])
-
-  const setViewMode = useCallback((mode: CurriculumViewMode) => {
-    triggerHaptic('tap')
-    setViewModeState(mode)
-    try {
-      localStorage.setItem(CURRICULUM_VIEW_STORAGE_KEY, mode)
-    } catch (error: unknown) {
-      console.warn('[useRoadmapPage] Failed to persist view preference to localStorage:', error)
-    }
-  }, [])
+    },
+    [setSearchParams]
+  )
 
   // ── 1. RESOLVE REQUESTED TRACK ──
-  const userRegisteredTrack = user?.primary_stack || user?.career_path?.slug || undefined
+  const userRegisteredTrack = user?.primary_stack || user?.career_path?.slug
   const requestedTrack = explicitTrack || routeTrack || userRegisteredTrack || ''
 
   // ── 2. FETCH SYLLABUS & PROGRESS VIA TANSTACK QUERY (SSOT) ──
@@ -98,15 +103,10 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const totalPartsCount = allParts.length
   const completedPartsCount = allParts.filter((p) => p.is_completed).length
 
-  const overallProgress = (() => {
-    const modules = roadmap?.modules || []
-    if (modules.length > 0) {
-      const totalRate = modules.reduce((acc, m) => acc + (m.progress_rate || 0), 0)
-      return Math.round(totalRate / modules.length)
-    }
-    if (totalPartsCount === 0) return 0
-    return Math.min(100, Math.round((completedPartsCount / totalPartsCount) * 100))
-  })()
+  // Single source of truth: progress is derived from completed parts so the
+  // percentage always matches the "completed / total" counter shown in the UI.
+  const overallProgress =
+    totalPartsCount === 0 ? 0 : Math.round((completedPartsCount / totalPartsCount) * 100)
 
   const trackProgressMap = currentTrack
     ? {
@@ -151,6 +151,8 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   // ── 4b. DATABASE-BACKED FIRST-TIME TOUR ONBOARDING ──
   const hasSeenTour = user?.has_seen_roadmap_tour
   const hasTriggeredTourRef = useRef(false)
+  // Guards against duplicate PATCH requests (select track + close modal both mark the tour)
+  const isTourPersistingRef = useRef(false)
 
   useEffect(() => {
     if (hasSeenTour === false && !hasTriggeredTourRef.current) {
@@ -160,17 +162,19 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   }, [hasSeenTour])
 
   const markTourSeen = useCallback(async () => {
-    if (hasSeenTour === false) {
-      // Optimistic update
-      updateUser({ has_seen_roadmap_tour: true })
-      try {
-        await authService.updateProfile({ has_seen_roadmap_tour: true })
-        await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
-      } catch (err: unknown) {
-        // Rollback state on failure
-        updateUser({ has_seen_roadmap_tour: false })
-        console.error('Failed to persist has_seen_roadmap_tour to backend:', err)
-      }
+    if (hasSeenTour !== false || isTourPersistingRef.current) return
+    isTourPersistingRef.current = true
+
+    // Optimistic update
+    updateUser({ has_seen_roadmap_tour: true })
+    try {
+      await authService.updateProfile({ has_seen_roadmap_tour: true })
+      await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
+    } catch (err: unknown) {
+      // Rollback state on failure and allow a retry
+      updateUser({ has_seen_roadmap_tour: false })
+      isTourPersistingRef.current = false
+      console.error('[useRoadmapPage] Failed to persist has_seen_roadmap_tour:', err)
     }
   }, [hasSeenTour, updateUser, queryClient])
 
@@ -189,43 +193,36 @@ export const useRoadmapPage = (explicitTrack?: string) => {
         await authService.updateProfile({ primary_stack: trackSlug })
         await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       } catch (err: unknown) {
-        // Rollback on network failure
-        if (previousStack) {
-          updateUser({ primary_stack: previousStack })
-        }
+        // Rollback on network failure (restores `undefined` for first-time users too)
+        updateUser({ primary_stack: previousStack })
         showNotification('Gagal menyimpan preferensi kurikulum ke server', true)
-        console.error('Failed to persist selected track to backend profile:', err)
+        console.error('[useRoadmapPage] Failed to persist selected track:', err)
       }
     },
     [currentStack, navigate, markTourSeen, updateUser, queryClient, showNotification]
   )
 
-  const handleCloseTrackSwitcher = useCallback(() => {
+  const openTrackSwitcher = useCallback(() => {
+    setIsTrackSwitcherOpen(true)
+  }, [])
+
+  const closeTrackSwitcher = useCallback(() => {
     setIsTrackSwitcherOpen(false)
     void markTourSeen()
   }, [markTourSeen])
 
-  // Locked units (!isActive && !isCompleted) are collapsed by default unless toggled by the user
   const isUnitCollapsed = useCallback(
-    (unit: SequentialCurriculumUnit): boolean => {
-      if (unit.id in collapsedOverrides) {
-        return collapsedOverrides[unit.id]
-      }
-      return !unit.isActive && !unit.isCompleted
-    },
+    (unit: SequentialCurriculumUnit): boolean =>
+      collapsedOverrides[unit.id] ?? isCollapsedByDefault(unit),
     [collapsedOverrides]
   )
 
   const toggleUnitCollapse = useCallback((unit: SequentialCurriculumUnit) => {
     triggerHaptic('tap')
-    setCollapsedOverrides((prev) => {
-      const currentCollapsed =
-        unit.id in prev ? prev[unit.id] : !unit.isActive && !unit.isCompleted
-      return {
-        ...prev,
-        [unit.id]: !currentCollapsed,
-      }
-    })
+    setCollapsedOverrides((prev) => ({
+      ...prev,
+      [unit.id]: !(prev[unit.id] ?? isCollapsedByDefault(unit)),
+    }))
   }, [])
 
   const handleLockedNodeClick = useCallback(
@@ -259,8 +256,8 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     error,
     refetch: handleRefetch,
     isTrackSwitcherOpen,
-    setIsTrackSwitcherOpen,
-    handleCloseTrackSwitcher,
+    openTrackSwitcher,
+    closeTrackSwitcher,
     isLeaderboardOpen,
     setIsLeaderboardOpen,
     isMobileDrawerOpen,

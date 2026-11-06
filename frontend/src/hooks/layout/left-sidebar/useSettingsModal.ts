@@ -5,7 +5,7 @@ import { onboardingService } from '../../../services/onboardingService'
 import { useAuthStore } from '../../../store/authStore'
 import { triggerHaptic } from '../../../utils/haptics'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../top-bar/useAppTopBar'
+import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
 import type { User } from '../../../types/auth'
 import type { AvatarStyle } from '../../../utils/avatar'
 

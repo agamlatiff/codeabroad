@@ -7,8 +7,7 @@ import type { CareerTrackOption } from '../../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
 import { resolveTrackIconType } from '../../../tokens/roadmapTokens'
 
-export const PROFILE_QUERY_KEY = ['profile'] as const
-export const CAREER_PATHS_QUERY_KEY = ['career-paths'] as const
+import { PROFILE_QUERY_KEY, CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
 
 /**
  * 1:1 Headless controller hook for AppTopBar.

@@ -5,7 +5,7 @@ import { onboardingService } from '../../services/onboardingService'
 import { triggerHaptic } from '../../utils/haptics'
 import type { CareerTrackOption } from '../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY } from '../layout/top-bar/useAppTopBar'
+import { CAREER_PATHS_QUERY_KEY } from '../../constants/queryKeys'
 
 export interface UseRoadmapTrackSwitcherModalOptions {
   onSelectTrack: (trackSlug: string) => void

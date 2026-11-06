@@ -4,7 +4,7 @@ import { useAuthStore } from '../../../store/authStore'
 import { authService } from '../../../services/authService'
 import { triggerHaptic } from '../../../utils/haptics'
 import { audioEngine } from '../../../utils/audio'
-import { PROFILE_QUERY_KEY } from '../top-bar/useAppTopBar'
+import { PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
 import { ACTIVITY_LOGS_QUERY_KEY } from './useStreakSection'
 import {
   DAILY_REWARDS_QUERY_KEY,
