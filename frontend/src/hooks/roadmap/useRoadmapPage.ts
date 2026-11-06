@@ -45,8 +45,8 @@ export const useRoadmapPage = (explicitTrack?: string) => {
       if (stored === 'map' || stored === 'syllabus') {
         return stored
       }
-    } catch {
-      /* ignore storage failure */
+    } catch (error: unknown) {
+      console.warn('[useRoadmapPage] Failed to read view preference from localStorage:', error)
     }
     return 'map'
   })
@@ -64,8 +64,8 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     setViewModeState(mode)
     try {
       localStorage.setItem(CURRICULUM_VIEW_STORAGE_KEY, mode)
-    } catch {
-      /* ignore storage failure */
+    } catch (error: unknown) {
+      console.warn('[useRoadmapPage] Failed to persist view preference to localStorage:', error)
     }
   }, [])
 
