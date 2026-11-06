@@ -72,7 +72,7 @@ Organized via clean normalized hierarchy: **`tech_stacks` ➔ `modules` ➔ `cha
   4. **Daily Habit Quest:** Fast daily code reviews keeping habit streaks alive (`daily`).
   5. **Boss Milestone Quest:** Comprehensive architectural milestone challenges (`boss`).
 - **Three Strict Node Interaction States:**
-  1. ✅ **Completed (`sudah selesai dikerjakan`):** Emerald green 3D button with checkmark badge `✓`. Replayable anytime.
+  1. ✅ **Completed (`sudah selesai dikerjakan`):** Emerald green 3D button with checkmark badge (Phosphor `CheckFat` icon). Replayable anytime.
   2. ⚡ **Available / Active (`sudah bisa dikerjakan`):** Electric Blue 3D button with pulsating outer ring, floating popover CTA (*"Part X: [Judul] • LANJUTKAN (+50 XP)"*), and cheering Kodi mascot.
   3. 🔒 **Locked (`belum bisa dikerjakan`):** Tactile slate-gray button showing embossed part number with padlock badge `🔒`.
 - **Vertical Bezier Flow:** Smooth SVG S-curves with ample breathing room (~180px vertical distance per node) preventing UI overlap.

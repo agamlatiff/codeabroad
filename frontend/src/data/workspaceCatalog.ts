@@ -189,7 +189,7 @@ export const formatQuestBadge = (status: QuestStatus): string => {
     case 'in_progress':
       return '⚡ SEDANG BERJALAN'
     case 'completed':
-      return '✓ SELESAI'
+      return 'SELESAI'
   }
 }
 `,
@@ -229,7 +229,7 @@ API_URL="http://localhost:8080/health"
 STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$API_URL" || echo "000")
 
 if [ "$STATUS" -eq 200 ]; then
-    echo "✓ Deployment Sukses: Service beroperasi normal"
+    echo "[OK] Deployment Sukses: Service beroperasi normal"
     exit 0
 else
     echo "✕ Deployment Gagal: HTTP status $STATUS"

@@ -102,7 +102,7 @@ func (u *questUsecase) RunUnitTests(ctx context.Context, questID string, req *do
 		for _, ec := range evaluatedCriteria {
 			if ec.Passed {
 				passedCriteria++
-				outputLogs = append(outputLogs, fmt.Sprintf("✓ [CHECK] %s: PASSED", ec.ID))
+				outputLogs = append(outputLogs, fmt.Sprintf("[CHECK] %s: PASSED", ec.ID))
 			} else {
 				outputLogs = append(outputLogs, fmt.Sprintf("✕ [FAIL] %s: VIOLATION DETECTED", ec.ID))
 			}
