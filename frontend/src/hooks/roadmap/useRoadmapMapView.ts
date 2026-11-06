@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { triggerHaptic } from '../../utils/haptics'
+import { playSound } from '../../utils/sound'
 import type { Roadmap, CurriculumUnitData, PathMapNode } from '../../types/roadmap'
 import {
   transformRoadmapToMapUnits,
@@ -70,10 +71,18 @@ export const useRoadmapMapView = ({
 
   const handleNodeClick = useCallback((node: PathMapNode) => {
     triggerHaptic('tap')
+    if (node.isTrophy || node.isChest) {
+      playSound('trophy_tap')
+    } else if (node.status === 'locked') {
+      playSound('node_locked')
+    } else {
+      playSound('node_tap')
+    }
     setActiveModalNode(node)
   }, [])
 
   const handleCloseModal = useCallback(() => {
+    playSound('modal_close')
     setActiveModalNode(null)
   }, [])
 

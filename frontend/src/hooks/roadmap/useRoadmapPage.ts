@@ -5,6 +5,7 @@ import { useAuthStore } from '../../store/authStore'
 import { roadmapService } from '../../services/roadmapService'
 import { authService } from '../../services/authService'
 import { triggerHaptic } from '../../utils/haptics'
+import { playSound } from '../../utils/sound'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
 import { computeRoadmapPageMetrics } from '../../utils/roadmapMapTransformer'
 import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
@@ -68,6 +69,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const setViewMode = useCallback(
     (mode: CurriculumViewMode) => {
       triggerHaptic('tap')
+      playSound('view_switch')
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -187,6 +189,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const handleSelectTrack = useCallback(
     async (trackSlug: string) => {
       triggerHaptic('success')
+      playSound('track_change')
       const previousStack = currentStack
       navigate(`/roadmap/${trackSlug}`)
       void markTourSeen()
@@ -207,10 +210,12 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   )
 
   const openTrackSwitcher = useCallback(() => {
+    playSound('modal_open')
     setIsTrackSwitcherOpen(true)
   }, [])
 
   const closeTrackSwitcher = useCallback(() => {
+    playSound('modal_close')
     setIsTrackSwitcherOpen(false)
     void markTourSeen()
   }, [markTourSeen])
@@ -223,6 +228,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
 
   const toggleUnitCollapse = useCallback((unit: SequentialCurriculumUnit) => {
     triggerHaptic('tap')
+    playSound('node_tap')
     setCollapsedOverrides((prev) => ({
       ...prev,
       [unit.id]: !(prev[unit.id] ?? isCollapsedByDefault(unit)),
@@ -231,6 +237,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
 
   const handleLockedNodeClick = useCallback(
     (title: string) => {
+      playSound('node_locked')
       showNotification(`Selesaikan sesi sebelumnya untuk membuka "${title}"`, true)
     },
     [showNotification]
@@ -239,6 +246,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const handleStartQuest = useCallback(
     (route: string) => {
       triggerHaptic('success')
+      playSound('quest_start')
       navigate(route)
     },
     [navigate]
