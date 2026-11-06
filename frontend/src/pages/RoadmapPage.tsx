@@ -125,6 +125,8 @@ export const RoadmapPage = () => {
         currentTrack={currentTrack}
         onSelectTrack={handleSelectTrack}
         trackProgressMap={trackProgressMap}
+        viewMode={viewMode}
+        onChangeViewMode={setViewMode}
       />
 
       {/* ── 4. TOKYO LEADERBOARD MODAL ── */}

@@ -1,11 +1,12 @@
 import { useMemo, useCallback } from 'react'
 import { useAuthStore } from '../../store/authStore'
+import { authService } from '../../services/authService'
 import { useQuery } from '@tanstack/react-query'
 import { onboardingService } from '../../services/onboardingService'
 import { triggerHaptic } from '../../utils/haptics'
 import type { CareerTrackOption } from '../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY } from '../../constants/queryKeys'
+import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 
 export interface UseRoadmapTrackSwitcherModalOptions {
   onSelectTrack: (trackSlug: string) => void
@@ -27,7 +28,13 @@ export const useRoadmapTrackSwitcherModal = ({
   })
 
   // Memoized due to nested loops in mapCareerPathsToTrackOptions
-  const { user } = useAuthStore()
+  const { user: storeUser } = useAuthStore()
+  const { data: profileUser } = useQuery({
+    queryKey: PROFILE_QUERY_KEY,
+    queryFn: authService.getProfile,
+    staleTime: 1000 * 60 * 5,
+  })
+  const user = profileUser || storeUser
 
   const trackOptions: CareerTrackOption[] = useMemo(
     () => mapCareerPathsToTrackOptions(careerPaths, user),

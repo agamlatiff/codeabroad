@@ -44,9 +44,17 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const queryClient = useQueryClient()
   const { track: routeTrack } = useParams<{ track?: string }>()
 
-  // Reactive selector for auth store
-  const user = useAuthStore((s) => s.user)
+  // Reactive selector for auth store & database profile synchronization
+  const storeUser = useAuthStore((s) => s.user)
   const updateUser = useAuthStore((s) => s.updateUser)
+
+  const { data: profileUser } = useQuery({
+    queryKey: PROFILE_QUERY_KEY,
+    queryFn: authService.getProfile,
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const user = profileUser || storeUser
 
   // ── 0. CURRICULUM VIEW MODE (Peta RPG vs Silabus Modul) ──
   // URL `?view=` is the source of truth; localStorage is only the fallback preference.
