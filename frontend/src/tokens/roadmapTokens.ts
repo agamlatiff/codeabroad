@@ -118,7 +118,7 @@ export const resolveUnitCardTokens = (unit: SequentialCurriculumUnit): UnitCardS
 }
 
 /**
- * 3. Part Item Status & Category Tokens (completed | active | locked + code | nihongo | capstone)
+ * 3. Part Item Status & Category Tokens (completed | active | locked + code | nihongo | boss)
  */
 export const PART_STATUS_TOKENS: Record<
   RoadmapNodeStatus,
@@ -160,7 +160,7 @@ export const PART_CATEGORY_TOKENS: Record<
     chip: 'bg-rose-100 text-rose-700 border border-rose-200',
     lockedCardAccent: 'bg-rose-50/40 border-rose-200/60',
   },
-  capstone: {
+  boss: {
     chip: 'bg-amber-100 text-amber-800 border border-amber-300',
     lockedCardAccent: 'bg-amber-50/30 border-amber-200/60',
   },
@@ -221,4 +221,55 @@ export const resolveTrackIconType = (slug: string): TrackIconType => {
   if (normalized.includes('nihongo')) return 'nihongo'
   return 'fundamental'
 }
+
+/**
+ * 6. Map View Duolingo 3D Serpentine Path Palettes & Geometry Tokens
+ */
+export interface MapUnitPalette {
+  gradient: string
+  border: string
+  glow: string
+}
+
+export const MAP_UNIT_PALETTES: MapUnitPalette[] = [
+  {
+    gradient: 'bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-700',
+    border: 'border-emerald-500/40',
+    glow: 'bg-emerald-400',
+  },
+  {
+    gradient: 'bg-gradient-to-r from-blue-600 via-indigo-600 to-blue-700',
+    border: 'border-blue-500/40',
+    glow: 'bg-blue-400',
+  },
+  {
+    gradient: 'bg-gradient-to-r from-indigo-700 via-purple-700 to-violet-800',
+    border: 'border-purple-500/40',
+    glow: 'bg-indigo-400',
+  },
+  {
+    gradient: 'bg-gradient-to-r from-slate-700 via-slate-800 to-indigo-900',
+    border: 'border-slate-500/40',
+    glow: 'bg-slate-400',
+  },
+]
+
+export const resolveMapUnitPalette = (index: number): MapUnitPalette =>
+  MAP_UNIT_PALETTES[index % MAP_UNIT_PALETTES.length]
+
+export const MAP_GEOMETRY = {
+  xSequence: [135, 200, 265, 200] as const,
+  verticalSpacing: 175,
+  startY: 135,
+  viewboxWidth: 400,
+  bottomPadding: 70,
+} as const
+
+export const MAP_MILESTONE_REWARDS = {
+  chestXp: 30,
+  trophyXp: 50,
+  defaultQuestXp: 50,
+  chestGems: 20,
+} as const
+
 
