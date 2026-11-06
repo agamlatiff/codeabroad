@@ -4,7 +4,7 @@ import { AppRightSidebar } from '../components/layout/right-sidebar/AppRightSide
 import { RoadmapViewToggle } from '../components/roadmap/RoadmapViewToggle'
 import { RoadmapMapView } from '../components/roadmap/map-view/RoadmapMapView'
 import { RoadmapAccordionView } from '../components/roadmap/accordion-view/RoadmapAccordionView'
-import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
+import { TrackSwitcherModal } from '../components/layout/top-bar/TrackSwitcherModal'
 import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
 import { useRoadmapPage } from '../hooks/roadmap/useRoadmapPage'
 import { LockSimple } from '@phosphor-icons/react'
@@ -114,7 +114,7 @@ export const RoadmapPage = () => {
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
-      <RoadmapTrackSwitcherModal
+      <TrackSwitcherModal
         isOpen={isTrackSwitcherOpen}
         onClose={handleCloseTrackSwitcher}
         currentTrack={currentTrack}

@@ -5,18 +5,18 @@ import {
   Sparkle,
   X,
 } from '@phosphor-icons/react'
-import doodleCoding from '../../assets/kodi/doodle-coding.png'
+import doodleCoding from '../../../assets/kodi/doodle-coding.png'
 import {
   GolangLogo,
   ReactLogo,
   DockerLogo,
   FundamentalLogo,
   TechNihongoLogo,
-} from '../ui/BrandLogos'
-import type { CareerTrackOption } from '../../types/roadmap'
-import { useRoadmapTrackSwitcherModal } from '../../hooks/roadmap/useRoadmapTrackSwitcherModal'
+} from '../../ui/BrandLogos'
+import type { CareerTrackOption } from '../../../types/roadmap'
+import { useRoadmapTrackSwitcherModal } from '../../../hooks/roadmap/useRoadmapTrackSwitcherModal'
 
-export interface RoadmapTrackSwitcherModalProps {
+export interface TrackSwitcherModalProps {
   isOpen: boolean
   onClose: () => void
   currentTrack: string
@@ -24,13 +24,19 @@ export interface RoadmapTrackSwitcherModalProps {
   trackProgressMap?: Record<string, { completed: number; total: number }>
 }
 
-export const RoadmapTrackSwitcherModal = ({
+/**
+ * TrackSwitcherModal
+ * TopBar curriculum and career track selection modal.
+ * Allows users to switch between Universal Foundations (CS & Web Fundamental)
+ * and Active Career Track Specializations (Go, React, DevOps AWS).
+ */
+export const TrackSwitcherModal = ({
   isOpen,
   onClose,
   currentTrack,
   onSelectTrack,
   trackProgressMap,
-}: RoadmapTrackSwitcherModalProps) => {
+}: TrackSwitcherModalProps) => {
   const { trackOptions, handleSelect } = useRoadmapTrackSwitcherModal({
     onSelectTrack,
     onClose,
@@ -219,3 +225,7 @@ export const RoadmapTrackSwitcherModal = ({
     document.body
   )
 }
+
+// Backwards-compatible alias
+export { TrackSwitcherModal as RoadmapTrackSwitcherModal }
+

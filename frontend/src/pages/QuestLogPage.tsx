@@ -11,7 +11,7 @@ import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
 import { AppTopBar } from '../components/layout/top-bar/AppTopBar'
-import { RoadmapTrackSwitcherModal } from '../components/roadmap/RoadmapTrackSwitcherModal'
+import { TrackSwitcherModal } from '../components/layout/top-bar/TrackSwitcherModal'
 import { LeaderboardModal } from '../components/leaderboard/LeaderboardModal'
 import { ChestRewardModal } from '../components/game/ChestRewardModal'
 import { MonthlyBadgeModal } from '../components/game/MonthlyBadgeModal'
@@ -1722,7 +1722,7 @@ export const QuestLogPage = () => {
       </div>
 
       {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
-      <RoadmapTrackSwitcherModal
+      <TrackSwitcherModal
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
