@@ -1,5 +1,5 @@
 import type { Quest, RunTestsResponse, SubmitQuestResponse, AcceptanceCriterion } from '../types/quest'
-import type { User } from '../types/auth'
+import type { User } from '../types/user'
 import { CURRICULUM_TRACKS_MAP } from './curriculumData'
 
 /**

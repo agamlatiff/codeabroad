@@ -6,7 +6,7 @@ import { useAuthStore } from '../../../store/authStore'
 import { triggerHaptic } from '../../../utils/haptics'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
 import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
-import type { User } from '../../../types/auth'
+import type { User } from '../../../types/user'
 import type { AvatarStyle } from '../../../utils/avatar'
 
 const CLOSE_AFTER_SAVE_MS = 900

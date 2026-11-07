@@ -36,6 +36,7 @@ export interface QuestSummary {
   title: string
   chip_label: string
   type: 'main' | 'side' | 'daily' | 'boss'
+  format?: 'code' | 'quiz' | 'fill_blank'
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string
   xp_reward: number
   gems_reward?: number
@@ -49,6 +50,7 @@ export interface Quest {
   title: string
   description?: string
   type: 'main' | 'side' | 'daily' | 'boss'
+  format?: 'code' | 'quiz' | 'fill_blank'
   career_path_id?: string
   country_id?: string
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string
@@ -66,6 +68,7 @@ export interface Quest {
   acceptance_criteria?: AcceptanceCriterion[]
   starter_code?: StarterCode
   test_suite?: TestSuite
+  solution_code?: string
   user_status: 'locked' | 'available' | 'completed'
   user_tests_passed: number
   user_total_tests: number

@@ -1,7 +1,8 @@
 
 import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../store/authStore'
-import type { ApiResponse, AuthResponse } from '../types/auth'
+import type { ApiResponse } from '../types/api'
+import type { AuthResponse } from '../types/auth'
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'

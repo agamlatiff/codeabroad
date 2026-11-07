@@ -1,5 +1,5 @@
 import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, LanguageLevel } from '../../types/onboarding'
-import type { User } from '../../types/auth'
+import type { User } from '../../types/user'
 import { Airplane, Sparkle, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
 import { DoodleHanko } from '../illustrations/doodles'
 import { Button3D, MetricTile, BadgePill } from '../ui'

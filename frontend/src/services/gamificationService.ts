@@ -1,41 +1,14 @@
 import { api } from './api'
-import type { ApiResponse } from '../types/auth'
+import type { ApiResponse } from '../types/api'
+import type {
+  GamificationStatus,
+  ClaimChestResponse,
+  CoachingSubmissionRequest,
+  CoachingSubmissionResponse,
+} from '../types/gamification'
 
-export interface GamificationStatus {
-  gems: number
-  inventory: Record<string, number>
-  claimed_chests: number[]
-  monthly_badge_claimed: boolean
-  monthly_badge_key: string
-}
-
-export interface ClaimChestResponse {
-  status: GamificationStatus
-  gems_awarded: number
-  xp_awarded: number
-}
-
-export interface CoachingSubmissionRequest {
-  type: 'cv-review' | 'mock-interview'
-  target_role?: string
-  github_url?: string
-  resume_url?: string
-  discord_handle?: string
-  interview_language?: string
-  focus_topic?: string
-  preferred_time?: string
-  notes?: string
-}
-
-export interface CoachingSubmissionResponse {
-  submission: {
-    id: string
-    type: string
-    status: string
-    created_at: string
-  }
-  status: GamificationStatus
-}
+// Re-export gamification types
+export type * from '../types/gamification'
 
 export const gamificationService = {
   // Retrieve unified SSOT gamification profile (gems, inventory, chest claims, badges)

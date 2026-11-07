@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { Airplane, CheckCircle, ArrowSquareOut } from '@phosphor-icons/react'
 import { DoodleHanko } from '../illustrations/doodles'
-import type { User } from '../../types/auth'
+import type { User } from '../../types/user'
 
 export interface TokyoPassportWidgetProps {
   user: User | null

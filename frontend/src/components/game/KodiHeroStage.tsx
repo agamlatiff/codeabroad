@@ -3,7 +3,7 @@ import { ArrowCounterClockwise, Clock, Sparkle } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
 import { SpeechBubble } from '../ui/SpeechBubble'
 import { KodiCharacter } from '../ui/KodiCharacter'
-import type { User } from '../../types/auth'
+import type { User } from '../../types/user'
 
 export interface KodiHeroStageProps {
   user: User | null

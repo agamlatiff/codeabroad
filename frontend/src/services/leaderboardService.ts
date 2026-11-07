@@ -1,5 +1,5 @@
 import { api } from './api'
-import type { ApiResponse } from '../types/auth'
+import type { ApiResponse } from '../types/api'
 import type { TokyoDivision, WeeklyLeaderboardResponse } from '../types/leaderboard'
 
 export const leaderboardService = {

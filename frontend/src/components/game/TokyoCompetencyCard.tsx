@@ -1,6 +1,6 @@
 import { Briefcase, CheckCircle, CircleDashed } from '@phosphor-icons/react'
 import { KodiCharacter } from '../ui/KodiCharacter'
-import type { User } from '../../types/auth'
+import type { User } from '../../types/user'
 
 export interface TokyoCompetencyCardProps {
   user?: User | null
