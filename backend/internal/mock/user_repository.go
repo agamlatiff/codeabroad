@@ -59,7 +59,7 @@ func (m *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 	return u, nil
 }
 
-func (m *UserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error {
+func (m *UserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error {
 	m.UpdatedUserID = userID
 	return m.UpdateError
 }
@@ -80,8 +80,12 @@ func (m *UserRepository) LogActivity(ctx context.Context, userID string, activit
 	return nil
 }
 
-func (m *UserRepository) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
-	return nil, nil
+func (m *UserRepository) HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error) {
+	return true, nil
+}
+
+func (m *UserRepository) GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]domain.DailyActivityStat, error) {
+	return map[string]domain.DailyActivityStat{}, nil
 }
 
 func (m *UserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {

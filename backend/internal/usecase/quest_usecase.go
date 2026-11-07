@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"codeabroad/backend/internal/domain"
+	userUsecase "codeabroad/backend/internal/usecase/user"
 	"context"
 	"fmt"
 	"strings"
@@ -193,7 +194,7 @@ func (u *questUsecase) SubmitQuest(ctx context.Context, questID string, userID s
 	xpEarned := quest.XPReward
 	gemsEarned := 10 // Standard Tokyo Gems reward
 	newXP := user.XP + xpEarned
-	newLevel := (newXP / 100) + 1
+	newLevel := userUsecase.CalculateLevel(newXP)
 
 	// Streak handling
 	streakExtended := false

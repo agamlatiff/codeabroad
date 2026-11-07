@@ -2,7 +2,9 @@ package http
 
 import (
 	"codeabroad/backend/internal/delivery/http/handler"
+	authHandlerPkg "codeabroad/backend/internal/delivery/http/handler/auth"
 	roadmapHandlerPkg "codeabroad/backend/internal/delivery/http/handler/roadmap"
+	userHandlerPkg "codeabroad/backend/internal/delivery/http/handler/user"
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"github.com/gin-gonic/gin"
 )
@@ -10,7 +12,8 @@ import (
 // RouterConfig holds all handler dependencies required by the router
 type RouterConfig struct {
 	HealthHandler          *handler.HealthHandler
-	AuthHandler            *handler.AuthHandler
+	AuthHandler            *authHandlerPkg.Handler
+	UserHandler            *userHandlerPkg.Handler
 	OnboardingHandler      *handler.OnboardingHandler
 	RoadmapHandler         *roadmapHandlerPkg.Handler
 	QuestHandler           *handler.QuestHandler
@@ -26,6 +29,8 @@ type RouterConfig struct {
 func SetupRouter(cfg *RouterConfig) *gin.Engine {
 	r := gin.Default()
 
+	r.Use(middleware.SecurityHeadersMiddleware())
+	r.Use(middleware.BodySizeLimitMiddleware(middleware.DefaultMaxBodyBytes))
 	r.Use(middleware.CORSMiddleware(cfg.CORSAllowedOrigins))
 
 	// API version 1 route group
@@ -36,6 +41,9 @@ func SetupRouter(cfg *RouterConfig) *gin.Engine {
 		}
 		if cfg.AuthHandler != nil {
 			cfg.AuthHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
+		if cfg.UserHandler != nil {
+			cfg.UserHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 		}
 		if cfg.OnboardingHandler != nil {
 			cfg.OnboardingHandler.RegisterRoutes(v1, cfg.AuthMiddleware)

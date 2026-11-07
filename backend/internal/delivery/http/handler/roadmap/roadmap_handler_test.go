@@ -12,13 +12,12 @@ import (
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"codeabroad/backend/internal/domain"
 	"codeabroad/backend/internal/mock"
-	"codeabroad/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
 
 func generateRoadmapTestToken(secret, userID string) string {
-	claims := &usecase.JWTClaims{
+	claims := &domain.JWTClaims{
 		UserID:   userID,
 		Email:    "test@example.com",
 		Username: "testuser",

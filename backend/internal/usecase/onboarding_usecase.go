@@ -127,9 +127,6 @@ func (u *onboardingUsecase) CompleteOnboarding(
 		req.CountryID,
 		req.CareerPathID,
 		req.PrimaryStack,
-		req.Level,
-		req.TargetTimeline,
-		req.LanguageLevel,
 		OnboardingBonusXP,
 	)
 	if err != nil {
@@ -141,6 +138,10 @@ func (u *onboardingUsecase) CompleteOnboarding(
 	if err != nil {
 		return nil, fmt.Errorf("failed to retrieve updated profile: %w", err)
 	}
+
+	profile.Level = req.Level
+	profile.TargetTimeline = &req.TargetTimeline
+	profile.LanguageLevel = &req.LanguageLevel
 
 	return profile, nil
 }

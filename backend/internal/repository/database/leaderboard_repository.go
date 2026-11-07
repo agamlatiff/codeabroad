@@ -114,16 +114,18 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 		var u domain.User
 		var weeklyXP int
 		err := r.db.Pool.QueryRow(ctx, `
-			SELECT u.id, u.name, u.username, u.avatar_url, u.xp, u.current_level, u.streak,
+			SELECT u.id, COALESCE(up.name, ''), COALESCE(up.username, ''), COALESCE(ug.xp, 0), COALESCE(ug.current_level, 1), COALESCE(ug.streak, 0),
 			       COALESCE((
 			           SELECT SUM(xp_earned) 
 			           FROM user_activity_logs 
 			           WHERE user_id = u.id AND created_at >= NOW() - INTERVAL '7 days'
-			       ), u.xp) as week_xp
+			       ), COALESCE(ug.xp, 0)) as week_xp
 			FROM users u
+			LEFT JOIN user_profiles up ON u.id = up.user_id
+			LEFT JOIN user_gamification ug ON u.id = ug.user_id
 			WHERE u.id = $1
 		`, userID).Scan(
-			&u.ID, &u.Name, &u.Username, &u.AvatarURL, &u.XP, &u.CurrentLevel, &u.Streak, &weeklyXP,
+			&u.ID, &u.Name, &u.Username, &u.XP, &u.CurrentLevel, &u.Streak, &weeklyXP,
 		)
 		if err == nil {
 			var userDiv domain.TokyoDivision
@@ -144,7 +146,7 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 					UserID:        u.ID,
 					Username:      u.Username,
 					Name:          u.Name,
-					AvatarURL:     u.AvatarURL,
+					AvatarURL:     nil,
 					WeeklyXP:      weeklyXP,
 					Streak:        u.Streak,
 					CurrentLevel:  u.CurrentLevel,

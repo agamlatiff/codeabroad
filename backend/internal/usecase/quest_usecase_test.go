@@ -156,7 +156,10 @@ func TestQuestUsecase_SubmitQuest(t *testing.T) {
 	userRepo := newOnboardingMockUserRepo()
 
 	userID := "user-123"
-	_ = userRepo.Create(ctx, &domain.User{ID: userID, XP: 100, CurrentLevel: 1, Streak: 3})
+	_ = userRepo.Create(ctx, &domain.User{
+		UserAccount: domain.UserAccount{ID: userID},
+		UserGamificationStats: domain.UserGamificationStats{XP: 100, CurrentLevel: 1, Streak: 3},
+	})
 
 	questID := "d1000001-0000-0000-0000-000000000001"
 	qRepo.questsByID[questID] = &domain.Quest{

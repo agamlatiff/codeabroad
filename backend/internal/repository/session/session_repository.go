@@ -1,11 +1,14 @@
 package session
 
 import (
-	"context"
-	"fmt"
-	"time"
 	"codeabroad/backend/internal/domain"
 	infraRedis "codeabroad/backend/internal/infrastructure/redis"
+	"context"
+	"errors"
+	"fmt"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 )
 
 type sessionRepository struct {
@@ -24,7 +27,14 @@ func (s *sessionRepository) SetSession(ctx context.Context, userID string, token
 
 func (s *sessionRepository) GetSession(ctx context.Context, userID string) (string, error) {
 	key := fmt.Sprintf("session:%s", userID)
-	return s.rdb.Client.Get(ctx, key).Result()
+	token, err := s.rdb.Client.Get(ctx, key).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return "", domain.ErrTokenExpired
+		}
+		return "", fmt.Errorf("failed to get session from redis: %w", err)
+	}
+	return token, nil
 }
 
 func (s *sessionRepository) DeleteSession(ctx context.Context, userID string) error {

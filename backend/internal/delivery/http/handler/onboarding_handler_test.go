@@ -13,7 +13,6 @@ import (
 	"codeabroad/backend/internal/delivery/http/handler"
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"codeabroad/backend/internal/domain"
-	"codeabroad/backend/internal/usecase"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -61,7 +60,7 @@ func setupOnboardingTestRouter(mockUc *mockOnboardingUsecase, secret string) *gi
 }
 
 func generateTestToken(secret, userID, email, username string) string {
-	claims := &usecase.JWTClaims{
+	claims := &domain.JWTClaims{
 		UserID:   userID,
 		Email:    email,
 		Username: username,

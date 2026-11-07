@@ -56,8 +56,8 @@ func TestRoadmapUsecase_GetActiveUserRoadmap(t *testing.T) {
 
 	tsID := "ts-1"
 	user := &domain.User{
-		ID:          "user-1",
-		TechStackID: &tsID,
+		UserAccount: domain.UserAccount{ID: "user-1"},
+		UserProfile: domain.UserProfile{TechStackID: &tsID},
 	}
 	_ = userRepo.Create(ctx, user)
 
@@ -82,7 +82,7 @@ func TestRoadmapUsecase_GetActiveUserRoadmap(t *testing.T) {
 
 	// Fallback path: user has no tech_stack_id, fallbacks to default 'golang' track
 	userNoStack := &domain.User{
-		ID: "user-2",
+		UserAccount: domain.UserAccount{ID: "user-2"},
 	}
 	_ = userRepo.Create(ctx, userNoStack)
 	rmRepo.RoadmapsBySlug["golang"] = rm

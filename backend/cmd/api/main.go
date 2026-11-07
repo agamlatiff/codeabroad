@@ -5,7 +5,9 @@ import (
 	"codeabroad/backend/internal/repository/database"
 	"codeabroad/backend/internal/repository/session"
 	"codeabroad/backend/internal/usecase"
+	authUsecasePkg "codeabroad/backend/internal/usecase/auth"
 	roadmapUsecasePkg "codeabroad/backend/internal/usecase/roadmap"
+	userUsecasePkg "codeabroad/backend/internal/usecase/user"
 	"context"
 	"errors"
 	"log"
@@ -17,7 +19,9 @@ import (
 
 	deliveryHttp "codeabroad/backend/internal/delivery/http"
 	"codeabroad/backend/internal/delivery/http/handler"
+	authHandlerPkg "codeabroad/backend/internal/delivery/http/handler/auth"
 	roadmapHandlerPkg "codeabroad/backend/internal/delivery/http/handler/roadmap"
+	userHandlerPkg "codeabroad/backend/internal/delivery/http/handler/user"
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"codeabroad/backend/internal/infrastructure/postgres"
 	"codeabroad/backend/internal/infrastructure/redis"
@@ -65,7 +69,8 @@ func main() {
 	gamificationRepo := database.NewGamificationRepository(pg)
 
 	// 5. Initialize Usecases (Business Logic Layer)
-	authUsecase := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
+	authUsecase := authUsecasePkg.New(userRepo, sessionRepo, cfg)
+	userUsecase := userUsecasePkg.New(userRepo)
 	onboardingUsecase := usecase.NewOnboardingUsecase(countryRepo, careerPathRepo, userRepo)
 	roadmapUsecase := roadmapUsecasePkg.New(roadmapRepo, careerPathRepo, userRepo)
 	questUsecase := usecase.NewQuestUsecase(questRepo, userQuestRepo, userRepo)
@@ -75,7 +80,8 @@ func main() {
 
 	// 6. Initialize Handlers & Middlewares (Delivery Layer)
 	healthHandler := handler.NewHealthHandler(pg, rdb)
-	authHandler := handler.NewAuthHandler(authUsecase)
+	authHandler := authHandlerPkg.New(authUsecase)
+	userHandler := userHandlerPkg.New(userUsecase)
 	onboardingHandler := handler.NewOnboardingHandler(onboardingUsecase)
 	roadmapHandler := roadmapHandlerPkg.New(roadmapUsecase)
 	questHandler := handler.NewQuestHandler(questUsecase)
@@ -89,6 +95,7 @@ func main() {
 	router := deliveryHttp.SetupRouter(&deliveryHttp.RouterConfig{
 		HealthHandler:          healthHandler,
 		AuthHandler:            authHandler,
+		UserHandler:            userHandler,
 		OnboardingHandler:      onboardingHandler,
 		RoadmapHandler:         roadmapHandler,
 		QuestHandler:           questHandler,

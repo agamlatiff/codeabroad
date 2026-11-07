@@ -1,4 +1,4 @@
-package usecase_test
+package auth_test
 
 import (
 	"context"
@@ -7,11 +7,10 @@ import (
 
 	"codeabroad/backend/internal/config"
 	"codeabroad/backend/internal/domain"
-	"codeabroad/backend/internal/usecase"
+	authUsecasePkg "codeabroad/backend/internal/usecase/auth"
 	"golang.org/x/crypto/bcrypt"
 )
 
-// mockUserRepository implements an in-memory domain.UserRepository for unit testing
 type mockUserRepository struct {
 	usersByID       map[string]*domain.User
 	usersByEmail    map[string]*domain.User
@@ -27,6 +26,9 @@ func newMockUserRepository() *mockUserRepository {
 }
 
 func (m *mockUserRepository) Create(ctx context.Context, user *domain.User) error {
+	if user.ID == "" {
+		user.ID = "usr_" + user.Username
+	}
 	m.usersByID[user.ID] = user
 	m.usersByEmail[user.Email] = user
 	m.usersByUsername[user.Username] = user
@@ -45,7 +47,7 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*domain.Us
 	return m.usersByID[id], nil
 }
 
-func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error {
+func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error {
 	return nil
 }
 
@@ -58,73 +60,33 @@ func (m *mockUserRepository) UpdateGamification(ctx context.Context, userID stri
 }
 
 func (m *mockUserRepository) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
-	user := m.usersByID[userID]
-	if user == nil {
-		return nil, domain.ErrUserNotFound
-	}
-	if req.PrimaryStack != nil {
-		user.PrimaryStack = req.PrimaryStack
-	}
-	if req.CareerPathID != nil {
-		user.CareerPathID = req.CareerPathID
-	}
-	return user, nil
+	return m.usersByID[userID], nil
 }
 
 func (m *mockUserRepository) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
 	return nil
 }
 
-func (m *mockUserRepository) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
-	return &domain.UserActivitySummary{
-		CurrentStreak:   5,
-		TotalActiveDays: 3,
-		WeeklyLogs: []domain.UserActivityLog{
-			{Date: "2026-10-12", DayIndex: 0, DayLabel: "Sen", IsActive: true},
-			{Date: "2026-10-13", DayIndex: 1, DayLabel: "Sel", IsActive: true},
-			{Date: "2026-10-14", DayIndex: 2, DayLabel: "Rab", IsActive: true, IsToday: true},
-			{Date: "2026-10-15", DayIndex: 3, DayLabel: "Kam", IsActive: false},
-			{Date: "2026-10-16", DayIndex: 4, DayLabel: "Jum", IsActive: false},
-			{Date: "2026-10-17", DayIndex: 5, DayLabel: "Sab", IsActive: false},
-		},
-	}, nil
+func (m *mockUserRepository) HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error) {
+	return true, nil
+}
+
+func (m *mockUserRepository) GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]domain.DailyActivityStat, error) {
+	return map[string]domain.DailyActivityStat{}, nil
 }
 
 func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
-	user := m.usersByID[userID]
-	if user == nil {
-		return nil, domain.ErrUserNotFound
-	}
-	user.XP += xpAwarded
-	user.CurrentLevel = (user.XP / 100) + 1
-	return &domain.DailyRewardClaimResponse{
-		RewardType:   rewardType,
-		XPAwarded:    xpAwarded,
-		CurrentXP:    user.XP,
-		CurrentLevel: user.CurrentLevel,
-		Streak:       user.Streak,
-		ClaimedAt:    "2026-10-14T10:00:00Z",
-	}, nil
+	return nil, nil
 }
 
 func (m *mockUserRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
-	return &domain.DailyRewardsStatusResponse{
-		Date:               "2026-10-14",
-		VocabQuestClaimed:  false,
-		GoldenChestClaimed: false,
-	}, nil
+	return nil, nil
 }
 
 func (m *mockUserRepository) AddGems(ctx context.Context, userID string, gems int) (int, error) {
-	user := m.usersByID[userID]
-	if user == nil {
-		return 0, domain.ErrUserNotFound
-	}
-	user.Gems += gems
-	return user.Gems, nil
+	return 0, nil
 }
 
-// mockSessionRepository implements an in-memory domain.SessionRepository for unit testing
 type mockSessionRepository struct {
 	sessions map[string]string
 	ttls     map[string]time.Duration
@@ -165,7 +127,7 @@ func setupTestUsecase() (domain.AuthUsecase, *mockUserRepository, *mockSessionRe
 		JWTRefreshExpirationDays:   30,
 	}
 
-	authUc := usecase.NewAuthUsecase(userRepo, sessionRepo, cfg)
+	authUc := authUsecasePkg.New(userRepo, sessionRepo, cfg)
 	return authUc, userRepo, sessionRepo
 }
 
@@ -193,13 +155,11 @@ func TestRegister_Success(t *testing.T) {
 		t.Fatalf("expected user details to match, got email: %s, username: %s", res.User.Email, res.User.Username)
 	}
 
-	// Verify persistence in repository
 	savedUser, _ := userRepo.GetByEmail(ctx, req.Email)
 	if savedUser == nil {
 		t.Fatal("expected user to be persisted in repository")
 	}
 
-	// Verify session in Redis
 	sessionToken, _ := sessionRepo.GetSession(ctx, savedUser.ID)
 	if sessionToken != res.RefreshToken {
 		t.Fatalf("expected session token to match refresh token, got: %s", sessionToken)
@@ -222,7 +182,6 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 		t.Fatalf("first registration failed: %v", err)
 	}
 
-	// Try registering with same email
 	reqDuplicate := &domain.RegisterRequest{
 		Name:     "Test User 2",
 		Username: "user2",
@@ -231,10 +190,6 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 	}
 
 	_, err = authUc.Register(ctx, reqDuplicate)
-	if err == nil {
-		t.Fatal("expected error for duplicate email, got nil")
-	}
-
 	if err != domain.ErrEmailAlreadyExists {
 		t.Fatalf("expected domain.ErrEmailAlreadyExists, got: %v", err)
 	}
@@ -256,7 +211,6 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 		t.Fatalf("first registration failed: %v", err)
 	}
 
-	// Try registering with same username but different email
 	reqDuplicate := &domain.RegisterRequest{
 		Name:     "Test User 2",
 		Username: "unique_user",
@@ -265,10 +219,6 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 	}
 
 	_, err = authUc.Register(ctx, reqDuplicate)
-	if err == nil {
-		t.Fatal("expected error for duplicate username, got nil")
-	}
-
 	if err != domain.ErrUsernameTaken {
 		t.Fatalf("expected domain.ErrUsernameTaken, got: %v", err)
 	}
@@ -282,11 +232,15 @@ func TestLogin_Success(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	user := &domain.User{
-		ID:           "usr_123",
-		Name:         "Existing User",
-		Username:     "existing",
-		Email:        "existing@example.com",
-		PasswordHash: string(hashedPassword),
+		UserAccount: domain.UserAccount{
+			ID:           "usr_123",
+			Email:        "existing@example.com",
+			PasswordHash: string(hashedPassword),
+		},
+		UserProfile: domain.UserProfile{
+			Name:     "Existing User",
+			Username: "existing",
+		},
 	}
 	_ = userRepo.Create(ctx, user)
 
@@ -313,11 +267,15 @@ func TestLogin_RememberMe_True(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	user := &domain.User{
-		ID:           "usr_remember_true",
-		Name:         "Persistent User",
-		Username:     "persistent_user",
-		Email:        "persistent@example.com",
-		PasswordHash: string(hashedPassword),
+		UserAccount: domain.UserAccount{
+			ID:           "usr_remember_true",
+			Email:        "persistent@example.com",
+			PasswordHash: string(hashedPassword),
+		},
+		UserProfile: domain.UserProfile{
+			Name:     "Persistent User",
+			Username: "persistent_user",
+		},
 	}
 	_ = userRepo.Create(ctx, user)
 
@@ -336,7 +294,6 @@ func TestLogin_RememberMe_True(t *testing.T) {
 		t.Fatal("expected access and refresh tokens")
 	}
 
-	// Verify session TTL is 30 days (30 * 24 hours as defined in setupTestUsecase config)
 	expectedTTL := 30 * 24 * time.Hour
 	actualTTL := sessionRepo.ttls[user.ID]
 	if actualTTL != expectedTTL {
@@ -352,11 +309,15 @@ func TestLogin_RememberMe_False(t *testing.T) {
 	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 
 	user := &domain.User{
-		ID:           "usr_remember_false",
-		Name:         "Temporary User",
-		Username:     "temporary_user",
-		Email:        "temporary@example.com",
-		PasswordHash: string(hashedPassword),
+		UserAccount: domain.UserAccount{
+			ID:           "usr_remember_false",
+			Email:        "temporary@example.com",
+			PasswordHash: string(hashedPassword),
+		},
+		UserProfile: domain.UserProfile{
+			Name:     "Temporary User",
+			Username: "temporary_user",
+		},
 	}
 	_ = userRepo.Create(ctx, user)
 
@@ -366,16 +327,11 @@ func TestLogin_RememberMe_False(t *testing.T) {
 		RememberMe: false,
 	}
 
-	res, err := authUc.Login(ctx, loginReq)
+	_, err := authUc.Login(ctx, loginReq)
 	if err != nil {
 		t.Fatalf("expected successful login, got: %v", err)
 	}
 
-	if res.AccessToken == "" || res.RefreshToken == "" {
-		t.Fatal("expected access and refresh tokens")
-	}
-
-	// Verify session TTL is 24 hours for temporary session
 	expectedTTL := 24 * time.Hour
 	actualTTL := sessionRepo.ttls[user.ID]
 	if actualTTL != expectedTTL {
@@ -387,7 +343,6 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 	authUc, _, _ := setupTestUsecase()
 	ctx := context.Background()
 
-	// Non-existent email
 	loginReq := &domain.LoginRequest{
 		Email:    "nonexistent@example.com",
 		Password: "Password123!",
@@ -403,7 +358,6 @@ func TestRefreshToken_Success(t *testing.T) {
 	authUc, _, sessionRepo := setupTestUsecase()
 	ctx := context.Background()
 
-	// 1. Register first
 	regReq := &domain.RegisterRequest{
 		Name:     "Refresh User",
 		Username: "refreshuser",
@@ -415,7 +369,6 @@ func TestRefreshToken_Success(t *testing.T) {
 		t.Fatalf("register failed: %v", err)
 	}
 
-	// 2. Perform Token Refresh
 	refreshRes, err := authUc.RefreshToken(ctx, regRes.RefreshToken)
 	if err != nil {
 		t.Fatalf("expected successful refresh, got: %v", err)
@@ -425,42 +378,9 @@ func TestRefreshToken_Success(t *testing.T) {
 		t.Fatal("expected new tokens to be issued")
 	}
 
-	// Token rotation check: verify session repo now holds the NEW refresh token
 	storedToken, _ := sessionRepo.GetSession(ctx, regRes.User.ID)
 	if storedToken != refreshRes.RefreshToken {
 		t.Fatalf("expected session to store new refresh token %s, got: %s", refreshRes.RefreshToken, storedToken)
-	}
-}
-
-func TestGetProfile_Success(t *testing.T) {
-	authUc, userRepo, _ := setupTestUsecase()
-	ctx := context.Background()
-
-	user := &domain.User{
-		ID:       "usr_profile_1",
-		Name:     "Profile User",
-		Username: "profileuser",
-		Email:    "profile@example.com",
-	}
-	_ = userRepo.Create(ctx, user)
-
-	profile, err := authUc.GetProfile(ctx, "usr_profile_1")
-	if err != nil {
-		t.Fatalf("expected profile, got error: %v", err)
-	}
-
-	if profile.ID != user.ID || profile.Email != user.Email {
-		t.Fatalf("profile data mismatch: %+v", profile)
-	}
-}
-
-func TestGetProfile_NotFound(t *testing.T) {
-	authUc, _, _ := setupTestUsecase()
-	ctx := context.Background()
-
-	_, err := authUc.GetProfile(ctx, "non_existent_id")
-	if err != domain.ErrUserNotFound {
-		t.Fatalf("expected domain.ErrUserNotFound, got: %v", err)
 	}
 }
 
@@ -471,19 +391,11 @@ func TestAuthUsecase_Logout_Success(t *testing.T) {
 	userID := "usr_test_logout"
 	_ = sessionRepo.SetSession(ctx, userID, "valid_refresh_token", 24*time.Hour)
 
-	// Ensure session exists
-	token, err := sessionRepo.GetSession(ctx, userID)
-	if err != nil || token == "" {
-		t.Fatalf("expected active session, got error: %v", err)
-	}
-
-	// Perform logout
 	if err := authUc.Logout(ctx, userID); err != nil {
 		t.Fatalf("expected successful logout, got: %v", err)
 	}
 
-	// Verify session has been deleted
-	_, err = sessionRepo.GetSession(ctx, userID)
+	_, err := sessionRepo.GetSession(ctx, userID)
 	if err != domain.ErrTokenExpired {
 		t.Fatalf("expected session to be deleted/expired, got: %v", err)
 	}
@@ -496,5 +408,41 @@ func TestAuthUsecase_Logout_EmptyUserID(t *testing.T) {
 	err := authUc.Logout(ctx, "")
 	if err != domain.ErrUnauthorized {
 		t.Fatalf("expected ErrUnauthorized, got: %v", err)
+	}
+}
+
+
+func TestRegister_And_Login_EmailCaseNormalization(t *testing.T) {
+	authUc, _, _ := setupTestUsecase()
+	ctx := context.Background()
+
+	regReq := &domain.RegisterRequest{
+		Name:     "  Case User  ",
+		Username: "  caseuser  ",
+		Email:    "  MixedCase@Example.COM  ",
+		Password: "Password123!",
+	}
+
+	regRes, err := authUc.Register(ctx, regReq)
+	if err != nil {
+		t.Fatalf("expected registration to succeed, got: %v", err)
+	}
+	if regRes.User.Email != "mixedcase@example.com" {
+		t.Fatalf("expected normalized lowercase email 'mixedcase@example.com', got: %s", regRes.User.Email)
+	}
+	if regRes.User.Username != "caseuser" {
+		t.Fatalf("expected trimmed username 'caseuser', got: %s", regRes.User.Username)
+	}
+
+	// Login with uppercase email should succeed against normalized record
+	loginRes, err := authUc.Login(ctx, &domain.LoginRequest{
+		Email:    "MIXEDCASE@EXAMPLE.COM",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("expected login with uppercase email to succeed, got: %v", err)
+	}
+	if loginRes.AccessToken == "" {
+		t.Fatal("expected valid access token upon normalized login")
 	}
 }

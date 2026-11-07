@@ -147,7 +147,7 @@ func (m *onboardingMockUserRepo) GetByID(ctx context.Context, id string) (*domai
 	return u, nil
 }
 
-func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, level string, targetTimeline string, languageLevel string, bonusXP int) error {
+func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error {
 	if m.updateError != nil {
 		return m.updateError
 	}
@@ -155,18 +155,12 @@ func (m *onboardingMockUserRepo) UpdateOnboarding(ctx context.Context, userID st
 	m.updatedCountryID = countryID
 	m.updatedCareerPathID = careerPathID
 	m.updatedPrimaryStack = primaryStack
-	m.updatedLevel = level
-	m.updatedTargetTimeline = targetTimeline
-	m.updatedLanguageLevel = languageLevel
 	m.updatedBonusXP = bonusXP
 
 	if u, ok := m.users[userID]; ok {
 		u.CountryID = &countryID
 		u.CareerPathID = &careerPathID
 		u.PrimaryStack = &primaryStack
-		u.Level = level
-		u.TargetTimeline = &targetTimeline
-		u.LanguageLevel = &languageLevel
 		u.XP += bonusXP
 		u.IsOnboarded = true
 	}
@@ -183,14 +177,14 @@ func (m *onboardingMockUserRepo) GetProfileWithDetails(ctx context.Context, user
 		Name:         u.Name,
 		Username:     u.Username,
 		Email:        u.Email,
-		Level:        u.Level,
+		Level:        m.updatedLevel,
 		XP:           u.XP,
 		CurrentLevel: u.CurrentLevel,
 		Streak:       1,
 		IsOnboarded:    u.IsOnboarded,
 		PrimaryStack:   u.PrimaryStack,
-		TargetTimeline: u.TargetTimeline,
-		LanguageLevel:  u.LanguageLevel,
+		TargetTimeline: &m.updatedTargetTimeline,
+		LanguageLevel:  &m.updatedLanguageLevel,
 		Country: &domain.CountrySummary{
 			ID:        *u.CountryID,
 			Code:      "JP",
@@ -237,20 +231,12 @@ func (m *onboardingMockUserRepo) LogActivity(ctx context.Context, userID string,
 	return nil
 }
 
-func (m *onboardingMockUserRepo) GetWeeklyActivityLogs(ctx context.Context, userID string) (*domain.UserActivitySummary, error) {
-	return &domain.UserActivitySummary{
-		CurrentStreak:   3,
-		TotalActiveDays: 3,
-		WeeklyLogs: []domain.UserActivityLog{
-			{Date: "2026-10-12", DayIndex: 0, DayLabel: "Sen", IsActive: true},
-			{Date: "2026-10-13", DayIndex: 1, DayLabel: "Sel", IsActive: true},
-			{Date: "2026-10-14", DayIndex: 2, DayLabel: "Rab", IsActive: true, IsToday: true},
-			{Date: "2026-10-15", DayIndex: 3, DayLabel: "Kam", IsActive: false},
-			{Date: "2026-10-16", DayIndex: 4, DayLabel: "Jum", IsActive: false},
-			{Date: "2026-10-17", DayIndex: 5, DayLabel: "Sab", IsActive: false},
-			{Date: "2026-10-18", DayIndex: 6, DayLabel: "Min", IsActive: false},
-		},
-	}, nil
+func (m *onboardingMockUserRepo) HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error) {
+	return true, nil
+}
+
+func (m *onboardingMockUserRepo) GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]domain.DailyActivityStat, error) {
+	return map[string]domain.DailyActivityStat{}, nil
 }
 
 func (m *onboardingMockUserRepo) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
@@ -384,16 +370,21 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 	}
 
 	userRepo.users["user-1"] = &domain.User{
-		ID:           "user-1",
-		Name:         "Budi Pratama",
-		Username:     "budipratama",
-		Email:        "budi@example.com",
-		Level:        "beginner",
-		XP:           0,
-		CurrentLevel: 1,
-		Streak:       0,
-		IsOnboarded:  false,
-		CreatedAt:    time.Now(),
+		UserAccount: domain.UserAccount{
+			ID:        "user-1",
+			Email:     "budi@example.com",
+			CreatedAt: time.Now(),
+		},
+		UserProfile: domain.UserProfile{
+			Name:        "Budi Pratama",
+			Username:    "budipratama",
+			IsOnboarded: false,
+		},
+		UserGamificationStats: domain.UserGamificationStats{
+			XP:           0,
+			CurrentLevel: 1,
+			Streak:       0,
+		},
 	}
 
 	uc := usecase.NewOnboardingUsecase(countryRepo, careerPathRepo, userRepo)
@@ -438,8 +429,8 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 
 	t.Run("happy path - completes onboarding with fluent language level and 6_months sprint", func(t *testing.T) {
 		userRepo.users["user-fluent"] = &domain.User{
-			ID:          "user-fluent",
-			IsOnboarded: false,
+			UserAccount: domain.UserAccount{ID: "user-fluent"},
+			UserProfile: domain.UserProfile{IsOnboarded: false},
 		}
 		req := &domain.OnboardingRequest{
 			CountryID:      "c-jp",
@@ -478,8 +469,8 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 
 	t.Run("fails when user has already completed onboarding", func(t *testing.T) {
 		userRepo.users["user-already-onboarded"] = &domain.User{
-			ID:          "user-already-onboarded",
-			IsOnboarded: true,
+			UserAccount: domain.UserAccount{ID: "user-already-onboarded"},
+			UserProfile: domain.UserProfile{IsOnboarded: true},
 		}
 
 		req := &domain.OnboardingRequest{
@@ -496,7 +487,7 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 	})
 
 	t.Run("fails when selected country is not found", func(t *testing.T) {
-		userRepo.users["user-2"] = &domain.User{ID: "user-2", IsOnboarded: false}
+		userRepo.users["user-2"] = &domain.User{UserAccount: domain.UserAccount{ID: "user-2"}, UserProfile: domain.UserProfile{IsOnboarded: false}}
 		req := &domain.OnboardingRequest{
 			CountryID:    "non-existent-country",
 			CareerPathID: "cp-backend",
@@ -511,7 +502,7 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 	})
 
 	t.Run("fails when selected country is coming soon / not active", func(t *testing.T) {
-		userRepo.users["user-3"] = &domain.User{ID: "user-3", IsOnboarded: false}
+		userRepo.users["user-3"] = &domain.User{UserAccount: domain.UserAccount{ID: "user-3"}, UserProfile: domain.UserProfile{IsOnboarded: false}}
 		req := &domain.OnboardingRequest{
 			CountryID:    "c-de", // Inactive
 			CareerPathID: "cp-backend",
@@ -526,7 +517,7 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 	})
 
 	t.Run("fails when career path is not found", func(t *testing.T) {
-		userRepo.users["user-4"] = &domain.User{ID: "user-4", IsOnboarded: false}
+		userRepo.users["user-4"] = &domain.User{UserAccount: domain.UserAccount{ID: "user-4"}, UserProfile: domain.UserProfile{IsOnboarded: false}}
 		req := &domain.OnboardingRequest{
 			CountryID:    "c-jp",
 			CareerPathID: "non-existent-cp",
@@ -541,7 +532,7 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 	})
 
 	t.Run("fails when stack does not exist in career path", func(t *testing.T) {
-		userRepo.users["user-5"] = &domain.User{ID: "user-5", IsOnboarded: false}
+		userRepo.users["user-5"] = &domain.User{UserAccount: domain.UserAccount{ID: "user-5"}, UserProfile: domain.UserProfile{IsOnboarded: false}}
 		req := &domain.OnboardingRequest{
 			CountryID:    "c-jp",
 			CareerPathID: "cp-backend",
@@ -556,7 +547,7 @@ func TestOnboardingUsecase_CompleteOnboarding(t *testing.T) {
 	})
 
 	t.Run("fails when stack is coming soon / not active", func(t *testing.T) {
-		userRepo.users["user-6"] = &domain.User{ID: "user-6", IsOnboarded: false}
+		userRepo.users["user-6"] = &domain.User{UserAccount: domain.UserAccount{ID: "user-6"}, UserProfile: domain.UserProfile{IsOnboarded: false}}
 		req := &domain.OnboardingRequest{
 			CountryID:    "c-jp",
 			CareerPathID: "cp-backend",
