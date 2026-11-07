@@ -3,7 +3,7 @@ import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import { roadmapService } from '../../services/roadmapService'
-import { authService } from '../../services/authService'
+import { userService } from '../../services/userService'
 import { triggerHaptic } from '../../utils/haptics'
 import { playSound, playBgm, stopBgm } from '../../utils/sound'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
@@ -54,7 +54,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
 
   const { data: profileUser } = useQuery({
     queryKey: PROFILE_QUERY_KEY,
-    queryFn: authService.getProfile,
+    queryFn: userService.getProfile,
     staleTime: 1000 * 60 * 5,
   })
 
@@ -95,7 +95,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
 
       // Optimistically update auth store and sync to backend user profile
       updateUser({ preferred_roadmap_view: mode })
-      authService.updateProfile({ preferred_roadmap_view: mode }).catch((err) => {
+      userService.updateProfile({ preferred_roadmap_view: mode }).catch((err) => {
         console.warn('[useRoadmapPage] Failed to persist view mode to backend profile:', err)
       })
     },
@@ -203,7 +203,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     // Optimistic update
     updateUser({ has_seen_roadmap_tour: true })
     try {
-      await authService.updateProfile({ has_seen_roadmap_tour: true })
+      await userService.updateProfile({ has_seen_roadmap_tour: true })
       await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
     } catch (err: unknown) {
       // Rollback state on failure and allow a retry
@@ -226,7 +226,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
       // Optimistic client update
       updateUser({ primary_stack: trackSlug })
       try {
-        await authService.updateProfile({ primary_stack: trackSlug })
+        await userService.updateProfile({ primary_stack: trackSlug })
         await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       } catch (err: unknown) {
         // Rollback on network failure (restores `undefined` for first-time users too)

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../store/authStore'
 import { authService } from '../services/authService'
+import { userService } from '../services/userService'
 import type { AvatarStyle } from '../utils/avatar'
 import type { KodiPose } from '../components/ui/MascotCard'
 import { getKodiPoseMessage } from '../utils/kodi'
@@ -21,7 +22,7 @@ export const useDashboard = () => {
   // 1. Profile Synchronization via TanStack Query
   const { data: profile, refetch: refetchProfile } = useQuery({
     queryKey: ['profile'],
-    queryFn: authService.getProfile,
+    queryFn: userService.getProfile,
     staleTime: 1000 * 60 * 5, // 5 minutes cache
   })
 

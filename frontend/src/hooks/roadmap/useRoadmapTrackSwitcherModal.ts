@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { useAuthStore } from '../../store/authStore'
-import { authService } from '../../services/authService'
+import { userService } from '../../services/userService'
 import { useQuery } from '@tanstack/react-query'
 import { onboardingService } from '../../services/onboardingService'
 import { triggerHaptic } from '../../utils/haptics'
@@ -30,7 +30,7 @@ export const useRoadmapTrackSwitcherModal = ({
   const { user: storeUser } = useAuthStore()
   const { data: profileUser } = useQuery({
     queryKey: PROFILE_QUERY_KEY,
-    queryFn: authService.getProfile,
+    queryFn: userService.getProfile,
     staleTime: 1000 * 60 * 5,
   })
   const user = profileUser || storeUser

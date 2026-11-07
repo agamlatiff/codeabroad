@@ -45,10 +45,15 @@ export const useRegister = () => {
       navigate(targetPath, { replace: true })
     },
     onError: (err: unknown) => {
-      if (isAxiosError<{ error?: string; message?: string }>(err)) {
+      if (isAxiosError<{ error?: string; message?: string; code?: string }>(err)) {
+        const status = err.response?.status
         const rawError = (err.response?.data?.error || err.response?.data?.message || '').toLowerCase()
 
-        if (rawError.includes('email') && (rawError.includes('already') || rawError.includes('exists') || rawError.includes('registered'))) {
+        if (status === 429) {
+          setGeneralError('Terlalu banyak percobaan pendaftaran. Demi keamanan, mohon tunggu 1 menit sebelum mencoba lagi.')
+        } else if (status === 413) {
+          setGeneralError('Ukuran data payload melebihi batas yang diizinkan.')
+        } else if (rawError.includes('email') && (rawError.includes('already') || rawError.includes('exists') || rawError.includes('registered'))) {
           setFieldErrors((prev) => ({
             ...prev,
             email: 'Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.',
@@ -61,10 +66,10 @@ export const useRegister = () => {
         } else if (rawError.includes('password')) {
           setFieldErrors((prev) => ({
             ...prev,
-            password: 'Kata sandi tidak memenuhi kriteria keamanan minimal.',
+            password: 'Kata sandi minimal 8 karakter.',
           }))
-        } else if (err.response?.status === 409) {
-          setGeneralError('Data akun sudah terdaftar. Silakan periksa email atau username kamu.')
+        } else if (status === 409) {
+          setGeneralError('Data akun sudah terdaftar. Silakan periksa kembali email atau username kamu.')
         } else {
           setGeneralError(err.response?.data?.error || 'Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.')
         }
@@ -86,9 +91,9 @@ export const useRegister = () => {
     }
 
     registerMutation.mutate({
-      name,
-      username,
-      email,
+      name: name.trim(),
+      username: username.trim().toLowerCase(),
+      email: email.trim().toLowerCase(),
       password,
     })
   }

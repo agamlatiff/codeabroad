@@ -1,6 +1,6 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { authService } from '../../../services/authService'
+import { userService } from '../../../services/userService'
 import { onboardingService } from '../../../services/onboardingService'
 import { useAuthStore } from '../../../store/authStore'
 import { triggerHaptic } from '../../../utils/haptics'
@@ -86,7 +86,7 @@ export const useSettingsModal = ({
 
   const updateProfileMutation = useMutation({
     mutationFn: () =>
-      authService.updateProfile({
+      userService.updateProfile({
         name: name.trim() || undefined,
         bio: bio.trim() || undefined,
         primary_stack: primaryStack,

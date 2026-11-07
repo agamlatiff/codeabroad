@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../../store/authStore'
-import { authService } from '../../../services/authService'
+import { userService } from '../../../services/userService'
 import { triggerHaptic } from '../../../utils/haptics'
 import { audioEngine } from '../../../utils/audio'
 import { PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
@@ -39,7 +39,7 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
 
   const { data: dailyRewardsStatus = null } = useQuery({
     queryKey: DAILY_REWARDS_QUERY_KEY,
-    queryFn: () => authService.getDailyRewardsStatus(),
+    queryFn: () => userService.getDailyRewardsStatus(),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
   })
@@ -82,7 +82,7 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
 
   const claimRewardMutation = useMutation({
     mutationFn: (rewardType: 'vocab_quest' | 'golden_chest') =>
-      authService.claimDailyReward(rewardType),
+      userService.claimDailyReward(rewardType),
     onSuccess: (res) => {
       updateUser({
         xp: res.current_xp,

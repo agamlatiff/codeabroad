@@ -43,17 +43,23 @@ export const useLogin = () => {
       navigate(targetPath, { replace: true })
     },
     onError: (err: unknown) => {
-      if (isAxiosError<{ error?: string; message?: string }>(err)) {
+      if (isAxiosError<{ error?: string; message?: string; code?: string }>(err)) {
+        const status = err.response?.status
         const rawError = (err.response?.data?.error || err.response?.data?.message || '').toLowerCase()
-        if (
-          err.response?.status === 401 ||
+
+        if (status === 429) {
+          setGeneralError('Terlalu banyak percobaan masuk. Demi keamanan, mohon tunggu 1 menit sebelum mencoba lagi.')
+        } else if (status === 413) {
+          setGeneralError('Ukuran data payload melebihi batas yang diizinkan.')
+        } else if (
+          status === 401 ||
           rawError.includes('unauthorized') ||
           rawError.includes('invalid') ||
           rawError.includes('password') ||
           rawError.includes('credential')
         ) {
           setGeneralError('Email atau kata sandi yang kamu masukkan salah. Silakan coba lagi.')
-        } else if (err.response?.status === 404 || rawError.includes('not found')) {
+        } else if (status === 404 || rawError.includes('not found')) {
           setGeneralError('Akun dengan email ini belum terdaftar. Silakan buat akun baru.')
         } else {
           setGeneralError(err.response?.data?.error || 'Gagal masuk. Periksa kembali email dan kata sandi kamu.')
@@ -76,7 +82,7 @@ export const useLogin = () => {
     }
 
     loginMutation.mutate({
-      email,
+      email: email.trim(),
       password,
       remember_me: rememberMe,
     })

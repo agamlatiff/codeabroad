@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../../store/authStore'
-import { authService } from '../../../services/authService'
+import { userService } from '../../../services/userService'
 import { questService } from '../../../services/questService'
 import { triggerHaptic } from '../../../utils/haptics'
 import { ACTIVITY_LOGS_QUERY_KEY } from './useStreakSection'
@@ -69,14 +69,14 @@ export const useQuestsSection = ({
 
   const { data: activitySummary = null } = useQuery({
     queryKey: ACTIVITY_LOGS_QUERY_KEY,
-    queryFn: () => authService.getActivityLogs(),
+    queryFn: () => userService.getActivityLogs(),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
   })
 
   const { data: dailyRewardsStatus = null } = useQuery({
     queryKey: DAILY_REWARDS_QUERY_KEY,
-    queryFn: () => authService.getDailyRewardsStatus(),
+    queryFn: () => userService.getDailyRewardsStatus(),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
   })

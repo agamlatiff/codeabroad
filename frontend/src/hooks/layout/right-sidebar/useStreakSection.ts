@@ -1,7 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../../store/authStore'
-import { authService } from '../../../services/authService'
+import { userService } from '../../../services/userService'
 import { triggerHaptic } from '../../../utils/haptics'
 
 export const ACTIVITY_LOGS_QUERY_KEY = ['activity-logs'] as const
@@ -28,7 +28,7 @@ export const useStreakSection = () => {
 
   const { data: activitySummary = null } = useQuery({
     queryKey: ACTIVITY_LOGS_QUERY_KEY,
-    queryFn: () => authService.getActivityLogs(),
+    queryFn: () => userService.getActivityLogs(),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
   })

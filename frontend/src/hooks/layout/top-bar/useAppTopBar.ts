@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../../store/authStore'
-import { authService } from '../../../services/authService'
+import { userService } from '../../../services/userService'
 import { onboardingService } from '../../../services/onboardingService'
 import type { CareerTrackOption } from '../../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
@@ -20,7 +20,7 @@ export const useAppTopBar = (activeTrack: string) => {
   // 1. Subscribe to cached user profile
   const { data: queriedUser } = useQuery({
     queryKey: PROFILE_QUERY_KEY,
-    queryFn: authService.getProfile,
+    queryFn: userService.getProfile,
     staleTime: 1000 * 60 * 5,
   })
 

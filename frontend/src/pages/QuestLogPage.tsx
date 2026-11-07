@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from '../components/layout/left-sidebar/AppLeftSidebar'
 import { useAuthStore } from '../store/authStore'
-import { authService } from '../services/authService'
+import { userService } from '../services/userService'
 import { questService } from '../services/questService'
 import { gamificationService } from '../services/gamificationService'
 import type { Quest } from '../types/quest'
@@ -357,7 +357,7 @@ export const QuestLogPage = () => {
     setIsCourseSwitcherOpen(false)
     updateUser({ primary_stack: trackSlug })
     try {
-      await authService.updateProfile({ primary_stack: trackSlug })
+      await userService.updateProfile({ primary_stack: trackSlug })
     } catch {
       // Gracefully continue with local state
     }
