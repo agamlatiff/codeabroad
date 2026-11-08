@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
 import { roadmapService } from '../../services/roadmapService'
 import { userService } from '../../services/userService'
+import { useUser } from '../user/useUser'
 import { triggerHaptic } from '../../utils/haptics'
 import { playSound, playBgm, stopBgm } from '../../utils/sound'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
@@ -48,17 +49,9 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const queryClient = useQueryClient()
   const { track: routeTrack } = useParams<{ track?: string }>()
 
-  // Reactive selector for auth store & database profile synchronization
-  const storeUser = useAuthStore((s) => s.user)
+  // SSOT user profile and update handler
+  const { user } = useUser()
   const updateUser = useAuthStore((s) => s.updateUser)
-
-  const { data: profileUser } = useQuery({
-    queryKey: PROFILE_QUERY_KEY,
-    queryFn: userService.getProfile,
-    staleTime: 1000 * 60 * 5,
-  })
-
-  const user = profileUser || storeUser
 
   // ── 0. CURRICULUM VIEW MODE (Peta RPG vs Silabus Modul) ──
   // URL `?view=` is the source of truth; localStorage is only the fallback preference.

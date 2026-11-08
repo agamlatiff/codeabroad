@@ -1,12 +1,11 @@
 import { useCallback } from 'react'
-import { useAuthStore } from '../../store/authStore'
-import { userService } from '../../services/userService'
 import { useQuery } from '@tanstack/react-query'
 import { onboardingService } from '../../services/onboardingService'
+import { useUser } from '../user/useUser'
 import { triggerHaptic } from '../../utils/haptics'
 import type { CareerTrackOption } from '../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../../constants/queryKeys'
+import { CAREER_PATHS_QUERY_KEY } from '../../constants/queryKeys'
 
 export interface UseRoadmapTrackSwitcherModalOptions {
   onSelectTrack: (trackSlug: string) => void
@@ -27,13 +26,7 @@ export const useRoadmapTrackSwitcherModal = ({
     staleTime: 1000 * 60 * 10, // 10 minutes cache
   })
 
-  const { user: storeUser } = useAuthStore()
-  const { data: profileUser } = useQuery({
-    queryKey: PROFILE_QUERY_KEY,
-    queryFn: userService.getProfile,
-    staleTime: 1000 * 60 * 5,
-  })
-  const user = profileUser || storeUser
+  const { user } = useUser()
 
   // Direct lightweight computation (~5 career paths, simple filter and find)
   const trackOptions: CareerTrackOption[] = mapCareerPathsToTrackOptions(careerPaths, user)
@@ -52,4 +45,3 @@ export const useRoadmapTrackSwitcherModal = ({
     handleSelect,
   }
 }
-
