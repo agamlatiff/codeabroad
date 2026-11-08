@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authService } from '../../services/authService'
+import type { LoginPayload } from '../../types/auth'
 import { useAuthStore } from '../../store/authStore'
 import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 import { validateLoginForm } from '../../utils/validation'
@@ -32,7 +33,7 @@ export const useLogin = () => {
 
   // 3. TanStack Mutation for Session Authentication
   const loginMutation = useMutation({
-    mutationFn: authService.login,
+    mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (data) => {
       setAuth(data.user, data.access_token, data.refresh_token, rememberMe)
       queryClient.setQueryData(PROFILE_QUERY_KEY, data.user)

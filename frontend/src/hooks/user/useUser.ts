@@ -22,7 +22,7 @@ export const useUser = () => {
     refetch,
   } = useQuery({
     queryKey: PROFILE_QUERY_KEY,
-    queryFn: userService.getProfile,
+    queryFn: ({ signal }) => userService.getProfile({ signal }),
     enabled: isAuthenticated,
     staleTime: 1000 * 60 * 5, // 5 minutes fresh cache
   })

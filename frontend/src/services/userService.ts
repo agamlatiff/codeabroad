@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api, unwrapApiResponse, type RequestOptions } from './api'
 import type { ApiResponse } from '../types/api'
 import type {
   User,
@@ -16,57 +16,55 @@ export const userService = {
   /**
    * Fetches latest user profile data from /users/me.
    */
-  async getProfile(): Promise<User> {
-    const response = await api.get<ApiResponse<User>>('/users/me')
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Gagal memuat profil pengguna.')
-    }
-    return response.data.data
+  async getProfile(options?: RequestOptions): Promise<User> {
+    const response = await api.get<ApiResponse<User>>('/users/me', {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat profil pengguna.')
   },
 
   /**
    * Updates user preferences, primary stack, or profile fields on /users/me.
    */
-  async updateProfile(payload: UpdateProfilePayload): Promise<User> {
-    const response = await api.patch<ApiResponse<User>>('/users/me', payload)
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Gagal memperbarui profil pengguna.')
-    }
-    return response.data.data
+  async updateProfile(payload: UpdateProfilePayload, options?: RequestOptions): Promise<User> {
+    const response = await api.patch<ApiResponse<User>>('/users/me', payload, {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memperbarui profil pengguna.')
   },
 
   /**
    * Fetches 7-day weekly activity history and real streak tracking from /users/me/activity-logs.
    */
-  async getActivityLogs(): Promise<UserActivitySummaryResponse> {
-    const response = await api.get<ApiResponse<UserActivitySummaryResponse>>('/users/me/activity-logs')
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Gagal memuat catatan aktivitas belajar.')
-    }
-    return response.data.data
+  async getActivityLogs(options?: RequestOptions): Promise<UserActivitySummaryResponse> {
+    const response = await api.get<ApiResponse<UserActivitySummaryResponse>>('/users/me/activity-logs', {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat catatan aktivitas belajar.')
   },
 
   /**
    * Claims a daily reward (vocab_quest or golden_chest) and persists XP on backend PostgreSQL.
    */
-  async claimDailyReward(rewardType: 'vocab_quest' | 'golden_chest'): Promise<DailyRewardClaimResponse> {
-    const response = await api.post<ApiResponse<DailyRewardClaimResponse>>('/users/me/daily-rewards/claim', {
-      reward_type: rewardType,
-    })
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Gagal mengklaim hadiah harian.')
-    }
-    return response.data.data
+  async claimDailyReward(
+    rewardType: 'vocab_quest' | 'golden_chest',
+    options?: RequestOptions
+  ): Promise<DailyRewardClaimResponse> {
+    const response = await api.post<ApiResponse<DailyRewardClaimResponse>>(
+      '/users/me/daily-rewards/claim',
+      { reward_type: rewardType },
+      { signal: options?.signal }
+    )
+    return unwrapApiResponse(response, 'Gagal mengklaim hadiah harian.')
   },
 
   /**
    * Fetches today's daily rewards status from backend PostgreSQL.
    */
-  async getDailyRewardsStatus(): Promise<DailyRewardsStatusResponse> {
-    const response = await api.get<ApiResponse<DailyRewardsStatusResponse>>('/users/me/daily-rewards')
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Gagal memuat status hadiah harian.')
-    }
-    return response.data.data
+  async getDailyRewardsStatus(options?: RequestOptions): Promise<DailyRewardsStatusResponse> {
+    const response = await api.get<ApiResponse<DailyRewardsStatusResponse>>('/users/me/daily-rewards', {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat status hadiah harian.')
   },
 }

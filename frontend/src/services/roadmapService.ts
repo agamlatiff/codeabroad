@@ -1,23 +1,30 @@
-import { api } from './api'
+import { api, unwrapApiResponse, type RequestOptions } from './api'
 import type { ApiResponse } from '../types/api'
 import type { Roadmap } from '../types/roadmap'
 
+/**
+ * Service managing learning curriculum and Tokyo tech roadmap queries.
+ * Directly corresponds to backend Roadmap Service (`/api/v1/roadmaps/*`).
+ */
 export const roadmapService = {
-  // Fetch active user roadmap based on their selected career track and progress
-  async getActiveRoadmap(): Promise<Roadmap> {
-    const response = await api.get<ApiResponse<Roadmap>>('/roadmaps/active')
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    }
-    throw new Error(response.data.error || 'Failed to fetch active roadmap')
+  /**
+   * Fetches the active personalized roadmap based on the user's selected track.
+   */
+  async getActiveRoadmap(options?: RequestOptions): Promise<Roadmap> {
+    const response = await api.get<ApiResponse<Roadmap>>('/roadmaps/active', {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat kurikulum aktif.')
   },
 
-  // Fetch specific career track roadmap (e.g. 'golang', 'devops_aws', 'react')
-  async getTrackRoadmap(trackSlug: string): Promise<Roadmap> {
-    const response = await api.get<ApiResponse<Roadmap>>(`/roadmaps/${trackSlug}`)
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    }
-    throw new Error(response.data.error || `Failed to fetch roadmap for track ${trackSlug}`)
+  /**
+   * Fetches a specific career track roadmap (e.g. 'golang', 'react', 'fullstack').
+   */
+  async getTrackRoadmap(trackSlug: string, options?: RequestOptions): Promise<Roadmap> {
+    const sanitizedSlug = encodeURIComponent(trackSlug.trim())
+    const response = await api.get<ApiResponse<Roadmap>>(`/roadmaps/${sanitizedSlug}`, {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, `Gagal memuat kurikulum untuk track ${trackSlug}.`)
   },
 }

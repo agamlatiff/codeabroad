@@ -93,10 +93,10 @@ export const useRoadmapPage = (explicitTrack?: string) => {
     refetch,
   } = useQuery({
     queryKey: [ROADMAP_QUERY_KEY, requestedTrack || 'active'],
-    queryFn: () =>
+    queryFn: ({ signal }) =>
       requestedTrack
-        ? roadmapService.getTrackRoadmap(requestedTrack)
-        : roadmapService.getActiveRoadmap(),
+        ? roadmapService.getTrackRoadmap(requestedTrack, { signal })
+        : roadmapService.getActiveRoadmap({ signal }),
     staleTime: 1000 * 60 * 2, // 2 minutes cache
   })
 

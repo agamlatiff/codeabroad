@@ -1,5 +1,4 @@
-
-import type { AxiosError, InternalAxiosRequestConfig } from 'axios'
+import type { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../store/authStore'
 import type { ApiResponse } from '../types/api'
 import type { AuthResponse } from '../types/auth'
@@ -7,8 +6,30 @@ import axios from 'axios'
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
 
+/**
+ * Standard request options for service methods (supports cancellation via AbortSignal).
+ */
+export interface RequestOptions {
+    signal?: AbortSignal
+}
+
+/**
+ * Unwraps data from standard Go API response envelope (response.go).
+ * Throws a formatted Error with backend error message or provided fallback.
+ */
+export const unwrapApiResponse = <T>(
+    response: AxiosResponse<ApiResponse<T>>,
+    fallbackError: string = 'Terjadi kesalahan pada server'
+): T => {
+    if (response.data.success && response.data.data !== undefined) {
+        return response.data.data
+    }
+    throw new Error(response.data.error || fallbackError)
+}
+
 export const api = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 15000, // 15 seconds request timeout
     headers: {
         'Content-Type': 'application/json',
     },
@@ -83,7 +104,8 @@ api.interceptors.response.use(
                 // Request a new token pair from backend
                 const response = await axios.post<ApiResponse<AuthResponse>>(
                     `${API_BASE_URL}/auth/refresh`,
-                    { refresh_token: refreshToken }
+                    { refresh_token: refreshToken },
+                    { timeout: 10000 }
                 )
 
                 const data = response.data

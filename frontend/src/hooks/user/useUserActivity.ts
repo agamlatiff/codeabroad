@@ -18,7 +18,7 @@ export const useUserActivity = () => {
     refetch,
   } = useQuery<UserActivitySummaryResponse>({
     queryKey: ACTIVITY_LOGS_QUERY_KEY,
-    queryFn: () => userService.getActivityLogs(),
+    queryFn: ({ signal }) => userService.getActivityLogs({ signal }),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2, // 2 minutes fresh cache
   })

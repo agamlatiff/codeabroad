@@ -20,7 +20,7 @@ export const useDailyRewards = () => {
     refetch,
   } = useQuery<DailyRewardsStatusResponse>({
     queryKey: DAILY_REWARDS_QUERY_KEY,
-    queryFn: () => userService.getDailyRewardsStatus(),
+    queryFn: ({ signal }) => userService.getDailyRewardsStatus({ signal }),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
   })

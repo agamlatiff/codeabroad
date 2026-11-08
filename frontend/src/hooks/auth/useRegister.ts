@@ -3,6 +3,7 @@ import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authService } from '../../services/authService'
+import type { RegisterPayload } from '../../types/auth'
 import { useAuthStore } from '../../store/authStore'
 import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 import { validateRegisterForm } from '../../utils/validation'
@@ -33,7 +34,7 @@ export const useRegister = () => {
 
   // 3. TanStack Mutation for Registration
   const registerMutation = useMutation({
-    mutationFn: authService.register,
+    mutationFn: (payload: RegisterPayload) => authService.register(payload),
     onSuccess: (data) => {
       // Automatically authenticate on successful registration (default persistent session)
       setAuth(data.user, data.access_token, data.refresh_token, true)

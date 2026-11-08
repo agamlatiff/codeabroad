@@ -1,4 +1,4 @@
-import { api } from './api'
+import { api, unwrapApiResponse, type RequestOptions } from './api'
 import type { ApiResponse } from '../types/api'
 import type {
   AuthResponse,
@@ -8,29 +8,27 @@ import type {
 
 /**
  * Service managing authentication and user session API interactions.
- * Corresponds to backend Auth Service (`/api/v1/auth/*`).
+ * Directly corresponds to backend Auth Service (`/api/v1/auth/*`).
  */
 export const authService = {
   /**
    * Submits user credentials to authenticate session.
    */
-  async login(payload: LoginPayload): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', payload)
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Gagal masuk. Silakan coba lagi.')
-    }
-    return response.data.data
+  async login(payload: LoginPayload, options?: RequestOptions): Promise<AuthResponse> {
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/login', payload, {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal masuk. Silakan coba lagi.')
   },
 
   /**
    * Submits new user profile details to register account.
    */
-  async register(payload: RegisterPayload): Promise<AuthResponse> {
-    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', payload)
-    if (!response.data.success || !response.data.data) {
-      throw new Error(response.data.error || 'Pendaftaran gagal. Silakan coba lagi.')
-    }
-    return response.data.data
+  async register(payload: RegisterPayload, options?: RequestOptions): Promise<AuthResponse> {
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/register', payload, {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Pendaftaran gagal. Silakan coba lagi.')
   },
 
   /**
@@ -39,8 +37,10 @@ export const authService = {
   async logout(): Promise<void> {
     try {
       await api.post('/auth/logout')
-    } catch {
-      // Gracefully ignore network errors during sign out
+    } catch (err: unknown) {
+      if (import.meta.env.DEV) {
+        console.warn('[authService.logout] Gagal mencabut sesi di server:', err)
+      }
     }
   },
 }
