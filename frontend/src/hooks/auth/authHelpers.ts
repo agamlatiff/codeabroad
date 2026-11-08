@@ -1,5 +1,5 @@
 import { isAxiosError } from 'axios'
-import { API_BASE_URL } from '../../services/api'
+// import { API_BASE_URL } from '../../services/api'
 import type { User } from '../../types/user'
 
 /**
@@ -15,12 +15,12 @@ export interface AuthApiErrorPayload {
 export interface ParsedAuthError {
   status?: number
   rawError: string
-  serverMessage?: string
   isNetworkError: boolean
 }
 
 export const NETWORK_ERROR_MESSAGE = 'Tidak dapat terhubung. Periksa koneksi internet kamu dan coba lagi ya.'
 export const PAYLOAD_TOO_LARGE_MESSAGE = 'Data yang dikirim terlalu besar. Mohon periksa kembali formulir kamu.'
+export const SERVER_ERROR_MESSAGE = 'Terjadi kendala pada sistem kami. Silakan coba beberapa saat lagi.'
 
 /** Normalizes an unknown mutation error into a predictable shape. */
 export const parseAuthError = (err: unknown): ParsedAuthError => {
@@ -31,7 +31,6 @@ export const parseAuthError = (err: unknown): ParsedAuthError => {
   return {
     status: err.response?.status,
     rawError: (serverMessage || '').toLowerCase(),
-    serverMessage,
     isNetworkError: !err.response,
   }
 }
@@ -44,8 +43,7 @@ export const rateLimitMessage = (action: 'masuk' | 'pendaftaran') =>
 export const resolvePostAuthPath = (user: Pick<User, 'is_onboarded'>) =>
   user.is_onboarded ? '/roadmap' : '/onboarding'
 
-/** Redirects the browser to the backend Google OAuth entrypoint. */
-export const redirectToGoogleOAuth = () => {
-  window.location.href = `${API_BASE_URL}/auth/google`
-}
-
+/** Redirects the browser to the backend Google OAuth entrypoint (Temporarily disabled). */
+// export const redirectToGoogleOAuth = () => {
+//   window.location.href = `${API_BASE_URL}/auth/google`
+// }

@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authService } from '../../services/authService'
 import { useAuthStore } from '../../store/authStore'
+import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 import { validateRegisterForm } from '../../utils/validation'
 import { useFieldErrors } from './useFieldErrors'
 import {
   NETWORK_ERROR_MESSAGE,
   PAYLOAD_TOO_LARGE_MESSAGE,
+  SERVER_ERROR_MESSAGE,
   parseAuthError,
   rateLimitMessage,
-  redirectToGoogleOAuth,
+  // redirectToGoogleOAuth,
   resolvePostAuthPath,
 } from './authHelpers'
 
@@ -20,6 +22,7 @@ import {
  */
 export const useRegister = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
 
   // 1. Form State
@@ -38,10 +41,11 @@ export const useRegister = () => {
     onSuccess: (data) => {
       // Automatically authenticate on successful registration (default persistent session)
       setAuth(data.user, data.access_token, data.refresh_token, true)
+      queryClient.setQueryData(PROFILE_QUERY_KEY, data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
     onError: (err: unknown) => {
-      const { status, rawError, serverMessage, isNetworkError } = parseAuthError(err)
+      const { status, rawError, isNetworkError } = parseAuthError(err)
 
       if (isNetworkError) {
         setGeneralError(NETWORK_ERROR_MESSAGE)
@@ -49,6 +53,8 @@ export const useRegister = () => {
         setGeneralError(rateLimitMessage('pendaftaran'))
       } else if (status === 413) {
         setGeneralError(PAYLOAD_TOO_LARGE_MESSAGE)
+      } else if (status !== undefined && status >= 500) {
+        setGeneralError(SERVER_ERROR_MESSAGE)
       } else if (rawError.includes('email') && (rawError.includes('already') || rawError.includes('exists') || rawError.includes('registered'))) {
         setFieldError('email', 'Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.')
       } else if (rawError.includes('username') && (rawError.includes('taken') || rawError.includes('already') || rawError.includes('exists'))) {
@@ -58,7 +64,7 @@ export const useRegister = () => {
       } else if (status === 409) {
         setGeneralError('Data akun sudah terdaftar. Silakan periksa kembali email atau username kamu.')
       } else {
-        setGeneralError(serverMessage || 'Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.')
+        setGeneralError('Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.')
       }
     },
   })
@@ -66,6 +72,8 @@ export const useRegister = () => {
   // 4. Form Submit Handler
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
+    if (registerMutation.isPending) return
+
     setGeneralError(null)
 
     const errors = validateRegisterForm(name, username, email, password)
@@ -107,8 +115,7 @@ export const useRegister = () => {
     // 3. User Actions
     actions: {
       submit: handleSubmit,
-      googleRegister: redirectToGoogleOAuth,
+      // googleRegister: redirectToGoogleOAuth,
     },
   }
 }
-

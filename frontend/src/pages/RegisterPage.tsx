@@ -3,8 +3,8 @@ import { useRegister } from '../hooks/auth/useRegister'
 import { AuthLayout } from '../components/auth/AuthLayout'
 import { AuthField } from '../components/auth/AuthField'
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
-import { SocialAuthButton } from '../components/auth/SocialAuthButton'
-import { AuthDivider } from '../components/auth/AuthDivider'
+// import { SocialAuthButton } from '../components/auth/SocialAuthButton'
+// import { AuthDivider } from '../components/auth/AuthDivider'
 import { Button3D } from '../components/ui/Button3D'
 import { User, At, EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
 
@@ -103,15 +103,13 @@ export const RegisterPage = () => {
         </Button3D>
       </form>
 
-      {/* ── 2. DIVIDER ── */}
-      <AuthDivider text="atau daftar dengan" className="my-3 sm:my-3.5" />
-
-      {/* ── 3. GOOGLE OAUTH BUTTON ── */}
+      {/* ── 2. DIVIDER & GOOGLE OAUTH BUTTON (TEMPORARILY DISABLED) ── */}
+      {/* <AuthDivider text="atau daftar dengan" className="my-3 sm:my-3.5" />
       <div className="space-y-3">
         <SocialAuthButton provider="google" onClick={actions.googleRegister}>
           Daftar dengan Google
         </SocialAuthButton>
-      </div>
+      </div> */}
 
       {/* ── 4. LOGIN FOOTER ── */}
       <div className="mt-3.5 sm:mt-4 text-center text-xs text-slate-500 font-normal">

@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { useLogin } from '../hooks/auth/useLogin'
 import { AuthLayout } from '../components/auth/AuthLayout'
-import { SocialAuthButton } from '../components/auth/SocialAuthButton'
+// import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 import { AuthField } from '../components/auth/AuthField'
-import { AuthDivider } from '../components/auth/AuthDivider'
+// import { AuthDivider } from '../components/auth/AuthDivider'
 import { AuthCheckbox } from '../components/auth/AuthCheckbox'
 import { Button3D } from '../components/ui/Button3D'
 import { EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
@@ -84,15 +84,13 @@ export const LoginPage = () => {
         </Button3D>
       </form>
 
-      {/* ── 2. DIVIDER ── */}
-      <AuthDivider text="atau lanjutkan dengan" className="my-3.5 sm:my-4" />
-
-      {/* ── 3. GOOGLE OAUTH BUTTON (SECOND) ── */}
+      {/* ── 2. DIVIDER & GOOGLE OAUTH BUTTON (TEMPORARILY DISABLED) ── */}
+      {/* <AuthDivider text="atau lanjutkan dengan" className="my-3.5 sm:my-4" />
       <div className="space-y-3">
         <SocialAuthButton provider="google" onClick={actions.googleLogin}>
           Masuk dengan Google
         </SocialAuthButton>
-      </div>
+      </div> */}
 
       {/* ── 4. REGISTRATION FOOTER ── */}
       <div className="mt-4 sm:mt-5 text-center text-xs text-slate-500 font-normal">
@@ -104,4 +102,3 @@ export const LoginPage = () => {
     </AuthLayout>
   )
 }
-

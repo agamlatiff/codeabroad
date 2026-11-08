@@ -1,17 +1,19 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authService } from '../../services/authService'
 import { useAuthStore } from '../../store/authStore'
+import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 import { validateLoginForm } from '../../utils/validation'
 import { useFieldErrors } from './useFieldErrors'
 import {
   NETWORK_ERROR_MESSAGE,
   PAYLOAD_TOO_LARGE_MESSAGE,
+  SERVER_ERROR_MESSAGE,
   parseAuthError,
   rateLimitMessage,
-  redirectToGoogleOAuth,
+  // redirectToGoogleOAuth,
   resolvePostAuthPath,
 } from './authHelpers'
 
@@ -20,6 +22,7 @@ import {
  */
 export const useLogin = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
 
   // 1. Form State
@@ -36,10 +39,11 @@ export const useLogin = () => {
     mutationFn: authService.login,
     onSuccess: (data) => {
       setAuth(data.user, data.access_token, data.refresh_token, rememberMe)
+      queryClient.setQueryData(PROFILE_QUERY_KEY, data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
     onError: (err: unknown) => {
-      const { status, rawError, serverMessage, isNetworkError } = parseAuthError(err)
+      const { status, rawError, isNetworkError } = parseAuthError(err)
 
       if (isNetworkError) {
         setGeneralError(NETWORK_ERROR_MESSAGE)
@@ -47,6 +51,8 @@ export const useLogin = () => {
         setGeneralError(rateLimitMessage('masuk'))
       } else if (status === 413) {
         setGeneralError(PAYLOAD_TOO_LARGE_MESSAGE)
+      } else if (status !== undefined && status >= 500) {
+        setGeneralError(SERVER_ERROR_MESSAGE)
       } else if (
         status === 401 ||
         rawError.includes('unauthorized') ||
@@ -55,10 +61,8 @@ export const useLogin = () => {
         rawError.includes('credential')
       ) {
         setGeneralError('Email atau kata sandi yang kamu masukkan salah. Silakan coba lagi.')
-      } else if (status === 404 || rawError.includes('not found')) {
-        setGeneralError('Akun dengan email ini belum terdaftar. Silakan buat akun baru.')
       } else {
-        setGeneralError(serverMessage || 'Gagal masuk. Periksa kembali email dan kata sandi kamu.')
+        setGeneralError('Gagal masuk. Periksa kembali email dan kata sandi kamu.')
       }
     },
   })
@@ -66,6 +70,8 @@ export const useLogin = () => {
   // 4. Form Submit Handler
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault()
+    if (loginMutation.isPending) return
+
     setGeneralError(null)
 
     const errors = validateLoginForm(email, password)
@@ -75,7 +81,7 @@ export const useLogin = () => {
     }
 
     loginMutation.mutate({
-      email: email.trim(),
+      email: email.trim().toLowerCase(),
       password,
       remember_me: rememberMe,
     })
@@ -104,8 +110,7 @@ export const useLogin = () => {
     // 3. User Actions
     actions: {
       submit: handleSubmit,
-      googleLogin: redirectToGoogleOAuth,
+      // googleLogin: redirectToGoogleOAuth,
     },
   }
 }
-
