@@ -12,6 +12,17 @@ interface AuthState {
   logout: () => void
 }
 
+/** Safely parses serialized user JSON to prevent app crashes on corrupted storage */
+const safeParseUser = (raw: string | null): User | null => {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw)
+    return parsed && typeof parsed === 'object' ? (parsed as User) : null
+  } catch {
+    return null
+  }
+}
+
 export const useAuthStore = create<AuthState>((set) => {
   // Check localStorage (Remember Me) first, then fallback to sessionStorage
   const savedUser = localStorage.getItem('user') || sessionStorage.getItem('user')
@@ -19,7 +30,7 @@ export const useAuthStore = create<AuthState>((set) => {
   const savedAccessToken = localStorage.getItem('access_token') || sessionStorage.getItem('access_token')
 
   return {
-    user: savedUser ? JSON.parse(savedUser) : null,
+    user: safeParseUser(savedUser),
     accessToken: savedAccessToken || null,
     refreshToken: savedRefreshToken || null,
     isAuthenticated: Boolean(savedRefreshToken),

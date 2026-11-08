@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '../../../store/authStore'
+import { useUser } from '../../user/useUser'
 import { questService } from '../../../services/questService'
 import { useUserActivity } from '../../user/useUserActivity'
 import { useDailyRewards } from '../../user/useDailyRewards'
@@ -41,7 +41,8 @@ export const useQuestsSection = ({
   onClaimChestReward,
 }: UseQuestsSectionOptions) => {
   const navigate = useNavigate()
-  const { user } = useAuthStore()
+  const { data: userData } = useUser()
+  const user = userData.user
 
   const [timeLeft, setTimeLeft] = useState('00:00:00')
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
@@ -67,8 +68,11 @@ export const useQuestsSection = ({
     return () => clearInterval(timer)
   }, [])
 
-  const { activitySummary } = useUserActivity()
-  const { dailyRewardsStatus } = useDailyRewards()
+  const { data: activityData } = useUserActivity()
+  const activitySummary = activityData.activitySummary
+
+  const { data: rewardsData } = useDailyRewards()
+  const dailyRewardsStatus = rewardsData.dailyRewardsStatus
 
   const { data: dailyQuests = [] } = useQuery({
     queryKey: DAILY_QUESTS_QUERY_KEY,

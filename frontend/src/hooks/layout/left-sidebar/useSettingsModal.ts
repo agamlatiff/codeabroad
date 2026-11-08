@@ -1,11 +1,10 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { userService } from '../../../services/userService'
+import { useQuery } from '@tanstack/react-query'
 import { onboardingService } from '../../../services/onboardingService'
-import { useAuthStore } from '../../../store/authStore'
+import { useUser } from '../../user/useUser'
 import { triggerHaptic } from '../../../utils/haptics'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY, PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
+import { CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
 import type { User } from '../../../types/user'
 import type { AvatarStyle } from '../../../utils/avatar'
 
@@ -28,8 +27,8 @@ export interface UseSettingsModalOptions {
 
 /**
  * 1:1 Headless controller hook for SettingsModal in AppLeftSidebar.
- * Manages profile update mutation, dynamic career track options from PostgreSQL,
- * and avatar style selection.
+ * Manages profile update mutation via SSOT useUser hook, dynamic career track options
+ * from PostgreSQL, and avatar style selection.
  */
 export const useSettingsModal = ({
   isOpen,
@@ -39,8 +38,7 @@ export const useSettingsModal = ({
   onAvatarStyleChange,
   onProfileUpdated,
 }: UseSettingsModalOptions) => {
-  const queryClient = useQueryClient()
-  const { updateUser } = useAuthStore()
+  const { actions: userActions, status: userStatus } = useUser()
 
   const [name, setName] = useState(user?.name || '')
   const [bio, setBio] = useState(user?.bio || '')
@@ -48,6 +46,7 @@ export const useSettingsModal = ({
   const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -84,33 +83,6 @@ export const useSettingsModal = ({
     [careerPaths]
   )
 
-  const updateProfileMutation = useMutation({
-    mutationFn: () =>
-      userService.updateProfile({
-        name: name.trim() || undefined,
-        bio: bio.trim() || undefined,
-        primary_stack: primaryStack,
-      }),
-    onSuccess: (updatedUser) => {
-      updateUser(updatedUser)
-      setSaveSuccess(true)
-      setErrorMessage(null)
-      triggerHaptic('success')
-      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
-      onProfileUpdated?.()
-
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
-      closeTimerRef.current = setTimeout(() => {
-        onClose()
-      }, CLOSE_AFTER_SAVE_MS)
-    },
-    onError: (err: unknown) => {
-      const msg = err instanceof Error ? err.message : 'Gagal memperbarui profil pengguna'
-      setErrorMessage(msg)
-      triggerHaptic('error')
-    },
-  })
-
   const handleAvatarSelect = useCallback(
     (style: AvatarStyle) => {
       triggerHaptic('tap')
@@ -126,14 +98,37 @@ export const useSettingsModal = ({
   }, [])
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
+    async (e: React.FormEvent) => {
       e.preventDefault()
       triggerHaptic('tap')
       setSaveSuccess(false)
       setErrorMessage(null)
-      updateProfileMutation.mutate()
+      setIsSubmitting(true)
+
+      try {
+        await userActions.updateProfile({
+          name: name.trim() || undefined,
+          bio: bio.trim() || undefined,
+          primary_stack: primaryStack,
+        })
+        setSaveSuccess(true)
+        setErrorMessage(null)
+        triggerHaptic('success')
+        onProfileUpdated?.()
+
+        if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = setTimeout(() => {
+          onClose()
+        }, CLOSE_AFTER_SAVE_MS)
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : 'Gagal memperbarui profil pengguna'
+        setErrorMessage(msg)
+        triggerHaptic('error')
+      } finally {
+        setIsSubmitting(false)
+      }
     },
-    [updateProfileMutation]
+    [name, bio, primaryStack, userActions, onProfileUpdated, onClose]
   )
 
   return {
@@ -145,7 +140,7 @@ export const useSettingsModal = ({
     selectedAvatarStyle,
     stackOptions,
     avatarStyles: AVATAR_STYLE_OPTIONS,
-    isSubmitting: updateProfileMutation.isPending,
+    isSubmitting: isSubmitting || userStatus.isUpdating,
     saveSuccess,
     errorMessage,
     handleAvatarSelect,
@@ -153,4 +148,3 @@ export const useSettingsModal = ({
     handleSubmit,
   }
 }
-

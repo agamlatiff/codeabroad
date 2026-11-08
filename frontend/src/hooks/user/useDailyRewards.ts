@@ -6,6 +6,7 @@ import type { DailyRewardsStatusResponse, DailyRewardClaimResponse } from '../..
 
 /**
  * Headless hook managing daily habit milestone rewards (Vocab Quest & Golden Chest).
+ * Returns semantic { data, status, actions } objects for clean readability.
  */
 export const useDailyRewards = () => {
   const queryClient = useQueryClient()
@@ -45,13 +46,18 @@ export const useDailyRewards = () => {
   })
 
   return {
-    dailyRewardsStatus,
-    isLoading,
-    isError,
-    refetch,
-    claimReward: claimMutation.mutateAsync,
-    isClaiming: claimMutation.isPending,
-    claimError: claimMutation.error,
+    data: {
+      dailyRewardsStatus,
+    },
+    status: {
+      isLoading,
+      isError,
+      isClaiming: claimMutation.isPending,
+      claimError: claimMutation.error,
+    },
+    actions: {
+      refetch,
+      claimReward: claimMutation.mutateAsync,
+    },
   }
 }
-

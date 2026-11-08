@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react'
-import { useAuthStore } from '../../../store/authStore'
+import { useUser } from '../../user/useUser'
 import { useUserActivity } from '../../user/useUserActivity'
 import { triggerHaptic } from '../../../utils/haptics'
 
@@ -22,10 +22,12 @@ export interface WeeklyStreakDayItem {
  * the StreakModal visibility.
  */
 export const useStreakSection = () => {
-  const { user } = useAuthStore()
+  const { data: userData } = useUser()
+  const user = userData.user
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false)
 
-  const { activitySummary } = useUserActivity()
+  const { data: activityData } = useUserActivity()
+  const activitySummary = activityData.activitySummary
 
   const userStreak =
     activitySummary?.current_streak ?? (typeof user?.streak === 'number' ? user.streak : 0)
@@ -88,4 +90,3 @@ export const useStreakSection = () => {
     handleCloseStreakModal,
   }
 }
-

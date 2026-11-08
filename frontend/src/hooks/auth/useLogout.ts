@@ -6,8 +6,8 @@ import { useAuthStore } from '../../store/authStore'
 
 /**
  * Shared session sign-out hook.
- * Revokes the server session (best-effort), clears the auth store and
- * TanStack Query cache, then redirects to /login.
+ * Revokes the server session (best-effort), clears the auth store,
+ * clears local user storage, wipes TanStack Query cache, then redirects to /login.
  */
 export const useLogout = () => {
   const navigate = useNavigate()
@@ -18,11 +18,19 @@ export const useLogout = () => {
     try {
       await authService.logout()
     } finally {
-      // Always clear the client session, even if the server is unreachable
+      // 1. Clear client auth session
       clearAuthStore()
+
+      // 2. Wipe TanStack Query cache to prevent data bleed
       queryClient.clear()
+
+      // 3. Clear temporary user-specific storage
+      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+        localStorage.removeItem('codeabroad_completed_quests')
+      }
+
+      // 4. Redirect to login
       navigate('/login', { replace: true })
     }
   }, [clearAuthStore, queryClient, navigate])
 }
-

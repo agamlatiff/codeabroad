@@ -6,6 +6,7 @@ import type { UserActivitySummaryResponse } from '../../types/user'
 
 /**
  * Headless hook managing 7-day learning activity logs, streaks, and attendance calendar.
+ * Returns semantic { data, status, actions } objects for clean readability.
  */
 export const useUserActivity = () => {
   const { user } = useAuthStore()
@@ -23,10 +24,15 @@ export const useUserActivity = () => {
   })
 
   return {
-    activitySummary,
-    isLoading,
-    isError,
-    refetch,
+    data: {
+      activitySummary,
+    },
+    status: {
+      isLoading,
+      isError,
+    },
+    actions: {
+      refetch,
+    },
   }
 }
-
