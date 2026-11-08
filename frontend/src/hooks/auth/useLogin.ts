@@ -1,0 +1,111 @@
+import { useState } from 'react'
+import type { FormEvent } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { useMutation } from '@tanstack/react-query'
+import { authService } from '../../services/authService'
+import { useAuthStore } from '../../store/authStore'
+import { validateLoginForm } from '../../utils/validation'
+import { useFieldErrors } from './useFieldErrors'
+import {
+  NETWORK_ERROR_MESSAGE,
+  PAYLOAD_TOO_LARGE_MESSAGE,
+  parseAuthError,
+  rateLimitMessage,
+  redirectToGoogleOAuth,
+  resolvePostAuthPath,
+} from './authHelpers'
+
+/**
+ * Headless controller hook managing user authentication flow and form validation for LoginPage.
+ */
+export const useLogin = () => {
+  const navigate = useNavigate()
+  const setAuth = useAuthStore((state) => state.setAuth)
+
+  // 1. Form State
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [rememberMe, setRememberMe] = useState(false)
+
+  // 2. Error States
+  const { fieldErrors, setFieldErrors, clearFieldError } = useFieldErrors()
+  const [generalError, setGeneralError] = useState<string | null>(null)
+
+  // 3. TanStack Mutation for Session Authentication
+  const loginMutation = useMutation({
+    mutationFn: authService.login,
+    onSuccess: (data) => {
+      setAuth(data.user, data.access_token, data.refresh_token, rememberMe)
+      navigate(resolvePostAuthPath(data.user), { replace: true })
+    },
+    onError: (err: unknown) => {
+      const { status, rawError, serverMessage, isNetworkError } = parseAuthError(err)
+
+      if (isNetworkError) {
+        setGeneralError(NETWORK_ERROR_MESSAGE)
+      } else if (status === 429) {
+        setGeneralError(rateLimitMessage('masuk'))
+      } else if (status === 413) {
+        setGeneralError(PAYLOAD_TOO_LARGE_MESSAGE)
+      } else if (
+        status === 401 ||
+        rawError.includes('unauthorized') ||
+        rawError.includes('invalid') ||
+        rawError.includes('password') ||
+        rawError.includes('credential')
+      ) {
+        setGeneralError('Email atau kata sandi yang kamu masukkan salah. Silakan coba lagi.')
+      } else if (status === 404 || rawError.includes('not found')) {
+        setGeneralError('Akun dengan email ini belum terdaftar. Silakan buat akun baru.')
+      } else {
+        setGeneralError(serverMessage || 'Gagal masuk. Periksa kembali email dan kata sandi kamu.')
+      }
+    },
+  })
+
+  // 4. Form Submit Handler
+  const handleSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    setGeneralError(null)
+
+    const errors = validateLoginForm(email, password)
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors)
+      return
+    }
+
+    loginMutation.mutate({
+      email: email.trim(),
+      password,
+      remember_me: rememberMe,
+    })
+  }
+
+  return {
+    // 1. Form Values & Field Setters
+    form: {
+      email,
+      setEmail,
+      password,
+      setPassword,
+      rememberMe,
+      setRememberMe,
+      fieldErrors,
+      clearFieldError,
+    },
+
+    // 2. Request Status & Alerts
+    status: {
+      loading: loginMutation.isPending,
+      error: generalError,
+      clearError: () => setGeneralError(null),
+    },
+
+    // 3. User Actions
+    actions: {
+      submit: handleSubmit,
+      googleLogin: redirectToGoogleOAuth,
+    },
+  }
+}
+

@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
+import { useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import {
   SquaresFour,
@@ -8,7 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
 import { useAuthStore } from '../../../store/authStore'
-import { authService } from '../../../services/authService'
+import { useLogout } from '../../auth/useLogout'
 import { triggerHaptic } from '../../../utils/haptics'
 import type { AvatarStyle } from '../../../utils/avatar'
 import { PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
@@ -29,9 +29,9 @@ export interface LeftSidebarNavItem {
  */
 export const useAppLeftSidebar = () => {
   const location = useLocation()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { user, logout: clearAuthStore } = useAuthStore()
+  const { user } = useAuthStore()
+  const logout = useLogout()
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>('adventurer')
@@ -87,11 +87,8 @@ export const useAppLeftSidebar = () => {
 
   const handleLogout = useCallback(() => {
     triggerHaptic('tap')
-    void authService.logout()
-    clearAuthStore()
-    queryClient.clear()
-    navigate('/login')
-  }, [clearAuthStore, queryClient, navigate])
+    void logout()
+  }, [logout])
 
   return {
     user,
