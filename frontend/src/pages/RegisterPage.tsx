@@ -6,7 +6,7 @@ import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 // import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 // import { AuthDivider } from '../components/auth/AuthDivider'
 import { Button3D } from '../components/ui/Button3D'
-import { User, At, EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
+import { User, At, EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const RegisterPage = () => {
   const { form, status, actions } = useRegister()
@@ -19,15 +19,8 @@ export const RegisterPage = () => {
       heroSubtitle="Bergabung bersama ribuan developer Indonesia untuk menembus coding interview ke Jepang, Jerman, dan Singapura."
       heroEmotion="coding"
       speechBubble="Yuk mulai petualangan coding globalmu bareng aku! ✨"
+      error={status.error}
     >
-      {/* Error Alert */}
-      {status.error && (
-        <div className="mb-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2">
-          <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
-          <span>{status.error}</span>
-        </div>
-      )}
-
       {/* ── 1. REGISTRATION FORM (FIRST) ── */}
       <form onSubmit={actions.submit} noValidate className="space-y-2 sm:space-y-2.5">
         <AuthField

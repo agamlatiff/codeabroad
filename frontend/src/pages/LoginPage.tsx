@@ -6,7 +6,7 @@ import { AuthField } from '../components/auth/AuthField'
 // import { AuthDivider } from '../components/auth/AuthDivider'
 import { AuthCheckbox } from '../components/auth/AuthCheckbox'
 import { Button3D } from '../components/ui/Button3D'
-import { EnvelopeSimple, LockSimple, WarningCircle } from '@phosphor-icons/react'
+import { EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const LoginPage = () => {
   const { form, status, actions } = useLogin()
@@ -16,15 +16,8 @@ export const LoginPage = () => {
       title="Selamat Datang"
       subtitle="Masuk ke akunmu untuk melanjutkan persiapan karir tech."
       speechBubble="Halo! Siap lanjut push code hari ini? 🚀"
+      error={status.error}
     >
-      {/* Error Alert */}
-      {status.error && (
-        <div className="mb-4 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2">
-          <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
-          <span>{status.error}</span>
-        </div>
-      )}
-
       {/* ── 1. EMAIL & PASSWORD FORM (FIRST) ── */}
       <form onSubmit={actions.submit} noValidate className="space-y-3.5">
         <AuthField
@@ -55,7 +48,7 @@ export const LoginPage = () => {
           icon={<LockSimple weight="bold" className="w-4 h-4" />}
         />
 
-        {/* Remember Me & Forgot Password Row */}
+        {/* Remember Me Row (Forgot Password temporarily disabled) */}
         <div className="flex items-center justify-between pt-0.5">
           <AuthCheckbox
             id="remember"
@@ -63,12 +56,12 @@ export const LoginPage = () => {
             checked={form.rememberMe}
             onChange={(e) => form.setRememberMe(e.target.checked)}
           />
-          <button
+          {/* <button
             type="button"
             className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
           >
             Lupa kata sandi?
-          </button>
+          </button> */}
         </div>
 
         {/* Submit Button with Duolingo 3D Tactile Push-Down */}

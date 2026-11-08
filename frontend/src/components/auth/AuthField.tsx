@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { Eye, EyeSlash, WarningCircle } from '@phosphor-icons/react'
+import { getAuthInputClassName } from '../../hooks/auth/authHelpers'
 
 export interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string
@@ -21,6 +22,8 @@ export const AuthField = ({
 }: AuthFieldProps) => {
   const [showPassword, setShowPassword] = useState(false)
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type
+  const errorId = error && id ? `${id}-error` : undefined
+  const toggleLabel = showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'
 
   return (
     <div className="w-full space-y-1.5 text-left">
@@ -43,13 +46,14 @@ export const AuthField = ({
         <input
           id={id}
           type={inputType}
-          className={`w-full h-11 bg-white border-2 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal ${
-            icon ? 'pl-10' : 'pl-3.5'
-          } ${isPassword ? 'pr-11' : 'pr-3.5'} ${
-            error
-              ? 'border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15'
-              : 'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15'
-          } ${className}`}
+          aria-invalid={Boolean(error)}
+          aria-describedby={errorId}
+          className={getAuthInputClassName({
+            hasIcon: Boolean(icon),
+            isPassword,
+            hasError: Boolean(error),
+            className,
+          })}
           {...props}
         />
 
@@ -57,10 +61,11 @@ export const AuthField = ({
         {isPassword && (
           <button
             type="button"
-            onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1 outline-none focus:outline-none"
+            onClick={() => setShowPassword((prev) => !prev)}
+            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition p-1 outline-none focus:outline-none cursor-pointer"
             tabIndex={-1}
-            title={showPassword ? 'Hide password' : 'Show password'}
+            title={toggleLabel}
+            aria-label={toggleLabel}
           >
             {showPassword ? <EyeSlash weight="bold" className="w-4 h-4" /> : <Eye weight="bold" className="w-4 h-4" />}
           </button>
@@ -68,7 +73,11 @@ export const AuthField = ({
       </div>
 
       {error && (
-        <p className="text-xs text-rose-500 font-medium flex items-center gap-1.5 mt-1 animate-in fade-in duration-150">
+        <p
+          id={errorId}
+          role="alert"
+          className="text-xs text-rose-500 font-medium flex items-center gap-1.5 mt-1 animate-in fade-in duration-150"
+        >
           <WarningCircle weight="bold" className="w-3.5 h-3.5 shrink-0" />
           <span>{error}</span>
         </p>

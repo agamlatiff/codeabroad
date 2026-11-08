@@ -1,4 +1,5 @@
 import type { FC, ReactNode } from 'react'
+import { WarningCircle } from '@phosphor-icons/react'
 import { Logo } from '../ui/Logo'
 import { KodiCharacter, type KodiEmotion } from '../ui/KodiCharacter'
 
@@ -10,6 +11,7 @@ export interface AuthLayoutProps {
   heroImage?: string
   heroEmotion?: KodiEmotion
   speechBubble?: string
+  error?: string | null
   children: ReactNode
 }
 
@@ -21,6 +23,7 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
   heroImage,
   heroEmotion = 'welcome',
   speechBubble,
+  error,
   children,
 }) => {
   return (
@@ -128,6 +131,16 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               </p>
             )}
           </div>
+
+          {error && (
+            <div
+              role="alert"
+              className="mb-3.5 p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 text-xs font-medium flex items-center gap-2"
+            >
+              <WarningCircle weight="bold" className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {children}
         </div>
