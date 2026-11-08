@@ -64,7 +64,7 @@ export const useAppLeftSidebar = () => {
       isActive:
         location.pathname === item.href ||
         (item.href === '/roadmap' &&
-          (location.pathname === '/dashboard' || location.pathname.startsWith('/roadmap'))),
+          location.pathname.startsWith('/roadmap')),
     }))
   }, [location.pathname])
 

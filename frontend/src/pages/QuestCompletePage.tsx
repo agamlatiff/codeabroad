@@ -46,7 +46,7 @@ export const QuestCompletePage = () => {
     if (submitResult?.next_quest?.id) {
       navigate(`/learn/${submitResult.next_quest.id}`)
     } else {
-      navigate('/dashboard')
+      navigate('/roadmap')
     }
   }
 
@@ -64,7 +64,7 @@ export const QuestCompletePage = () => {
             type="button"
             onClick={() => {
               triggerHaptic('tap')
-              navigate('/courses')
+              navigate('/roadmap')
             }}
             className="bg-slate-100 hover:bg-slate-200 active:translate-y-0.5 text-slate-800 font-bold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer"
           >

@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   private handleGoHome = (): void => {
-    window.location.href = '/dashboard'
+    window.location.href = '/roadmap'
   }
 
   public override render(): ReactNode {

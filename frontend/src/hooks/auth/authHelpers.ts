@@ -42,7 +42,7 @@ export const rateLimitMessage = (action: 'masuk' | 'pendaftaran') =>
 
 /** Resolves the post-auth landing route based on onboarding status. */
 export const resolvePostAuthPath = (user: Pick<User, 'is_onboarded'>) =>
-  user.is_onboarded ? '/dashboard' : '/onboarding'
+  user.is_onboarded ? '/roadmap' : '/onboarding'
 
 /** Redirects the browser to the backend Google OAuth entrypoint. */
 export const redirectToGoogleOAuth = () => {

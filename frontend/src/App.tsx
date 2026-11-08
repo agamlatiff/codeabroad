@@ -31,7 +31,6 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route path="/roadmap" element={<RoadmapPage />} />
             <Route path="/roadmap/:track" element={<RoadmapPage />} />
-            <Route path="/dashboard" element={<Navigate to="/roadmap" replace />} />
             <Route path="/courses" element={<Navigate to="/roadmap" replace />} />
             <Route path="/quests" element={<QuestLogPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
