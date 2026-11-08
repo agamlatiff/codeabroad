@@ -14,7 +14,9 @@ const AVATAR_STYLE_STORAGE_KEY = 'codeabroad_avatar_style'
  */
 export const useDashboard = () => {
   const handleLogout = useLogout()
-  const { user: activeUser, refetch: refetchProfile } = useUser()
+  const { data, actions } = useUser()
+  const activeUser = data.user
+  const refetchProfile = actions.refetch
 
   // Derived user display details
   const firstName = activeUser?.name?.split(' ')[0] || 'Developer'

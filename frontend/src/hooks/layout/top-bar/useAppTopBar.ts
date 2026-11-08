@@ -14,7 +14,8 @@ import { CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
  * directly from backend PostgreSQL endpoints via TanStack Query cache synchronization.
  */
 export const useAppTopBar = (activeTrack: string) => {
-  const { user: activeUser } = useUser()
+  const { data } = useUser()
+  const activeUser = data.user
 
   // 2. Fetch database-seeded career paths & tech stacks
   const { data: careerPaths = [] } = useQuery({

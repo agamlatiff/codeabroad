@@ -2,6 +2,7 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
+import { useRoadmapStore, type CurriculumViewMode } from '../../store/roadmapStore'
 import { roadmapService } from '../../services/roadmapService'
 import { userService } from '../../services/userService'
 import { useUser } from '../user/useUser'
@@ -12,26 +13,10 @@ import { computeRoadmapPageMetrics } from '../../utils/roadmapMapTransformer'
 import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 
 export const ROADMAP_QUERY_KEY = 'roadmap' as const
-export const CURRICULUM_VIEW_STORAGE_KEY = 'codeabroad_curriculum_view' as const
-export type CurriculumViewMode = 'map' | 'syllabus'
 const TOAST_DURATION_MS = 3200
-const DEFAULT_VIEW_MODE: CurriculumViewMode = 'syllabus'
 
 const isViewMode = (value: string | null): value is CurriculumViewMode =>
   value === 'map' || value === 'syllabus'
-
-const readStoredViewMode = (): CurriculumViewMode => {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    return DEFAULT_VIEW_MODE
-  }
-  try {
-    const stored = localStorage.getItem(CURRICULUM_VIEW_STORAGE_KEY)
-    if (isViewMode(stored)) return stored
-  } catch (error: unknown) {
-    console.warn('[useRoadmapPage] Failed to read view preference from localStorage:', error)
-  }
-  return DEFAULT_VIEW_MODE
-}
 
 /** Locked units (not active, not completed) start collapsed unless the user toggles them. */
 const isCollapsedByDefault = (unit: SequentialCurriculumUnit): boolean =>
@@ -42,6 +27,7 @@ const isCollapsedByDefault = (unit: SequentialCurriculumUnit): boolean =>
  * Orchestrates backend syllabus synchronization via TanStack Query,
  * career track switching, unit accordion state, view mode (Map vs Syllabus),
  * optimistic state updates with rollback on network failure, and modal visibility.
+ * Structured cleanly into semantic { curriculum, status, modals, actions } objects.
  */
 export const useRoadmapPage = (explicitTrack?: string) => {
   const navigate = useNavigate()
@@ -50,12 +36,14 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   const { track: routeTrack } = useParams<{ track?: string }>()
 
   // SSOT user profile and update handler
-  const { user } = useUser()
+  const { data: userData } = useUser()
+  const user = userData.user
   const updateUser = useAuthStore((s) => s.updateUser)
 
-  // ── 0. CURRICULUM VIEW MODE (Peta RPG vs Silabus Modul) ──
-  // URL `?view=` is the source of truth; localStorage is only the fallback preference.
-  const [storedViewMode] = useState(readStoredViewMode)
+  // ── 0. CURRICULUM VIEW MODE (Peta RPG vs Silabus Modul) via Zustand Store ──
+  const storedViewMode = useRoadmapStore((s) => s.viewMode)
+  const setStoreViewMode = useRoadmapStore((s) => s.setViewMode)
+
   const queryView = searchParams.get('view')
   const userDbView = user?.preferred_roadmap_view && isViewMode(user.preferred_roadmap_view)
     ? user.preferred_roadmap_view
@@ -80,11 +68,9 @@ export const useRoadmapPage = (explicitTrack?: string) => {
         },
         { replace: true }
       )
-      try {
-        localStorage.setItem(CURRICULUM_VIEW_STORAGE_KEY, mode)
-      } catch (error: unknown) {
-        console.warn('[useRoadmapPage] Failed to persist view preference to localStorage:', error)
-      }
+
+      // Persist in Zustand store
+      setStoreViewMode(mode)
 
       // Optimistically update auth store and sync to backend user profile
       updateUser({ preferred_roadmap_view: mode })
@@ -92,7 +78,7 @@ export const useRoadmapPage = (explicitTrack?: string) => {
         console.warn('[useRoadmapPage] Failed to persist view mode to backend profile:', err)
       })
     },
-    [setSearchParams, updateUser]
+    [setSearchParams, setStoreViewMode, updateUser]
   )
 
   // ── 1. RESOLVE REQUESTED TRACK ──
@@ -132,8 +118,6 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   }, [currentTrack])
 
   // ── 3. DERIVED METRICS (SINGLE-PASS O(N) MEMOIZED COMPUTATION) ──
-  // Compute total, completed counts, and unit data in one pass, memoized
-  // to avoid redundant layout recalculations on UI modal toggles.
   const {
     units,
     totalPartsCount,
@@ -179,7 +163,6 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   // ── 4b. DATABASE-BACKED FIRST-TIME TOUR ONBOARDING ──
   const hasSeenTour = user?.has_seen_roadmap_tour
   const hasTriggeredTourRef = useRef(false)
-  // Guards against duplicate PATCH requests (select track + close modal both mark the tour)
   const isTourPersistingRef = useRef(false)
 
   useEffect(() => {
@@ -279,30 +262,47 @@ export const useRoadmapPage = (explicitTrack?: string) => {
   }, [refetch])
 
   return {
-    currentTrack,
-    roadmap,
-    units,
-    totalPartsCount,
-    completedPartsCount,
-    overallProgress,
-    trackProgressMap,
-    isLoading,
-    error,
-    refetch: handleRefetch,
-    isTrackSwitcherOpen,
-    openTrackSwitcher,
-    closeTrackSwitcher,
-    isLeaderboardOpen,
-    setIsLeaderboardOpen,
-    isMobileDrawerOpen,
-    setIsMobileDrawerOpen,
-    isUnitCollapsed,
-    toggleUnitCollapse,
-    lockedNotification,
-    handleLockedNodeClick,
-    handleSelectTrack,
-    handleStartQuest,
-    viewMode,
-    setViewMode,
+    // 1. Data & Syllabus
+    curriculum: {
+      currentTrack,
+      roadmap,
+      units,
+      viewMode,
+      metrics: {
+        totalPartsCount,
+        completedPartsCount,
+        overallProgress,
+        trackProgressMap,
+      },
+    },
+
+    // 2. Query Status & Feedback
+    status: {
+      isLoading,
+      error,
+      lockedNotification,
+    },
+
+    // 3. Modal & Accordion View States
+    modals: {
+      isTrackSwitcherOpen,
+      isLeaderboardOpen,
+      isMobileDrawerOpen,
+      isUnitCollapsed,
+    },
+
+    // 4. User Interaction Actions
+    actions: {
+      refetch: handleRefetch,
+      setViewMode,
+      openTrackSwitcher,
+      closeTrackSwitcher,
+      setIsLeaderboardOpen,
+      setIsMobileDrawerOpen,
+      toggleUnitCollapse,
+      handleLockedNodeClick,
+      handleSelectTrack,
+      handleStartQuest,
+    },
   }
 }

@@ -8,6 +8,7 @@ import type { User, UpdateProfilePayload } from '../../types/user'
 /**
  * Single Source of Truth (SSOT) hook for user profile and preferences.
  * Combines client Zustand auth store with TanStack Query database profile.
+ * Structured with semantic { data, status, actions } objects for clean readability.
  */
 export const useUser = () => {
   const queryClient = useQueryClient()
@@ -46,14 +47,19 @@ export const useUser = () => {
   const user = profileUser || storeUser
 
   return {
-    user,
-    isAuthenticated,
-    isLoading,
-    isError,
-    refetch,
-    updateProfile: updateProfileMutation.mutateAsync,
-    isUpdating: updateProfileMutation.isPending,
-    updateError: updateProfileMutation.error,
+    data: {
+      user,
+      isAuthenticated,
+    },
+    status: {
+      isLoading,
+      isError,
+      isUpdating: updateProfileMutation.isPending,
+      updateError: updateProfileMutation.error,
+    },
+    actions: {
+      refetch,
+      updateProfile: updateProfileMutation.mutateAsync,
+    },
   }
 }
-

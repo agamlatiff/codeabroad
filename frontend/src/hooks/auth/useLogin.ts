@@ -8,13 +8,9 @@ import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 import { validateLoginForm } from '../../utils/validation'
 import { useFieldErrors } from './useFieldErrors'
 import {
-  NETWORK_ERROR_MESSAGE,
-  PAYLOAD_TOO_LARGE_MESSAGE,
-  SERVER_ERROR_MESSAGE,
-  parseAuthError,
-  rateLimitMessage,
-  // redirectToGoogleOAuth,
+  resolveLoginErrorMessage,
   resolvePostAuthPath,
+  // redirectToGoogleOAuth,
 } from './authHelpers'
 
 /**
@@ -43,27 +39,7 @@ export const useLogin = () => {
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
     onError: (err: unknown) => {
-      const { status, rawError, isNetworkError } = parseAuthError(err)
-
-      if (isNetworkError) {
-        setGeneralError(NETWORK_ERROR_MESSAGE)
-      } else if (status === 429) {
-        setGeneralError(rateLimitMessage('masuk'))
-      } else if (status === 413) {
-        setGeneralError(PAYLOAD_TOO_LARGE_MESSAGE)
-      } else if (status !== undefined && status >= 500) {
-        setGeneralError(SERVER_ERROR_MESSAGE)
-      } else if (
-        status === 401 ||
-        rawError.includes('unauthorized') ||
-        rawError.includes('invalid') ||
-        rawError.includes('password') ||
-        rawError.includes('credential')
-      ) {
-        setGeneralError('Email atau kata sandi yang kamu masukkan salah. Silakan coba lagi.')
-      } else {
-        setGeneralError('Gagal masuk. Periksa kembali email dan kata sandi kamu.')
-      }
+      setGeneralError(resolveLoginErrorMessage(err))
     },
   })
 

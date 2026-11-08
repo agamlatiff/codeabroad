@@ -26,7 +26,8 @@ export const useRoadmapTrackSwitcherModal = ({
     staleTime: 1000 * 60 * 10, // 10 minutes cache
   })
 
-  const { user } = useUser()
+  const { data } = useUser()
+  const user = data.user
 
   // Direct lightweight computation (~5 career paths, simple filter and find)
   const trackOptions: CareerTrackOption[] = mapCareerPathsToTrackOptions(careerPaths, user)

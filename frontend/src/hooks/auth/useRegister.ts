@@ -8,13 +8,9 @@ import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
 import { validateRegisterForm } from '../../utils/validation'
 import { useFieldErrors } from './useFieldErrors'
 import {
-  NETWORK_ERROR_MESSAGE,
-  PAYLOAD_TOO_LARGE_MESSAGE,
-  SERVER_ERROR_MESSAGE,
-  parseAuthError,
-  rateLimitMessage,
-  // redirectToGoogleOAuth,
+  resolveRegisterErrorMessage,
   resolvePostAuthPath,
+  // redirectToGoogleOAuth,
 } from './authHelpers'
 
 /**
@@ -45,26 +41,11 @@ export const useRegister = () => {
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
     onError: (err: unknown) => {
-      const { status, rawError, isNetworkError } = parseAuthError(err)
-
-      if (isNetworkError) {
-        setGeneralError(NETWORK_ERROR_MESSAGE)
-      } else if (status === 429) {
-        setGeneralError(rateLimitMessage('pendaftaran'))
-      } else if (status === 413) {
-        setGeneralError(PAYLOAD_TOO_LARGE_MESSAGE)
-      } else if (status !== undefined && status >= 500) {
-        setGeneralError(SERVER_ERROR_MESSAGE)
-      } else if (rawError.includes('email') && (rawError.includes('already') || rawError.includes('exists') || rawError.includes('registered'))) {
-        setFieldError('email', 'Email ini sudah terdaftar. Silakan gunakan email lain atau masuk.')
-      } else if (rawError.includes('username') && (rawError.includes('taken') || rawError.includes('already') || rawError.includes('exists'))) {
-        setFieldError('username', 'Username ini sudah digunakan. Coba username yang lain.')
-      } else if (rawError.includes('password')) {
-        setFieldError('password', 'Kata sandi minimal 8 karakter.')
-      } else if (status === 409) {
-        setGeneralError('Data akun sudah terdaftar. Silakan periksa kembali email atau username kamu.')
+      const errorResult = resolveRegisterErrorMessage(err)
+      if (errorResult.type === 'field') {
+        setFieldError(errorResult.field, errorResult.message)
       } else {
-        setGeneralError('Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.')
+        setGeneralError(errorResult.message)
       }
     },
   })
