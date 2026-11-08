@@ -2,10 +2,10 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../../store/authStore'
-import { userService } from '../../../services/userService'
 import { questService } from '../../../services/questService'
+import { useUserActivity } from '../../user/useUserActivity'
+import { useDailyRewards } from '../../user/useDailyRewards'
 import { triggerHaptic } from '../../../utils/haptics'
-import { ACTIVITY_LOGS_QUERY_KEY } from './useStreakSection'
 
 export const DAILY_REWARDS_QUERY_KEY = ['daily-rewards'] as const
 export const DAILY_QUESTS_QUERY_KEY = ['daily-quests'] as const
@@ -67,19 +67,8 @@ export const useQuestsSection = ({
     return () => clearInterval(timer)
   }, [])
 
-  const { data: activitySummary = null } = useQuery({
-    queryKey: ACTIVITY_LOGS_QUERY_KEY,
-    queryFn: () => userService.getActivityLogs(),
-    enabled: Boolean(user),
-    staleTime: 1000 * 60 * 2,
-  })
-
-  const { data: dailyRewardsStatus = null } = useQuery({
-    queryKey: DAILY_REWARDS_QUERY_KEY,
-    queryFn: () => userService.getDailyRewardsStatus(),
-    enabled: Boolean(user),
-    staleTime: 1000 * 60 * 2,
-  })
+  const { activitySummary } = useUserActivity()
+  const { dailyRewardsStatus } = useDailyRewards()
 
   const { data: dailyQuests = [] } = useQuery({
     queryKey: DAILY_QUESTS_QUERY_KEY,

@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '../store/authStore'
-import { authService } from '../services/authService'
-import { userService } from '../services/userService'
+import { useLogout } from './auth/useLogout'
+import { useUser } from './user/useUser'
 import type { AvatarStyle } from '../utils/avatar'
 import type { KodiPose } from '../components/ui/MascotCard'
 import { getKodiPoseMessage } from '../utils/kodi'
@@ -16,25 +13,8 @@ const AVATAR_STYLE_STORAGE_KEY = 'codeabroad_avatar_style'
  * live clocks, avatar styles, and mascot interactions for DashboardPage.
  */
 export const useDashboard = () => {
-  const navigate = useNavigate()
-  const { user, logout, updateUser } = useAuthStore()
-
-  // 1. Profile Synchronization via TanStack Query
-  const { data: profile, refetch: refetchProfile } = useQuery({
-    queryKey: ['profile'],
-    queryFn: userService.getProfile,
-    staleTime: 1000 * 60 * 5, // 5 minutes cache
-  })
-
-  // Synchronize fresh profile with client Zustand store
-  useEffect(() => {
-    if (profile) {
-      updateUser(profile)
-    }
-  }, [profile, updateUser])
-
-  // Active user data (prefers freshly queried profile over initial store)
-  const activeUser = profile || user
+  const handleLogout = useLogout()
+  const { user: activeUser, refetch: refetchProfile } = useUser()
 
   // Derived user display details
   const firstName = activeUser?.name?.split(' ')[0] || 'Developer'
@@ -64,18 +44,6 @@ export const useDashboard = () => {
   // 4. Kodi Mascot Pose & Message State
   const [currentPose, setCurrentPose] = useState<KodiPose>('welcome')
   const kodiMessage = getKodiPoseMessage(currentPose, firstName, destinationName)
-
-  // 5. Logout Action
-  const handleLogout = async () => {
-    try {
-      await authService.logout()
-    } catch {
-      // Gracefully clear client session if server unreachable
-    } finally {
-      logout()
-      navigate('/login', { replace: true })
-    }
-  }
 
   return {
     // 1. Active User Profile Data

@@ -1,13 +1,12 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from '../../../store/authStore'
-import { userService } from '../../../services/userService'
+import { useUser } from '../../user/useUser'
 import { onboardingService } from '../../../services/onboardingService'
 import type { CareerTrackOption } from '../../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
 import { resolveTrackIconType } from '../../../tokens/roadmapTokens'
 
-import { PROFILE_QUERY_KEY, CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
+import { CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
 
 /**
  * 1:1 Headless controller hook for AppTopBar.
@@ -15,14 +14,7 @@ import { PROFILE_QUERY_KEY, CAREER_PATHS_QUERY_KEY } from '../../../constants/qu
  * directly from backend PostgreSQL endpoints via TanStack Query cache synchronization.
  */
 export const useAppTopBar = (activeTrack: string) => {
-  const { user: storeUser } = useAuthStore()
-
-  // 1. Subscribe to cached user profile
-  const { data: queriedUser } = useQuery({
-    queryKey: PROFILE_QUERY_KEY,
-    queryFn: userService.getProfile,
-    staleTime: 1000 * 60 * 5,
-  })
+  const { user: activeUser } = useUser()
 
   // 2. Fetch database-seeded career paths & tech stacks
   const { data: careerPaths = [] } = useQuery({
@@ -30,8 +22,6 @@ export const useAppTopBar = (activeTrack: string) => {
     queryFn: onboardingService.getCareerPaths,
     staleTime: 1000 * 60 * 10,
   })
-
-  const activeUser = queriedUser || storeUser
 
   // Derived user gamification HUD stats
   const userXp = typeof activeUser?.xp === 'number' ? activeUser.xp.toLocaleString() : '0'
