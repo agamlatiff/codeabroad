@@ -4,17 +4,19 @@ import { Check, LockSimple } from '@phosphor-icons/react'
 import {
   SpecialistMindsetIllustration,
   GeneralistMindsetIllustration,
+} from './illustrations/MindsetIllustrations'
+import {
   FrontendIllustration,
   BackendIllustration,
   FullstackIllustration,
   DevOpsIllustration,
   ProductEngineerIllustration,
   SolutionsArchitectIllustration,
-  TechIcon,
-} from '../illustrations/onboarding'
+} from './illustrations/TrackIllustrations'
+import { TechIcon } from './illustrations/TechIcons'
 import { TRACK_BADGES, STACK_DESCRIPTIONS } from '../../utils/onboardingConfig'
 import { formatStackBadge } from '../../utils/formatters'
-import { BadgePill } from '../ui'
+import { BadgePill } from '../ui/BadgePill'
 import { triggerHaptic } from '../../utils/haptics'
 
 export type Step2SubStep = 'mindset' | 'track' | 'stack' | 'stack_fe' | 'stack_be'

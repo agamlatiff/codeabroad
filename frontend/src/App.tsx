@@ -8,8 +8,8 @@ import { LearnWorkspacePage } from './pages/LearnWorkspacePage'
 import { QuestCompletePage } from './pages/QuestCompletePage'
 import { LeaderboardPage } from './pages/LeaderboardPage'
 import { NotFoundPage } from './pages/NotFoundPage'
-import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/guards'
-import { ErrorBoundary } from './components/common/ErrorBoundary'
+import { ProtectedRoute, OnboardingRoute, GuestRoute } from './components/auth/ProtectedRoute'
+import { ErrorBoundary } from './components/ui/ErrorBoundary'
 
 function App() {
   return (

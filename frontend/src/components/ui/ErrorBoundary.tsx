@@ -1,6 +1,6 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { KodiMascot } from '../ui/KodiMascot'
-import { Button3D } from '../ui/Button3D'
+import { KodiMascot } from './KodiMascot'
+import { Button3D } from './Button3D'
 import { ArrowClockwise, HouseLine, Bug } from '@phosphor-icons/react'
 
 interface Props {
@@ -99,3 +99,4 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
+

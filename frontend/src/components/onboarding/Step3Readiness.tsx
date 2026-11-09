@@ -3,22 +3,26 @@ import { Check } from '@phosphor-icons/react'
 import {
   BeginnerIllustration,
   ExperiencedIllustration,
-  FlightRoadmapGraphic,
+} from './illustrations/LevelIllustrations'
+import { FlightRoadmapGraphic } from './illustrations/FlightRoadmapGraphic'
+import {
   SprintPaceIllustration,
   IdealPaceIllustration,
   RelaxedPaceIllustration,
+} from './illustrations/TimelineIllustrations'
+import {
   LanguageZeroIllustration,
   LanguageBasicIllustration,
   LanguageFluentIllustration,
   LanguageBusinessIllustration,
-} from '../illustrations/onboarding'
+} from './illustrations/LanguageIllustrations'
 import {
   LEVEL_OPTIONS,
   TIMELINE_OPTIONS,
   LANGUAGE_OPTIONS,
 } from '../../utils/onboardingConfig'
 import { getTargetLandingDate } from '../../utils/date'
-import { BadgePill } from '../ui'
+import { BadgePill } from '../ui/BadgePill'
 import { triggerHaptic } from '../../utils/haptics'
 
 export type Step3SubStep = 'level' | 'readiness'

@@ -48,3 +48,4 @@ export const GuestRoute = () => {
 
   return <Outlet />
 }
+

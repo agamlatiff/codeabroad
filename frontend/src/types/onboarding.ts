@@ -83,3 +83,7 @@ export interface OnboardingProfileResponse {
   career_path: CareerPathSummary
   created_at: string
 }
+
+export interface IllustrationProps {
+  className?: string
+}

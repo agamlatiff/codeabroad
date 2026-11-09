@@ -1,4 +1,4 @@
-import type { IllustrationProps } from '../types'
+import type { IllustrationProps } from '../../../types/onboarding'
 
 // Japan Flag (White field with Vermilion crimson sun disc)
 export const JapanFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
@@ -93,10 +93,3 @@ export const GermanyFlagIllustration = ({ className = 'w-full h-full max-h-40 ob
     </svg>
   </div>
 )
-
-// Aliases for compatibility
-export const JapanIllustration = JapanFlagIllustration
-export const SingaporeIllustration = SingaporeFlagIllustration
-export const GermanyIllustration = GermanyFlagIllustration
-export const TokyoIllustration = JapanFlagIllustration
-export const GlobalIllustration = SingaporeFlagIllustration

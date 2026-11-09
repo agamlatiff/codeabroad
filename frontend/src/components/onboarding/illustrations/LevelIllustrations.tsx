@@ -1,4 +1,4 @@
-import type { IllustrationProps } from '../types'
+import type { IllustrationProps } from '../../../types/onboarding'
 
 // Level 1: Mulai dari Nol (Beginner / Career Switcher Seedling)
 export const BeginnerIllustration = ({ className = 'w-full h-full max-h-44 object-contain' }: IllustrationProps) => (
@@ -75,24 +75,4 @@ export const ExperiencedIllustration = ({ className = 'w-full h-full max-h-44 ob
       <line x1="165" y1="55" x2="165" y2="95" stroke="#BFDBFE" strokeWidth="2" strokeDasharray="4 4" strokeLinecap="round" />
     </svg>
   </div>
-)
-
-// Fundamental Path Breakdown (Curriculum Roadmap, Daily Quest, Language)
-export const FundamentalGuideIllustration = ({ className = 'w-16 h-16' }: { className?: string }) => (
-  <svg viewBox="0 0 64 64" className={className} fill="none">
-    <rect x="6" y="8" width="52" height="48" rx="10" fill="#DBEAFE" stroke="#2563EB" strokeWidth="2" />
-    <path d="M16 22 H40 M16 32 H48 M16 42 H34" stroke="#60A5FA" strokeWidth="2.5" strokeLinecap="round" />
-    <circle cx="46" cy="22" r="3" fill="#10B981" />
-    <circle cx="42" cy="42" r="3" fill="#F59E0B" />
-  </svg>
-)
-
-// Accelerated Path Breakdown (System Design, Mock Interview, Fast PR Visa)
-export const AcceleratedSystemIllustration = ({ className = 'w-16 h-16' }: { className?: string }) => (
-  <svg viewBox="0 0 64 64" className={className} fill="none">
-    <rect x="6" y="8" width="52" height="48" rx="10" fill="#1E3A8A" stroke="#1D4ED8" strokeWidth="2" />
-    <polygon points="32,16 44,28 36,28 36,44 28,44 28,28 20,28" fill="#F43F5E" />
-    <circle cx="48" cy="44" r="3" fill="#38BDF8" />
-    <circle cx="16" cy="44" r="3" fill="#34D399" />
-  </svg>
 )

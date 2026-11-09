@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useLearnWorkspace } from '../hooks/useLearnWorkspace'
 import { useAuthStore } from '../store/authStore'
-import { QuestCompleteModal } from '../components/workspace/QuestCompleteModal'
+import { QuestCompleteModal } from '../components/quest/QuestCompleteModal'
 import { Button3D } from '../components/ui/Button3D'
 import { ArrowCounterClockwise, Check, CheckFat, X as XIcon } from '@phosphor-icons/react'
 

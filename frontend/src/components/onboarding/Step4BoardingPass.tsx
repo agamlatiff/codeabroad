@@ -1,8 +1,9 @@
 import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, LanguageLevel } from '../../types/onboarding'
 import type { User } from '../../types/user'
 import { Airplane, Sparkle, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
-import { DoodleHanko } from '../illustrations/doodles'
-import { Button3D, MetricTile, BadgePill } from '../ui'
+import { Button3D } from '../ui/Button3D'
+import { MetricTile } from '../ui/MetricTile'
+import { BadgePill } from '../ui/BadgePill'
 import { KodiCharacter } from '../ui/KodiCharacter'
 import {
   formatTechStack,
@@ -200,19 +201,13 @@ export const Step4BoardingPass = ({
 
         {/* 4. TICKET STUB FOOTER */}
         <div className="px-5 sm:px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="shrink-0 animate-stamp-slam">
-              <DoodleHanko text="合格" className="w-11 h-11" />
+          <div className="space-y-1">
+            <div className="font-mono text-[9px] tracking-[0.22em] text-slate-400 font-bold select-none">
+              ||||| | |||| ||| |||||| | |||||
             </div>
-
-            <div className="space-y-1">
-              <div className="font-mono text-[9px] tracking-[0.22em] text-slate-400 font-bold select-none">
-                ||||| | |||| ||| |||||| | |||||
-              </div>
-              <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600">
-                <CheckCircle weight="fill" className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-                <span>PASPOR RESMI TERVERIFIKASI</span>
-              </div>
+            <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600">
+              <CheckCircle weight="fill" className="w-3.5 h-3.5 text-blue-600 shrink-0" />
+              <span>PASPOR RESMI TERVERIFIKASI</span>
             </div>
           </div>
 

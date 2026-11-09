@@ -1,4 +1,4 @@
-import type { IllustrationProps } from '../types'
+import type { IllustrationProps } from '../../../types/onboarding'
 
 // Mindset Track 1: Specialist Mindset (Deep Laser Focus)
 export const SpecialistMindsetIllustration = ({ className = 'w-full h-full max-h-44 object-contain' }: IllustrationProps) => (

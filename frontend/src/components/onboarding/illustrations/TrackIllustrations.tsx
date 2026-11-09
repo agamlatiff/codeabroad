@@ -1,4 +1,4 @@
-import type { IllustrationProps } from '../types'
+import type { IllustrationProps } from '../../../types/onboarding'
 
 // Track 1: Backend Specialist (Go / Microservices, High Concurrency, DB)
 export const BackendIllustration = ({ className = 'w-full h-full max-h-44 object-contain' }: IllustrationProps) => (

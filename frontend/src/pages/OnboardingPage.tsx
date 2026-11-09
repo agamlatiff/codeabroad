@@ -1,5 +1,6 @@
 import { ArrowRight, ArrowLeft, Check } from '@phosphor-icons/react'
-import { Logo, Button3D } from '../components/ui'
+import { Logo } from '../components/ui/Logo'
+import { Button3D } from '../components/ui/Button3D'
 import { triggerHaptic } from '../utils/haptics'
 import { Step1Destination } from '../components/onboarding/Step1Destination'
 import { Step2CareerTracks } from '../components/onboarding/Step2CareerTracks'

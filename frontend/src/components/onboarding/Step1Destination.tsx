@@ -5,9 +5,9 @@ import {
   JapanFlagIllustration,
   SingaporeFlagIllustration,
   GermanyFlagIllustration,
-} from '../illustrations/onboarding'
+} from './illustrations/FlagIllustrations'
 import { COUNTRY_DESCRIPTIONS } from '../../utils/onboardingConfig'
-import { BadgePill } from '../ui'
+import { BadgePill } from '../ui/BadgePill'
 import { triggerHaptic } from '../../utils/haptics'
 
 // Static flag component lookup map placed outside to avoid re-allocations on render

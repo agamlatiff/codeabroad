@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import type { SubmitQuestResponse, Quest } from '../../types/quest'
 import { useAuthStore } from '../../store/authStore'
 import { Button3D } from '../ui/Button3D'
-import { DoodleHanko } from '../illustrations/doodles'
 import { KodiCharacter } from '../ui/KodiCharacter'
 
 export interface QuestCompleteModalProps {
@@ -51,11 +50,6 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
   return createPortal(
     <div className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white rounded-3xl border-2 border-slate-200 shadow-2xl p-6 sm:p-8 max-w-xl w-full text-center space-y-5 animate-in zoom-in-95 duration-200 relative overflow-hidden">
-        {/* Hanko Stamp watermark at top-right */}
-        <div className="absolute top-4 right-4 -rotate-12 pointer-events-none opacity-90">
-          <DoodleHanko text="合格" className="w-14 h-14 drop-shadow-sm" />
-        </div>
-
         {/* ── 1. CELEBRATION KODI MASCOT & HEADLINE ── */}
         <div className="relative flex flex-col items-center justify-center pt-2">
           {/* Subtle Stepped Glass Base */}
@@ -221,3 +215,4 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
     document.body
   )
 }
+
