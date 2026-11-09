@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { authService } from '../../services/authService'
 import type { LoginPayload } from '../../types/auth'
 import { useAuthStore } from '../../store/authStore'
-import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
+import { PROFILE_QUERY_KEY } from '../../services/userService'
 import { validateLoginForm } from '../../utils/validation'
 import { useFieldErrors } from './useFieldErrors'
 import {

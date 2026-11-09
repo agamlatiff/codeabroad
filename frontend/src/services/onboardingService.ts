@@ -7,6 +7,8 @@ import type {
   OnboardingProfileResponse,
 } from '../types/onboarding'
 
+export const CAREER_PATHS_QUERY_KEY = ['career-paths'] as const
+
 export const onboardingService = {
   // Fetch available destination countries
   async getCountries(): Promise<Country[]> {

@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
-import { userService } from '../../services/userService'
-import { DAILY_REWARDS_QUERY_KEY, ACTIVITY_LOGS_QUERY_KEY } from '../../constants/queryKeys'
+import { userService, DAILY_REWARDS_QUERY_KEY, ACTIVITY_LOGS_QUERY_KEY } from '../../services/userService'
 import type { DailyRewardsStatusResponse, DailyRewardClaimResponse } from '../../types/user'
 
 /**

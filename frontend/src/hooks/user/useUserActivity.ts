@@ -1,7 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
-import { userService } from '../../services/userService'
-import { ACTIVITY_LOGS_QUERY_KEY } from '../../constants/queryKeys'
+import { userService, ACTIVITY_LOGS_QUERY_KEY } from '../../services/userService'
 import type { UserActivitySummaryResponse } from '../../types/user'
 
 /**

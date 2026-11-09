@@ -10,7 +10,7 @@ import { triggerHaptic } from '../../utils/haptics'
 import { playSound, playBgm, stopBgm } from '../../utils/sound'
 import type { SequentialCurriculumUnit } from '../../types/roadmap'
 import { computeRoadmapPageMetrics } from '../../utils/roadmapMapTransformer'
-import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
+import { PROFILE_QUERY_KEY } from '../../services/userService'
 
 export const ROADMAP_QUERY_KEY = 'roadmap' as const
 const TOAST_DURATION_MS = 3200

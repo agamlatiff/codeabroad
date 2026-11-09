@@ -11,7 +11,7 @@ import { useAuthStore } from '../../../store/authStore'
 import { useLogout } from '../../auth/useLogout'
 import { triggerHaptic } from '../../../utils/haptics'
 import type { AvatarStyle } from '../../../utils/avatar'
-import { PROFILE_QUERY_KEY } from '../../../constants/queryKeys'
+import { PROFILE_QUERY_KEY } from '../../../services/userService'
 
 export interface LeftSidebarNavItem {
   label: string

@@ -1,11 +1,10 @@
 import { useCallback } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { onboardingService } from '../../services/onboardingService'
+import { onboardingService, CAREER_PATHS_QUERY_KEY } from '../../services/onboardingService'
 import { useUser } from '../user/useUser'
 import { triggerHaptic } from '../../utils/haptics'
 import type { CareerTrackOption } from '../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY } from '../../constants/queryKeys'
 
 export interface UseRoadmapTrackSwitcherModalOptions {
   onSelectTrack: (trackSlug: string) => void

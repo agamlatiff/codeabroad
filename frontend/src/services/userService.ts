@@ -8,6 +8,10 @@ import type {
   DailyRewardsStatusResponse,
 } from '../types/user'
 
+export const PROFILE_QUERY_KEY = ['profile'] as const
+export const ACTIVITY_LOGS_QUERY_KEY = ['activity-logs'] as const
+export const DAILY_REWARDS_QUERY_KEY = ['daily-rewards'] as const
+
 /**
  * Service managing user profile, preferences, and daily consistency activity tracking.
  * Directly corresponds to backend User Service (`/api/v1/users/me/*`).

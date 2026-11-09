@@ -1,8 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '../../store/authStore'
-import { userService } from '../../services/userService'
-import { PROFILE_QUERY_KEY } from '../../constants/queryKeys'
+import { userService, PROFILE_QUERY_KEY } from '../../services/userService'
 import type { User, UpdateProfilePayload } from '../../types/user'
 
 /**

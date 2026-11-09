@@ -1,12 +1,11 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useUser } from '../../user/useUser'
-import { onboardingService } from '../../../services/onboardingService'
+import { onboardingService, CAREER_PATHS_QUERY_KEY } from '../../../services/onboardingService'
 import type { CareerTrackOption } from '../../../types/roadmap'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
 import { resolveTrackIconType } from '../../../tokens/roadmapTokens'
 
-import { CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
 
 /**
  * 1:1 Headless controller hook for AppTopBar.

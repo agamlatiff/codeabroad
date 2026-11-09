@@ -1,10 +1,9 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { onboardingService } from '../../../services/onboardingService'
+import { onboardingService, CAREER_PATHS_QUERY_KEY } from '../../../services/onboardingService'
 import { useUser } from '../../user/useUser'
 import { triggerHaptic } from '../../../utils/haptics'
 import { mapCareerPathsToTrackOptions } from '../../../utils/roadmapMapper'
-import { CAREER_PATHS_QUERY_KEY } from '../../../constants/queryKeys'
 import type { User } from '../../../types/user'
 import type { AvatarStyle } from '../../../utils/avatar'
 
