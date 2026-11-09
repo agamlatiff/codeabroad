@@ -4,7 +4,7 @@ import {
   SignOut,
   Sparkle,
 } from '@phosphor-icons/react'
-import { UserAvatar } from '../../ui/UserAvatar'
+import { UserAvatar } from './UserAvatar'
 import { triggerHaptic } from '../../../utils/haptics'
 import { useAppLeftSidebar } from '../../../hooks/layout/left-sidebar/useAppLeftSidebar'
 import { SettingsModal } from './SettingsModal'

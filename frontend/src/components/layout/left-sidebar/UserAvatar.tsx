@@ -6,7 +6,7 @@ import {
   getDeterministicGradient,
   type AvatarStyle,
   type AvatarUser,
-} from '../../utils/avatar'
+} from '../../../utils/avatar'
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 

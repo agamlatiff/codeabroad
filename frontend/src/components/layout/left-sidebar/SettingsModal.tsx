@@ -12,7 +12,7 @@ import {
   DeviceMobile,
 } from '@phosphor-icons/react'
 import { Button3D } from '../../ui/Button3D'
-import { UserAvatar } from '../../ui/UserAvatar'
+import { UserAvatar } from './UserAvatar'
 import { triggerHaptic } from '../../../utils/haptics'
 import {
   useSettingsModal,

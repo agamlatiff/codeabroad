@@ -22,7 +22,7 @@ import {
   LANGUAGE_OPTIONS,
 } from '../../utils/onboardingConfig'
 import { getTargetLandingDate } from '../../utils/date'
-import { BadgePill } from '../ui/BadgePill'
+import { BadgePill } from './BadgePill'
 import { triggerHaptic } from '../../utils/haptics'
 
 export type Step3SubStep = 'level' | 'readiness'

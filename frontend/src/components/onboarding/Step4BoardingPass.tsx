@@ -2,8 +2,8 @@ import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, La
 import type { User } from '../../types/user'
 import { Airplane, Sparkle, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
 import { Button3D } from '../ui/Button3D'
-import { MetricTile } from '../ui/MetricTile'
-import { BadgePill } from '../ui/BadgePill'
+import { MetricTile } from './MetricTile'
+import { BadgePill } from './BadgePill'
 import { KodiCharacter } from '../ui/KodiCharacter'
 import {
   formatTechStack,

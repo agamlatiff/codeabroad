@@ -1,5 +1,5 @@
 import { Sparkle, Check } from '@phosphor-icons/react'
-import { Modal3D } from '../ui/Modal3D'
+import { Modal3D } from './Modal3D'
 import { Button3D } from '../ui/Button3D'
 import { triggerHaptic } from '../../utils/haptics'
 import { audioEngine } from '../../utils/audio'

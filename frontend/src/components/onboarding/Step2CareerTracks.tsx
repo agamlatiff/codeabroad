@@ -16,7 +16,7 @@ import {
 import { TechIcon } from './illustrations/TechIcons'
 import { TRACK_BADGES, STACK_DESCRIPTIONS } from '../../utils/onboardingConfig'
 import { formatStackBadge } from '../../utils/formatters'
-import { BadgePill } from '../ui/BadgePill'
+import { BadgePill } from './BadgePill'
 import { triggerHaptic } from '../../utils/haptics'
 
 export type Step2SubStep = 'mindset' | 'track' | 'stack' | 'stack_fe' | 'stack_be'
