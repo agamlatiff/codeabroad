@@ -5,6 +5,7 @@ import { useQuestStore } from '../store/questStore'
 import { useAuthStore } from '../store/authStore'
 import { triggerHaptic } from '../utils/haptics'
 import { audioEngine } from '../utils/audio'
+import { audioService } from '../services/audioService'
 import {
   getWorkspaceQuestFallback,
   evaluateWorkspaceCode,
@@ -13,6 +14,14 @@ import {
 
 export const useLearnWorkspace = () => {
   const { id } = useParams<{ id: string }>()
+
+  // Ambient Lo-Fi soundscape for deep focus coding
+  useEffect(() => {
+    audioService.playBgm('universal')
+    return () => {
+      audioService.stopBgm()
+    }
+  }, [])
   const {
     currentQuest,
     userCode,
@@ -148,7 +157,7 @@ export const useLearnWorkspace = () => {
       }
 
       triggerHaptic('stampImpact')
-      audioEngine.playSuccess()
+      audioEngine.playFanfare()
     } catch {
       // Fallback submit completion response
       if (currentQuest) {
@@ -172,7 +181,7 @@ export const useLearnWorkspace = () => {
         }
 
         triggerHaptic('stampImpact')
-        audioEngine.playSuccess()
+        audioEngine.playFanfare()
       } else {
         setError('Gagal menyelesaikan quest')
         triggerHaptic('error')

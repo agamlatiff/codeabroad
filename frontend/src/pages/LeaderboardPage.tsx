@@ -102,7 +102,7 @@ export const LeaderboardPage = () => {
 
   const handleSelectDivision = (div: TokyoDivision) => {
     triggerHaptic('tap')
-    soundEngine.playPop()
+    soundEngine.playLevelUp()
     setSelectedDivision(div)
   }
 

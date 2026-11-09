@@ -377,7 +377,7 @@ export const QuestLogPage = () => {
   // Handle claim daily quest reward with burst animation & XP multiplier
   const handleClaimDailyQuest = (questId: string, xpReward: number, gemReward: number) => {
     triggerHaptic('success')
-    audioEngine.playPop()
+    audioEngine.playRewardClaim()
 
     const isBoosterActive = xpBoosterExpiresAt > Date.now()
     const finalXp = isBoosterActive ? xpReward * 2 : xpReward
@@ -409,7 +409,7 @@ export const QuestLogPage = () => {
     const owned = inventory['xp-booster'] || 0
     if (owned <= 0) return
     triggerHaptic('success')
-    audioEngine.playPop()
+    audioEngine.playStreakFlame()
 
     const newInventory = {
       ...inventory,
@@ -517,10 +517,12 @@ export const QuestLogPage = () => {
   }) => {
     if (!chest.unlocked) {
       triggerHaptic('error')
+      audioEngine.playError()
       showToast(`⚠️ Selesaikan ${chest.tier - dailyDoneCount} misi harian lagi untuk membuka ${chest.label}!`)
       return
     }
     triggerHaptic('tap')
+    audioEngine.playPop()
     setSelectedChestForModal(chest)
     setIsChestModalOpen(true)
   }
@@ -528,6 +530,8 @@ export const QuestLogPage = () => {
   // Confirm claim chest reward from unboxing modal
   const handleConfirmClaimChest = async () => {
     if (!selectedChestForModal) return
+    triggerHaptic('success')
+    audioEngine.playChestClaim()
     const tier = selectedChestForModal.tier
     const nextChests = { ...claimedDailyChests, [tier]: true }
     setClaimedDailyChests(nextChests)
@@ -561,6 +565,8 @@ export const QuestLogPage = () => {
 
   // Claim Monthly Roppongi Gold Badge
   const handleClaimMonthlyBadge = async () => {
+    triggerHaptic('success')
+    audioEngine.playFanfare()
     setIsMonthlyBadgeClaimed(true)
     try {
       localStorage.setItem(monthlyBadgeKey, 'true')
@@ -588,12 +594,13 @@ export const QuestLogPage = () => {
   const handlePurchaseShopItem = async (item: ShopItem) => {
     if (userGems < item.price) {
       triggerHaptic('error')
+      audioEngine.playError()
       showToast(`⚠️ Saldo Gems tidak cukup! Butuh ${item.price} Gems (Saldo: ${userGems}).`)
       return
     }
 
     triggerHaptic('success')
-    audioEngine.playPop()
+    audioEngine.playCoinJingle()
 
     try {
       const updatedStatus = await gamificationService.buyShopItem(item.id)

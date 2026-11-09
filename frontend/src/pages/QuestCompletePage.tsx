@@ -43,6 +43,7 @@ export const QuestCompletePage = () => {
 
   const handleNextQuest = () => {
     triggerHaptic('success')
+    audioEngine.playSuccess()
     if (submitResult?.next_quest?.id) {
       navigate(`/learn/${submitResult.next_quest.id}`)
     } else {
@@ -52,6 +53,7 @@ export const QuestCompletePage = () => {
 
   const handleReviewCode = () => {
     triggerHaptic('tap')
+    audioEngine.playPop()
     navigate(`/learn/${quest?.id || id || 'part-1-variabel-dan-tipe-data'}`)
   }
 
