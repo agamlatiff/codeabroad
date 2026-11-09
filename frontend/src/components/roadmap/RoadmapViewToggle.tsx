@@ -1,4 +1,4 @@
-import { useState, useEffect, type FC } from 'react'
+import { type FC } from 'react'
 import {
   MapTrifold,
   ListBullets,
@@ -8,12 +8,7 @@ import {
 } from '@phosphor-icons/react'
 import { triggerHaptic } from '../../utils/haptics'
 import { VIEW_TOGGLE_TOKENS } from '../../tokens/roadmapTokens'
-import {
-  getAudioMode,
-  cycleAudioMode,
-  subscribeAudioMode,
-  type AudioPlaybackMode,
-} from '../../utils/sound'
+import { useAudioStore } from '../../store/audioStore'
 
 export type CurriculumViewMode = 'map' | 'syllabus'
 
@@ -34,13 +29,8 @@ export const RoadmapViewToggle: FC<RoadmapViewToggleProps> = ({
   onChangeViewMode,
   totalUnitsCount,
 }) => {
-  const [audioMode, setAudioModeState] = useState<AudioPlaybackMode>(getAudioMode)
-
-  useEffect(() => {
-    return subscribeAudioMode((next) => {
-      setAudioModeState(next)
-    })
-  }, [])
+  const audioMode = useAudioStore((s) => s.audioMode)
+  const cycleAudioMode = useAudioStore((s) => s.cycleAudioMode)
 
   const handleSelect = (mode: CurriculumViewMode) => {
     if (mode === viewMode) return

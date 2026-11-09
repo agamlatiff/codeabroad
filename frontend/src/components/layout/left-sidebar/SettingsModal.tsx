@@ -10,10 +10,14 @@ import {
   Code,
   Cpu,
   DeviceMobile,
+  SpeakerHigh,
+  SpeakerLow,
+  SpeakerSimpleSlash,
 } from '@phosphor-icons/react'
 import { Button3D } from '../../ui/Button3D'
 import { UserAvatar } from './UserAvatar'
 import { triggerHaptic } from '../../../utils/haptics'
+import { useAudioStore } from '../../../store/audioStore'
 import {
   useSettingsModal,
   type UseSettingsModalOptions,
@@ -52,6 +56,8 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     handleStackSelect,
     handleSubmit,
   } = useSettingsModal(props)
+
+  const { audioMode, setAudioMode, soundscapeTrack, setSoundscapeTrack } = useAudioStore()
 
   if (!isOpen || typeof document === 'undefined') return null
 
@@ -263,6 +269,106 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               </div>
             </div>
           )}
+
+          {/* ── AUDIO & SOUNDSCAPE PREFERENCES ── */}
+          <div className="space-y-2.5 pt-3 border-t border-slate-200/80">
+            <div className="flex items-center justify-between">
+              <label className="block text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
+                Suara & Musik Latar (No Copyright)
+              </label>
+              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold">
+                100% Royalty Free
+              </span>
+            </div>
+
+            {/* Audio Mode 3D Segmented Control */}
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setAudioMode('all')
+                }}
+                className={`py-2 px-2.5 rounded-xl border-2 text-center text-xs font-brand font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  audioMode === 'all'
+                    ? 'border-emerald-500 bg-emerald-50/80 text-emerald-800 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                }`}
+              >
+                <SpeakerHigh weight={audioMode === 'all' ? 'fill' : 'bold'} className="w-4 h-4 text-emerald-600" />
+                <span className="text-[10px]">BGM & SFX</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setAudioMode('sfx_only')
+                }}
+                className={`py-2 px-2.5 rounded-xl border-2 text-center text-xs font-brand font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  audioMode === 'sfx_only'
+                    ? 'border-blue-500 bg-blue-50/80 text-blue-800 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                }`}
+              >
+                <SpeakerLow weight={audioMode === 'sfx_only' ? 'fill' : 'bold'} className="w-4 h-4 text-blue-600" />
+                <span className="text-[10px]">SFX Saja</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setAudioMode('muted')
+                }}
+                className={`py-2 px-2.5 rounded-xl border-2 text-center text-xs font-brand font-bold transition-all cursor-pointer flex flex-col items-center gap-1 ${
+                  audioMode === 'muted'
+                    ? 'border-slate-400 bg-slate-100 text-slate-800 shadow-xs'
+                    : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                }`}
+              >
+                <SpeakerSimpleSlash weight={audioMode === 'muted' ? 'fill' : 'bold'} className="w-4 h-4 text-slate-500" />
+                <span className="text-[10px]">Hening</span>
+              </button>
+            </div>
+
+            {/* BGM Soundscape Theme Selection (If audioMode === 'all') */}
+            {audioMode === 'all' && (
+              <div className="grid grid-cols-2 gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setSoundscapeTrack('universal')
+                  }}
+                  className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                    soundscapeTrack === 'universal'
+                      ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                  }`}
+                >
+                  <span className="text-[11px] font-brand font-black block">☕ Universal Lo-Fi</span>
+                  <span className="text-[9px] text-slate-500 block">Akord 7th hangat untuk fokus koding</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setSoundscapeTrack('japan')
+                  }}
+                  className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
+                    soundscapeTrack === 'japan'
+                      ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-xs'
+                      : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
+                  }`}
+                >
+                  <span className="text-[11px] font-brand font-black block">⛩️ Tokyo Zen</span>
+                  <span className="text-[9px] text-slate-500 block">Dawai koto pentatonik tradisional</span>
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Footer Buttons */}
           <div className="pt-2 flex items-center justify-end gap-3">

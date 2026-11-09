@@ -4,6 +4,9 @@ import {
   Star,
   Trophy,
   Gift,
+  SpeakerHigh,
+  SpeakerLow,
+  SpeakerSimpleSlash,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -14,6 +17,7 @@ import {
 } from '../../ui/BrandLogos'
 import { useAppTopBar } from '../../../hooks/layout/top-bar/useAppTopBar'
 import { triggerHaptic } from '../../../utils/haptics'
+import { useAudioStore } from '../../../store/audioStore'
 
 export interface AppTopBarProps {
   activeTrack: string
@@ -43,6 +47,9 @@ export const AppTopBar = ({
     userGems,
     currentTrackConfig,
   } = useAppTopBar(activeTrack)
+
+  const audioMode = useAudioStore((s) => s.audioMode)
+  const cycleAudioMode = useAudioStore((s) => s.cycleAudioMode)
 
   return (
     <div className="flex flex-col gap-2.5 sm:gap-3">
@@ -143,6 +150,49 @@ export const AppTopBar = ({
             >
               <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
               <span className="hidden md:inline">Liga</span>
+            </button>
+
+            {/* Audio Mode Tactile 3D Cycler */}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                cycleAudioMode()
+              }}
+              className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl border border-b-2 active:translate-y-0.5 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer ${
+                audioMode === 'all'
+                  ? 'bg-emerald-50 hover:bg-emerald-100/80 border-emerald-300 border-b-emerald-400 text-emerald-800'
+                  : audioMode === 'sfx_only'
+                  ? 'bg-blue-50 hover:bg-blue-100/80 border-blue-300 border-b-blue-400 text-blue-800'
+                  : 'bg-slate-100 hover:bg-slate-200/80 border-slate-300 border-b-slate-400 text-slate-500'
+              }`}
+              title={`Mode Suara: ${
+                audioMode === 'all'
+                  ? 'Musik & Efek Suara Aktif (Klik untuk ganti ke SFX saja)'
+                  : audioMode === 'sfx_only'
+                  ? 'Efek Suara Saja (Klik untuk senyap)'
+                  : 'Semua Suara Dibisukan (Klik untuk aktifkan)'
+              }`}
+              aria-label="Pengaturan Mode Suara"
+            >
+              {audioMode === 'all' && (
+                <>
+                  <SpeakerHigh weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 animate-pulse" />
+                  <span className="hidden lg:inline text-[11px]">BGM & SFX</span>
+                </>
+              )}
+              {audioMode === 'sfx_only' && (
+                <>
+                  <SpeakerLow weight="bold" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
+                  <span className="hidden lg:inline text-[11px]">SFX Saja</span>
+                </>
+              )}
+              {audioMode === 'muted' && (
+                <>
+                  <SpeakerSimpleSlash weight="bold" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
+                  <span className="hidden lg:inline text-[11px]">Hening</span>
+                </>
+              )}
             </button>
           </div>
 
