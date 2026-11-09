@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { useLogin } from '../hooks/auth/useLogin'
 import { AuthLayout } from '../components/auth/AuthLayout'
 // import { SocialAuthButton } from '../components/auth/SocialAuthButton'
-import { AuthField } from '../components/auth/AuthField'
+import { Input } from '../components/ui/Input'
 // import { AuthDivider } from '../components/auth/AuthDivider'
 import { AuthCheckbox } from '../components/auth/AuthCheckbox'
 import { Button3D } from '../components/ui/Button3D'
@@ -20,7 +20,7 @@ export const LoginPage = () => {
     >
       {/* ── 1. EMAIL & PASSWORD FORM (FIRST) ── */}
       <form onSubmit={actions.submit} noValidate className="space-y-3.5">
-        <AuthField
+        <Input
           id="email"
           label="Alamat Email"
           type="email"
@@ -34,7 +34,7 @@ export const LoginPage = () => {
           icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
         />
 
-        <AuthField
+        <Input
           id="password"
           label="Kata Sandi"
           isPassword

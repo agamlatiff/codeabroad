@@ -3,7 +3,7 @@ import { isAxiosError } from 'axios'
 import type { User } from '../../types/user'
 
 /**
- * Shared pure helpers for auth custom hooks and components (login, register, logout, fields).
+ * Shared pure helpers for auth custom hooks (login, register, logout).
  */
 
 export interface AuthApiErrorPayload {
@@ -16,34 +16,6 @@ export interface ParsedAuthError {
   status?: number
   rawError: string
   isNetworkError: boolean
-}
-
-export interface AuthInputClassOptions {
-  hasIcon: boolean
-  isPassword?: boolean
-  hasError: boolean
-  className?: string
-}
-
-const AUTH_INPUT_BASE_CLASS =
-  'w-full h-11 bg-white border-2 rounded-2xl text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal'
-const AUTH_INPUT_DEFAULT_STATE_CLASS =
-  'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15'
-const AUTH_INPUT_ERROR_STATE_CLASS =
-  'border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15'
-
-/** Resolves the complete className string for an AuthField input. */
-export const getAuthInputClassName = ({
-  hasIcon,
-  isPassword = false,
-  hasError,
-  className = '',
-}: AuthInputClassOptions): string => {
-  const paddingLeft = hasIcon ? 'pl-10' : 'pl-3.5'
-  const paddingRight = isPassword ? 'pr-11' : 'pr-3.5'
-  const stateClass = hasError ? AUTH_INPUT_ERROR_STATE_CLASS : AUTH_INPUT_DEFAULT_STATE_CLASS
-
-  return `${AUTH_INPUT_BASE_CLASS} ${paddingLeft} ${paddingRight} ${stateClass} ${className}`.trim()
 }
 
 export const NETWORK_ERROR_MESSAGE = 'Tidak dapat terhubung. Periksa koneksi internet kamu dan coba lagi ya.'

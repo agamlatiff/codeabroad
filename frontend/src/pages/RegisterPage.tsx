@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useRegister } from '../hooks/auth/useRegister'
 import { AuthLayout } from '../components/auth/AuthLayout'
-import { AuthField } from '../components/auth/AuthField'
+import { Input } from '../components/ui/Input'
 import { PasswordStrengthMeter } from '../components/auth/PasswordStrengthMeter'
 // import { SocialAuthButton } from '../components/auth/SocialAuthButton'
 // import { AuthDivider } from '../components/auth/AuthDivider'
@@ -23,7 +23,7 @@ export const RegisterPage = () => {
     >
       {/* ── 1. REGISTRATION FORM (FIRST) ── */}
       <form onSubmit={actions.submit} noValidate className="space-y-2 sm:space-y-2.5">
-        <AuthField
+        <Input
           id="name"
           label="Nama Lengkap"
           type="text"
@@ -37,7 +37,7 @@ export const RegisterPage = () => {
           icon={<User weight="bold" className="w-4 h-4" />}
         />
 
-        <AuthField
+        <Input
           id="username"
           label="Username"
           type="text"
@@ -51,7 +51,7 @@ export const RegisterPage = () => {
           icon={<At weight="bold" className="w-4 h-4" />}
         />
 
-        <AuthField
+        <Input
           id="email"
           label="Alamat Email"
           type="email"
@@ -66,7 +66,7 @@ export const RegisterPage = () => {
         />
 
         <div>
-          <AuthField
+          <Input
             id="password"
             label="Kata Sandi"
             isPassword
