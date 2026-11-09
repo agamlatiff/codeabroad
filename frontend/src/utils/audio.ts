@@ -1,275 +1,82 @@
 /**
- * Web Audio API Synthesizer & Speech Engine for CodeAbroad
- * Provides Duolingo-grade tactile sound effects (pops, chimes, coin jingles)
- * completely synthesized on the fly (0 external MP3 files required).
+ * [COMPATIBILITY FACADE: AUDIO UTILITIES]
+ * Seamless proxy bridging legacy audioEngine calls to audioService (Driver)
+ * and useAudioStore (Zustand SSOT).
  */
 
-const STORAGE_KEY = 'codeabroad_sound_muted'
+import { audioService } from '../services/audioService'
+import { useAudioStore } from '../store/audioStore'
 
-class SoundEngine {
-  private ctx: AudioContext | null = null
-  private muted: boolean = false
-
-  constructor() {
-    if (typeof window !== 'undefined') {
-      this.muted = localStorage.getItem(STORAGE_KEY) === 'true'
-    }
-  }
-
-  /**
-   * Lazily initializes or resumes the AudioContext upon user gesture.
-   */
-  private getContext(): AudioContext | null {
-    if (typeof window === 'undefined') return null
-    if (!this.ctx) {
-      const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
-      if (AudioCtx) {
-        this.ctx = new AudioCtx()
-      }
-    }
-    if (this.ctx && this.ctx.state === 'suspended') {
-      this.ctx.resume().catch(() => {})
-    }
-    return this.ctx
-  }
-
+class AudioEngineProxy {
   public isMuted(): boolean {
-    return this.muted
+    return useAudioStore.getState().audioMode === 'muted'
   }
 
   public setMuted(muted: boolean): void {
-    this.muted = muted
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(STORAGE_KEY, String(muted))
-      window.dispatchEvent(new CustomEvent('codeabroad_sound_toggle', { detail: { muted } }))
-    }
+    useAudioStore.getState().setAudioMode(muted ? 'muted' : 'all')
   }
 
   public toggleMute(): boolean {
-    this.setMuted(!this.muted)
-    return this.muted
+    return useAudioStore.getState().toggleMute()
   }
 
-  /**
-   * playPop: Tactile bubble pop when pressing buttons or nodes.
-   */
   public playPop(): void {
-    if (this.muted) return
-    const ctx = this.getContext()
-    if (!ctx) return
-
-    try {
-      const now = ctx.currentTime
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-
-      osc.type = 'sine'
-      // Frequency drop for rich tactile 'plop'
-      osc.frequency.setValueAtTime(260, now)
-      osc.frequency.exponentialRampToValueAtTime(70, now + 0.07)
-
-      gain.gain.setValueAtTime(0.18, now)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07)
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-
-      osc.start(now)
-      osc.stop(now + 0.08)
-    } catch {
-      // Ignored if audio device unavailable
-    }
+    audioService.playPop()
   }
 
-  /**
-   * playSuccess: Melodic arpeggio fanfare (C5, E5, G5, C6) when tests pass or quest is completed.
-   */
   public playSuccess(): void {
-    if (this.muted) return
-    const ctx = this.getContext()
-    if (!ctx) return
-
-    try {
-      const notes = [523.25, 659.25, 783.99, 1046.5] // C5, E5, G5, C6
-      const noteDelay = 0.07
-      const startTime = ctx.currentTime
-
-      notes.forEach((freq, index) => {
-        const noteStart = startTime + index * noteDelay
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-
-        osc.type = 'sine'
-        osc.frequency.setValueAtTime(freq, noteStart)
-
-        const duration = index === notes.length - 1 ? 0.35 : 0.18
-        gain.gain.setValueAtTime(0.16, noteStart)
-        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + duration)
-
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-
-        osc.start(noteStart)
-        osc.stop(noteStart + duration)
-      })
-    } catch {
-      // Ignored
-    }
+    audioService.playSuccess()
   }
 
-  /**
-   * playFanfare: Alias for playSuccess to celebrate quest completions.
-   */
-  public playFanfare(): void {
-    this.playSuccess()
+  public playLevelUp(): void {
+    audioService.playLevelUp()
   }
 
-  /**
-   * playChestClaim: Sparkling metallic coin chime when opening chests (+50 XP).
-   */
-  public playChestClaim(): void {
-    if (this.muted) return
-    const ctx = this.getContext()
-    if (!ctx) return
-
-    try {
-      const freqs = [880, 1174.66, 1760, 2093] // A5, D6, A6, C7
-      const startTime = ctx.currentTime
-
-      freqs.forEach((freq, idx) => {
-        const noteStart = startTime + idx * 0.05
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-
-        osc.type = 'triangle'
-        osc.frequency.setValueAtTime(freq, noteStart)
-
-        gain.gain.setValueAtTime(0.2, noteStart)
-        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.3)
-
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-
-        osc.start(noteStart)
-        osc.stop(noteStart + 0.32)
-      })
-    } catch {
-      // Ignored
-    }
-  }
-
-  /**
-   * playRewardClaim: Alias for playChestClaim when claiming rewards/chests.
-   */
-  public playRewardClaim(): void {
-    this.playChestClaim()
-  }
-
-  /**
-   * playStreakFlame: Ascending warm whoosh when streak increases.
-   */
-  public playStreakFlame(): void {
-    if (this.muted) return
-    const ctx = this.getContext()
-    if (!ctx) return
-
-    try {
-      const now = ctx.currentTime
-      const osc = ctx.createOscillator()
-      const gain = ctx.createGain()
-
-      osc.type = 'sine'
-      osc.frequency.setValueAtTime(200, now)
-      osc.frequency.exponentialRampToValueAtTime(600, now + 0.22)
-
-      gain.gain.setValueAtTime(0.01, now)
-      gain.gain.linearRampToValueAtTime(0.15, now + 0.1)
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25)
-
-      osc.connect(gain)
-      gain.connect(ctx.destination)
-
-      osc.start(now)
-      osc.stop(now + 0.26)
-    } catch {
-      // Ignored
-    }
-  }
-
-  /**
-   * playError: Soft double-thud when tests fail or invalid code submitted.
-   */
   public playError(): void {
-    if (this.muted) return
-    const ctx = this.getContext()
-    if (!ctx) return
-
-    try {
-      const startTime = ctx.currentTime
-      ;[140, 110].forEach((freq, idx) => {
-        const noteStart = startTime + idx * 0.11
-        const osc = ctx.createOscillator()
-        const gain = ctx.createGain()
-
-        osc.type = 'triangle'
-        osc.frequency.setValueAtTime(freq, noteStart)
-
-        gain.gain.setValueAtTime(0.15, noteStart)
-        gain.gain.exponentialRampToValueAtTime(0.001, noteStart + 0.1)
-
-        osc.connect(gain)
-        gain.connect(ctx.destination)
-
-        osc.start(noteStart)
-        osc.stop(noteStart + 0.12)
-      })
-    } catch {
-      // Ignored
-    }
+    audioService.playError()
   }
 
-  /**
-   * speakLanguage: Speaks text using native Web Speech Synthesis with specified language voice.
-   */
-  public speakLanguage(text: string, lang = 'ja-JP', onEnd?: () => void, onError?: () => void): void {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
-      onEnd?.()
-      return
-    }
-
-    try {
-      window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
-      utterance.lang = lang
-      utterance.rate = 0.88
-      utterance.pitch = 1.05
-
-      // Attempt to find dedicated native language voice
-      const voices = window.speechSynthesis.getVoices()
-      const langPrefix = lang.split('-')[0].toLowerCase()
-      const matchedVoice = voices.find(
-        (v) => v.lang.toLowerCase().startsWith(langPrefix) || v.lang.toLowerCase().includes(lang.toLowerCase())
-      )
-      if (matchedVoice) {
-        utterance.voice = matchedVoice
-      }
-
-      utterance.onend = () => onEnd?.()
-      utterance.onerror = () => onError?.()
-
-      window.speechSynthesis.speak(utterance)
-    } catch {
-      onError?.()
-    }
+  public playWhoosh(): void {
+    audioService.playWhoosh()
   }
 
-  /**
-   * speakJapanese: Speaks text using native Web Speech Synthesis with ja-JP voice.
-   */
+  public playCoinJingle(): void {
+    audioService.playCoinJingle()
+  }
+
+  public playChestClaim(): void {
+    audioService.playChestClaim()
+  }
+
+  public playRewardClaim(): void {
+    audioService.playRewardClaim()
+  }
+
+  public playStreakFlame(): void {
+    audioService.playStreakFlame()
+  }
+
+  public playFanfare(): void {
+    audioService.playFanfare()
+  }
+
+  public speakLanguage(
+    text: string,
+    lang = 'ja-JP',
+    onEnd?: () => void,
+    onError?: () => void
+  ): void {
+    audioService.speakLanguage(text, lang, onEnd, onError)
+  }
+
   public speakJapanese(text: string, onEnd?: () => void, onError?: () => void): void {
-    this.speakLanguage(text, 'ja-JP', onEnd, onError)
+    audioService.speakJapanese(text, onEnd, onError)
+  }
+
+  public playSpeech(text: string, lang = 'ja-JP'): void {
+    audioService.playSpeech(text, lang)
   }
 }
 
-export const audioEngine = new SoundEngine()
-export const soundEngine = audioEngine
+export const soundEngine = new AudioEngineProxy()
+export const audioEngine = soundEngine
