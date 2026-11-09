@@ -1,5 +1,5 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
-import { KodiMascot } from './KodiMascot'
+import { KodiCharacter } from './KodiCharacter'
 import { Button3D } from './Button3D'
 import { ArrowClockwise, HouseLine, Bug } from '@phosphor-icons/react'
 
@@ -44,11 +44,12 @@ export class ErrorBoundary extends Component<Props, State> {
         <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
           <div className="max-w-md w-full bg-slate-800/80 border-2 border-slate-700/80 rounded-3xl p-6 sm:p-8 text-center shadow-2xl backdrop-blur-md">
             <div className="flex justify-center mb-4">
-              <KodiMascot
+              <KodiCharacter
                 emotion="warning"
                 size="lg"
+                showSpeechBubble
                 speechText="Aduh, ada sirkuit yang konslet!"
-                speechDirection="bottom"
+                interactive
               />
             </div>
 
@@ -99,4 +100,3 @@ export class ErrorBoundary extends Component<Props, State> {
     return this.props.children
   }
 }
-

@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import { KodiMascot } from '../components/ui/KodiMascot'
+import { KodiCharacter } from '../components/ui/KodiCharacter'
 import { Button3D } from '../components/ui/Button3D'
 import { Compass, GameController, ArrowLeft } from '@phosphor-icons/react'
 
@@ -14,11 +14,12 @@ export const NotFoundPage = () => {
       <div className="relative z-10 max-w-lg w-full text-center">
         {/* Mascot */}
         <div className="flex justify-center mb-6">
-          <KodiMascot
+          <KodiCharacter
             emotion="thinking"
             size="xl"
+            showSpeechBubble
             speechText="Hmm, radar Kodi tidak mendeteksi koordinat ini!"
-            speechDirection="bottom"
+            interactive
           />
         </div>
 
@@ -42,7 +43,7 @@ export const NotFoundPage = () => {
             variant="blue"
             size="lg"
             icon={<Compass size={20} weight="fill" />}
-            onClick={() => navigate('/courses')}
+            onClick={() => navigate('/roadmap')}
             fullWidth
           >
             Buka Roadmap

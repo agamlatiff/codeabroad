@@ -1,10 +1,11 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
 import { CircleNotch } from '@phosphor-icons/react'
 import { audioEngine } from '../../utils/audio'
+import { BUTTON_3D_TOKENS } from '../../tokens/elevationTokens'
 
 export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'blue' | 'cyan' | 'dark' | 'emerald' | 'amber' | 'rose' | 'white' | 'ghost'
-  size?: 'sm' | 'md' | 'lg'
+  variant?: keyof typeof BUTTON_3D_TOKENS.variants
+  size?: keyof typeof BUTTON_3D_TOKENS.sizes
   loading?: boolean
   icon?: ReactNode
   fullWidth?: boolean
@@ -12,8 +13,7 @@ export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 /**
  * Button3D — Tactile 3D Duolingo-style push-down button.
- * Uses 90% Duolingo physics (thick bottom shadow depth that presses flat on click)
- * and font-brand typography.
+ * Uses BUTTON_3D_TOKENS from elevationTokens.ts as Single Source of Truth.
  */
 export const Button3D = ({
   children,
@@ -27,26 +27,6 @@ export const Button3D = ({
   onClick,
   ...props
 }: Button3DProps) => {
-  const baseStyles =
-    'inline-flex items-center justify-center font-brand font-black tracking-wide uppercase rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:translate-y-1 active:shadow-none'
-
-  const variants = {
-    blue: 'bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white shadow-[0_4px_0_0_#1D4ED8] hover:shadow-[0_5px_0_0_#1D4ED8]',
-    cyan: 'bg-[#0284C7] hover:bg-[#38BDF8] active:bg-[#0284C7] text-white shadow-[0_5px_0_0_#0369A1] hover:shadow-[0_6px_0_0_#0369A1]',
-    dark: 'bg-[#0F172A] hover:bg-[#1E293B] active:bg-[#0F172A] text-white border border-white/10 shadow-[0_5px_0_0_#020617] hover:shadow-[0_6px_0_0_#020617]',
-    emerald: 'bg-[#059669] hover:bg-[#10B981] active:bg-[#059669] text-white shadow-[0_5px_0_0_#047857] hover:shadow-[0_6px_0_0_#047857]',
-    amber: 'bg-[#D97706] hover:bg-[#F59E0B] active:bg-[#D97706] text-white shadow-[0_5px_0_0_#B45309] hover:shadow-[0_6px_0_0_#B45309]',
-    rose: 'bg-[#E11D48] hover:bg-[#F43F5E] active:bg-[#E11D48] text-white shadow-[0_5px_0_0_#BE123C] hover:shadow-[0_6px_0_0_#BE123C]',
-    white: 'bg-white hover:bg-slate-50 active:bg-white text-slate-900 border border-slate-200 shadow-[0_4px_0_0_#CBD5E1] hover:shadow-[0_5px_0_0_#CBD5E1]',
-    ghost: 'bg-transparent text-slate-500 hover:text-slate-900 hover:bg-slate-100 active:translate-y-0 active:shadow-none shadow-none',
-  }
-
-  const sizes = {
-    sm: 'text-xs px-4 py-2 min-h-[38px] gap-1.5',
-    md: 'text-sm px-6 py-3 min-h-[48px] gap-2',
-    lg: 'text-base px-8 py-4 min-h-[56px] gap-2.5',
-  }
-
   const widthStyle = fullWidth ? 'w-full' : ''
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -57,7 +37,7 @@ export const Button3D = ({
   return (
     <button
       disabled={disabled || loading}
-      className={`${baseStyles} ${variants[variant]} ${sizes[size]} ${widthStyle} ${className}`}
+      className={`${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants[variant]} ${BUTTON_3D_TOKENS.sizes[size]} ${widthStyle} ${className}`.trim()}
       onClick={handleClick}
       {...props}
     >

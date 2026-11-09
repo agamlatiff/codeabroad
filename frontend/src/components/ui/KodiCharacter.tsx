@@ -1,6 +1,7 @@
 import { useState, type FC, type MouseEvent } from 'react'
 import { triggerHaptic } from '../../utils/haptics'
 import { playSound } from '../../utils/sound'
+import { MASCOT_TOKENS, SPEECH_BUBBLE_TOKENS } from '../../tokens/gamificationTokens'
 
 export type KodiEmotion =
   | 'welcome'
@@ -41,16 +42,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
 }) => {
   const [isJumping, setIsJumping] = useState(false)
 
-  const sizePixel =
-    typeof size === 'number'
-      ? size
-      : size === 'sm'
-      ? 64
-      : size === 'md'
-      ? 110
-      : size === 'lg'
-      ? 160
-      : 220
+  const sizePixel = typeof size === 'number' ? size : MASCOT_TOKENS.sizePixels[size]
 
   const handleClick = (e: MouseEvent<HTMLDivElement>) => {
     e.stopPropagation()
@@ -85,10 +77,10 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
     >
       {/* ── 1. OPTIONAL SPEECH BUBBLE ── */}
       {showSpeechBubble && speechText && (
-        <div className="mb-2 z-30 animate-bounce-subtle pointer-events-none">
-          <div className="relative bg-white border-2 border-slate-200/90 text-slate-800 px-3 py-1.5 rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.08)] text-[11px] font-brand font-black tracking-tight max-w-[200px] text-center">
+        <div className={SPEECH_BUBBLE_TOKENS.containerClass}>
+          <div className={SPEECH_BUBBLE_TOKENS.bubbleClass}>
             <span>{speechText}</span>
-            <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-200/90 rotate-45" />
+            <div className={SPEECH_BUBBLE_TOKENS.tailClass} />
           </div>
         </div>
       )}

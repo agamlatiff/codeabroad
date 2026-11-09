@@ -52,6 +52,7 @@ export const GAMIFICATION_RULES_TOKENS = {
 export const MASCOT_TOKENS = {
   name: 'Kodi',
   species: 'Tech Companion Panda / Red Panda',
+  title: 'Kodi (Chiikawa Neko) — CodeAbroad Companion',
   emotions: {
     welcome: { label: 'Greeting / Hello', aura: 'rgba(59, 130, 246, 0.25)' },
     celebrate: { label: 'Yatta / Milestone Success', aura: 'rgba(16, 185, 129, 0.3)' },
@@ -65,6 +66,12 @@ export const MASCOT_TOKENS = {
     lg: 'w-32 h-32',   // 128px - Hero celebration / stage companion
     xl: 'w-40 h-40',   // 160px - Milestone panoramic theater
   },
+  sizePixels: {
+    sm: 64,
+    md: 110,
+    lg: 160,
+    xl: 220,
+  },
 } as const
 
 export const SPEECH_BUBBLE_TOKENS = {
@@ -75,4 +82,9 @@ export const SPEECH_BUBBLE_TOKENS = {
   tailSize: '8px',
   radius: '1.25rem',  // 20px
   shadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
+  containerClass: 'mb-2 z-30 animate-bounce-subtle pointer-events-none',
+  bubbleClass:
+    'relative bg-white border-2 border-slate-200/90 text-slate-800 px-3 py-1.5 rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.08)] text-[11px] font-brand font-black tracking-tight max-w-[200px] text-center',
+  tailClass:
+    'absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r-2 border-b-2 border-slate-200/90 rotate-45',
 } as const
