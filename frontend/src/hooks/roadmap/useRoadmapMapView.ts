@@ -4,7 +4,6 @@ import { playSound } from '../../utils/sound'
 import type { Roadmap, CurriculumUnitData, PathMapNode } from '../../types/roadmap'
 import {
   transformRoadmapToMapUnits,
-  transformFallbackToMapUnits,
   resolveCompletedQuestSet,
 } from '../../utils/roadmapMapTransformer'
 import { useRoadmapStore } from '../../store/roadmapStore'
@@ -21,9 +20,7 @@ export interface UseRoadmapMapViewProps {
  * Coordinates real-time quest sync via useRoadmapStore, unit data derivation, and modal state.
  */
 export const useRoadmapMapView = ({
-  trackSlug = '',
   roadmap = null,
-  currentPart,
 }: UseRoadmapMapViewProps) => {
   const [activeModalNode, setActiveModalNode] = useState<PathMapNode | null>(null)
   const completedQuestIds = useRoadmapStore((s) => s.completedQuestIds)
@@ -49,9 +46,8 @@ export const useRoadmapMapView = ({
     if (roadmap?.modules && roadmap.modules.length > 0) {
       return transformRoadmapToMapUnits(roadmap, completedSet)
     }
-    const effectiveTrack = trackSlug || roadmap?.slug || ''
-    return transformFallbackToMapUnits(effectiveTrack, completedSet, currentPart)
-  }, [roadmap, trackSlug, currentPart, completedSet])
+    return []
+  }, [roadmap, completedSet])
 
   const handleNodeClick = useCallback((node: PathMapNode) => {
     triggerHaptic('tap')

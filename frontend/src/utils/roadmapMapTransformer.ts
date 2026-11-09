@@ -6,7 +6,6 @@ import type {
   SequentialCurriculumUnit,
 } from '../types/roadmap'
 import { resolveMapUnitPalette, MAP_MILESTONE_REWARDS } from '../tokens/roadmapTokens'
-import { TRACK_CURRICULA } from '../data/roadmapMapFallback'
 import { mapModulesToSequentialUnits } from './roadmapMapper'
 
 /**
@@ -194,68 +193,6 @@ export const transformRoadmapToMapUnits = (
       bannerBorder: palette.border,
       parts: stationQuests,
       bossQuest: unitBossQuest,
-    }
-  })
-}
-
-/**
- * Pure single-pass transformer for static fallback curricula when offline or awaiting backend.
- */
-export const transformFallbackToMapUnits = (
-  trackSlug: string,
-  completedSet: Set<string>,
-  currentPart?: number
-): CurriculumUnitData[] => {
-  const fallbackConfig = TRACK_CURRICULA[trackSlug] || TRACK_CURRICULA['golang']
-  let hasFoundActiveFallback = false
-
-  return fallbackConfig.units.map((u): CurriculumUnitData => {
-    let allPartsCompleted = true
-    let hasActivePart = false
-
-    const parts = u.parts.map((p): CurriculumPartNode => {
-      const isCompleted =
-        completedSet.has(p.id) ||
-        completedSet.has(`part-${p.number}`) ||
-        (typeof currentPart === 'number' && p.number < currentPart)
-
-      let partStatus: 'completed' | 'active' | 'locked'
-      if (isCompleted) {
-        partStatus = 'completed'
-      } else if (!hasFoundActiveFallback) {
-        partStatus = 'active'
-        hasFoundActiveFallback = true
-        hasActivePart = true
-        allPartsCompleted = false
-      } else {
-        partStatus = 'locked'
-        allPartsCompleted = false
-      }
-
-      return {
-        ...p,
-        route: `/learn/${p.id}`,
-        status: partStatus,
-      }
-    })
-
-    // O(1) status resolution without calling parts.every() or parts.some()
-    const isCompleted = parts.length > 0 && allPartsCompleted
-    const isActive = !isCompleted && hasActivePart
-
-    return {
-      ...u,
-      parts,
-      statusBadge: isCompleted
-        ? 'SELESAI (100%)'
-        : isActive
-        ? 'SEDANG BERJALAN'
-        : 'TERKUNCI',
-      badgeType: isCompleted
-        ? ('completed' as const)
-        : isActive
-        ? ('active' as const)
-        : ('locked' as const),
     }
   })
 }
