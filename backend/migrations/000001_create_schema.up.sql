@@ -1,71 +1,46 @@
+-- ============================================================================
+-- Migration: 000001_create_schema.up.sql
+-- Description: CodeAbroad v3.0 Master Schema (Auth, Gamification, Language Mastery, Anki SRS & Diagnostics)
+-- Version: 3.0
+-- Database: PostgreSQL 16 (pgcrypto)
+-- ============================================================================
+
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
-CREATE TABLE IF NOT EXISTS countries (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    code VARCHAR(10) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    is_active BOOLEAN NOT NULL DEFAULT FALSE,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS career_paths (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    slug VARCHAR(50) UNIQUE NOT NULL,
-    label VARCHAR(100) NOT NULL,
-    description TEXT,
-    
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-
-CREATE TABLE IF NOT EXISTS tech_stacks (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    career_path_id UUID REFERENCES career_paths(id) ON DELETE CASCADE,
-    slug VARCHAR(50) UNIQUE NOT NULL,   
-    label VARCHAR(100) NOT NULL,        
-    badge VARCHAR(50),                 
-    is_active BOOLEAN NOT NULL DEFAULT FALSE,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
-);
-CREATE INDEX IF NOT EXISTS idx_tech_stacks_career_path_id ON tech_stacks(career_path_id);
-
-
+-- ----------------------------------------------------------------------------
+-- 1. IDENTITY & AUTHENTICATION (Pillar 1: Auth Core)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email VARCHAR(255) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- ----------------------------------------------------------------------------
+-- 2. PROFILE & PREFERENCES (Pillar 2: Application Profile)
+-- ----------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS user_profiles (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     name VARCHAR(100) NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
     bio TEXT,
-    career_path_id UUID REFERENCES career_paths(id) ON DELETE SET NULL,
-    country_id UUID REFERENCES countries(id) ON DELETE SET NULL,
-    tech_stack_id UUID REFERENCES tech_stacks(id) ON DELETE SET NULL,
     is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
-    has_seen_roadmap_tour BOOLEAN NOT NULL DEFAULT FALSE,
     preferred_roadmap_view VARCHAR(20) NOT NULL DEFAULT 'map' CHECK (preferred_roadmap_view IN ('map', 'syllabus')),
-    
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_user_profiles_career_path_id ON user_profiles(career_path_id);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_country_id ON user_profiles(country_id);
-CREATE INDEX IF NOT EXISTS idx_user_profiles_tech_stack_id ON user_profiles(tech_stack_id);
+CREATE INDEX IF NOT EXISTS idx_user_profiles_username ON user_profiles(username);
 
-
-CREATE TABLE IF NOT EXISTS user_gamification(
+-- ----------------------------------------------------------------------------
+-- 3. GAMIFICATION & INVENTORY (Pillar 3: High-Concurrency Game Loop)
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_gamification (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     xp INT NOT NULL DEFAULT 0,
@@ -73,93 +48,17 @@ CREATE TABLE IF NOT EXISTS user_gamification(
     streak INT NOT NULL DEFAULT 0,
     gems INT NOT NULL DEFAULT 0,
     last_active_at TIMESTAMP WITH TIME ZONE,
-
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX IF NOT EXISTS idx_user_gamification_xp ON user_gamification(xp DESC);
 
-CREATE TABLE IF NOT EXISTS modules (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    tech_stack_id UUID NOT NULL REFERENCES tech_stacks(id) ON DELETE CASCADE,
-    module_number INT NOT NULL,
-    title VARCHAR(100) NOT NULL,
-    description TEXT,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_modules_tech_stack_number UNIQUE (tech_stack_id, module_number)
-);
-
-CREATE TABLE IF NOT EXISTS chapters (
-    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    module_id UUID NOT NULL REFERENCES modules(id) ON DELETE CASCADE,
-    chapter_number INT NOT NULL,
-    title VARCHAR(100) NOT NULL,
-    description TEXT,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_chapters_module_number UNIQUE(module_id, chapter_number)
-);
-
-CREATE TABLE IF NOT EXISTS quests (
-    id UUID PRIMARY KEY NOT NULL DEFAULT gen_random_uuid(),
-    chapter_id UUID NOT NULL REFERENCES chapters(id) ON DELETE CASCADE,
-    title VARCHAR(150) NOT NULL,
-    description TEXT,
-
-    type VARCHAR(20) NOT NULL DEFAULT 'main' CHECK (type IN ('main', 'boss', 'daily')),
-    format VARCHAR(20) NOT NULL DEFAULT 'code' CHECK (format IN ('code', 'quiz', 'fill_blank')),
-    difficulty VARCHAR(20) NOT NULL DEFAULT 'easy' CHECK (difficulty IN ('easy', 'medium', 'hard')),
-    
-    xp_reward INT NOT NULL DEFAULT 50,
-    gems_reward INT NOT NULL DEFAULT 0,
-    estimated_minutes INT NOT NULL DEFAULT 15,
-    order_index INT NOT NULL DEFAULT 0,
-
-    starter_code TEXT,
-    test_suite TEXT,
-    solution_code TEXT,
-
-    quiz_data JSONB,
-    hints JSONB,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_quests_chapter_order UNIQUE (chapter_id, order_index)
-);
-
-CREATE TABLE IF NOT EXISTS user_quests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    quest_id UUID NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
-    status VARCHAR(20) NOT NULL DEFAULT 'locked' CHECK (status IN ('locked', 'available', 'completed')),
-
-    code_submission TEXT,
-    tests_passed INT NOT NULL DEFAULT 0,
-    total_tests INT NOT NULL DEFAULT 0,
-
-    completed_at TIMESTAMP WITH TIME ZONE,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-
-    CONSTRAINT uq_user_quests_user_quest UNIQUE (user_id, quest_id)
-);
-
-CREATE INDEX IF NOT EXISTS idx_user_quests_user_status ON user_quests(user_id, status);
-
 CREATE TABLE IF NOT EXISTS user_inventories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     item_id VARCHAR(50) NOT NULL,
     quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
-
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
@@ -182,7 +81,6 @@ CREATE TABLE IF NOT EXISTS user_daily_chest_claims (
     tier INT NOT NULL CHECK (tier IN (1, 2, 3)),
     gems_awarded INT NOT NULL DEFAULT 0,
     xp_awarded INT NOT NULL DEFAULT 0,
-
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
     CONSTRAINT uq_user_daily_chest_claims UNIQUE (user_id, claim_date, tier)
@@ -193,11 +91,13 @@ CREATE TABLE IF NOT EXISTS user_activity_logs (
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     activity_type VARCHAR(50) NOT NULL CHECK (activity_type IN (
         'daily_login', 
-        'quest_completed', 
-        'daily_vocab_quest_claim', 
-        'daily_golden_chest_claim'
+        'lesson_completed', 
+        'srs_review_completed', 
+        'readiness_exam_completed', 
+        'daily_golden_chest_claim',
+        'quest_completed',
+        'daily_vocab_quest_claim'
     )),
-
     xp_earned INT NOT NULL DEFAULT 0,
     metadata JSONB,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -205,24 +105,172 @@ CREATE TABLE IF NOT EXISTS user_activity_logs (
 
 CREATE INDEX IF NOT EXISTS idx_user_activity_logs_user_created ON user_activity_logs(user_id, created_at DESC);
 
-CREATE TABLE IF NOT EXISTS vocabularies (
+-- ----------------------------------------------------------------------------
+-- 4. UNIVERSAL LANGUAGE CURRICULUM MASTER DOMAIN
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS languages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    country_id VARCHAR(2) NOT NULL REFERENCES countries(code) ON DELETE CASCADE,
-    term VARCHAR(100) NOT NULL,
-
-    reading VARCHAR(150) NOT NULL,
-    meaning VARCHAR(255) NOT NULL,
-    category VARCHAR(100) NOT NULL,
-    audio_url VARCHAR(255),
-
-    example_sentence TEXT NOT NULL,       
-    example_translation TEXT NOT NULL,  
-
-    difficulty_level VARCHAR(20) NOT NULL DEFAULT 'A1',
-    position INT NOT NULL DEFAULT 0,
-
-    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    code VARCHAR(10) UNIQUE NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    supported_scripts JSONB NOT NULL DEFAULT '["latin"]'::jsonb,
+    is_active BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
-CREATE INDEX IF NOT EXISTS idx_vocabularies_category ON vocabularies(category);
+CREATE INDEX IF NOT EXISTS idx_languages_code ON languages(code);
+CREATE INDEX IF NOT EXISTS idx_languages_active ON languages(is_active);
+
+CREATE TABLE IF NOT EXISTS proficiency_levels (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    language_id UUID NOT NULL REFERENCES languages(id) ON DELETE CASCADE,
+    code VARCHAR(30) NOT NULL,
+    name VARCHAR(50) NOT NULL,
+    tier VARCHAR(20) NOT NULL DEFAULT 'beginner' CHECK (tier IN ('beginner', 'intermediate', 'advanced')),
+    official_exam_name VARCHAR(50) NOT NULL,
+    passing_score_percent INT NOT NULL DEFAULT 60 CHECK (passing_score_percent BETWEEN 1 AND 100),
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_proficiency_levels_lang_code UNIQUE (language_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_proficiency_levels_lang_order ON proficiency_levels(language_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_proficiency_levels_tier ON proficiency_levels(tier);
+
+CREATE TABLE IF NOT EXISTS grammar_points (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    level_id UUID NOT NULL REFERENCES proficiency_levels(id) ON DELETE CASCADE,
+    code VARCHAR(30) NOT NULL,
+    category VARCHAR(30) NOT NULL CHECK (category IN ('tense', 'conjugation', 'particle', 'honorific', 'sentence_pattern')),
+    title VARCHAR(100) NOT NULL,
+    formula TEXT NOT NULL,
+    explanation TEXT NOT NULL,
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_grammar_points_level_code UNIQUE (level_id, code)
+);
+
+CREATE INDEX IF NOT EXISTS idx_grammar_points_level_order ON grammar_points(level_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_grammar_points_category ON grammar_points(category);
+
+CREATE TABLE IF NOT EXISTS units (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    level_id UUID NOT NULL REFERENCES proficiency_levels(id) ON DELETE CASCADE,
+    title VARCHAR(100) NOT NULL,
+    description TEXT,
+    unit_type VARCHAR(20) NOT NULL DEFAULT 'curriculum' CHECK (unit_type IN ('curriculum', 'diagnostic_exam')),
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_units_level_order ON units(level_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_units_type ON units(unit_type);
+
+CREATE TABLE IF NOT EXISTS lessons (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    unit_id UUID NOT NULL REFERENCES units(id) ON DELETE CASCADE,
+    title VARCHAR(100) NOT NULL,
+    xp_reward INT NOT NULL DEFAULT 15 CHECK (xp_reward >= 0),
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_lessons_unit_order ON lessons(unit_id, order_index);
+
+CREATE TABLE IF NOT EXISTS exercises (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    lesson_id UUID NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    grammar_point_id UUID REFERENCES grammar_points(id) ON DELETE SET NULL,
+    skill_pillar VARCHAR(20) NOT NULL CHECK (skill_pillar IN ('reading', 'listening', 'writing', 'speaking')),
+    exercise_type VARCHAR(30) NOT NULL CHECK (exercise_type IN ('sentence_builder', 'fill_blank', 'listening_choice', 'speaking_repeat', 'dialogue_roleplay')),
+    prompt TEXT NOT NULL,
+    content JSONB NOT NULL DEFAULT '{}'::jsonb,
+    correct_answer JSONB NOT NULL DEFAULT '{}'::jsonb,
+    acceptable_answers JSONB,
+    diagnostic_rubric JSONB,
+    explanation TEXT NOT NULL,
+    order_index INT NOT NULL DEFAULT 1,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_exercises_lesson_order ON exercises(lesson_id, order_index);
+CREATE INDEX IF NOT EXISTS idx_exercises_grammar_point ON exercises(grammar_point_id);
+CREATE INDEX IF NOT EXISTS idx_exercises_pillar ON exercises(skill_pillar);
+CREATE INDEX IF NOT EXISTS idx_exercises_type ON exercises(exercise_type);
+
+-- ----------------------------------------------------------------------------
+-- 5. USER PROGRESS, ANKI SRS & DIAGNOSTIC MOCK EXAMS
+-- ----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS user_language_enrollments (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    language_id UUID NOT NULL REFERENCES languages(id) ON DELETE CASCADE,
+    current_level_id UUID REFERENCES proficiency_levels(id) ON DELETE SET NULL,
+    initial_placement_type VARCHAR(30) NOT NULL DEFAULT 'zero_beginner' CHECK (initial_placement_type IN ('zero_beginner', 'placement_test', 'manual_select')),
+    placement_score_percent INT CHECK (placement_score_percent BETWEEN 0 AND 100),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    enrolled_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_user_language_enrollments UNIQUE (user_id, language_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_lang_enrollments_user_active ON user_language_enrollments(user_id, is_active);
+
+CREATE TABLE IF NOT EXISTS user_lesson_progress (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    lesson_id UUID NOT NULL REFERENCES lessons(id) ON DELETE CASCADE,
+    is_completed BOOLEAN NOT NULL DEFAULT FALSE,
+    score INT NOT NULL DEFAULT 0 CHECK (score BETWEEN 0 AND 100),
+    is_skipped BOOLEAN NOT NULL DEFAULT FALSE,
+    completed_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+
+    CONSTRAINT uq_user_lesson_progress UNIQUE (user_id, lesson_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_user_lesson_progress_user ON user_lesson_progress(user_id, is_completed);
+
+CREATE TABLE IF NOT EXISTS user_exercise_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exercise_id UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    is_correct BOOLEAN NOT NULL,
+    selected_answer JSONB NOT NULL DEFAULT '{}'::jsonb,
+    time_spent_seconds INT NOT NULL DEFAULT 0 CHECK (time_spent_seconds >= 0),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_attempts_user_ex ON user_exercise_attempts(user_id, exercise_id, is_correct);
+CREATE INDEX IF NOT EXISTS idx_attempts_user_created ON user_exercise_attempts(user_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS user_srs_reviews (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    exercise_id UUID NOT NULL REFERENCES exercises(id) ON DELETE CASCADE,
+    interval_days INT NOT NULL DEFAULT 1 CHECK (interval_days >= 1),
+    repetition_count INT NOT NULL DEFAULT 0 CHECK (repetition_count >= 0),
+    ease_factor DECIMAL(4,2) NOT NULL DEFAULT 2.50 CHECK (ease_factor >= 1.30),
+    next_review_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    last_reviewed_at TIMESTAMP WITH TIME ZONE,
+
+    CONSTRAINT uq_user_srs_reviews UNIQUE (user_id, exercise_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_srs_user_due ON user_srs_reviews(user_id, next_review_at);
+
+CREATE TABLE IF NOT EXISTS readiness_exam_attempts (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    level_id UUID NOT NULL REFERENCES proficiency_levels(id) ON DELETE CASCADE,
+    reading_score INT NOT NULL CHECK (reading_score BETWEEN 0 AND 100),
+    listening_score INT NOT NULL CHECK (listening_score BETWEEN 0 AND 100),
+    writing_score INT NOT NULL CHECK (writing_score BETWEEN 0 AND 100),
+    speaking_score INT NOT NULL CHECK (speaking_score BETWEEN 0 AND 100),
+    overall_score INT NOT NULL CHECK (overall_score BETWEEN 0 AND 100),
+    is_passed BOOLEAN NOT NULL,
+    analysis_report JSONB NOT NULL DEFAULT '{}'::jsonb,
+    attempted_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_readiness_exam_user_level ON readiness_exam_attempts(user_id, level_id, attempted_at DESC);
