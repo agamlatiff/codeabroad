@@ -1,11 +1,11 @@
 -- ============================================================================
--- Migration: 000003_seed_flagship_curriculum_jlpt_n5.up.sql
--- Description: Seed JLPT N5 Flagship Curriculum (Grammar Points, Units, Lessons & 4-Pillar Exercises)
+-- Migration: 000004_seed_flagship_curriculum_jlpt_n5.up.sql
+-- Description: Seed JLPT N5 Flagship Curriculum (Unit 1 & Unit 2 Regular Roadmap Nodes)
 -- Version: CodeAbroad v3.0
 -- ============================================================================
 
 -- ----------------------------------------------------------------------------
--- 1. GRAMMAR POINTS (JLPT N5)
+-- 1. GRAMMAR POINTS ENSURE (JLPT N5)
 -- ----------------------------------------------------------------------------
 INSERT INTO grammar_points (level_id, code, category, title, formula, explanation, order_index)
 SELECT pl.id, 'GP-JA-N5-001', 'sentence_pattern', 'Partikel WA (Topik Kalimat)', '[Topik / Subjek] + は + [Predikat] + です', 'Partikel は (dibaca wa) berfungsi sebagai penanda topik utama dalam kalimat bahasa Jepang. Digunakan untuk menyatakan identitas, profesi, atau sifat.', 1
@@ -22,7 +22,7 @@ WHERE l.code = 'ja' AND pl.code = 'N5'
 ON CONFLICT (level_id, code) DO NOTHING;
 
 -- ----------------------------------------------------------------------------
--- 2. UNITS & LESSONS (JLPT N5)
+-- 2. UNITS & LESSONS (JLPT N5 REGULAR ROADMAP)
 -- ----------------------------------------------------------------------------
 
 -- Unit 1: Curriculum Module
@@ -96,7 +96,7 @@ INSERT INTO exercises (
     prompt, 
     content, 
     correct_answer, 
-    acceptable_answers, git ad
+    acceptable_answers, 
     diagnostic_rubric, 
     explanation, 
     order_index

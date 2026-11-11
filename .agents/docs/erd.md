@@ -91,6 +91,7 @@ CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamifi
 | `username` | VARCHAR(50) | UNIQUE, NOT NULL | Unique platform username | Active |
 | `bio` | TEXT | NULL | Short bio | Active |
 | `is_onboarded` | BOOLEAN | NOT NULL, DEFAULT FALSE | Onboarding completion flag | Active |
+| `daily_goal_minutes` | INTEGER | NOT NULL, DEFAULT 15, CHECK (`daily_goal_minutes` IN (5, 15, 30, 45)) | Target komitmen belajar harian dari Onboarding | Active |
 | `preferred_roadmap_view` | VARCHAR(20) | NOT NULL, DEFAULT 'map', CHECK (`preferred_roadmap_view` IN ('map', 'syllabus')) | Persisted curriculum view preference across devices | Active |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile creation timestamp | Active |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile update timestamp | Active |
@@ -112,12 +113,35 @@ CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamifi
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp | Active |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Last stats update timestamp | Active |
 
+#### `badge_definitions` (Master Badge Catalog)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(100)| PRIMARY KEY | Unique badge SKU (e.g. `first_step`, `streak_7`) |
+| `title` | VARCHAR(100)| NOT NULL | Display title (e.g. "Langkah Pertama") |
+| `description` | TEXT | NOT NULL | Milestone description |
+| `category` | VARCHAR(50) | NOT NULL | Category: `milestone`, `streak`, `srs`, `mastery` |
+| `icon` | VARCHAR(100)| NULL | Icon identifier or vector asset name |
+| `xp_reward` | INTEGER | NOT NULL, DEFAULT 50 | XP awarded on achievement claim |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp |
+
+#### `shop_items` (Master Shop Catalog)
+| Column | Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | VARCHAR(50) | PRIMARY KEY | Unique item SKU (e.g. `streak-freeze`, `xp-booster`) |
+| `title` | VARCHAR(100)| NOT NULL | Item name |
+| `subtitle` | TEXT | NOT NULL | Item utility description |
+| `price_gems` | INTEGER | NOT NULL | Price in virtual blue gems |
+| `category` | VARCHAR(50) | NOT NULL | Category: `protection`, `booster`, `career` |
+| `badge` | VARCHAR(50) | NULL | Promotion badge (e.g. "POPULER 🔥") |
+| `is_active` | BOOLEAN | NOT NULL, DEFAULT TRUE | Availability status in game shop |
+| `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Creation timestamp |
+
 #### `user_inventories` (Player Bag / Consumables)
 | Column | Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, `gen_random_uuid()` | Inventory record ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | Item owner |
-| `item_id` | VARCHAR(50) | NOT NULL (enum: `streak-freeze`, `xp-booster`) | Purchased item SKU |
+| `item_id` | VARCHAR(50) | NOT NULL, FK → `shop_items.id` ON DELETE CASCADE | Purchased item SKU |
 | `quantity` | INTEGER | NOT NULL, DEFAULT 0 | Quantity remaining |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Purchase timestamp |
 | `updated_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Consumption timestamp |
@@ -128,7 +152,7 @@ CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamifi
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, `gen_random_uuid()` | Badge award ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | Badge recipient |
-| `badge_key` | VARCHAR(100)| NOT NULL | Unique badge identifier |
+| `badge_key` | VARCHAR(100)| NOT NULL, FK → `badge_definitions.id` ON DELETE CASCADE | Unique badge identifier |
 | `awarded_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Award timestamp |
 | *Index* | UNIQUE(`user_id`, `badge_key`) | | One award per badge per user |
 
@@ -353,6 +377,7 @@ Table user_profiles {
   username varchar(50) [unique, not null]
   bio text
   is_onboarded boolean [not null, default: false]
+  daily_goal_minutes integer [not null, default: 15, note: '5 | 15 | 30 | 45']
   preferred_roadmap_view varchar(20) [not null, default: 'map', note: 'map | syllabus']
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
@@ -373,10 +398,31 @@ Table user_gamification {
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
 }
 
+Table badge_definitions {
+  id varchar(100) [pk]
+  title varchar(100) [not null]
+  description text [not null]
+  category varchar(50) [not null, note: 'milestone | streak | srs | mastery']
+  icon varchar(100)
+  xp_reward integer [not null, default: 50]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
+Table shop_items {
+  id varchar(50) [pk]
+  title varchar(100) [not null]
+  subtitle text [not null]
+  price_gems integer [not null]
+  category varchar(50) [not null, note: 'protection | booster | career']
+  badge varchar(50)
+  is_active boolean [not null, default: true]
+  created_at timestamptz [default: `CURRENT_TIMESTAMP`]
+}
+
 Table user_inventories {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  item_id varchar(50) [not null, note: 'App-level enum: streak-freeze, xp-booster']
+  item_id varchar(50) [not null]
   quantity integer [not null, default: 0]
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
   updated_at timestamptz [default: `CURRENT_TIMESTAMP`]
@@ -585,7 +631,9 @@ Table readiness_exam_attempts {
 Ref: user_profiles.user_id - users.id [delete: cascade]
 Ref: user_gamification.user_id - users.id [delete: cascade]
 Ref: user_inventories.user_id > users.id [delete: cascade]
+Ref: user_inventories.item_id > shop_items.id [delete: cascade]
 Ref: user_badges.user_id > users.id [delete: cascade]
+Ref: user_badges.badge_key > badge_definitions.id [delete: cascade]
 Ref: user_daily_chest_claims.user_id > users.id [delete: cascade]
 Ref: user_activity_logs.user_id > users.id [delete: cascade]
 

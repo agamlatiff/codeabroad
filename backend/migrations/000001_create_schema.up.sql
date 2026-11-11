@@ -30,6 +30,7 @@ CREATE TABLE IF NOT EXISTS user_profiles (
     username VARCHAR(50) UNIQUE NOT NULL,
     bio TEXT,
     is_onboarded BOOLEAN NOT NULL DEFAULT FALSE,
+    daily_goal_minutes INT NOT NULL DEFAULT 15 CHECK (daily_goal_minutes IN (5, 15, 30, 45)),
     preferred_roadmap_view VARCHAR(20) NOT NULL DEFAULT 'map' CHECK (preferred_roadmap_view IN ('map', 'syllabus')),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
@@ -54,10 +55,31 @@ CREATE TABLE IF NOT EXISTS user_gamification (
 
 CREATE INDEX IF NOT EXISTS idx_user_gamification_xp ON user_gamification(xp DESC);
 
+CREATE TABLE IF NOT EXISTS badge_definitions (
+    id VARCHAR(100) PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    category VARCHAR(50) NOT NULL,
+    icon VARCHAR(100),
+    xp_reward INT NOT NULL DEFAULT 50 CHECK (xp_reward >= 0),
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS shop_items (
+    id VARCHAR(50) PRIMARY KEY,
+    title VARCHAR(100) NOT NULL,
+    subtitle TEXT NOT NULL,
+    price_gems INT NOT NULL CHECK (price_gems >= 0),
+    category VARCHAR(50) NOT NULL,
+    badge VARCHAR(50),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS user_inventories (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    item_id VARCHAR(50) NOT NULL,
+    item_id VARCHAR(50) NOT NULL REFERENCES shop_items(id) ON DELETE CASCADE,
     quantity INT NOT NULL DEFAULT 0 CHECK (quantity >= 0),
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
@@ -68,7 +90,7 @@ CREATE TABLE IF NOT EXISTS user_inventories (
 CREATE TABLE IF NOT EXISTS user_badges (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    badge_key VARCHAR(100) NOT NULL,
+    badge_key VARCHAR(100) NOT NULL REFERENCES badge_definitions(id) ON DELETE CASCADE,
     awarded_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
 
     CONSTRAINT uq_user_badges_user_key UNIQUE (user_id, badge_key)
