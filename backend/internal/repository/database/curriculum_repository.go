@@ -4,7 +4,6 @@ import (
 	"codeabroad/backend/internal/domain"
 	"codeabroad/backend/internal/infrastructure/postgres"
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -95,8 +94,6 @@ func (r *CurriculumRepository) GetUnitsByLevelID(ctx context.Context, levelID st
 	defer rows.Close()
 
 	var units []domain.Unit
-	allPreviousCompleted := true
-
 	for rows.Next() {
 		var u domain.Unit
 		if err := rows.Scan(
@@ -105,13 +102,6 @@ func (r *CurriculumRepository) GetUnitsByLevelID(ctx context.Context, levelID st
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan unit row: %w", err)
 		}
-
-		// Pedagogical unlock logic: First unit is always unlocked; subsequent units unlock when previous unit is complete
-		u.IsUnlocked = allPreviousCompleted
-		if u.TotalLessons > 0 && u.CompletedLessons < u.TotalLessons {
-			allPreviousCompleted = false
-		}
-
 		units = append(units, u)
 	}
 	if err := rows.Err(); err != nil {
@@ -200,35 +190,6 @@ func (r *CurriculumRepository) GetLessonByID(ctx context.Context, id string, use
 			return nil, domain.ErrLessonNotFound
 		}
 		return nil, fmt.Errorf("failed to query lesson by id: %w", err)
-	}
-
-	// Fetch exercises belonging to this lesson
-	exerciseQuery := `
-		SELECT id, lesson_id, type, question_text, options, correct_answer, hint, explanation, media_url, xp_reward, order_index, created_at
-		FROM exercises
-		WHERE lesson_id = $1
-		ORDER BY order_index ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, exerciseQuery, id)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query exercises for lesson: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var ex domain.Exercise
-		var optionsJSON []byte
-		if err := rows.Scan(
-			&ex.ID, &ex.LessonID, &ex.Type, &ex.QuestionText, &optionsJSON,
-			&ex.CorrectAnswer, &ex.Hint, &ex.Explanation, &ex.MediaURL,
-			&ex.XPReward, &ex.OrderIndex, &ex.CreatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan exercise row: %w", err)
-		}
-		if len(optionsJSON) > 0 {
-			_ = json.Unmarshal(optionsJSON, &ex.Options)
-		}
-		l.Exercises = append(l.Exercises, ex)
 	}
 
 	return &l, nil

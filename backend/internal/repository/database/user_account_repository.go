@@ -72,11 +72,6 @@ func scanUser(row pgx.Row, user *domain.User) error {
 
 // Create inserts a new user across all 3 normalized pillars in a single atomic Writeable CTE (1 DB round-trip)
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
-	dailyGoal := user.DailyGoalMinutes
-	if dailyGoal <= 0 {
-		dailyGoal = 15 // Default 15 minutes per day
-	}
-
 	query := `
 		WITH new_user AS (
 			INSERT INTO users (email, password_hash)
@@ -101,7 +96,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 		user.Name,
 		user.Username,
 		user.IsOnboarded,
-		dailyGoal,
+		user.DailyGoalMinutes,
 		user.XP,
 		user.CurrentLevel,
 		user.Streak,

@@ -168,20 +168,20 @@ func (r *GamificationRepository) UpdateStats(
 	return nil
 }
 
-// AddXPAndGems atomically increments currency & XP, recalculating level progression
-func (r *GamificationRepository) AddXPAndGems(ctx context.Context, userID string, xp int, gems int) (*domain.UserGamificationStats, error) {
+// AddXPAndGems atomically increments currency & XP, updating level progression
+func (r *GamificationRepository) AddXPAndGems(ctx context.Context, userID string, xp int, level int, gems int) (*domain.UserGamificationStats, error) {
 	query := `
 		UPDATE user_gamification
 		SET xp = xp + $2,
-		    current_level = ((xp + $2) / 100) + 1,
-		    gems = GREATEST(0, gems + $3),
+		    current_level = $3,
+		    gems = GREATEST(0, gems + $4),
 		    last_active_at = NOW(),
 		    updated_at = NOW()
 		WHERE user_id = $1
 		RETURNING xp, current_level, streak, gems, last_active_at
 	`
 	var stats domain.UserGamificationStats
-	err := r.db.Pool.QueryRow(ctx, query, userID, xp, gems).Scan(
+	err := r.db.Pool.QueryRow(ctx, query, userID, xp, level, gems).Scan(
 		&stats.XP, &stats.CurrentLevel, &stats.Streak, &stats.Gems, &stats.LastActiveAt,
 	)
 	if err != nil {
@@ -193,15 +193,24 @@ func (r *GamificationRepository) AddXPAndGems(ctx context.Context, userID string
 	return &stats, nil
 }
 
-// GetShopItems retrieves items from the Akihabara arcade catalog
+// GetShopItems retrieves items from the Akihabara arcade catalog (zero OR in WHERE)
 func (r *GamificationRepository) GetShopItems(ctx context.Context, onlyAvailable bool) ([]domain.ShopItem, error) {
-	query := `
-		SELECT id, name, description, category, price_gems, icon, is_available, created_at
-		FROM shop_items
-		WHERE ($1 = false OR is_available = true)
-		ORDER BY price_gems ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, onlyAvailable)
+	var query string
+	if onlyAvailable {
+		query = `
+			SELECT id, name, description, category, price_gems, icon, is_available, created_at
+			FROM shop_items
+			WHERE is_available = true
+			ORDER BY price_gems ASC
+		`
+	} else {
+		query = `
+			SELECT id, name, description, category, price_gems, icon, is_available, created_at
+			FROM shop_items
+			ORDER BY price_gems ASC
+		`
+	}
+	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query shop items: %w", err)
 	}
@@ -390,7 +399,7 @@ func (r *GamificationRepository) GetUserBadges(ctx context.Context, userID strin
 }
 
 // AwardBadge grants an achievement badge to a user and deposits its bonus XP atomically
-func (r *GamificationRepository) AwardBadge(ctx context.Context, userID string, badgeKey string) (*domain.UserBadge, error) {
+func (r *GamificationRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*domain.UserBadge, error) {
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin award badge tx: %w", err)
@@ -429,8 +438,8 @@ func (r *GamificationRepository) AwardBadge(ctx context.Context, userID string, 
 	if bd.XPBonus > 0 {
 		_, err = tx.Exec(
 			ctx,
-			`UPDATE user_gamification SET xp = xp + $2, current_level = ((xp + $2) / 100) + 1, updated_at = NOW() WHERE user_id = $1`,
-			userID, bd.XPBonus,
+			`UPDATE user_gamification SET xp = xp + $2, current_level = $3, updated_at = NOW() WHERE user_id = $1`,
+			userID, bd.XPBonus, newLevel,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to award badge bonus xp: %w", err)
@@ -473,7 +482,7 @@ func (r *GamificationRepository) GetDailyChestClaims(ctx context.Context, userID
 }
 
 // ClaimDailyChest records a milestone chest reward and awards XP/gems in an atomic transaction
-func (r *GamificationRepository) ClaimDailyChest(ctx context.Context, claim *domain.DailyChestClaim) error {
+func (r *GamificationRepository) ClaimDailyChest(ctx context.Context, claim *domain.DailyChestClaim, newLevel int) error {
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin daily chest tx: %w", err)
@@ -496,17 +505,17 @@ func (r *GamificationRepository) ClaimDailyChest(ctx context.Context, claim *dom
 		return fmt.Errorf("failed to record daily chest claim: %w", err)
 	}
 
-	// Update user stats
+	// Update user stats with pre-calculated level
 	updateQuery := `
 		UPDATE user_gamification
 		SET xp = xp + $2,
-		    current_level = ((xp + $2) / 100) + 1,
-		    gems = gems + $3,
+		    current_level = $3,
+		    gems = gems + $4,
 		    last_active_at = NOW(),
 		    updated_at = NOW()
 		WHERE user_id = $1
 	`
-	if _, err := tx.Exec(ctx, updateQuery, claim.UserID, claim.XPAwarded, claim.GemsAwarded); err != nil {
+	if _, err := tx.Exec(ctx, updateQuery, claim.UserID, claim.XPAwarded, newLevel, claim.GemsAwarded); err != nil {
 		return fmt.Errorf("failed to update gamification stats for chest: %w", err)
 	}
 

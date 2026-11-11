@@ -153,7 +153,7 @@ type UserActivityRepository interface {
 	LogActivity(ctx context.Context, log *UserActivityLog) error
 	HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error)
 	GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]DailyActivityStat, error)
-	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error)
+	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, newLevel int) (*DailyRewardClaimResponse, error)
 	GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error)
 }
 

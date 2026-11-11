@@ -107,6 +107,7 @@ func (r *UserRepository) ClaimDailyReward(
 	userID string,
 	rewardType string,
 	xpAwarded int,
+	newLevel int,
 ) (*domain.DailyRewardClaimResponse, error) {
 	activityType := "daily_" + rewardType + "_claim"
 	now := time.Now().UTC()
@@ -159,19 +160,19 @@ func (r *UserRepository) ClaimDailyReward(
 		WITH updated_stats AS (
 			UPDATE user_gamification
 			SET xp = xp + $2,
-			    current_level = ((xp + $2) / 100) + 1,
+			    current_level = $3,
 			    last_active_at = NOW(),
 			    updated_at = NOW()
 			WHERE user_id = $1
 			RETURNING xp, current_level, streak
 		)
 		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-		SELECT $1, $3, $2, $4, NOW()
+		SELECT $1, $4, $2, $5, NOW()
 		FROM updated_stats
 		RETURNING (SELECT xp FROM updated_stats), (SELECT current_level FROM updated_stats), (SELECT streak FROM updated_stats)
 	`
-	var newXP, newLevel, currentStreak int
-	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, activityType, metaJSON).Scan(&newXP, &newLevel, &currentStreak)
+	var updatedXP, updatedLevel, currentStreak int
+	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, newLevel, activityType, metaJSON).Scan(&updatedXP, &updatedLevel, &currentStreak)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute atomic daily reward claim: %w", err)
 	}
@@ -183,8 +184,8 @@ func (r *UserRepository) ClaimDailyReward(
 	return &domain.DailyRewardClaimResponse{
 		RewardType:   rewardType,
 		XPAwarded:    xpAwarded,
-		CurrentXP:    newXP,
-		CurrentLevel: newLevel,
+		CurrentXP:    updatedXP,
+		CurrentLevel: updatedLevel,
 		Streak:       currentStreak,
 		ClaimedAt:    now.Format(time.RFC3339),
 	}, nil

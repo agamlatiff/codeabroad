@@ -151,16 +151,16 @@ type GamificationRepository interface {
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
 	GetGamificationStats(ctx context.Context, userID string) (*UserGamificationStats, error)
 	UpdateStats(ctx context.Context, userID string, xp int, level int, streak int, gems int, lastActiveAt *time.Time) error
-	AddXPAndGems(ctx context.Context, userID string, xp int, gems int) (*UserGamificationStats, error)
+	AddXPAndGems(ctx context.Context, userID string, xp int, level int, gems int) (*UserGamificationStats, error)
 	GetShopItems(ctx context.Context, onlyAvailable bool) ([]ShopItem, error)
 	GetShopItemByID(ctx context.Context, itemID string) (*ShopItem, error)
 	GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error)
 	BuyShopItem(ctx context.Context, userID string, itemID string, priceGems int) (*UserInventoryItem, int, error)
 	GetBadges(ctx context.Context) ([]BadgeDefinition, error)
 	GetUserBadges(ctx context.Context, userID string) ([]UserBadge, error)
-	AwardBadge(ctx context.Context, userID string, badgeKey string) (*UserBadge, error)
+	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*UserBadge, error)
 	GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]DailyChestClaim, error)
-	ClaimDailyChest(ctx context.Context, claim *DailyChestClaim) error
+	ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, newLevel int) error
 	CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error
 }
 

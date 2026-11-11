@@ -106,7 +106,7 @@ func (r *ExerciseRepository) GetPlacementExercises(ctx context.Context, language
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
 		JOIN proficiency_levels pl ON u.level_id = pl.id
-		WHERE pl.language_id = $1::uuid AND (e.type = 'placement_test' OR u.unit_type = 'diagnostic_exam')
+		WHERE pl.language_id = $1::uuid AND e.type = 'placement_test'
 		ORDER BY e.order_index ASC
 		LIMIT $2
 	`
@@ -361,18 +361,35 @@ func (r *ExerciseRepository) CreateExamAttempt(ctx context.Context, attempt *dom
 	return nil
 }
 
-// GetExamAttemptsByUserID retrieves previous mock exam results for a user
+// GetExamAttemptsByUserID retrieves previous mock exam results for a user (zero OR condition in WHERE)
 func (r *ExerciseRepository) GetExamAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]domain.ReadinessExamAttempt, error) {
-	query := `
-		SELECT 
-			a.id, a.user_id, a.level_id, a.total_score, a.max_score, a.score_percent, a.is_passed, a.answers_payload, a.completed_at,
-			pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
-		FROM readiness_exam_attempts a
-		JOIN proficiency_levels pl ON a.level_id = pl.id
-		WHERE a.user_id = $1 AND ($2 = '' OR a.level_id = $2::uuid)
-		ORDER BY a.completed_at DESC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, userID, levelID)
+	var query string
+	var rows pgx.Rows
+	var err error
+
+	if levelID != "" {
+		query = `
+			SELECT 
+				a.id, a.user_id, a.level_id, a.total_score, a.max_score, a.score_percent, a.is_passed, a.answers_payload, a.completed_at,
+				pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
+			FROM readiness_exam_attempts a
+			JOIN proficiency_levels pl ON a.level_id = pl.id
+			WHERE a.user_id = $1 AND a.level_id = $2::uuid
+			ORDER BY a.completed_at DESC
+		`
+		rows, err = r.db.Pool.Query(ctx, query, userID, levelID)
+	} else {
+		query = `
+			SELECT 
+				a.id, a.user_id, a.level_id, a.total_score, a.max_score, a.score_percent, a.is_passed, a.answers_payload, a.completed_at,
+				pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
+			FROM readiness_exam_attempts a
+			JOIN proficiency_levels pl ON a.level_id = pl.id
+			WHERE a.user_id = $1
+			ORDER BY a.completed_at DESC
+		`
+		rows, err = r.db.Pool.Query(ctx, query, userID)
+	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to query readiness exam attempts: %w", err)
 	}

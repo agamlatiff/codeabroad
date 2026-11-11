@@ -20,15 +20,25 @@ func NewLanguageRepository(db *postgres.PostgresDB) domain.LanguageRepository {
 	return &LanguageRepository{db: db}
 }
 
-// GetAllLanguages retrieves all language tracks, optionally filtered by active status
+// GetAllLanguages retrieves all language tracks with SARGable queries (zero OR condition in WHERE)
 func (r *LanguageRepository) GetAllLanguages(ctx context.Context, onlyActive bool) ([]domain.Language, error) {
-	query := `
-		SELECT id, code, name, supported_scripts, is_active, created_at
-		FROM languages
-		WHERE ($1 = false OR is_active = true)
-		ORDER BY name ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, onlyActive)
+	var query string
+	if onlyActive {
+		query = `
+			SELECT id, code, name, supported_scripts, is_active, created_at
+			FROM languages
+			WHERE is_active = true
+			ORDER BY name ASC
+		`
+	} else {
+		query = `
+			SELECT id, code, name, supported_scripts, is_active, created_at
+			FROM languages
+			ORDER BY name ASC
+		`
+	}
+
+	rows, err := r.db.Pool.Query(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query languages: %w", err)
 	}
@@ -190,24 +200,45 @@ func (r *LanguageRepository) GetEnrollmentsByUserID(ctx context.Context, userID 
 
 // GetActiveEnrollment retrieves the currently active destination language track for a user
 func (r *LanguageRepository) GetActiveEnrollment(ctx context.Context, userID string, languageID string) (*domain.UserLanguageEnrollment, error) {
-	query := `
-		SELECT 
-			e.id, e.user_id, e.language_id, e.current_level_id, e.initial_placement_type, 
-			e.placement_score_percent, e.is_active, e.enrolled_at,
-			l.id, l.code, l.name, l.supported_scripts, l.is_active, l.created_at,
-			pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
-		FROM user_language_enrollments e
-		JOIN languages l ON e.language_id = l.id
-		LEFT JOIN proficiency_levels pl ON e.current_level_id = pl.id
-		WHERE e.user_id = $1 AND ($2 = '' OR e.language_id = $2::uuid) AND e.is_active = true
-		LIMIT 1
-	`
+	var query string
+	var row pgx.Row
+
+	if languageID != "" {
+		query = `
+			SELECT 
+				e.id, e.user_id, e.language_id, e.current_level_id, e.initial_placement_type, 
+				e.placement_score_percent, e.is_active, e.enrolled_at,
+				l.id, l.code, l.name, l.supported_scripts, l.is_active, l.created_at,
+				pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
+			FROM user_language_enrollments e
+			JOIN languages l ON e.language_id = l.id
+			LEFT JOIN proficiency_levels pl ON e.current_level_id = pl.id
+			WHERE e.user_id = $1 AND e.language_id = $2::uuid AND e.is_active = true
+			LIMIT 1
+		`
+		row = r.db.Pool.QueryRow(ctx, query, userID, languageID)
+	} else {
+		query = `
+			SELECT 
+				e.id, e.user_id, e.language_id, e.current_level_id, e.initial_placement_type, 
+				e.placement_score_percent, e.is_active, e.enrolled_at,
+				l.id, l.code, l.name, l.supported_scripts, l.is_active, l.created_at,
+				pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
+			FROM user_language_enrollments e
+			JOIN languages l ON e.language_id = l.id
+			LEFT JOIN proficiency_levels pl ON e.current_level_id = pl.id
+			WHERE e.user_id = $1 AND e.is_active = true
+			LIMIT 1
+		`
+		row = r.db.Pool.QueryRow(ctx, query, userID)
+	}
+
 	var e domain.UserLanguageEnrollment
 	var l domain.Language
 	var pl domain.ProficiencyLevel
 	var plID *string
 
-	err := r.db.Pool.QueryRow(ctx, query, userID, languageID).Scan(
+	err := row.Scan(
 		&e.ID, &e.UserID, &e.LanguageID, &e.CurrentLevelID, &e.InitialPlacementType,
 		&e.PlacementScorePercent, &e.IsActive, &e.EnrolledAt,
 		&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt,
@@ -306,4 +337,3 @@ func (r *LanguageRepository) SetActiveLanguage(ctx context.Context, userID strin
 
 	return tx.Commit(ctx)
 }
-

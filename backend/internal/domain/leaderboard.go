@@ -43,7 +43,8 @@ type WeeklyLeaderboardResponse struct {
 
 // LeaderboardRepository defines data operations for ranking
 type LeaderboardRepository interface {
-	GetWeeklyLeaderboard(ctx context.Context, userID string, division TokyoDivision) (*WeeklyLeaderboardResponse, error)
+	GetDivisionStandings(ctx context.Context, minXP int, maxXP int, limit int) ([]LeaderboardEntry, error)
+	GetUserStanding(ctx context.Context, userID string) (*LeaderboardEntry, error)
 }
 
 // LeaderboardUsecase defines business rules for Tokyo League rankings

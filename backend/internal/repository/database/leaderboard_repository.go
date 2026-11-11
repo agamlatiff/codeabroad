@@ -4,7 +4,10 @@ import (
 	"codeabroad/backend/internal/domain"
 	"codeabroad/backend/internal/infrastructure/postgres"
 	"context"
-	"time"
+	"errors"
+	"fmt"
+
+	"github.com/jackc/pgx/v5"
 )
 
 // LeaderboardRepository implements domain.LeaderboardRepository using PostgreSQL
@@ -17,32 +20,8 @@ func NewLeaderboardRepository(db *postgres.PostgresDB) domain.LeaderboardReposit
 	return &LeaderboardRepository{db: db}
 }
 
-// GetWeeklyLeaderboard computes real standings from PostgreSQL across 3 normalized pillars
-func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID string, division domain.TokyoDivision) (*domain.WeeklyLeaderboardResponse, error) {
-	now := time.Now()
-	_, seasonWeek := now.ISOWeek()
-
-	// Calculate days remaining until Sunday midnight reset
-	daysUntilSunday := int(time.Sunday - now.Weekday())
-	if daysUntilSunday <= 0 {
-		daysUntilSunday += 7
-	}
-
-	divisionName := "Liga Perunggu"
-	divisionTier := "Bronze League (0 – 299 XP)"
-	switch division {
-	case domain.DivisionShibuya:
-		divisionName = "Liga Perak"
-		divisionTier = "Silver League (300 – 799 XP)"
-	case domain.DivisionAkihabara:
-		divisionName = "Liga Emas"
-		divisionTier = "Gold League (800 – 1.499 XP)"
-	case domain.DivisionRoppongi:
-		divisionName = "Liga Berlian"
-		divisionTier = "Diamond Master (1.500+ XP)"
-	}
-
-	// Query 100% real active users belonging to the requested division tier from PostgreSQL
+// GetDivisionStandings queries active users within an XP boundary ordered by weekly performance (uses B-Tree index on ug.xp)
+func (r *LeaderboardRepository) GetDivisionStandings(ctx context.Context, minXP int, maxXP int, limit int) ([]domain.LeaderboardEntry, error) {
 	query := `
 		SELECT u.id, up.name, up.username, ug.xp, ug.current_level, ug.streak,
 		       COALESCE((
@@ -53,27 +32,18 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 		FROM users u
 		JOIN user_profiles up ON u.id = up.user_id
 		JOIN user_gamification ug ON u.id = ug.user_id
-		WHERE 
-		  CASE 
-		    WHEN $1 = 'roppongi'  THEN ug.xp >= 1500
-		    WHEN $1 = 'akihabara' THEN ug.xp >= 800 AND ug.xp < 1500
-		    WHEN $1 = 'shibuya'   THEN ug.xp >= 300 AND ug.xp < 800
-		    ELSE ug.xp < 300
-		  END
+		WHERE ug.xp >= $1 AND ug.xp < $2
 		ORDER BY week_xp DESC, ug.streak DESC, ug.xp DESC
-		LIMIT 50
+		LIMIT $3
 	`
 
-	rows, err := r.db.Pool.Query(ctx, query, string(division))
+	rows, err := r.db.Pool.Query(ctx, query, minXP, maxXP, limit)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to query division standings: %w", err)
 	}
 	defer rows.Close()
 
-	allEntries := make([]domain.LeaderboardEntry, 0)
-	var userRankItem *domain.LeaderboardEntry
-
-	rank := 1
+	var entries []domain.LeaderboardEntry
 	for rows.Next() {
 		var e domain.LeaderboardEntry
 		var totalXP int
@@ -86,87 +56,46 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 			&e.Streak,
 			&e.WeeklyXP,
 		); err != nil {
-			continue
+			return nil, fmt.Errorf("failed to scan leaderboard entry: %w", err)
 		}
-
-		e.Rank = rank
-		e.Division = division
-		e.IsCurrentUser = (userID != "" && e.UserID == userID)
-
-		if rank <= 3 {
-			e.Zone = "promotion"
-		} else if rank > 10 {
-			e.Zone = "demotion"
-		} else {
-			e.Zone = "safe"
-		}
-
-		if e.IsCurrentUser {
-			copied := e
-			userRankItem = &copied
-		}
-
-		allEntries = append(allEntries, e)
-		rank++
+		entries = append(entries, e)
 	}
-
-	// If current user is authenticated but not in the requested division, fetch their current division status
-	if userID != "" && userRankItem == nil {
-		var u domain.User
-		var weeklyXP int
-		err := r.db.Pool.QueryRow(ctx, `
-			SELECT u.id, COALESCE(up.name, ''), COALESCE(up.username, ''), COALESCE(ug.xp, 0), COALESCE(ug.current_level, 1), COALESCE(ug.streak, 0),
-			       COALESCE((
-			           SELECT SUM(xp_earned) 
-			           FROM user_activity_logs 
-			           WHERE user_id = u.id AND created_at >= NOW() - INTERVAL '7 days'
-			       ), COALESCE(ug.xp, 0)) as week_xp
-			FROM users u
-			LEFT JOIN user_profiles up ON u.id = up.user_id
-			LEFT JOIN user_gamification ug ON u.id = ug.user_id
-			WHERE u.id = $1
-		`, userID).Scan(
-			&u.ID, &u.Name, &u.Username, &u.XP, &u.CurrentLevel, &u.Streak, &weeklyXP,
-		)
-		if err == nil {
-			var userDiv domain.TokyoDivision
-			if u.XP >= 1500 {
-				userDiv = domain.DivisionRoppongi
-			} else if u.XP >= 800 {
-				userDiv = domain.DivisionAkihabara
-			} else if u.XP >= 300 {
-				userDiv = domain.DivisionShibuya
-			} else {
-				userDiv = domain.DivisionShinjuku
-			}
-
-			// If the user's division matches the requested division, assign their rank
-			if userDiv == division {
-				userRankItem = &domain.LeaderboardEntry{
-					Rank:          len(allEntries) + 1,
-					UserID:        u.ID,
-					Username:      u.Username,
-					Name:          u.Name,
-					AvatarURL:     nil,
-					WeeklyXP:      weeklyXP,
-					Streak:        u.Streak,
-					CurrentLevel:  u.CurrentLevel,
-					Division:      division,
-					IsCurrentUser: true,
-					Zone:          "safe",
-				}
-			}
-		}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in leaderboard: %w", err)
 	}
+	return entries, nil
+}
 
-	return &domain.WeeklyLeaderboardResponse{
-		Division:         division,
-		DivisionName:     divisionName,
-		DivisionTier:     divisionTier,
-		SeasonWeek:       seasonWeek,
-		DaysRemaining:    daysUntilSunday,
-		UserRank:         userRankItem,
-		Entries:          allEntries,
-		TotalCompetitors: len(allEntries),
-	}, nil
+// GetUserStanding queries a single user's current ranking statistics across the 3 normalized pillars
+func (r *LeaderboardRepository) GetUserStanding(ctx context.Context, userID string) (*domain.LeaderboardEntry, error) {
+	query := `
+		SELECT u.id, up.name, up.username, ug.xp, ug.current_level, ug.streak,
+		       COALESCE((
+		           SELECT SUM(xp_earned) 
+		           FROM user_activity_logs 
+		           WHERE user_id = u.id AND created_at >= NOW() - INTERVAL '7 days'
+		       ), ug.xp) as week_xp
+		FROM users u
+		JOIN user_profiles up ON u.id = up.user_id
+		JOIN user_gamification ug ON u.id = ug.user_id
+		WHERE u.id = $1
+	`
+	var e domain.LeaderboardEntry
+	var totalXP int
+	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(
+		&e.UserID,
+		&e.Name,
+		&e.Username,
+		&totalXP,
+		&e.CurrentLevel,
+		&e.Streak,
+		&e.WeeklyXP,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to query user standing: %w", err)
+	}
+	return &e, nil
 }
