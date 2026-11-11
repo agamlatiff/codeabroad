@@ -2,14 +2,13 @@ package domain
 
 import (
 	"context"
-	"fmt"
 	"time"
 )
 
 // Specific User Domain Errors
 var (
-	ErrUserNotFound              = fmt.Errorf("%w: user not found", ErrNotFound)
-	ErrDailyRewardAlreadyClaimed = fmt.Errorf("%w: hadiah hari ini sudah diklaim sebelumnya", ErrConflict)
+	ErrUserNotFound              = NewNotFoundError("USER_NOT_FOUND", "user not found")
+	ErrDailyRewardAlreadyClaimed = NewConflictError("DAILY_REWARD_CLAIMED", "hadiah hari ini sudah diklaim sebelumnya")
 )
 
 // ----------------------------------------------------------------------------
@@ -25,20 +24,17 @@ type UserAccount struct {
 	UpdatedAt    time.Time `json:"updated_at"`
 }
 
-// UserProfile represents Pillar 2: Profile & Career Goals (user_profiles table)
+// UserProfile represents Pillar 2: Profile & Learning Goals (user_profiles table)
 type UserProfile struct {
-	Name                 string             `json:"name"`
-	Username             string             `json:"username"`
-	Bio                  *string            `json:"bio"`
-	CareerPathID         *string            `json:"career_path_id"`
-	CountryID            *string            `json:"country_id"`
-	TechStackID          *string            `json:"tech_stack_id,omitempty"`
-	PrimaryStack         *string            `json:"primary_stack"`
-	IsOnboarded          bool               `json:"is_onboarded"`
-	HasSeenRoadmapTour   bool               `json:"has_seen_roadmap_tour"`
-	PreferredRoadmapView string             `json:"preferred_roadmap_view"`
-	Country              *CountrySummary    `json:"country,omitempty"`
-	CareerPath           *CareerPathSummary `json:"career_path,omitempty"`
+	Name                 string    `json:"name"`
+	Username             string    `json:"username"`
+	Bio                  *string   `json:"bio"`
+	DailyGoalMinutes     int       `json:"daily_goal_minutes"`
+	IsOnboarded          bool      `json:"is_onboarded"`
+	HasSeenRoadmapTour   bool      `json:"has_seen_roadmap_tour"`
+	PreferredRoadmapView string    `json:"preferred_roadmap_view"`
+	CreatedAt            time.Time `json:"-"`
+	UpdatedAt            time.Time `json:"-"`
 }
 
 // UserGamificationStats represents Pillar 3: High-Concurrency Game Loop Stats (user_gamification table)
@@ -57,41 +53,48 @@ type User struct {
 	UserGamificationStats
 }
 
+// UserActivityLog records individual audit events of learning consistency (user_activity_logs table)
+type UserActivityLog struct {
+	ID           string         `json:"id"`
+	UserID       string         `json:"user_id"`
+	ActivityType string         `json:"activity_type"`
+	XPEarned     int            `json:"xp_earned"`
+	Metadata     map[string]any `json:"metadata,omitempty"`
+	CreatedAt    time.Time      `json:"created_at"`
+}
+
 // ============================================================================
 // USER DATA TRANSFER OBJECTS (DTOs: REQUESTS & RESPONSES)
 // ============================================================================
 
-// --- 1. User Profile DTOs (Profile Management) ---
+// --- 1. User Profile DTOs ---
 
 // UpdateProfileRequest defines the input payload for updating user preferences and profile
 type UpdateProfileRequest struct {
 	Name                 *string `json:"name"`
 	Bio                  *string `json:"bio"`
-	CountryID            *string `json:"country_id"`
-	CareerPathID         *string `json:"career_path_id"`
-	TechStackID          *string `json:"tech_stack_id"`
-	PrimaryStack         *string `json:"primary_stack"`
+	DailyGoalMinutes     *int    `json:"daily_goal_minutes" binding:"omitempty,oneof=5 15 30 45"`
 	HasSeenRoadmapTour   *bool   `json:"has_seen_roadmap_tour"`
 	PreferredRoadmapView *string `json:"preferred_roadmap_view" binding:"omitempty,oneof=map syllabus"`
 }
 
 // --- 2. Activity & Consistency DTOs (7-Day Tracking) ---
 
-// DailyActivityStat holds raw aggregated daily XP and completed quest counts from persistence
+// DailyActivityStat holds raw aggregated daily XP and completed lesson counts from persistence
 type DailyActivityStat struct {
-	XPEarned    int
-	QuestsCount int
+	XPEarned     int
+	LessonsCount int
 }
 
 // UserActivityLogItem represents a single daily learning activity entry
 type UserActivityLogItem struct {
-	Date        string `json:"date"`         // "2026-10-14"
-	DayIndex    int    `json:"day_index"`    // 0=Sen, 1=Sel, 2=Rab, 3=Kam, 4=Jum, 5=Sab, 6=Min
-	DayLabel    string `json:"day_label"`    // "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"
-	IsActive    bool   `json:"is_active"`    // true if user was active on this day
-	IsToday     bool   `json:"is_today"`
-	XPEarned    int    `json:"xp_earned"`
-	QuestsCount int    `json:"quests_count"`
+	Date         string `json:"date"`         // "2026-10-14"
+	DayIndex     int    `json:"day_index"`    // 0=Sen, 1=Sel, 2=Rab, 3=Kam, 4=Jum, 5=Sab, 6=Min
+	DayLabel     string `json:"day_label"`    // "Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"
+	IsActive     bool   `json:"is_active"`    // true if user was active on this day
+	IsToday      bool   `json:"is_today"`
+	XPEarned     int    `json:"xp_earned"`
+	LessonsCount int    `json:"lessons_count"`
 }
 
 // UserActivitySummaryResponse provides weekly activity context and streak status
@@ -107,7 +110,7 @@ type UserActivitySummaryResponse struct {
 
 // DailyRewardClaimRequest defines the payload for claiming a daily habit reward
 type DailyRewardClaimRequest struct {
-	RewardType string `json:"reward_type" binding:"required"` // "vocab_quest" or "golden_chest"
+	RewardType string `json:"reward_type" binding:"required,oneof=lesson_milestone golden_chest"`
 }
 
 // DailyRewardClaimResponse defines the payload returned after claiming a daily reward
@@ -122,35 +125,34 @@ type DailyRewardClaimResponse struct {
 
 // DailyRewardsStatusResponse reports which daily rewards have been claimed today
 type DailyRewardsStatusResponse struct {
-	Date               string `json:"date"`
-	VocabQuestClaimed  bool   `json:"vocab_quest_claimed"`
-	GoldenChestClaimed bool   `json:"golden_chest_claimed"`
+	Date                   string `json:"date"`
+	LessonMilestoneClaimed bool   `json:"lesson_milestone_claimed"`
+	GoldenChestClaimed     bool   `json:"golden_chest_claimed"`
 }
 
 // ============================================================================
 // USER REPOSITORY & USECASE CONTRACTS
 // ============================================================================
 
-// UserAccountRepository specifies the persistence contract for user account and profile (Pillar 1 & 2)
+// UserAccountRepository specifies persistence for user account and profile (Pillar 1 & 2)
 type UserAccountRepository interface {
 	Create(ctx context.Context, user *User) error
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
-	UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error
-	GetProfileWithDetails(ctx context.Context, userID string) (*OnboardingProfileResponse, error)
+	SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error
 }
 
-// UserGamificationRepository specifies the contract for high-concurrency game loop progression (Pillar 3)
+// UserGamificationRepository specifies persistence for high-concurrency game loop progression (Pillar 3)
 type UserGamificationRepository interface {
 	UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error
 	AddGems(ctx context.Context, userID string, gems int) (int, error)
 }
 
-// UserActivityRepository specifies the contract for pure SQL activity persistence and daily claims
+// UserActivityRepository specifies persistence for activity logging and daily habit claims
 type UserActivityRepository interface {
-	LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error
+	LogActivity(ctx context.Context, log *UserActivityLog) error
 	HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error)
 	GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]DailyActivityStat, error)
 	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error)
@@ -164,7 +166,7 @@ type UserRepository interface {
 	UserActivityRepository
 }
 
-// UserUsecase specifies the business logic contract for user profile, preferences, and daily consistency
+// UserUsecase specifies business operations for profile, activity history, and daily habit claims
 type UserUsecase interface {
 	GetProfile(ctx context.Context, userID string) (*User, error)
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)

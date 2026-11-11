@@ -2,79 +2,58 @@ package domain
 
 import (
 	"context"
-	"time"
 )
 
-// Business Error Codes for Onboarding
-const (
-	ErrCodeCountryNotFound    = "COUNTRY_NOT_FOUND"
-	ErrCodeCountryComingSoon  = "COUNTRY_COMING_SOON"
-	ErrCodeCareerPathNotFound = "CAREER_PATH_NOT_FOUND"
-	ErrCodeStackComingSoon    = "STACK_COMING_SOON"
-	ErrCodeInvalidStack       = "INVALID_STACK"
-	ErrCodeAlreadyOnboarded   = "ALREADY_ONBOARDED"
-)
-
-// Specific Onboarding Errors (unified domain error instances)
+// Specific Onboarding Errors
 var (
-	ErrCountryNotFound    = NewNotFoundError(ErrCodeCountryNotFound, "country not found")
-	ErrCountryNotActive   = NewBadRequestError(ErrCodeCountryComingSoon, "country is coming soon and not yet active", nil)
-	ErrCareerPathNotFound = NewNotFoundError(ErrCodeCareerPathNotFound, "career path not found")
-	ErrStackNotActive     = NewBadRequestError(ErrCodeStackComingSoon, "selected tech stack is coming soon and not yet active", nil)
-	ErrInvalidStack       = NewBadRequestError(ErrCodeInvalidStack, "invalid tech stack for the selected career path", nil)
-	ErrAlreadyOnboarded   = NewConflictError(ErrCodeAlreadyOnboarded, "user has already completed onboarding")
+	ErrInvalidPaceTarget    = NewBadRequestError("INVALID_PACE_TARGET", "target harian harus 5, 15, 30, atau 45 menit", nil)
+	ErrInvalidPlacementType = NewBadRequestError("INVALID_PLACEMENT_TYPE", "metode penempatan tidak valid (harus zero_beginner, placement_test, atau manual_select)", nil)
+	ErrAlreadyOnboarded     = NewConflictError("ALREADY_ONBOARDED", "pengguna telah menyelesaikan onboarding")
 )
 
-// OnboardingRequest defines the payload for submitting user onboarding preferences
+// ----------------------------------------------------------------------------
+// DTOs (REQUESTS & RESPONSES)
+// ----------------------------------------------------------------------------
+
+// PlacementAnswer defines a single question answer in diagnostic onboarding
+type PlacementAnswer struct {
+	ExerciseID string `json:"exercise_id" binding:"required,uuid"`
+	UserAnswer string `json:"user_answer" binding:"required"`
+}
+
+// OnboardingRequest defines the 3-step payload for initializing a learner's destination
 type OnboardingRequest struct {
-	CountryID      string `json:"country_id" binding:"required,uuid"`
-	CareerPathID   string `json:"career_path_id" binding:"required,uuid"`
-	PrimaryStack   string `json:"primary_stack" binding:"required"`
-	Level          string `json:"level" binding:"required,oneof=beginner intermediate"`
-	TargetTimeline string `json:"target_timeline" binding:"required,oneof=6_months 1_year exploring"`
-	LanguageLevel  string `json:"language_level" binding:"required,oneof=none basic conversational fluent"`
+	LanguageID           string            `json:"language_id" binding:"required,uuid"`
+	DailyGoalMinutes     int               `json:"daily_goal_minutes" binding:"required,oneof=5 15 30 45"`
+	InitialPlacementType string            `json:"initial_placement_type" binding:"required,oneof=zero_beginner placement_test manual_select"`
+	ManualLevelID        *string           `json:"manual_level_id,omitempty"`
+	PlacementAnswers     []PlacementAnswer `json:"placement_answers,omitempty"`
 }
 
-// CountrySummary represents simplified country data embedded in user profile responses
-type CountrySummary struct {
-	ID        string `json:"id"`
-	Code      string `json:"code"`
-	Name      string `json:"name"`
-	FlagEmoji string `json:"flag_emoji"`
+// PlacementTestQuestionResponse delivers diagnostic questions for Step 3 placement test
+type PlacementTestQuestionResponse struct {
+	Language  Language   `json:"language"`
+	Questions []Exercise `json:"questions"`
 }
 
-// CareerPathSummary represents simplified career path data embedded in user profile responses
-type CareerPathSummary struct {
-	ID    string `json:"id"`
-	Slug  string `json:"slug"`
-	Label string `json:"label"`
+// OnboardingResultResponse delivers the initialized learning profile and starting curriculum
+type OnboardingResultResponse struct {
+	User              UserAccount            `json:"user"`
+	Profile           UserProfile            `json:"profile"`
+	Enrollment        UserLanguageEnrollment `json:"enrollment"`
+	AssignedLevel     ProficiencyLevel       `json:"assigned_level"`
+	PlacementScore    *int                   `json:"placement_score_percent,omitempty"`
+	GamificationStats UserGamificationStats  `json:"gamification_stats"`
+	AwardedBadges     []BadgeDefinition      `json:"awarded_badges,omitempty"`
 }
 
-// OnboardingProfileResponse represents the user profile payload with populated relations
-type OnboardingProfileResponse struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Username       string             `json:"username"`
-	Email          string             `json:"email"`
-	Level          string             `json:"level"`
-	XP             int                `json:"xp"`
-	CurrentLevel   int                `json:"current_level"`
-	Streak         int                `json:"streak"`
-	Gems           int                `json:"gems"`
-	IsOnboarded        bool               `json:"is_onboarded"`
-	HasSeenRoadmapTour   bool               `json:"has_seen_roadmap_tour"`
-	PreferredRoadmapView string             `json:"preferred_roadmap_view"`
-	PrimaryStack   *string            `json:"primary_stack"`
-	TargetTimeline *string            `json:"target_timeline"`
-	LanguageLevel  *string            `json:"language_level"`
-	Country        *CountrySummary    `json:"country"`
-	CareerPath     *CareerPathSummary `json:"career_path"`
-	CreatedAt      time.Time          `json:"created_at"`
-}
+// ----------------------------------------------------------------------------
+// CONTRACTS (INTERFACES)
+// ----------------------------------------------------------------------------
 
-// OnboardingUsecase specifies the business logic contract for onboarding operations
+// OnboardingUsecase specifies business operations for initializing learner tracks
 type OnboardingUsecase interface {
-	GetCountries(ctx context.Context) ([]Country, error)
-	GetCareerPaths(ctx context.Context) ([]CareerPath, error)
-	CompleteOnboarding(ctx context.Context, userID string, req *OnboardingRequest) (*OnboardingProfileResponse, error)
+	GetAvailableLanguages(ctx context.Context) ([]Language, error)
+	GetPlacementQuestions(ctx context.Context, languageID string) (*PlacementTestQuestionResponse, error)
+	CompleteOnboarding(ctx context.Context, userID string, req *OnboardingRequest) (*OnboardingResultResponse, error)
 }

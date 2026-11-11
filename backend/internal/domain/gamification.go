@@ -5,7 +5,20 @@ import (
 	"time"
 )
 
-// UserGamification represents the gamification state and currency profile
+// Specific Gamification Domain Errors
+var (
+	ErrBadgeNotFound       = NewNotFoundError("BADGE_NOT_FOUND", "badge definition not found")
+	ErrShopItemNotFound    = NewNotFoundError("SHOP_ITEM_NOT_FOUND", "shop item not found")
+	ErrInsufficientGems    = NewBadRequestError("INSUFFICIENT_GEMS", "not enough gems to complete transaction", nil)
+	ErrChestAlreadyClaimed = NewConflictError("CHEST_ALREADY_CLAIMED", "chest tier already claimed today")
+	ErrItemUnavailable    = NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
+)
+
+// ----------------------------------------------------------------------------
+// DOMAIN ENTITIES
+// ----------------------------------------------------------------------------
+
+// UserGamification represents high-concurrency game loop progression (user_gamification table)
 type UserGamification struct {
 	ID           string     `json:"id"`
 	UserID       string     `json:"user_id"`
@@ -18,28 +31,50 @@ type UserGamification struct {
 	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
-// UserInventoryItem represents an item owned by a user
+// BadgeDefinition represents system-wide earnable achievements (badge_definitions table)
+type BadgeDefinition struct {
+	ID          string    `json:"id"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Icon        string    `json:"icon"`
+	Category    string    `json:"category"` // speed | consistency | mastery | streak | special
+	XPBonus     int       `json:"xp_bonus"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// UserBadge represents an unlocked achievement awarded to a user (user_badges table)
+type UserBadge struct {
+	ID        string           `json:"id"`
+	UserID    string           `json:"user_id"`
+	BadgeKey  string           `json:"badge_key"`
+	Badge     *BadgeDefinition `json:"badge,omitempty"`
+	AwardedAt time.Time        `json:"awarded_at"`
+}
+
+// ShopItem represents a purchasable consumable or cosmetic perk (shop_items table)
+type ShopItem struct {
+	ID          string    `json:"id"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	Category    string    `json:"category"` // boost | cosmetic | streak_freeze | companion | pass
+	PriceGems   int       `json:"price_gems"`
+	Icon        string    `json:"icon"`
+	IsAvailable bool      `json:"is_available"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
+// UserInventoryItem represents an item owned by a user in the arcade inventory (user_inventories table)
 type UserInventoryItem struct {
 	ID        string    `json:"id"`
 	UserID    string    `json:"user_id"`
 	ItemID    string    `json:"item_id"`
 	Quantity  int       `json:"quantity"`
+	Item      *ShopItem `json:"item,omitempty"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
-// UserBadge represents a badge awarded to a user
-type UserBadge struct {
-	ID          string    `json:"id"`
-	UserID      string    `json:"user_id"`
-	BadgeKey    string    `json:"badge_key"`
-	Title       string    `json:"title"`
-	Description string    `json:"description,omitempty"`
-	Icon        string    `json:"icon,omitempty"`
-	AwardedAt   time.Time `json:"awarded_at"`
-}
-
-// DailyChestClaim represents a claimed 3-tier milestone chest
+// DailyChestClaim represents a claimed 3-tier milestone chest (daily_chest_claims table)
 type DailyChestClaim struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
@@ -50,11 +85,11 @@ type DailyChestClaim struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// CoachingSubmission represents a CV review or VIP mock interview submission
+// CoachingSubmission represents a CV review or VIP mock interview request (coaching_submissions table)
 type CoachingSubmission struct {
 	ID                string    `json:"id"`
 	UserID            string    `json:"user_id"`
-	Type              string    `json:"type"` // "cv-review" | "mock-interview"
+	Type              string    `json:"type"` // cv-review | mock-interview
 	TargetRole        string    `json:"target_role,omitempty"`
 	GitHubURL         string    `json:"github_url,omitempty"`
 	ResumeURL         string    `json:"resume_url,omitempty"`
@@ -63,33 +98,40 @@ type CoachingSubmission struct {
 	FocusTopic        string    `json:"focus_topic,omitempty"`
 	PreferredTime     string    `json:"preferred_time,omitempty"`
 	Notes             string    `json:"notes,omitempty"`
-	Status            string    `json:"status"` // "in_review", "confirmed_discord", "completed"
+	Status            string    `json:"status"` // pending | in_review | confirmed_discord | completed
 	CreatedAt         time.Time `json:"created_at"`
 	UpdatedAt         time.Time `json:"updated_at"`
 }
 
-// GamificationStatus represents the full SSOT gamification state for a user
+// ----------------------------------------------------------------------------
+// DTOs (REQUESTS & RESPONSES)
+// ----------------------------------------------------------------------------
+
+// GamificationStatus represents the full single source of truth gamified state
 type GamificationStatus struct {
-	Gems                int            `json:"gems"`
-	Inventory           map[string]int `json:"inventory"`
-	ClaimedChests       []int          `json:"claimed_chests"` // e.g. [1, 2]
-	MonthlyBadgeClaimed bool           `json:"monthly_badge_claimed"`
-	MonthlyBadgeKey     string         `json:"monthly_badge_key"`
+	XP             int                 `json:"xp"`
+	CurrentLevel   int                 `json:"current_level"`
+	Streak         int                 `json:"streak"`
+	Gems           int                 `json:"gems"`
+	Inventory      map[string]int      `json:"inventory"`
+	InventoryItems []UserInventoryItem `json:"inventory_items,omitempty"`
+	ClaimedChests  []int               `json:"claimed_chests"` // e.g. [1, 2]
+	Badges         []UserBadge         `json:"badges,omitempty"`
 }
 
-// ClaimChestRequest is the payload to claim a milestone chest
+// ClaimChestRequest defines the payload to claim a milestone chest
 type ClaimChestRequest struct {
 	Tier int `json:"tier" binding:"required,min=1,max=3"`
 }
 
-// ShopBuyRequest is the payload to purchase an Akihabara arcade item
+// ShopBuyRequest defines the payload to purchase an Akihabara arcade item
 type ShopBuyRequest struct {
 	ItemID string `json:"item_id" binding:"required"`
 }
 
-// CoachingSubmissionRequest is the payload for CV review or mock interview
+// CoachingSubmissionRequest defines the payload for mentorship or review requests
 type CoachingSubmissionRequest struct {
-	Type              string `json:"type" binding:"required"`
+	Type              string `json:"type" binding:"required,oneof=cv-review mock-interview"`
 	TargetRole        string `json:"target_role"`
 	GitHubURL         string `json:"github_url"`
 	ResumeURL         string `json:"resume_url"`
@@ -100,20 +142,34 @@ type CoachingSubmissionRequest struct {
 	Notes             string `json:"notes"`
 }
 
-// GamificationRepository interface defines persistence contracts for gamification
+// ----------------------------------------------------------------------------
+// CONTRACTS (INTERFACES)
+// ----------------------------------------------------------------------------
+
+// GamificationRepository specifies persistence operations for gamification elements
 type GamificationRepository interface {
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
-	ClaimDailyChest(ctx context.Context, userID string, tier int, gemsAwarded int, xpAwarded int) error
-	BuyShopItem(ctx context.Context, userID string, itemID string, price int) (int, map[string]int, error)
-	ClaimMonthlyBadge(ctx context.Context, userID string, badgeKey string, title string, description string, icon string, gemReward int) error
-	CreateCoachingSubmission(ctx context.Context, userID string, sub *CoachingSubmission) error
+	GetGamificationStats(ctx context.Context, userID string) (*UserGamificationStats, error)
+	UpdateStats(ctx context.Context, userID string, xp int, level int, streak int, gems int, lastActiveAt *time.Time) error
+	AddXPAndGems(ctx context.Context, userID string, xp int, gems int) (*UserGamificationStats, error)
+	GetShopItems(ctx context.Context, onlyAvailable bool) ([]ShopItem, error)
+	GetShopItemByID(ctx context.Context, itemID string) (*ShopItem, error)
+	GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error)
+	BuyShopItem(ctx context.Context, userID string, itemID string, priceGems int) (*UserInventoryItem, int, error)
+	GetBadges(ctx context.Context) ([]BadgeDefinition, error)
+	GetUserBadges(ctx context.Context, userID string) ([]UserBadge, error)
+	AwardBadge(ctx context.Context, userID string, badgeKey string) (*UserBadge, error)
+	GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]DailyChestClaim, error)
+	ClaimDailyChest(ctx context.Context, claim *DailyChestClaim) error
+	CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error
 }
 
-// GamificationUsecase interface defines business logic contracts for gamification
+// GamificationUsecase specifies business operations for shop, chests, and badges
 type GamificationUsecase interface {
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
-	ClaimDailyChest(ctx context.Context, userID string, tier int) (*GamificationStatus, int, int, error)
-	BuyShopItem(ctx context.Context, userID string, itemID string) (*GamificationStatus, error)
-	ClaimMonthlyBadge(ctx context.Context, userID string) (*GamificationStatus, error)
+	ListShopItems(ctx context.Context) ([]ShopItem, error)
+	BuyShopItem(ctx context.Context, userID string, itemID string) (*UserInventoryItem, *GamificationStatus, error)
+	ListBadges(ctx context.Context, userID string) ([]BadgeDefinition, []UserBadge, error)
+	ClaimDailyChest(ctx context.Context, userID string, tier int) (*DailyChestClaim, *GamificationStatus, error)
 	SubmitCoaching(ctx context.Context, userID string, req *CoachingSubmissionRequest) (*CoachingSubmission, *GamificationStatus, error)
 }
