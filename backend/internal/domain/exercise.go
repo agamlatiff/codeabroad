@@ -164,8 +164,8 @@ type SRSRepository interface {
 
 // ReadinessExamRepository specifies persistence operations for diagnostic mock exams
 type ReadinessExamRepository interface {
-	CreateAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error
-	GetAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]ReadinessExamAttempt, error)
+	CreateExamAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error
+	GetExamAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]ReadinessExamAttempt, error)
 	GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error)
 }
 

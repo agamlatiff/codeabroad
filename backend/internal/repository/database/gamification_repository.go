@@ -16,51 +16,67 @@ type GamificationRepository struct {
 	db *postgres.PostgresDB
 }
 
-// NewGamificationRepository creates a new PostgreSQL gamification repository
+// NewGamificationRepository creates a new PostgreSQL gamification repository instance
 func NewGamificationRepository(db *postgres.PostgresDB) domain.GamificationRepository {
 	return &GamificationRepository{db: db}
 }
 
-// GetStatus retrieves the unified SSOT gamification profile for a user
+// GetStatus retrieves the unified SSOT gamification state for a user
 func (r *GamificationRepository) GetStatus(ctx context.Context, userID string) (*domain.GamificationStatus, error) {
 	status := &domain.GamificationStatus{
-		Inventory: map[string]int{
-			"streak-freeze":  0,	
-			"xp-booster":     0,
-			"cv-review":      0,
-			"mock-interview": 0,
-		},
-		ClaimedChests: make([]int, 0),
+		Inventory:      make(map[string]int),
+		InventoryItems: make([]domain.UserInventoryItem, 0),
+		ClaimedChests:  make([]int, 0),
+		Badges:         make([]domain.UserBadge, 0),
 	}
 
-	// 1. Fetch user gems
-	err := r.db.Pool.QueryRow(ctx, `SELECT gems FROM users WHERE id = $1`, userID).Scan(&status.Gems)
+	// 1. Fetch user core gamification stats
+	err := r.db.Pool.QueryRow(
+		ctx,
+		`SELECT xp, current_level, streak, gems FROM user_gamification WHERE user_id = $1`,
+		userID,
+	).Scan(&status.XP, &status.CurrentLevel, &status.Streak, &status.Gems)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, domain.ErrUserNotFound
 		}
-		return nil, fmt.Errorf("failed to query user gems: %w", err)
+		return nil, fmt.Errorf("failed to query user gamification stats: %w", err)
 	}
 
-	// 2. Fetch inventory items
-	rows, err := r.db.Pool.Query(ctx, `SELECT item_id, quantity FROM user_inventories WHERE user_id = $1`, userID)
+	// 2. Fetch inventory items with catalog metadata
+	invRows, err := r.db.Pool.Query(
+		ctx,
+		`SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
+		        si.id, si.name, si.description, si.category, si.price_gems, si.icon, si.is_available, si.created_at
+		 FROM user_inventories ui
+		 JOIN shop_items si ON ui.item_id = si.id
+		 WHERE ui.user_id = $1
+		 ORDER BY si.price_gems ASC`,
+		userID,
+	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query user inventory: %w", err)
 	}
-	defer rows.Close()
+	defer invRows.Close()
 
-	for rows.Next() {
-		var itemID string
-		var qty int
-		if err := rows.Scan(&itemID, &qty); err == nil {
-			status.Inventory[itemID] = qty
+	for invRows.Next() {
+		var inv domain.UserInventoryItem
+		var si domain.ShopItem
+		if err := invRows.Scan(
+			&inv.ID, &inv.UserID, &inv.ItemID, &inv.Quantity, &inv.CreatedAt, &inv.UpdatedAt,
+			&si.ID, &si.Name, &si.Description, &si.Category, &si.PriceGems, &si.Icon, &si.IsAvailable, &si.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user inventory: %w", err)
 		}
+		inv.Item = &si
+		status.Inventory[inv.ItemID] = inv.Quantity
+		status.InventoryItems = append(status.InventoryItems, inv)
 	}
 
-	// 3. Fetch today's claimed chests
+	// 3. Fetch today's claimed chest tiers
 	chestRows, err := r.db.Pool.Query(
 		ctx,
-		`SELECT tier FROM user_daily_chest_claims WHERE user_id = $1 AND claim_date = CURRENT_DATE ORDER BY tier ASC`,
+		`SELECT tier FROM daily_chest_claims WHERE user_id = $1 AND claim_date = CURRENT_DATE ORDER BY tier ASC`,
 		userID,
 	)
 	if err != nil {
@@ -75,199 +91,447 @@ func (r *GamificationRepository) GetStatus(ctx context.Context, userID string) (
 		}
 	}
 
-	// 4. Fetch monthly challenge badge status
-	now := time.Now()
-	status.MonthlyBadgeKey = fmt.Sprintf("codeabroad_monthly_badge_%d_%d", now.Year(), int(now.Month()))
-	err = r.db.Pool.QueryRow(
+	// 4. Fetch unlocked user badges
+	badgeRows, err := r.db.Pool.Query(
 		ctx,
-		`SELECT EXISTS(SELECT 1 FROM user_badges WHERE user_id = $1 AND badge_key = $2)`,
+		`SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
+		        bd.id, bd.title, bd.description, bd.icon, bd.category, bd.xp_bonus, bd.created_at
+		 FROM user_badges ub
+		 JOIN badge_definitions bd ON ub.badge_key = bd.id
+		 WHERE ub.user_id = $1
+		 ORDER BY ub.awarded_at DESC`,
 		userID,
-		status.MonthlyBadgeKey,
-	).Scan(&status.MonthlyBadgeClaimed)
+	)
 	if err != nil {
-		status.MonthlyBadgeClaimed = false
+		return nil, fmt.Errorf("failed to query user badges: %w", err)
+	}
+	defer badgeRows.Close()
+
+	for badgeRows.Next() {
+		var ub domain.UserBadge
+		var bd domain.BadgeDefinition
+		if err := badgeRows.Scan(
+			&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt,
+			&bd.ID, &bd.Title, &bd.Description, &bd.Icon, &bd.Category, &bd.XPBonus, &bd.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user badge: %w", err)
+		}
+		ub.Badge = &bd
+		status.Badges = append(status.Badges, ub)
 	}
 
 	return status, nil
 }
 
-// ClaimDailyChest stores chest claim and credits gems atomically
-func (r *GamificationRepository) ClaimDailyChest(ctx context.Context, userID string, tier int, gemsAwarded int, xpAwarded int) error {
-	tx, err := r.db.Pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	// Insert chest claim for today
-	tag, err := tx.Exec(
-		ctx,
-		`INSERT INTO user_daily_chest_claims (user_id, claim_date, tier, gems_awarded, xp_awarded)
-		 VALUES ($1, CURRENT_DATE, $2, $3, $4)
-		 ON CONFLICT (user_id, claim_date, tier) DO NOTHING`,
-		userID, tier, gemsAwarded, xpAwarded,
+// GetGamificationStats retrieves lightweight stats for high-concurrency game checks
+func (r *GamificationRepository) GetGamificationStats(ctx context.Context, userID string) (*domain.UserGamificationStats, error) {
+	query := `
+		SELECT xp, current_level, streak, gems, last_active_at
+		FROM user_gamification
+		WHERE user_id = $1
+	`
+	var stats domain.UserGamificationStats
+	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(
+		&stats.XP, &stats.CurrentLevel, &stats.Streak, &stats.Gems, &stats.LastActiveAt,
 	)
-	if err != nil {
-		return fmt.Errorf("failed to insert chest claim: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return domain.NewConflictError("CHEST_ALREADY_CLAIMED", fmt.Sprintf("peti tier %d sudah diklaim hari ini", tier))
-	}
-
-	// Credit gems
-	if gemsAwarded > 0 {
-		_, err = tx.Exec(ctx, `UPDATE users SET gems = gems + $2 WHERE id = $1`, userID, gemsAwarded)
-		if err != nil {
-			return fmt.Errorf("failed to credit gems for chest: %w", err)
-		}
-	}
-
-	return tx.Commit(ctx)
-}
-
-// BuyShopItem deducts gems and increments user inventory quantity
-func (r *GamificationRepository) BuyShopItem(ctx context.Context, userID string, itemID string, price int) (int, map[string]int, error) {
-	tx, err := r.db.Pool.Begin(ctx)
-	if err != nil {
-		return 0, nil, fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	// Lock and check current gems
-	var currentGems int
-	err = tx.QueryRow(ctx, `SELECT gems FROM users WHERE id = $1 FOR UPDATE`, userID).Scan(&currentGems)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			return 0, nil, domain.ErrUserNotFound
+			return nil, domain.ErrUserNotFound
 		}
-		return 0, nil, fmt.Errorf("failed to query user gems: %w", err)
+		return nil, fmt.Errorf("failed to get gamification stats: %w", err)
 	}
+	return &stats, nil
+}
 
-	if currentGems < price {
-		return 0, nil, domain.NewBadRequestError("INSUFFICIENT_GEMS", fmt.Sprintf("Gems tidak cukup (butuh %d 💎, Anda memiliki %d 💎)", price, currentGems), nil)
-	}
-
-	// Deduct gems
-	var newGems int
-	err = tx.QueryRow(ctx, `UPDATE users SET gems = gems - $2 WHERE id = $1 RETURNING gems`, userID, price).Scan(&newGems)
+// UpdateStats writes back updated progression values
+func (r *GamificationRepository) UpdateStats(
+	ctx context.Context,
+	userID string,
+	xp int,
+	level int,
+	streak int,
+	gems int,
+	lastActiveAt *time.Time,
+) error {
+	query := `
+		UPDATE user_gamification
+		SET xp = $2, current_level = $3, streak = $4, gems = $5, last_active_at = $6, updated_at = NOW()
+		WHERE user_id = $1
+	`
+	tag, err := r.db.Pool.Exec(ctx, query, userID, xp, level, streak, gems, lastActiveAt)
 	if err != nil {
-		return 0, nil, fmt.Errorf("failed to deduct gems: %w", err)
+		return fmt.Errorf("failed to update user gamification stats: %w", err)
 	}
+	if tag.RowsAffected() == 0 {
+		return domain.ErrUserNotFound
+	}
+	return nil
+}
 
-	// Increment inventory quantity
-	_, err = tx.Exec(
-		ctx,
-		`INSERT INTO user_inventories (user_id, item_id, quantity)
-		 VALUES ($1, $2, 1)
-		 ON CONFLICT (user_id, item_id)
-		 DO UPDATE SET quantity = user_inventories.quantity + 1, updated_at = CURRENT_TIMESTAMP`,
-		userID, itemID,
+// AddXPAndGems atomically increments currency & XP, recalculating level progression
+func (r *GamificationRepository) AddXPAndGems(ctx context.Context, userID string, xp int, gems int) (*domain.UserGamificationStats, error) {
+	query := `
+		UPDATE user_gamification
+		SET xp = xp + $2,
+		    current_level = ((xp + $2) / 100) + 1,
+		    gems = GREATEST(0, gems + $3),
+		    last_active_at = NOW(),
+		    updated_at = NOW()
+		WHERE user_id = $1
+		RETURNING xp, current_level, streak, gems, last_active_at
+	`
+	var stats domain.UserGamificationStats
+	err := r.db.Pool.QueryRow(ctx, query, userID, xp, gems).Scan(
+		&stats.XP, &stats.CurrentLevel, &stats.Streak, &stats.Gems, &stats.LastActiveAt,
 	)
 	if err != nil {
-		return 0, nil, fmt.Errorf("failed to increment inventory: %w", err)
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to add xp and gems: %w", err)
 	}
+	return &stats, nil
+}
 
-	// Query updated inventory
-	rows, err := tx.Query(ctx, `SELECT item_id, quantity FROM user_inventories WHERE user_id = $1`, userID)
+// GetShopItems retrieves items from the Akihabara arcade catalog
+func (r *GamificationRepository) GetShopItems(ctx context.Context, onlyAvailable bool) ([]domain.ShopItem, error) {
+	query := `
+		SELECT id, name, description, category, price_gems, icon, is_available, created_at
+		FROM shop_items
+		WHERE ($1 = false OR is_available = true)
+		ORDER BY price_gems ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, onlyAvailable)
 	if err != nil {
-		return 0, nil, fmt.Errorf("failed to read updated inventory: %w", err)
+		return nil, fmt.Errorf("failed to query shop items: %w", err)
 	}
 	defer rows.Close()
 
-	inventory := map[string]int{
-		"streak-freeze":  0,
-		"xp-booster":     0,
-		"cv-review":      0,
-		"mock-interview": 0,
-	}
+	var items []domain.ShopItem
 	for rows.Next() {
-		var item string
-		var qty int
-		if err := rows.Scan(&item, &qty); err == nil {
-			inventory[item] = qty
+		var item domain.ShopItem
+		if err := rows.Scan(
+			&item.ID, &item.Name, &item.Description, &item.Category,
+			&item.PriceGems, &item.Icon, &item.IsAvailable, &item.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan shop item: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in shop items: %w", err)
+	}
+	return items, nil
+}
+
+// GetShopItemByID retrieves a single shop item by ID
+func (r *GamificationRepository) GetShopItemByID(ctx context.Context, itemID string) (*domain.ShopItem, error) {
+	query := `
+		SELECT id, name, description, category, price_gems, icon, is_available, created_at
+		FROM shop_items
+		WHERE id = $1
+	`
+	var item domain.ShopItem
+	err := r.db.Pool.QueryRow(ctx, query, itemID).Scan(
+		&item.ID, &item.Name, &item.Description, &item.Category,
+		&item.PriceGems, &item.Icon, &item.IsAvailable, &item.CreatedAt,
+	)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrShopItemNotFound
+		}
+		return nil, fmt.Errorf("failed to query shop item: %w", err)
+	}
+	return &item, nil
+}
+
+// GetUserInventory retrieves all inventory items owned by the user
+func (r *GamificationRepository) GetUserInventory(ctx context.Context, userID string) ([]domain.UserInventoryItem, error) {
+	query := `
+		SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
+		       si.id, si.name, si.description, si.category, si.price_gems, si.icon, si.is_available, si.created_at
+		FROM user_inventories ui
+		JOIN shop_items si ON ui.item_id = si.id
+		WHERE ui.user_id = $1
+		ORDER BY si.price_gems ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user inventory: %w", err)
+	}
+	defer rows.Close()
+
+	var items []domain.UserInventoryItem
+	for rows.Next() {
+		var inv domain.UserInventoryItem
+		var si domain.ShopItem
+		if err := rows.Scan(
+			&inv.ID, &inv.UserID, &inv.ItemID, &inv.Quantity, &inv.CreatedAt, &inv.UpdatedAt,
+			&si.ID, &si.Name, &si.Description, &si.Category, &si.PriceGems, &si.Icon, &si.IsAvailable, &si.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user inventory row: %w", err)
+		}
+		inv.Item = &si
+		items = append(items, inv)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in user inventory: %w", err)
+	}
+	return items, nil
+}
+
+// BuyShopItem handles an atomic transaction deducting gems and incrementing user inventory
+func (r *GamificationRepository) BuyShopItem(ctx context.Context, userID string, itemID string, priceGems int) (*domain.UserInventoryItem, int, error) {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to begin shop transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Deduct gems atomically if balance is sufficient
+	deductQuery := `
+		UPDATE user_gamification
+		SET gems = gems - $2, updated_at = NOW()
+		WHERE user_id = $1 AND gems >= $2
+		RETURNING gems
+	`
+	var remainingGems int
+	err = tx.QueryRow(ctx, deductQuery, userID, priceGems).Scan(&remainingGems)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, 0, domain.ErrInsufficientGems
+		}
+		return nil, 0, fmt.Errorf("failed to deduct gems: %w", err)
+	}
+
+	// 2. Upsert user inventory quantity
+	invQuery := `
+		INSERT INTO user_inventories (user_id, item_id, quantity, created_at, updated_at)
+		VALUES ($1, $2, 1, NOW(), NOW())
+		ON CONFLICT (user_id, item_id)
+		DO UPDATE SET quantity = user_inventories.quantity + 1, updated_at = NOW()
+		RETURNING id, user_id, item_id, quantity, created_at, updated_at
+	`
+	var inv domain.UserInventoryItem
+	err = tx.QueryRow(ctx, invQuery, userID, itemID).Scan(
+		&inv.ID, &inv.UserID, &inv.ItemID, &inv.Quantity, &inv.CreatedAt, &inv.UpdatedAt,
+	)
+	if err != nil {
+		return nil, 0, fmt.Errorf("failed to increment user inventory: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, 0, fmt.Errorf("failed to commit shop purchase tx: %w", err)
+	}
+
+	return &inv, remainingGems, nil
+}
+
+// GetBadges retrieves all registered achievement badges
+func (r *GamificationRepository) GetBadges(ctx context.Context) ([]domain.BadgeDefinition, error) {
+	query := `
+		SELECT id, title, description, icon, category, xp_bonus, created_at
+		FROM badge_definitions
+		ORDER BY id ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query badges: %w", err)
+	}
+	defer rows.Close()
+
+	var badges []domain.BadgeDefinition
+	for rows.Next() {
+		var b domain.BadgeDefinition
+		if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Icon, &b.Category, &b.XPBonus, &b.CreatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan badge: %w", err)
+		}
+		badges = append(badges, b)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in badges: %w", err)
+	}
+	return badges, nil
+}
+
+// GetUserBadges retrieves all achievements awarded to the user
+func (r *GamificationRepository) GetUserBadges(ctx context.Context, userID string) ([]domain.UserBadge, error) {
+	query := `
+		SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
+		       bd.id, bd.title, bd.description, bd.icon, bd.category, bd.xp_bonus, bd.created_at
+		FROM user_badges ub
+		JOIN badge_definitions bd ON ub.badge_key = bd.id
+		WHERE ub.user_id = $1
+		ORDER BY ub.awarded_at DESC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user badges: %w", err)
+	}
+	defer rows.Close()
+
+	var badges []domain.UserBadge
+	for rows.Next() {
+		var ub domain.UserBadge
+		var bd domain.BadgeDefinition
+		if err := rows.Scan(
+			&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt,
+			&bd.ID, &bd.Title, &bd.Description, &bd.Icon, &bd.Category, &bd.XPBonus, &bd.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user badge: %w", err)
+		}
+		ub.Badge = &bd
+		badges = append(badges, ub)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in user badges: %w", err)
+	}
+	return badges, nil
+}
+
+// AwardBadge grants an achievement badge to a user and deposits its bonus XP atomically
+func (r *GamificationRepository) AwardBadge(ctx context.Context, userID string, badgeKey string) (*domain.UserBadge, error) {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin award badge tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Fetch badge definition
+	var bd domain.BadgeDefinition
+	err = tx.QueryRow(
+		ctx,
+		`SELECT id, title, description, icon, category, xp_bonus, created_at FROM badge_definitions WHERE id = $1`,
+		badgeKey,
+	).Scan(&bd.ID, &bd.Title, &bd.Description, &bd.Icon, &bd.Category, &bd.XPBonus, &bd.CreatedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, domain.ErrBadgeNotFound
+		}
+		return nil, fmt.Errorf("failed to fetch badge definition: %w", err)
+	}
+
+	// 2. Insert user_badge safely (idempotent ON CONFLICT)
+	var ub domain.UserBadge
+	insertQuery := `
+		INSERT INTO user_badges (user_id, badge_key, awarded_at)
+		VALUES ($1, $2, NOW())
+		ON CONFLICT (user_id, badge_key) DO UPDATE SET awarded_at = user_badges.awarded_at
+		RETURNING id, user_id, badge_key, awarded_at
+	`
+	err = tx.QueryRow(ctx, insertQuery, userID, badgeKey).Scan(&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to record user badge: %w", err)
+	}
+	ub.Badge = &bd
+
+	// 3. Deposit bonus XP if applicable
+	if bd.XPBonus > 0 {
+		_, err = tx.Exec(
+			ctx,
+			`UPDATE user_gamification SET xp = xp + $2, current_level = ((xp + $2) / 100) + 1, updated_at = NOW() WHERE user_id = $1`,
+			userID, bd.XPBonus,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to award badge bonus xp: %w", err)
 		}
 	}
 
 	if err := tx.Commit(ctx); err != nil {
-		return 0, nil, fmt.Errorf("failed to commit purchase: %w", err)
+		return nil, fmt.Errorf("failed to commit award badge tx: %w", err)
 	}
 
-	return newGems, inventory, nil
+	return &ub, nil
 }
 
-// ClaimMonthlyBadge awards the monthly challenge badge and bonus gems
-func (r *GamificationRepository) ClaimMonthlyBadge(ctx context.Context, userID string, badgeKey string, title string, description string, icon string, gemReward int) error {
+// GetDailyChestClaims retrieves milestone chest claims for the specified date
+func (r *GamificationRepository) GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]domain.DailyChestClaim, error) {
+	query := `
+		SELECT id, user_id, claim_date, tier, gems_awarded, xp_awarded, created_at
+		FROM daily_chest_claims
+		WHERE user_id = $1 AND claim_date = $2::date
+		ORDER BY tier ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, userID, claimDate)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query daily chest claims: %w", err)
+	}
+	defer rows.Close()
+
+	var claims []domain.DailyChestClaim
+	for rows.Next() {
+		var c domain.DailyChestClaim
+		if err := rows.Scan(&c.ID, &c.UserID, &c.ClaimDate, &c.Tier, &c.GemsAwarded, &c.XPAwarded, &c.CreatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan chest claim: %w", err)
+		}
+		claims = append(claims, c)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in chest claims: %w", err)
+	}
+	return claims, nil
+}
+
+// ClaimDailyChest records a milestone chest reward and awards XP/gems in an atomic transaction
+func (r *GamificationRepository) ClaimDailyChest(ctx context.Context, claim *domain.DailyChestClaim) error {
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
+		return fmt.Errorf("failed to begin daily chest tx: %w", err)
 	}
-	defer func() { _ = tx.Rollback(ctx) }()
+	defer tx.Rollback(ctx)
 
-	tag, err := tx.Exec(
-		ctx,
-		`INSERT INTO user_badges (user_id, badge_key, title, description, icon)
-		 VALUES ($1, $2, $3, $4, $5)
-		 ON CONFLICT (user_id, badge_key) DO NOTHING`,
-		userID, badgeKey, title, description, icon,
-	)
+	insertQuery := `
+		INSERT INTO daily_chest_claims (user_id, claim_date, tier, gems_awarded, xp_awarded, created_at)
+		VALUES ($1, $2::date, $3, $4, $5, NOW())
+		RETURNING id, created_at
+	`
+	err = tx.QueryRow(
+		ctx, insertQuery,
+		claim.UserID, claim.ClaimDate, claim.Tier, claim.GemsAwarded, claim.XPAwarded,
+	).Scan(&claim.ID, &claim.CreatedAt)
 	if err != nil {
-		return fmt.Errorf("failed to insert monthly badge: %w", err)
-	}
-	if tag.RowsAffected() == 0 {
-		return domain.NewConflictError("BADGE_ALREADY_CLAIMED", "lencana tantangan bulan ini sudah diklaim")
+		if errors.Is(err, pgx.ErrNoRows) || errors.Is(err, pgx.ErrTooManyRows) {
+			return domain.ErrChestAlreadyClaimed
+		}
+		return fmt.Errorf("failed to record daily chest claim: %w", err)
 	}
 
-	if gemReward > 0 {
-		_, err = tx.Exec(ctx, `UPDATE users SET gems = gems + $2 WHERE id = $1`, userID, gemReward)
-		if err != nil {
-			return fmt.Errorf("failed to credit gems for monthly badge: %w", err)
-		}
+	// Update user stats
+	updateQuery := `
+		UPDATE user_gamification
+		SET xp = xp + $2,
+		    current_level = ((xp + $2) / 100) + 1,
+		    gems = gems + $3,
+		    last_active_at = NOW(),
+		    updated_at = NOW()
+		WHERE user_id = $1
+	`
+	if _, err := tx.Exec(ctx, updateQuery, claim.UserID, claim.XPAwarded, claim.GemsAwarded); err != nil {
+		return fmt.Errorf("failed to update gamification stats for chest: %w", err)
 	}
 
 	return tx.Commit(ctx)
 }
 
-// CreateCoachingSubmission consumes a coupon and records the submission
-func (r *GamificationRepository) CreateCoachingSubmission(ctx context.Context, userID string, sub *domain.CoachingSubmission) error {
-	tx, err := r.db.Pool.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to begin transaction: %w", err)
-	}
-	defer func() { _ = tx.Rollback(ctx) }()
-
-	// Check coupon inventory
-	var qty int
-	err = tx.QueryRow(ctx, `SELECT quantity FROM user_inventories WHERE user_id = $1 AND item_id = $2 FOR UPDATE`, userID, sub.Type).Scan(&qty)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) || qty <= 0 {
-			return domain.NewBadRequestError("NO_COUPON_AVAILABLE", fmt.Sprintf("Anda tidak memiliki kupon '%s'", sub.Type), nil)
-		}
-		return fmt.Errorf("failed to query coupon inventory: %w", err)
-	}
-	if qty <= 0 {
-		return domain.NewBadRequestError("NO_COUPON_AVAILABLE", fmt.Sprintf("Anda tidak memiliki kupon '%s'", sub.Type), nil)
+// CreateCoachingSubmission records a mentorship or CV review request
+func (r *GamificationRepository) CreateCoachingSubmission(ctx context.Context, sub *domain.CoachingSubmission) error {
+	query := `
+		INSERT INTO coaching_submissions (
+			user_id, type, target_role, github_url, resume_url, discord_handle, interview_language, focus_topic, preferred_time, notes, status, created_at, updated_at
+		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW(), NOW())
+		RETURNING id, created_at, updated_at
+	`
+	if sub.Status == "" {
+		sub.Status = "pending"
 	}
 
-	// Deduct coupon
-	_, err = tx.Exec(ctx, `UPDATE user_inventories SET quantity = quantity - 1, updated_at = CURRENT_TIMESTAMP WHERE user_id = $1 AND item_id = $2`, userID, sub.Type)
-	if err != nil {
-		return fmt.Errorf("failed to deduct coupon: %w", err)
-	}
-
-	// Insert submission
-	err = tx.QueryRow(
-		ctx,
-		`INSERT INTO coaching_submissions (
-			user_id, type, target_role, github_url, resume_url, discord_handle,
-			interview_language, focus_topic, preferred_time, notes, status
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, 'in_review')
-		RETURNING id, created_at, updated_at`,
-		userID, sub.Type, sub.TargetRole, sub.GitHubURL, sub.ResumeURL, sub.DiscordHandle,
-		sub.InterviewLanguage, sub.FocusTopic, sub.PreferredTime, sub.Notes,
+	err := r.db.Pool.QueryRow(
+		ctx, query,
+		sub.UserID, sub.Type, sub.TargetRole, sub.GitHubURL, sub.ResumeURL,
+		sub.DiscordHandle, sub.InterviewLanguage, sub.FocusTopic, sub.PreferredTime, sub.Notes, sub.Status,
 	).Scan(&sub.ID, &sub.CreatedAt, &sub.UpdatedAt)
 	if err != nil {
-		return fmt.Errorf("failed to insert coaching submission: %w", err)
+		return fmt.Errorf("failed to create coaching submission: %w", err)
 	}
-
-	return tx.Commit(ctx)
+	return nil
 }

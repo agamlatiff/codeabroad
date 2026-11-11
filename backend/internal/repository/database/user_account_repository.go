@@ -28,9 +28,7 @@ const userSelectColumns = `
 	u.email, 
 	u.password_hash, 
 	up.bio, 
-	up.career_path_id, 
-	up.country_id, 
-	up.tech_stack_id, 
+	up.daily_goal_minutes,
 	up.is_onboarded,
 	up.has_seen_roadmap_tour,
 	up.preferred_roadmap_view,
@@ -40,26 +38,16 @@ const userSelectColumns = `
 	ug.gems, 
 	ug.last_active_at,
 	u.created_at, 
-	u.updated_at,
-	c.id, c.code, c.name,
-	cp.id, cp.slug, cp.label,
-	ts.slug
+	u.updated_at
 `
 
 const userFromClause = `
 	FROM users u
 	JOIN user_profiles up ON u.id = up.user_id
 	JOIN user_gamification ug ON u.id = ug.user_id
-	LEFT JOIN countries c ON up.country_id = c.id
-	LEFT JOIN career_paths cp ON up.career_path_id = cp.id
-	LEFT JOIN tech_stacks ts ON up.tech_stack_id = ts.id
 `
 
 func scanUser(row pgx.Row, user *domain.User) error {
-	var cID, cCode, cName *string
-	var cpID, cpSlug, cpLabel *string
-	var tsSlug *string
-
 	err := row.Scan(
 		&user.ID,
 		&user.Name,
@@ -67,9 +55,7 @@ func scanUser(row pgx.Row, user *domain.User) error {
 		&user.Email,
 		&user.PasswordHash,
 		&user.Bio,
-		&user.CareerPathID,
-		&user.CountryID,
-		&user.TechStackID,
+		&user.DailyGoalMinutes,
 		&user.IsOnboarded,
 		&user.HasSeenRoadmapTour,
 		&user.PreferredRoadmapView,
@@ -80,40 +66,17 @@ func scanUser(row pgx.Row, user *domain.User) error {
 		&user.LastActiveAt,
 		&user.CreatedAt,
 		&user.UpdatedAt,
-		&cID,
-		&cCode,
-		&cName,
-		&cpID,
-		&cpSlug,
-		&cpLabel,
-		&tsSlug,
 	)
-	if err != nil {
-		return err
-	}
-	if tsSlug != nil && *tsSlug != "" {
-		user.PrimaryStack = tsSlug
-	}
-	if cID != nil && cCode != nil && cName != nil {
-		user.Country = &domain.CountrySummary{
-			ID:        *cID,
-			Code:      *cCode,
-			Name:      *cName,
-			FlagEmoji: flagEmojiForCountry(*cCode),
-		}
-	}
-	if cpID != nil && cpSlug != nil && cpLabel != nil {
-		user.CareerPath = &domain.CareerPathSummary{
-			ID:    *cpID,
-			Slug:  *cpSlug,
-			Label: *cpLabel,
-		}
-	}
-	return nil
+	return err
 }
 
 // Create inserts a new user across all 3 normalized pillars in a single atomic Writeable CTE (1 DB round-trip)
 func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
+	dailyGoal := user.DailyGoalMinutes
+	if dailyGoal <= 0 {
+		dailyGoal = 15 // Default 15 minutes per day
+	}
+
 	query := `
 		WITH new_user AS (
 			INSERT INTO users (email, password_hash)
@@ -121,12 +84,12 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
-			INSERT INTO user_profiles (user_id, name, username, is_onboarded)
-			SELECT id, $3, $4, $5 FROM new_user
+			INSERT INTO user_profiles (user_id, name, username, is_onboarded, daily_goal_minutes)
+			SELECT id, $3, $4, $5, $6 FROM new_user
 		),
 		new_gamification AS (
 			INSERT INTO user_gamification (user_id, xp, current_level, streak, gems)
-			SELECT id, $6, $7, $8, $9 FROM new_user
+			SELECT id, $7, $8, $9, $10 FROM new_user
 		)
 		SELECT id, created_at, updated_at FROM new_user
 	`
@@ -138,6 +101,7 @@ func (r *UserRepository) Create(ctx context.Context, user *domain.User) error {
 		user.Name,
 		user.Username,
 		user.IsOnboarded,
+		dailyGoal,
 		user.XP,
 		user.CurrentLevel,
 		user.Streak,
@@ -197,21 +161,15 @@ func (r *UserRepository) GetByID(ctx context.Context, id string) (*domain.User, 
 	return &user, nil
 }
 
-// UpdateProfile updates user profile fields including resolving primary_stack slug when provided
+// UpdateProfile updates user profile preferences with parameterized values
 func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
 	query := `
 		UPDATE user_profiles
 		SET name = COALESCE($2, name),
 		    bio = COALESCE($3, bio),
-		    country_id = COALESCE($4, country_id),
-		    career_path_id = COALESCE($5, career_path_id),
-		    tech_stack_id = COALESCE(
-		        $6,
-		        (SELECT id FROM tech_stacks WHERE slug = $7 LIMIT 1),
-		        tech_stack_id
-		    ),
-		    has_seen_roadmap_tour = COALESCE($8, has_seen_roadmap_tour),
-		    preferred_roadmap_view = COALESCE($9, preferred_roadmap_view),
+		    daily_goal_minutes = COALESCE($4, daily_goal_minutes),
+		    has_seen_roadmap_tour = COALESCE($5, has_seen_roadmap_tour),
+		    preferred_roadmap_view = COALESCE($6, preferred_roadmap_view),
 		    updated_at = NOW()
 		WHERE user_id = $1
 	`
@@ -221,10 +179,7 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *
 		userID,
 		req.Name,
 		req.Bio,
-		req.CountryID,
-		req.CareerPathID,
-		req.TechStackID,
-		req.PrimaryStack,
+		req.DailyGoalMinutes,
 		req.HasSeenRoadmapTour,
 		req.PreferredRoadmapView,
 	)
@@ -237,70 +192,21 @@ func (r *UserRepository) UpdateProfile(ctx context.Context, userID string, req *
 	return r.GetByID(ctx, userID)
 }
 
-// UpdateOnboarding updates user_profiles and user_gamification atomically in a single Writeable CTE (1 DB round-trip)
-func (r *UserRepository) UpdateOnboarding(
-	ctx context.Context,
-	userID string,
-	countryID string,
-	careerPathID string,
-	primaryStack string,
-	bonusXP int,
-) error {
+// SetOnboarded marks the user as having finished the 3-step onboarding flow and records their pace goal
+func (r *UserRepository) SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error {
 	query := `
-		WITH updated_profile AS (
-			UPDATE user_profiles
-			SET country_id = $2,
-			    career_path_id = $3,
-			    tech_stack_id = (SELECT id FROM tech_stacks WHERE slug = $4 LIMIT 1),
-			    is_onboarded = TRUE,
-			    updated_at = NOW()
-			WHERE user_id = $1
-			RETURNING user_id
-		)
-		UPDATE user_gamification ug
-		SET xp = ug.xp + $5,
-		    current_level = ((ug.xp + $5) / 100) + 1,
-		    streak = GREATEST(1, ug.streak),
-		    last_active_at = NOW(),
+		UPDATE user_profiles
+		SET is_onboarded = true,
+		    daily_goal_minutes = COALESCE(NULLIF($2, 0), daily_goal_minutes),
 		    updated_at = NOW()
-		FROM updated_profile up
-		WHERE ug.user_id = up.user_id
+		WHERE user_id = $1
 	`
-	tag, err := r.db.Pool.Exec(ctx, query, userID, countryID, careerPathID, primaryStack, bonusXP)
+	tag, err := r.db.Pool.Exec(ctx, query, userID, dailyGoalMinutes)
 	if err != nil {
-		return fmt.Errorf("failed to update onboarding: %w", err)
+		return fmt.Errorf("failed to set user onboarded: %w", err)
 	}
 	if tag.RowsAffected() == 0 {
 		return domain.ErrUserNotFound
 	}
 	return nil
-}
-
-// GetProfileWithDetails reuses GetByID (which already joins countries, career_paths, and tech_stacks)
-func (r *UserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
-	user, err := r.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get user profile with details: %w", err)
-	}
-	if user == nil {
-		return nil, domain.ErrUserNotFound
-	}
-
-	return &domain.OnboardingProfileResponse{
-		ID:                   user.ID,
-		Name:                 user.Name,
-		Username:             user.Username,
-		Email:                user.Email,
-		XP:                   user.XP,
-		CurrentLevel:         user.CurrentLevel,
-		Streak:               user.Streak,
-		Gems:                 user.Gems,
-		IsOnboarded:          user.IsOnboarded,
-		HasSeenRoadmapTour:   user.HasSeenRoadmapTour,
-		PreferredRoadmapView: user.PreferredRoadmapView,
-		PrimaryStack:         user.PrimaryStack,
-		Country:              user.Country,
-		CareerPath:           user.CareerPath,
-		CreatedAt:            user.CreatedAt,
-	}, nil
 }

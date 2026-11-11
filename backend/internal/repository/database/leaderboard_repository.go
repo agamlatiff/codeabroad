@@ -17,7 +17,7 @@ func NewLeaderboardRepository(db *postgres.PostgresDB) domain.LeaderboardReposit
 	return &LeaderboardRepository{db: db}
 }
 
-// GetWeeklyLeaderboard computes real standings from PostgreSQL for the specified division
+// GetWeeklyLeaderboard computes real standings from PostgreSQL across 3 normalized pillars
 func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID string, division domain.TokyoDivision) (*domain.WeeklyLeaderboardResponse, error) {
 	now := time.Now()
 	_, seasonWeek := now.ISOWeek()
@@ -44,21 +44,23 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 
 	// Query 100% real active users belonging to the requested division tier from PostgreSQL
 	query := `
-		SELECT u.id, u.name, u.username, u.avatar_url, u.xp, u.current_level, u.streak,
+		SELECT u.id, up.name, up.username, ug.xp, ug.current_level, ug.streak,
 		       COALESCE((
 		           SELECT SUM(xp_earned) 
 		           FROM user_activity_logs 
 		           WHERE user_id = u.id AND created_at >= NOW() - INTERVAL '7 days'
-		       ), u.xp) as week_xp
+		       ), ug.xp) as week_xp
 		FROM users u
+		JOIN user_profiles up ON u.id = up.user_id
+		JOIN user_gamification ug ON u.id = ug.user_id
 		WHERE 
 		  CASE 
-		    WHEN $1 = 'roppongi'  THEN u.xp >= 1500
-		    WHEN $1 = 'akihabara' THEN u.xp >= 800 AND u.xp < 1500
-		    WHEN $1 = 'shibuya'   THEN u.xp >= 300 AND u.xp < 800
-		    ELSE u.xp < 300
+		    WHEN $1 = 'roppongi'  THEN ug.xp >= 1500
+		    WHEN $1 = 'akihabara' THEN ug.xp >= 800 AND ug.xp < 1500
+		    WHEN $1 = 'shibuya'   THEN ug.xp >= 300 AND ug.xp < 800
+		    ELSE ug.xp < 300
 		  END
-		ORDER BY week_xp DESC, u.streak DESC, u.xp DESC
+		ORDER BY week_xp DESC, ug.streak DESC, ug.xp DESC
 		LIMIT 50
 	`
 
@@ -79,7 +81,6 @@ func (r *LeaderboardRepository) GetWeeklyLeaderboard(ctx context.Context, userID
 			&e.UserID,
 			&e.Name,
 			&e.Username,
-			&e.AvatarURL,
 			&totalXP,
 			&e.CurrentLevel,
 			&e.Streak,

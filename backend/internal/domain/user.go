@@ -26,15 +26,13 @@ type UserAccount struct {
 
 // UserProfile represents Pillar 2: Profile & Learning Goals (user_profiles table)
 type UserProfile struct {
-	Name                 string    `json:"name"`
-	Username             string    `json:"username"`
-	Bio                  *string   `json:"bio"`
-	DailyGoalMinutes     int       `json:"daily_goal_minutes"`
-	IsOnboarded          bool      `json:"is_onboarded"`
-	HasSeenRoadmapTour   bool      `json:"has_seen_roadmap_tour"`
-	PreferredRoadmapView string    `json:"preferred_roadmap_view"`
-	CreatedAt            time.Time `json:"-"`
-	UpdatedAt            time.Time `json:"-"`
+	Name                 string  `json:"name"`
+	Username             string  `json:"username"`
+	Bio                  *string `json:"bio"`
+	DailyGoalMinutes     int     `json:"daily_goal_minutes"`
+	IsOnboarded          bool    `json:"is_onboarded"`
+	HasSeenRoadmapTour   bool    `json:"has_seen_roadmap_tour"`
+	PreferredRoadmapView string  `json:"preferred_roadmap_view"`
 }
 
 // UserGamificationStats represents Pillar 3: High-Concurrency Game Loop Stats (user_gamification table)

@@ -12,17 +12,11 @@ import (
 )
 
 // LogActivity inserts a user activity event and updates last_active_at in a single atomic Writeable CTE (1 DB round-trip)
-func (r *UserRepository) LogActivity(
-	ctx context.Context,
-	userID string,
-	activityType string,
-	xpEarned int,
-	metadata map[string]interface{},
-) error {
+func (r *UserRepository) LogActivity(ctx context.Context, log *domain.UserActivityLog) error {
 	var metaJSON []byte
-	if metadata != nil {
+	if log.Metadata != nil {
 		var err error
-		metaJSON, err = json.Marshal(metadata)
+		metaJSON, err = json.Marshal(log.Metadata)
 		if err != nil {
 			return fmt.Errorf("failed to marshal activity metadata: %w", err)
 		}
@@ -38,7 +32,7 @@ func (r *UserRepository) LogActivity(
 		    updated_at = NOW()
 		WHERE user_id = $1
 	`
-	if _, err := r.db.Pool.Exec(ctx, query, userID, activityType, xpEarned, metaJSON); err != nil {
+	if _, err := r.db.Pool.Exec(ctx, query, log.UserID, log.ActivityType, log.XPEarned, metaJSON); err != nil {
 		return fmt.Errorf("failed to log user activity: %w", err)
 	}
 	return nil
@@ -66,26 +60,26 @@ func (r *UserRepository) HasActivityInRange(
 	return exists, nil
 }
 
-// GetDailyActivityStatsSince executes a single consolidated UNION ALL query returning raw daily XP and completed quest counts
+// GetDailyActivityStatsSince aggregates daily XP and completed lesson counts since a cutoff time
 func (r *UserRepository) GetDailyActivityStatsSince(
 	ctx context.Context,
 	userID string,
 	since time.Time,
 ) (map[string]domain.DailyActivityStat, error) {
 	query := `
-		SELECT act_date, SUM(xp_earned) AS total_xp, SUM(quests_count) AS total_quests
+		SELECT act_date, SUM(xp_earned) AS total_xp, SUM(lessons_count) AS total_lessons
 		FROM (
 			SELECT TO_CHAR(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS act_date,
 			       xp_earned,
-			       0 AS quests_count
+			       0 AS lessons_count
 			FROM user_activity_logs
 			WHERE user_id = $1 AND created_at >= $2
 			UNION ALL
 			SELECT TO_CHAR(completed_at AT TIME ZONE 'UTC', 'YYYY-MM-DD') AS act_date,
 			       0 AS xp_earned,
-			       1 AS quests_count
-			FROM user_quests
-			WHERE user_id = $1 AND status = 'completed' AND completed_at >= $2
+			       1 AS lessons_count
+			FROM user_lesson_progress
+			WHERE user_id = $1 AND is_completed = true AND completed_at >= $2
 		) combined
 		GROUP BY act_date
 	`
@@ -99,7 +93,7 @@ func (r *UserRepository) GetDailyActivityStatsSince(
 	for rows.Next() {
 		var dateStr string
 		var stat domain.DailyActivityStat
-		if err := rows.Scan(&dateStr, &stat.XPEarned, &stat.QuestsCount); err != nil {
+		if err := rows.Scan(&dateStr, &stat.XPEarned, &stat.LessonsCount); err != nil {
 			return nil, fmt.Errorf("failed to scan daily activity stat: %w", err)
 		}
 		dailyStats[dateStr] = stat
@@ -107,7 +101,7 @@ func (r *UserRepository) GetDailyActivityStatsSince(
 	return dailyStats, rows.Err()
 }
 
-// ClaimDailyReward atomically locks the user row, verifies no duplicate claim today, updates XP/level, and logs the claim
+// ClaimDailyReward atomically locks user_gamification, verifies claim status today, awards XP/levels, and logs activity
 func (r *UserRepository) ClaimDailyReward(
 	ctx context.Context,
 	userID string,
@@ -125,7 +119,7 @@ func (r *UserRepository) ClaimDailyReward(
 	}
 	defer tx.Rollback(ctx)
 
-	// 1. Pessimistic lock on user_gamification to serialize concurrent claims for the same user
+	// 1. Pessimistic lock on user_gamification to prevent duplicate race conditions
 	var currentXP, streak int
 	lockQuery := `
 		SELECT xp, streak
@@ -140,7 +134,7 @@ func (r *UserRepository) ClaimDailyReward(
 		return nil, fmt.Errorf("failed to lock user gamification for daily reward: %w", err)
 	}
 
-	// 2. SARGable check if already claimed today
+	// 2. SARGable index scan to ensure no duplicate claim on the current UTC date
 	checkQuery := `
 		SELECT EXISTS (
 			SELECT 1 FROM user_activity_logs
@@ -154,30 +148,32 @@ func (r *UserRepository) ClaimDailyReward(
 		return nil, domain.ErrDailyRewardAlreadyClaimed
 	}
 
-	// 3. Atomic CTE updating XP/level and inserting activity log in 1 round-trip
+	// 3. Atomic progression update and audit log in 1 round-trip
 	metaJSON, _ := json.Marshal(map[string]interface{}{
 		"reward_type": rewardType,
 		"date":        today,
+		"xp_awarded":  xpAwarded,
 	})
-	updateAndLogQuery := `
-		WITH updated_gam AS (
+
+	updateQuery := `
+		WITH updated_stats AS (
 			UPDATE user_gamification
 			SET xp = xp + $2,
 			    current_level = ((xp + $2) / 100) + 1,
 			    last_active_at = NOW(),
 			    updated_at = NOW()
 			WHERE user_id = $1
-			RETURNING xp, current_level
-		),
-		inserted_log AS (
-			INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-			VALUES ($1, $3, $2, $4, NOW())
+			RETURNING xp, current_level, streak
 		)
-		SELECT xp, current_level FROM updated_gam
+		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		SELECT $1, $3, $2, $4, NOW()
+		FROM updated_stats
+		RETURNING (SELECT xp FROM updated_stats), (SELECT current_level FROM updated_stats), (SELECT streak FROM updated_stats)
 	`
-	var newXP, newLevel int
-	if err := tx.QueryRow(ctx, updateAndLogQuery, userID, xpAwarded, activityType, metaJSON).Scan(&newXP, &newLevel); err != nil {
-		return nil, fmt.Errorf("failed to update xp and log daily reward claim: %w", err)
+	var newXP, newLevel, currentStreak int
+	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, activityType, metaJSON).Scan(&newXP, &newLevel, &currentStreak)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute atomic daily reward claim: %w", err)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -189,38 +185,40 @@ func (r *UserRepository) ClaimDailyReward(
 		XPAwarded:    xpAwarded,
 		CurrentXP:    newXP,
 		CurrentLevel: newLevel,
-		Streak:       streak,
+		Streak:       currentStreak,
 		ClaimedAt:    now.Format(time.RFC3339),
 	}, nil
 }
 
-// GetDailyRewardsStatus checks both daily rewards in a single SARGable table scan using BOOL_OR
+// GetDailyRewardsStatus reports whether lesson milestones or golden chests have already been claimed today
 func (r *UserRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
 	now := time.Now().UTC()
-	today := now.Format("2006-01-02")
 	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
 	query := `
 		SELECT 
-			COALESCE(BOOL_OR(activity_type = 'daily_vocab_quest_claim'), FALSE) AS vocab_claimed,
-			COALESCE(BOOL_OR(activity_type = 'daily_golden_chest_claim'), FALSE) AS chest_claimed
-		FROM user_activity_logs
-		WHERE user_id = $1
-		  AND activity_type IN ('daily_vocab_quest_claim', 'daily_golden_chest_claim')
-		  AND created_at >= $2
+			EXISTS (
+				SELECT 1 FROM user_activity_logs
+				WHERE user_id = $1 
+				  AND activity_type = 'daily_lesson_milestone_claim'
+				  AND created_at >= $2
+			) AS lesson_milestone_claimed,
+			EXISTS (
+				SELECT 1 FROM user_activity_logs
+				WHERE user_id = $1 
+				  AND activity_type = 'daily_golden_chest_claim'
+				  AND created_at >= $2
+			) AS golden_chest_claimed
 	`
-	var vocabClaimed, chestClaimed bool
-	if err := r.db.Pool.QueryRow(ctx, query, userID, startOfToday).Scan(&vocabClaimed, &chestClaimed); err != nil {
-		return &domain.DailyRewardsStatusResponse{
-			Date:               today,
-			VocabQuestClaimed:  false,
-			GoldenChestClaimed: false,
-		}, nil
-	}
+	var status domain.DailyRewardsStatusResponse
+	status.Date = now.Format("2006-01-02")
 
-	return &domain.DailyRewardsStatusResponse{
-		Date:               today,
-		VocabQuestClaimed:  vocabClaimed,
-		GoldenChestClaimed: chestClaimed,
-	}, nil
+	err := r.db.Pool.QueryRow(ctx, query, userID, startOfToday).Scan(
+		&status.LessonMilestoneClaimed,
+		&status.GoldenChestClaimed,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query daily rewards status: %w", err)
+	}
+	return &status, nil
 }
