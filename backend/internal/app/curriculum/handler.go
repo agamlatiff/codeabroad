@@ -27,7 +27,10 @@ func (h *Handler) GetRoadmap(c *gin.Context) {
 	}
 
 	var req GetRoadmapRequest
-	_ = c.ShouldBindQuery(&req)
+	if err := c.ShouldBindQuery(&req); err != nil {
+		response.BadRequest(c, "invalid language_id query parameter format")
+		return
+	}
 
 	roadmap, err := h.curriculumUsecase.GetRoadmap(c.Request.Context(), userID, &req)
 	if err != nil {
@@ -46,13 +49,15 @@ func (h *Handler) GetLessonDetail(c *gin.Context) {
 		return
 	}
 
-	lessonID := c.Param("id")
-	if lessonID == "" {
-		response.BadRequest(c, "lesson ID parameter is required")
+	var uri struct {
+		ID string `uri:"id" binding:"required,uuid"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		response.BadRequest(c, "invalid lesson ID format, must be a valid UUID")
 		return
 	}
 
-	lesson, err := h.curriculumUsecase.GetLessonDetail(c.Request.Context(), userID, lessonID)
+	lesson, err := h.curriculumUsecase.GetLessonDetail(c.Request.Context(), userID, uri.ID)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -69,15 +74,20 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 		return
 	}
 
-	lessonID := c.Param("id")
+	var uri struct {
+		ID string `uri:"id" binding:"required,uuid"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		response.BadRequest(c, "invalid lesson ID format, must be a valid UUID")
+		return
+	}
+
 	var req CompleteLessonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		response.BadRequest(c, err.Error())
 		return
 	}
-	if req.LessonID == "" {
-		req.LessonID = lessonID
-	}
+	req.LessonID = uri.ID
 
 	res, err := h.curriculumUsecase.CompleteLesson(c.Request.Context(), userID, &req)
 	if err != nil {
@@ -90,13 +100,15 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 
 // GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=...
 func (h *Handler) GetGrammarPoints(c *gin.Context) {
-	levelID := c.Query("level_id")
-	if levelID == "" {
-		response.BadRequest(c, "level_id query parameter is required")
+	var query struct {
+		LevelID string `form:"level_id" binding:"required,uuid"`
+	}
+	if err := c.ShouldBindQuery(&query); err != nil {
+		response.BadRequest(c, "level_id query parameter is required and must be a valid UUID")
 		return
 	}
 
-	points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), levelID)
+	points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), query.LevelID)
 	if err != nil {
 		response.Error(c, err)
 		return

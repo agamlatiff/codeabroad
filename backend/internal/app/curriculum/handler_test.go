@@ -83,6 +83,18 @@ func TestHTTP_GetRoadmap(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetRoadmap_InvalidLanguageID_Returns400(t *testing.T) {
+	r, _, _ := setupCurriculumTestRouter()
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/roadmap?language_id=not-a-valid-uuid", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request, got: %d", w.Code)
+	}
+}
+
 func TestHTTP_GetLessonDetail(t *testing.T) {
 	r, _, _ := setupCurriculumTestRouter()
 
@@ -92,6 +104,18 @@ func TestHTTP_GetLessonDetail(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK, got: %d", w.Code)
+	}
+}
+
+func TestHTTP_GetLessonDetail_InvalidUUID_Returns400(t *testing.T) {
+	r, _, _ := setupCurriculumTestRouter()
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/lessons/not-a-valid-uuid", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request, got: %d", w.Code)
 	}
 }
 
@@ -114,6 +138,23 @@ func TestHTTP_CompleteLesson(t *testing.T) {
 	}
 }
 
+func TestHTTP_CompleteLesson_BodyWithoutLessonID(t *testing.T) {
+	r, _, _ := setupCurriculumTestRouter()
+	lessonID := "33333333-3333-3333-3333-333333333333"
+
+	// Omit lesson_id from body; URI parameter must be used as Single Source of Truth
+	body := []byte(`{"score": 95}`)
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestHTTP_GetGrammarPoints(t *testing.T) {
 	r, cRepo, _ := setupCurriculumTestRouter()
 	cRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{
@@ -133,3 +174,14 @@ func TestHTTP_GetGrammarPoints(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetGrammarPoints_InvalidLevelID_Returns400(t *testing.T) {
+	r, _, _ := setupCurriculumTestRouter()
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/grammar-points?level_id=not-a-valid-uuid", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request, got: %d", w.Code)
+	}
+}

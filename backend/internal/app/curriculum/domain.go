@@ -103,7 +103,7 @@ type UnitNodeResponse struct {
 
 // GetRoadmapRequest defines query filters for retrieving the curriculum roadmap
 type GetRoadmapRequest struct {
-	LanguageID string `form:"language_id"`
+	LanguageID string `form:"language_id" binding:"omitempty,uuid"`
 }
 
 // RoadmapResponse encapsulates the full active language curriculum tree with level metrics
@@ -136,7 +136,7 @@ type LessonDetailResponse struct {
 
 // CompleteLessonRequest defines the payload when a learner submits a finished lesson
 type CompleteLessonRequest struct {
-	LessonID string `json:"lesson_id" binding:"required,uuid"`
+	LessonID string `json:"lesson_id,omitempty" binding:"omitempty,uuid"`
 	Score    int    `json:"score" binding:"min=0,max=100"`
 }
 
