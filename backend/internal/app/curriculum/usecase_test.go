@@ -239,3 +239,32 @@ func TestCompleteLesson_ScoreGreatestPreserved(t *testing.T) {
 	}
 }
 
+func TestCompleteLesson_UserNotFound_FailFast(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository() // empty users map, user "non-existent" not found
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	_, err := uc.CompleteLesson(context.Background(), "non-existent", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    90,
+	})
+	if err == nil {
+		t.Fatalf("expected error for non-existent user, got nil")
+	}
+	if err != user.ErrUserNotFound {
+		t.Fatalf("expected ErrUserNotFound, got %v", err)
+	}
+
+	// Verify fail-fast: no lesson progress was upserted
+	if len(cRepo.LessonProgress) != 0 {
+		t.Fatalf("expected 0 lesson progress entries due to fail-fast, got %d", len(cRepo.LessonProgress))
+	}
+}
+
+

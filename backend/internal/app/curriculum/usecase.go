@@ -89,6 +89,9 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 	}
 
 	unlockedUnits, totalLessons, completedLessons, progressPercent, currentLessonID := u.helper.CalculateRoadmapUnlocks(units)
+	if unlockedUnits == nil {
+		unlockedUnits = []UnitNodeResponse{}
+	}
 
 	return &RoadmapResponse{
 		Language:         *enrollment.Language,
@@ -132,6 +135,9 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 	if err != nil {
 		return nil, fmt.Errorf("failed to query exercises for lesson: %w", err)
 	}
+	if exercises == nil {
+		exercises = []exercise.Exercise{}
+	}
 	lesson.Exercises = exercises
 
 	gps, err := u.curriculumRepo.GetGrammarPointsByLessonID(ctx, lessonID)
@@ -168,6 +174,15 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		}
 	}
 
+	// Fail-fast: Validate user existence before modifying progress state
+	usr, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
+	}
+	if usr == nil {
+		return nil, user.ErrUserNotFound
+	}
+
 	xpEarned := lesson.XPReward
 	if xpEarned <= 0 {
 		xpEarned = 15
@@ -194,14 +209,6 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, fmt.Errorf("failed to record lesson completion: %w", err)
 	}
 
-	usr, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch user: %w", err)
-	}
-	if usr == nil {
-		return nil, user.ErrUserNotFound
-	}
-
 	newStreak, _ := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now)
 	newXP := usr.XP + xpEarned
 	newLevel := (newXP / 100) + 1
@@ -210,6 +217,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, fmt.Errorf("failed to update gamification stats: %w", err)
 	}
 
+	// Activity logging is non-blocking telemetry; failures should not abort lesson completion
 	_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
 		UserID:       userID,
 		ActivityType: activityType,
@@ -241,6 +249,13 @@ func (u *usecase) GetGrammarPoints(ctx context.Context, levelID string) ([]Gramm
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	return u.curriculumRepo.GetGrammarPointsByLevelID(ctx, levelID)
+	points, err := u.curriculumRepo.GetGrammarPointsByLevelID(ctx, levelID)
+	if err != nil {
+		return nil, err
+	}
+	if points == nil {
+		points = []GrammarPoint{}
+	}
+	return points, nil
 }
 

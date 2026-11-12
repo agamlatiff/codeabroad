@@ -34,7 +34,7 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 	}
 	defer rows.Close()
 
-	var points []GrammarPoint
+	points := make([]GrammarPoint, 0)
 	for rows.Next() {
 		var gp GrammarPoint
 		if err := rows.Scan(
@@ -87,7 +87,7 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 	}
 	defer rows.Close()
 
-	var points []GrammarPoint
+	points := make([]GrammarPoint, 0)
 	for rows.Next() {
 		var gp GrammarPoint
 		if err := rows.Scan(
@@ -119,7 +119,7 @@ func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID stri
 	}
 	defer rows.Close()
 
-	var units []UnitNodeResponse
+	units := make([]UnitNodeResponse, 0)
 	for rows.Next() {
 		var u UnitNodeResponse
 		if err := rows.Scan(
@@ -177,7 +177,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	}
 	defer rows.Close()
 
-	var lessons []LessonNodeResponse
+	lessons := make([]LessonNodeResponse, 0)
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
@@ -214,7 +214,7 @@ func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID stri
 	}
 	defer rows.Close()
 
-	var lessons []LessonNodeResponse
+	lessons := make([]LessonNodeResponse, 0)
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
