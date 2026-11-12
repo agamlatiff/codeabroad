@@ -151,18 +151,38 @@ type CompleteLessonResponse struct {
 // 3. PERSISTENCE & BUSINESS LOGIC CONTRACTS
 // ============================================================================
 
-// Repository specifies data access operations for curriculum structures
-type Repository interface {
+// GrammarPointRepository specifies data access operations for syntax and grammar points
+type GrammarPointRepository interface {
 	GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error)
 	GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error)
+}
+
+// UnitRepository specifies data access operations for curriculum units and chapters
+type UnitRepository interface {
 	GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error)
 	GetUnitByID(ctx context.Context, id string) (*Unit, error)
+}
+
+// LessonRepository specifies data access operations for lesson catalogs and node navigation
+type LessonRepository interface {
 	GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error)
 	GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error)
 	GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error)
+}
+
+// LessonProgressRepository specifies data access operations for user lesson completion state
+type LessonProgressRepository interface {
 	GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error)
 	UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
+}
+
+// Repository combines segregated curriculum contracts into a unified composite interface
+type Repository interface {
+	GrammarPointRepository
+	UnitRepository
+	LessonRepository
+	LessonProgressRepository
 }
 
 // Usecase specifies business operations for roadmap and lesson navigation
