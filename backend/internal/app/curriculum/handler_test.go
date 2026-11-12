@@ -44,7 +44,7 @@ func setupCurriculumTestRouter() (*gin.Engine, *curriculum.MockRepository, *lang
 		CurrentLevel:   lvl,
 	}
 
-	curriculumRepo.Lessons[lessonID] = &curriculum.Lesson{
+	curriculumRepo.Lessons[lessonID] = &curriculum.LessonNodeResponse{
 		ID:         lessonID,
 		UnitID:     "unit-1",
 		Title:      "Hiragana Basics",

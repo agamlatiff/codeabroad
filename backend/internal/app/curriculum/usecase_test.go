@@ -12,9 +12,9 @@ import (
 
 func TestGetRoadmap_Success(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
-	cRepo.Units["unit-1"] = &curriculum.Unit{ID: "unit-1", LevelID: "lvl-n5", Title: "Unit 1: Basics", TotalLessons: 2, CompletedLessons: 2}
-	cRepo.Units["unit-2"] = &curriculum.Unit{ID: "unit-2", LevelID: "lvl-n5", Title: "Unit 2: Daily Life", TotalLessons: 2, CompletedLessons: 0}
-	cRepo.Lessons["lesson-1"] = &curriculum.Lesson{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15}
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", Title: "Unit 1: Basics", TotalLessons: 2, CompletedLessons: 2, OrderIndex: 1}
+	cRepo.Units["unit-2"] = &curriculum.UnitNodeResponse{ID: "unit-2", LevelID: "lvl-n5", Title: "Unit 2: Daily Life", TotalLessons: 2, CompletedLessons: 0, OrderIndex: 2}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
 
 	lRepo := language.NewMockRepository()
 	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese"}
@@ -37,7 +37,7 @@ func TestGetRoadmap_Success(t *testing.T) {
 	}
 
 	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
-	roadmap, err := uc.GetRoadmap(context.Background(), "user-1", "lang-ja")
+	roadmap, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
@@ -51,7 +51,9 @@ func TestGetRoadmap_Success(t *testing.T) {
 
 func TestCompleteLesson_Success(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
-	cRepo.Lessons["lesson-1"] = &curriculum.Lesson{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15}
+	nextID := "lesson-2"
+	cRepo.NextLessonID = &nextID
 
 	lRepo := language.NewMockRepository()
 	eRepo := exercise.NewMockRepository()
@@ -74,6 +76,9 @@ func TestCompleteLesson_Success(t *testing.T) {
 	}
 	if res.Gamification.XP != 35 { // 20 + 15
 		t.Errorf("expected 35 XP, got %d", res.Gamification.XP)
+	}
+	if res.UnlockedNextLessonID == nil || *res.UnlockedNextLessonID != "lesson-2" {
+		t.Errorf("expected next lesson id lesson-2, got %v", res.UnlockedNextLessonID)
 	}
 }
 

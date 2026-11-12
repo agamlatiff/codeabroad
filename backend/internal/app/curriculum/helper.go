@@ -8,17 +8,49 @@ func NewHelper() *Helper {
 	return &Helper{}
 }
 
-// CalculateUnitUnlocks determines pedagogical unlock status for a sequence of units
-func (h *Helper) CalculateUnitUnlocks(units []Unit) []Unit {
-	allPreviousCompleted := true
+// CalculateRoadmapUnlocks computes unlock statuses, overall progression metrics, and locates current active lesson
+func (h *Helper) CalculateRoadmapUnlocks(units []UnitNodeResponse) ([]UnitNodeResponse, int, int, int, *string) {
+	allPreviousUnitsCompleted := true
+	totalLessons := 0
+	completedLessons := 0
+	var currentLessonID *string
 
 	for i := range units {
-		units[i].IsUnlocked = allPreviousCompleted
+		units[i].IsUnlocked = allPreviousUnitsCompleted
+		unitActiveTraversed := false
+
+		for j := range units[i].Lessons {
+			totalLessons++
+			lesson := &units[i].Lessons[j]
+
+			if lesson.IsCompleted {
+				completedLessons++
+				lesson.IsUnlocked = true
+			} else {
+				if allPreviousUnitsCompleted && !unitActiveTraversed {
+					lesson.IsUnlocked = true
+					unitActiveTraversed = true
+					if currentLessonID == nil {
+						id := lesson.ID
+						currentLessonID = &id
+					}
+				} else {
+					lesson.IsUnlocked = false
+				}
+			}
+		}
+
 		if units[i].TotalLessons > 0 && units[i].CompletedLessons < units[i].TotalLessons {
-			allPreviousCompleted = false
+			allPreviousUnitsCompleted = false
 		}
 	}
-	return units
+
+	progressPercent := 0
+	if totalLessons > 0 {
+		progressPercent = (completedLessons * 100) / totalLessons
+	}
+
+	return units, totalLessons, completedLessons, progressPercent, currentLessonID
 }
 
 // CanAccessLesson verifies whether a lesson node can be accessed by the user

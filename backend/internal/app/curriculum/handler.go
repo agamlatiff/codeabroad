@@ -26,8 +26,10 @@ func (h *Handler) GetRoadmap(c *gin.Context) {
 		return
 	}
 
-	languageID := c.Query("language_id")
-	roadmap, err := h.curriculumUsecase.GetRoadmap(c.Request.Context(), userID, languageID)
+	var req GetRoadmapRequest
+	_ = c.ShouldBindQuery(&req)
+
+	roadmap, err := h.curriculumUsecase.GetRoadmap(c.Request.Context(), userID, &req)
 	if err != nil {
 		response.Error(c, err)
 		return

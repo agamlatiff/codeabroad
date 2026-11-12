@@ -40,9 +40,14 @@ func NewUsecase(
 }
 
 // GetRoadmap retrieves the full active language curriculum tree with calculated unit unlocks
-func (u *usecase) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
+func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmapRequest) (*RoadmapResponse, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
+	}
+
+	languageID := ""
+	if req != nil {
+		languageID = req.LanguageID
 	}
 
 	enrollment, err := u.langRepo.GetActiveEnrollment(ctx, userID, languageID)
@@ -66,17 +71,21 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, languageID stri
 		units[i].Lessons = lessons
 	}
 
-	unlockedUnits := u.helper.CalculateUnitUnlocks(units)
+	unlockedUnits, totalLessons, completedLessons, progressPercent, currentLessonID := u.helper.CalculateRoadmapUnlocks(units)
 
 	return &RoadmapResponse{
-		Language: *enrollment.Language,
-		Level:    *enrollment.CurrentLevel,
-		Units:    unlockedUnits,
+		Language:         *enrollment.Language,
+		Level:            *enrollment.CurrentLevel,
+		TotalLessons:     totalLessons,
+		CompletedLessons: completedLessons,
+		ProgressPercent:  progressPercent,
+		CurrentLessonID:  currentLessonID,
+		Units:            unlockedUnits,
 	}, nil
 }
 
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
-func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID string) (*Lesson, error) {
+func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
@@ -154,6 +163,11 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		CreatedAt:    now,
 	})
 
+	var nextLessonID *string
+	if nextID, err := u.curriculumRepo.GetNextLessonID(ctx, req.LessonID); err == nil && nextID != nil {
+		nextLessonID = nextID
+	}
+
 	return &CompleteLessonResponse{
 		Progress: *progress,
 		Gamification: user.UserGamificationStats{
@@ -163,6 +177,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 			Gems:         usr.Gems,
 			LastActiveAt: &now,
 		},
+		UnlockedNextLessonID: nextLessonID,
 	}, nil
 }
 

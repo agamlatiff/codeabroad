@@ -10,15 +10,17 @@ import (
 // MockRepository implements Repository for unit testing
 type MockRepository struct {
 	GrammarPoints        map[string]*GrammarPoint
-	Units                map[string]*Unit
-	Lessons              map[string]*Lesson
+	Units                map[string]*UnitNodeResponse
+	Lessons              map[string]*LessonNodeResponse
 	LessonProgress       map[string]*UserLessonProgress
+	NextLessonID         *string
 	GetGrammarPointsErr  error
 	GetGrammarPointErr   error
 	GetUnitsErr          error
 	GetUnitByIDErr       error
 	GetLessonsErr        error
 	GetLessonByIDErr     error
+	GetNextLessonIDErr   error
 	GetLessonProgressErr error
 	UpsertProgressErr    error
 	SkipPrecedingErr     error
@@ -28,8 +30,8 @@ type MockRepository struct {
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
 		GrammarPoints:  make(map[string]*GrammarPoint),
-		Units:          make(map[string]*Unit),
-		Lessons:        make(map[string]*Lesson),
+		Units:          make(map[string]*UnitNodeResponse),
+		Lessons:        make(map[string]*LessonNodeResponse),
 		LessonProgress: make(map[string]*UserLessonProgress),
 	}
 }
@@ -63,11 +65,11 @@ func (m *MockRepository) GetGrammarPointByID(ctx context.Context, id string) (*G
 	return gp, nil
 }
 
-func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]Unit, error) {
+func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
 	if m.GetUnitsErr != nil {
 		return nil, m.GetUnitsErr
 	}
-	var res []Unit
+	var res []UnitNodeResponse
 	for _, u := range m.Units {
 		if u.LevelID == levelID {
 			res = append(res, *u)
@@ -87,14 +89,22 @@ func (m *MockRepository) GetUnitByID(ctx context.Context, id string) (*Unit, err
 	if !ok {
 		return nil, nil
 	}
-	return u, nil
+	return &Unit{
+		ID:          u.ID,
+		LevelID:     u.LevelID,
+		Title:       u.Title,
+		Description: u.Description,
+		UnitType:    u.UnitType,
+		OrderIndex:  u.OrderIndex,
+		CreatedAt:   u.CreatedAt,
+	}, nil
 }
 
-func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]Lesson, error) {
+func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error) {
 	if m.GetLessonsErr != nil {
 		return nil, m.GetLessonsErr
 	}
-	var res []Lesson
+	var res []LessonNodeResponse
 	for _, l := range m.Lessons {
 		if l.UnitID == unitID {
 			res = append(res, *l)
@@ -106,7 +116,7 @@ func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, 
 	return res, nil
 }
 
-func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID string) (*Lesson, error) {
+func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
 	if m.GetLessonByIDErr != nil {
 		return nil, m.GetLessonByIDErr
 	}
@@ -114,7 +124,25 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 	if !ok {
 		return nil, nil
 	}
-	return l, nil
+	return &LessonDetailResponse{
+		ID:          l.ID,
+		UnitID:      l.UnitID,
+		Title:       l.Title,
+		XPReward:    l.XPReward,
+		OrderIndex:  l.OrderIndex,
+		IsUnlocked:  l.IsUnlocked,
+		IsCompleted: l.IsCompleted,
+		Score:       l.Score,
+		IsSkipped:   l.IsSkipped,
+		CompletedAt: l.CompletedAt,
+	}, nil
+}
+
+func (m *MockRepository) GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error) {
+	if m.GetNextLessonIDErr != nil {
+		return nil, m.GetNextLessonIDErr
+	}
+	return m.NextLessonID, nil
 }
 
 func (m *MockRepository) GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error) {

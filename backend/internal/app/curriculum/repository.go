@@ -73,7 +73,7 @@ func (r *PostgresRepository) GetGrammarPointByID(ctx context.Context, id string)
 }
 
 // GetUnitsByLevelID retrieves all curriculum chapters with aggregated lesson metrics and progressive unlocks
-func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]Unit, error) {
+func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
 	query := `
 		SELECT 
 			u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at,
@@ -92,9 +92,9 @@ func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID stri
 	}
 	defer rows.Close()
 
-	var units []Unit
+	var units []UnitNodeResponse
 	for rows.Next() {
-		var u Unit
+		var u UnitNodeResponse
 		if err := rows.Scan(
 			&u.ID, &u.LevelID, &u.Title, &u.Description, &u.UnitType,
 			&u.OrderIndex, &u.CreatedAt, &u.TotalLessons, &u.CompletedLessons,
@@ -130,10 +130,10 @@ func (r *PostgresRepository) GetUnitByID(ctx context.Context, id string) (*Unit,
 }
 
 // GetLessonsByUnitID retrieves all lesson nodes for a unit with user progression status
-func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]Lesson, error) {
+func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error) {
 	query := `
 		SELECT 
-			l.id, l.unit_id, l.title, l.xp_reward, l.order_index, l.created_at,
+			l.id, l.unit_id, l.title, l.xp_reward, l.order_index,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -149,11 +149,11 @@ func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID stri
 	}
 	defer rows.Close()
 
-	var lessons []Lesson
+	var lessons []LessonNodeResponse
 	for rows.Next() {
-		var l Lesson
+		var l LessonNodeResponse
 		if err := rows.Scan(
-			&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
+			&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex,
 			&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan lesson row: %w", err)
@@ -167,7 +167,7 @@ func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID stri
 }
 
 // GetLessonByID retrieves a single lesson with user progress and child exercises
-func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*Lesson, error) {
+func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
 	lessonQuery := `
 		SELECT 
 			l.id, l.unit_id, l.title, l.xp_reward, l.order_index, l.created_at,
@@ -179,7 +179,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2
 		WHERE l.id = $1
 	`
-	var l Lesson
+	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
 		&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
 		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
@@ -192,6 +192,33 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	}
 
 	return &l, nil
+}
+
+// GetNextLessonID finds the next sequential lesson ID in the current unit or next unit
+func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error) {
+	query := `
+		SELECT next_l.id
+		FROM lessons cur_l
+		JOIN units cur_u ON cur_l.unit_id = cur_u.id
+		JOIN units next_u ON cur_u.level_id = next_u.level_id
+		JOIN lessons next_l ON next_l.unit_id = next_u.id
+		WHERE cur_l.id = $1
+		  AND (
+		    (next_u.order_index = cur_u.order_index AND next_l.order_index > cur_l.order_index)
+		    OR (next_u.order_index > cur_u.order_index)
+		  )
+		ORDER BY next_u.order_index ASC, next_l.order_index ASC
+		LIMIT 1
+	`
+	var nextID string
+	err := r.db.Pool.QueryRow(ctx, query, currentLessonID).Scan(&nextID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to query next lesson id: %w", err)
+	}
+	return &nextID, nil
 }
 
 // GetUserLessonProgress retrieves a user's completion status on a lesson

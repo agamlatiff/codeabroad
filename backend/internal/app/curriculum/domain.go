@@ -19,6 +19,10 @@ var (
 	ErrLessonLocked         = apperror.NewForbiddenError("LESSON_LOCKED", "previous lesson nodes must be completed first", nil)
 )
 
+// ============================================================================
+// 1. PURE DOMAIN ENTITIES (1:1 with Master Database Schema / ERD)
+// ============================================================================
+
 // GrammarPoint represents a normalized syntax rule / tenses / particles (grammar_points table)
 type GrammarPoint struct {
 	ID          string    `json:"id"`
@@ -32,37 +36,28 @@ type GrammarPoint struct {
 	CreatedAt   time.Time `json:"created_at"`
 }
 
-// Unit represents a curriculum chapter or diagnostic mock module (units table)
+// Unit represents a static curriculum chapter or diagnostic mock module (units table)
 type Unit struct {
-	ID               string    `json:"id"`
-	LevelID          string    `json:"level_id"`
-	Title            string    `json:"title"`
-	Description      *string   `json:"description,omitempty"`
-	UnitType         string    `json:"unit_type"` // curriculum | diagnostic_exam
-	OrderIndex       int       `json:"order_index"`
-	TotalLessons     int       `json:"total_lessons"`
-	CompletedLessons int       `json:"completed_lessons"`
-	IsUnlocked       bool      `json:"is_unlocked"`
-	Lessons          []Lesson  `json:"lessons,omitempty"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID          string    `json:"id"`
+	LevelID     string    `json:"level_id"`
+	Title       string    `json:"title"`
+	Description *string   `json:"description,omitempty"`
+	UnitType    string    `json:"unit_type"` // curriculum | diagnostic_exam
+	OrderIndex  int       `json:"order_index"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
-// Lesson represents a daily learning session node on the roadmap (lessons table)
+// Lesson represents a static learning session node catalog (lessons table)
 type Lesson struct {
-	ID          string              `json:"id"`
-	UnitID      string              `json:"unit_id"`
-	Title       string              `json:"title"`
-	XPReward    int                 `json:"xp_reward"`
-	OrderIndex  int                 `json:"order_index"`
-	IsCompleted bool                `json:"is_completed"`
-	Score       int                 `json:"score"`
-	IsSkipped   bool                `json:"is_skipped"`
-	CompletedAt *time.Time          `json:"completed_at,omitempty"`
-	Exercises   []exercise.Exercise `json:"exercises,omitempty"`
-	CreatedAt   time.Time           `json:"created_at"`
+	ID         string    `json:"id"`
+	UnitID     string    `json:"unit_id"`
+	Title      string    `json:"title"`
+	XPReward   int       `json:"xp_reward"`
+	OrderIndex int       `json:"order_index"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
-// UserLessonProgress represents node completion status in the user's roadmap (user_lesson_progress table)
+// UserLessonProgress represents a user's completion status on a lesson (user_lesson_progress table)
 type UserLessonProgress struct {
 	ID          string    `json:"id"`
 	UserID      string    `json:"user_id"`
@@ -73,20 +68,78 @@ type UserLessonProgress struct {
 	CompletedAt time.Time `json:"completed_at"`
 }
 
-// RoadmapResponse encapsulates the full active language curriculum tree
-type RoadmapResponse struct {
-	Language language.Language         `json:"language"`
-	Level    language.ProficiencyLevel `json:"level"`
-	Units    []Unit                    `json:"units"`
+// ============================================================================
+// 2. DATA TRANSFER OBJECTS (Explicit Request & Response View Models)
+// ============================================================================
+
+// LessonNodeResponse represents a decorated lesson node on the learner's interactive roadmap
+type LessonNodeResponse struct {
+	ID          string     `json:"id"`
+	UnitID      string     `json:"unit_id"`
+	Title       string     `json:"title"`
+	XPReward    int        `json:"xp_reward"`
+	OrderIndex  int        `json:"order_index"`
+	IsUnlocked  bool       `json:"is_unlocked"`
+	IsCompleted bool       `json:"is_completed"`
+	Score       int        `json:"score"`
+	IsSkipped   bool       `json:"is_skipped"`
+	CompletedAt *time.Time `json:"completed_at,omitempty"`
 }
 
-// CompleteLessonRequest defines the payload when a learner completes all exercises in a lesson
+// UnitNodeResponse represents a decorated curriculum unit with aggregated progress metrics
+type UnitNodeResponse struct {
+	ID               string               `json:"id"`
+	LevelID          string               `json:"level_id"`
+	Title            string               `json:"title"`
+	Description      *string              `json:"description,omitempty"`
+	UnitType         string               `json:"unit_type"` // curriculum | diagnostic_exam
+	OrderIndex       int                  `json:"order_index"`
+	TotalLessons     int                  `json:"total_lessons"`
+	CompletedLessons int                  `json:"completed_lessons"`
+	IsUnlocked       bool                 `json:"is_unlocked"`
+	Lessons          []LessonNodeResponse `json:"lessons,omitempty"`
+	CreatedAt        time.Time            `json:"created_at"`
+}
+
+// GetRoadmapRequest defines query filters for retrieving the curriculum roadmap
+type GetRoadmapRequest struct {
+	LanguageID string `form:"language_id"`
+}
+
+// RoadmapResponse encapsulates the full active language curriculum tree with level metrics
+type RoadmapResponse struct {
+	Language         language.Language         `json:"language"`
+	Level            language.ProficiencyLevel `json:"level"`
+	TotalLessons     int                       `json:"total_lessons"`
+	CompletedLessons int                       `json:"completed_lessons"`
+	ProgressPercent  int                       `json:"progress_percent"`
+	CurrentLessonID  *string                   `json:"current_lesson_id,omitempty"`
+	Units            []UnitNodeResponse        `json:"units"`
+}
+
+// LessonDetailResponse encapsulates full lesson node details and its child interactive exercises
+type LessonDetailResponse struct {
+	ID          string              `json:"id"`
+	UnitID      string              `json:"unit_id"`
+	Title       string              `json:"title"`
+	XPReward    int                 `json:"xp_reward"`
+	OrderIndex  int                 `json:"order_index"`
+	IsUnlocked  bool                `json:"is_unlocked"`
+	IsCompleted bool                `json:"is_completed"`
+	Score       int                 `json:"score"`
+	IsSkipped   bool                `json:"is_skipped"`
+	CompletedAt *time.Time          `json:"completed_at,omitempty"`
+	Exercises   []exercise.Exercise `json:"exercises,omitempty"`
+	CreatedAt   time.Time           `json:"created_at"`
+}
+
+// CompleteLessonRequest defines the payload when a learner submits a finished lesson
 type CompleteLessonRequest struct {
 	LessonID string `json:"lesson_id" binding:"required,uuid"`
 	Score    int    `json:"score" binding:"required,min=0,max=100"`
 }
 
-// CompleteLessonResponse returns the updated progression and rewards
+// CompleteLessonResponse returns updated progression, gamification rewards, and the next unlocked node
 type CompleteLessonResponse struct {
 	Progress             UserLessonProgress             `json:"progress"`
 	Gamification         user.UserGamificationStats     `json:"gamification"`
@@ -94,14 +147,19 @@ type CompleteLessonResponse struct {
 	AwardedBadges        []gamification.BadgeDefinition `json:"awarded_badges,omitempty"`
 }
 
+// ============================================================================
+// 3. PERSISTENCE & BUSINESS LOGIC CONTRACTS
+// ============================================================================
+
 // Repository specifies data access operations for curriculum structures
 type Repository interface {
 	GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error)
 	GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error)
-	GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]Unit, error)
+	GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error)
 	GetUnitByID(ctx context.Context, id string) (*Unit, error)
-	GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]Lesson, error)
-	GetLessonByID(ctx context.Context, id string, userID string) (*Lesson, error)
+	GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error)
+	GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error)
+	GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error)
 	GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error)
 	UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
@@ -109,8 +167,8 @@ type Repository interface {
 
 // Usecase specifies business operations for roadmap and lesson navigation
 type Usecase interface {
-	GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error)
-	GetLessonDetail(ctx context.Context, userID string, lessonID string) (*Lesson, error)
+	GetRoadmap(ctx context.Context, userID string, req *GetRoadmapRequest) (*RoadmapResponse, error)
+	GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error)
 	CompleteLesson(ctx context.Context, userID string, req *CompleteLessonRequest) (*CompleteLessonResponse, error)
 }
 
