@@ -36,7 +36,7 @@ type RegisterRequest struct {
 // LoginRequest defines the input payload for authenticating a user
 type LoginRequest struct {
 	Email      string `json:"email" binding:"required,email,max=255"`
-	Password   string `json:"password" binding:"required,min=8,max=72"`
+	Password   string `json:"password" binding:"required,max=72"`
 	RememberMe bool   `json:"remember_me"`
 }
 
