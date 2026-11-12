@@ -26,7 +26,7 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 		SELECT id, level_id, code, category, title, formula, explanation, order_index, created_at
 		FROM grammar_points
 		WHERE level_id = $1
-		ORDER BY order_index ASC
+		ORDER BY order_index ASC, id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID)
 	if err != nil {
@@ -34,7 +34,7 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 	}
 	defer rows.Close()
 
-	points := make([]GrammarPoint, 0)
+	points := make([]GrammarPoint, 0, 16)
 	for rows.Next() {
 		var gp GrammarPoint
 		if err := rows.Scan(
@@ -79,7 +79,7 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 		FROM grammar_points gp
 		JOIN exercises e ON gp.id = e.grammar_point_id
 		WHERE e.lesson_id = $1
-		ORDER BY gp.order_index ASC
+		ORDER BY gp.order_index ASC, gp.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, lessonID)
 	if err != nil {
@@ -87,7 +87,7 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 	}
 	defer rows.Close()
 
-	points := make([]GrammarPoint, 0)
+	points := make([]GrammarPoint, 0, 8)
 	for rows.Next() {
 		var gp GrammarPoint
 		if err := rows.Scan(
@@ -105,13 +105,13 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 }
 
 // GetUnitsByLevelID retrieves all curriculum chapters for a proficiency level
-func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
+func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, _ string) ([]UnitNodeResponse, error) {
 	query := `
 		SELECT 
 			u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at
 		FROM units u
 		WHERE u.level_id = $1
-		ORDER BY u.order_index ASC
+		ORDER BY u.order_index ASC, u.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID)
 	if err != nil {
@@ -119,7 +119,7 @@ func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID stri
 	}
 	defer rows.Close()
 
-	units := make([]UnitNodeResponse, 0)
+	units := make([]UnitNodeResponse, 0, 8)
 	for rows.Next() {
 		var u UnitNodeResponse
 		if err := rows.Scan(
@@ -177,7 +177,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	}
 	defer rows.Close()
 
-	lessons := make([]LessonNodeResponse, 0)
+	lessons := make([]LessonNodeResponse, 0, 32)
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
@@ -206,7 +206,7 @@ func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID stri
 		FROM lessons l
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2
 		WHERE l.unit_id = $1
-		ORDER BY l.order_index ASC
+		ORDER BY l.order_index ASC, l.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, unitID, userID)
 	if err != nil {
@@ -214,7 +214,7 @@ func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID stri
 	}
 	defer rows.Close()
 
-	lessons := make([]LessonNodeResponse, 0)
+	lessons := make([]LessonNodeResponse, 0, 16)
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
@@ -262,17 +262,21 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 // GetNextLessonID finds the next sequential lesson ID in the current unit or next unit
 func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error) {
 	query := `
+		WITH current_target AS (
+			SELECT u.level_id, u.order_index AS unit_order, l.order_index AS lesson_order
+			FROM lessons l
+			JOIN units u ON l.unit_id = u.id
+			WHERE l.id = $1
+		)
 		SELECT next_l.id
-		FROM lessons cur_l
-		JOIN units cur_u ON cur_l.unit_id = cur_u.id
-		JOIN units next_u ON cur_u.level_id = next_u.level_id
+		FROM current_target ct
+		JOIN units next_u ON next_u.level_id = ct.level_id
 		JOIN lessons next_l ON next_l.unit_id = next_u.id
-		WHERE cur_l.id = $1
-		  AND (
-		    (next_u.order_index = cur_u.order_index AND next_l.order_index > cur_l.order_index)
-		    OR (next_u.order_index > cur_u.order_index)
-		  )
-		ORDER BY next_u.order_index ASC, next_l.order_index ASC
+		WHERE (
+			(next_u.order_index = ct.unit_order AND next_l.order_index > ct.lesson_order)
+			OR (next_u.order_index > ct.unit_order)
+		)
+		ORDER BY next_u.order_index ASC, next_l.order_index ASC, next_l.id ASC
 		LIMIT 1
 	`
 	var nextID string
@@ -289,22 +293,26 @@ func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonI
 // IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
 	query := `
+		WITH current_target AS (
+			SELECT l.id, u.level_id, u.order_index AS unit_order, l.order_index AS lesson_order
+			FROM lessons l
+			JOIN units u ON l.unit_id = u.id
+			WHERE l.id = $1
+		)
 		SELECT 
 			CASE 
-				WHEN NOT EXISTS (SELECT 1 FROM lessons WHERE id = $1) THEN false
+				WHEN NOT EXISTS (SELECT 1 FROM current_target) THEN false
 				ELSE NOT EXISTS (
 					SELECT 1
-					FROM lessons prev_l
-					JOIN units prev_u ON prev_l.unit_id = prev_u.id
-					JOIN units cur_u ON cur_u.level_id = prev_u.level_id
-					JOIN lessons cur_l ON cur_l.unit_id = cur_u.id
+					FROM current_target ct
+					JOIN units prev_u ON prev_u.level_id = ct.level_id
+					JOIN lessons prev_l ON prev_l.unit_id = prev_u.id
 					LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2
-					WHERE cur_l.id = $1
-					  AND (
-					    prev_u.order_index < cur_u.order_index
-					    OR (prev_u.order_index = cur_u.order_index AND prev_l.order_index < cur_l.order_index)
-					  )
-					  AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
+					WHERE (
+						prev_u.order_index < ct.unit_order
+						OR (prev_u.order_index = ct.unit_order AND prev_l.order_index < ct.lesson_order)
+					)
+					AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
 				)
 			END AS is_unlocked
 	`

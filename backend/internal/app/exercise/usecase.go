@@ -59,12 +59,17 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		return nil, err
 	}
 
-	isCorrect := u.helper.EvaluateAnswer(ex.CorrectAnswer, req.UserAnswer)
+	isCorrect := u.helper.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, req.UserAnswer)
+	var diagnosticFeedback *string
+	if !isCorrect {
+		diagnosticFeedback = u.helper.ExtractDiagnosticFeedback(ex.DiagnosticRubric, req.UserAnswer)
+	}
 
 	attempt := &UserExerciseAttempt{
 		UserID:           userID,
 		ExerciseID:       req.ExerciseID,
 		IsCorrect:        isCorrect,
+		SelectedAnswer:   map[string]any{"user_answer": req.UserAnswer},
 		UserAnswer:       req.UserAnswer,
 		TimeSpentSeconds: req.TimeSpentSeconds,
 	}
@@ -77,13 +82,15 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	if !isCorrect {
 		tomorrow := now.AddDate(0, 0, 1)
 		srsCard := &UserSRSReview{
-			UserID:         userID,
-			ExerciseID:     req.ExerciseID,
-			Repetitions:    0,
-			IntervalDays:   1,
-			EaseFactor:     2.5,
-			DueDate:        tomorrow,
-			LastReviewedAt: &now,
+			UserID:          userID,
+			ExerciseID:      req.ExerciseID,
+			RepetitionCount: 0,
+			Repetitions:     0,
+			IntervalDays:    1,
+			EaseFactor:      2.5,
+			NextReviewAt:    tomorrow,
+			DueDate:         tomorrow,
+			LastReviewedAt:  &now,
 		}
 		_ = u.srsRepo.UpsertReview(ctx, srsCard)
 		nextDue = &tomorrow
@@ -95,12 +102,13 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	}
 
 	return &SubmitExerciseAnswerResponse{
-		IsCorrect:     isCorrect,
-		CorrectAnswer: ex.CorrectAnswer,
-		Explanation:   ex.Explanation,
-		XPEarned:      xpEarned,
-		StreakBonus:   0,
-		NextReviewDue: nextDue,
+		IsCorrect:          isCorrect,
+		CorrectAnswer:      ex.CorrectAnswer,
+		Explanation:        ex.Explanation,
+		DiagnosticFeedback: diagnosticFeedback,
+		XPEarned:           xpEarned,
+		StreakBonus:        0,
+		NextReviewDue:      nextDue,
 	}, nil
 }
 
@@ -208,14 +216,24 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	maxScore := len(questions)
 	answersPayload := make(map[string]any)
 
+	pillarTotal := make(map[string]int)
+	pillarCorrect := make(map[string]int)
+
 	for _, ans := range req.Answers {
 		q, exists := questionsMap[ans.ExerciseID]
 		if !exists {
 			continue
 		}
-		isCorrect := u.helper.EvaluateAnswer(q.CorrectAnswer, ans.UserAnswer)
+		pillar := q.SkillPillar
+		if pillar == "" {
+			pillar = "reading"
+		}
+		pillarTotal[pillar]++
+
+		isCorrect := u.helper.EvaluateAnswer(q.CorrectAnswer, q.AcceptableAnswers, ans.UserAnswer)
 		if isCorrect {
 			totalScore++
+			pillarCorrect[pillar]++
 		}
 		answersPayload[ans.ExerciseID] = map[string]any{
 			"user_answer": ans.UserAnswer,
@@ -228,6 +246,19 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		scorePercent = (totalScore * 100) / maxScore
 	}
 
+	calcPillarScore := func(pillar string) int {
+		total := pillarTotal[pillar]
+		if total == 0 {
+			return scorePercent
+		}
+		return (pillarCorrect[pillar] * 100) / total
+	}
+
+	readingScore := calcPillarScore("reading")
+	listeningScore := calcPillarScore("listening")
+	writingScore := calcPillarScore("writing")
+	speakingScore := calcPillarScore("speaking")
+
 	passingScore := lvl.PassingScorePercent
 	if passingScore <= 0 {
 		passingScore = 60
@@ -238,11 +269,26 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	attempt := &ReadinessExamAttempt{
 		UserID:         userID,
 		LevelID:        req.LevelID,
+		ReadingScore:   readingScore,
+		ListeningScore: listeningScore,
+		WritingScore:   writingScore,
+		SpeakingScore:  speakingScore,
+		OverallScore:   scorePercent,
 		TotalScore:     totalScore,
 		MaxScore:       maxScore,
 		ScorePercent:   scorePercent,
 		IsPassed:       isPassed,
+		AnalysisReport: map[string]any{
+			"answers": answersPayload,
+			"pillars": map[string]int{
+				"reading":   readingScore,
+				"listening": listeningScore,
+				"writing":   writingScore,
+				"speaking":  speakingScore,
+			},
+		},
 		AnswersPayload: answersPayload,
+		AttemptedAt:    now,
 		CompletedAt:    now,
 	}
 

@@ -17,55 +17,66 @@ var (
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "quality rating must be between 0 and 5", nil)
 )
 
-// ExerciseType enumeration constants
+// ExerciseType enumeration constants aligned with database CHECK constraint
 const (
-	ExerciseTypeMultipleChoice       = "multiple_choice"
 	ExerciseTypeSentenceBuilder      = "sentence_builder"
-	ExerciseTypeListeningCloze       = "listening_cloze"
-	ExerciseTypePitchAccent          = "pitch_accent"
-	ExerciseTypeKanjiTracing         = "kanji_tracing"
+	ExerciseTypeFillBlank            = "fill_blank"
+	ExerciseTypeListeningChoice      = "listening_choice"
+	ExerciseTypeSpeakingRepeat       = "speaking_repeat"
+	ExerciseTypeDialogueRoleplay     = "dialogue_roleplay"
+	ExerciseTypeMultipleChoice       = "multiple_choice"
 	ExerciseTypePlacementTest        = "placement_test"
 	ExerciseTypeReadingComprehension = "reading_comprehension"
 )
 
 // Exercise represents an interactive pedagogical question (exercises table)
 type Exercise struct {
-	ID            string    `json:"id"`
-	LessonID      *string   `json:"lesson_id,omitempty"`
-	Type          string    `json:"type"`
-	QuestionText  string    `json:"question_text"`
-	Options       []string  `json:"options"`
-	CorrectAnswer string    `json:"correct_answer,omitempty"`
-	Hint          *string   `json:"hint,omitempty"`
-	Explanation   *string   `json:"explanation,omitempty"`
-	MediaURL      *string   `json:"media_url,omitempty"`
-	XPReward      int       `json:"xp_reward"`
-	OrderIndex    int       `json:"order_index"`
-	CreatedAt     time.Time `json:"created_at"`
+	ID                string         `json:"id"`
+	LessonID          *string        `json:"lesson_id,omitempty"`
+	GrammarPointID    *string        `json:"grammar_point_id,omitempty"`
+	SkillPillar       string         `json:"skill_pillar"`
+	ExerciseType      string         `json:"exercise_type"`
+	Type              string         `json:"type,omitempty"` // Backward-compatible alias
+	Prompt            string         `json:"prompt"`
+	QuestionText      string         `json:"question_text,omitempty"` // Backward-compatible alias
+	Content           map[string]any `json:"content,omitempty"`
+	Options           []string       `json:"options,omitempty"` // Extracted from content.options for frontend
+	CorrectAnswer     string         `json:"correct_answer,omitempty"`
+	AcceptableAnswers []string       `json:"acceptable_answers,omitempty"`
+	DiagnosticRubric  map[string]any `json:"diagnostic_rubric,omitempty"`
+	Explanation       *string        `json:"explanation,omitempty"`
+	Hint              *string        `json:"hint,omitempty"`
+	MediaURL          *string        `json:"media_url,omitempty"`
+	XPReward          int            `json:"xp_reward"`
+	OrderIndex        int            `json:"order_index"`
+	CreatedAt         time.Time      `json:"created_at"`
 }
 
 // UserExerciseAttempt logs single-attempt telemetry for learning analytics (user_exercise_attempts table)
 type UserExerciseAttempt struct {
-	ID               string    `json:"id"`
-	UserID           string    `json:"user_id"`
-	ExerciseID       string    `json:"exercise_id"`
-	IsCorrect        bool      `json:"is_correct"`
-	UserAnswer       string    `json:"user_answer"`
-	TimeSpentSeconds int       `json:"time_spent_seconds"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID               string         `json:"id"`
+	UserID           string         `json:"user_id"`
+	ExerciseID       string         `json:"exercise_id"`
+	IsCorrect        bool           `json:"is_correct"`
+	SelectedAnswer   map[string]any `json:"selected_answer,omitempty"`
+	UserAnswer       string         `json:"user_answer"` // Backward-compatible alias
+	TimeSpentSeconds int            `json:"time_spent_seconds"`
+	CreatedAt        time.Time      `json:"created_at"`
 }
 
 // UserSRSReview represents the spaced repetition memory state (SM-2) for an exercise (user_srs_reviews table)
 type UserSRSReview struct {
-	ID             string     `json:"id"`
-	UserID         string     `json:"user_id"`
-	ExerciseID     string     `json:"exercise_id"`
-	Repetitions    int        `json:"repetitions"`
-	IntervalDays   int        `json:"interval_days"`
-	EaseFactor     float64    `json:"ease_factor"`
-	DueDate        time.Time  `json:"due_date"`
-	LastReviewedAt *time.Time `json:"last_reviewed_at,omitempty"`
-	Exercise       *Exercise  `json:"exercise,omitempty"`
+	ID              string     `json:"id"`
+	UserID          string     `json:"user_id"`
+	ExerciseID      string     `json:"exercise_id"`
+	RepetitionCount int        `json:"repetition_count"`
+	Repetitions     int        `json:"repetitions,omitempty"` // Backward-compatible alias
+	IntervalDays    int        `json:"interval_days"`
+	EaseFactor      float64    `json:"ease_factor"`
+	NextReviewAt    time.Time  `json:"next_review_at"`
+	DueDate         time.Time  `json:"due_date,omitempty"` // Backward-compatible alias
+	LastReviewedAt  *time.Time `json:"last_reviewed_at,omitempty"`
+	Exercise        *Exercise  `json:"exercise,omitempty"`
 }
 
 // ReadinessExamAttempt records full mock certification exam submissions (readiness_exam_attempts table)
@@ -73,12 +84,19 @@ type ReadinessExamAttempt struct {
 	ID             string                     `json:"id"`
 	UserID         string                     `json:"user_id"`
 	LevelID        string                     `json:"level_id"`
-	TotalScore     int                        `json:"total_score"`
-	MaxScore       int                        `json:"max_score"`
-	ScorePercent   int                        `json:"score_percent"`
+	ReadingScore   int                        `json:"reading_score"`
+	ListeningScore int                        `json:"listening_score"`
+	WritingScore   int                        `json:"writing_score"`
+	SpeakingScore  int                        `json:"speaking_score"`
+	OverallScore   int                        `json:"overall_score"`
+	TotalScore     int                        `json:"total_score,omitempty"` // Backward-compatible alias
+	MaxScore       int                        `json:"max_score,omitempty"`
+	ScorePercent   int                        `json:"score_percent,omitempty"`
 	IsPassed       bool                       `json:"is_passed"`
-	AnswersPayload map[string]any             `json:"answers_payload,omitempty"`
-	CompletedAt    time.Time                  `json:"completed_at"`
+	AnalysisReport map[string]any             `json:"analysis_report,omitempty"`
+	AnswersPayload map[string]any             `json:"answers_payload,omitempty"` // Backward-compatible alias
+	AttemptedAt    time.Time                  `json:"attempted_at"`
+	CompletedAt    time.Time                  `json:"completed_at,omitempty"` // Backward-compatible alias
 	Level          *language.ProficiencyLevel `json:"level,omitempty"`
 }
 
@@ -91,12 +109,13 @@ type SubmitExerciseAnswerRequest struct {
 
 // SubmitExerciseAnswerResponse returns validation, correction, and reward feedback
 type SubmitExerciseAnswerResponse struct {
-	IsCorrect     bool       `json:"is_correct"`
-	CorrectAnswer string     `json:"correct_answer"`
-	Explanation   *string    `json:"explanation,omitempty"`
-	XPEarned      int        `json:"xp_earned"`
-	StreakBonus   int        `json:"streak_bonus"`
-	NextReviewDue *time.Time `json:"next_review_due,omitempty"`
+	IsCorrect          bool       `json:"is_correct"`
+	CorrectAnswer      string     `json:"correct_answer"`
+	Explanation        *string    `json:"explanation,omitempty"`
+	DiagnosticFeedback *string    `json:"diagnostic_feedback,omitempty"`
+	XPEarned           int        `json:"xp_earned"`
+	StreakBonus        int        `json:"streak_bonus"`
+	NextReviewDue      *time.Time `json:"next_review_due,omitempty"`
 }
 
 // SubmitSRSReviewRequest defines the SM-2 quality grade (0-5) after reviewing a card

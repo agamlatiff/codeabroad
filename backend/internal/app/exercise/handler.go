@@ -31,13 +31,15 @@ func NewHandler(
 
 // GetExercisesByLesson handles GET /api/v1/exercises/lesson/:lesson_id
 func (h *Handler) GetExercisesByLesson(c *gin.Context) {
-	lessonID := c.Param("lesson_id")
-	if lessonID == "" {
-		response.BadRequest(c, "lesson_id parameter is required")
+	var uri struct {
+		LessonID string `uri:"lesson_id" binding:"required,uuid"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		response.BadRequest(c, "invalid lesson_id parameter format, must be a valid UUID")
 		return
 	}
 
-	exercises, err := h.exerciseUsecase.GetExercisesByLesson(c.Request.Context(), lessonID)
+	exercises, err := h.exerciseUsecase.GetExercisesByLesson(c.Request.Context(), uri.LessonID)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -114,13 +116,15 @@ func (h *Handler) ProcessReview(c *gin.Context) {
 
 // GetExamQuestions handles GET /api/v1/exams/questions/:level_id
 func (h *Handler) GetExamQuestions(c *gin.Context) {
-	levelID := c.Param("level_id")
-	if levelID == "" {
-		response.BadRequest(c, "level_id parameter is required")
+	var uri struct {
+		LevelID string `uri:"level_id" binding:"required,uuid"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		response.BadRequest(c, "invalid level_id parameter format, must be a valid UUID")
 		return
 	}
 
-	questions, err := h.examUsecase.GetExamQuestions(c.Request.Context(), levelID)
+	questions, err := h.examUsecase.GetExamQuestions(c.Request.Context(), uri.LevelID)
 	if err != nil {
 		response.Error(c, err)
 		return

@@ -72,10 +72,43 @@ func (h *Helper) CalculateSM2(
 	}
 }
 
-// EvaluateAnswer checks user answer string against correct answer with case-insensitive whitespace trim
-func (h *Helper) EvaluateAnswer(correctAnswer string, userAnswer string) bool {
-	normCorrect := strings.ToLower(strings.TrimSpace(correctAnswer))
+// EvaluateAnswer checks user answer string against correct answer and acceptable synonyms with case-insensitive whitespace trim
+func (h *Helper) EvaluateAnswer(correctAnswer string, acceptableAnswers []string, userAnswer string) bool {
 	normUser := strings.ToLower(strings.TrimSpace(userAnswer))
-	return normCorrect == normUser
+	if normUser == "" {
+		return false
+	}
+	normCorrect := strings.ToLower(strings.TrimSpace(correctAnswer))
+	if normCorrect == normUser {
+		return true
+	}
+	for _, acc := range acceptableAnswers {
+		if strings.ToLower(strings.TrimSpace(acc)) == normUser {
+			return true
+		}
+	}
+	return false
+}
+
+// ExtractDiagnosticFeedback looks up targeted feedback in the diagnostic rubric for a specific user choice
+func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer string) *string {
+	if len(rubric) == 0 {
+		return nil
+	}
+	trimmed := strings.TrimSpace(userAnswer)
+	if val, ok := rubric[trimmed]; ok {
+		if str, ok := val.(string); ok && str != "" {
+			return &str
+		}
+	}
+	lowerUser := strings.ToLower(trimmed)
+	for k, v := range rubric {
+		if strings.ToLower(strings.TrimSpace(k)) == lowerUser {
+			if str, ok := v.(string); ok && str != "" {
+				return &str
+			}
+		}
+	}
+	return nil
 }
 

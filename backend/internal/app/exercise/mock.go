@@ -145,7 +145,11 @@ func (m *MockSRSRepository) GetDueReviews(ctx context.Context, userID string, no
 	}
 	var res []UserSRSReview
 	for _, r := range m.Reviews {
-		if r.UserID == userID && !r.DueDate.After(now) {
+		due := r.NextReviewAt
+		if due.IsZero() {
+			due = r.DueDate
+		}
+		if r.UserID == userID && !due.After(now) {
 			res = append(res, *r)
 			if limit > 0 && len(res) >= limit {
 				break
@@ -185,7 +189,11 @@ func (m *MockSRSRepository) GetDueCount(ctx context.Context, userID string, now 
 	}
 	count := 0
 	for _, r := range m.Reviews {
-		if r.UserID == userID && !r.DueDate.After(now) {
+		due := r.NextReviewAt
+		if due.IsZero() {
+			due = r.DueDate
+		}
+		if r.UserID == userID && !due.After(now) {
 			count++
 		}
 	}
