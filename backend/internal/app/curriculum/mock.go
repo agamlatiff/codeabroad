@@ -240,6 +240,11 @@ func (m *MockRepository) UpsertLessonProgress(ctx context.Context, progress *Use
 		progress.CompletedAt = time.Now()
 	}
 	key := fmt.Sprintf("%s:%s", progress.UserID, progress.LessonID)
+	if existing, ok := m.LessonProgress[key]; ok {
+		if existing.Score > progress.Score {
+			progress.Score = existing.Score
+		}
+	}
 	m.LessonProgress[key] = progress
 	return nil
 }

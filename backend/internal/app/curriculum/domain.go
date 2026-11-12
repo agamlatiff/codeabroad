@@ -137,7 +137,7 @@ type LessonDetailResponse struct {
 // CompleteLessonRequest defines the payload when a learner submits a finished lesson
 type CompleteLessonRequest struct {
 	LessonID string `json:"lesson_id" binding:"required,uuid"`
-	Score    int    `json:"score" binding:"required,min=0,max=100"`
+	Score    int    `json:"score" binding:"min=0,max=100"`
 }
 
 // CompleteLessonResponse returns updated progression, gamification rewards, and the next unlocked node

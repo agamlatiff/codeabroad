@@ -169,7 +169,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 		JOIN units u ON l.unit_id = u.id
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2
 		WHERE u.level_id = $1
-		ORDER BY u.order_index ASC, l.order_index ASC
+		ORDER BY u.order_index ASC, l.order_index ASC, l.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID, userID)
 	if err != nil {
@@ -289,20 +289,24 @@ func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonI
 // IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
 	query := `
-		SELECT NOT EXISTS (
-			SELECT 1
-			FROM lessons prev_l
-			JOIN units prev_u ON prev_l.unit_id = prev_u.id
-			JOIN units cur_u ON cur_u.level_id = prev_u.level_id
-			JOIN lessons cur_l ON cur_l.unit_id = cur_u.id
-			LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2
-			WHERE cur_l.id = $1
-			  AND (
-			    prev_u.order_index < cur_u.order_index
-			    OR (prev_u.order_index = cur_u.order_index AND prev_l.order_index < cur_l.order_index)
-			  )
-			  AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
-		) AS is_unlocked
+		SELECT 
+			CASE 
+				WHEN NOT EXISTS (SELECT 1 FROM lessons WHERE id = $1) THEN false
+				ELSE NOT EXISTS (
+					SELECT 1
+					FROM lessons prev_l
+					JOIN units prev_u ON prev_l.unit_id = prev_u.id
+					JOIN units cur_u ON cur_u.level_id = prev_u.level_id
+					JOIN lessons cur_l ON cur_l.unit_id = cur_u.id
+					LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2
+					WHERE cur_l.id = $1
+					  AND (
+					    prev_u.order_index < cur_u.order_index
+					    OR (prev_u.order_index = cur_u.order_index AND prev_l.order_index < cur_l.order_index)
+					  )
+					  AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
+				)
+			END AS is_unlocked
 	`
 	var isUnlocked bool
 	err := r.db.Pool.QueryRow(ctx, query, lessonID, userID).Scan(&isUnlocked)
@@ -343,7 +347,7 @@ func (r *PostgresRepository) UpsertLessonProgress(ctx context.Context, progress 
 			score = GREATEST(user_lesson_progress.score, EXCLUDED.score),
 			is_skipped = EXCLUDED.is_skipped,
 			completed_at = EXCLUDED.completed_at
-		RETURNING id
+		RETURNING id, score, is_completed, is_skipped, completed_at
 	`
 	if progress.CompletedAt.IsZero() {
 		progress.CompletedAt = time.Now().UTC()
@@ -352,7 +356,7 @@ func (r *PostgresRepository) UpsertLessonProgress(ctx context.Context, progress 
 	err := r.db.Pool.QueryRow(
 		ctx, query,
 		progress.UserID, progress.LessonID, progress.IsCompleted, progress.Score, progress.IsSkipped, progress.CompletedAt,
-	).Scan(&progress.ID)
+	).Scan(&progress.ID, &progress.Score, &progress.IsCompleted, &progress.IsSkipped, &progress.CompletedAt)
 	if err != nil {
 		return fmt.Errorf("failed to upsert user lesson progress: %w", err)
 	}

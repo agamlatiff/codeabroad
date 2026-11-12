@@ -177,3 +177,65 @@ func TestGetGrammarPoints(t *testing.T) {
 	}
 }
 
+func TestCompleteLesson_ZeroScore_Allowed(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 0, CurrentLevel: 1},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	// Submitting a score of 0 should be fully valid
+	res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    0,
+	})
+	if err != nil {
+		t.Fatalf("expected 0 score to be accepted, got error: %v", err)
+	}
+	if res.Progress.Score != 0 {
+		t.Errorf("expected progress score to be 0, got %d", res.Progress.Score)
+	}
+}
+
+func TestCompleteLesson_ScoreGreatestPreserved(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
+	cRepo.LessonProgress["user-1:lesson-1"] = &curriculum.UserLessonProgress{
+		UserID:      "user-1",
+		LessonID:    "lesson-1",
+		IsCompleted: true,
+		Score:       95,
+	}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 100, CurrentLevel: 2},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	// Replay with lower score of 60; GREATEST score (95) should be preserved
+	res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    60,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if res.Progress.Score != 95 {
+		t.Errorf("expected preserved highest score 95, got %d", res.Progress.Score)
+	}
+}
+
