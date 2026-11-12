@@ -28,6 +28,7 @@ export const useRegister = () => {
     register,
     handleSubmit: rhfHandleSubmit,
     watch,
+    control,
     setValue,
     setError,
     clearErrors,
@@ -79,39 +80,15 @@ export const useRegister = () => {
   }
 
   return {
-    // React Hook Form register primitive for direct binding
+    // React Hook Form primitives
     register,
-
-    // Form Values & Field Setters (backwards-compatible with RegisterPage UI components)
-    form: {
-      name: watch('name') ?? '',
-      setName: (val: string) => {
-        setValue('name', val)
-        clearErrors('name')
-      },
-      username: watch('username') ?? '',
-      setUsername: (val: string) => {
-        setValue('username', val)
-        clearErrors('username')
-      },
-      email: watch('email') ?? '',
-      setEmail: (val: string) => {
-        setValue('email', val)
-        clearErrors('email')
-      },
-      password: watch('password') ?? '',
-      setPassword: (val: string) => {
-        setValue('password', val)
-        clearErrors('password')
-      },
-      fieldErrors: {
-        name: errors.name?.message,
-        username: errors.username?.message,
-        email: errors.email?.message,
-        password: errors.password?.message,
-      },
-      clearFieldError: (field: keyof RegisterPayload) => clearErrors(field),
-    },
+    handleSubmit: rhfHandleSubmit,
+    watch,
+    control,
+    setValue,
+    setError,
+    clearErrors,
+    errors,
 
     // Request Status & Alerts
     status: {
@@ -123,7 +100,6 @@ export const useRegister = () => {
     // User Actions
     actions: {
       submit: handleFormSubmit,
-      // googleRegister: redirectToGoogleOAuth,
     },
   }
 }

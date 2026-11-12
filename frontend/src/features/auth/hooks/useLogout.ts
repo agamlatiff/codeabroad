@@ -28,9 +28,21 @@ export const useLogout = () => {
       // 2. Wipe TanStack Query cache to prevent data bleed
       queryClient.clear()
 
-      // 3. Clear temporary user-specific storage
-      if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-        localStorage.removeItem('codeabroad_completed_quests')
+      // 3. Clear temporary user-specific storage (purge all codeabroad_* keys to avoid cross-user state bleed)
+      if (typeof window !== 'undefined') {
+        try {
+          const keysToPurge: string[] = []
+          for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i)
+            if (key && key.startsWith('codeabroad_')) {
+              keysToPurge.push(key)
+            }
+          }
+          keysToPurge.forEach((k) => localStorage.removeItem(k))
+          sessionStorage.clear()
+        } catch {
+          // Ignore private mode / restricted browser storage errors
+        }
       }
 
       // 4. Redirect to login

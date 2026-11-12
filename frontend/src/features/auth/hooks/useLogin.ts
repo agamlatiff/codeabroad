@@ -27,7 +27,6 @@ export const useLogin = () => {
   const {
     register,
     handleSubmit: rhfHandleSubmit,
-    watch,
     setValue,
     clearErrors,
     formState: { errors },
@@ -70,29 +69,12 @@ export const useLogin = () => {
   }
 
   return {
-    // React Hook Form register primitive for direct binding
+    // React Hook Form primitives
     register,
-
-    // Form Values & Field Setters (backwards-compatible with LoginPage UI components)
-    form: {
-      email: watch('email') ?? '',
-      setEmail: (val: string) => {
-        setValue('email', val)
-        clearErrors('email')
-      },
-      password: watch('password') ?? '',
-      setPassword: (val: string) => {
-        setValue('password', val)
-        clearErrors('password')
-      },
-      rememberMe: watch('remember_me') ?? false,
-      setRememberMe: (val: boolean) => setValue('remember_me', val),
-      fieldErrors: {
-        email: errors.email?.message,
-        password: errors.password?.message,
-      },
-      clearFieldError: (field: keyof LoginPayload) => clearErrors(field),
-    },
+    handleSubmit: rhfHandleSubmit,
+    errors,
+    setValue,
+    clearErrors,
 
     // Request Status & Alerts
     status: {
@@ -104,7 +86,6 @@ export const useLogin = () => {
     // User Actions
     actions: {
       submit: handleFormSubmit,
-      // googleLogin: redirectToGoogleOAuth,
     },
   }
 }

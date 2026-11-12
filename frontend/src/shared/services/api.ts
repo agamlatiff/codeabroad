@@ -72,11 +72,12 @@ api.interceptors.response.use(
 
         // If 401 Unauthorized and request has not been retried yet
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-            // Prevent infinite refresh loop on auth endpoints
+            // Prevent infinite refresh loop on auth endpoints (including logout)
             if (
                 originalRequest.url?.includes('/auth/login') ||
                 originalRequest.url?.includes('/auth/register') ||
-                originalRequest.url?.includes('/auth/refresh')
+                originalRequest.url?.includes('/auth/refresh') ||
+                originalRequest.url?.includes('/auth/logout')
             ) {
                 return Promise.reject(error)
             }
@@ -88,6 +89,9 @@ api.interceptors.response.use(
                 return Promise.reject(error)
             }
 
+            // Mark original request as retried before queuing or executing refresh
+            originalRequest._retry = true
+
             // If another refresh call is already in progress, queue this request
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
@@ -97,7 +101,6 @@ api.interceptors.response.use(
                     .catch((err) => Promise.reject(err))
             }
 
-            originalRequest._retry = true
             isRefreshing = true
 
             try {

@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import type { User } from "@/features/user/types/user"
+import { PASSWORD_MIN_LENGTH, PASSWORD_MAX_LENGTH } from "@/shared/utils/validation"
 
 /**
  * AUTH DOMAIN CONTRACTS & ZOD SCHEMAS
@@ -16,7 +17,7 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(1, 'Kata sandi wajib diisi')
-    .max(72, 'Kata sandi maksimal 72 karakter'),
+    .max(PASSWORD_MAX_LENGTH, `Kata sandi maksimal ${PASSWORD_MAX_LENGTH} karakter`),
   remember_me: z.boolean().optional(),
 })
 
@@ -46,8 +47,8 @@ export const registerSchema = z.object({
   password: z
     .string()
     .min(1, 'Kata sandi wajib diisi')
-    .min(8, 'Kata sandi minimal 8 karakter')
-    .max(72, 'Kata sandi maksimal 72 karakter'),
+    .min(PASSWORD_MIN_LENGTH, `Kata sandi minimal ${PASSWORD_MIN_LENGTH} karakter`)
+    .max(PASSWORD_MAX_LENGTH, `Kata sandi maksimal ${PASSWORD_MAX_LENGTH} karakter`),
 })
 
 export type RegisterPayload = z.infer<typeof registerSchema>

@@ -9,7 +9,8 @@ import { Button3D } from "@/shared/components/ui/Button3D"
 import { User, At, EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const RegisterPage = () => {
-  const { form, status, actions } = useRegister()
+  const { register, watch, errors, status, actions } = useRegister()
+  const password = watch('password') ?? ''
 
   return (
     <AuthLayout
@@ -27,42 +28,33 @@ export const RegisterPage = () => {
           id="name"
           label="Nama Lengkap"
           type="text"
+          autoComplete="name"
           placeholder="Contoh: Budi Pratama"
-          value={form.name}
-          error={form.fieldErrors.name}
-          onChange={(e) => {
-            form.setName(e.target.value)
-            form.clearFieldError('name')
-          }}
+          error={errors.name?.message}
           icon={<User weight="bold" className="w-4 h-4" />}
+          {...register('name')}
         />
 
         <Input
           id="username"
           label="Username"
           type="text"
+          autoComplete="username"
           placeholder="nama_kamu"
-          value={form.username}
-          error={form.fieldErrors.username}
-          onChange={(e) => {
-            form.setUsername(e.target.value.toLowerCase().trim())
-            form.clearFieldError('username')
-          }}
+          error={errors.username?.message}
           icon={<At weight="bold" className="w-4 h-4" />}
+          {...register('username')}
         />
 
         <Input
           id="email"
           label="Alamat Email"
           type="email"
+          autoComplete="email"
           placeholder="nama@email.com"
-          value={form.email}
-          error={form.fieldErrors.email}
-          onChange={(e) => {
-            form.setEmail(e.target.value)
-            form.clearFieldError('email')
-          }}
+          error={errors.email?.message}
           icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
+          {...register('email')}
         />
 
         <div>
@@ -70,17 +62,14 @@ export const RegisterPage = () => {
             id="password"
             label="Kata Sandi"
             isPassword
+            autoComplete="new-password"
             placeholder="Minimal 8 karakter"
-            value={form.password}
-            error={form.fieldErrors.password}
-            onChange={(e) => {
-              form.setPassword(e.target.value)
-              form.clearFieldError('password')
-            }}
+            error={errors.password?.message}
             icon={<LockSimple weight="bold" className="w-4 h-4" />}
+            {...register('password')}
           />
           {/* Real-time Password Strength Meter */}
-          <PasswordStrengthMeter password={form.password} />
+          <PasswordStrengthMeter password={password} />
         </div>
 
         {/* Submit Button with Duolingo 3D Tactile Push-Down */}

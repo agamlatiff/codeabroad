@@ -9,7 +9,7 @@ import { Button3D } from "@/shared/components/ui/Button3D"
 import { EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const LoginPage = () => {
-  const { form, status, actions } = useLogin()
+  const { register, errors, status, actions } = useLogin()
 
   return (
     <AuthLayout
@@ -24,28 +24,22 @@ export const LoginPage = () => {
           id="email"
           label="Alamat Email"
           type="email"
+          autoComplete="email"
           placeholder="nama@email.com"
-          value={form.email}
-          error={form.fieldErrors.email}
-          onChange={(e) => {
-            form.setEmail(e.target.value)
-            form.clearFieldError('email')
-          }}
+          error={errors.email?.message}
           icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
+          {...register('email')}
         />
 
         <Input
           id="password"
           label="Kata Sandi"
           isPassword
+          autoComplete="current-password"
           placeholder="Masukkan kata sandi kamu"
-          value={form.password}
-          error={form.fieldErrors.password}
-          onChange={(e) => {
-            form.setPassword(e.target.value)
-            form.clearFieldError('password')
-          }}
+          error={errors.password?.message}
           icon={<LockSimple weight="bold" className="w-4 h-4" />}
+          {...register('password')}
         />
 
         {/* Remember Me Row (Forgot Password temporarily disabled) */}
@@ -53,15 +47,8 @@ export const LoginPage = () => {
           <AuthCheckbox
             id="remember"
             label="Ingat saya"
-            checked={form.rememberMe}
-            onChange={(e) => form.setRememberMe(e.target.checked)}
+            {...register('remember_me')}
           />
-          {/* <button
-            type="button"
-            className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline cursor-pointer"
-          >
-            Lupa kata sandi?
-          </button> */}
         </div>
 
         {/* Submit Button with Duolingo 3D Tactile Push-Down */}
