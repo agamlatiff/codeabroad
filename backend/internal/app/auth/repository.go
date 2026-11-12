@@ -14,18 +14,18 @@ type redisSessionRepository struct {
 	rdb *infraRedis.RedisClient
 }
 
-// NewSessionRepository creates a new Redis session repository
+// NewSessionRepository creates a new Redis session repository supporting multi-device sessions
 func NewSessionRepository(rdb *infraRedis.RedisClient) SessionRepository {
 	return &redisSessionRepository{rdb: rdb}
 }
 
-func (s *redisSessionRepository) SetSession(ctx context.Context, userID string, token string, ttl time.Duration) error {
-	key := fmt.Sprintf("session:%s", userID)
+func (s *redisSessionRepository) SetSession(ctx context.Context, userID string, sessionID string, token string, ttl time.Duration) error {
+	key := fmt.Sprintf("session:%s:%s", userID, sessionID)
 	return s.rdb.Client.Set(ctx, key, token, ttl).Err()
 }
 
-func (s *redisSessionRepository) GetSession(ctx context.Context, userID string) (string, error) {
-	key := fmt.Sprintf("session:%s", userID)
+func (s *redisSessionRepository) GetSession(ctx context.Context, userID string, sessionID string) (string, error) {
+	key := fmt.Sprintf("session:%s:%s", userID, sessionID)
 	token, err := s.rdb.Client.Get(ctx, key).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -36,8 +36,18 @@ func (s *redisSessionRepository) GetSession(ctx context.Context, userID string) 
 	return token, nil
 }
 
-func (s *redisSessionRepository) DeleteSession(ctx context.Context, userID string) error {
-	key := fmt.Sprintf("session:%s", userID)
+func (s *redisSessionRepository) DeleteSession(ctx context.Context, userID string, sessionID string) error {
+	key := fmt.Sprintf("session:%s:%s", userID, sessionID)
 	return s.rdb.Client.Del(ctx, key).Err()
 }
 
+func (s *redisSessionRepository) DeleteAllSessions(ctx context.Context, userID string) error {
+	pattern := fmt.Sprintf("session:%s:*", userID)
+	iter := s.rdb.Client.Scan(ctx, 0, pattern, 0).Iterator()
+	for iter.Next(ctx) {
+		if err := s.rdb.Client.Del(ctx, iter.Val()).Err(); err != nil {
+			return fmt.Errorf("failed to delete session %s: %w", iter.Val(), err)
+		}
+	}
+	return iter.Err()
+}

@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"codeabroad/backend/config"
-	"codeabroad/backend/internal/shared/apperror"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 )
 
 type usecase struct {
@@ -64,12 +64,13 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 	}
 
 	sessionTTL := u.helper.DefaultRefreshTTL()
-	accessToken, refreshToken, err := u.helper.GenerateTokenPair(newUser, sessionTTL)
+	sessionID := u.helper.GenerateSessionID()
+	accessToken, refreshToken, err := u.helper.GenerateTokenPair(newUser, sessionID, sessionTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	if err := u.sessionRepo.SetSession(ctx, newUser.ID, refreshToken, sessionTTL); err != nil {
+	if err := u.sessionRepo.SetSession(ctx, newUser.ID, sessionID, refreshToken, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
 
@@ -80,7 +81,7 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 	}, nil
 }
 
-// Login authenticates credentials, records attendance streak, and returns new auth tokens
+// Login authenticates credentials, records attendance streak, and returns new auth tokens bound to a new device session
 func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error) {
 	u.helper.NormalizeLoginInput(req)
 
@@ -89,6 +90,8 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 		return nil, fmt.Errorf("failed to lookup user: %w", err)
 	}
 	if usr == nil {
+		// Mitigate timing-based user enumeration attacks: execute dummy bcrypt check (~70ms)
+		u.helper.PerformDummyPasswordCheck(req.Password)
 		return nil, ErrInvalidCredentials
 	}
 
@@ -97,12 +100,13 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}
 
 	sessionTTL := u.helper.ResolveSessionTTL(req.RememberMe)
-	accessToken, refreshToken, err := u.helper.GenerateTokenPair(usr, sessionTTL)
+	sessionID := u.helper.GenerateSessionID()
+	accessToken, refreshToken, err := u.helper.GenerateTokenPair(usr, sessionID, sessionTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	if err := u.sessionRepo.SetSession(ctx, usr.ID, refreshToken, sessionTTL); err != nil {
+	if err := u.sessionRepo.SetSession(ctx, usr.ID, sessionID, refreshToken, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
 
@@ -127,14 +131,14 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}, nil
 }
 
-// RefreshToken validates an existing refresh token and generates a new pair (token rotation)
+// RefreshToken validates an existing refresh token and generates a new pair (token rotation per session)
 func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error) {
 	claims, err := u.helper.ParseRefreshToken(refreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	storedToken, err := u.sessionRepo.GetSession(ctx, claims.UserID)
+	storedToken, err := u.sessionRepo.GetSession(ctx, claims.UserID, claims.SessionID)
 	if err != nil || storedToken != refreshToken {
 		return nil, ErrTokenExpired
 	}
@@ -148,12 +152,12 @@ func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthR
 	}
 
 	sessionTTL := u.helper.DefaultRefreshTTL()
-	newAccessToken, newRefreshToken, err := u.helper.GenerateTokenPair(usr, sessionTTL)
+	newAccessToken, newRefreshToken, err := u.helper.GenerateTokenPair(usr, claims.SessionID, sessionTTL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	if err := u.sessionRepo.SetSession(ctx, usr.ID, newRefreshToken, sessionTTL); err != nil {
+	if err := u.sessionRepo.SetSession(ctx, usr.ID, claims.SessionID, newRefreshToken, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to update session: %w", err)
 	}
 
@@ -164,11 +168,21 @@ func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthR
 	}, nil
 }
 
-// Logout invalidates the active user session in the cache
-func (u *usecase) Logout(ctx context.Context, userID string) error {
+// Logout invalidates the active device session in Redis
+func (u *usecase) Logout(ctx context.Context, userID string, sessionID string) error {
 	if userID == "" {
 		return apperror.ErrUnauthorized
 	}
-	return u.sessionRepo.DeleteSession(ctx, userID)
+	if sessionID == "" {
+		return u.sessionRepo.DeleteAllSessions(ctx, userID)
+	}
+	return u.sessionRepo.DeleteSession(ctx, userID, sessionID)
 }
 
+// LogoutAll invalidates all active device sessions for the given user in Redis
+func (u *usecase) LogoutAll(ctx context.Context, userID string) error {
+	if userID == "" {
+		return apperror.ErrUnauthorized
+	}
+	return u.sessionRepo.DeleteAllSessions(ctx, userID)
+}

@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"crypto/rand"
 	"fmt"
 	"strings"
 	"time"
@@ -10,6 +11,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
+
+// dummyPasswordHash is a pre-computed valid bcrypt hash used to equalize execution timing (~70ms)
+// when a queried user does not exist, mitigating timing-based user enumeration attacks.
+var dummyPasswordHash, _ = bcrypt.GenerateFromPassword([]byte("codeabroad-dummy-bcrypt-salt-for-timing-attack-protection"), bcrypt.DefaultCost)
 
 // Helper encapsulates cryptographic, token generation, and login streak rules (DDD)
 type Helper struct {
@@ -48,6 +53,21 @@ func (h *Helper) VerifyPassword(hashedPassword, rawPassword string) error {
 		return ErrInvalidCredentials
 	}
 	return nil
+}
+
+// PerformDummyPasswordCheck executes a real bcrypt comparison against a dummy hash
+// to equalize execution time (~70ms) when an email does not exist in the database, preventing timing attacks.
+func (h *Helper) PerformDummyPasswordCheck(rawPassword string) {
+	_ = bcrypt.CompareHashAndPassword(dummyPasswordHash, []byte(rawPassword))
+}
+
+// GenerateSessionID produces a cryptographically secure UUID v4 identifier for each client device session
+func (h *Helper) GenerateSessionID() string {
+	var b [16]byte
+	_, _ = rand.Read(b[:])
+	b[6] = (b[6] & 0x0f) | 0x40 // RFC 4122 version 4
+	b[8] = (b[8] & 0x3f) | 0x80 // RFC 4122 variant
+	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
 // ResolveSessionTTL determines refresh session TTL based on RememberMe preference
@@ -105,14 +125,15 @@ func (h *Helper) BuildNewUser(req *RegisterRequest, hashedPassword string) *user
 	}
 }
 
-// GenerateTokenPair produces a signed access token and dynamic duration refresh token
-func (h *Helper) GenerateTokenPair(u *user.User, refreshDuration time.Duration) (string, string, error) {
+// GenerateTokenPair produces a signed access token and dynamic duration refresh token bound to a sessionID
+func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDuration time.Duration) (string, string, error) {
 	now := time.Now()
 
 	accessClaims := &JWTClaims{
-		UserID:   u.ID,
-		Email:    u.Email,
-		Username: u.Username,
+		UserID:    u.ID,
+		SessionID: sessionID,
+		Email:     u.Email,
+		Username:  u.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(h.cfg.JWTAccessExpirationMinutes) * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -128,9 +149,10 @@ func (h *Helper) GenerateTokenPair(u *user.User, refreshDuration time.Duration) 
 	}
 
 	refreshClaims := &JWTClaims{
-		UserID:   u.ID,
-		Email:    u.Email,
-		Username: u.Username,
+		UserID:    u.ID,
+		SessionID: sessionID,
+		Email:     u.Email,
+		Username:  u.Username,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(now.Add(refreshDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
@@ -167,4 +189,3 @@ func (h *Helper) ParseRefreshToken(refreshToken string) (*JWTClaims, error) {
 	}
 	return claims, nil
 }
-

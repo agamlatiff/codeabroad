@@ -88,20 +88,45 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	response.Success(c, http.StatusOK, "token refreshed successfully", res)
 }
 
-// Logout handles POST /api/v1/auth/logout
+// Logout handles POST /api/v1/auth/logout (terminates active device session, or all devices if ?all=true)
 func (h *Handler) Logout(c *gin.Context) {
+	userID := c.GetString("userID")
+	sessionID := c.GetString("sessionID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	all := c.Query("all") == "true"
+	if all {
+		if err := h.authUsecase.LogoutAll(c.Request.Context(), userID); err != nil {
+			response.Error(c, err)
+			return
+		}
+	} else {
+		if err := h.authUsecase.Logout(c.Request.Context(), userID, sessionID); err != nil {
+			response.Error(c, err)
+			return
+		}
+	}
+
+	response.Success(c, http.StatusOK, "user logged out successfully", nil)
+}
+
+// LogoutAll handles POST /api/v1/auth/logout-all (terminates all active device sessions for this user)
+func (h *Handler) LogoutAll(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
 		response.Error(c, apperror.ErrUnauthorized)
 		return
 	}
 
-	if err := h.authUsecase.Logout(c.Request.Context(), userID); err != nil {
+	if err := h.authUsecase.LogoutAll(c.Request.Context(), userID); err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "user logged out successfully", nil)
+	response.Success(c, http.StatusOK, "all user device sessions terminated successfully", nil)
 }
 
 // RegisterRoutes registers public and protected /auth routes with rate limiting on login, register, and refresh
@@ -125,6 +150,6 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	}
 	{
 		authProtected.POST("/logout", h.Logout)
+		authProtected.POST("/logout-all", h.LogoutAll)
 	}
 }
-

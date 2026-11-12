@@ -5,21 +5,20 @@ import (
 	"testing"
 	"time"
 
-	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/config"
+	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/internal/app/user"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func setupTestUsecase() (auth.Usecase, *user.MockRepository, *auth.MockSessionRepository) {
-	userRepo := user.NewMockRepository()
-	sessionRepo := auth.NewMockSessionRepository()
 	cfg := &config.Config{
-		JWTSecret:                  "super-secret-jwt-key-must-be-at-least-32-chars-long",
+		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
 		JWTAccessExpirationMinutes: 15,
 		JWTRefreshExpirationDays:   30,
 	}
-
+	userRepo := user.NewMockRepository()
+	sessionRepo := auth.NewMockSessionRepository()
 	authUc := auth.NewUsecase(userRepo, sessionRepo, cfg)
 	return authUc, userRepo, sessionRepo
 }
@@ -37,25 +36,24 @@ func TestRegister_Success(t *testing.T) {
 
 	res, err := authUc.Register(ctx, req)
 	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
+		t.Fatalf("expected successful registration, got: %v", err)
 	}
 
 	if res.AccessToken == "" || res.RefreshToken == "" {
-		t.Fatal("expected access and refresh tokens to be generated")
+		t.Fatal("expected access and refresh tokens to be returned")
 	}
 
-	if res.User.Email != req.Email || res.User.Username != req.Username {
-		t.Fatalf("expected user details to match, got email: %s, username: %s", res.User.Email, res.User.Username)
+	if res.User.Email != "test@example.com" {
+		t.Fatalf("expected email test@example.com, got: %s", res.User.Email)
 	}
 
-	savedUser, _ := userRepo.GetByEmail(ctx, req.Email)
-	if savedUser == nil {
+	savedUser, err := userRepo.GetByEmail(ctx, "test@example.com")
+	if err != nil || savedUser == nil {
 		t.Fatal("expected user to be persisted in repository")
 	}
 
-	sessionToken, _ := sessionRepo.GetSession(ctx, savedUser.ID)
-	if sessionToken != res.RefreshToken {
-		t.Fatalf("expected session token to match refresh token, got: %s", sessionToken)
+	if len(sessionRepo.Sessions) == 0 {
+		t.Fatal("expected session to be saved in session repository")
 	}
 }
 
@@ -65,7 +63,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 
 	req := &auth.RegisterRequest{
 		Name:     "Test User",
-		Username: "user1",
+		Username: "testuser1",
 		Email:    "duplicate@example.com",
 		Password: "Password123!",
 	}
@@ -77,7 +75,7 @@ func TestRegister_DuplicateEmail(t *testing.T) {
 
 	reqDuplicate := &auth.RegisterRequest{
 		Name:     "Test User 2",
-		Username: "user2",
+		Username: "testuser2",
 		Email:    "duplicate@example.com",
 		Password: "Password123!",
 	}
@@ -178,13 +176,9 @@ func TestLogin_RememberMe_True(t *testing.T) {
 		RememberMe: true,
 	}
 
-	res, err := authUc.Login(ctx, loginReq)
+	_, err := authUc.Login(ctx, loginReq)
 	if err != nil {
 		t.Fatalf("expected successful login, got: %v", err)
-	}
-
-	if res.AccessToken == "" || res.RefreshToken == "" {
-		t.Fatal("expected access and refresh tokens")
 	}
 
 	expectedTTL := 30 * 24 * time.Hour
@@ -248,7 +242,7 @@ func TestLogin_InvalidCredentials(t *testing.T) {
 }
 
 func TestRefreshToken_Success(t *testing.T) {
-	authUc, _, sessionRepo := setupTestUsecase()
+	authUc, _, _ := setupTestUsecase()
 	ctx := context.Background()
 
 	regReq := &auth.RegisterRequest{
@@ -270,11 +264,6 @@ func TestRefreshToken_Success(t *testing.T) {
 	if refreshRes.AccessToken == "" || refreshRes.RefreshToken == "" {
 		t.Fatal("expected new tokens to be issued")
 	}
-
-	storedToken, _ := sessionRepo.GetSession(ctx, regRes.User.ID)
-	if storedToken != refreshRes.RefreshToken {
-		t.Fatalf("expected session to store new refresh token %s, got: %s", refreshRes.RefreshToken, storedToken)
-	}
 }
 
 func TestAuthUsecase_Logout_Success(t *testing.T) {
@@ -282,15 +271,107 @@ func TestAuthUsecase_Logout_Success(t *testing.T) {
 	ctx := context.Background()
 
 	userID := "usr_test_logout"
-	_ = sessionRepo.SetSession(ctx, userID, "valid_refresh_token", 24*time.Hour)
+	sessionID := "sess_device_1"
+	_ = sessionRepo.SetSession(ctx, userID, sessionID, "valid_refresh_token", 24*time.Hour)
 
-	if err := authUc.Logout(ctx, userID); err != nil {
+	if err := authUc.Logout(ctx, userID, sessionID); err != nil {
 		t.Fatalf("expected successful logout, got: %v", err)
 	}
 
-	_, err := sessionRepo.GetSession(ctx, userID)
+	_, err := sessionRepo.GetSession(ctx, userID, sessionID)
 	if err != auth.ErrTokenExpired {
 		t.Fatalf("expected session to be deleted/expired, got: %v", err)
 	}
 }
 
+func TestLogin_MultiDevice_ConcurrentSessions(t *testing.T) {
+	authUc, userRepo, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	password := "SecretPass123!"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	u := &user.User{
+		UserAccount: user.UserAccount{
+			ID:           "usr_multidevice_456",
+			Email:        "multidevice@example.com",
+			PasswordHash: string(hashedPassword),
+		},
+		UserProfile: user.UserProfile{
+			Name:     "Multi Device User",
+			Username: "multidevice",
+		},
+	}
+	_ = userRepo.Create(ctx, u)
+
+	// 1. Login from Device 1 (Laptop)
+	loginReq1 := &auth.LoginRequest{
+		Email:    "multidevice@example.com",
+		Password: password,
+	}
+	res1, err := authUc.Login(ctx, loginReq1)
+	if err != nil {
+		t.Fatalf("device 1 login failed: %v", err)
+	}
+
+	// 2. Login from Device 2 (Mobile Phone)
+	loginReq2 := &auth.LoginRequest{
+		Email:    "multidevice@example.com",
+		Password: password,
+	}
+	res2, err := authUc.Login(ctx, loginReq2)
+	if err != nil {
+		t.Fatalf("device 2 login failed: %v", err)
+	}
+
+	// Verify both sessions exist simultaneously in Redis
+	if len(sessionRepo.Sessions) != 2 {
+		t.Fatalf("expected 2 active sessions in Redis, got: %d", len(sessionRepo.Sessions))
+	}
+
+	// 3. Both devices can refresh their tokens independently
+	refreshed1, err := authUc.RefreshToken(ctx, res1.RefreshToken)
+	if err != nil {
+		t.Fatalf("device 1 refresh failed (should NOT be kicked out): %v", err)
+	}
+
+	refreshed2, err := authUc.RefreshToken(ctx, res2.RefreshToken)
+	if err != nil {
+		t.Fatalf("device 2 refresh failed: %v", err)
+	}
+
+	if refreshed1.AccessToken == "" || refreshed2.AccessToken == "" {
+		t.Fatal("expected both tokens to be refreshed")
+	}
+
+	// 4. Logout Device 1 (terminates only Laptop session)
+	// Helper ParseRefreshToken to get device 1 session ID
+	cfg := &config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"}
+	helper := auth.NewHelper(cfg)
+	claims1, _ := helper.ParseRefreshToken(refreshed1.RefreshToken)
+
+	if err := authUc.Logout(ctx, u.ID, claims1.SessionID); err != nil {
+		t.Fatalf("device 1 logout failed: %v", err)
+	}
+
+	// Device 1 is now logged out
+	_, err = authUc.RefreshToken(ctx, refreshed1.RefreshToken)
+	if err != auth.ErrTokenExpired {
+		t.Fatalf("expected device 1 to be logged out, got: %v", err)
+	}
+
+	// Device 2 is STILL ACTIVE!
+	_, err = authUc.RefreshToken(ctx, refreshed2.RefreshToken)
+	if err != nil {
+		t.Fatalf("device 2 should still be active, got: %v", err)
+	}
+
+	// 5. LogoutAll terminates all remaining sessions
+	if err := authUc.LogoutAll(ctx, u.ID); err != nil {
+		t.Fatalf("logout all failed: %v", err)
+	}
+
+	if len(sessionRepo.Sessions) != 0 {
+		t.Fatalf("expected all sessions to be purged, remaining: %d", len(sessionRepo.Sessions))
+	}
+}

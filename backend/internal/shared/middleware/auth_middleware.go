@@ -12,9 +12,10 @@ import (
 
 // JWTClaims defines the cryptographic token payload claims shared across Auth Usecase and Middleware
 type JWTClaims struct {
-	UserID   string `json:"user_id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
+	UserID    string `json:"user_id"`
+	SessionID string `json:"session_id,omitempty"`
+	Email     string `json:"email"`
+	Username  string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -49,6 +50,7 @@ func parseBearerToken(authHeader string, jwtSecret string) (*JWTClaims, error) {
 
 func injectClaimsIntoContext(c *gin.Context, claims *JWTClaims) {
 	c.Set("userID", claims.UserID)
+	c.Set("sessionID", claims.SessionID)
 	c.Set("email", claims.Email)
 	c.Set("username", claims.Username)
 }
@@ -93,4 +95,3 @@ func OptionalAuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		c.Next()
 	}
 }
-

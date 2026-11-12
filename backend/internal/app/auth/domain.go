@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"codeabroad/backend/internal/shared/apperror"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -17,9 +17,10 @@ var (
 
 // JWTClaims defines the cryptographic token payload claims shared across Auth Usecase and Middleware
 type JWTClaims struct {
-	UserID   string `json:"user_id"`
-	Email    string `json:"email"`
-	Username string `json:"username"`
+	UserID    string `json:"user_id"`
+	SessionID string `json:"session_id,omitempty"`
+	Email     string `json:"email"`
+	Username  string `json:"username"`
 	jwt.RegisteredClaims
 }
 
@@ -52,9 +53,10 @@ type AuthResponse struct {
 
 // SessionRepository specifies the caching contract for active user sessions (Redis)
 type SessionRepository interface {
-	SetSession(ctx context.Context, userID string, token string, ttl time.Duration) error
-	GetSession(ctx context.Context, userID string) (string, error)
-	DeleteSession(ctx context.Context, userID string) error
+	SetSession(ctx context.Context, userID string, sessionID string, token string, ttl time.Duration) error
+	GetSession(ctx context.Context, userID string, sessionID string) (string, error)
+	DeleteSession(ctx context.Context, userID string, sessionID string) error
+	DeleteAllSessions(ctx context.Context, userID string) error
 }
 
 // Usecase specifies the business logic contract for authentication and session lifecycle
@@ -62,6 +64,6 @@ type Usecase interface {
 	Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error)
 	Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error)
-	Logout(ctx context.Context, userID string) error
+	Logout(ctx context.Context, userID string, sessionID string) error
+	LogoutAll(ctx context.Context, userID string) error
 }
-
