@@ -114,3 +114,22 @@ func TestHTTP_CompleteLesson(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetGrammarPoints(t *testing.T) {
+	r, cRepo, _ := setupCurriculumTestRouter()
+	cRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{
+		ID:       "gp-1",
+		LevelID:  "22222222-2222-2222-2222-222222222222",
+		Code:     "GP-01",
+		Category: "sentence_pattern",
+		Title:    "WA Particle",
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/grammar-points?level_id=22222222-2222-2222-2222-222222222222", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got: %d", w.Code)
+	}
+}
+

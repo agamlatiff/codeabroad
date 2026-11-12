@@ -119,18 +119,19 @@ type RoadmapResponse struct {
 
 // LessonDetailResponse encapsulates full lesson node details and its child interactive exercises
 type LessonDetailResponse struct {
-	ID          string              `json:"id"`
-	UnitID      string              `json:"unit_id"`
-	Title       string              `json:"title"`
-	XPReward    int                 `json:"xp_reward"`
-	OrderIndex  int                 `json:"order_index"`
-	IsUnlocked  bool                `json:"is_unlocked"`
-	IsCompleted bool                `json:"is_completed"`
-	Score       int                 `json:"score"`
-	IsSkipped   bool                `json:"is_skipped"`
-	CompletedAt *time.Time          `json:"completed_at,omitempty"`
-	Exercises   []exercise.Exercise `json:"exercises,omitempty"`
-	CreatedAt   time.Time           `json:"created_at"`
+	ID            string              `json:"id"`
+	UnitID        string              `json:"unit_id"`
+	Title         string              `json:"title"`
+	XPReward      int                 `json:"xp_reward"`
+	OrderIndex    int                 `json:"order_index"`
+	IsUnlocked    bool                `json:"is_unlocked"`
+	IsCompleted   bool                `json:"is_completed"`
+	Score         int                 `json:"score"`
+	IsSkipped     bool                `json:"is_skipped"`
+	CompletedAt   *time.Time          `json:"completed_at,omitempty"`
+	GrammarPoints []GrammarPoint      `json:"grammar_points,omitempty"`
+	Exercises     []exercise.Exercise `json:"exercises,omitempty"`
+	CreatedAt     time.Time           `json:"created_at"`
 }
 
 // CompleteLessonRequest defines the payload when a learner submits a finished lesson
@@ -155,6 +156,7 @@ type CompleteLessonResponse struct {
 type GrammarPointRepository interface {
 	GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error)
 	GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error)
+	GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error)
 }
 
 // UnitRepository specifies data access operations for curriculum units and chapters
@@ -169,6 +171,7 @@ type LessonRepository interface {
 	GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error)
 	GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error)
 	GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error)
+	IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error)
 }
 
 // LessonProgressRepository specifies data access operations for user lesson completion state
@@ -191,5 +194,6 @@ type Usecase interface {
 	GetRoadmap(ctx context.Context, userID string, req *GetRoadmapRequest) (*RoadmapResponse, error)
 	GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error)
 	CompleteLesson(ctx context.Context, userID string, req *CompleteLessonRequest) (*CompleteLessonResponse, error)
+	GetGrammarPoints(ctx context.Context, levelID string) ([]GrammarPoint, error)
 }
 

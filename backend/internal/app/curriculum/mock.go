@@ -65,6 +65,17 @@ func (m *MockRepository) GetGrammarPointByID(ctx context.Context, id string) (*G
 	return gp, nil
 }
 
+func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
+	if m.GetGrammarPointsErr != nil {
+		return nil, m.GetGrammarPointsErr
+	}
+	var res []GrammarPoint
+	for _, gp := range m.GrammarPoints {
+		res = append(res, *gp)
+	}
+	return res, nil
+}
+
 func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
 	if m.GetUnitsErr != nil {
 		return nil, m.GetUnitsErr
@@ -170,6 +181,40 @@ func (m *MockRepository) GetNextLessonID(ctx context.Context, currentLessonID st
 		return nil, m.GetNextLessonIDErr
 	}
 	return m.NextLessonID, nil
+}
+
+func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	curLesson, ok := m.Lessons[lessonID]
+	if !ok {
+		return false, ErrLessonNotFound
+	}
+	key := fmt.Sprintf("%s:%s", userID, lessonID)
+	if p, ok := m.LessonProgress[key]; ok && p.IsCompleted {
+		return true, nil
+	}
+
+	curUnit := m.Units[curLesson.UnitID]
+	if curUnit == nil {
+		return true, nil
+	}
+
+	for _, l := range m.Lessons {
+		u := m.Units[l.UnitID]
+		if u == nil || u.LevelID != curUnit.LevelID {
+			continue
+		}
+		isPreceding := u.OrderIndex < curUnit.OrderIndex ||
+			(u.OrderIndex == curUnit.OrderIndex && l.OrderIndex < curLesson.OrderIndex)
+
+		if isPreceding {
+			pKey := fmt.Sprintf("%s:%s", userID, l.ID)
+			prog := m.LessonProgress[pKey]
+			if prog == nil || !prog.IsCompleted {
+				return false, nil
+			}
+		}
+	}
+	return true, nil
 }
 
 func (m *MockRepository) GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error) {

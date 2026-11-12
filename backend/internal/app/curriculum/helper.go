@@ -1,5 +1,7 @@
 package curriculum
 
+import "time"
+
 // Helper encapsulates business logic for roadmap unlocks and lesson completion evaluation
 type Helper struct{}
 
@@ -62,5 +64,35 @@ func (h *Helper) CanAccessLesson(isUnitUnlocked bool, prevLessonCompleted bool, 
 		return true
 	}
 	return prevLessonCompleted
+}
+
+// EvaluateDailyStreak calculates the updated daily streak based on the last active timestamp adjusted to application timezone (WIB)
+func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time, now time.Time) (newStreak int, changed bool) {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		loc = time.FixedZone("WIB", 7*3600)
+	}
+
+	nowInWIB := now.In(loc)
+	today := time.Date(nowInWIB.Year(), nowInWIB.Month(), nowInWIB.Day(), 0, 0, 0, 0, loc)
+
+	newStreak = currentStreak
+	if lastActiveAt == nil {
+		newStreak = 1
+	} else {
+		lastInWIB := lastActiveAt.In(loc)
+		lastActiveDay := time.Date(lastInWIB.Year(), lastInWIB.Month(), lastInWIB.Day(), 0, 0, 0, 0, loc)
+		daysDiff := int(today.Sub(lastActiveDay).Hours() / 24)
+
+		if daysDiff == 1 {
+			newStreak = currentStreak + 1
+		} else if daysDiff > 1 {
+			newStreak = 1
+		} else if currentStreak == 0 {
+			newStreak = 1
+		}
+	}
+
+	return newStreak, newStreak != currentStreak
 }
 

@@ -115,11 +115,31 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 		return nil, err
 	}
 
+	if !lesson.IsCompleted {
+		unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, lessonID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify lesson unlock status: %w", err)
+		}
+		if !unlocked {
+			return nil, ErrLessonLocked
+		}
+		lesson.IsUnlocked = true
+	} else {
+		lesson.IsUnlocked = true
+	}
+
 	exercises, err := u.exerciseRepo.GetExercisesByLessonID(ctx, lessonID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query exercises for lesson: %w", err)
 	}
 	lesson.Exercises = exercises
+
+	gps, err := u.curriculumRepo.GetGrammarPointsByLessonID(ctx, lessonID)
+	if err == nil && len(gps) > 0 {
+		lesson.GrammarPoints = gps
+	} else {
+		lesson.GrammarPoints = []GrammarPoint{}
+	}
 
 	return lesson, nil
 }
@@ -136,6 +156,28 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	lesson, err := u.curriculumRepo.GetLessonByID(ctx, req.LessonID, userID)
 	if err != nil {
 		return nil, err
+	}
+
+	if !lesson.IsCompleted {
+		unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, req.LessonID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify lesson unlock status: %w", err)
+		}
+		if !unlocked {
+			return nil, ErrLessonLocked
+		}
+	}
+
+	xpEarned := lesson.XPReward
+	if xpEarned <= 0 {
+		xpEarned = 15
+	}
+	activityType := "lesson_completed"
+
+	// Anti-exploit: Replaying an already mastered lesson awards practice XP instead of full reward
+	if lesson.IsCompleted {
+		xpEarned = 5
+		activityType = "lesson_practiced"
 	}
 
 	now := time.Now().UTC()
@@ -160,21 +202,17 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, user.ErrUserNotFound
 	}
 
-	xpEarned := lesson.XPReward
-	if xpEarned <= 0 {
-		xpEarned = 15
-	}
-
+	newStreak, _ := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now)
 	newXP := usr.XP + xpEarned
 	newLevel := (newXP / 100) + 1
 
-	if err := u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, usr.Streak, &now); err != nil {
+	if err := u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, newStreak, &now); err != nil {
 		return nil, fmt.Errorf("failed to update gamification stats: %w", err)
 	}
 
 	_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
 		UserID:       userID,
-		ActivityType: "lesson_completed",
+		ActivityType: activityType,
 		XPEarned:     xpEarned,
 		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score},
 		CreatedAt:    now,
@@ -190,11 +228,19 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		Gamification: user.UserGamificationStats{
 			XP:           newXP,
 			CurrentLevel: newLevel,
-			Streak:       usr.Streak,
+			Streak:       newStreak,
 			Gems:         usr.Gems,
 			LastActiveAt: &now,
 		},
 		UnlockedNextLessonID: nextLessonID,
 	}, nil
+}
+
+// GetGrammarPoints retrieves all grammar points belonging to a proficiency level
+func (u *usecase) GetGrammarPoints(ctx context.Context, levelID string) ([]GrammarPoint, error) {
+	if levelID == "" {
+		return nil, apperror.ErrBadRequest
+	}
+	return u.curriculumRepo.GetGrammarPointsByLevelID(ctx, levelID)
 }
 

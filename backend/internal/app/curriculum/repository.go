@@ -72,6 +72,38 @@ func (r *PostgresRepository) GetGrammarPointByID(ctx context.Context, id string)
 	return &gp, nil
 }
 
+// GetGrammarPointsByLessonID retrieves distinct grammar points referenced by exercises within a lesson node
+func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
+	query := `
+		SELECT DISTINCT gp.id, gp.level_id, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.order_index, gp.created_at
+		FROM grammar_points gp
+		JOIN exercises e ON gp.id = e.grammar_point_id
+		WHERE e.lesson_id = $1
+		ORDER BY gp.order_index ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, lessonID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query grammar points for lesson: %w", err)
+	}
+	defer rows.Close()
+
+	var points []GrammarPoint
+	for rows.Next() {
+		var gp GrammarPoint
+		if err := rows.Scan(
+			&gp.ID, &gp.LevelID, &gp.Code, &gp.Category, &gp.Title,
+			&gp.Formula, &gp.Explanation, &gp.OrderIndex, &gp.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan lesson grammar point: %w", err)
+		}
+		points = append(points, gp)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in lesson grammar points: %w", err)
+	}
+	return points, nil
+}
+
 // GetUnitsByLevelID retrieves all curriculum chapters for a proficiency level
 func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
 	query := `
@@ -252,6 +284,32 @@ func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonI
 		return nil, fmt.Errorf("failed to query next lesson id: %w", err)
 	}
 	return &nextID, nil
+}
+
+// IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
+func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	query := `
+		SELECT NOT EXISTS (
+			SELECT 1
+			FROM lessons prev_l
+			JOIN units prev_u ON prev_l.unit_id = prev_u.id
+			JOIN units cur_u ON cur_u.level_id = prev_u.level_id
+			JOIN lessons cur_l ON cur_l.unit_id = cur_u.id
+			LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2
+			WHERE cur_l.id = $1
+			  AND (
+			    prev_u.order_index < cur_u.order_index
+			    OR (prev_u.order_index = cur_u.order_index AND prev_l.order_index < cur_l.order_index)
+			  )
+			  AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
+		) AS is_unlocked
+	`
+	var isUnlocked bool
+	err := r.db.Pool.QueryRow(ctx, query, lessonID, userID).Scan(&isUnlocked)
+	if err != nil {
+		return false, fmt.Errorf("failed to verify lesson unlock invariant: %w", err)
+	}
+	return isUnlocked, nil
 }
 
 // GetUserLessonProgress retrieves a user's completion status on a lesson

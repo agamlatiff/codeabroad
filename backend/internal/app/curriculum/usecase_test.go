@@ -51,7 +51,8 @@ func TestGetRoadmap_Success(t *testing.T) {
 
 func TestCompleteLesson_Success(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
-	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15}
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
 	nextID := "lesson-2"
 	cRepo.NextLessonID = &nextID
 
@@ -60,7 +61,7 @@ func TestCompleteLesson_Success(t *testing.T) {
 	uRepo := user.NewMockRepository()
 	uRepo.Users["user-1"] = &user.User{
 		UserAccount:           user.UserAccount{ID: "user-1"},
-		UserGamificationStats: user.UserGamificationStats{XP: 20, CurrentLevel: 1},
+		UserGamificationStats: user.UserGamificationStats{XP: 20, CurrentLevel: 1, Streak: 1},
 	}
 
 	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
@@ -79,6 +80,100 @@ func TestCompleteLesson_Success(t *testing.T) {
 	}
 	if res.UnlockedNextLessonID == nil || *res.UnlockedNextLessonID != "lesson-2" {
 		t.Errorf("expected next lesson id lesson-2, got %v", res.UnlockedNextLessonID)
+	}
+}
+
+func TestGetLessonDetail_Locked_ReturnsErrLessonLocked(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", OrderIndex: 1, IsCompleted: false}
+	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-1", Title: "Lesson 2", OrderIndex: 2, IsCompleted: false}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	// User tries to open lesson-2 directly without finishing lesson-1
+	_, err := uc.GetLessonDetail(context.Background(), "user-1", "lesson-2")
+	if err == nil {
+		t.Fatalf("expected ErrLessonLocked, got nil")
+	}
+	if err != curriculum.ErrLessonLocked {
+		t.Fatalf("expected ErrLessonLocked, got: %v", err)
+	}
+}
+
+func TestGetLessonDetail_Unlocked_Success(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", OrderIndex: 1, IsCompleted: true}
+	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-1", Title: "Lesson 2", OrderIndex: 2, IsCompleted: false}
+	cRepo.LessonProgress["user-1:lesson-1"] = &curriculum.UserLessonProgress{UserID: "user-1", LessonID: "lesson-1", IsCompleted: true}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	// Since lesson-1 is completed, lesson-2 is unlocked
+	detail, err := uc.GetLessonDetail(context.Background(), "user-1", "lesson-2")
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if !detail.IsUnlocked {
+		t.Errorf("expected lesson detail is_unlocked true")
+	}
+}
+
+func TestCompleteLesson_Replay_AntiExploitPracticeXP(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	// Lesson was ALREADY completed previously
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
+	cRepo.LessonProgress["user-1:lesson-1"] = &curriculum.UserLessonProgress{UserID: "user-1", LessonID: "lesson-1", IsCompleted: true}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 100, CurrentLevel: 2, Streak: 1},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	// Replaying completed lesson should only award 5 practice XP, NOT full 15 XP
+	res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    100,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	// 100 XP + 5 Practice XP = 105 XP
+	if res.Gamification.XP != 105 {
+		t.Errorf("expected 105 XP (5 practice XP awarded), got %d", res.Gamification.XP)
+	}
+}
+
+func TestGetGrammarPoints(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{ID: "gp-1", LevelID: "lvl-n5", Code: "GP-1", Title: "WA Particle"}
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	pts, err := uc.GetGrammarPoints(context.Background(), "lvl-n5")
+	if err != nil {
+		t.Fatalf("expected no error, got: %v", err)
+	}
+	if len(pts) != 1 {
+		t.Errorf("expected 1 grammar point, got %d", len(pts))
 	}
 }
 

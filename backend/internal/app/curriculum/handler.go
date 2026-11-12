@@ -88,6 +88,23 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 	response.Success(c, http.StatusOK, "lesson completed successfully", res)
 }
 
+// GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=...
+func (h *Handler) GetGrammarPoints(c *gin.Context) {
+	levelID := c.Query("level_id")
+	if levelID == "" {
+		response.BadRequest(c, "level_id query parameter is required")
+		return
+	}
+
+	points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), levelID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "grammar points retrieved successfully", points)
+}
+
 // RegisterRoutes registers curriculum routes under the protected group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	curriculum := rg.Group("/curriculum")
@@ -98,6 +115,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		curriculum.GET("/roadmap", h.GetRoadmap)
 		curriculum.GET("/lessons/:id", h.GetLessonDetail)
 		curriculum.POST("/lessons/:id/complete", h.CompleteLesson)
+		curriculum.GET("/grammar-points", h.GetGrammarPoints)
 	}
 }
 
