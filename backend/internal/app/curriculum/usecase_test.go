@@ -2,6 +2,7 @@ package curriculum_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"codeabroad/backend/internal/app/curriculum"
@@ -264,6 +265,111 @@ func TestCompleteLesson_UserNotFound_FailFast(t *testing.T) {
 	// Verify fail-fast: no lesson progress was upserted
 	if len(cRepo.LessonProgress) != 0 {
 		t.Fatalf("expected 0 lesson progress entries due to fail-fast, got %d", len(cRepo.LessonProgress))
+	}
+}
+
+func TestGetRoadmap_RedisCacheHitAndMiss(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", Title: "Unit 1: Basics", TotalLessons: 1, CompletedLessons: 1, OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese"}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", Name: "JLPT N5"}
+	lvlID := "lvl-n5"
+	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlID,
+		IsActive:       true,
+		Language:       lRepo.Languages["lang-ja"],
+		CurrentLevel:   lRepo.Levels["lvl-n5"],
+	}
+
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+
+	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, eRepo, uRepo, nil, cacheRepo)
+
+	// First call: Cache miss -> queries DB and populates cache
+	roadmap1, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
+	if err != nil {
+		t.Fatalf("first GetRoadmap failed: %v", err)
+	}
+	if roadmap1 == nil || len(roadmap1.Units) != 1 {
+		t.Fatalf("expected 1 unit, got %v", roadmap1)
+	}
+	if cacheRepo.SetRoadmapCallCount == 0 {
+		t.Errorf("expected SetRoadmap to be called on cache miss")
+	}
+
+	// Mutate DB repo to verify second call serves strictly from cache
+	delete(cRepo.Units, "unit-1")
+
+	roadmap2, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
+	if err != nil {
+		t.Fatalf("second GetRoadmap failed: %v", err)
+	}
+	if len(roadmap2.Units) != 1 {
+		t.Errorf("expected cached roadmap to retain 1 unit, got %d", len(roadmap2.Units))
+	}
+	if cacheRepo.GetRoadmapCallCount < 2 {
+		t.Errorf("expected GetRoadmap cache calls >= 2, got %d", cacheRepo.GetRoadmapCallCount)
+	}
+}
+
+func TestCompleteLesson_InvalidatesRoadmapCache(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 10, CurrentLevel: 1, Streak: 1},
+	}
+	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+
+	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, eRepo, uRepo, nil, cacheRepo)
+
+	_, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    90,
+	})
+	if err != nil {
+		t.Fatalf("CompleteLesson failed: %v", err)
+	}
+	if cacheRepo.InvalidateCallCount != 1 {
+		t.Errorf("expected InvalidateRoadmap to be called once, got %d", cacheRepo.InvalidateCallCount)
+	}
+}
+
+func TestCompleteLesson_AtomicTransaction_FailRollback(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	cRepo.RecordCompletionErr = errors.New("db transaction failure")
+
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 10, CurrentLevel: 1, Streak: 1},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	_, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    90,
+	})
+	if err == nil {
+		t.Fatalf("expected transaction failure error, got nil")
 	}
 }
 

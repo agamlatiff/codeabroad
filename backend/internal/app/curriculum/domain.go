@@ -140,6 +140,18 @@ type CompleteLessonRequest struct {
 	Score    int    `json:"score" binding:"min=0,max=100"`
 }
 
+// LessonCompletionPayload encapsulates data required to record lesson completion atomically in a single transaction
+type LessonCompletionPayload struct {
+	Progress     *UserLessonProgress `json:"progress"`
+	XPEarned     int                 `json:"xp_earned"`
+	NewXP        int                 `json:"new_xp"`
+	NewLevel     int                 `json:"new_level"`
+	NewStreak    int                 `json:"new_streak"`
+	LastActiveAt time.Time           `json:"last_active_at"`
+	ActivityType string              `json:"activity_type"`
+	Metadata     map[string]any      `json:"metadata,omitempty"`
+}
+
 // CompleteLessonResponse returns updated progression, gamification rewards, and the next unlocked node
 type CompleteLessonResponse struct {
 	Progress             UserLessonProgress             `json:"progress"`
@@ -178,7 +190,15 @@ type LessonRepository interface {
 type LessonProgressRepository interface {
 	GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error)
 	UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error
+	RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
+}
+
+// RoadmapCacheRepository specifies the caching contract for active curriculum roadmaps (Redis)
+type RoadmapCacheRepository interface {
+	GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error)
+	SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error
+	InvalidateRoadmap(ctx context.Context, userID string) error
 }
 
 // Repository combines segregated curriculum contracts into a unified composite interface

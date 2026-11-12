@@ -2,8 +2,10 @@ package curriculum
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -23,6 +25,7 @@ type MockRepository struct {
 	GetNextLessonIDErr   error
 	GetLessonProgressErr error
 	UpsertProgressErr    error
+	RecordCompletionErr  error
 	SkipPrecedingErr     error
 }
 
@@ -263,6 +266,81 @@ func (m *MockRepository) SkipPrecedingLessons(ctx context.Context, userID string
 			IsSkipped:   true,
 			Score:       100,
 			CompletedAt: time.Now(),
+		}
+	}
+	return nil
+}
+
+func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error {
+	if m.RecordCompletionErr != nil {
+		return m.RecordCompletionErr
+	}
+	if payload == nil || payload.Progress == nil {
+		return nil
+	}
+	return m.UpsertLessonProgress(ctx, payload.Progress)
+}
+
+// MockRoadmapCacheRepository provides an in-memory mock for RoadmapCacheRepository
+type MockRoadmapCacheRepository struct {
+	Cache               map[string][]byte
+	GetRoadmapErr       error
+	SetRoadmapErr       error
+	InvalidateErr       error
+	GetRoadmapCallCount int
+	SetRoadmapCallCount int
+	InvalidateCallCount int
+}
+
+// NewMockRoadmapCacheRepository creates an in-memory mock cache repository
+func NewMockRoadmapCacheRepository() *MockRoadmapCacheRepository {
+	return &MockRoadmapCacheRepository{
+		Cache: make(map[string][]byte),
+	}
+}
+
+var _ RoadmapCacheRepository = (*MockRoadmapCacheRepository)(nil)
+
+func (m *MockRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
+	m.GetRoadmapCallCount++
+	if m.GetRoadmapErr != nil {
+		return nil, m.GetRoadmapErr
+	}
+	key := fmt.Sprintf("%s:%s", userID, languageID)
+	data, ok := m.Cache[key]
+	if !ok {
+		return nil, nil
+	}
+	var res RoadmapResponse
+	if err := json.Unmarshal(data, &res); err != nil {
+		return nil, err
+	}
+	return &res, nil
+}
+
+func (m *MockRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error {
+	m.SetRoadmapCallCount++
+	if m.SetRoadmapErr != nil {
+		return m.SetRoadmapErr
+	}
+	key := fmt.Sprintf("%s:%s", userID, languageID)
+	data, err := json.Marshal(roadmap)
+	if err != nil {
+		return err
+	}
+	m.Cache[key] = data
+	return nil
+}
+
+func (m *MockRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, userID string) error {
+	m.InvalidateCallCount++
+	if m.InvalidateErr != nil {
+		return m.InvalidateErr
+	}
+	prefix := userID + ":"
+	for k := range m.Cache {
+		if strings.HasPrefix(k, prefix) {
+			delete(m.Cache, k)
 		}
 	}
 	return nil

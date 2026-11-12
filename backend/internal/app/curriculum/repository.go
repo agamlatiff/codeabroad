@@ -2,11 +2,13 @@ package curriculum
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
+	"codeabroad/backend/internal/app/user"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -392,5 +394,86 @@ func (r *PostgresRepository) SkipPrecedingLessons(ctx context.Context, userID st
 		return fmt.Errorf("failed to skip preceding lessons: %w", err)
 	}
 	return nil
+}
+
+// RecordLessonCompletionTx executes an atomic database transaction recording lesson completion,
+// updating user progression/streak in user_gamification, and appending an activity telemetry record.
+func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error {
+	if payload == nil || payload.Progress == nil {
+		return errors.New("nil lesson completion payload")
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin lesson completion tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	// 1. Atomic upsert of user_lesson_progress
+	upsertQuery := `
+		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT (user_id, lesson_id)
+		DO UPDATE SET
+			is_completed = EXCLUDED.is_completed,
+			score = GREATEST(user_lesson_progress.score, EXCLUDED.score),
+			is_skipped = EXCLUDED.is_skipped,
+			completed_at = EXCLUDED.completed_at
+		RETURNING id, score, is_completed, is_skipped, completed_at
+	`
+	if payload.Progress.CompletedAt.IsZero() {
+		payload.Progress.CompletedAt = payload.LastActiveAt
+	}
+
+	err = tx.QueryRow(
+		ctx, upsertQuery,
+		payload.Progress.UserID, payload.Progress.LessonID, payload.Progress.IsCompleted,
+		payload.Progress.Score, payload.Progress.IsSkipped, payload.Progress.CompletedAt,
+	).Scan(
+		&payload.Progress.ID, &payload.Progress.Score, &payload.Progress.IsCompleted,
+		&payload.Progress.IsSkipped, &payload.Progress.CompletedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to upsert user lesson progress in tx: %w", err)
+	}
+
+	// 2. Atomic update of user_gamification (XP, level, streak, last_active_at)
+	updateGamificationQuery := `
+		UPDATE user_gamification
+		SET xp = $2, current_level = $3, streak = $4, last_active_at = $5, updated_at = NOW()
+		WHERE user_id = $1
+	`
+	tag, err := tx.Exec(
+		ctx, updateGamificationQuery,
+		payload.Progress.UserID, payload.NewXP, payload.NewLevel, payload.NewStreak, payload.LastActiveAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to update gamification in tx: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return user.ErrUserNotFound
+	}
+
+	// 3. Telemetry activity log insertion
+	activityQuery := `
+		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		VALUES ($1, $2, $3, $4, $5)
+	`
+	var metadataBytes []byte
+	if payload.Metadata != nil {
+		metadataBytes, _ = json.Marshal(payload.Metadata)
+	} else {
+		metadataBytes = []byte("{}")
+	}
+
+	_, err = tx.Exec(
+		ctx, activityQuery,
+		payload.Progress.UserID, payload.ActivityType, payload.XPEarned, metadataBytes, payload.LastActiveAt,
+	)
+	if err != nil {
+		return fmt.Errorf("failed to insert user activity log in tx: %w", err)
+	}
+
+	return tx.Commit(ctx)
 }
 

@@ -18,16 +18,18 @@ type usecase struct {
 	exerciseRepo     exercise.Repository
 	userRepo         user.Repository
 	gamificationRepo gamification.Repository
+	cacheRepo        RoadmapCacheRepository
 	helper           *Helper
 }
 
-// NewUsecase creates a new Curriculum Usecase instance
-func NewUsecase(
+// NewUsecaseWithCache creates a new Curriculum Usecase instance with roadmap Redis caching support
+func NewUsecaseWithCache(
 	curriculumRepo Repository,
 	langRepo language.Repository,
 	exerciseRepo exercise.Repository,
 	userRepo user.Repository,
 	gamificationRepo gamification.Repository,
+	cacheRepo RoadmapCacheRepository,
 ) Usecase {
 	return &usecase{
 		curriculumRepo:   curriculumRepo,
@@ -35,8 +37,20 @@ func NewUsecase(
 		exerciseRepo:     exerciseRepo,
 		userRepo:         userRepo,
 		gamificationRepo: gamificationRepo,
+		cacheRepo:        cacheRepo,
 		helper:           NewHelper(),
 	}
+}
+
+// NewUsecase creates a new Curriculum Usecase instance without caching
+func NewUsecase(
+	curriculumRepo Repository,
+	langRepo language.Repository,
+	exerciseRepo exercise.Repository,
+	userRepo user.Repository,
+	gamificationRepo gamification.Repository,
+) Usecase {
+	return NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, nil)
 }
 
 // GetRoadmap retrieves the full active language curriculum tree with calculated unit unlocks
@@ -48,6 +62,13 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 	languageID := ""
 	if req != nil {
 		languageID = req.LanguageID
+	}
+
+	// 1. Check Redis cache first if cache repository is configured
+	if u.cacheRepo != nil {
+		if cached, err := u.cacheRepo.GetRoadmap(ctx, userID, languageID); err == nil && cached != nil {
+			return cached, nil
+		}
 	}
 
 	enrollment, err := u.langRepo.GetActiveEnrollment(ctx, userID, languageID)
@@ -93,7 +114,7 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		unlockedUnits = []UnitNodeResponse{}
 	}
 
-	return &RoadmapResponse{
+	res := &RoadmapResponse{
 		Language:         *enrollment.Language,
 		Level:            *enrollment.CurrentLevel,
 		TotalLessons:     totalLessons,
@@ -101,7 +122,17 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		ProgressPercent:  progressPercent,
 		CurrentLessonID:  currentLessonID,
 		Units:            unlockedUnits,
-	}, nil
+	}
+
+	// 2. Cache roadmap response for subsequent requests (15 min TTL)
+	if u.cacheRepo != nil {
+		_ = u.cacheRepo.SetRoadmap(ctx, userID, enrollment.Language.ID, res, 15*time.Minute)
+		if languageID != "" && languageID != enrollment.Language.ID {
+			_ = u.cacheRepo.SetRoadmap(ctx, userID, languageID, res, 15*time.Minute)
+		}
+	}
+
+	return res, nil
 }
 
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
@@ -192,7 +223,6 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	// Anti-exploit: Replaying an already mastered lesson awards practice XP instead of full reward
 	if lesson.IsCompleted {
 		xpEarned = 5
-		activityType = "lesson_practiced"
 	}
 
 	now := time.Now().UTC()
@@ -205,26 +235,30 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		CompletedAt: now,
 	}
 
-	if err := u.curriculumRepo.UpsertLessonProgress(ctx, progress); err != nil {
-		return nil, fmt.Errorf("failed to record lesson completion: %w", err)
-	}
-
 	newStreak, _ := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now)
 	newXP := usr.XP + xpEarned
 	newLevel := (newXP / 100) + 1
 
-	if err := u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, newStreak, &now); err != nil {
-		return nil, fmt.Errorf("failed to update gamification stats: %w", err)
+	// Atomic Unit-of-Work: update lesson progress, gamification stats, and activity log in a single DB transaction
+	payload := &LessonCompletionPayload{
+		Progress:     progress,
+		XPEarned:     xpEarned,
+		NewXP:        newXP,
+		NewLevel:     newLevel,
+		NewStreak:    newStreak,
+		LastActiveAt: now,
+		ActivityType: activityType,
+		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score, "is_practice": lesson.IsCompleted},
 	}
 
-	// Activity logging is non-blocking telemetry; failures should not abort lesson completion
-	_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
-		UserID:       userID,
-		ActivityType: activityType,
-		XPEarned:     xpEarned,
-		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score},
-		CreatedAt:    now,
-	})
+	if err := u.curriculumRepo.RecordLessonCompletionTx(ctx, payload); err != nil {
+		return nil, fmt.Errorf("failed to record lesson completion tx: %w", err)
+	}
+
+	// Invalidate user's cached roadmap to reflect freshly unlocked nodes
+	if u.cacheRepo != nil {
+		_ = u.cacheRepo.InvalidateRoadmap(ctx, userID)
+	}
 
 	var nextLessonID *string
 	if nextID, err := u.curriculumRepo.GetNextLessonID(ctx, req.LessonID); err == nil && nextID != nil {
