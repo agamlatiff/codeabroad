@@ -1,0 +1,224 @@
+import { useState, useEffect, useCallback } from 'react'
+import { useParams } from 'react-router-dom'
+import { questService } from "@/features/gamification/services/questService"
+import { useQuestStore } from "@/features/gamification/store/questStore"
+import { useAuthStore } from "@/features/auth/store/authStore"
+import { triggerHaptic } from "@/shared/utils/haptics"
+import { audioEngine } from "@/shared/utils/audio"
+import { audioService } from "@/shared/services/audioService"
+import {
+  getWorkspaceQuestFallback,
+  evaluateWorkspaceCode,
+  generateSubmitResponse,
+} from "@/features/exercise/data/workspaceCatalog"
+
+export const useLearnWorkspace = () => {
+  const { id } = useParams<{ id: string }>()
+
+  // Ambient Lo-Fi soundscape for deep focus coding
+  useEffect(() => {
+    audioService.playBgm('universal')
+    return () => {
+      audioService.stopBgm()
+    }
+  }, [])
+  const {
+    currentQuest,
+    userCode,
+    isRunningTests,
+    testResult,
+    isSubmitting,
+    submitResult,
+    error,
+    setQuest,
+    setUserCode,
+    resetUserCode,
+    setIsRunningTests,
+    setTestResult,
+    setIsSubmitting,
+    setSubmitResult,
+    setError,
+    clearWorkspace,
+  } = useQuestStore()
+
+  const [isLoading, setIsLoading] = useState<boolean>(true)
+  const user = useAuthStore((s) => s.user)
+  const updateUser = useAuthStore((s) => s.updateUser)
+
+  useEffect(() => {
+    let ignore = false
+    if (!id) return
+
+    void (async () => {
+      try {
+        const data = await questService.getQuestDetails(id)
+        if (ignore) return
+        if (data && (!data.acceptance_criteria || data.acceptance_criteria.length === 0 || !data.starter_code)) {
+          const fallback = getWorkspaceQuestFallback(id)
+          setQuest({
+            ...fallback,
+            ...data,
+            acceptance_criteria:
+              data.acceptance_criteria && data.acceptance_criteria.length > 0
+                ? data.acceptance_criteria
+                : fallback.acceptance_criteria,
+            starter_code: data.starter_code || fallback.starter_code,
+            nihongo_notes: data.nihongo_notes || fallback.nihongo_notes,
+          })
+        } else {
+          setQuest(data)
+        }
+      } catch {
+        if (ignore) return
+        const fallback = getWorkspaceQuestFallback(id)
+        setQuest(fallback)
+      } finally {
+        if (!ignore) {
+          setIsLoading(false)
+        }
+      }
+    })()
+
+    return () => {
+      ignore = true
+    }
+  }, [id, setQuest])
+
+  // Run automated unit tests in the sandbox
+  const handleRunTests = useCallback(async () => {
+    if (!id || isRunningTests) return
+    setIsRunningTests(true)
+    setError(null)
+    triggerHaptic('tap')
+
+    try {
+      const res = await questService.runTests(id, {
+        code: userCode,
+        filename: currentQuest?.starter_code?.filename,
+      })
+      setTestResult(res)
+      if (res.success) {
+        triggerHaptic('success')
+        audioEngine.playSuccess()
+      } else {
+        triggerHaptic('error')
+        audioEngine.playError()
+      }
+    } catch {
+      // Heuristic fallback testing engine
+      if (currentQuest) {
+        const fallbackRes = evaluateWorkspaceCode(currentQuest, userCode)
+        setTestResult(fallbackRes)
+        if (fallbackRes.success) {
+          triggerHaptic('success')
+          audioEngine.playSuccess()
+        } else {
+          triggerHaptic('error')
+          audioEngine.playError()
+        }
+      } else {
+        setError('Gagal mengevaluasi kode')
+        triggerHaptic('error')
+        audioEngine.playError()
+      }
+    } finally {
+      setIsRunningTests(false)
+    }
+  }, [id, isRunningTests, userCode, currentQuest, setError, setTestResult, setIsRunningTests])
+
+  // Submit final verified code solution
+  const handleSubmit = async () => {
+    if (!id || isSubmitting) return
+    setIsSubmitting(true)
+    setError(null)
+    triggerHaptic('tap')
+
+    try {
+      const res = await questService.submitQuest(id, { code: userCode })
+      setSubmitResult(res)
+
+      // Sync gamification state to global user store immediately
+      updateUser({
+        xp: res.current_xp,
+        current_level: res.current_level,
+        streak: res.streak,
+      })
+
+      // Persist completed quest for instant multi-page reactivity
+      try {
+        const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+        if (!stored.includes(id)) {
+          stored.push(id)
+          localStorage.setItem('codeabroad_completed_quests', JSON.stringify(stored))
+          window.dispatchEvent(new Event('codeabroad_quest_completed'))
+        }
+      } catch {
+        // Ignore localStorage error
+      }
+
+      triggerHaptic('stampImpact')
+      audioEngine.playFanfare()
+    } catch {
+      // Fallback submit completion response
+      if (currentQuest) {
+        const fallbackRes = generateSubmitResponse(currentQuest, user)
+        setSubmitResult(fallbackRes)
+
+        updateUser({
+          xp: fallbackRes.current_xp,
+          streak: fallbackRes.streak,
+        })
+
+        try {
+          const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
+          if (!stored.includes(id)) {
+            stored.push(id)
+            localStorage.setItem('codeabroad_completed_quests', JSON.stringify(stored))
+            window.dispatchEvent(new Event('codeabroad_quest_completed'))
+          }
+        } catch {
+          // Ignore localStorage error
+        }
+
+        triggerHaptic('stampImpact')
+        audioEngine.playFanfare()
+      } else {
+        setError('Gagal menyelesaikan quest')
+        triggerHaptic('error')
+        audioEngine.playError()
+      }
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  // Keyboard shortcut listener: Ctrl+Enter / Cmd+Enter runs tests
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault()
+        handleRunTests()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [handleRunTests])
+
+  return {
+    quest: currentQuest,
+    userCode,
+    setUserCode,
+    resetUserCode,
+    isRunningTests,
+    testResult,
+    isSubmitting,
+    submitResult,
+    dismissModal: () => setSubmitResult(null),
+    isLoading,
+    error,
+    handleRunTests,
+    handleSubmit,
+    clearWorkspace,
+  }
+}
