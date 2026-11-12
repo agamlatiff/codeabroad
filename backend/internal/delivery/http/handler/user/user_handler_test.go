@@ -2,12 +2,10 @@ package user_test
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	"time"
 
 	"codeabroad/backend/internal/config"
 	deliveryHttp "codeabroad/backend/internal/delivery/http"
@@ -15,111 +13,11 @@ import (
 	userHandlerPkg "codeabroad/backend/internal/delivery/http/handler/user"
 	"codeabroad/backend/internal/delivery/http/middleware"
 	"codeabroad/backend/internal/domain"
+	"codeabroad/backend/internal/mock"
 	authUsecasePkg "codeabroad/backend/internal/usecase/auth"
 	userUsecasePkg "codeabroad/backend/internal/usecase/user"
 	"github.com/gin-gonic/gin"
 )
-
-type testUserRepo struct {
-	users map[string]*domain.User
-}
-
-func (r *testUserRepo) Create(ctx context.Context, u *domain.User) error {
-	if u.ID == "" {
-		u.ID = "usr-test-123"
-	}
-	r.users[u.Email] = u
-	r.users[u.ID] = u
-	return nil
-}
-
-func (r *testUserRepo) GetByEmail(ctx context.Context, email string) (*domain.User, error) {
-	return r.users[email], nil
-}
-
-func (r *testUserRepo) GetByUsername(ctx context.Context, username string) (*domain.User, error) {
-	return nil, nil
-}
-
-func (r *testUserRepo) GetByID(ctx context.Context, id string) (*domain.User, error) {
-	return r.users[id], nil
-}
-
-func (r *testUserRepo) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error {
-	return nil
-}
-
-func (r *testUserRepo) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
-	return nil, nil
-}
-
-func (r *testUserRepo) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
-	return nil
-}
-
-func (r *testUserRepo) AddGems(ctx context.Context, userID string, gems int) (int, error) {
-	return 0, nil
-}
-
-func (r *testUserRepo) UpdateProfile(ctx context.Context, userID string, req *domain.UpdateProfileRequest) (*domain.User, error) {
-	u := r.users[userID]
-	if u == nil {
-		return nil, domain.ErrUserNotFound
-	}
-	if req.PrimaryStack != nil {
-		u.PrimaryStack = req.PrimaryStack
-	}
-	return u, nil
-}
-
-func (r *testUserRepo) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
-	return nil
-}
-
-func (r *testUserRepo) HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error) {
-	return true, nil
-}
-
-func (r *testUserRepo) GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]domain.DailyActivityStat, error) {
-	return map[string]domain.DailyActivityStat{}, nil
-}
-
-func (r *testUserRepo) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
-	return &domain.DailyRewardClaimResponse{
-		RewardType:   rewardType,
-		XPAwarded:    xpAwarded,
-		CurrentXP:    100,
-		CurrentLevel: 2,
-		Streak:       1,
-		ClaimedAt:    "2026-10-14T10:00:00Z",
-	}, nil
-}
-
-func (r *testUserRepo) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
-	return &domain.DailyRewardsStatusResponse{
-		Date:               "2026-10-14",
-		VocabQuestClaimed:  false,
-		GoldenChestClaimed: false,
-	}, nil
-}
-
-type testSessionRepo struct {
-	sessions map[string]string
-}
-
-func (s *testSessionRepo) SetSession(ctx context.Context, userID, token string, ttl time.Duration) error {
-	s.sessions[userID] = token
-	return nil
-}
-
-func (s *testSessionRepo) GetSession(ctx context.Context, userID string) (string, error) {
-	return s.sessions[userID], nil
-}
-
-func (s *testSessionRepo) DeleteSession(ctx context.Context, userID string) error {
-	delete(s.sessions, userID)
-	return nil
-}
 
 func setupUserTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
@@ -130,8 +28,8 @@ func setupUserTestRouter() *gin.Engine {
 		JWTRefreshExpirationDays:   30,
 	}
 
-	userRepo := &testUserRepo{users: make(map[string]*domain.User)}
-	sessionRepo := &testSessionRepo{sessions: make(map[string]string)}
+	userRepo := mock.NewUserRepository()
+	sessionRepo := mock.NewSessionRepository()
 
 	authUc := authUsecasePkg.New(userRepo, sessionRepo, cfg)
 	userUc := userUsecasePkg.New(userRepo)
@@ -223,7 +121,7 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 	_ = json.Unmarshal(wReg.Body.Bytes(), &regRes)
 
 	claimBody, _ := json.Marshal(map[string]string{
-		"reward_type": "vocab_quest",
+		"reward_type": "lesson_milestone",
 	})
 	wClaim := httptest.NewRecorder()
 	reqClaim, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
@@ -235,4 +133,3 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 		t.Fatalf("expected 200 OK for reward claim, got: %d, body: %s", wClaim.Code, wClaim.Body.String())
 	}
 }
-

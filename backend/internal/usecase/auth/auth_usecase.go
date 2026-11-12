@@ -106,7 +106,12 @@ func (u *usecase) Login(ctx context.Context, req *domain.LoginRequest) (*domain.
 
 	now := time.Now().UTC()
 	todayStr := now.Format("2006-01-02")
-	_ = u.userRepo.LogActivity(ctx, user.ID, "daily_login", 0, map[string]interface{}{"source": "login", "date": todayStr})
+	_ = u.userRepo.LogActivity(ctx, &domain.UserActivityLog{
+		UserID:       user.ID,
+		ActivityType: "daily_login",
+		XPEarned:     0,
+		Metadata:     map[string]interface{}{"source": "login", "date": todayStr},
+	})
 
 	if newStreak, changed := u.helper.EvaluateLoginStreak(user.Streak, user.LastActiveAt, now); changed {
 		user.Streak = newStreak

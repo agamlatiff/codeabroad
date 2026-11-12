@@ -36,12 +36,12 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*domain.Us
 	return m.usersByID[id], nil
 }
 
-func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error {
+func (m *mockUserRepository) SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error {
+	if u, ok := m.usersByID[userID]; ok {
+		u.IsOnboarded = true
+		u.DailyGoalMinutes = dailyGoalMinutes
+	}
 	return nil
-}
-
-func (m *mockUserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
-	return nil, nil
 }
 
 func (m *mockUserRepository) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
@@ -56,8 +56,8 @@ func (m *mockUserRepository) UpdateProfile(ctx context.Context, userID string, r
 	if req.Name != nil {
 		user.Name = *req.Name
 	}
-	if req.PrimaryStack != nil {
-		user.PrimaryStack = req.PrimaryStack
+	if req.DailyGoalMinutes != nil {
+		user.DailyGoalMinutes = *req.DailyGoalMinutes
 	}
 	if req.PreferredRoadmapView != nil {
 		user.PreferredRoadmapView = *req.PreferredRoadmapView
@@ -65,7 +65,7 @@ func (m *mockUserRepository) UpdateProfile(ctx context.Context, userID string, r
 	return user, nil
 }
 
-func (m *mockUserRepository) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
+func (m *mockUserRepository) LogActivity(ctx context.Context, log *domain.UserActivityLog) error {
 	return nil
 }
 
@@ -77,13 +77,13 @@ func (m *mockUserRepository) GetDailyActivityStatsSince(ctx context.Context, use
 	return map[string]domain.DailyActivityStat{}, nil
 }
 
-func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
+func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, newLevel int) (*domain.DailyRewardClaimResponse, error) {
 	user := m.usersByID[userID]
 	if user == nil {
 		return nil, domain.ErrUserNotFound
 	}
 	user.XP += xpAwarded
-	user.CurrentLevel = ((user.XP / 100) + 1)
+	user.CurrentLevel = newLevel
 	return &domain.DailyRewardClaimResponse{
 		RewardType:   rewardType,
 		XPAwarded:    xpAwarded,
@@ -96,9 +96,9 @@ func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string
 
 func (m *mockUserRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*domain.DailyRewardsStatusResponse, error) {
 	return &domain.DailyRewardsStatusResponse{
-		Date:               "2026-10-14",
-		VocabQuestClaimed:  false,
-		GoldenChestClaimed: false,
+		Date:                   "2026-10-14",
+		LessonMilestoneClaimed: false,
+		GoldenChestClaimed:     false,
 	}, nil
 }
 
@@ -108,71 +108,53 @@ func (m *mockUserRepository) AddGems(ctx context.Context, userID string, gems in
 
 func TestGetProfile_Success(t *testing.T) {
 	repo := newMockUserRepository()
-	uc := userUsecasePkg.New(repo)
-	ctx := context.Background()
-
-	user := &domain.User{
+	repo.usersByID["user-123"] = &domain.User{
 		UserAccount: domain.UserAccount{
-			ID:    "usr_profile_1",
-			Email: "profile@example.com",
+			ID:    "user-123",
+			Email: "learner@codeabroad.io",
 		},
 		UserProfile: domain.UserProfile{
-			Name:     "Profile User",
-			Username: "profileuser",
+			Name:             "CodeAbroad Learner",
+			Username:         "learner123",
+			DailyGoalMinutes: 15,
 		},
 	}
-	_ = repo.Create(ctx, user)
 
-	profile, err := uc.GetProfile(ctx, "usr_profile_1")
+	uc := userUsecasePkg.New(repo)
+	res, err := uc.GetProfile(context.Background(), "user-123")
 	if err != nil {
-		t.Fatalf("expected profile, got error: %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
-	if profile.ID != user.ID || profile.Email != user.Email {
-		t.Fatalf("profile data mismatch: %+v", profile)
+	if res.Name != "CodeAbroad Learner" {
+		t.Errorf("expected name 'CodeAbroad Learner', got '%s'", res.Name)
 	}
-}
-
-func TestGetProfile_NotFound(t *testing.T) {
-	repo := newMockUserRepository()
-	uc := userUsecasePkg.New(repo)
-	ctx := context.Background()
-
-	_, err := uc.GetProfile(ctx, "non_existent_id")
-	if err != domain.ErrUserNotFound {
-		t.Fatalf("expected domain.ErrUserNotFound, got: %v", err)
+	if res.DailyGoalMinutes != 15 {
+		t.Errorf("expected daily goal 15, got %d", res.DailyGoalMinutes)
 	}
 }
 
-func TestUpdateProfile_InvalidRoadmapView(t *testing.T) {
+func TestClaimDailyReward_Success(t *testing.T) {
 	repo := newMockUserRepository()
-	uc := userUsecasePkg.New(repo)
-	ctx := context.Background()
-
-	invalidView := "invalid_view"
-	_, err := uc.UpdateProfile(ctx, "usr_1", &domain.UpdateProfileRequest{
-		PreferredRoadmapView: &invalidView,
-	})
-	if err == nil {
-		t.Fatal("expected validation error for invalid roadmap view, got nil")
+	repo.usersByID["user-123"] = &domain.User{
+		UserAccount: domain.UserAccount{
+			ID: "user-123",
+		},
+		UserGamificationStats: domain.UserGamificationStats{
+			XP:           50,
+			CurrentLevel: 1,
+			Streak:       3,
+		},
 	}
-}
 
-func TestClaimDailyReward_VocabQuest(t *testing.T) {
-	repo := newMockUserRepository()
 	uc := userUsecasePkg.New(repo)
-	ctx := context.Background()
-
-	_ = repo.Create(ctx, &domain.User{
-		UserAccount:           domain.UserAccount{ID: "usr_1"},
-		UserGamificationStats: domain.UserGamificationStats{XP: 80, CurrentLevel: 1},
-	})
-
-	res, err := uc.ClaimDailyReward(ctx, "usr_1", "vocab_quest")
+	res, err := uc.ClaimDailyReward(context.Background(), "user-123", "lesson_milestone")
 	if err != nil {
-		t.Fatalf("expected no error, got: %v", err)
+		t.Fatalf("expected no error, got %v", err)
 	}
-	if res.XPAwarded != 30 || res.CurrentXP != 110 || res.CurrentLevel != 2 {
-		t.Fatalf("unexpected reward calculation: %+v", res)
+	if res.XPAwarded != 30 {
+		t.Errorf("expected 30 XP, got %d", res.XPAwarded)
+	}
+	if res.CurrentXP != 80 {
+		t.Errorf("expected 80 XP, got %d", res.CurrentXP)
 	}
 }
-

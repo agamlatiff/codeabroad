@@ -33,7 +33,7 @@ func (h *Helper) ValidateRoadmapView(view *string) error {
 // ResolveDailyRewardXP validates the daily reward type and returns the XP amount to award
 func (h *Helper) ResolveDailyRewardXP(rewardType string) (int, error) {
 	switch rewardType {
-	case "vocab_quest":
+	case "lesson_milestone":
 		return 30, nil
 	case "golden_chest":
 		return 50, nil
@@ -143,7 +143,7 @@ func (h *Helper) BuildWeeklyActivitySummary(
 			IsActive:    isActive,
 			IsToday:     isToday,
 			XPEarned:    stat.XPEarned,
-			QuestsCount: stat.QuestsCount,
+			LessonsCount: stat.LessonsCount,
 		}
 	}
 

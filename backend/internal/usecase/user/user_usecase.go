@@ -67,7 +67,12 @@ func (u *usecase) GetActivityLogs(ctx context.Context, userID string) (*domain.U
 
 	alreadyActiveToday, err := u.userRepo.HasActivityInRange(ctx, userID, startOfToday, startOfTomorrow)
 	if err == nil && !alreadyActiveToday {
-		_ = u.userRepo.LogActivity(ctx, userID, "daily_login", 0, map[string]interface{}{"date": todayStr})
+		_ = u.userRepo.LogActivity(ctx, &domain.UserActivityLog{
+			UserID:       userID,
+			ActivityType: "daily_login",
+			XPEarned:     0,
+			Metadata:     map[string]interface{}{"date": todayStr},
+		})
 		if newStreak, changed := u.helper.EvaluateDailyStreak(user.Streak, user.LastActiveAt, now); changed {
 			user.Streak = newStreak
 			user.LastActiveAt = &now
@@ -94,7 +99,16 @@ func (u *usecase) ClaimDailyReward(ctx context.Context, userID string, rewardTyp
 		return nil, err
 	}
 
-	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded)
+	user, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch user: %w", err)
+	}
+	if user == nil {
+		return nil, domain.ErrUserNotFound
+	}
+
+	newLevel := u.helper.CalculateLevel(user.XP + xpAwarded)
+	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded, newLevel)
 }
 
 // GetDailyRewardsStatus checks reward claim status for the authenticated user

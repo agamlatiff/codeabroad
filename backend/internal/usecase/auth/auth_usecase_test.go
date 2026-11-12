@@ -47,12 +47,8 @@ func (m *mockUserRepository) GetByID(ctx context.Context, id string) (*domain.Us
 	return m.usersByID[id], nil
 }
 
-func (m *mockUserRepository) UpdateOnboarding(ctx context.Context, userID string, countryID string, careerPathID string, primaryStack string, bonusXP int) error {
+func (m *mockUserRepository) SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error {
 	return nil
-}
-
-func (m *mockUserRepository) GetProfileWithDetails(ctx context.Context, userID string) (*domain.OnboardingProfileResponse, error) {
-	return nil, nil
 }
 
 func (m *mockUserRepository) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
@@ -63,7 +59,7 @@ func (m *mockUserRepository) UpdateProfile(ctx context.Context, userID string, r
 	return m.usersByID[userID], nil
 }
 
-func (m *mockUserRepository) LogActivity(ctx context.Context, userID string, activityType string, xpEarned int, metadata map[string]interface{}) error {
+func (m *mockUserRepository) LogActivity(ctx context.Context, log *domain.UserActivityLog) error {
 	return nil
 }
 
@@ -75,7 +71,7 @@ func (m *mockUserRepository) GetDailyActivityStatsSince(ctx context.Context, use
 	return map[string]domain.DailyActivityStat{}, nil
 }
 
-func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*domain.DailyRewardClaimResponse, error) {
+func (m *mockUserRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, newLevel int) (*domain.DailyRewardClaimResponse, error) {
 	return nil, nil
 }
 
@@ -446,3 +442,5 @@ func TestRegister_And_Login_EmailCaseNormalization(t *testing.T) {
 		t.Fatal("expected valid access token upon normalized login")
 	}
 }
+
+
