@@ -83,6 +83,9 @@ export const resolveRegisterErrorMessage = (err: unknown): RegisterErrorResult =
   if (rawError.includes('username') && (rawError.includes('taken') || rawError.includes('already') || rawError.includes('exists'))) {
     return { type: 'field', field: 'username', message: 'Username ini sudah digunakan. Coba username yang lain.' }
   }
+  if (rawError.includes('username') && (rawError.includes('invalid') || rawError.includes('only contain'))) {
+    return { type: 'field', field: 'username', message: 'Username hanya boleh huruf, angka, garis bawah (_), dan strip (-).' }
+  }
   if (rawError.includes('password')) {
     return { type: 'field', field: 'password', message: 'Kata sandi minimal 8 karakter.' }
   }

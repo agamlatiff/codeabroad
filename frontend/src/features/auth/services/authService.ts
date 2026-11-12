@@ -43,4 +43,17 @@ export const authService = {
       }
     }
   },
+
+  /**
+   * Terminates all active device sessions for this user on the backend.
+   */
+  async logoutAll(): Promise<void> {
+    try {
+      await api.post('/auth/logout-all')
+    } catch (err: unknown) {
+      if (import.meta.env.DEV) {
+        console.warn('[authService.logoutAll] Gagal mencabut semua sesi di server:', err)
+      }
+    }
+  },
 }

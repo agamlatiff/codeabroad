@@ -56,56 +56,25 @@ const safeParseSession = (raw: string | null): AuthSessionData | null => {
 }
 
 /**
- * Loads initial session with seamless backward compatibility migration for legacy keys.
+ * Loads initial session from browser storage (localStorage or sessionStorage based on rememberMe).
  */
 const loadInitialSession = (): AuthSessionData => {
   const local = getBrowserStorage('local')
   const session = getBrowserStorage('session')
 
-  // 1. Check primary unified storage key
+  // 1. Check persistent localStorage session (rememberMe: true)
   const storedLocal = safeParseSession(local?.getItem(AUTH_STORAGE_KEY) ?? null)
   if (storedLocal?.refreshToken) {
     return { ...storedLocal, rememberMe: true }
   }
 
+  // 2. Check transient sessionStorage session (rememberMe: false)
   const storedSession = safeParseSession(session?.getItem(AUTH_STORAGE_KEY) ?? null)
   if (storedSession?.refreshToken) {
     return { ...storedSession, rememberMe: false }
   }
 
-  // 2. Backward compatibility migration from legacy separate keys ('user', 'access_token', 'refresh_token')
-  const legacyRefreshToken = local?.getItem('refresh_token') || session?.getItem('refresh_token')
-  if (legacyRefreshToken) {
-    const isLocal = Boolean(local?.getItem('refresh_token'))
-    const legacyAccessToken = (isLocal ? local : session)?.getItem('access_token') || null
-    const legacyRawUser = (isLocal ? local : session)?.getItem('user') || null
-    let legacyUser: User | null
-    try {
-      legacyUser = legacyRawUser ? JSON.parse(legacyRawUser) : null
-    } catch {
-      legacyUser = null
-    }
-
-    const migrated: AuthSessionData = {
-      user: legacyUser,
-      accessToken: legacyAccessToken,
-      refreshToken: legacyRefreshToken,
-      rememberMe: isLocal,
-    }
-
-    // Persist to unified storage and clean up legacy raw keys
-    const targetStorage = isLocal ? local : session
-    targetStorage?.setItem(AUTH_STORAGE_KEY, JSON.stringify(migrated))
-    local?.removeItem('user')
-    local?.removeItem('access_token')
-    local?.removeItem('refresh_token')
-    session?.removeItem('user')
-    session?.removeItem('access_token')
-    session?.removeItem('refresh_token')
-
-    return migrated
-  }
-
+  // 3. Fallback unauthenticated default
   return {
     user: null,
     accessToken: null,

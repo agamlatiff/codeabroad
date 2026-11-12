@@ -14,9 +14,13 @@ export const useLogout = () => {
   const queryClient = useQueryClient()
   const clearAuthStore = useAuthStore((state) => state.logout)
 
-  return useCallback(async () => {
+  return useCallback(async (allDevices: boolean = false) => {
     try {
-      await authService.logout()
+      if (allDevices) {
+        await authService.logoutAll()
+      } else {
+        await authService.logout()
+      }
     } finally {
       // 1. Clear client auth session
       clearAuthStore()

@@ -128,8 +128,8 @@ export const validateUsername = (username: string): string | null => {
   if (trimmed.length > 30) {
     return 'Username maksimal 30 karakter'
   }
-  if (!/^[a-zA-Z0-9_]+$/.test(trimmed)) {
-    return 'Username hanya boleh huruf, angka, dan garis bawah (_)'
+  if (!/^[a-zA-Z0-9_-]+$/.test(trimmed)) {
+    return 'Username hanya boleh huruf, angka, garis bawah (_), dan strip (-)'
   }
   return null
 }
