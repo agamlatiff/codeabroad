@@ -2,12 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from "@/features/auth/services/authService"
-import type { RegisterPayload } from "@/features/auth/types/auth"
+import { registerSchema, type RegisterPayload } from "@/features/auth/types/auth"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
-import { validateRegisterForm } from "@/shared/utils/validation"
-import { useFieldErrors } from './useFieldErrors'
 import {
   resolveRegisterErrorMessage,
   resolvePostAuthPath,
@@ -15,24 +15,34 @@ import {
 } from './authHelpers'
 
 /**
- * Headless controller hook managing user registration flow, validation, and error mapping for RegisterPage.
+ * Headless controller hook managing user registration flow with React Hook Form + Zod for RegisterPage.
  */
 export const useRegister = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
-
-  // 1. Form State
-  const [name, setName] = useState('')
-  const [username, setUsername] = useState('')
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-
-  // 2. Error States
-  const { fieldErrors, setFieldErrors, setFieldError, clearFieldError } = useFieldErrors()
   const [generalError, setGeneralError] = useState<string | null>(null)
 
-  // 3. TanStack Mutation for Registration
+  // 1. React Hook Form + Zod Schema Resolver
+  const {
+    register,
+    handleSubmit: rhfHandleSubmit,
+    watch,
+    setValue,
+    setError,
+    clearErrors,
+    formState: { errors },
+  } = useForm<RegisterPayload>({
+    resolver: zodResolver(registerSchema),
+    defaultValues: {
+      name: '',
+      username: '',
+      email: '',
+      password: '',
+    },
+  })
+
+  // 2. TanStack Mutation for Registration
   const registerMutation = useMutation({
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
     onSuccess: (data) => {
@@ -44,59 +54,75 @@ export const useRegister = () => {
     onError: (err: unknown) => {
       const errorResult = resolveRegisterErrorMessage(err)
       if (errorResult.type === 'field') {
-        setFieldError(errorResult.field, errorResult.message)
+        setError(errorResult.field, { message: errorResult.message })
       } else {
         setGeneralError(errorResult.message)
       }
     },
   })
 
-  // 4. Form Submit Handler
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (registerMutation.isPending) return
-
+  // 3. Form Submit Handler bridged to RHF validation
+  const onSubmit = (data: RegisterPayload) => {
     setGeneralError(null)
-
-    const errors = validateRegisterForm(name, username, email, password)
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors)
-      return
-    }
-
     registerMutation.mutate({
-      name: name.trim(),
-      username: username.trim().toLowerCase(),
-      email: email.trim().toLowerCase(),
-      password,
+      name: data.name.trim(),
+      username: data.username.trim().toLowerCase(),
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
     })
   }
 
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    if (registerMutation.isPending) return
+    rhfHandleSubmit(onSubmit)(e)
+  }
+
   return {
-    // 1. Form Values & Field Setters
+    // React Hook Form register primitive for direct binding
+    register,
+
+    // Form Values & Field Setters (backwards-compatible with RegisterPage UI components)
     form: {
-      name,
-      setName,
-      username,
-      setUsername,
-      email,
-      setEmail,
-      password,
-      setPassword,
-      fieldErrors,
-      clearFieldError,
+      name: watch('name') ?? '',
+      setName: (val: string) => {
+        setValue('name', val)
+        clearErrors('name')
+      },
+      username: watch('username') ?? '',
+      setUsername: (val: string) => {
+        setValue('username', val)
+        clearErrors('username')
+      },
+      email: watch('email') ?? '',
+      setEmail: (val: string) => {
+        setValue('email', val)
+        clearErrors('email')
+      },
+      password: watch('password') ?? '',
+      setPassword: (val: string) => {
+        setValue('password', val)
+        clearErrors('password')
+      },
+      fieldErrors: {
+        name: errors.name?.message,
+        username: errors.username?.message,
+        email: errors.email?.message,
+        password: errors.password?.message,
+      },
+      clearFieldError: (field: keyof RegisterPayload) => clearErrors(field),
     },
 
-    // 2. Request Status & Alerts
+    // Request Status & Alerts
     status: {
       loading: registerMutation.isPending,
       error: generalError,
       clearError: () => setGeneralError(null),
     },
 
-    // 3. User Actions
+    // User Actions
     actions: {
-      submit: handleSubmit,
+      submit: handleFormSubmit,
       // googleRegister: redirectToGoogleOAuth,
     },
   }

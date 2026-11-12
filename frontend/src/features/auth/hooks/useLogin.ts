@@ -2,12 +2,12 @@ import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from "@/features/auth/services/authService"
-import type { LoginPayload } from "@/features/auth/types/auth"
+import { loginSchema, type LoginPayload } from "@/features/auth/types/auth"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
-import { validateLoginForm } from "@/shared/utils/validation"
-import { useFieldErrors } from './useFieldErrors'
 import {
   resolveLoginErrorMessage,
   resolvePostAuthPath,
@@ -15,27 +15,36 @@ import {
 } from './authHelpers'
 
 /**
- * Headless controller hook managing user authentication flow and form validation for LoginPage.
+ * Headless controller hook managing user authentication flow with React Hook Form + Zod for LoginPage.
  */
 export const useLogin = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
-
-  // 1. Form State
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [rememberMe, setRememberMe] = useState(false)
-
-  // 2. Error States
-  const { fieldErrors, setFieldErrors, clearFieldError } = useFieldErrors()
   const [generalError, setGeneralError] = useState<string | null>(null)
 
-  // 3. TanStack Mutation for Session Authentication
+  // 1. React Hook Form + Zod Schema Resolver
+  const {
+    register,
+    handleSubmit: rhfHandleSubmit,
+    watch,
+    setValue,
+    clearErrors,
+    formState: { errors },
+  } = useForm<LoginPayload>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+      remember_me: false,
+    },
+  })
+
+  // 2. TanStack Mutation for Session Authentication
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
-    onSuccess: (data) => {
-      setAuth(data.user, data.access_token, data.refresh_token, rememberMe)
+    onSuccess: (data, variables) => {
+      setAuth(data.user, data.access_token, data.refresh_token, variables.remember_me)
       queryClient.setQueryData(PROFILE_QUERY_KEY, data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
@@ -44,49 +53,57 @@ export const useLogin = () => {
     },
   })
 
-  // 4. Form Submit Handler
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault()
-    if (loginMutation.isPending) return
-
+  // 3. Form Submit Handler bridged to RHF validation
+  const onSubmit = (data: LoginPayload) => {
     setGeneralError(null)
-
-    const errors = validateLoginForm(email, password)
-    if (Object.keys(errors).length > 0) {
-      setFieldErrors(errors)
-      return
-    }
-
     loginMutation.mutate({
-      email: email.trim().toLowerCase(),
-      password,
-      remember_me: rememberMe,
+      email: data.email.trim().toLowerCase(),
+      password: data.password,
+      remember_me: data.remember_me ?? false,
     })
   }
 
+  const handleFormSubmit = (e: FormEvent) => {
+    e.preventDefault()
+    if (loginMutation.isPending) return
+    rhfHandleSubmit(onSubmit)(e)
+  }
+
   return {
-    // 1. Form Values & Field Setters
+    // React Hook Form register primitive for direct binding
+    register,
+
+    // Form Values & Field Setters (backwards-compatible with LoginPage UI components)
     form: {
-      email,
-      setEmail,
-      password,
-      setPassword,
-      rememberMe,
-      setRememberMe,
-      fieldErrors,
-      clearFieldError,
+      email: watch('email') ?? '',
+      setEmail: (val: string) => {
+        setValue('email', val)
+        clearErrors('email')
+      },
+      password: watch('password') ?? '',
+      setPassword: (val: string) => {
+        setValue('password', val)
+        clearErrors('password')
+      },
+      rememberMe: watch('remember_me') ?? false,
+      setRememberMe: (val: boolean) => setValue('remember_me', val),
+      fieldErrors: {
+        email: errors.email?.message,
+        password: errors.password?.message,
+      },
+      clearFieldError: (field: keyof LoginPayload) => clearErrors(field),
     },
 
-    // 2. Request Status & Alerts
+    // Request Status & Alerts
     status: {
       loading: loginMutation.isPending,
       error: generalError,
       clearError: () => setGeneralError(null),
     },
 
-    // 3. User Actions
+    // User Actions
     actions: {
-      submit: handleSubmit,
+      submit: handleFormSubmit,
       // googleLogin: redirectToGoogleOAuth,
     },
   }
