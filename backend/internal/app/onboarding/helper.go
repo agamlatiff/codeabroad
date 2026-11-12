@@ -42,7 +42,17 @@ func (h *Helper) GradePlacementAnswers(questions []exercise.Exercise, answers []
 		if !exists {
 			continue
 		}
-		if strings.EqualFold(strings.TrimSpace(q.CorrectAnswer), strings.TrimSpace(ans.UserAnswer)) {
+		trimmedUser := strings.TrimSpace(ans.UserAnswer)
+		isCorrect := strings.EqualFold(strings.TrimSpace(q.CorrectAnswer), trimmedUser)
+		if !isCorrect {
+			for _, acc := range q.AcceptableAnswers {
+				if strings.EqualFold(strings.TrimSpace(acc), trimmedUser) {
+					isCorrect = true
+					break
+				}
+			}
+		}
+		if isCorrect {
 			correctCount++
 		}
 	}

@@ -43,7 +43,7 @@ func (r *PostgresRepository) GetAllLanguages(ctx context.Context, onlyActive boo
 	}
 	defer rows.Close()
 
-	var languages []Language
+	languages := make([]Language, 0)
 	for rows.Next() {
 		var l Language
 		if err := rows.Scan(&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt); err != nil {
@@ -103,7 +103,7 @@ func (r *PostgresRepository) GetLevelsByLanguageID(ctx context.Context, language
 		SELECT id, language_id, code, name, tier, official_exam_name, passing_score_percent, order_index, created_at
 		FROM proficiency_levels
 		WHERE language_id = $1
-		ORDER BY order_index ASC
+		ORDER BY order_index ASC, id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, languageID)
 	if err != nil {
@@ -111,7 +111,7 @@ func (r *PostgresRepository) GetLevelsByLanguageID(ctx context.Context, language
 	}
 	defer rows.Close()
 
-	var levels []ProficiencyLevel
+	levels := make([]ProficiencyLevel, 0)
 	for rows.Next() {
 		var pl ProficiencyLevel
 		if err := rows.Scan(
@@ -161,7 +161,7 @@ func (r *PostgresRepository) GetEnrollmentsByUserID(ctx context.Context, userID 
 		JOIN languages l ON e.language_id = l.id
 		LEFT JOIN proficiency_levels pl ON e.current_level_id = pl.id
 		WHERE e.user_id = $1
-		ORDER BY e.is_active DESC, e.enrolled_at DESC
+		ORDER BY e.is_active DESC, e.enrolled_at DESC, e.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, userID)
 	if err != nil {
@@ -169,7 +169,7 @@ func (r *PostgresRepository) GetEnrollmentsByUserID(ctx context.Context, userID 
 	}
 	defer rows.Close()
 
-	var enrollments []UserLanguageEnrollment
+	enrollments := make([]UserLanguageEnrollment, 0)
 	for rows.Next() {
 		var e UserLanguageEnrollment
 		var l Language
@@ -322,7 +322,7 @@ func (r *PostgresRepository) SetActiveLanguage(ctx context.Context, userID strin
 	tag, err := tx.Exec(ctx, `
 		UPDATE user_language_enrollments 
 		SET is_active = true 
-		WHERE user_id = $1 AND language_id = $2
+		WHERE user_id = $1 AND language_id = $2::uuid
 	`, userID, languageID)
 	if err != nil {
 		return fmt.Errorf("failed to activate target language track: %w", err)

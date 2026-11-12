@@ -141,10 +141,29 @@ func (m *MockRepository) GetShopItems(ctx context.Context, onlyAvailable bool) (
 	if m.GetShopItemsErr != nil {
 		return nil, m.GetShopItemsErr
 	}
-	var res []ShopItem
+	res := make([]ShopItem, 0)
 	for _, it := range m.ShopItems {
-		if !onlyAvailable || it.IsAvailable {
-			res = append(res, *it)
+		item := *it
+		if item.Title == "" {
+			item.Title = item.Name
+		}
+		if item.Name == "" {
+			item.Name = item.Title
+		}
+		if item.Subtitle == "" {
+			item.Subtitle = item.Description
+		}
+		if item.Description == "" {
+			item.Description = item.Subtitle
+		}
+		if item.Badge == "" {
+			item.Badge = item.Icon
+		}
+		if item.Icon == "" {
+			item.Icon = item.Badge
+		}
+		if !onlyAvailable || item.IsAvailable || item.IsActive {
+			res = append(res, item)
 		}
 	}
 	return res, nil
@@ -158,7 +177,26 @@ func (m *MockRepository) GetShopItemByID(ctx context.Context, itemID string) (*S
 	if !ok {
 		return nil, ErrShopItemNotFound
 	}
-	return it, nil
+	item := *it
+	if item.Title == "" {
+		item.Title = item.Name
+	}
+	if item.Name == "" {
+		item.Name = item.Title
+	}
+	if item.Subtitle == "" {
+		item.Subtitle = item.Description
+	}
+	if item.Description == "" {
+		item.Description = item.Subtitle
+	}
+	if item.Badge == "" {
+		item.Badge = item.Icon
+	}
+	if item.Icon == "" {
+		item.Icon = item.Badge
+	}
+	return &item, nil
 }
 
 func (m *MockRepository) GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error) {
@@ -203,9 +241,16 @@ func (m *MockRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, erro
 	if m.GetBadgesErr != nil {
 		return nil, m.GetBadgesErr
 	}
-	var res []BadgeDefinition
+	res := make([]BadgeDefinition, 0)
 	for _, b := range m.Badges {
-		res = append(res, *b)
+		badge := *b
+		if badge.XPReward == 0 && badge.XPBonus > 0 {
+			badge.XPReward = badge.XPBonus
+		}
+		if badge.XPBonus == 0 && badge.XPReward > 0 {
+			badge.XPBonus = badge.XPReward
+		}
+		res = append(res, badge)
 	}
 	return res, nil
 }
@@ -214,7 +259,23 @@ func (m *MockRepository) GetUserBadges(ctx context.Context, userID string) ([]Us
 	if m.GetUserBadgesErr != nil {
 		return nil, m.GetUserBadgesErr
 	}
-	return m.UserBadges[userID], nil
+	ubList := m.UserBadges[userID]
+	res := make([]UserBadge, 0, len(ubList))
+	for _, ub := range ubList {
+		badgeCopy := ub
+		if badgeCopy.Badge != nil {
+			bd := *badgeCopy.Badge
+			if bd.XPReward == 0 && bd.XPBonus > 0 {
+				bd.XPReward = bd.XPBonus
+			}
+			if bd.XPBonus == 0 && bd.XPReward > 0 {
+				bd.XPBonus = bd.XPReward
+			}
+			badgeCopy.Badge = &bd
+		}
+		res = append(res, badgeCopy)
+	}
+	return res, nil
 }
 
 func (m *MockRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*UserBadge, error) {

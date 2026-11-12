@@ -296,3 +296,23 @@ CREATE TABLE IF NOT EXISTS readiness_exam_attempts (
 );
 
 CREATE INDEX IF NOT EXISTS idx_readiness_exam_user_level ON readiness_exam_attempts(user_id, level_id, attempted_at DESC);
+
+CREATE TABLE IF NOT EXISTS coaching_submissions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    type VARCHAR(50) NOT NULL,
+    target_role VARCHAR(100),
+    github_url VARCHAR(255),
+    resume_url VARCHAR(255),
+    discord_handle VARCHAR(100),
+    interview_language VARCHAR(50),
+    focus_topic VARCHAR(100),
+    preferred_time VARCHAR(100),
+    notes TEXT,
+    status VARCHAR(30) NOT NULL DEFAULT 'pending',
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_coaching_user_created ON coaching_submissions(user_id, created_at DESC);
+

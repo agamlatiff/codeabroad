@@ -37,7 +37,8 @@ type BadgeDefinition struct {
 	Description string    `json:"description"`
 	Icon        string    `json:"icon"`
 	Category    string    `json:"category"` // speed | consistency | mastery | streak | special
-	XPBonus     int       `json:"xp_bonus"`
+	XPReward    int       `json:"xp_reward"`
+	XPBonus     int       `json:"xp_bonus,omitempty"` // alias for backwards compatibility
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -53,12 +54,16 @@ type UserBadge struct {
 // ShopItem represents a purchasable consumable or cosmetic perk (shop_items table)
 type ShopItem struct {
 	ID          string    `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description"`
-	Category    string    `json:"category"` // boost | cosmetic | streak_freeze | companion | pass
+	Title       string    `json:"title"`
+	Name        string    `json:"name,omitempty"` // alias for backwards compatibility
+	Subtitle    string    `json:"subtitle"`
+	Description string    `json:"description,omitempty"` // alias for backwards compatibility
+	Category    string    `json:"category"`              // boost | cosmetic | streak_freeze | companion | pass
 	PriceGems   int       `json:"price_gems"`
-	Icon        string    `json:"icon"`
-	IsAvailable bool      `json:"is_available"`
+	Badge       string    `json:"badge"`
+	Icon        string    `json:"icon,omitempty"` // alias for backwards compatibility
+	IsActive    bool      `json:"is_active"`
+	IsAvailable bool      `json:"is_available"` // alias for backwards compatibility
 	CreatedAt   time.Time `json:"created_at"`
 }
 

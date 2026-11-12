@@ -45,11 +45,11 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 	invRows, err := r.db.Pool.Query(
 		ctx,
 		`SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
-		        si.id, si.name, si.description, si.category, si.price_gems, si.icon, si.is_available, si.created_at
+		        si.id, si.title, si.subtitle, si.category, si.price_gems, si.badge, si.is_active, si.created_at
 		 FROM user_inventories ui
 		 JOIN shop_items si ON ui.item_id = si.id
 		 WHERE ui.user_id = $1
-		 ORDER BY si.price_gems ASC`,
+		 ORDER BY si.price_gems ASC, si.id ASC`,
 		userID,
 	)
 	if err != nil {
@@ -62,10 +62,14 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 		var si ShopItem
 		if err := invRows.Scan(
 			&inv.ID, &inv.UserID, &inv.ItemID, &inv.Quantity, &inv.CreatedAt, &inv.UpdatedAt,
-			&si.ID, &si.Name, &si.Description, &si.Category, &si.PriceGems, &si.Icon, &si.IsAvailable, &si.CreatedAt,
+			&si.ID, &si.Title, &si.Subtitle, &si.Category, &si.PriceGems, &si.Badge, &si.IsActive, &si.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan user inventory: %w", err)
 		}
+		si.Name = si.Title
+		si.Description = si.Subtitle
+		si.Icon = si.Badge
+		si.IsAvailable = si.IsActive
 		inv.Item = &si
 		status.Inventory[inv.ItemID] = inv.Quantity
 		status.InventoryItems = append(status.InventoryItems, inv)
@@ -73,7 +77,7 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 
 	chestRows, err := r.db.Pool.Query(
 		ctx,
-		`SELECT tier FROM daily_chest_claims WHERE user_id = $1 AND claim_date = CURRENT_DATE ORDER BY tier ASC`,
+		`SELECT tier FROM user_daily_chest_claims WHERE user_id = $1 AND claim_date = CURRENT_DATE ORDER BY tier ASC, id ASC`,
 		userID,
 	)
 	if err != nil {
@@ -91,11 +95,11 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 	badgeRows, err := r.db.Pool.Query(
 		ctx,
 		`SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
-		        bd.id, bd.title, bd.description, bd.icon, bd.category, bd.xp_bonus, bd.created_at
+		        bd.id, bd.title, bd.description, bd.category, bd.icon, bd.xp_reward, bd.created_at
 		 FROM user_badges ub
 		 JOIN badge_definitions bd ON ub.badge_key = bd.id
 		 WHERE ub.user_id = $1
-		 ORDER BY ub.awarded_at DESC`,
+		 ORDER BY ub.awarded_at DESC, ub.id ASC`,
 		userID,
 	)
 	if err != nil {
@@ -108,10 +112,11 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 		var bd BadgeDefinition
 		if err := badgeRows.Scan(
 			&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt,
-			&bd.ID, &bd.Title, &bd.Description, &bd.Icon, &bd.Category, &bd.XPBonus, &bd.CreatedAt,
+			&bd.ID, &bd.Title, &bd.Description, &bd.Category, &bd.Icon, &bd.XPReward, &bd.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan user badge: %w", err)
 		}
+		bd.XPBonus = bd.XPReward
 		ub.Badge = &bd
 		status.Badges = append(status.Badges, ub)
 	}
@@ -194,16 +199,16 @@ func (r *PostgresRepository) GetShopItems(ctx context.Context, onlyAvailable boo
 	var query string
 	if onlyAvailable {
 		query = `
-			SELECT id, name, description, category, price_gems, icon, is_available, created_at
+			SELECT id, title, subtitle, category, price_gems, badge, is_active, created_at
 			FROM shop_items
-			WHERE is_available = true
-			ORDER BY price_gems ASC
+			WHERE is_active = true
+			ORDER BY price_gems ASC, id ASC
 		`
 	} else {
 		query = `
-			SELECT id, name, description, category, price_gems, icon, is_available, created_at
+			SELECT id, title, subtitle, category, price_gems, badge, is_active, created_at
 			FROM shop_items
-			ORDER BY price_gems ASC
+			ORDER BY price_gems ASC, id ASC
 		`
 	}
 	rows, err := r.db.Pool.Query(ctx, query)
@@ -212,15 +217,19 @@ func (r *PostgresRepository) GetShopItems(ctx context.Context, onlyAvailable boo
 	}
 	defer rows.Close()
 
-	var items []ShopItem
+	items := make([]ShopItem, 0)
 	for rows.Next() {
 		var item ShopItem
 		if err := rows.Scan(
-			&item.ID, &item.Name, &item.Description, &item.Category,
-			&item.PriceGems, &item.Icon, &item.IsAvailable, &item.CreatedAt,
+			&item.ID, &item.Title, &item.Subtitle, &item.Category,
+			&item.PriceGems, &item.Badge, &item.IsActive, &item.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan shop item: %w", err)
 		}
+		item.Name = item.Title
+		item.Description = item.Subtitle
+		item.Icon = item.Badge
+		item.IsAvailable = item.IsActive
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -232,14 +241,14 @@ func (r *PostgresRepository) GetShopItems(ctx context.Context, onlyAvailable boo
 // GetShopItemByID retrieves a single shop item by ID
 func (r *PostgresRepository) GetShopItemByID(ctx context.Context, itemID string) (*ShopItem, error) {
 	query := `
-		SELECT id, name, description, category, price_gems, icon, is_available, created_at
+		SELECT id, title, subtitle, category, price_gems, badge, is_active, created_at
 		FROM shop_items
 		WHERE id = $1
 	`
 	var item ShopItem
 	err := r.db.Pool.QueryRow(ctx, query, itemID).Scan(
-		&item.ID, &item.Name, &item.Description, &item.Category,
-		&item.PriceGems, &item.Icon, &item.IsAvailable, &item.CreatedAt,
+		&item.ID, &item.Title, &item.Subtitle, &item.Category,
+		&item.PriceGems, &item.Badge, &item.IsActive, &item.CreatedAt,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -247,6 +256,10 @@ func (r *PostgresRepository) GetShopItemByID(ctx context.Context, itemID string)
 		}
 		return nil, fmt.Errorf("failed to query shop item: %w", err)
 	}
+	item.Name = item.Title
+	item.Description = item.Subtitle
+	item.Icon = item.Badge
+	item.IsAvailable = item.IsActive
 	return &item, nil
 }
 
@@ -254,11 +267,11 @@ func (r *PostgresRepository) GetShopItemByID(ctx context.Context, itemID string)
 func (r *PostgresRepository) GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error) {
 	query := `
 		SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
-		       si.id, si.name, si.description, si.category, si.price_gems, si.icon, si.is_available, si.created_at
+		       si.id, si.title, si.subtitle, si.category, si.price_gems, si.badge, si.is_active, si.created_at
 		FROM user_inventories ui
 		JOIN shop_items si ON ui.item_id = si.id
 		WHERE ui.user_id = $1
-		ORDER BY si.price_gems ASC
+		ORDER BY si.price_gems ASC, ui.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, userID)
 	if err != nil {
@@ -266,16 +279,20 @@ func (r *PostgresRepository) GetUserInventory(ctx context.Context, userID string
 	}
 	defer rows.Close()
 
-	var items []UserInventoryItem
+	items := make([]UserInventoryItem, 0)
 	for rows.Next() {
 		var inv UserInventoryItem
 		var si ShopItem
 		if err := rows.Scan(
 			&inv.ID, &inv.UserID, &inv.ItemID, &inv.Quantity, &inv.CreatedAt, &inv.UpdatedAt,
-			&si.ID, &si.Name, &si.Description, &si.Category, &si.PriceGems, &si.Icon, &si.IsAvailable, &si.CreatedAt,
+			&si.ID, &si.Title, &si.Subtitle, &si.Category, &si.PriceGems, &si.Badge, &si.IsActive, &si.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan user inventory row: %w", err)
 		}
+		si.Name = si.Title
+		si.Description = si.Subtitle
+		si.Icon = si.Badge
+		si.IsAvailable = si.IsActive
 		inv.Item = &si
 		items = append(items, inv)
 	}
@@ -333,7 +350,7 @@ func (r *PostgresRepository) BuyShopItem(ctx context.Context, userID string, ite
 // GetBadges retrieves all registered achievement badges
 func (r *PostgresRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, error) {
 	query := `
-		SELECT id, title, description, icon, category, xp_bonus, created_at
+		SELECT id, title, description, category, icon, xp_reward, created_at
 		FROM badge_definitions
 		ORDER BY id ASC
 	`
@@ -343,12 +360,13 @@ func (r *PostgresRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, 
 	}
 	defer rows.Close()
 
-	var badges []BadgeDefinition
+	badges := make([]BadgeDefinition, 0)
 	for rows.Next() {
 		var b BadgeDefinition
-		if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Icon, &b.Category, &b.XPBonus, &b.CreatedAt); err != nil {
+		if err := rows.Scan(&b.ID, &b.Title, &b.Description, &b.Category, &b.Icon, &b.XPReward, &b.CreatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan badge: %w", err)
 		}
+		b.XPBonus = b.XPReward
 		badges = append(badges, b)
 	}
 	if err := rows.Err(); err != nil {
@@ -361,11 +379,11 @@ func (r *PostgresRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, 
 func (r *PostgresRepository) GetUserBadges(ctx context.Context, userID string) ([]UserBadge, error) {
 	query := `
 		SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
-		       bd.id, bd.title, bd.description, bd.icon, bd.category, bd.xp_bonus, bd.created_at
+		       bd.id, bd.title, bd.description, bd.category, bd.icon, bd.xp_reward, bd.created_at
 		FROM user_badges ub
 		JOIN badge_definitions bd ON ub.badge_key = bd.id
 		WHERE ub.user_id = $1
-		ORDER BY ub.awarded_at DESC
+		ORDER BY ub.awarded_at DESC, ub.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, userID)
 	if err != nil {
@@ -373,16 +391,17 @@ func (r *PostgresRepository) GetUserBadges(ctx context.Context, userID string) (
 	}
 	defer rows.Close()
 
-	var badges []UserBadge
+	badges := make([]UserBadge, 0)
 	for rows.Next() {
 		var ub UserBadge
 		var bd BadgeDefinition
 		if err := rows.Scan(
 			&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt,
-			&bd.ID, &bd.Title, &bd.Description, &bd.Icon, &bd.Category, &bd.XPBonus, &bd.CreatedAt,
+			&bd.ID, &bd.Title, &bd.Description, &bd.Category, &bd.Icon, &bd.XPReward, &bd.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan user badge: %w", err)
 		}
+		bd.XPBonus = bd.XPReward
 		ub.Badge = &bd
 		badges = append(badges, ub)
 	}
@@ -403,15 +422,16 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 	var bd BadgeDefinition
 	err = tx.QueryRow(
 		ctx,
-		`SELECT id, title, description, icon, category, xp_bonus, created_at FROM badge_definitions WHERE id = $1`,
+		`SELECT id, title, description, category, icon, xp_reward, created_at FROM badge_definitions WHERE id = $1`,
 		badgeKey,
-	).Scan(&bd.ID, &bd.Title, &bd.Description, &bd.Icon, &bd.Category, &bd.XPBonus, &bd.CreatedAt)
+	).Scan(&bd.ID, &bd.Title, &bd.Description, &bd.Category, &bd.Icon, &bd.XPReward, &bd.CreatedAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrBadgeNotFound
 		}
 		return nil, fmt.Errorf("failed to fetch badge definition: %w", err)
 	}
+	bd.XPBonus = bd.XPReward
 
 	var ub UserBadge
 	insertQuery := `
@@ -426,11 +446,11 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 	}
 	ub.Badge = &bd
 
-	if bd.XPBonus > 0 {
+	if bd.XPReward > 0 {
 		_, err = tx.Exec(
 			ctx,
 			`UPDATE user_gamification SET xp = xp + $2, current_level = $3, updated_at = NOW() WHERE user_id = $1`,
-			userID, bd.XPBonus, newLevel,
+			userID, bd.XPReward, newLevel,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to award badge bonus xp: %w", err)
@@ -448,9 +468,9 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 func (r *PostgresRepository) GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]DailyChestClaim, error) {
 	query := `
 		SELECT id, user_id, claim_date, tier, gems_awarded, xp_awarded, created_at
-		FROM daily_chest_claims
+		FROM user_daily_chest_claims
 		WHERE user_id = $1 AND claim_date = $2::date
-		ORDER BY tier ASC
+		ORDER BY tier ASC, id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, userID, claimDate)
 	if err != nil {
@@ -458,7 +478,7 @@ func (r *PostgresRepository) GetDailyChestClaims(ctx context.Context, userID str
 	}
 	defer rows.Close()
 
-	var claims []DailyChestClaim
+	claims := make([]DailyChestClaim, 0)
 	for rows.Next() {
 		var c DailyChestClaim
 		if err := rows.Scan(&c.ID, &c.UserID, &c.ClaimDate, &c.Tier, &c.GemsAwarded, &c.XPAwarded, &c.CreatedAt); err != nil {
@@ -481,7 +501,7 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 	defer tx.Rollback(ctx)
 
 	insertQuery := `
-		INSERT INTO daily_chest_claims (user_id, claim_date, tier, gems_awarded, xp_awarded, created_at)
+		INSERT INTO user_daily_chest_claims (user_id, claim_date, tier, gems_awarded, xp_awarded, created_at)
 		VALUES ($1, $2::date, $3, $4, $5, NOW())
 		RETURNING id, created_at
 	`

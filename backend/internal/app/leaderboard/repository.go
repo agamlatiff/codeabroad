@@ -33,7 +33,7 @@ func (r *PostgresRepository) GetDivisionStandings(ctx context.Context, minXP int
 		JOIN user_profiles up ON u.id = up.user_id
 		JOIN user_gamification ug ON u.id = ug.user_id
 		WHERE ug.xp >= $1 AND ug.xp < $2
-		ORDER BY week_xp DESC, ug.streak DESC, ug.xp DESC
+		ORDER BY week_xp DESC, ug.streak DESC, ug.xp DESC, u.id ASC
 		LIMIT $3
 	`
 
@@ -43,7 +43,11 @@ func (r *PostgresRepository) GetDivisionStandings(ctx context.Context, minXP int
 	}
 	defer rows.Close()
 
-	var entries []LeaderboardEntry
+	capacity := limit
+	if capacity <= 0 {
+		capacity = 0
+	}
+	entries := make([]LeaderboardEntry, 0, capacity)
 	for rows.Next() {
 		var e LeaderboardEntry
 		var totalXP int

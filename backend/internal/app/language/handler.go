@@ -29,15 +29,19 @@ func (h *Handler) ListLanguages(c *gin.Context) {
 	response.Success(c, http.StatusOK, "languages retrieved successfully", languages)
 }
 
+type getLanguageDetailsURI struct {
+	ID string `uri:"id" binding:"required,uuid"`
+}
+
 // GetLanguageDetails handles GET /api/v1/languages/:id
 func (h *Handler) GetLanguageDetails(c *gin.Context) {
-	languageID := c.Param("id")
-	if languageID == "" {
-		response.BadRequest(c, "language ID parameter is required")
+	var uri getLanguageDetailsURI
+	if err := c.ShouldBindUri(&uri); err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	lang, levels, err := h.langUsecase.GetLanguageDetails(c.Request.Context(), languageID)
+	lang, levels, err := h.langUsecase.GetLanguageDetails(c.Request.Context(), uri.ID)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -67,7 +71,7 @@ func (h *Handler) GetUserEnrollments(c *gin.Context) {
 }
 
 type switchLanguageRequest struct {
-	LanguageID string `json:"language_id" binding:"required"`
+	LanguageID string `json:"language_id" binding:"required,uuid"`
 }
 
 // SwitchActiveLanguage handles POST /api/v1/languages/switch
