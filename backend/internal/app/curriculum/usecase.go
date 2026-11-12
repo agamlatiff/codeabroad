@@ -63,12 +63,29 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		return nil, fmt.Errorf("failed to query units for level: %w", err)
 	}
 
+	lessons, err := u.curriculumRepo.GetLessonsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch query lessons for level: %w", err)
+	}
+
+	lessonsByUnit := make(map[string][]LessonNodeResponse, len(units))
+	for _, lesson := range lessons {
+		lessonsByUnit[lesson.UnitID] = append(lessonsByUnit[lesson.UnitID], lesson)
+	}
+
 	for i := range units {
-		lessons, err := u.curriculumRepo.GetLessonsByUnitID(ctx, units[i].ID, userID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to query lessons for unit %s: %w", units[i].ID, err)
+		unitLessons := lessonsByUnit[units[i].ID]
+		if unitLessons == nil {
+			unitLessons = []LessonNodeResponse{}
 		}
-		units[i].Lessons = lessons
+		units[i].Lessons = unitLessons
+		units[i].TotalLessons = len(unitLessons)
+		units[i].CompletedLessons = 0
+		for _, l := range unitLessons {
+			if l.IsCompleted {
+				units[i].CompletedLessons++
+			}
+		}
 	}
 
 	unlockedUnits, totalLessons, completedLessons, progressPercent, currentLessonID := u.helper.CalculateRoadmapUnlocks(units)

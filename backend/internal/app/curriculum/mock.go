@@ -100,6 +100,33 @@ func (m *MockRepository) GetUnitByID(ctx context.Context, id string) (*Unit, err
 	}, nil
 }
 
+func (m *MockRepository) GetLessonsByLevelID(ctx context.Context, levelID string, userID string) ([]LessonNodeResponse, error) {
+	if m.GetLessonsErr != nil {
+		return nil, m.GetLessonsErr
+	}
+	unitMap := make(map[string]bool)
+	for _, u := range m.Units {
+		if u.LevelID == levelID {
+			unitMap[u.ID] = true
+		}
+	}
+	var res []LessonNodeResponse
+	for _, l := range m.Lessons {
+		if unitMap[l.UnitID] {
+			res = append(res, *l)
+		}
+	}
+	sort.Slice(res, func(i, j int) bool {
+		uI := m.Units[res[i].UnitID]
+		uJ := m.Units[res[j].UnitID]
+		if uI != nil && uJ != nil && uI.OrderIndex != uJ.OrderIndex {
+			return uI.OrderIndex < uJ.OrderIndex
+		}
+		return res[i].OrderIndex < res[j].OrderIndex
+	})
+	return res, nil
+}
+
 func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error) {
 	if m.GetLessonsErr != nil {
 		return nil, m.GetLessonsErr

@@ -165,6 +165,7 @@ type UnitRepository interface {
 
 // LessonRepository specifies data access operations for lesson catalogs and node navigation
 type LessonRepository interface {
+	GetLessonsByLevelID(ctx context.Context, levelID string, userID string) ([]LessonNodeResponse, error)
 	GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error)
 	GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error)
 	GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error)

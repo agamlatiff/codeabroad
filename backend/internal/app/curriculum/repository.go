@@ -72,23 +72,18 @@ func (r *PostgresRepository) GetGrammarPointByID(ctx context.Context, id string)
 	return &gp, nil
 }
 
-// GetUnitsByLevelID retrieves all curriculum chapters with aggregated lesson metrics and progressive unlocks
+// GetUnitsByLevelID retrieves all curriculum chapters for a proficiency level
 func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
 	query := `
 		SELECT 
-			u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at,
-			COUNT(l.id) AS total_lessons,
-			COUNT(CASE WHEN ulp.is_completed = true THEN 1 END) AS completed_lessons
+			u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at
 		FROM units u
-		LEFT JOIN lessons l ON u.id = l.unit_id
-		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2
 		WHERE u.level_id = $1
-		GROUP BY u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at
 		ORDER BY u.order_index ASC
 	`
-	rows, err := r.db.Pool.Query(ctx, query, levelID, userID)
+	rows, err := r.db.Pool.Query(ctx, query, levelID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query units with progress: %w", err)
+		return nil, fmt.Errorf("failed to query units: %w", err)
 	}
 	defer rows.Close()
 
@@ -97,7 +92,7 @@ func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID stri
 		var u UnitNodeResponse
 		if err := rows.Scan(
 			&u.ID, &u.LevelID, &u.Title, &u.Description, &u.UnitType,
-			&u.OrderIndex, &u.CreatedAt, &u.TotalLessons, &u.CompletedLessons,
+			&u.OrderIndex, &u.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan unit row: %w", err)
 		}
@@ -127,6 +122,44 @@ func (r *PostgresRepository) GetUnitByID(ctx context.Context, id string) (*Unit,
 		return nil, fmt.Errorf("failed to query unit by id: %w", err)
 	}
 	return &u, nil
+}
+
+// GetLessonsByLevelID retrieves all lesson nodes across all units in a level with user progression status
+func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID string, userID string) ([]LessonNodeResponse, error) {
+	query := `
+		SELECT 
+			l.id, l.unit_id, l.title, l.xp_reward, l.order_index,
+			COALESCE(ulp.is_completed, false) AS is_completed,
+			COALESCE(ulp.score, 0) AS score,
+			COALESCE(ulp.is_skipped, false) AS is_skipped,
+			ulp.completed_at
+		FROM lessons l
+		JOIN units u ON l.unit_id = u.id
+		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2
+		WHERE u.level_id = $1
+		ORDER BY u.order_index ASC, l.order_index ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, levelID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to batch query lessons by level: %w", err)
+	}
+	defer rows.Close()
+
+	var lessons []LessonNodeResponse
+	for rows.Next() {
+		var l LessonNodeResponse
+		if err := rows.Scan(
+			&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex,
+			&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan lesson row: %w", err)
+		}
+		lessons = append(lessons, l)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in batch lessons: %w", err)
+	}
+	return lessons, nil
 }
 
 // GetLessonsByUnitID retrieves all lesson nodes for a unit with user progression status
