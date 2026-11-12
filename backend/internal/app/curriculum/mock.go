@@ -3,6 +3,7 @@ package curriculum
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -45,6 +46,9 @@ func (m *MockRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID 
 			res = append(res, *gp)
 		}
 	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].OrderIndex < res[j].OrderIndex
+	})
 	return res, nil
 }
 
@@ -69,6 +73,9 @@ func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, 
 			res = append(res, *u)
 		}
 	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].OrderIndex < res[j].OrderIndex
+	})
 	return res, nil
 }
 
@@ -93,6 +100,9 @@ func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, 
 			res = append(res, *l)
 		}
 	}
+	sort.Slice(res, func(i, j int) bool {
+		return res[i].OrderIndex < res[j].OrderIndex
+	})
 	return res, nil
 }
 

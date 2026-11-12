@@ -375,3 +375,34 @@ func TestLogin_MultiDevice_ConcurrentSessions(t *testing.T) {
 		t.Fatalf("expected all sessions to be purged, remaining: %d", len(sessionRepo.Sessions))
 	}
 }
+
+func TestEvaluateLoginStreak_TimezoneAware(t *testing.T) {
+	cfg := &config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"}
+	helper := auth.NewHelper(cfg)
+
+	// User logged in on Nov 10 at 23:30 WIB (which is Nov 10 16:30 UTC)
+	wib := helper.DefaultLocation()
+	day1Login := time.Date(2026, 11, 10, 23, 30, 0, 0, wib)
+
+	// User logs in again on Nov 11 at 00:30 WIB (which is Nov 10 17:30 UTC - still Nov 10 in UTC!)
+	day2Login := time.Date(2026, 11, 11, 0, 30, 0, 0, wib)
+
+	// In WIB, this is consecutive days (Nov 10 -> Nov 11), so streak must increment from 1 to 2
+	newStreak, changed := helper.EvaluateLoginStreak(1, &day1Login, day2Login)
+	if !changed {
+		t.Fatal("expected streak change to true")
+	}
+	if newStreak != 2 {
+		t.Fatalf("expected streak to increment to 2 in WIB, got: %d", newStreak)
+	}
+
+	// Logging in again on the SAME WIB day (e.g. 14:00 WIB on Nov 11) should NOT increment streak again
+	sameDayLogin := time.Date(2026, 11, 11, 14, 0, 0, 0, wib)
+	newStreakSameDay, changedSameDay := helper.EvaluateLoginStreak(2, &day2Login, sameDayLogin)
+	if changedSameDay {
+		t.Fatal("expected no streak change on same calendar day")
+	}
+	if newStreakSameDay != 2 {
+		t.Fatalf("expected streak to remain 2, got: %d", newStreakSameDay)
+	}
+}

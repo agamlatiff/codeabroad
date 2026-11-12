@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	"codeabroad/backend/config"
@@ -111,17 +112,21 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}
 
 	now := time.Now().UTC()
-	todayStr := now.Format("2006-01-02")
-	_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
+	todayStr := now.In(u.helper.DefaultLocation()).Format("2006-01-02")
+	if err := u.userRepo.LogActivity(ctx, &user.UserActivityLog{
 		UserID:       usr.ID,
 		ActivityType: "daily_login",
 		XPEarned:     0,
 		Metadata:     map[string]interface{}{"source": "login", "date": todayStr},
-	})
+	}); err != nil {
+		log.Printf("[WARN] [auth.Login] failed to log daily login activity for user %s: %v", usr.ID, err)
+	}
 
 	if newStreak, changed := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now); changed {
 		usr.Streak = newStreak
-		_ = u.userRepo.UpdateGamification(ctx, usr.ID, usr.XP, usr.CurrentLevel, newStreak, &now)
+		if err := u.userRepo.UpdateGamification(ctx, usr.ID, usr.XP, usr.CurrentLevel, newStreak, &now); err != nil {
+			log.Printf("[WARN] [auth.Login] failed to update streak gamification for user %s: %v", usr.ID, err)
+		}
 	}
 
 	return &AuthResponse{
