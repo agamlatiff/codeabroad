@@ -10,30 +10,20 @@ import (
 	"syscall"
 	"time"
 
-	"codeabroad/backend/internal/config"
-	deliveryHttp "codeabroad/backend/internal/delivery/http"
-	authHandlerPkg "codeabroad/backend/internal/delivery/http/handler/auth"
-	curriculumHandlerPkg "codeabroad/backend/internal/delivery/http/handler/curriculum"
-	exerciseHandlerPkg "codeabroad/backend/internal/delivery/http/handler/exercise"
-	gamificationHandlerPkg "codeabroad/backend/internal/delivery/http/handler/gamification"
-	healthHandlerPkg "codeabroad/backend/internal/delivery/http/handler/health"
-	languageHandlerPkg "codeabroad/backend/internal/delivery/http/handler/language"
-	leaderboardHandlerPkg "codeabroad/backend/internal/delivery/http/handler/leaderboard"
-	onboardingHandlerPkg "codeabroad/backend/internal/delivery/http/handler/onboarding"
-	userHandlerPkg "codeabroad/backend/internal/delivery/http/handler/user"
-	"codeabroad/backend/internal/delivery/http/middleware"
-	"codeabroad/backend/internal/infrastructure/postgres"
-	"codeabroad/backend/internal/infrastructure/redis"
-	"codeabroad/backend/internal/repository/database"
-	"codeabroad/backend/internal/repository/session"
-	authUsecasePkg "codeabroad/backend/internal/usecase/auth"
-	curriculumUsecasePkg "codeabroad/backend/internal/usecase/curriculum"
-	exerciseUsecasePkg "codeabroad/backend/internal/usecase/exercise"
-	gamificationUsecasePkg "codeabroad/backend/internal/usecase/gamification"
-	languageUsecasePkg "codeabroad/backend/internal/usecase/language"
-	leaderboardUsecasePkg "codeabroad/backend/internal/usecase/leaderboard"
-	onboardingUsecasePkg "codeabroad/backend/internal/usecase/onboarding"
-	userUsecasePkg "codeabroad/backend/internal/usecase/user"
+	"codeabroad/backend/internal/app/auth"
+	"codeabroad/backend/config"
+	"codeabroad/backend/internal/app/curriculum"
+	"codeabroad/backend/internal/app/exercise"
+	"codeabroad/backend/internal/app/gamification"
+	"codeabroad/backend/internal/app/health"
+	"codeabroad/backend/infrastructure/postgres"
+	"codeabroad/backend/infrastructure/redis"
+	"codeabroad/backend/internal/app/language"
+	"codeabroad/backend/internal/app/leaderboard"
+	"codeabroad/backend/internal/app/onboarding"
+	"codeabroad/backend/internal/shared/middleware"
+	"codeabroad/backend/internal/shared/router"
+	"codeabroad/backend/internal/app/user"
 )
 
 func main() {
@@ -65,42 +55,42 @@ func main() {
 	}()
 	log.Println("connected to Redis successfully")
 
-	// 4. Initialize Repositories (Data Layer v3.0)
-	userRepo := database.NewUserRepository(pg)
-	sessionRepo := session.NewSessionRepository(rdb)
-	langRepo := database.NewLanguageRepository(pg)
-	curriculumRepo := database.NewCurriculumRepository(pg)
-	exerciseRepo := database.NewExerciseRepository(pg)
-	srsRepo := database.NewSRSRepository(pg)
-	examRepo := database.NewReadinessExamRepository(pg)
-	gamificationRepo := database.NewGamificationRepository(pg)
-	leaderboardRepo := database.NewLeaderboardRepository(pg)
+	// 4. Initialize Repositories (Domain Encapsulation)
+	userRepo := user.NewRepository(pg)
+	sessionRepo := auth.NewSessionRepository(rdb)
+	langRepo := language.NewRepository(pg)
+	curriculumRepo := curriculum.NewRepository(pg)
+	exerciseRepo := exercise.NewRepository(pg)
+	srsRepo := exercise.NewSRSRepository(pg)
+	examRepo := exercise.NewReadinessExamRepository(pg)
+	gamificationRepo := gamification.NewRepository(pg)
+	leaderboardRepo := leaderboard.NewRepository(pg)
 
-	// 5. Initialize Usecases (Business Logic Layer v3.0)
-	authUsecase := authUsecasePkg.New(userRepo, sessionRepo, cfg)
-	userUsecase := userUsecasePkg.New(userRepo)
-	onboardingUsecase := onboardingUsecasePkg.New(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo)
-	langUsecase := languageUsecasePkg.New(langRepo)
-	curriculumUsecase := curriculumUsecasePkg.New(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo)
-	exerciseUsecase := exerciseUsecasePkg.New(exerciseRepo, srsRepo, examRepo, langRepo, userRepo)
-	gamificationUsecase := gamificationUsecasePkg.New(gamificationRepo)
-	leaderboardUsecase := leaderboardUsecasePkg.New(leaderboardRepo)
+	// 5. Initialize Usecases (Business Logic Services)
+	authUsecase := auth.NewUsecase(userRepo, sessionRepo, cfg)
+	userUsecase := user.NewUsecase(userRepo)
+	onboardingUsecase := onboarding.NewUsecase(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo)
+	langUsecase := language.NewUsecase(langRepo)
+	curriculumUsecase := curriculum.NewUsecase(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo)
+	exerciseUsecase := exercise.NewUsecase(exerciseRepo, srsRepo, examRepo, langRepo, userRepo)
+	gamificationUsecase := gamification.NewUsecase(gamificationRepo)
+	leaderboardUsecase := leaderboard.NewUsecase(leaderboardRepo)
 
-	// 6. Initialize Handlers & Middlewares (Delivery Layer v3.0)
-	healthHandler := healthHandlerPkg.New(pg, rdb)
-	authHandler := authHandlerPkg.New(authUsecase)
-	userHandler := userHandlerPkg.New(userUsecase)
-	onboardingHandler := onboardingHandlerPkg.New(onboardingUsecase)
-	langHandler := languageHandlerPkg.New(langUsecase)
-	curriculumHandler := curriculumHandlerPkg.New(curriculumUsecase)
-	exerciseHandler := exerciseHandlerPkg.New(exerciseUsecase, exerciseUsecase, exerciseUsecase)
-	gamificationHandler := gamificationHandlerPkg.New(gamificationUsecase)
-	leaderboardHandler := leaderboardHandlerPkg.New(leaderboardUsecase)
+	// 6. Initialize Handlers & Middlewares
+	healthHandler := health.NewHandler(pg, rdb)
+	authHandler := auth.NewHandler(authUsecase)
+	userHandler := user.NewHandler(userUsecase)
+	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
+	langHandler := language.NewHandler(langUsecase)
+	curriculumHandler := curriculum.NewHandler(curriculumUsecase)
+	exerciseHandler := exercise.NewHandler(exerciseUsecase, exerciseUsecase, exerciseUsecase)
+	gamificationHandler := gamification.NewHandler(gamificationUsecase)
+	leaderboardHandler := leaderboard.NewHandler(leaderboardUsecase)
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
 
 	// 7. Setup Gin router with registered routes
-	router := deliveryHttp.SetupRouter(&deliveryHttp.RouterConfig{
+	appRouter := router.SetupRouter(&router.Config{
 		HealthHandler:          healthHandler,
 		AuthHandler:            authHandler,
 		UserHandler:            userHandler,
@@ -118,7 +108,7 @@ func main() {
 	// 8. Configure HTTP server
 	srv := &http.Server{
 		Addr:         ":" + cfg.Port,
-		Handler:      router,
+		Handler:      appRouter,
 		ReadTimeout:  10 * time.Second,
 		WriteTimeout: 10 * time.Second,
 		IdleTimeout:  60 * time.Second,
