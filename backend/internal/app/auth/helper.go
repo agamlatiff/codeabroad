@@ -3,6 +3,7 @@ package auth
 import (
 	"crypto/rand"
 	"fmt"
+	"regexp"
 	"strings"
 	"time"
 
@@ -19,6 +20,9 @@ var dummyPasswordHash, _ = bcrypt.GenerateFromPassword([]byte("codeabroad-dummy-
 // defaultAppLocation defines the primary application timezone (WIB / Asia/Jakarta: UTC+7) for streak date calculations.
 var defaultAppLocation = time.FixedZone("WIB", 7*3600)
 
+// usernameRegex validates standard alphanumeric, underscore, and hyphen handles (3-30 chars)
+var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,30}$`)
+
 // Helper encapsulates cryptographic, token generation, and login streak rules (DDD)
 type Helper struct {
 	cfg *config.Config
@@ -29,11 +33,19 @@ func NewHelper(cfg *config.Config) *Helper {
 	return &Helper{cfg: cfg}
 }
 
-// NormalizeRegisterInput trims whitespace and normalizes email to lowercase
+// NormalizeRegisterInput trims whitespace and normalizes email & username to lowercase
 func (h *Helper) NormalizeRegisterInput(req *RegisterRequest) {
 	req.Name = strings.TrimSpace(req.Name)
-	req.Username = strings.TrimSpace(req.Username)
+	req.Username = strings.ToLower(strings.TrimSpace(req.Username))
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
+}
+
+// ValidateUsername checks if username matches alphanumeric, underscore, and hyphen format (3-30 chars)
+func (h *Helper) ValidateUsername(username string) error {
+	if !usernameRegex.MatchString(username) {
+		return ErrInvalidUsername
+	}
+	return nil
 }
 
 // NormalizeLoginInput trims whitespace and normalizes email to lowercase

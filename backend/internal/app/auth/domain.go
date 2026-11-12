@@ -13,6 +13,7 @@ import (
 var (
 	ErrInvalidCredentials = apperror.NewUnauthorizedError("INVALID_CREDENTIALS", "invalid email or password")
 	ErrTokenExpired       = apperror.NewUnauthorizedError("TOKEN_EXPIRED", "token has expired or revoked")
+	ErrInvalidUsername    = apperror.NewBadRequestError("INVALID_USERNAME", "username can only contain letters, numbers, underscores, and hyphens (3-30 characters)", nil)
 )
 
 // JWTClaims defines the cryptographic token payload claims shared across Auth Usecase and Middleware

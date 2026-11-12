@@ -7,6 +7,9 @@ import (
 	"codeabroad/backend/internal/shared/apperror"
 )
 
+// defaultAppLocation defines the primary application timezone (WIB / Asia/Jakarta: UTC+7) for user activity calendar calculations.
+var defaultAppLocation = time.FixedZone("WIB", 7*3600)
+
 // Helper encapsulates user profile validation, level progression, streak evaluation, and 7-day calendar assembly (DDD)
 type Helper struct{}
 
@@ -56,16 +59,23 @@ func (h *Helper) CalculateLevel(xp int) int {
 	return CalculateLevel(xp)
 }
 
-// EvaluateDailyStreak calculates the updated daily streak based on the last active timestamp
+// DefaultLocation returns the primary application timezone (WIB / UTC+7)
+func (h *Helper) DefaultLocation() *time.Location {
+	return defaultAppLocation
+}
+
+// EvaluateDailyStreak calculates the updated daily streak based on the last active timestamp adjusted to application timezone (WIB)
 func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time, now time.Time) (newStreak int, changed bool) {
-	todayStr := now.Format("2006-01-02")
-	yesterdayStr := now.AddDate(0, 0, -1).Format("2006-01-02")
+	loc := defaultAppLocation
+	nowLocal := now.In(loc)
+	todayStr := nowLocal.Format("2006-01-02")
+	yesterdayStr := nowLocal.AddDate(0, 0, -1).Format("2006-01-02")
 
 	newStreak = currentStreak
 	if lastActiveAt == nil {
 		newStreak = 1
 	} else {
-		lastDate := lastActiveAt.Format("2006-01-02")
+		lastDate := lastActiveAt.In(loc).Format("2006-01-02")
 		if lastDate == yesterdayStr {
 			newStreak = currentStreak + 1
 		} else if lastDate != todayStr {
@@ -78,12 +88,14 @@ func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time,
 	return newStreak, newStreak != currentStreak
 }
 
-// ResolveCalendarWindow calculates UTC day boundaries and the 90-day lookback start date
+// ResolveCalendarWindow calculates application timezone (WIB) day boundaries and the 90-day lookback start date
 func (h *Helper) ResolveCalendarWindow(now time.Time) (startOfToday time.Time, startOfTomorrow time.Time, calendarStart time.Time) {
-	startOfToday = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	loc := defaultAppLocation
+	nowLocal := now.In(loc)
+	startOfToday = time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, loc)
 	startOfTomorrow = startOfToday.AddDate(0, 0, 1)
 
-	weekday := int(now.Weekday())
+	weekday := int(nowLocal.Weekday())
 	mondayOffset := (weekday + 6) % 7
 	monday := startOfToday.AddDate(0, 0, -mondayOffset)
 
@@ -101,9 +113,11 @@ func (h *Helper) BuildWeeklyActivitySummary(
 	dailyStats map[string]DailyActivityStat,
 	now time.Time,
 ) *UserActivitySummaryResponse {
-	todayStr := now.Format("2006-01-02")
-	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
-	weekday := int(now.Weekday())
+	loc := defaultAppLocation
+	nowLocal := now.In(loc)
+	todayStr := nowLocal.Format("2006-01-02")
+	startOfToday := time.Date(nowLocal.Year(), nowLocal.Month(), nowLocal.Day(), 0, 0, 0, 0, loc)
+	weekday := int(nowLocal.Weekday())
 	mondayOffset := (weekday + 6) % 7
 	monday := startOfToday.AddDate(0, 0, -mondayOffset)
 

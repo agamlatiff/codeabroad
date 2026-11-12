@@ -43,11 +43,16 @@ func (s *redisSessionRepository) DeleteSession(ctx context.Context, userID strin
 
 func (s *redisSessionRepository) DeleteAllSessions(ctx context.Context, userID string) error {
 	pattern := fmt.Sprintf("session:%s:*", userID)
+	var keys []string
 	iter := s.rdb.Client.Scan(ctx, 0, pattern, 0).Iterator()
 	for iter.Next(ctx) {
-		if err := s.rdb.Client.Del(ctx, iter.Val()).Err(); err != nil {
-			return fmt.Errorf("failed to delete session %s: %w", iter.Val(), err)
-		}
+		keys = append(keys, iter.Val())
 	}
-	return iter.Err()
+	if err := iter.Err(); err != nil {
+		return fmt.Errorf("failed to scan user sessions: %w", err)
+	}
+	if len(keys) == 0 {
+		return nil
+	}
+	return s.rdb.Client.Del(ctx, keys...).Err()
 }

@@ -3,6 +3,7 @@ package user
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
@@ -63,21 +64,25 @@ func (u *usecase) GetActivityLogs(ctx context.Context, userID string) (*UserActi
 	}
 
 	now := time.Now().UTC()
-	todayStr := now.Format("2006-01-02")
+	todayStr := now.In(u.helper.DefaultLocation()).Format("2006-01-02")
 	startOfToday, startOfTomorrow, calendarStart := u.helper.ResolveCalendarWindow(now)
 
 	alreadyActiveToday, err := u.userRepo.HasActivityInRange(ctx, userID, startOfToday, startOfTomorrow)
 	if err == nil && !alreadyActiveToday {
-		_ = u.userRepo.LogActivity(ctx, &UserActivityLog{
+		if err := u.userRepo.LogActivity(ctx, &UserActivityLog{
 			UserID:       userID,
 			ActivityType: "daily_login",
 			XPEarned:     0,
 			Metadata:     map[string]interface{}{"date": todayStr},
-		})
+		}); err != nil {
+			log.Printf("[WARN] [user.GetActivityLogs] failed to log daily login activity for user %s: %v", userID, err)
+		}
 		if newStreak, changed := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now); changed {
 			usr.Streak = newStreak
 			usr.LastActiveAt = &now
-			_ = u.userRepo.UpdateGamification(ctx, userID, usr.XP, usr.CurrentLevel, newStreak, &now)
+			if err := u.userRepo.UpdateGamification(ctx, userID, usr.XP, usr.CurrentLevel, newStreak, &now); err != nil {
+				log.Printf("[WARN] [user.GetActivityLogs] failed to update streak gamification for user %s: %v", userID, err)
+			}
 		}
 	}
 

@@ -35,6 +35,10 @@ func NewUsecase(
 func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error) {
 	u.helper.NormalizeRegisterInput(req)
 
+	if err := u.helper.ValidateUsername(req.Username); err != nil {
+		return nil, err
+	}
+
 	existingEmail, err := u.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to check existing email: %w", err)

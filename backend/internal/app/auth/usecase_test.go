@@ -115,6 +115,58 @@ func TestRegister_DuplicateUsername(t *testing.T) {
 	}
 }
 
+func TestRegister_InvalidUsername(t *testing.T) {
+	authUc, _, _ := setupTestUsecase()
+	ctx := context.Background()
+
+	invalidUsernames := []string{
+		"ab",
+		"user name",
+		"user/name",
+		"user@name",
+		"   ",
+	}
+
+	for _, invalid := range invalidUsernames {
+		req := &auth.RegisterRequest{
+			Name:     "Invalid User",
+			Username: invalid,
+			Email:    "invalid@example.com",
+			Password: "Password123!",
+		}
+		_, err := authUc.Register(ctx, req)
+		if err != auth.ErrInvalidUsername {
+			t.Fatalf("expected ErrInvalidUsername for '%s', got: %v", invalid, err)
+		}
+	}
+}
+
+func TestRegister_UsernameNormalized(t *testing.T) {
+	authUc, userRepo, _ := setupTestUsecase()
+	ctx := context.Background()
+
+	req := &auth.RegisterRequest{
+		Name:     "Upper User",
+		Username: "  JohnDoe  ",
+		Email:    "johndoe@example.com",
+		Password: "Password123!",
+	}
+
+	res, err := authUc.Register(ctx, req)
+	if err != nil {
+		t.Fatalf("expected registration to succeed, got: %v", err)
+	}
+
+	if res.User.Username != "johndoe" {
+		t.Fatalf("expected username to be normalized to 'johndoe', got: %s", res.User.Username)
+	}
+
+	saved, err := userRepo.GetByUsername(ctx, "johndoe")
+	if err != nil || saved == nil {
+		t.Fatal("expected user to be queryable by normalized username 'johndoe'")
+	}
+}
+
 func TestLogin_Success(t *testing.T) {
 	authUc, userRepo, _ := setupTestUsecase()
 	ctx := context.Background()
