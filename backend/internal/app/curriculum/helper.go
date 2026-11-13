@@ -25,6 +25,14 @@ func (h *Helper) CalculateRoadmapUnlocks(units []UnitNodeResponse) ([]UnitNodeRe
 	var currentLessonID *string
 
 	for i := range units {
+		if units[i].UnitType != "" && units[i].UnitType != "curriculum" {
+			units[i].IsUnlocked = false
+			for j := range units[i].Lessons {
+				units[i].Lessons[j].IsUnlocked = false
+			}
+			continue
+		}
+
 		units[i].IsUnlocked = allPreviousUnitsCompleted
 		unitActiveTraversed := false
 
@@ -112,6 +120,9 @@ func (h *Helper) CalculateLevel(xp int) int {
 }
 
 // ComputeVerifiedLessonScore validates exercise attempt completeness and calculates server-verified lesson accuracy.
+const minLessonPassScore = 60
+
+// ComputeVerifiedLessonScore derives a lesson's score strictly from verified exercise_attempts rows
 func (h *Helper) ComputeVerifiedLessonScore(_ int, summary *LessonAttemptSummary, isReplay bool) (int, error) {
 	if summary == nil || summary.TotalExercises <= 0 {
 		return 0, apperror.NewBadRequestError(
@@ -146,6 +157,17 @@ func (h *Helper) ComputeVerifiedLessonScore(_ int, summary *LessonAttemptSummary
 	if correct > summary.TotalExercises {
 		correct = summary.TotalExercises
 	}
-	return (correct * 100) / summary.TotalExercises, nil
+	score := (correct * 100) / summary.TotalExercises
+	if !isReplay && score < minLessonPassScore {
+		return 0, apperror.NewBadRequestError(
+			"LESSON_SCORE_TOO_LOW",
+			fmt.Sprintf("You need at least %d%% accuracy to complete this lesson", minLessonPassScore),
+			map[string]any{
+				"score":          score,
+				"required_score": minLessonPassScore,
+			},
+		)
+	}
+	return score, nil
 }
 

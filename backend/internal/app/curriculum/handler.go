@@ -102,7 +102,7 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 
 	var req CompleteLessonRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid request payload: score must be an integer between 0 and 100")
 		return
 	}
 	req.LessonID = uri.ID

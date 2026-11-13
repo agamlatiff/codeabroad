@@ -27,17 +27,18 @@ type MockRepository struct {
 	UserStreak           map[string]int
 	NextLessonID         *string
 	GetGrammarPointsErr  error
-	GetGrammarPointErr   error
 	GetUnitsErr          error
 	GetUnitByIDErr       error
 	GetLessonsErr        error
 	GetLessonByIDErr     error
 	GetNextLessonIDErr   error
-	GetLessonProgressErr error
-	UpsertProgressErr    error
 	RecordCompletionErr  error
 	SkipPrecedingErr     error
 	GetAttemptSummaryErr error
+}
+
+func isCurriculumUnit(u *UnitNodeResponse) bool {
+	return u != nil && (u.UnitType == "" || u.UnitType == "curriculum")
 }
 
 // NewMockRepository creates an in-memory mock curriculum Repository
@@ -79,19 +80,7 @@ func (m *MockRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID 
 	return res, nil
 }
 
-func (m *MockRepository) GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.GetGrammarPointErr != nil {
-		return nil, m.GetGrammarPointErr
-	}
-	gp, ok := m.GrammarPoints[id]
-	if !ok {
-		return nil, nil
-	}
-	return gp, nil
-}
+// GetGrammarPointsByLessonID returns distinct grammar points linked to a lesson in mock state
 
 func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
 	m.mu.Lock()
@@ -116,12 +105,15 @@ func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, 
 	}
 	var res []UnitNodeResponse
 	for _, u := range m.Units {
-		if u.LevelID == levelID {
+		if u.LevelID == levelID && isCurriculumUnit(u) {
 			res = append(res, *u)
 		}
 	}
 	sort.Slice(res, func(i, j int) bool {
-		return res[i].OrderIndex < res[j].OrderIndex
+		if res[i].OrderIndex != res[j].OrderIndex {
+			return res[i].OrderIndex < res[j].OrderIndex
+		}
+		return res[i].ID < res[j].ID
 	})
 	return res, nil
 }
@@ -157,7 +149,7 @@ func (m *MockRepository) GetLessonsByLevelID(ctx context.Context, levelID string
 	}
 	unitMap := make(map[string]bool)
 	for _, u := range m.Units {
-		if u.LevelID == levelID {
+		if u.LevelID == levelID && isCurriculumUnit(u) {
 			unitMap[u.ID] = true
 		}
 	}
@@ -178,37 +170,18 @@ func (m *MockRepository) GetLessonsByLevelID(ctx context.Context, levelID string
 	sort.Slice(res, func(i, j int) bool {
 		uI := m.Units[res[i].UnitID]
 		uJ := m.Units[res[j].UnitID]
-		if uI != nil && uJ != nil && uI.OrderIndex != uJ.OrderIndex {
-			return uI.OrderIndex < uJ.OrderIndex
-		}
-		return res[i].OrderIndex < res[j].OrderIndex
-	})
-	return res, nil
-}
-
-func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.GetLessonsErr != nil {
-		return nil, m.GetLessonsErr
-	}
-	var res []LessonNodeResponse
-	for _, l := range m.Lessons {
-		if l.UnitID == unitID {
-			item := *l
-			if p, ok := m.LessonProgress[fmt.Sprintf("%s:%s", userID, l.ID)]; ok {
-				item.IsCompleted = p.IsCompleted
-				item.Score = p.Score
-				item.IsSkipped = p.IsSkipped
-				cAt := p.CompletedAt
-				item.CompletedAt = &cAt
+		if uI != nil && uJ != nil {
+			if uI.OrderIndex != uJ.OrderIndex {
+				return uI.OrderIndex < uJ.OrderIndex
 			}
-			res = append(res, item)
+			if uI.ID != uJ.ID {
+				return uI.ID < uJ.ID
+			}
 		}
-	}
-	sort.Slice(res, func(i, j int) bool {
-		return res[i].OrderIndex < res[j].OrderIndex
+		if res[i].OrderIndex != res[j].OrderIndex {
+			return res[i].OrderIndex < res[j].OrderIndex
+		}
+		return res[i].ID < res[j].ID
 	})
 	return res, nil
 }
@@ -222,6 +195,9 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 	}
 	l, ok := m.Lessons[id]
 	if !ok {
+		return nil, nil
+	}
+	if u, hasUnit := m.Units[l.UnitID]; hasUnit && !isCurriculumUnit(u) {
 		return nil, nil
 	}
 	isCompleted := l.IsCompleted
@@ -265,6 +241,9 @@ func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, le
 		return false, ErrLessonNotFound
 	}
 	curUnit := m.Units[curLesson.UnitID]
+	if curUnit != nil && !isCurriculumUnit(curUnit) {
+		return false, nil
+	}
 	if curUnit != nil && m.UserInactiveLevels[fmt.Sprintf("%s:%s", userID, curUnit.LevelID)] {
 		return false, nil
 	}
@@ -274,22 +253,18 @@ func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, le
 		}
 	}
 
-	key := fmt.Sprintf("%s:%s", userID, lessonID)
-	if p, ok := m.LessonProgress[key]; ok && p.IsCompleted {
-		return true, nil
-	}
-
 	if curUnit == nil {
 		return true, nil
 	}
 
 	for _, l := range m.Lessons {
 		u := m.Units[l.UnitID]
-		if u == nil || u.LevelID != curUnit.LevelID {
+		if !isCurriculumUnit(u) || u.LevelID != curUnit.LevelID {
 			continue
 		}
 		isPreceding := u.OrderIndex < curUnit.OrderIndex ||
-			(u.OrderIndex == curUnit.OrderIndex && l.OrderIndex < curLesson.OrderIndex)
+			(u.OrderIndex == curUnit.OrderIndex && u.ID < curUnit.ID) ||
+			(u.OrderIndex == curUnit.OrderIndex && u.ID == curUnit.ID && (l.OrderIndex < curLesson.OrderIndex || (l.OrderIndex == curLesson.OrderIndex && l.ID < curLesson.ID)))
 
 		if isPreceding {
 			pKey := fmt.Sprintf("%s:%s", userID, l.ID)
@@ -302,31 +277,7 @@ func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, le
 	return true, nil
 }
 
-func (m *MockRepository) GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.GetLessonProgressErr != nil {
-		return nil, m.GetLessonProgressErr
-	}
-	key := fmt.Sprintf("%s:%s", userID, lessonID)
-	p, ok := m.LessonProgress[key]
-	if !ok {
-		return nil, nil
-	}
-	return p, nil
-}
-
-func (m *MockRepository) UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-	return m.upsertLessonProgressLocked(progress)
-}
-
 func (m *MockRepository) upsertLessonProgressLocked(progress *UserLessonProgress) error {
-	if m.UpsertProgressErr != nil {
-		return m.UpsertProgressErr
-	}
 	if progress.ID == "" {
 		progress.ID = fmt.Sprintf("prog_%d", len(m.LessonProgress)+1)
 	}
@@ -351,6 +302,9 @@ func (m *MockRepository) SkipPrecedingLessons(ctx context.Context, userID string
 		return m.SkipPrecedingErr
 	}
 	for _, l := range m.Lessons {
+		if u, ok := m.Units[l.UnitID]; ok && !isCurriculumUnit(u) {
+			continue
+		}
 		key := fmt.Sprintf("%s:%s", userID, l.ID)
 		m.LessonProgress[key] = &UserLessonProgress{
 			ID:          fmt.Sprintf("skip_%s", l.ID),
@@ -377,6 +331,18 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	}
 
 	userID := payload.Progress.UserID
+	if curLesson, hasLesson := m.Lessons[payload.Progress.LessonID]; hasLesson {
+		if curUnit := m.Units[curLesson.UnitID]; curUnit != nil {
+			if !isCurriculumUnit(curUnit) || m.UserInactiveLevels[fmt.Sprintf("%s:%s", userID, curUnit.LevelID)] {
+				return ErrLessonLocked
+			}
+			if maxOrder, ok := m.UserMaxLevelOrder[userID]; ok {
+				if targetOrder, exists := m.LevelOrders[curUnit.LevelID]; exists && targetOrder > maxOrder {
+					return ErrLessonLocked
+				}
+			}
+		}
+	}
 	if _, exists := m.UserXP[userID]; !exists {
 		m.UserXP[userID] = payload.NewXP - payload.XPEarned
 	}
@@ -457,22 +423,6 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	return nil
 }
 
-func (m *MockRepository) GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error) {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	if m.GetAttemptSummaryErr != nil {
-		return nil, m.GetAttemptSummaryErr
-	}
-	key := fmt.Sprintf("%s:%s", userID, lessonID)
-	s, ok := m.AttemptSummaries[key]
-	if !ok || s == nil {
-		return &LessonAttemptSummary{}, nil
-	}
-	copyVal := *s
-	return &copyVal, nil
-}
-
 // MockRoadmapCacheRepository provides an in-memory mock for RoadmapCacheRepository
 type MockRoadmapCacheRepository struct {
 	mu                  sync.Mutex
@@ -522,7 +472,8 @@ func (m *MockRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, 
 	}
 	var res RoadmapResponse
 	if err := json.Unmarshal(data, &res); err != nil {
-		return nil, ver, err
+		delete(m.Cache, key)
+		return nil, ver, nil
 	}
 	return &res, ver, nil
 }

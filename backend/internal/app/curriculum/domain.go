@@ -179,7 +179,6 @@ type CompleteLessonResponse struct {
 // GrammarPointRepository specifies data access operations for syntax and grammar points
 type GrammarPointRepository interface {
 	GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error)
-	GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error)
 	GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error)
 }
 
@@ -192,7 +191,6 @@ type UnitRepository interface {
 // LessonRepository specifies data access operations for lesson catalogs and node navigation
 type LessonRepository interface {
 	GetLessonsByLevelID(ctx context.Context, levelID string, userID string) ([]LessonNodeResponse, error)
-	GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error)
 	GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error)
 	GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error)
 	IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error)
@@ -200,11 +198,8 @@ type LessonRepository interface {
 
 // LessonProgressRepository specifies data access operations for user lesson completion state
 type LessonProgressRepository interface {
-	GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error)
-	UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error
 	RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
-	GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error)
 }
 
 // RoadmapCacheRepository specifies the caching contract for active curriculum roadmaps (Redis)

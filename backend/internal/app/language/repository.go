@@ -307,6 +307,23 @@ func (r *PostgresRepository) UpdateEnrollmentLevel(ctx context.Context, enrollme
 	return nil
 }
 
+// UpdateEnrollmentLevelIfCurrent updates the learner's proficiency level only if it still matches expectedLevelID
+func (r *PostgresRepository) UpdateEnrollmentLevelIfCurrent(ctx context.Context, enrollmentID string, expectedLevelID string, levelID string) error {
+	query := `
+		UPDATE user_language_enrollments
+		SET current_level_id = $2
+		WHERE id = $1 AND current_level_id = $3
+	`
+	tag, err := r.db.Pool.Exec(ctx, query, enrollmentID, levelID, expectedLevelID)
+	if err != nil {
+		return fmt.Errorf("failed to conditionally update enrollment level: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return ErrEnrollmentLevelChanged
+	}
+	return nil
+}
+
 // SetActiveLanguage switches the user's active learning track atomically
 func (r *PostgresRepository) SetActiveLanguage(ctx context.Context, userID string, languageID string) error {
 	tx, err := r.db.Pool.Begin(ctx)

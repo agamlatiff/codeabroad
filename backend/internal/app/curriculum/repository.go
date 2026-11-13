@@ -53,27 +53,6 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 	return points, nil
 }
 
-// GetGrammarPointByID retrieves a single grammar point by UUID
-func (r *PostgresRepository) GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error) {
-	query := `
-		SELECT id, level_id, code, category, title, formula, explanation, order_index, created_at
-		FROM grammar_points
-		WHERE id = $1::uuid
-	`
-	var gp GrammarPoint
-	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
-		&gp.ID, &gp.LevelID, &gp.Code, &gp.Category, &gp.Title,
-		&gp.Formula, &gp.Explanation, &gp.OrderIndex, &gp.CreatedAt,
-	)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrGrammarPointNotFound
-		}
-		return nil, fmt.Errorf("failed to query grammar point by id: %w", err)
-	}
-	return &gp, nil
-}
-
 // GetGrammarPointsByLessonID retrieves distinct grammar points referenced by exercises within a lesson node
 func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
 	query := `
@@ -112,7 +91,7 @@ func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID stri
 		SELECT 
 			u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at
 		FROM units u
-		WHERE u.level_id = $1::uuid
+		WHERE u.level_id = $1::uuid AND u.unit_type = 'curriculum'
 		ORDER BY u.order_index ASC, u.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID)
@@ -170,8 +149,8 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 		FROM lessons l
 		JOIN units u ON l.unit_id = u.id
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
-		WHERE u.level_id = $1::uuid
-		ORDER BY u.order_index ASC, l.order_index ASC, l.id ASC
+		WHERE u.level_id = $1::uuid AND u.unit_type = 'curriculum'
+		ORDER BY u.order_index ASC, u.id ASC, l.order_index ASC, l.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID, userID)
 	if err != nil {
@@ -196,43 +175,6 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	return lessons, nil
 }
 
-// GetLessonsByUnitID retrieves all lesson nodes for a unit with user progression status
-func (r *PostgresRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error) {
-	query := `
-		SELECT 
-			l.id, l.unit_id, l.title, l.xp_reward, l.order_index,
-			COALESCE(ulp.is_completed, false) AS is_completed,
-			COALESCE(ulp.score, 0) AS score,
-			COALESCE(ulp.is_skipped, false) AS is_skipped,
-			ulp.completed_at
-		FROM lessons l
-		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
-		WHERE l.unit_id = $1::uuid
-		ORDER BY l.order_index ASC, l.id ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, unitID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query lessons by unit: %w", err)
-	}
-	defer rows.Close()
-
-	lessons := make([]LessonNodeResponse, 0, 16)
-	for rows.Next() {
-		var l LessonNodeResponse
-		if err := rows.Scan(
-			&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex,
-			&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan lesson row: %w", err)
-		}
-		lessons = append(lessons, l)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in lessons: %w", err)
-	}
-	return lessons, nil
-}
-
 // GetLessonByID retrieves a single lesson with user progress and child exercises
 func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
 	lessonQuery := `
@@ -243,8 +185,9 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
 			ulp.completed_at
 		FROM lessons l
+		JOIN units u ON l.unit_id = u.id
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
-		WHERE l.id = $1::uuid
+		WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
 	`
 	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
@@ -265,20 +208,24 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error) {
 	query := `
 		WITH current_target AS (
-			SELECT u.level_id, u.order_index AS unit_order, l.order_index AS lesson_order
+			SELECT l.id, u.id AS unit_id, u.level_id, u.order_index AS unit_order, l.order_index AS lesson_order
 			FROM lessons l
 			JOIN units u ON l.unit_id = u.id
-			WHERE l.id = $1::uuid
+			WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
 		)
 		SELECT next_l.id
 		FROM current_target ct
-		JOIN units next_u ON next_u.level_id = ct.level_id
+		JOIN units next_u ON next_u.level_id = ct.level_id AND next_u.unit_type = 'curriculum'
 		JOIN lessons next_l ON next_l.unit_id = next_u.id
 		WHERE (
-			(next_u.order_index = ct.unit_order AND next_l.order_index > ct.lesson_order)
+			(next_u.order_index = ct.unit_order AND next_u.id = ct.unit_id AND (
+				next_l.order_index > ct.lesson_order
+				OR (next_l.order_index = ct.lesson_order AND next_l.id > ct.id)
+			))
+			OR (next_u.order_index = ct.unit_order AND next_u.id > ct.unit_id)
 			OR (next_u.order_index > ct.unit_order)
 		)
-		ORDER BY next_u.order_index ASC, next_l.order_index ASC, next_l.id ASC
+		ORDER BY next_u.order_index ASC, next_u.id ASC, next_l.order_index ASC, next_l.id ASC
 		LIMIT 1
 	`
 	var nextID string
@@ -297,11 +244,11 @@ func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonI
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
 	query := `
 		WITH current_target AS (
-			SELECT l.id, u.level_id, pl.language_id, pl.order_index AS level_order, u.order_index AS unit_order, l.order_index AS lesson_order
+			SELECT l.id, u.id AS unit_id, u.level_id, pl.language_id, pl.order_index AS level_order, u.order_index AS unit_order, l.order_index AS lesson_order
 			FROM lessons l
 			JOIN units u ON l.unit_id = u.id
 			JOIN proficiency_levels pl ON u.level_id = pl.id
-			WHERE l.id = $1::uuid
+			WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
 		)
 		SELECT 
 			CASE 
@@ -316,12 +263,16 @@ func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string
 				ELSE NOT EXISTS (
 					SELECT 1
 					FROM current_target ct
-					JOIN units prev_u ON prev_u.level_id = ct.level_id
+					JOIN units prev_u ON prev_u.level_id = ct.level_id AND prev_u.unit_type = 'curriculum'
 					JOIN lessons prev_l ON prev_l.unit_id = prev_u.id
 					LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
 					WHERE (
 						prev_u.order_index < ct.unit_order
-						OR (prev_u.order_index = ct.unit_order AND prev_l.order_index < ct.lesson_order)
+						OR (prev_u.order_index = ct.unit_order AND prev_u.id < ct.unit_id)
+						OR (prev_u.order_index = ct.unit_order AND prev_u.id = ct.unit_id AND (
+							prev_l.order_index < ct.lesson_order
+							OR (prev_l.order_index = ct.lesson_order AND prev_l.id < ct.id)
+						))
 					)
 					AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
 				)
@@ -335,57 +286,7 @@ func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string
 	return isUnlocked, nil
 }
 
-// GetUserLessonProgress retrieves a user's completion status on a lesson
-func (r *PostgresRepository) GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error) {
-	query := `
-		SELECT id, user_id, lesson_id, is_completed, score, is_skipped, completed_at
-		FROM user_lesson_progress
-		WHERE user_id = $1::uuid AND lesson_id = $2::uuid
-	`
-	var p UserLessonProgress
-	err := r.db.Pool.QueryRow(ctx, query, userID, lessonID).Scan(
-		&p.ID, &p.UserID, &p.LessonID, &p.IsCompleted, &p.Score, &p.IsSkipped, &p.CompletedAt,
-	)
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("failed to query user lesson progress: %w", err)
-	}
-	return &p, nil
-}
-
-// UpsertLessonProgress records or updates lesson completion atomically
-func (r *PostgresRepository) UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error {
-	query := `
-		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
-		VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6)
-		ON CONFLICT (user_id, lesson_id)
-		DO UPDATE SET
-			is_completed = EXCLUDED.is_completed,
-			score = GREATEST(user_lesson_progress.score, EXCLUDED.score),
-			is_skipped = EXCLUDED.is_skipped,
-			completed_at = CASE
-				WHEN user_lesson_progress.is_completed THEN user_lesson_progress.completed_at
-				ELSE EXCLUDED.completed_at
-			END
-		RETURNING id, score, is_completed, is_skipped, completed_at
-	`
-	if progress.CompletedAt.IsZero() {
-		progress.CompletedAt = time.Now().UTC()
-	}
-
-	err := r.db.Pool.QueryRow(
-		ctx, query,
-		progress.UserID, progress.LessonID, progress.IsCompleted, progress.Score, progress.IsSkipped, progress.CompletedAt,
-	).Scan(&progress.ID, &progress.Score, &progress.IsCompleted, &progress.IsSkipped, &progress.CompletedAt)
-	if err != nil {
-		return fmt.Errorf("failed to upsert user lesson progress: %w", err)
-	}
-	return nil
-}
-
-// SkipPrecedingLessons marks all prior lessons up to a target proficiency level as completed and skipped
+// SkipPrecedingLessons marks all prior curriculum lessons up to a target proficiency level as completed and skipped
 func (r *PostgresRepository) SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error {
 	query := `
 		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
@@ -393,7 +294,7 @@ func (r *PostgresRepository) SkipPrecedingLessons(ctx context.Context, userID st
 		FROM lessons l
 		JOIN units u ON l.unit_id = u.id
 		JOIN proficiency_levels pl ON u.level_id = pl.id
-		WHERE pl.language_id = $2::uuid AND pl.order_index < $3
+		WHERE pl.language_id = $2::uuid AND pl.order_index < $3 AND u.unit_type = 'curriculum'
 		ON CONFLICT (user_id, lesson_id)
 		DO UPDATE SET
 			is_completed = true,
@@ -425,10 +326,6 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	}
 	defer tx.Rollback(ctx)
 
-	if payload.LastActiveAt.IsZero() {
-		payload.LastActiveAt = time.Now().UTC()
-	}
-
 	// 1. Acquire row-level FOR UPDATE lock on user_gamification first to serialize concurrent completions per user
 	var lockedXP, lockedStreak, lockedGems int
 	var lockedLastActiveAt *time.Time
@@ -446,6 +343,43 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		return fmt.Errorf("failed to lock user gamification in tx: %w", err)
 	}
 	payload.PreviousStreak = lockedStreak
+
+	// 1b. Query PostgreSQL authoritative transaction clock and WIB midnight boundary
+	var dbNow, dayStartUTC time.Time
+	clockQuery := `SELECT NOW(), (NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta'`
+	if err = tx.QueryRow(ctx, clockQuery).Scan(&dbNow, &dayStartUTC); err != nil {
+		return fmt.Errorf("failed to query database clock in tx: %w", err)
+	}
+	dbNow = dbNow.UTC()
+	payload.LastActiveAt = dbNow
+
+	// 1c. Verify curriculum eligibility and active enrollment progression inside TX before mutating state
+	var isEligible bool
+	eligibilityQuery := `
+		WITH target_lesson AS (
+			SELECT l.id, pl.language_id, pl.order_index AS level_order
+			FROM lessons l
+			JOIN units u ON l.unit_id = u.id
+			JOIN proficiency_levels pl ON u.level_id = pl.id
+			WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
+		)
+		SELECT EXISTS (
+			SELECT 1
+			FROM target_lesson tl
+			JOIN user_language_enrollments ule
+			  ON ule.user_id = $2::uuid
+			 AND ule.language_id = tl.language_id
+			 AND ule.is_active = true
+			JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
+			WHERE tl.level_order <= user_pl.order_index
+		)
+	`
+	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&isEligible); err != nil {
+		return fmt.Errorf("failed to verify lesson eligibility in tx: %w", err)
+	}
+	if !isEligible {
+		return ErrLessonLocked
+	}
 
 	// 2. Check existing completion status inside the serialized transaction to prevent TOCTOU double-XP
 	var wasCompleted bool
@@ -484,14 +418,7 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		payload.Metadata["is_practice"] = true
 		payload.Metadata["is_replay"] = true
 
-		// Enforce daily replay XP cap per WIB day inside the serialized transaction
-		loc, locErr := time.LoadLocation("Asia/Jakarta")
-		if locErr != nil {
-			loc = time.FixedZone("WIB", 7*3600)
-		}
-		nowWIB := payload.LastActiveAt.In(loc)
-		dayStartUTC := time.Date(nowWIB.Year(), nowWIB.Month(), nowWIB.Day(), 0, 0, 0, 0, loc).UTC()
-
+		// Enforce daily replay XP cap per WIB day using the DB transaction clock
 		var dailyReplayXP int
 		capQuery := `
 			SELECT COALESCE(SUM(xp_earned), 0)
@@ -596,7 +523,7 @@ const lessonAttemptSummaryQuery = `
 	WITH last_completion AS (
 		SELECT GREATEST(
 			COALESCE((SELECT completed_at FROM user_lesson_progress WHERE user_id = $1::uuid AND lesson_id = $2::uuid LIMIT 1), '-infinity'::timestamptz),
-			COALESCE((SELECT MAX(created_at) FROM user_activity_logs WHERE user_id = $1::uuid AND activity_type = 'lesson_completed' AND metadata->>'lesson_id' = $2), '-infinity'::timestamptz)
+			COALESCE((SELECT MAX(created_at) FROM user_activity_logs WHERE user_id = $1::uuid AND activity_type = 'lesson_completed' AND metadata->>'lesson_id' = $2::uuid::text), '-infinity'::timestamptz)
 		) AS cutoff_at
 	),
 	latest_overall AS (
@@ -640,11 +567,5 @@ func scanLessonAttemptSummary(ctx context.Context, q rowQueryer, userID string, 
 		return nil, fmt.Errorf("failed to get lesson attempt summary: %w", err)
 	}
 	return &summary, nil
-}
-
-// GetLessonAttemptSummary retrieves total exercises, attempted distinct exercises, correct counts,
-// and fresh-attempt counts submitted after the user's most recent completion of that lesson.
-func (r *PostgresRepository) GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error) {
-	return scanLessonAttemptSummary(ctx, r.db.Pool, userID, lessonID)
 }
 

@@ -151,6 +151,21 @@ func (m *MockRepository) UpdateEnrollmentLevel(ctx context.Context, enrollmentID
 	return nil
 }
 
+func (m *MockRepository) UpdateEnrollmentLevelIfCurrent(ctx context.Context, enrollmentID string, expectedLevelID string, levelID string) error {
+	if m.UpdateEnrollLevelErr != nil {
+		return m.UpdateEnrollLevelErr
+	}
+	e, ok := m.Enrollments[enrollmentID]
+	if !ok {
+		return ErrEnrollmentNotFound
+	}
+	if e.CurrentLevelID == nil || *e.CurrentLevelID != expectedLevelID {
+		return ErrEnrollmentLevelChanged
+	}
+	e.CurrentLevelID = &levelID
+	return nil
+}
+
 func (m *MockRepository) SetActiveLanguage(ctx context.Context, userID string, languageID string) error {
 	if m.SetActiveLanguageErr != nil {
 		return m.SetActiveLanguageErr

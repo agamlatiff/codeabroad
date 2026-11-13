@@ -107,10 +107,10 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		return nil, language.ErrEnrollmentNotFound
 	}
 
-	// Capture cache version epoch and lookup cached roadmap in a single round-trip
+	// Capture cache version epoch and lookup cached roadmap in a single round-trip for active tracks only
 	cacheVer := ""
 	canCache := false
-	if u.cacheRepo != nil {
+	if u.cacheRepo != nil && enrollment.IsActive {
 		cached, ver, cacheErr := u.cacheRepo.GetRoadmapWithVersion(ctx, userID, enrollment.Language.ID)
 		if cacheErr != nil {
 			log.Printf("curriculum: failed to read roadmap cache for user %s: %v", userID, cacheErr)
@@ -156,6 +156,15 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 	unlockedUnits, totalLessons, completedLessons, progressPercent, currentLessonID := u.helper.CalculateRoadmapUnlocks(units)
 	if unlockedUnits == nil {
 		unlockedUnits = []UnitNodeResponse{}
+	}
+	if !enrollment.IsActive {
+		for i := range unlockedUnits {
+			unlockedUnits[i].IsUnlocked = false
+			for j := range unlockedUnits[i].Lessons {
+				unlockedUnits[i].Lessons[j].IsUnlocked = false
+			}
+		}
+		currentLessonID = nil
 	}
 
 	res := &RoadmapResponse{
@@ -211,7 +220,10 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 	lesson.Exercises = exercise.SanitizeExercises(exercises)
 
 	gps, err := u.curriculumRepo.GetGrammarPointsByLessonID(ctx, lessonID)
-	if err == nil && len(gps) > 0 {
+	if err != nil {
+		log.Printf("curriculum: failed to query grammar points for lesson %s: %v", lessonID, err)
+		lesson.GrammarPoints = []GrammarPoint{}
+	} else if len(gps) > 0 {
 		lesson.GrammarPoints = gps
 	} else {
 		lesson.GrammarPoints = []GrammarPoint{}
@@ -237,6 +249,7 @@ func (u *usecase) evaluateLessonBadges(ctx context.Context, userID string, paylo
 
 	existingBadges, err := u.gamificationRepo.GetUserBadges(ctx, userID)
 	if err != nil {
+		log.Printf("curriculum: failed to query user badges for user %s: %v", userID, err)
 		return nil, 0
 	}
 	owned := make(map[string]bool, len(existingBadges))
@@ -288,8 +301,12 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	if lesson == nil {
 		return nil, ErrLessonNotFound
 	}
+	canonicalLessonID := lesson.ID
+	if canonicalLessonID == "" {
+		canonicalLessonID = req.LessonID
+	}
 
-	unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, req.LessonID)
+	unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, canonicalLessonID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify lesson unlock status: %w", err)
 	}
@@ -320,7 +337,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	now := time.Now().UTC()
 	progress := &UserLessonProgress{
 		UserID:      userID,
-		LessonID:    req.LessonID,
+		LessonID:    canonicalLessonID,
 		IsCompleted: true,
 		Score:       req.Score,
 		IsSkipped:   false,
@@ -341,7 +358,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		NewGems:      usr.Gems,
 		LastActiveAt: now,
 		ActivityType: activityType,
-		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score, "is_practice": lesson.IsCompleted},
+		Metadata:     map[string]any{"lesson_id": canonicalLessonID, "score": req.Score, "is_practice": lesson.IsCompleted},
 	}
 
 	if err := u.curriculumRepo.RecordLessonCompletionTx(ctx, payload); err != nil {
@@ -367,8 +384,13 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	finalLevel := u.helper.CalculateLevel(finalXP)
 
 	var nextLessonID *string
-	if nextID, err := u.curriculumRepo.GetNextLessonID(ctx, req.LessonID); err == nil && nextID != nil {
+	if nextID, err := u.curriculumRepo.GetNextLessonID(ctx, canonicalLessonID); err == nil && nextID != nil {
 		nextLessonID = nextID
+	}
+
+	lastActive := payload.LastActiveAt
+	if lastActive.IsZero() {
+		lastActive = now
 	}
 
 	return &CompleteLessonResponse{
@@ -378,7 +400,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 			CurrentLevel: finalLevel,
 			Streak:       payload.NewStreak,
 			Gems:         payload.NewGems,
-			LastActiveAt: &now,
+			LastActiveAt: &lastActive,
 		},
 		UnlockedNextLessonID: nextLessonID,
 		AwardedBadges:        awardedBadges,
@@ -391,7 +413,7 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 	}
 
 	unit, err := u.curriculumRepo.GetUnitByID(ctx, unitID)
-	if err != nil || unit == nil || unit.LevelID == "" {
+	if err != nil || unit == nil || unit.LevelID == "" || (unit.UnitType != "" && unit.UnitType != "curriculum") {
 		return
 	}
 
@@ -403,7 +425,7 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 	var targetEnrollment *language.UserLanguageEnrollment
 	for i := range enrollments {
 		enr := &enrollments[i]
-		if enr.CurrentLevelID != nil && *enr.CurrentLevelID == unit.LevelID {
+		if enr.IsActive && enr.CurrentLevelID != nil && *enr.CurrentLevelID == unit.LevelID {
 			targetEnrollment = enr
 			break
 		}
@@ -417,7 +439,7 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 		return
 	}
 	for _, l := range lessons {
-		if !l.IsCompleted {
+		if !l.IsCompleted || l.Score < minLessonPassScore {
 			return
 		}
 	}
@@ -435,8 +457,15 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 	for i, lvl := range sortedLevels {
 		if lvl.ID == unit.LevelID {
 			if i+1 < len(sortedLevels) {
-				if err := u.langRepo.UpdateEnrollmentLevel(ctx, targetEnrollment.ID, sortedLevels[i+1].ID); err != nil {
-					log.Printf("curriculum: failed to advance enrollment level for user %s: %v", userID, err)
+				nextLevel := sortedLevels[i+1]
+				nextUnits, uErr := u.curriculumRepo.GetUnitsByLevelID(ctx, nextLevel.ID, userID)
+				if uErr != nil || len(nextUnits) == 0 {
+					return
+				}
+				if err := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, targetEnrollment.ID, unit.LevelID, nextLevel.ID); err != nil {
+					if !errors.Is(err, language.ErrEnrollmentLevelChanged) {
+						log.Printf("curriculum: failed to advance enrollment level for user %s: %v", userID, err)
+					}
 					return
 				}
 				if u.cacheRepo != nil {

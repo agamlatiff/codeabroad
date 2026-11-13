@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 
 	infraRedis "codeabroad/backend/infrastructure/redis"
@@ -90,7 +91,9 @@ func (c *redisRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context,
 
 	var roadmap RoadmapResponse
 	if err := json.Unmarshal(data, &roadmap); err != nil {
-		return nil, ver, err
+		log.Printf("curriculum: corrupt roadmap cache entry %s: %v", key, err)
+		_ = c.rdb.Client.Del(ctx, key).Err()
+		return nil, ver, nil
 	}
 	return &roadmap, ver, nil
 }

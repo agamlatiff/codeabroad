@@ -14,6 +14,7 @@ var (
 	ErrProficiencyLevelNotFound = apperror.NewNotFoundError("LEVEL_NOT_FOUND", "proficiency level not found")
 	ErrAlreadyEnrolled          = apperror.NewConflictError("ALREADY_ENROLLED", "user is already enrolled in this language track")
 	ErrEnrollmentNotFound       = apperror.NewNotFoundError("ENROLLMENT_NOT_FOUND", "active language enrollment not found")
+	ErrEnrollmentLevelChanged   = apperror.NewConflictError("LEVEL_ALREADY_CHANGED", "enrollment proficiency level was updated concurrently")
 )
 
 // Language represents a world destination language track (languages table)
@@ -64,6 +65,7 @@ type Repository interface {
 	GetActiveEnrollment(ctx context.Context, userID string, languageID string) (*UserLanguageEnrollment, error)
 	CreateEnrollment(ctx context.Context, enrollment *UserLanguageEnrollment) error
 	UpdateEnrollmentLevel(ctx context.Context, enrollmentID string, levelID string) error
+	UpdateEnrollmentLevelIfCurrent(ctx context.Context, enrollmentID string, expectedLevelID string, levelID string) error
 	SetActiveLanguage(ctx context.Context, userID string, languageID string) error
 }
 

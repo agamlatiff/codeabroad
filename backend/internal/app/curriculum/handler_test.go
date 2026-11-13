@@ -162,6 +162,24 @@ func TestHTTP_CompleteLesson_BodyWithoutLessonID(t *testing.T) {
 	}
 }
 
+func TestHTTP_CompleteLesson_InvalidBody_SanitizedError(t *testing.T) {
+	r, _, _ := setupCurriculumTestRouter()
+	lessonID := "33333333-3333-3333-3333-333333333333"
+
+	body := []byte(`{"score": 150}`)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request, got: %d", w.Code)
+	}
+	if bytes.Contains(w.Body.Bytes(), []byte("CompleteLessonRequest")) || bytes.Contains(w.Body.Bytes(), []byte("Field validation")) {
+		t.Errorf("expected sanitized validation error without struct field leakage, got: %s", w.Body.String())
+	}
+}
+
 func TestHTTP_GetGrammarPoints(t *testing.T) {
 	r, cRepo, _ := setupCurriculumTestRouter()
 	cRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{
