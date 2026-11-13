@@ -102,7 +102,7 @@ export const useOnboardingWizard = () => {
       ) {
         reset()
         updateUser({ is_onboarded: true })
-        navigate('/roadmap', { replace: true })
+        navigate('/curriculum', { replace: true })
         return
       }
       const backendMessage =
@@ -255,7 +255,7 @@ export const useOnboardingWizard = () => {
     } else if (currentStep === 4) {
       reset()
       updateUser({ is_onboarded: true })
-      navigate('/roadmap', { replace: true })
+      navigate('/curriculum', { replace: true })
     }
   }
 

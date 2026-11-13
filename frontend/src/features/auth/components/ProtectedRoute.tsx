@@ -25,9 +25,9 @@ export const OnboardingRoute = () => {
     return <Navigate to="/login" replace />
   }
 
-  // If already onboarded, redirect forward to roadmap
+  // If already onboarded, redirect forward to curriculum
   if (user && user.is_onboarded) {
-    return <Navigate to="/roadmap" replace />
+    return <Navigate to="/curriculum" replace />
   }
 
   return <Outlet />
@@ -42,8 +42,8 @@ export const GuestRoute = () => {
     if (user && !user.is_onboarded) {
       return <Navigate to="/onboarding" replace />
     }
-    // If logged in and already onboarded, redirect to roadmap
-    return <Navigate to="/roadmap" replace />
+    // If logged in and already onboarded, redirect to curriculum
+    return <Navigate to="/curriculum" replace />
   }
 
   return <Outlet />

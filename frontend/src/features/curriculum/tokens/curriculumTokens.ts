@@ -1,11 +1,6 @@
 /**
- * [DOMAIN: ROADMAP SERPENTINE & STATIONS]
- * Single Source of Truth khusus untuk visualisasi peta jalur kereta Yamanote (3D Serpentine Path):
- * geometri koordinat SVG, warna stasiun per unit, token modal node detail, dan segmented view switch.
- *
- * NOTE:
- * - Palet warna umum aplikasi berada di colorTokens.ts
- * - Aturan umum gamifikasi (XP/Streak) berada di gamificationTokens.ts
+ * [DOMAIN: CURRICULUM SERPENTINE & UNIT NODES]
+ * Single Source of Truth for Curriculum Map & Syllabus Accordion visual tokens.
  */
 
 import type {
@@ -14,9 +9,8 @@ import type {
   SequentialCurriculumUnit,
   SequentialPartItem,
   MapNodeCategory,
-} from "@/features/curriculum/types/roadmap"
-
-export type RoadmapNodeStatus = 'completed' | 'active' | 'locked'
+  CurriculumNodeStatus,
+} from "@/features/curriculum/types/curriculum"
 
 /**
  * 1. Visual 3D Banner Palettes per Unit Number
@@ -68,7 +62,7 @@ export const DEFAULT_UNIT_THEMES: Record<number, UnitTheme> = {
  * 2. Unit Card Status Tokens (completed | active | locked)
  */
 export interface UnitCardStyleTokens {
-  status: RoadmapNodeStatus
+  status: CurriculumNodeStatus
   containerRing: string
   bannerHeader: string
   unitTag: string
@@ -129,10 +123,10 @@ export const resolveUnitCardTokens = (unit: SequentialCurriculumUnit): UnitCardS
 }
 
 /**
- * 3. Part Item Status & Category Tokens (completed | active | locked + code | nihongo | boss)
+ * 3. Lesson Item Status & Category Tokens (completed | active | locked)
  */
 export const PART_STATUS_TOKENS: Record<
-  RoadmapNodeStatus,
+  CurriculumNodeStatus,
   {
     card: string
     cube: string
@@ -168,8 +162,8 @@ export const PART_CATEGORY_TOKENS: Record<
     lockedCardAccent: '',
   },
   language: {
-    chip: 'bg-rose-100 text-rose-700 border border-rose-200',
-    lockedCardAccent: 'bg-rose-50/40 border-rose-200/60',
+    chip: 'bg-blue-100 text-blue-700 border border-blue-200',
+    lockedCardAccent: 'bg-slate-50/80 border-slate-200/70',
   },
   boss: {
     chip: 'bg-amber-100 text-amber-800 border border-amber-300',
@@ -178,7 +172,7 @@ export const PART_CATEGORY_TOKENS: Record<
 }
 
 export interface PartItemStyleTokens {
-  status: RoadmapNodeStatus
+  status: CurriculumNodeStatus
   card: string
   cube: string
   chip: string
@@ -186,14 +180,14 @@ export interface PartItemStyleTokens {
 }
 
 export const resolvePartTokens = (part: SequentialPartItem): PartItemStyleTokens => {
-  const status: RoadmapNodeStatus = part.is_completed
+  const status: CurriculumNodeStatus = part.is_completed
     ? 'completed'
-    : part.isNextActive
+    : part.is_unlocked || part.isNextActive
       ? 'active'
       : 'locked'
 
   const statusToken = PART_STATUS_TOKENS[status]
-  const categoryToken = PART_CATEGORY_TOKENS[part.category] || PART_CATEGORY_TOKENS.code
+  const categoryToken = PART_CATEGORY_TOKENS[part.category] || PART_CATEGORY_TOKENS.language
 
   return {
     status,
@@ -213,10 +207,25 @@ export const resolveUnitTheme = (unitNumber: number): UnitTheme => {
 }
 
 /**
- * 5. Maps a database tech stack slug or career path slug to its UI brand icon identifier.
+ * 5. Maps a language code or track slug to its UI icon identifier.
  */
-export const resolveTrackIconType = (slug: string): TrackIconType => {
-  const normalized = slug.toLowerCase()
+export const resolveTrackIconType = (slugOrCode: string): TrackIconType => {
+  const normalized = slugOrCode.toLowerCase()
+  if (normalized === 'ja' || normalized.includes('nihongo') || normalized.includes('japan')) {
+    return 'nihongo'
+  }
+  if (normalized === 'en' || normalized.includes('english')) {
+    return 'english'
+  }
+  if (normalized === 'ko' || normalized.includes('korean')) {
+    return 'korean'
+  }
+  if (normalized === 'de' || normalized.includes('german')) {
+    return 'german'
+  }
+  if (normalized === 'zh' || normalized.includes('mandarin') || normalized.includes('chinese')) {
+    return 'mandarin'
+  }
   if (normalized.includes('go')) return 'golang'
   if (
     normalized.includes('react') ||
@@ -229,7 +238,6 @@ export const resolveTrackIconType = (slug: string): TrackIconType => {
   if (normalized.includes('devops') || normalized.includes('aws') || normalized.includes('cloud')) {
     return 'devops'
   }
-  if (normalized.includes('nihongo')) return 'nihongo'
   return 'fundamental'
 }
 
@@ -278,10 +286,8 @@ export const MAP_GEOMETRY = {
 } as const
 
 export const MAP_MILESTONE_REWARDS = {
-  chestXp: 30,
-  trophyXp: 50,
-  defaultQuestXp: 50,
-  chestGems: 20,
+  defaultLessonXp: 15,
+  trophyXp: 100,
 } as const
 
 /**
@@ -302,15 +308,15 @@ export interface MapCategoryStyleTokens {
 
 export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens> = {
   language: {
-    popoverBorder: 'border-rose-400',
-    popoverLabelColor: 'text-rose-600',
-    badgeClass: 'bg-rose-50 text-rose-600 border border-rose-200',
-    activeButtonVariant: 'rose',
-    activeButtonText: 'MULAI MATERI BAHASA',
-    discCompleted: 'bg-rose-500 shadow-[0_5px_0_0_#9F1239]',
-    discActive: 'bg-rose-500 shadow-[0_6px_0_0_#BE123C] ring-8 ring-rose-100',
-    modalIconBgActive: 'bg-rose-500 border-rose-600 text-white shadow-[0_3px_0_0_#9F1239]',
-    modalIconBgCompleted: 'bg-rose-100 border-rose-300 text-rose-700',
+    popoverBorder: 'border-blue-400',
+    popoverLabelColor: 'text-blue-600',
+    badgeClass: 'bg-blue-50 text-blue-700 border border-blue-200',
+    activeButtonVariant: 'blue',
+    activeButtonText: 'MULAI SESI BELAJAR',
+    discCompleted: 'bg-emerald-500 shadow-[0_5px_0_0_#047857]',
+    discActive: 'bg-blue-600 shadow-[0_6px_0_0_#1D4ED8] ring-8 ring-blue-100',
+    modalIconBgActive: 'bg-blue-600 border-blue-700 text-white shadow-[0_3px_0_0_#1D4ED8]',
+    modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
     modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
   },
   code: {
@@ -318,7 +324,7 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     popoverLabelColor: 'text-blue-600',
     badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
     activeButtonVariant: 'blue',
-    activeButtonText: 'LANJUTKAN KODING',
+    activeButtonText: 'MULAI SESI BELAJAR',
     discCompleted: 'bg-emerald-500 shadow-[0_5px_0_0_#047857]',
     discActive: 'bg-blue-600 shadow-[0_6px_0_0_#1D4ED8] ring-8 ring-blue-100',
     modalIconBgActive: 'bg-blue-100 border-blue-300 text-blue-700',
@@ -328,7 +334,7 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
 }
 
 export const resolveMapNodeCategory = (category?: string): MapNodeCategory =>
-  category === 'language' || category === 'nihongo' ? 'language' : 'code'
+  category === 'code' ? 'code' : 'language'
 
 export const resolveMapCategoryTokens = (category?: string): MapCategoryStyleTokens =>
   MAP_CATEGORY_TOKENS[resolveMapNodeCategory(category)]
@@ -346,12 +352,12 @@ export const MAP_MODAL_TOKENS = {
       'w-12 h-12 rounded-2xl bg-yellow-100 border-2 border-yellow-300 flex items-center justify-center text-yellow-700 shadow-2xs',
   },
   statusBadge: {
-    completed: 'Selesai 100%',
-    active: 'Sedang Berjalan',
-    locked: 'Modul Terkunci',
+    completed: 'Selesai',
+    active: 'Siap Dipelajari',
+    locked: 'Sesi Terkunci',
   },
   lockedDescription:
-    'Materi ini masih terkunci. Selesaikan modul koding sebelumnya terlebih dahulu agar pemahaman teknismu berurutan dan solid.',
+    'Sesi ini masih terkunci. Selesaikan seluruh lesson sebelumnya secara berurutan atau aktifkan bahasa ini terlebih dahulu.',
 } as const
 
 /**
@@ -391,7 +397,7 @@ export const MAP_TRACK_TOKENS = {
 } as const
 
 /**
- * 9. Map Biome Ambient Spotlight Aura
+ * 10. Map Biome Ambient Spotlight Aura
  */
 export const MAP_BIOME_AURA_TOKENS = {
   completed: 'bg-emerald-400',
@@ -400,7 +406,7 @@ export const MAP_BIOME_AURA_TOKENS = {
 } as const
 
 /**
- * 10. Map Milestone 3D Stepping Stone Nodes (Chest, Trophy, Locked)
+ * 11. Map Milestone 3D Stepping Stone Nodes
  */
 export const MAP_MILESTONE_DISC_TOKENS = {
   chest: {
@@ -425,7 +431,7 @@ export const MAP_MILESTONE_PILL_TOKENS = {
 } as const
 
 /**
- * 11. View Toggle Segmented Control 3D Tokens
+ * 12. View Toggle Segmented Control 3D Tokens
  */
 export const VIEW_TOGGLE_TOKENS = {
   container:
@@ -439,7 +445,7 @@ export const VIEW_TOGGLE_TOKENS = {
 } as const
 
 /**
- * 12. Accordion View Actions & Completion Banner Tokens
+ * 13. Accordion View Actions & Completion Banner Tokens
  */
 export const ACCORDION_ACTION_TOKENS = {
   completionBanner:
@@ -453,9 +459,5 @@ export const ACCORDION_ACTION_TOKENS = {
   completedPill:
     'px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-emerald-50 border-2 border-emerald-200 text-emerald-700 font-brand font-black text-xs flex items-center gap-1.5 shadow-[0_2px_0_0_#A7F3D0]',
   lockedButton:
-    'px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-400 hover:text-slate-600 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer',
+    'min-h-[44px] px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl bg-slate-100 hover:bg-slate-200/80 active:scale-95 border-2 border-slate-200 text-slate-500 hover:text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer',
 } as const
-
-
-
-

@@ -43,10 +43,10 @@ export const NotFoundPage = () => {
             variant="blue"
             size="lg"
             icon={<Compass size={20} weight="fill" />}
-            onClick={() => navigate('/roadmap')}
+            onClick={() => navigate('/curriculum')}
             fullWidth
           >
-            Buka Roadmap
+            Buka Kurikulum
           </Button3D>
 
           <Button3D

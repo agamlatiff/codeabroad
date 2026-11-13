@@ -39,7 +39,7 @@ export const QuestCompleteModal: FC<QuestCompleteModalProps> = ({
     if (submitResult?.next_quest?.id) {
       navigate(`/learn/${submitResult.next_quest.id}`)
     } else {
-      navigate('/roadmap')
+      navigate('/curriculum')
     }
   }
 

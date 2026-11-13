@@ -6,25 +6,25 @@ import {
   CheckFat,
   Trophy,
 } from '@phosphor-icons/react'
-import { RoadmapPartItem } from './RoadmapPartItem'
-import type { SequentialCurriculumUnit } from "@/features/curriculum/types/roadmap"
-import { resolveUnitCardTokens, ACCORDION_ACTION_TOKENS } from "@/features/curriculum/tokens/roadmapTokens"
+import { CurriculumLessonItem } from './CurriculumLessonItem'
+import type { SequentialCurriculumUnit } from "@/features/curriculum/types/curriculum"
+import { resolveUnitCardTokens, ACCORDION_ACTION_TOKENS } from "@/features/curriculum/tokens/curriculumTokens"
 
-export interface RoadmapUnitCardProps {
+export interface CurriculumUnitCardProps {
   unit: SequentialCurriculumUnit
   isCollapsed: boolean
   onToggleCollapse: () => void
   onLockedClick: (title: string) => void
-  onStartQuest: (route: string) => void
+  onStartLesson: (route: string) => void
 }
 
-export const RoadmapUnitCard = ({
+export const CurriculumUnitCard = ({
   unit,
   isCollapsed,
   onToggleCollapse,
   onLockedClick,
-  onStartQuest,
-}: RoadmapUnitCardProps) => {
+  onStartLesson,
+}: CurriculumUnitCardProps) => {
   const isUnitCompleted = unit.isCompleted
   const isUnitActive = unit.isActive
   const unitPercent = unit.progressPercent ?? 0
@@ -49,7 +49,7 @@ export const RoadmapUnitCard = ({
               {isUnitCompleted ? (
                 <span className="bg-white/20 text-white font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-white/25">
                   <CheckFat weight="fill" className="w-3 h-3 text-emerald-200" />
-                  <span>LULUS SEMUA SESI</span>
+                  <span>LULUS SEMUA LESSON</span>
                 </span>
               ) : isUnitActive ? (
                 <span className="bg-white/20 text-white font-brand font-black text-[10px] px-2.5 py-0.5 rounded-lg flex items-center gap-1 border border-white/25">
@@ -69,11 +69,13 @@ export const RoadmapUnitCard = ({
             >
               {unit.title}
             </h3>
-            <p
-              className={`text-xs leading-relaxed max-w-2xl font-medium ${tokens.descriptionText}`}
-            >
-              {unit.description}
-            </p>
+            {unit.description && (
+              <p
+                className={`text-xs leading-relaxed max-w-2xl font-medium ${tokens.descriptionText}`}
+              >
+                {unit.description}
+              </p>
+            )}
           </div>
 
           {/* Action Button: Collapse toggle */}
@@ -81,8 +83,9 @@ export const RoadmapUnitCard = ({
             <button
               type="button"
               onClick={onToggleCollapse}
-              className={`p-2 rounded-xl text-xs transition-all flex items-center justify-center cursor-pointer shrink-0 shadow-2xs ${tokens.collapseButton}`}
-              title={isCollapsed ? 'Buka Sesi Unit' : 'Lipat Sesi Unit'}
+              className={`min-w-[44px] min-h-[44px] p-2 rounded-xl text-xs transition-all flex items-center justify-center cursor-pointer shrink-0 shadow-2xs ${tokens.collapseButton}`}
+              title={isCollapsed ? 'Buka Daftar Lesson' : 'Lipat Daftar Lesson'}
+              aria-label={isCollapsed ? 'Buka Daftar Lesson' : 'Lipat Daftar Lesson'}
             >
               {isCollapsed ? (
                 <CaretDown weight="bold" className="w-4 h-4" />
@@ -108,26 +111,26 @@ export const RoadmapUnitCard = ({
           <span
             className={`text-xs font-brand font-black shrink-0 whitespace-nowrap ${tokens.progressLabel}`}
           >
-            {completedCount}/{unit.parts.length} Sesi ({unitPercent}%)
+            {completedCount}/{unit.parts.length} Lesson ({unitPercent}%)
           </span>
         </div>
       </div>
 
-      {/* ── SEQUENTIAL PART BREAKDOWN (COLLAPSIBLE) ── */}
+      {/* ── SEQUENTIAL LESSON BREAKDOWN (COLLAPSIBLE) ── */}
       {!isCollapsed && (
         <div className="p-3 sm:p-5 space-y-2.5 sm:space-y-3 bg-white">
           {unit.parts.map((part) => (
-            <RoadmapPartItem
+            <CurriculumLessonItem
               key={part.id}
               part={part}
               onLockedClick={onLockedClick}
-              onStartQuest={onStartQuest}
+              onStartLesson={onStartLesson}
             />
           ))}
         </div>
       )}
 
-      {/* Unit Milestone Trophy Badge */}
+      {/* Unit Milestone Trophy Banner */}
       {isUnitCompleted && (
         <div className={ACCORDION_ACTION_TOKENS.completionBanner}>
           <div className="flex items-center gap-2.5 min-w-0">
@@ -136,10 +139,10 @@ export const RoadmapUnitCard = ({
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-brand font-black text-emerald-950 truncate">
-                Unit 0{unit.unitNumber} Lulus 100%!
+                Unit {String(unit.unitNumber).padStart(2, '0')} Tuntas 100%!
               </span>
               <span className="text-[11px] text-emerald-700 font-medium">
-                Seluruh sesi Unit 0{unit.unitNumber} tuntas (+{unit.totalXp} XP total terkumpul).
+                Seluruh lesson Unit {String(unit.unitNumber).padStart(2, '0')} selesai ({unit.totalXp} XP tersedia).
               </span>
             </div>
           </div>
@@ -152,4 +155,3 @@ export const RoadmapUnitCard = ({
     </div>
   )
 }
-

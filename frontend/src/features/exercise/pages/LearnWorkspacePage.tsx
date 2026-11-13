@@ -81,7 +81,7 @@ export const LearnWorkspacePage = () => {
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => navigate('/roadmap')}
+            onClick={() => navigate('/curriculum')}
             className="bg-[#F1F5F9] hover:bg-slate-200 active:translate-y-0.5 text-[#0F172A] font-bold text-xs px-3 py-1.5 rounded-xl transition-all cursor-pointer"
           >
             ← Silabus

@@ -44,7 +44,7 @@ export const rateLimitMessage = (action: 'masuk' | 'pendaftaran') =>
 
 /** Resolves the post-auth landing route based on onboarding status. */
 export const resolvePostAuthPath = (user: Pick<User, 'is_onboarded'>) =>
-  user.is_onboarded ? '/roadmap' : '/onboarding'
+  user.is_onboarded ? '/curriculum' : '/onboarding'
 
 /**
  * O(1) Hash Map lookup dictionary for login error codes.

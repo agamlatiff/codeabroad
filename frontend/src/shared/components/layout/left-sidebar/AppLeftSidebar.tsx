@@ -34,7 +34,7 @@ export const AppLeftSidebar = () => {
         {/* Top Brand Mark */}
         <div className="flex flex-col items-center gap-6">
           <Link
-            to="/roadmap"
+            to="/curriculum"
             onClick={() => triggerHaptic('tap')}
             className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border-2 border-slate-200/90 shadow-[0_3px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer relative group"
             title="CodeAbroad Hub"

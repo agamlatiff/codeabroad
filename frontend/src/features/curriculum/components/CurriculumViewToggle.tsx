@@ -2,31 +2,34 @@ import { type FC } from 'react'
 import {
   MapTrifold,
   ListBullets,
+  BookOpenText,
   SpeakerHigh,
   SpeakerLow,
   SpeakerSimpleSlash,
 } from '@phosphor-icons/react'
 import { triggerHaptic } from "@/shared/utils/haptics"
-import { VIEW_TOGGLE_TOKENS } from "@/features/curriculum/tokens/roadmapTokens"
+import { VIEW_TOGGLE_TOKENS } from "@/features/curriculum/tokens/curriculumTokens"
 import { useAudioStore } from "@/shared/store/audioStore"
+import type { CurriculumViewMode } from "@/features/curriculum/types/curriculum"
 
-export type CurriculumViewMode = 'map' | 'syllabus'
-
-export interface RoadmapViewToggleProps {
+export interface CurriculumViewToggleProps {
   viewMode: CurriculumViewMode
   onChangeViewMode: (mode: CurriculumViewMode) => void
+  onOpenGrammar?: () => void
+  levelCode?: string
   totalUnitsCount?: number
 }
 
 /**
- * RoadmapViewToggle
- * Duolingo 3D Tactile Segmented Control to switch between
- * Interactive RPG Path Map (Yamanote Line) and Structured Syllabus Cards,
- * equipped with an interactive 3D Audio Soundscape mode cycler.
+ * CurriculumViewToggle
+ * Duolingo 3D Tactile Segmented Control to switch between Interactive Path Map
+ * and Structured Unit Syllabus, plus Grammar Reference drawer trigger and Audio mode cycler.
  */
-export const RoadmapViewToggle: FC<RoadmapViewToggleProps> = ({
+export const CurriculumViewToggle: FC<CurriculumViewToggleProps> = ({
   viewMode,
   onChangeViewMode,
+  onOpenGrammar,
+  levelCode,
   totalUnitsCount,
 }) => {
   const audioMode = useAudioStore((s) => s.audioMode)
@@ -48,37 +51,48 @@ export const RoadmapViewToggle: FC<RoadmapViewToggleProps> = ({
       {/* Left: View Mode Caption */}
       <div className="flex items-center gap-2">
         <span className="text-[11px] font-brand font-black uppercase tracking-wider text-slate-500">
-          Tampilan:
+          Kurikulum:
         </span>
         <span className="text-xs font-brand font-black text-slate-800 inline-flex items-center gap-1.5">
           {viewMode === 'map' ? (
             <>
               <MapTrifold weight="fill" className="w-3.5 h-3.5 text-blue-600" />
-              <span>Peta Petualangan RPG</span>
+              <span>Peta Jalur Belajar</span>
             </>
           ) : (
             <>
               <ListBullets weight="bold" className="w-3.5 h-3.5 text-blue-600" />
-              <span>Silabus Modul Terstruktur</span>
+              <span>Silabus Unit Terstruktur</span>
             </>
           )}
         </span>
       </div>
 
-      {/* Right Controls: Segmented View Switcher & 3D Audio Mode Cycler */}
-      <div className="flex items-center gap-2">
+      {/* Right Controls: Grammar Button, Segmented View Switcher & 3D Audio Mode Cycler */}
+      <div className="flex items-center gap-2 flex-wrap">
+        {onOpenGrammar && (
+          <button
+            type="button"
+            onClick={onOpenGrammar}
+            className="min-h-[44px] px-3 sm:px-3.5 rounded-2xl bg-white border-2 border-slate-200/90 hover:border-blue-400 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black text-slate-700 hover:text-blue-700 transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+            title="Lihat referensi grammar & pola kalimat untuk level ini"
+          >
+            <BookOpenText weight="bold" className="w-4 h-4 text-blue-600" />
+            <span>Panduan Grammar{levelCode ? ` (${levelCode})` : ''}</span>
+          </button>
+        )}
+
         {/* 1. Tactile 3D Segmented Control */}
         <div className={VIEW_TOGGLE_TOKENS.container}>
-          {/* 1a. Mode Peta Button */}
           <button
             type="button"
             onClick={() => handleSelect('map')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
+            className={`min-h-[38px] px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
               viewMode === 'map'
                 ? VIEW_TOGGLE_TOKENS.buttonActive
                 : VIEW_TOGGLE_TOKENS.buttonInactive
             }`}
-            title="Tampilan Peta Petualangan Stasiun Tokyo (Duolingo RPG)"
+            title="Tampilan Peta Jalur Belajar (3D Serpentine)"
           >
             <MapTrifold
               weight={viewMode === 'map' ? 'fill' : 'bold'}
@@ -87,23 +101,22 @@ export const RoadmapViewToggle: FC<RoadmapViewToggleProps> = ({
             <span>Peta Jalur</span>
           </button>
 
-          {/* 1b. Mode Silabus Button */}
           <button
             type="button"
             onClick={() => handleSelect('syllabus')}
-            className={`px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
+            className={`min-h-[38px] px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
               viewMode === 'syllabus'
                 ? VIEW_TOGGLE_TOKENS.buttonActive
                 : VIEW_TOGGLE_TOKENS.buttonInactive
             }`}
-            title="Tampilan Kartu Silabus Modul Terstruktur"
+            title="Tampilan Daftar Unit & Lesson Terstruktur"
           >
             <ListBullets
               weight={viewMode === 'syllabus' ? 'bold' : 'regular'}
               className={`w-4 h-4 ${viewMode === 'syllabus' ? 'text-blue-600' : 'text-slate-500'}`}
             />
             <div className="flex items-center gap-1.5">
-              <span>Silabus Modul</span>
+              <span>Silabus Unit</span>
               {totalUnitsCount && totalUnitsCount > 0 ? (
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-md ${
@@ -123,13 +136,13 @@ export const RoadmapViewToggle: FC<RoadmapViewToggleProps> = ({
         <button
           type="button"
           onClick={handleCycleAudio}
-          className="h-9 px-2.5 sm:px-3 rounded-2xl bg-white border-2 border-slate-200/90 hover:border-blue-400 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
+          className="min-h-[44px] px-2.5 sm:px-3 rounded-2xl bg-white border-2 border-slate-200/90 hover:border-blue-400 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black transition-all cursor-pointer flex items-center gap-1.5 shrink-0"
           title={`Mode Suara: ${
             audioMode === 'all'
               ? 'Musik Suasana & Efek Suara Aktif (Klik untuk ubah)'
               : audioMode === 'sfx_only'
-              ? 'Efek Suara Saja (Klik untuk bisukan)'
-              : 'Semua Suara Dibisukan (Klik untuk nyalakan)'
+                ? 'Efek Suara Saja (Klik untuk bisukan)'
+                : 'Semua Suara Dibisukan (Klik untuk nyalakan)'
           }`}
         >
           {audioMode === 'all' && (

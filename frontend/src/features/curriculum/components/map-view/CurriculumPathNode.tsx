@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import type { FC } from 'react'
+import type { FC, MouseEvent } from 'react'
 import {
   Check,
   LockSimple,
@@ -10,43 +10,43 @@ import {
 } from '@phosphor-icons/react'
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import { Button3D } from "@/shared/components/ui/Button3D"
-import type { PathMapNode } from "@/features/curriculum/types/roadmap"
+import type { PathMapNode } from "@/features/curriculum/types/curriculum"
 import { playSound } from "@/shared/utils/sound"
 import {
   resolveMapCategoryTokens,
   MAP_GEOMETRY,
   MAP_MILESTONE_DISC_TOKENS,
   MAP_MILESTONE_PILL_TOKENS,
-} from "@/features/curriculum/tokens/roadmapTokens"
-import { renderNodeSymbol, renderActionIcon } from './RoadmapNodeIcon'
+} from "@/features/curriculum/tokens/curriculumTokens"
+import { renderNodeSymbol, renderActionIcon } from './CurriculumNodeIcon'
 
-export interface RoadmapPathNodeProps {
+export interface CurriculumPathNodeProps {
   node: PathMapNode
   coord: { x: number; y: number }
   onClick: (node: PathMapNode) => void
-  onStartQuest?: (route: string) => void
+  onStartLesson?: (route: string) => void
 }
 
-export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
+export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
   node,
   coord,
   onClick,
-  onStartQuest,
+  onStartLesson,
 }) => {
   const navigate = useNavigate()
   const catTokens = resolveMapCategoryTokens(node.category)
   const leftPercent = (coord.x / MAP_GEOMETRY.viewboxWidth) * 100
   const topPx = coord.y - MAP_GEOMETRY.nodeDiscRadius
 
-  const handleActiveButtonClick = (e: React.MouseEvent) => {
+  const handleActiveButtonClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     const targetRoute =
       node.route && node.route !== '/courses'
         ? node.route
         : `/learn/${node.id}`
 
-    if (onStartQuest) {
-      onStartQuest(targetRoute)
+    if (onStartLesson) {
+      onStartLesson(targetRoute)
     } else {
       navigate(targetRoute)
     }
@@ -66,14 +66,14 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
         <div className="absolute -top-28 z-30 flex flex-col items-center select-none animate-bounce-subtle pointer-events-auto">
           <div
-            className={`bg-white border-2 rounded-2xl p-3 shadow-md text-center max-w-[210px] space-y-1.5 relative ${catTokens.popoverBorder}`}
+            className={`bg-white border-2 rounded-2xl p-3 shadow-md text-center max-w-[215px] space-y-1.5 relative ${catTokens.popoverBorder}`}
           >
             <div className="flex items-center justify-center gap-1.5">
               <span
                 className={`text-[10px] font-brand font-black uppercase tracking-wider flex items-center justify-center gap-1 ${catTokens.popoverLabelColor}`}
               >
                 <Sparkle weight="fill" className="w-3 h-3" />
-                <span>Sedang Berjalan</span>
+                <span>Sedang Dipelajari</span>
               </span>
               {node.badgeLabel && (
                 <span
@@ -128,14 +128,13 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
       {/* ── STEPPING STONE 3D DISC ── */}
       <div className="relative z-10">
         {node.isChest ? (
-          /* 3D Milestone Chest Node */
           <div
             className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
               node.status === 'completed'
                 ? MAP_MILESTONE_DISC_TOKENS.chest.completed
                 : node.status === 'active'
-                ? MAP_MILESTONE_DISC_TOKENS.chest.active
-                : MAP_MILESTONE_DISC_TOKENS.chest.locked
+                  ? MAP_MILESTONE_DISC_TOKENS.chest.active
+                  : MAP_MILESTONE_DISC_TOKENS.chest.locked
             }`}
             title={node.title}
           >
@@ -152,7 +151,6 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
             )}
           </div>
         ) : node.isTrophy ? (
-          /* 3D Milestone Trophy Node */
           <div
             className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
               node.status === 'completed'
@@ -174,7 +172,6 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
             )}
           </div>
         ) : node.status === 'completed' ? (
-          /* 3D Completed Lesson Node */
           <div className="relative">
             <div
               className={`w-16 h-16 rounded-full hover:brightness-105 active:translate-y-1 text-white font-brand font-black text-2xl active:shadow-none flex items-center justify-center transition-all group-hover:scale-105 ${catTokens.discCompleted}`}
@@ -186,7 +183,6 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
             </div>
           </div>
         ) : node.status === 'active' ? (
-          /* 3D Active Lesson Node with Pulsing Ring */
           <div className="relative">
             <div
               className={`w-18 h-18 rounded-full hover:brightness-105 active:translate-y-1 text-white font-brand font-black text-3xl active:shadow-none flex items-center justify-center transition-all group-hover:scale-105 ${catTokens.discActive}`}
@@ -195,7 +191,6 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
             </div>
           </div>
         ) : (
-          /* 3D Locked Lesson Node */
           <div className="relative">
             <div
               className={`w-16 h-16 rounded-full active:translate-y-1 text-slate-400 font-brand font-black text-2xl active:shadow-none flex items-center justify-center transition-all ${MAP_MILESTONE_DISC_TOKENS.lockedLesson}`}
@@ -210,18 +205,7 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
       </div>
 
       {/* ── COLLISION-FREE PILLS & LABELS ── */}
-      {node.isChest ? (
-        <div
-          className={`mt-2.5 z-20 rounded-full px-2.5 py-0.5 text-center shadow-2xs inline-flex items-center gap-1 ${MAP_MILESTONE_PILL_TOKENS.chest}`}
-        >
-          <Gift weight="fill" className="w-3 h-3 text-amber-700" />
-          <span className="font-brand font-black text-[10px]">
-            {node.status === 'completed'
-              ? `Diklaim (+${node.xpReward} XP)`
-              : `Peti Hadiah (+${node.xpReward} XP)`}
-          </span>
-        </div>
-      ) : node.isTrophy ? (
+      {node.isTrophy ? (
         <div
           className={`mt-2.5 z-20 rounded-full px-2.5 py-0.5 text-center shadow-2xs inline-flex items-center gap-1 ${MAP_MILESTONE_PILL_TOKENS.trophy}`}
         >
@@ -229,11 +213,11 @@ export const RoadmapPathNode: FC<RoadmapPathNodeProps> = ({
           <span className="font-brand font-black text-[10px]">
             {node.status === 'completed'
               ? `Lulus (+${node.xpReward} XP)`
-              : `Ujian Praktik (+${node.xpReward} XP)`}
+              : `Evaluasi Unit (+${node.xpReward} XP)`}
           </span>
         </div>
       ) : node.status !== 'active' ? (
-        <div className="mt-2 z-20 max-w-[170px] bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-xl px-2.5 py-1 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
+        <div className="mt-2 z-20 max-w-[175px] bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-xl px-2.5 py-1 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
           {node.badgeLabel && (
             <span
               className={`text-[9px] font-brand font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mb-0.5 ${catTokens.badgeClass}`}

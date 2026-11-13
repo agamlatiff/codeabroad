@@ -3,7 +3,7 @@ import { LoginPage } from '@/features/auth/pages/LoginPage'
 import { RegisterPage } from '@/features/auth/pages/RegisterPage'
 import { ProtectedRoute, OnboardingRoute, GuestRoute } from '@/features/auth/components/ProtectedRoute'
 import { OnboardingPage } from '@/features/onboarding/pages/OnboardingPage'
-import { RoadmapPage } from '@/features/curriculum/pages/RoadmapPage'
+import { CurriculumPage } from '@/features/curriculum/pages/CurriculumPage'
 import { QuestLogPage } from '@/features/gamification/pages/QuestLogPage'
 import { LearnWorkspacePage } from '@/features/exercise/pages/LearnWorkspacePage'
 import { QuestCompletePage } from '@/features/exercise/pages/QuestCompletePage'
@@ -29,18 +29,20 @@ function App() {
 
           {/* Protected App Routes (Requires completed onboarding) */}
           <Route element={<ProtectedRoute />}>
-            <Route path="/roadmap" element={<RoadmapPage />} />
-            <Route path="/roadmap/:track" element={<RoadmapPage />} />
-            <Route path="/courses" element={<Navigate to="/roadmap" replace />} />
+            <Route path="/curriculum" element={<CurriculumPage />} />
+            <Route path="/curriculum/:languageId" element={<CurriculumPage />} />
+            <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
+            <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
+            <Route path="/courses" element={<Navigate to="/curriculum" replace />} />
             <Route path="/quests" element={<QuestLogPage />} />
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/learn/:id" element={<LearnWorkspacePage />} />
             <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
-            <Route path="/career" element={<Navigate to="/roadmap" replace />} />
+            <Route path="/career" element={<Navigate to="/curriculum" replace />} />
           </Route>
 
           {/* Default Fallback */}
-          <Route path="/" element={<Navigate to="/roadmap" replace />} />
+          <Route path="/" element={<Navigate to="/curriculum" replace />} />
           <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </BrowserRouter>

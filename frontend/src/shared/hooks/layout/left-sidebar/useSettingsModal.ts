@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query'
 import { onboardingService, CAREER_PATHS_QUERY_KEY } from "@/features/onboarding/services/onboardingService"
 import { useUser } from "@/features/user/hooks/useUser"
 import { triggerHaptic } from "@/shared/utils/haptics"
-import { mapCareerPathsToTrackOptions } from "@/features/curriculum/utils/roadmapMapper"
+import { mapCareerPathsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
 import type { User } from "@/features/user/types/user"
 import type { AvatarStyle } from "@/features/user/utils/avatar"
 

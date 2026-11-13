@@ -1,0 +1,55 @@
+import { useCallback, useMemo } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import {
+  languageService,
+  LANGUAGES_QUERY_KEY,
+  LANGUAGE_ENROLLMENTS_QUERY_KEY,
+} from "@/features/curriculum/services/languageService"
+import { triggerHaptic } from "@/shared/utils/haptics"
+import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
+import { mapEnrollmentsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
+
+export interface UseCurriculumSwitcherModalOptions {
+  onSelectTrack: (languageId: string) => void
+  onClose: () => void
+}
+
+/**
+ * 1:1 Headless controller hook for Language / Curriculum Switcher Modal.
+ * Fetches user enrollments and available destination languages via TanStack Query.
+ */
+export const useCurriculumSwitcherModal = ({
+  onSelectTrack,
+  onClose,
+}: UseCurriculumSwitcherModalOptions) => {
+  const { data: enrollments = [] } = useQuery({
+    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    staleTime: 1000 * 60 * 5,
+  })
+
+  const { data: languages = [] } = useQuery({
+    queryKey: LANGUAGES_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.listLanguages({ signal }),
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const trackOptions: CareerTrackOption[] = useMemo(
+    () => mapEnrollmentsToTrackOptions(enrollments, languages),
+    [enrollments, languages]
+  )
+
+  const handleSelect = useCallback(
+    (track: CareerTrackOption) => {
+      triggerHaptic('success')
+      onSelectTrack(track.slug)
+      onClose()
+    },
+    [onSelectTrack, onClose]
+  )
+
+  return {
+    trackOptions,
+    handleSelect,
+  }
+}

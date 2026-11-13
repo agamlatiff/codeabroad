@@ -7,6 +7,7 @@ import {
   SpeakerHigh,
   SpeakerLow,
   SpeakerSimpleSlash,
+  Translate,
 } from '@phosphor-icons/react'
 import {
   GolangLogo,
@@ -72,6 +73,12 @@ export const AppTopBar = ({
               {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-3.5 h-3.5" />}
               {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
               {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
+              {(currentTrackConfig.iconType === 'english' ||
+                currentTrackConfig.iconType === 'korean' ||
+                currentTrackConfig.iconType === 'german' ||
+                currentTrackConfig.iconType === 'mandarin') && (
+                <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
+              )}
             </div>
             <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
               <span className="sm:hidden">{currentTrackConfig.shortTitle}</span>

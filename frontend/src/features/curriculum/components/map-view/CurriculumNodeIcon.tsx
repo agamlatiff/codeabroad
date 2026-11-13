@@ -5,19 +5,23 @@ import {
   Gift,
   Trophy,
   Translate,
-  Code,
+  BookOpen,
+  Play,
 } from '@phosphor-icons/react'
-import type { PathMapNode, MapNodeCategory } from "@/features/curriculum/types/roadmap"
-import { MAP_MODAL_TOKENS } from "@/features/curriculum/tokens/roadmapTokens"
+import type { PathMapNode, MapNodeCategory } from "@/features/curriculum/types/curriculum"
+import { MAP_MODAL_TOKENS } from "@/features/curriculum/tokens/curriculumTokens"
 
 /**
- * Renders the symbol or number inside the 3D map node disc.
+ * Renders the symbol or lesson number inside the 3D map node disc.
  */
 export const renderNodeSymbol = (node: PathMapNode, iconClass: string): ReactNode => {
+  if (node.category === 'language' && node.number !== undefined) {
+    return <span>{node.number}</span>
+  }
   if (node.category === 'language') {
     return <Translate weight="bold" className={iconClass} />
   }
-  return <span>{node.number}</span>
+  return <span>{node.number ?? <BookOpen weight="bold" className={iconClass} />}</span>
 }
 
 /**
@@ -27,18 +31,18 @@ export const renderActionIcon = (category?: MapNodeCategory): ReactNode => {
   if (category === 'language') {
     return <Translate weight="bold" className="w-3.5 h-3.5" />
   }
-  return <Code weight="bold" className="w-3.5 h-3.5" />
+  return <Play weight="fill" className="w-3.5 h-3.5" />
 }
 
-export interface RoadmapModalNodeIconProps {
+export interface CurriculumModalNodeIconProps {
   node: PathMapNode
   modalIconBg: string
 }
 
 /**
- * Renders the leading hero icon inside RoadmapNodeDetailModal.
+ * Renders the leading hero icon inside CurriculumNodeDetailModal.
  */
-export const RoadmapModalNodeIcon: FC<RoadmapModalNodeIconProps> = ({
+export const CurriculumModalNodeIcon: FC<CurriculumModalNodeIconProps> = ({
   node,
   modalIconBg,
 }) => {
@@ -61,7 +65,11 @@ export const RoadmapModalNodeIcon: FC<RoadmapModalNodeIconProps> = ({
   if (node.category === 'language') {
     return (
       <div className={`${MAP_MODAL_TOKENS.iconContainerBase} ${modalIconBg}`}>
-        <Translate weight="bold" className="w-6 h-6" />
+        {node.status === 'completed' ? (
+          <Check weight="bold" className="w-6 h-6 text-emerald-600" />
+        ) : (
+          <Translate weight="bold" className="w-6 h-6" />
+        )}
       </div>
     )
   }
@@ -76,4 +84,3 @@ export const RoadmapModalNodeIcon: FC<RoadmapModalNodeIconProps> = ({
     </div>
   )
 }
-

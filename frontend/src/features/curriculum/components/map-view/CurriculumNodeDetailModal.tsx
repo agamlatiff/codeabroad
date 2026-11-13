@@ -6,26 +6,23 @@ import {
   Translate,
   Lightning,
   Diamond,
+  CheckCircle,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { KodiCharacter, type KodiEmotion } from "@/shared/components/ui/KodiCharacter"
-import type { PathMapNode } from "@/features/curriculum/types/roadmap"
+import type { PathMapNode } from "@/features/curriculum/types/curriculum"
 import {
   resolveMapCategoryTokens,
   MAP_MODAL_TOKENS,
-  MAP_MILESTONE_REWARDS,
-} from "@/features/curriculum/tokens/roadmapTokens"
-import { RoadmapModalNodeIcon } from './RoadmapNodeIcon'
+} from "@/features/curriculum/tokens/curriculumTokens"
+import { CurriculumModalNodeIcon } from './CurriculumNodeIcon'
 
-export interface RoadmapNodeDetailModalProps {
+export interface CurriculumNodeDetailModalProps {
   node: PathMapNode | null
   onClose: () => void
-  onStartQuest?: (route: string) => void
+  onStartLesson?: (route: string) => void
 }
 
-/**
- * Resolves modular Kodi mascot emotion based on node state and milestone type.
- */
 const resolveMascotEmotion = (node: PathMapNode): KodiEmotion => {
   if (node.isChest || node.isTrophy) return 'celebrate'
   if (node.status === 'locked') return 'thinking'
@@ -33,10 +30,10 @@ const resolveMascotEmotion = (node: PathMapNode): KodiEmotion => {
   return 'coding'
 }
 
-export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
+export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
   node,
   onClose,
-  onStartQuest,
+  onStartLesson,
 }) => {
   const navigate = useNavigate()
 
@@ -51,8 +48,8 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
     node.status === 'completed'
       ? catTokens.modalIconBgCompleted
       : node.status === 'active'
-      ? catTokens.modalIconBgActive
-      : catTokens.modalIconBgLocked
+        ? catTokens.modalIconBgActive
+        : catTokens.modalIconBgLocked
 
   const handleAction = () => {
     onClose()
@@ -61,8 +58,8 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
         ? node.route
         : `/learn/${node.id}`
 
-    if (onStartQuest) {
-      onStartQuest(targetRoute)
+    if (onStartLesson) {
+      onStartLesson(targetRoute)
     } else {
       navigate(targetRoute)
     }
@@ -70,11 +67,14 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
 
   return createPortal(
     <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
-      <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-pop relative">
+      <div className="absolute inset-0" onClick={onClose} />
+
+      <div className="relative z-10 bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-pop">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer transition-colors"
+          className="absolute top-3.5 right-3.5 min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer transition-colors"
+          aria-label="Tutup detail lesson"
         >
           <X weight="bold" className="w-4 h-4" />
         </button>
@@ -89,7 +89,7 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          <RoadmapModalNodeIcon node={node} modalIconBg={modalIconBg} />
+          <CurriculumModalNodeIcon node={node} modalIconBg={modalIconBg} />
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -116,7 +116,9 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
         <p className="text-xs text-slate-600 font-medium leading-relaxed">
           {node.status === 'locked'
             ? MAP_MODAL_TOKENS.lockedDescription
-            : node.subtitle}
+            : node.isSkipped
+              ? 'Lesson ini telah dilewati otomatis berdasarkan hasil tes penempatan level Anda.'
+              : node.subtitle}
         </p>
 
         <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-700">
@@ -124,12 +126,17 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
             <Lightning weight="fill" className="w-4 h-4 text-amber-500" />
             <span>+{node.xpReward} XP Reward</span>
           </span>
-          {(node.isChest || (node.gemsReward && node.gemsReward > 0)) && (
+          {node.status === 'completed' && typeof node.score === 'number' && !node.isSkipped ? (
+            <span className="flex items-center gap-1 text-emerald-700 font-brand font-black">
+              <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500" />
+              <span>Skor {node.score}%</span>
+            </span>
+          ) : typeof node.gemsReward === 'number' && node.gemsReward > 0 ? (
             <span className="flex items-center gap-1 text-cyan-700 font-brand font-black">
               <Diamond weight="fill" className="w-3.5 h-3.5 text-cyan-500" />
-              <span>+{node.gemsReward ?? MAP_MILESTONE_REWARDS.chestGems} Permata</span>
+              <span>+{node.gemsReward} Permata</span>
             </span>
-          )}
+          ) : null}
         </div>
 
         {node.status === 'locked' ? (
@@ -148,25 +155,21 @@ export const RoadmapNodeDetailModal: FC<RoadmapNodeDetailModalProps> = ({
               node.status === 'completed'
                 ? 'emerald'
                 : node.isChest || node.isTrophy
-                ? 'amber'
-                : catTokens.activeButtonVariant
+                  ? 'amber'
+                  : catTokens.activeButtonVariant
             }
             size="md"
             fullWidth
             onClick={handleAction}
-            className="text-xs py-2.5 shadow-[0_3px_0_0_#047857]"
+            className="text-xs py-2.5"
           >
-            {node.isChest
+            {node.isTrophy
               ? node.status === 'completed'
-                ? 'PETI SUDAH DIBUKA'
-                : 'KLAIM PETI HADIAH'
-              : node.isTrophy
-              ? node.status === 'completed'
-                ? 'ULANGI TANTANGAN PRAKTIK'
-                : 'IKUTI TANTANGAN PRAKTIK'
+                ? 'ULANGI EVALUASI UNIT'
+                : 'IKUTI EVALUASI UNIT'
               : node.status === 'completed'
-              ? 'KODING ULANG (LATIHAN)'
-              : `MULAI KODING SEKARANG (+${node.xpReward} XP)`}
+                ? 'ULANGI LATIHAN LESSON'
+                : `MULAI BELAJAR (+${node.xpReward} XP)`}
           </Button3D>
         )}
       </div>

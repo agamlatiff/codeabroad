@@ -1,4 +1,4 @@
-import type { SequentialCurriculumUnit } from "@/features/curriculum/types/roadmap"
+import type { SequentialCurriculumUnit } from "@/features/curriculum/types/curriculum"
 
 // â”€â”€ 1. GOLANG BACKEND ENGINEERING CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const GOLANG_CURRICULUM_UNITS: SequentialCurriculumUnit[] = [

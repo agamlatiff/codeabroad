@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { createPortal } from 'react-dom'
+import { useQuery } from '@tanstack/react-query'
 import {
   Check,
   CaretRight,
@@ -8,6 +9,7 @@ import {
   MapTrifold,
   ListChecks,
   RocketLaunch,
+  Translate,
 } from '@phosphor-icons/react'
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import {
@@ -19,107 +21,93 @@ import {
 } from "@/shared/components/ui/BrandLogos"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { triggerHaptic } from "@/shared/utils/haptics"
-import type { CareerTrackOption } from "@/features/curriculum/types/roadmap"
-import { useRoadmapTrackSwitcherModal } from "@/features/curriculum/hooks/useRoadmapTrackSwitcherModal"
+import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
+import { useCurriculumSwitcherModal } from "@/features/curriculum/hooks/useCurriculumSwitcherModal"
+import { onboardingService, CAREER_PATHS_QUERY_KEY } from "@/features/onboarding/services/onboardingService"
+import { useUser } from "@/features/user/hooks/useUser"
+import { mapCareerPathsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
 
 export interface TrackSwitcherModalProps {
   isOpen: boolean
   onClose: () => void
   currentTrack: string
-  onSelectTrack: (trackSlug: string) => void
+  onSelectTrack: (trackIdOrSlug: string) => void
   trackProgressMap?: Record<string, { completed: number; total: number }>
   viewMode?: 'map' | 'syllabus'
   onChangeViewMode?: (mode: 'map' | 'syllabus') => void
+  mode?: 'language' | 'career'
 }
 
-/**
- * TrackSwitcherModal
- * Curriculum selection and learning preference modal.
- * Allows users to choose between Universal Foundations (CS & Web Fundamental)
- * and Active Career Track Specializations (Go, React, DevOps AWS),
- * as well as selecting their preferred Roadmap View Style (RPG Path Map vs Syllabus List).
- */
-export const TrackSwitcherModal = ({
-  isOpen,
+const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
+  switch (type) {
+    case 'fundamental':
+      return <FundamentalLogo className="w-6 h-6" />
+    case 'golang':
+      return <GolangLogo className="w-7 h-5" />
+    case 'frontend':
+      return <ReactLogo className="w-6 h-6" />
+    case 'devops':
+      return <DockerLogo className="w-6 h-6" />
+    case 'nihongo':
+      return <TechNihongoLogo className="w-6 h-6" />
+    case 'english':
+    case 'korean':
+    case 'german':
+    case 'mandarin':
+    default:
+      return <Translate weight="bold" className="w-6 h-6 text-blue-600" />
+  }
+}
+
+interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen'> {
+  trackOptions: CareerTrackOption[]
+}
+
+const TrackSwitcherDialog = ({
   onClose,
   currentTrack,
   onSelectTrack,
   trackProgressMap,
   viewMode = 'map',
   onChangeViewMode,
-}: TrackSwitcherModalProps) => {
-  const { trackOptions } = useRoadmapTrackSwitcherModal({
-    onSelectTrack,
-    onClose,
-  })
-
+  mode = 'career',
+  trackOptions,
+}: TrackSwitcherDialogProps) => {
   const [selectedTrack, setSelectedTrack] = useState<string>(currentTrack)
   const [selectedView, setSelectedView] = useState<'map' | 'syllabus'>(viewMode)
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setSelectedTrack(currentTrack)
-  }, [currentTrack])
-
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    if (viewMode) setSelectedView(viewMode)
-  }, [viewMode])
-
-  if (!isOpen) return null
-  if (typeof document === 'undefined') return null
 
   const handleTrackCardClick = (track: CareerTrackOption) => {
     triggerHaptic('tap')
     setSelectedTrack(track.slug)
   }
 
-  const handleViewModeCardClick = (mode: 'map' | 'syllabus') => {
+  const handleViewModeCardClick = (nextMode: 'map' | 'syllabus') => {
     triggerHaptic('tap')
-    setSelectedView(mode)
+    setSelectedView(nextMode)
+  }
+
+  const applyAndClose = () => {
+    if (selectedTrack && selectedTrack !== currentTrack) {
+      onSelectTrack(selectedTrack)
+    }
+    if (onChangeViewMode && selectedView !== viewMode) {
+      onChangeViewMode(selectedView)
+    }
+    onClose()
   }
 
   const handleConfirm = () => {
     triggerHaptic('success')
-    if (selectedTrack !== currentTrack) {
-      onSelectTrack(selectedTrack)
-    }
-    if (onChangeViewMode && selectedView !== viewMode) {
-      onChangeViewMode(selectedView)
-    }
-    onClose()
+    applyAndClose()
   }
 
-  const handleDismiss = () => {
-    // Apply choices on dismiss/close to keep state synchronized
-    if (selectedTrack !== currentTrack) {
-      onSelectTrack(selectedTrack)
-    }
-    if (onChangeViewMode && selectedView !== viewMode) {
-      onChangeViewMode(selectedView)
-    }
-    onClose()
-  }
-
-  const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
-    switch (type) {
-      case 'fundamental':
-        return <FundamentalLogo className="w-6 h-6" />
-      case 'golang':
-        return <GolangLogo className="w-7 h-5" />
-      case 'frontend':
-        return <ReactLogo className="w-6 h-6" />
-      case 'devops':
-        return <DockerLogo className="w-6 h-6" />
-      case 'nihongo':
-        return <TechNihongoLogo className="w-6 h-6" />
-    }
-  }
+  const foundationOptions = trackOptions.filter((t) => t.group === 'foundation')
+  const specializationOptions = trackOptions.filter((t) => t.group === 'career')
 
   const renderTrackCard = (track: CareerTrackOption) => {
-    const isCurrent = track.slug === currentTrack
-    const isSelected = track.slug === selectedTrack
-    const stats = trackProgressMap?.[track.slug]
+    const isCurrent = track.slug === currentTrack || track.id === currentTrack
+    const isSelected = track.slug === selectedTrack || track.id === selectedTrack
+    const stats = trackProgressMap?.[track.slug] || trackProgressMap?.[track.id]
     const completed = stats?.completed ?? 0
     const total = stats?.total ?? 0
     const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0
@@ -136,7 +124,6 @@ export const TrackSwitcherModal = ({
       >
         <div className="flex items-start justify-between gap-3">
           <div className="flex items-start gap-3 min-w-0 flex-1">
-            {/* Official Brand Logo Frame */}
             <div
               className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
                 isSelected
@@ -172,7 +159,6 @@ export const TrackSwitcherModal = ({
                 {track.subtitle}
               </p>
 
-              {/* Progress Bar (shown when progress stats are available) */}
               {total > 0 && (
                 <div className="mt-2.5 flex items-center gap-3">
                   <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
@@ -184,7 +170,7 @@ export const TrackSwitcherModal = ({
                     />
                   </div>
                   <span className="text-[11px] font-bold text-slate-600 shrink-0">
-                    {completed}/{total} Sesi ({percent}%)
+                    {completed}/{total} Lesson ({percent}%)
                   </span>
                 </div>
               )}
@@ -201,10 +187,8 @@ export const TrackSwitcherModal = ({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none">
-      {/* Backdrop click dismiss */}
-      <div className="absolute inset-0" onClick={handleDismiss} />
+      <div className="absolute inset-0" onClick={applyAndClose} />
 
-      {/* Modal Dialog Card */}
       <div className="relative z-10 w-full max-w-lg bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col animate-pop">
         {/* Header */}
         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
@@ -214,26 +198,31 @@ export const TrackSwitcherModal = ({
             </div>
             <div>
               <h3 className="font-brand font-black text-base text-slate-900">
-                Pilih Kurikulum & Gaya Belajar
+                {mode === 'language'
+                  ? 'Pilih Bahasa & Gaya Belajar'
+                  : 'Pilih Kurikulum & Gaya Belajar'}
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Kenali fondasi teknis, tentukan spesialisasi karier, dan pilih gaya belajar Anda.
+                {mode === 'language'
+                  ? 'Beralih antar bahasa target yang terdaftar dan atur tampilan kurikulum Anda.'
+                  : 'Tentukan spesialisasi karier dan pilih gaya belajar Anda.'}
               </p>
             </div>
           </div>
 
           <button
             type="button"
-            onClick={handleDismiss}
-            className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
+            onClick={applyAndClose}
+            className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
+            aria-label="Tutup pengalih kurikulum"
           >
             <X weight="bold" className="w-4 h-4" />
           </button>
         </div>
 
-        {/* Structured Content: View Style & Curriculum Tracks */}
+        {/* Body */}
         <div className="p-4 sm:p-5 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
-          {/* ── 1. PREFERENSI GAYA BELAJAR (VIEW MODE) ── */}
+          {/* ── 1. VIEW MODE SELECTION ── */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between px-1">
               <span className="text-[10px] font-brand font-black text-amber-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
@@ -246,7 +235,6 @@ export const TrackSwitcherModal = ({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              {/* Option 1: Peta Jalur (RPG Map) */}
               <div
                 onClick={() => handleViewModeCardClick('map')}
                 className={`group relative rounded-2xl p-3.5 border-2 transition-all cursor-pointer flex flex-col justify-between ${
@@ -278,13 +266,12 @@ export const TrackSwitcherModal = ({
                       )}
                     </div>
                     <p className="text-[11px] text-slate-500 font-medium mt-1 leading-snug">
-                      Visual berliku Yamanote Line bersama Kodi & stepping stones.
+                      Peta langkah visual interaktif bersama Kodi & checkpoint setiap unit.
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Option 2: Silabus Modul (Structured List) */}
               <div
                 onClick={() => handleViewModeCardClick('syllabus')}
                 className={`group relative rounded-2xl p-3.5 border-2 transition-all cursor-pointer flex flex-col justify-between ${
@@ -316,7 +303,7 @@ export const TrackSwitcherModal = ({
                       )}
                     </div>
                     <p className="text-[11px] text-slate-500 font-medium mt-1 leading-snug">
-                      Daftar unit & bab teknis akordion terstruktur rapi dan cepat.
+                      Daftar unit & lesson akordion terstruktur rapi dan cepat.
                     </p>
                   </div>
                 </div>
@@ -324,47 +311,71 @@ export const TrackSwitcherModal = ({
             </div>
           </div>
 
-          {/* ── 2. FONDASI UTAMA (UNIVERSAL) ── */}
-          <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-brand font-black text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                <span>🧠</span>
-                <span>FONDASI UTAMA (UNIVERSAL)</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">
-                Wajib untuk semua engineer
-              </span>
+          {/* ── 2. AVAILABLE LANGUAGES OR TRACKS ── */}
+          {mode === 'language' ? (
+            <div className="space-y-2.5 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                  <Translate weight="bold" className="w-3.5 h-3.5" />
+                  <span>BAHASA TARGET ANDA</span>
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Progres per bahasa tersimpan terpisah
+                </span>
+              </div>
+              <div className="space-y-2.5">
+                {trackOptions.length === 0 ? (
+                  <p className="text-xs text-slate-500 text-center py-6">
+                    Memuat daftar bahasa tersedia...
+                  </p>
+                ) : (
+                  trackOptions.map(renderTrackCard)
+                )}
+              </div>
             </div>
-            <div className="space-y-2.5">
-              {trackOptions.filter((t) => t.group === 'foundation').map(renderTrackCard)}
-            </div>
-          </div>
+          ) : (
+            <>
+              {foundationOptions.length > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-brand font-black text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                      <span>🧠</span>
+                      <span>FONDASI UTAMA</span>
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">{foundationOptions.map(renderTrackCard)}</div>
+                </div>
+              )}
 
-          {/* ── 3. SPESIALISASI KARIER ANDA ── */}
-          <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                <span>🎯</span>
-                <span>SPESIALISASI KARIER ANDA</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">
-                Dapat diubah di Pengaturan
-              </span>
-            </div>
-            <div className="space-y-2.5">
-              {trackOptions.filter((t) => t.group === 'career').map(renderTrackCard)}
-            </div>
-          </div>
+              {specializationOptions.length > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                      <span>🎯</span>
+                      <span>SPESIALISASI</span>
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Dapat diubah kapan saja
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">{specializationOptions.map(renderTrackCard)}</div>
+                </div>
+              )}
+            </>
+          )}
         </div>
 
-        {/* Footer: Kodi Tip & Primary Action Button */}
+        {/* Footer */}
         <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2.5 text-xs text-slate-600 font-medium min-w-0 flex-1">
             <div className="shrink-0 flex items-center justify-center">
               <KodiCharacter emotion="coding" size={38} />
             </div>
             <p className="line-clamp-2">
-              <span className="font-bold text-slate-900">Tips Kodi:</span> Kuasai Fondasi CS & Web, lalu selesaikan Spesialisasi Karier Anda!
+              <span className="font-bold text-slate-900">Tips Kodi:</span>{' '}
+              {mode === 'language'
+                ? 'Latihan konsisten 10 menit per hari menjaga streak dan penguasaan bahasa Anda!'
+                : 'Pilih jalur belajar sesuai target pekerjaan global Anda!'}
             </p>
           </div>
           <Button3D
@@ -383,5 +394,53 @@ export const TrackSwitcherModal = ({
   )
 }
 
-// Backwards-compatible alias
-export { TrackSwitcherModal as RoadmapTrackSwitcherModal }
+/**
+ * TrackSwitcherModal
+ * Curriculum & Language Selection Modal.
+ * Supports both backend-driven target languages (`mode="language"`) and legacy career paths (`mode="career"`).
+ */
+export const TrackSwitcherModal = ({
+  isOpen,
+  onClose,
+  currentTrack,
+  onSelectTrack,
+  trackProgressMap,
+  viewMode = 'map',
+  onChangeViewMode,
+  mode = 'career',
+}: TrackSwitcherModalProps) => {
+  const { trackOptions: languageOptions } = useCurriculumSwitcherModal({
+    onSelectTrack,
+    onClose,
+  })
+
+  const { data: careerPaths = [] } = useQuery({
+    queryKey: CAREER_PATHS_QUERY_KEY,
+    queryFn: onboardingService.getCareerPaths,
+    enabled: mode === 'career',
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const { data: userData } = useUser()
+  const careerOptions = mapCareerPathsToTrackOptions(careerPaths, userData.user)
+
+  if (!isOpen || typeof document === 'undefined') {
+    return null
+  }
+
+  const activeOptions = mode === 'language' ? languageOptions : careerOptions
+
+  return (
+    <TrackSwitcherDialog
+      key={`${mode}-${currentTrack}-${viewMode}`}
+      onClose={onClose}
+      currentTrack={currentTrack}
+      onSelectTrack={onSelectTrack}
+      trackProgressMap={trackProgressMap}
+      viewMode={viewMode}
+      onChangeViewMode={onChangeViewMode}
+      mode={mode}
+      trackOptions={activeOptions}
+    />
+  )
+}

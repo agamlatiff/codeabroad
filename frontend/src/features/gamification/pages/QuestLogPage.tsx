@@ -336,7 +336,7 @@ export const QuestLogPage = () => {
     }
   }, [])
 
-  // Multi-track progress map for RoadmapTrackSwitcherModal
+  // Multi-track progress map for TrackSwitcherModal
   const trackProgressMap = useMemo(() => {
     const progressMap: Record<string, { completed: number; total: number }> = {}
     Object.entries(CURRICULUM_TRACKS_MAP).forEach(([trackSlug, trackUnits]) => {
@@ -350,7 +350,7 @@ export const QuestLogPage = () => {
     return progressMap
   }, [completedQuestsSet])
 
-  // Handle track switch from RoadmapTrackSwitcherModal
+  // Handle track switch from TrackSwitcherModal
   const handleSelectTrack = async (trackSlug: string) => {
     triggerHaptic('success')
     setActiveTrack(trackSlug)
@@ -1732,7 +1732,7 @@ export const QuestLogPage = () => {
             <span>Ingin melanjutkan modul kurikulum utama?</span>
             <button
               type="button"
-              onClick={() => navigate('/courses')}
+              onClick={() => navigate('/curriculum')}
               className="text-[#2563EB] hover:underline flex items-center gap-1 font-black cursor-pointer"
             >
               <span>Buka Silabus Kurikulum</span>
