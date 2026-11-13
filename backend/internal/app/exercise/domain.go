@@ -136,7 +136,7 @@ type SubmitExerciseAnswerResponse struct {
 // SubmitSRSReviewRequest defines the SM-2 quality grade (0-5) after reviewing a card
 type SubmitSRSReviewRequest struct {
 	ExerciseID string `json:"exercise_id" binding:"required,uuid"`
-	Quality    int    `json:"quality" binding:"required,min=0,max=5"`
+	Quality    int    `json:"quality" binding:"min=0,max=5"`
 }
 
 // SRSQueueResponse provides the batch of due spaced repetition reviews

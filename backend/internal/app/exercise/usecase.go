@@ -134,7 +134,9 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		UserAnswer:       req.UserAnswer,
 		TimeSpentSeconds: req.TimeSpentSeconds,
 	}
-	_ = u.exerciseRepo.CreateAttempt(ctx, attempt)
+	if err := u.exerciseRepo.CreateAttempt(ctx, attempt); err != nil {
+		return nil, fmt.Errorf("failed to record exercise attempt: %w", err)
+	}
 
 	now := time.Now().UTC()
 	var nextDue *time.Time
@@ -153,8 +155,11 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 			DueDate:         tomorrow,
 			LastReviewedAt:  &now,
 		}
-		_ = u.srsRepo.UpsertReview(ctx, srsCard)
-		nextDue = &tomorrow
+		if srsErr := u.srsRepo.UpsertReview(ctx, srsCard); srsErr != nil {
+			log.Printf("exercise: failed to upsert srs card for user %s exercise %s: %v", userID, req.ExerciseID, srsErr)
+		} else {
+			nextDue = &tomorrow
+		}
 	} else {
 		xpEarned = ex.XPReward
 		if xpEarned <= 0 {
@@ -180,6 +185,8 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 	}
 	if limit <= 0 {
 		limit = 20
+	} else if limit > 100 {
+		limit = 100
 	}
 
 	now := time.Now().UTC()
@@ -312,8 +319,14 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 
 	pillarTotal := make(map[string]int)
 	pillarCorrect := make(map[string]int)
+	seenExerciseIDs := make(map[string]bool, len(req.Answers))
 
 	for _, ans := range req.Answers {
+		if seenExerciseIDs[ans.ExerciseID] {
+			continue
+		}
+		seenExerciseIDs[ans.ExerciseID] = true
+
 		q, exists := questionsMap[ans.ExerciseID]
 		if !exists {
 			continue

@@ -407,5 +407,98 @@ func TestSubmitExam_PassedAdvancesLevelAndInvalidatesCache(t *testing.T) {
 	}
 }
 
+func TestParseCorrectAndAcceptableAnswersJSON(t *testing.T) {
+	if got := exercise.ParseCorrectAnswerJSON([]byte(`{"selected_id":"opt_1"}`)); got != "opt_1" {
+		t.Errorf("expected opt_1 for selected_id, got %q", got)
+	}
+	if got := exercise.ParseCorrectAnswerJSON([]byte(`{"expected_transcript":"みずをのみます"}`)); got != "みずをのみます" {
+		t.Errorf("expected expected_transcript extraction, got %q", got)
+	}
+	if got := exercise.ParseCorrectAnswerJSON([]byte(`["まいあさ", "ごはん", "を", "たべます"]`)); got != "まいあさ ごはん を たべます" {
+		t.Errorf("expected space-joined token answer, got %q", got)
+	}
+	if got := exercise.ParseCorrectAnswerJSON([]byte(`{"selected":"を"}`)); got != "を" {
+		t.Errorf("expected selected particle extraction, got %q", got)
+	}
+
+	nested := exercise.ParseAcceptableAnswersJSON([]byte(`[["毎朝", "ご飯", "を", "食べます"], ["毎朝", "ごはん", "を", "たべます"]]`))
+	if len(nested) != 2 || nested[0] != "毎朝 ご飯 を 食べます" {
+		t.Errorf("expected flattened acceptable answers, got %#v", nested)
+	}
+}
+
+func TestHelper_EvaluateAndDiagnosticTokenFeedback(t *testing.T) {
+	h := exercise.NewHelper()
+
+	if !h.EvaluateAnswer("まいあさ ごはん を たべます", []string{"毎朝 ご飯 を 食べます"}, "まいあさごはんをたべます。") {
+		t.Errorf("expected collapsed Japanese sentence with punctuation to match")
+	}
+
+	rubric := map[string]any{
+		"パン":   "Pan berarti roti, bukan nasi.",
+		"のみます": "Nomimasu berarti minum.",
+	}
+	fb := h.ExtractDiagnosticFeedback(rubric, "まいあさ パン を たべます")
+	if fb == nil || *fb != "Pan berarti roti, bukan nasi." {
+		t.Errorf("expected token distractor diagnostic feedback, got %v", fb)
+	}
+}
+
+func TestSubmitExam_DeduplicatesRepeatedExerciseID(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-2", SkillPillar: "reading", CorrectAnswer: "B"},
+	}
+
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), langRepo, user.NewMockRepository())
+
+	res, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: "lvl-n5",
+		Answers: []exercise.SubmitExerciseAnswerRequest{
+			{ExerciseID: "q-1", UserAnswer: "A"},
+			{ExerciseID: "q-1", UserAnswer: "A"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected submit exam not to fail cleanly, got %v", err)
+	}
+	if res.Attempt.TotalScore != 1 || res.Attempt.ScorePercent != 50 || res.Attempt.IsPassed {
+		t.Errorf("expected deduplicated score 1/2 (50%% fail), got total=%d percent=%d passed=%v", res.Attempt.TotalScore, res.Attempt.ScorePercent, res.Attempt.IsPassed)
+	}
+}
+
+func TestSubmitAnswer_CreateAttemptErrorPropagates(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	eRepo.CreateAttemptErr = errors.New("db write error")
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository())
+
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-1",
+		UserAnswer: "A",
+	}); err == nil {
+		t.Fatalf("expected error when CreateAttempt fails")
+	}
+}
+
+
 
 

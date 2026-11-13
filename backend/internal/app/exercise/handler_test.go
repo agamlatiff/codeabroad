@@ -150,4 +150,23 @@ func TestHTTP_GetExamQuestions_InvalidUUID_Returns400(t *testing.T) {
 	}
 }
 
+func TestHTTP_ProcessReview_AllowsZeroQuality(t *testing.T) {
+	r, _, _, _ := setupExerciseTestRouter()
+
+	body, _ := json.Marshal(exercise.SubmitSRSReviewRequest{
+		ExerciseID: "44444444-4444-4444-4444-444444444444",
+		Quality:    0,
+	})
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/srs/review", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK when submitting SM-2 quality 0, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+
 

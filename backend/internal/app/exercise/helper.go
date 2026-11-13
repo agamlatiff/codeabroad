@@ -2,9 +2,33 @@ package exercise
 
 import (
 	"math"
+	"sort"
 	"strings"
 	"time"
 )
+
+func normalizeComparableAnswer(raw string) (withSpaces string, collapsed string) {
+	cleaned := strings.ToLower(strings.TrimSpace(raw))
+	cleaned = strings.TrimRight(cleaned, "。？！.?!")
+	fields := strings.Fields(cleaned)
+	withSpaces = strings.Join(fields, " ")
+	collapsed = strings.Join(fields, "")
+	return withSpaces, collapsed
+}
+
+func answersMatch(candidate string, userWithSpaces string, userCollapsed string) bool {
+	if userWithSpaces == "" {
+		return false
+	}
+	candWithSpaces, candCollapsed := normalizeComparableAnswer(candidate)
+	if candWithSpaces == "" {
+		return false
+	}
+	if candWithSpaces == userWithSpaces {
+		return true
+	}
+	return candCollapsed != "" && candCollapsed == userCollapsed
+}
 
 // Helper encapsulates cognitive algorithms including SuperMemo SM-2 and answer grading
 type Helper struct{}
@@ -72,25 +96,24 @@ func (h *Helper) CalculateSM2(
 	}
 }
 
-// EvaluateAnswer checks user answer string against correct answer and acceptable synonyms with case-insensitive whitespace trim
+// EvaluateAnswer checks user answer string against correct answer and acceptable synonyms with whitespace/punctuation normalization
 func (h *Helper) EvaluateAnswer(correctAnswer string, acceptableAnswers []string, userAnswer string) bool {
-	normUser := strings.ToLower(strings.TrimSpace(userAnswer))
-	if normUser == "" {
+	userWithSpaces, userCollapsed := normalizeComparableAnswer(userAnswer)
+	if userWithSpaces == "" {
 		return false
 	}
-	normCorrect := strings.ToLower(strings.TrimSpace(correctAnswer))
-	if normCorrect == normUser {
+	if answersMatch(correctAnswer, userWithSpaces, userCollapsed) {
 		return true
 	}
 	for _, acc := range acceptableAnswers {
-		if strings.ToLower(strings.TrimSpace(acc)) == normUser {
+		if answersMatch(acc, userWithSpaces, userCollapsed) {
 			return true
 		}
 	}
 	return false
 }
 
-// ExtractDiagnosticFeedback looks up targeted feedback in the diagnostic rubric for a specific user choice
+// ExtractDiagnosticFeedback looks up targeted feedback in the diagnostic rubric for exact answers or distractor tokens
 func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer string) *string {
 	if len(rubric) == 0 {
 		return nil
@@ -102,9 +125,42 @@ func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer str
 		}
 	}
 	lowerUser := strings.ToLower(trimmed)
-	for k, v := range rubric {
-		if strings.ToLower(strings.TrimSpace(k)) == lowerUser {
-			if str, ok := v.(string); ok && str != "" {
+	keys := make([]string, 0, len(rubric))
+	for k := range rubric {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	for _, k := range keys {
+		lowerKey := strings.ToLower(strings.TrimSpace(k))
+		if lowerKey == "" {
+			continue
+		}
+		if lowerKey == lowerUser {
+			if str, ok := rubric[k].(string); ok && str != "" {
+				return &str
+			}
+		}
+	}
+
+	userFields := strings.Fields(lowerUser)
+	for _, k := range keys {
+		lowerKey := strings.ToLower(strings.TrimSpace(k))
+		if lowerKey == "" {
+			continue
+		}
+		matched := false
+		for _, token := range userFields {
+			if token == lowerKey {
+				matched = true
+				break
+			}
+		}
+		if !matched && strings.Contains(lowerUser, lowerKey) {
+			matched = true
+		}
+		if matched {
+			if str, ok := rubric[k].(string); ok && str != "" {
 				return &str
 			}
 		}

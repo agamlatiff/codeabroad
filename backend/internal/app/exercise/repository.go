@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
@@ -32,17 +33,64 @@ func NewReadinessExamRepository(db *postgres.PostgresDB) ReadinessExamRepository
 	return &PostgresRepository{db: db}
 }
 
-func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, error) {
-	var ex Exercise
-	var contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte
-
-	if err := scanner.Scan(
-		&ex.ID, &ex.LessonID, &ex.GrammarPointID, &ex.SkillPillar, &ex.ExerciseType, &ex.Prompt,
-		&contentJSON, &correctJSON, &acceptableJSON, &diagnosticJSON, &ex.Explanation, &ex.OrderIndex, &ex.CreatedAt,
-	); err != nil {
-		return nil, err
+// ParseCorrectAnswerJSON extracts a canonical comparable answer string from any supported DB JSONB shape.
+func ParseCorrectAnswerJSON(correctJSON []byte) string {
+	if len(correctJSON) == 0 {
+		return ""
 	}
 
+	var strAnswer string
+	if err := json.Unmarshal(correctJSON, &strAnswer); err == nil && strAnswer != "" {
+		return strAnswer
+	}
+
+	var tokenSlice []string
+	if err := json.Unmarshal(correctJSON, &tokenSlice); err == nil && len(tokenSlice) > 0 {
+		return strings.TrimSpace(strings.Join(tokenSlice, " "))
+	}
+
+	var mapAnswer map[string]any
+	if err := json.Unmarshal(correctJSON, &mapAnswer); err == nil {
+		for _, key := range []string{"selected", "selected_id", "expected_transcript", "answer", "correct"} {
+			if val, ok := mapAnswer[key].(string); ok && strings.TrimSpace(val) != "" {
+				return strings.TrimSpace(val)
+			}
+		}
+	}
+
+	return string(correctJSON)
+}
+
+// ParseAcceptableAnswersJSON extracts acceptable answer strings from either []string or [][]string DB JSONB shapes.
+func ParseAcceptableAnswersJSON(acceptableJSON []byte) []string {
+	if len(acceptableJSON) == 0 {
+		return []string{}
+	}
+
+	var flat []string
+	if err := json.Unmarshal(acceptableJSON, &flat); err == nil {
+		if flat == nil {
+			return []string{}
+		}
+		return flat
+	}
+
+	var matrix [][]string
+	if err := json.Unmarshal(acceptableJSON, &matrix); err == nil {
+		flattened := make([]string, 0, len(matrix))
+		for _, tokens := range matrix {
+			joined := strings.TrimSpace(strings.Join(tokens, " "))
+			if joined != "" {
+				flattened = append(flattened, joined)
+			}
+		}
+		return flattened
+	}
+
+	return []string{}
+}
+
+func hydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte) {
 	ex.Type = ex.ExerciseType
 	ex.QuestionText = ex.Prompt
 	ex.XPReward = 10
@@ -53,6 +101,10 @@ func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, e
 			for _, o := range rawOpts {
 				if s, ok := o.(string); ok {
 					ex.Options = append(ex.Options, s)
+				} else if m, ok := o.(map[string]any); ok {
+					if text, ok := m["text"].(string); ok && text != "" {
+						ex.Options = append(ex.Options, text)
+					}
 				}
 			}
 		}
@@ -72,34 +124,8 @@ func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, e
 		ex.Options = []string{}
 	}
 
-	if len(correctJSON) > 0 {
-		var strAnswer string
-		if err := json.Unmarshal(correctJSON, &strAnswer); err == nil && strAnswer != "" {
-			ex.CorrectAnswer = strAnswer
-		} else {
-			var mapAnswer map[string]any
-			if err := json.Unmarshal(correctJSON, &mapAnswer); err == nil {
-				if sel, ok := mapAnswer["selected"].(string); ok {
-					ex.CorrectAnswer = sel
-				} else if ans, ok := mapAnswer["answer"].(string); ok {
-					ex.CorrectAnswer = ans
-				} else if correct, ok := mapAnswer["correct"].(string); ok {
-					ex.CorrectAnswer = correct
-				} else {
-					ex.CorrectAnswer = string(correctJSON)
-				}
-			} else {
-				ex.CorrectAnswer = string(correctJSON)
-			}
-		}
-	}
-
-	if len(acceptableJSON) > 0 {
-		_ = json.Unmarshal(acceptableJSON, &ex.AcceptableAnswers)
-	}
-	if ex.AcceptableAnswers == nil {
-		ex.AcceptableAnswers = []string{}
-	}
+	ex.CorrectAnswer = ParseCorrectAnswerJSON(correctJSON)
+	ex.AcceptableAnswers = ParseAcceptableAnswersJSON(acceptableJSON)
 
 	if len(diagnosticJSON) > 0 {
 		_ = json.Unmarshal(diagnosticJSON, &ex.DiagnosticRubric)
@@ -107,7 +133,20 @@ func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, e
 	if ex.DiagnosticRubric == nil {
 		ex.DiagnosticRubric = make(map[string]any)
 	}
+}
 
+func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, error) {
+	var ex Exercise
+	var contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte
+
+	if err := scanner.Scan(
+		&ex.ID, &ex.LessonID, &ex.GrammarPointID, &ex.SkillPillar, &ex.ExerciseType, &ex.Prompt,
+		&contentJSON, &correctJSON, &acceptableJSON, &diagnosticJSON, &ex.Explanation, &ex.OrderIndex, &ex.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+
+	hydrateExerciseJSONFields(&ex, contentJSON, correctJSON, acceptableJSON, diagnosticJSON)
 	return &ex, nil
 }
 
@@ -325,52 +364,7 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan srs review row: %w", err)
 		}
-		ex.Type = ex.ExerciseType
-		ex.QuestionText = ex.Prompt
-		ex.XPReward = 10
-
-		if len(contentJSON) > 0 {
-			_ = json.Unmarshal(contentJSON, &ex.Content)
-			if rawOpts, ok := ex.Content["options"].([]any); ok {
-				for _, o := range rawOpts {
-					if s, ok := o.(string); ok {
-						ex.Options = append(ex.Options, s)
-					}
-				}
-			}
-		}
-		if ex.Options == nil {
-			ex.Options = []string{}
-		}
-		if len(correctJSON) > 0 {
-			var strAnswer string
-			if err := json.Unmarshal(correctJSON, &strAnswer); err == nil && strAnswer != "" {
-				ex.CorrectAnswer = strAnswer
-			} else {
-				var mapAnswer map[string]any
-				if err := json.Unmarshal(correctJSON, &mapAnswer); err == nil {
-					if sel, ok := mapAnswer["selected"].(string); ok {
-						ex.CorrectAnswer = sel
-					} else {
-						ex.CorrectAnswer = string(correctJSON)
-					}
-				} else {
-					ex.CorrectAnswer = string(correctJSON)
-				}
-			}
-		}
-		if len(acceptableJSON) > 0 {
-			_ = json.Unmarshal(acceptableJSON, &ex.AcceptableAnswers)
-		}
-		if ex.AcceptableAnswers == nil {
-			ex.AcceptableAnswers = []string{}
-		}
-		if len(diagnosticJSON) > 0 {
-			_ = json.Unmarshal(diagnosticJSON, &ex.DiagnosticRubric)
-		}
-		if ex.DiagnosticRubric == nil {
-			ex.DiagnosticRubric = make(map[string]any)
-		}
+		hydrateExerciseJSONFields(&ex, contentJSON, correctJSON, acceptableJSON, diagnosticJSON)
 
 		rev.Repetitions = rev.RepetitionCount
 		rev.DueDate = rev.NextReviewAt
