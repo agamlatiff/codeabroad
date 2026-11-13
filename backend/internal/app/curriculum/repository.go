@@ -179,7 +179,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
 	lessonQuery := `
 		SELECT 
-			l.id, l.unit_id, l.title, l.xp_reward, l.order_index, l.created_at,
+			l.id, l.unit_id, u.level_id, u.unit_type, l.title, l.xp_reward, l.order_index, l.created_at,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -191,7 +191,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	`
 	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
-		&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
+		&l.ID, &l.UnitID, &l.LevelID, &l.UnitType, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
 		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
 	)
 	if err != nil {
@@ -353,11 +353,18 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	dbNow = dbNow.UTC()
 	payload.LastActiveAt = dbNow
 
-	// 1c. Verify curriculum eligibility and active enrollment progression inside TX before mutating state
+	// 1c. Verify curriculum eligibility, active enrollment progression, and sequential prerequisite inside TX before mutating state
 	var isEligible bool
 	eligibilityQuery := `
 		WITH target_lesson AS (
-			SELECT l.id, pl.language_id, pl.order_index AS level_order
+			SELECT
+				l.id,
+				u.id AS unit_id,
+				u.level_id,
+				u.order_index AS unit_order,
+				l.order_index AS lesson_order,
+				pl.language_id,
+				pl.order_index AS level_order
 			FROM lessons l
 			JOIN units u ON l.unit_id = u.id
 			JOIN proficiency_levels pl ON u.level_id = pl.id
@@ -372,6 +379,23 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 			 AND ule.is_active = true
 			JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
 			WHERE tl.level_order <= user_pl.order_index
+			  AND NOT EXISTS (
+				SELECT 1
+				FROM lessons prev_l
+				JOIN units prev_u ON prev_l.unit_id = prev_u.id
+				LEFT JOIN user_lesson_progress prev_ulp
+				  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
+				WHERE prev_u.level_id = tl.level_id
+				  AND prev_u.unit_type = 'curriculum'
+				  AND COALESCE(prev_ulp.is_completed, false) = false
+				  AND (
+					(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
+					OR (
+						prev_u.id = tl.unit_id
+						AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
+					)
+				  )
+			  )
 		)
 	`
 	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&isEligible); err != nil {
@@ -499,7 +523,10 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	`
 	var metadataBytes []byte
 	if payload.Metadata != nil {
-		metadataBytes, _ = json.Marshal(payload.Metadata)
+		metadataBytes, err = json.Marshal(payload.Metadata)
+		if err != nil {
+			return fmt.Errorf("failed to marshal xp metadata: %w", err)
+		}
 	} else {
 		metadataBytes = []byte("{}")
 	}

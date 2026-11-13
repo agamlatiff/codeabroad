@@ -1263,5 +1263,175 @@ func TestGetRoadmap_CorruptCacheSelfHeals(t *testing.T) {
 	}
 }
 
+type canonicalLookupRepo struct {
+	*curriculum.MockRepository
+	unlockedCheckedID string
+}
+
+func (r *canonicalLookupRepo) GetLessonByID(ctx context.Context, id string, userID string) (*curriculum.LessonDetailResponse, error) {
+	if id == "LESSON-1" {
+		return r.MockRepository.GetLessonByID(ctx, "lesson-1", userID)
+	}
+	return r.MockRepository.GetLessonByID(ctx, id, userID)
+}
+
+func (r *canonicalLookupRepo) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	r.unlockedCheckedID = lessonID
+	return r.MockRepository.IsLessonUnlocked(ctx, userID, lessonID)
+}
+
+func TestGetLessonDetail_NormalizesCanonicalLessonID(t *testing.T) {
+	baseRepo := curriculum.NewMockRepository()
+	baseRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	baseRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	baseRepo.GrammarPoints["gp-2"] = &curriculum.GrammarPoint{ID: "gp-2", Title: "Point B", OrderIndex: 2}
+	baseRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{ID: "gp-1", Title: "Point A", OrderIndex: 1}
+	baseRepo.LessonGrammarPoints["lesson-1"] = []string{"gp-2", "gp-1"}
+
+	cRepo := &canonicalLookupRepo{MockRepository: baseRepo}
+	eRepo := exercise.NewMockRepository()
+	canonLessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID: "ex-1", LessonID: &canonLessonID, Prompt: "Q1", CorrectAnswer: "A",
+	}
+
+	uc := curriculum.NewUsecase(cRepo, language.NewMockRepository(), eRepo, user.NewMockRepository(), nil)
+	res, err := uc.GetLessonDetail(context.Background(), "user-1", "LESSON-1")
+	if err != nil {
+		t.Fatalf("expected GetLessonDetail with uppercase ID to succeed, got %v", err)
+	}
+	if cRepo.unlockedCheckedID != "lesson-1" {
+		t.Errorf("expected canonical lesson ID 'lesson-1' passed to IsLessonUnlocked, got %q", cRepo.unlockedCheckedID)
+	}
+	if len(res.Exercises) != 1 || res.Exercises[0].ID != "ex-1" {
+		t.Errorf("expected exercises looked up via canonical lesson ID, got %+v", res.Exercises)
+	}
+	if len(res.GrammarPoints) != 2 || res.GrammarPoints[0].ID != "gp-1" || res.GrammarPoints[1].ID != "gp-2" {
+		t.Errorf("expected grammar points filtered and sorted by order_index ASC, got %+v", res.GrammarPoints)
+	}
+}
+
+func TestRecordLessonCompletionTx_BlocksSkippedPrerequisiteDirectly(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-1", Title: "Lesson 2", XPReward: 15, OrderIndex: 2}
+	cRepo.AttemptSummaries["user-1:lesson-2"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     2,
+		AttemptedExercises: 2,
+		CorrectExercises:   2,
+	}
+
+	err := cRepo.RecordLessonCompletionTx(context.Background(), &curriculum.LessonCompletionPayload{
+		Progress: &curriculum.UserLessonProgress{
+			UserID:      "user-1",
+			LessonID:    "lesson-2",
+			IsCompleted: true,
+			Score:       100,
+			CompletedAt: time.Now(),
+		},
+		XPEarned: 15,
+	})
+	if !errors.Is(err, curriculum.ErrLessonLocked) {
+		t.Fatalf("expected RecordLessonCompletionTx to reject skipped prerequisite with ErrLessonLocked, got %v", err)
+	}
+}
+
+func TestCalculateRoadmapUnlocks_ComputesCountsWithoutPreAggregation(t *testing.T) {
+	helper := curriculum.NewHelper()
+	units := []curriculum.UnitNodeResponse{
+		{
+			ID:       "unit-1",
+			UnitType: "curriculum",
+			Lessons: []curriculum.LessonNodeResponse{
+				{ID: "l-1", IsCompleted: true},
+				{ID: "l-2", IsCompleted: false},
+			},
+		},
+		{
+			ID:       "unit-2",
+			UnitType: "curriculum",
+			Lessons: []curriculum.LessonNodeResponse{
+				{ID: "l-3", IsCompleted: false},
+			},
+		},
+	}
+
+	out, total, completed, _, currentID := helper.CalculateRoadmapUnlocks(units)
+	if total != 3 || completed != 1 {
+		t.Fatalf("expected totals 3/1, got %d/%d", total, completed)
+	}
+	if out[0].TotalLessons != 2 || out[0].CompletedLessons != 1 {
+		t.Errorf("expected unit-1 counts computed dynamically as 2/1, got %d/%d", out[0].TotalLessons, out[0].CompletedLessons)
+	}
+	if out[1].IsUnlocked {
+		t.Errorf("expected unit-2 to remain locked while unit-1 has incomplete lessons even when TotalLessons started at 0")
+	}
+	if currentID == nil || *currentID != "l-2" {
+		t.Errorf("expected currentLessonID 'l-2', got %v", currentID)
+	}
+}
+
+type syncingUserRepo struct {
+	*user.MockRepository
+	postBadgeXP int
+	calls       int
+}
+
+func (r *syncingUserRepo) GetByID(ctx context.Context, id string) (*user.User, error) {
+	u, err := r.MockRepository.GetByID(ctx, id)
+	if err != nil || u == nil {
+		return u, err
+	}
+	r.calls++
+	if r.calls >= 2 && r.postBadgeXP > u.XP {
+		copyU := *u
+		copyU.XP = r.postBadgeXP
+		return &copyU, nil
+	}
+	return u, nil
+}
+
+func TestCompleteLesson_DynamicNextLessonAndAuthoritativeXPSync(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-1", Title: "Lesson 2", XPReward: 20, OrderIndex: 2}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          2,
+		AttemptedExercises:      2,
+		CorrectExercises:        2,
+		FreshAttemptedExercises: 2,
+		FreshCorrectExercises:   2,
+	}
+
+	gRepo := gamification.NewMockRepository()
+	gRepo.Badges["first_step"] = &gamification.BadgeDefinition{ID: "first_step", XPReward: 50}
+	gRepo.Stats["user-1"] = &user.UserGamificationStats{XP: 0, CurrentLevel: 1}
+
+	baseUserRepo := user.NewMockRepository()
+	baseUserRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 120, CurrentLevel: 2},
+	}
+	uRepo := &syncingUserRepo{MockRepository: baseUserRepo, postBadgeXP: 250}
+
+	uc := curriculum.NewUsecase(cRepo, language.NewMockRepository(), exercise.NewMockRepository(), uRepo, gRepo)
+	res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    100,
+	})
+	if err != nil {
+		t.Fatalf("expected CompleteLesson to succeed, got %v", err)
+	}
+	if res.UnlockedNextLessonID == nil || *res.UnlockedNextLessonID != "lesson-2" {
+		t.Errorf("expected dynamic UnlockedNextLessonID 'lesson-2', got %v", res.UnlockedNextLessonID)
+	}
+	if res.Gamification.XP != 250 || res.Gamification.CurrentLevel != 3 {
+		t.Errorf("expected authoritative XP/level synced from userRepo after badge award (250 / lvl 3), got %d / lvl %d", res.Gamification.XP, res.Gamification.CurrentLevel)
+	}
+}
+
+
 
 

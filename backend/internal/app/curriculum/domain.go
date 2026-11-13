@@ -121,6 +121,8 @@ type RoadmapResponse struct {
 type LessonDetailResponse struct {
 	ID            string              `json:"id"`
 	UnitID        string              `json:"unit_id"`
+	LevelID       string              `json:"-"`
+	UnitType      string              `json:"-"`
 	Title         string              `json:"title"`
 	XPReward      int                 `json:"xp_reward"`
 	OrderIndex    int                 `json:"order_index"`

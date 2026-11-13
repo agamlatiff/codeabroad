@@ -35,6 +35,8 @@ func (h *Helper) CalculateRoadmapUnlocks(units []UnitNodeResponse) ([]UnitNodeRe
 
 		units[i].IsUnlocked = allPreviousUnitsCompleted
 		unitActiveTraversed := false
+		unitTotal := len(units[i].Lessons)
+		unitCompleted := 0
 
 		for j := range units[i].Lessons {
 			totalLessons++
@@ -42,6 +44,7 @@ func (h *Helper) CalculateRoadmapUnlocks(units []UnitNodeResponse) ([]UnitNodeRe
 
 			if lesson.IsCompleted {
 				completedLessons++
+				unitCompleted++
 				lesson.IsUnlocked = true
 			} else {
 				if allPreviousUnitsCompleted && !unitActiveTraversed {
@@ -57,7 +60,18 @@ func (h *Helper) CalculateRoadmapUnlocks(units []UnitNodeResponse) ([]UnitNodeRe
 			}
 		}
 
-		if units[i].TotalLessons > 0 && units[i].CompletedLessons < units[i].TotalLessons {
+		if unitTotal > 0 {
+			units[i].TotalLessons = unitTotal
+			units[i].CompletedLessons = unitCompleted
+		}
+
+		effectiveTotal := unitTotal
+		effectiveCompleted := unitCompleted
+		if effectiveTotal == 0 {
+			effectiveTotal = units[i].TotalLessons
+			effectiveCompleted = units[i].CompletedLessons
+		}
+		if effectiveTotal > 0 && effectiveCompleted < effectiveTotal {
 			allPreviousUnitsCompleted = false
 		}
 	}
@@ -97,7 +111,7 @@ func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time,
 	} else {
 		lastInWIB := lastActiveAt.In(loc)
 		lastActiveDay := time.Date(lastInWIB.Year(), lastInWIB.Month(), lastInWIB.Day(), 0, 0, 0, 0, loc)
-		daysDiff := int(today.Sub(lastActiveDay).Hours() / 24)
+		daysDiff := int(today.Sub(lastActiveDay) / (24 * time.Hour))
 
 		if daysDiff == 1 {
 			newStreak = currentStreak + 1

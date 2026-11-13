@@ -416,8 +416,10 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 				})
 				for _, nextLvl := range levels {
 					if nextLvl.OrderIndex > lvl.OrderIndex {
-						if updErr := u.langRepo.UpdateEnrollmentLevel(ctx, enrollment.ID, nextLvl.ID); updErr != nil {
-							log.Printf("exercise: failed to advance enrollment %s to level %s: %v", enrollment.ID, nextLvl.ID, updErr)
+						if updErr := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, enrollment.ID, lvl.ID, nextLvl.ID); updErr != nil {
+							if !errors.Is(updErr, language.ErrEnrollmentLevelChanged) {
+								log.Printf("exercise: failed to advance enrollment %s to level %s: %v", enrollment.ID, nextLvl.ID, updErr)
+							}
 						} else if u.cacheInvalidator != nil {
 							if invErr := u.cacheInvalidator.InvalidateRoadmap(ctx, userID); invErr != nil {
 								log.Printf("exercise: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
