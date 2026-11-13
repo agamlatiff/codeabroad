@@ -1,224 +1,582 @@
-import { useState, useEffect, useCallback } from 'react'
-import { useParams } from 'react-router-dom'
-import { questService } from "@/features/gamification/services/questService"
-import { useQuestStore } from "@/features/gamification/store/questStore"
-import { useAuthStore } from "@/features/auth/store/authStore"
-import { triggerHaptic } from "@/shared/utils/haptics"
-import { audioEngine } from "@/shared/utils/audio"
-import { audioService } from "@/shared/services/audioService"
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import {
-  getWorkspaceQuestFallback,
-  evaluateWorkspaceCode,
-  generateSubmitResponse,
-} from "@/features/exercise/data/workspaceCatalog"
+  CURRICULUM_QUERY_KEY,
+  LESSON_DETAIL_QUERY_KEY,
+  curriculumService,
+} from '@/features/curriculum/services/curriculumService'
+import {
+  LANGUAGE_ENROLLMENTS_QUERY_KEY,
+  languageService,
+} from '@/features/curriculum/services/languageService'
+import { exerciseService } from '@/features/exercise/services/exerciseService'
+import {
+  formatUserAnswerForSubmission,
+  parseExerciseContent,
+  resolveSpeechLocale,
+} from '@/features/exercise/utils/exerciseHelpers'
+import type {
+  LessonCompletionNavigationState,
+  SubmitExerciseAnswerResponse,
+} from '@/features/exercise/types/exercise'
+import { PROFILE_QUERY_KEY } from '@/features/user/services/userService'
+import {
+  DAILY_QUESTS_QUERY_KEY,
+  DAILY_REWARDS_QUERY_KEY,
+} from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
+import { ACTIVITY_LOGS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useStreakSection'
+import { extractApiErrorMessage } from '@/shared/services/api'
+import { audioService } from '@/shared/services/audioService'
+import { audioEngine } from '@/shared/utils/audio'
+import { triggerHaptic } from '@/shared/utils/haptics'
+
+interface BrowserSpeechRecognitionAlternative {
+  transcript: string
+}
+
+interface BrowserSpeechRecognitionResult {
+  [index: number]: BrowserSpeechRecognitionAlternative | undefined
+}
+
+interface BrowserSpeechRecognitionEvent {
+  results: {
+    [index: number]: BrowserSpeechRecognitionResult | undefined
+  }
+}
+
+interface BrowserSpeechRecognition {
+  lang: string
+  interimResults: boolean
+  maxAlternatives: number
+  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null
+  onerror: (() => void) | null
+  onend: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+
+type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition
+
+const getSpeechRecognitionConstructor = (): SpeechRecognitionConstructor | null => {
+  if (typeof window === 'undefined') return null
+  const win = window as unknown as {
+    SpeechRecognition?: SpeechRecognitionConstructor
+    webkitSpeechRecognition?: SpeechRecognitionConstructor
+  }
+  return win.SpeechRecognition ?? win.webkitSpeechRecognition ?? null
+}
 
 export const useLearnWorkspace = () => {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const updateUser = useAuthStore((state) => state.updateUser)
 
-  // Ambient Lo-Fi soundscape for deep focus coding
+  // Session state keyed per route lesson ID cleanly during render on route change
+  const [trackedLessonId, setTrackedLessonId] = useState<string | undefined>(id)
+  const [currentIndex, setCurrentIndex] = useState(0)
+  const [selectedTokenIndices, setSelectedTokenIndices] = useState<number[]>([])
+  const [selectedOptionValue, setSelectedOptionValue] = useState('')
+  const [textInput, setTextInput] = useState('')
+  const [submittedResult, setSubmittedResult] =
+    useState<SubmitExerciseAnswerResponse | null>(null)
+  const [submitError, setSubmitError] = useState<string | null>(null)
+  const [showHint, setShowHint] = useState(false)
+  const [isGrammarDrawerOpen, setIsGrammarDrawerOpen] = useState(false)
+  const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>([])
+  const [totalSessionXp, setTotalSessionXp] = useState(0)
+  const [isSpeakingAudio, setIsSpeakingAudio] = useState(false)
+  const [isRecordingSpeech, setIsRecordingSpeech] = useState(false)
+  const [audioPlaybackError, setAudioPlaybackError] = useState<string | null>(null)
+
+  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
+  const activeHtmlAudioRef = useRef<HTMLAudioElement | null>(null)
+  const questionStartedAtRef = useRef<number>(0)
+
+  if (id !== trackedLessonId) {
+    setTrackedLessonId(id)
+    setCurrentIndex(0)
+    setSelectedTokenIndices([])
+    setSelectedOptionValue('')
+    setTextInput('')
+    setSubmittedResult(null)
+    setSubmitError(null)
+    setShowHint(false)
+    setIsGrammarDrawerOpen(false)
+    setCorrectExerciseIds([])
+    setTotalSessionXp(0)
+    setAudioPlaybackError(null)
+  }
+
+  useEffect(() => {
+    questionStartedAtRef.current = Date.now()
+  }, [id, currentIndex])
+
+  // Ambient soundscape while inside lesson player
   useEffect(() => {
     audioService.playBgm('universal')
     return () => {
       audioService.stopBgm()
+      recognitionRef.current?.stop()
+      if (activeHtmlAudioRef.current) {
+        activeHtmlAudioRef.current.pause()
+        activeHtmlAudioRef.current = null
+      }
     }
   }, [])
-  const {
-    currentQuest,
-    userCode,
-    isRunningTests,
-    testResult,
-    isSubmitting,
-    submitResult,
-    error,
-    setQuest,
-    setUserCode,
-    resetUserCode,
-    setIsRunningTests,
-    setTestResult,
-    setIsSubmitting,
-    setSubmitResult,
-    setError,
-    clearWorkspace,
-  } = useQuestStore()
 
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const user = useAuthStore((s) => s.user)
-  const updateUser = useAuthStore((s) => s.updateUser)
+  const lessonQuery = useQuery({
+    queryKey: [...LESSON_DETAIL_QUERY_KEY, id],
+    queryFn: ({ signal }) => curriculumService.getLessonDetail(id!, { signal }),
+    enabled: Boolean(id),
+    retry: false,
+  })
 
-  useEffect(() => {
-    let ignore = false
-    if (!id) return
+  const enrollmentsQuery = useQuery({
+    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    staleTime: 60_000,
+    retry: false,
+  })
 
-    void (async () => {
-      try {
-        const data = await questService.getQuestDetails(id)
-        if (ignore) return
-        if (data && (!data.acceptance_criteria || data.acceptance_criteria.length === 0 || !data.starter_code)) {
-          const fallback = getWorkspaceQuestFallback(id)
-          setQuest({
-            ...fallback,
-            ...data,
-            acceptance_criteria:
-              data.acceptance_criteria && data.acceptance_criteria.length > 0
-                ? data.acceptance_criteria
-                : fallback.acceptance_criteria,
-            starter_code: data.starter_code || fallback.starter_code,
-            nihongo_notes: data.nihongo_notes || fallback.nihongo_notes,
-          })
-        } else {
-          setQuest(data)
-        }
-      } catch {
-        if (ignore) return
-        const fallback = getWorkspaceQuestFallback(id)
-        setQuest(fallback)
-      } finally {
-        if (!ignore) {
-          setIsLoading(false)
-        }
-      }
-    })()
+  const speechLocale = useMemo(() => {
+    const enrollments = enrollmentsQuery.data ?? []
+    const active = enrollments.find((item) => item.is_active) ?? enrollments[0]
+    return resolveSpeechLocale(active?.language?.code)
+  }, [enrollmentsQuery.data])
 
-    return () => {
-      ignore = true
-    }
-  }, [id, setQuest])
+  const speechRecognitionSupported = useMemo(
+    () => getSpeechRecognitionConstructor() !== null,
+    []
+  )
 
-  // Run automated unit tests in the sandbox
-  const handleRunTests = useCallback(async () => {
-    if (!id || isRunningTests) return
-    setIsRunningTests(true)
-    setError(null)
+  const lesson = lessonQuery.data ?? null
+  const exercises = useMemo(() => lesson?.exercises ?? [], [lesson])
+  const currentExercise = exercises[currentIndex] ?? null
+  const parsedContent = useMemo(
+    () => (currentExercise ? parseExerciseContent(currentExercise) : null),
+    [currentExercise]
+  )
+
+  const selectedTokens = useMemo(() => {
+    if (!parsedContent) return []
+    return selectedTokenIndices
+      .map((tokenIdx) => parsedContent.tokens[tokenIdx])
+      .filter((token): token is string => typeof token === 'string')
+  }, [parsedContent, selectedTokenIndices])
+
+  const currentExerciseType =
+    currentExercise?.exercise_type || currentExercise?.type || ''
+
+  const currentUserAnswer = useMemo(() => {
+    if (!currentExercise) return ''
+    return formatUserAnswerForSubmission(currentExercise, {
+      selectedTokens,
+      selectedOptionValue,
+      textInput,
+    })
+  }, [currentExercise, selectedTokens, selectedOptionValue, textInput])
+
+  const canCheckAnswer =
+    currentExercise !== null &&
+    submittedResult === null &&
+    currentUserAnswer.length > 0
+
+  const isLastExercise =
+    exercises.length > 0 && currentIndex >= exercises.length - 1
+
+  const submitAnswerMutation = useMutation({
+    mutationFn: (payload: {
+      exercise_id: string
+      user_answer: string
+      time_spent_seconds: number
+    }) => exerciseService.submitAnswer(payload),
+  })
+
+  const completeLessonMutation = useMutation({
+    mutationFn: (payload: { lessonId: string; score: number }) =>
+      curriculumService.completeLesson(payload.lessonId, {
+        lesson_id: payload.lessonId,
+        score: payload.score,
+      }),
+  })
+
+  const resetQuestionInputs = useCallback(() => {
+    recognitionRef.current?.stop()
+    setIsRecordingSpeech(false)
+    setSelectedTokenIndices([])
+    setSelectedOptionValue('')
+    setTextInput('')
+    setSubmittedResult(null)
+    setSubmitError(null)
+    setShowHint(false)
+    setAudioPlaybackError(null)
+    questionStartedAtRef.current = Date.now()
+  }, [])
+
+  const handleAddToken = useCallback(
+    (tokenIndex: number) => {
+      if (submittedResult !== null) return
+      triggerHaptic('tap')
+      audioEngine.playPop()
+      setSelectedTokenIndices((prev) =>
+        prev.includes(tokenIndex) ? prev : [...prev, tokenIndex]
+      )
+    },
+    [submittedResult]
+  )
+
+  const handleRemoveToken = useCallback(
+    (selectedPosition: number) => {
+      if (submittedResult !== null) return
+      triggerHaptic('tap')
+      audioEngine.playPop()
+      setSelectedTokenIndices((prev) =>
+        prev.filter((_, idx) => idx !== selectedPosition)
+      )
+    },
+    [submittedResult]
+  )
+
+  const handleClearTokens = useCallback(() => {
+    if (submittedResult !== null) return
+    triggerHaptic('tap')
+    audioEngine.playPop()
+    setSelectedTokenIndices([])
+  }, [submittedResult])
+
+  const handleSelectOption = useCallback(
+    (optionValue: string) => {
+      if (submittedResult !== null) return
+      triggerHaptic('tap')
+      audioEngine.playPop()
+      setSelectedOptionValue(optionValue)
+    },
+    [submittedResult]
+  )
+
+  const handleSetTextInput = useCallback(
+    (value: string) => {
+      if (submittedResult !== null) return
+      setTextInput(value)
+    },
+    [submittedResult]
+  )
+
+  const handleConfirmSpokenSample = useCallback(() => {
+    if (submittedResult !== null || !parsedContent?.displayText) return
+    triggerHaptic('tap')
+    audioEngine.playPop()
+    setTextInput(parsedContent.displayText)
+  }, [parsedContent, submittedResult])
+
+  const handlePlayAudio = useCallback(() => {
+    if (!parsedContent) return
+    const spokenText =
+      parsedContent.audioText ?? parsedContent.displayText ?? currentExercise?.prompt
+
+    setAudioPlaybackError(null)
     triggerHaptic('tap')
 
+    const speakFallback = () => {
+      if (!spokenText) {
+        setIsSpeakingAudio(false)
+        setAudioPlaybackError('Teks audio tidak tersedia untuk latihan ini.')
+        return
+      }
+      audioEngine.speakLanguage(
+        spokenText,
+        speechLocale,
+        () => setIsSpeakingAudio(false),
+        () => {
+          setIsSpeakingAudio(false)
+          setAudioPlaybackError(
+            'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
+          )
+        }
+      )
+    }
+
+    if (activeHtmlAudioRef.current) {
+      activeHtmlAudioRef.current.pause()
+      activeHtmlAudioRef.current = null
+    }
+
+    setIsSpeakingAudio(true)
+
+    if (parsedContent.audioUrl && typeof Audio !== 'undefined') {
+      const audio = new Audio(parsedContent.audioUrl)
+      activeHtmlAudioRef.current = audio
+      audio.onended = () => setIsSpeakingAudio(false)
+      audio.onerror = () => speakFallback()
+      void audio.play().catch(() => speakFallback())
+      return
+    }
+
+    speakFallback()
+  }, [currentExercise, parsedContent, speechLocale])
+
+  const handleToggleRecording = useCallback(() => {
+    if (submittedResult !== null) return
+
+    if (isRecordingSpeech && recognitionRef.current) {
+      recognitionRef.current.stop()
+      setIsRecordingSpeech(false)
+      return
+    }
+
+    const RecognitionCtor = getSpeechRecognitionConstructor()
+    if (!RecognitionCtor) {
+      setAudioPlaybackError(
+        'Pengenalan suara browser tidak tersedia. Ketik atau konfirmasi pelafalan secara manual.'
+      )
+      return
+    }
+
     try {
-      const res = await questService.runTests(id, {
-        code: userCode,
-        filename: currentQuest?.starter_code?.filename,
+      setAudioPlaybackError(null)
+      const recognition = new RecognitionCtor()
+      recognition.lang = speechLocale
+      recognition.interimResults = false
+      recognition.maxAlternatives = 1
+
+      recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
+        const transcript = event.results[0]?.[0]?.transcript?.trim() ?? ''
+        if (transcript) {
+          setTextInput(transcript)
+        }
+      }
+      recognition.onerror = () => {
+        setIsRecordingSpeech(false)
+        setAudioPlaybackError(
+          'Mikrofon gagal menangkap suara. Coba ulangi atau ketik manual.'
+        )
+      }
+      recognition.onend = () => {
+        setIsRecordingSpeech(false)
+      }
+
+      recognitionRef.current = recognition
+      setIsRecordingSpeech(true)
+      recognition.start()
+      triggerHaptic('tap')
+    } catch {
+      setIsRecordingSpeech(false)
+    }
+  }, [isRecordingSpeech, speechLocale, submittedResult])
+
+  const handleCheckAnswer = useCallback(async () => {
+    if (!currentExercise || !canCheckAnswer || submitAnswerMutation.isPending) {
+      return
+    }
+
+    setSubmitError(null)
+    const elapsedSeconds =
+      questionStartedAtRef.current > 0
+        ? Math.max(1, Math.round((Date.now() - questionStartedAtRef.current) / 1000))
+        : 1
+
+    try {
+      const res = await submitAnswerMutation.mutateAsync({
+        exercise_id: currentExercise.id,
+        user_answer: currentUserAnswer,
+        time_spent_seconds: elapsedSeconds,
       })
-      setTestResult(res)
-      if (res.success) {
+
+      setSubmittedResult(res)
+      if (res.is_correct) {
         triggerHaptic('success')
         audioEngine.playSuccess()
+        setCorrectExerciseIds((prev) =>
+          prev.includes(currentExercise.id) ? prev : [...prev, currentExercise.id]
+        )
+        setTotalSessionXp((prev) => prev + res.xp_earned + res.streak_bonus)
       } else {
         triggerHaptic('error')
         audioEngine.playError()
       }
-    } catch {
-      // Heuristic fallback testing engine
-      if (currentQuest) {
-        const fallbackRes = evaluateWorkspaceCode(currentQuest, userCode)
-        setTestResult(fallbackRes)
-        if (fallbackRes.success) {
-          triggerHaptic('success')
-          audioEngine.playSuccess()
-        } else {
-          triggerHaptic('error')
-          audioEngine.playError()
-        }
-      } else {
-        setError('Gagal mengevaluasi kode')
-        triggerHaptic('error')
-        audioEngine.playError()
-      }
-    } finally {
-      setIsRunningTests(false)
+    } catch (err) {
+      setSubmitError(
+        extractApiErrorMessage(err, 'Gagal mengirim jawaban. Coba lagi.')
+      )
+      triggerHaptic('error')
+      audioEngine.playError()
     }
-  }, [id, isRunningTests, userCode, currentQuest, setError, setTestResult, setIsRunningTests])
+  }, [
+    canCheckAnswer,
+    currentExercise,
+    currentUserAnswer,
+    submitAnswerMutation,
+  ])
 
-  // Submit final verified code solution
-  const handleSubmit = async () => {
-    if (!id || isSubmitting) return
-    setIsSubmitting(true)
-    setError(null)
-    triggerHaptic('tap')
+  const handleCompleteLesson = useCallback(async () => {
+    if (!lesson || completeLessonMutation.isPending) return
+
+    setSubmitError(null)
+    const total = Math.max(1, exercises.length)
+    const accuracyPercent = Math.round((correctExerciseIds.length / total) * 100)
 
     try {
-      const res = await questService.submitQuest(id, { code: userCode })
-      setSubmitResult(res)
-
-      // Sync gamification state to global user store immediately
-      updateUser({
-        xp: res.current_xp,
-        current_level: res.current_level,
-        streak: res.streak,
+      const completionResult = await completeLessonMutation.mutateAsync({
+        lessonId: lesson.id,
+        score: accuracyPercent,
       })
 
-      // Persist completed quest for instant multi-page reactivity
-      try {
-        const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
-        if (!stored.includes(id)) {
-          stored.push(id)
-          localStorage.setItem('codeabroad_completed_quests', JSON.stringify(stored))
-          window.dispatchEvent(new Event('codeabroad_quest_completed'))
-        }
-      } catch {
-        // Ignore localStorage error
-      }
-
-      triggerHaptic('stampImpact')
-      audioEngine.playFanfare()
-    } catch {
-      // Fallback submit completion response
-      if (currentQuest) {
-        const fallbackRes = generateSubmitResponse(currentQuest, user)
-        setSubmitResult(fallbackRes)
-
+      if (completionResult.gamification) {
         updateUser({
-          xp: fallbackRes.current_xp,
-          streak: fallbackRes.streak,
+          xp: completionResult.gamification.xp,
+          current_level: completionResult.gamification.current_level,
+          streak: completionResult.gamification.streak,
+          gems: completionResult.gamification.gems,
+          last_active_at: completionResult.gamification.last_active_at,
         })
-
-        try {
-          const stored = JSON.parse(localStorage.getItem('codeabroad_completed_quests') || '[]')
-          if (!stored.includes(id)) {
-            stored.push(id)
-            localStorage.setItem('codeabroad_completed_quests', JSON.stringify(stored))
-            window.dispatchEvent(new Event('codeabroad_quest_completed'))
-          }
-        } catch {
-          // Ignore localStorage error
-        }
-
-        triggerHaptic('stampImpact')
-        audioEngine.playFanfare()
-      } else {
-        setError('Gagal menyelesaikan quest')
-        triggerHaptic('error')
-        audioEngine.playError()
       }
-    } finally {
-      setIsSubmitting(false)
-    }
-  }
 
-  // Keyboard shortcut listener: Ctrl+Enter / Cmd+Enter runs tests
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        e.preventDefault()
-        handleRunTests()
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: LESSON_DETAIL_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
+      ])
+
+      audioEngine.playFanfare()
+      triggerHaptic('success')
+
+      const navState: LessonCompletionNavigationState = {
+        completionResult,
+        lesson,
+        totalExercises: exercises.length,
+        correctCount: correctExerciseIds.length,
+        totalXpEarned:
+          totalSessionXp > 0 ? totalSessionXp : lesson.xp_reward,
+        accuracyPercent,
       }
+
+      navigate(`/learn/${lesson.id}/complete`, {
+        replace: true,
+        state: navState,
+      })
+    } catch (err) {
+      setSubmitError(
+        extractApiErrorMessage(
+          err,
+          'Gagal menyelesaikan pelajaran. Pastikan semua soal telah terjawab.'
+        )
+      )
+      triggerHaptic('error')
+      audioEngine.playError()
+    }
+  }, [
+    completeLessonMutation,
+    correctExerciseIds.length,
+    exercises.length,
+    lesson,
+    navigate,
+    queryClient,
+    totalSessionXp,
+    updateUser,
+  ])
+
+  const handleContinue = useCallback(() => {
+    if (submittedResult === null && exercises.length > 0) return
+
+    if (isLastExercise || exercises.length === 0) {
+      void handleCompleteLesson()
+      return
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleRunTests])
+    audioEngine.playPop()
+    triggerHaptic('tap')
+    setCurrentIndex((prev) => prev + 1)
+    resetQuestionInputs()
+  }, [
+    exercises.length,
+    handleCompleteLesson,
+    isLastExercise,
+    resetQuestionInputs,
+    submittedResult,
+  ])
+
+  const handleToggleHint = useCallback(() => {
+    audioEngine.playPop()
+    triggerHaptic('tap')
+    setShowHint((prev) => !prev)
+  }, [])
+
+  const handleExitToCurriculum = useCallback(() => {
+    audioEngine.playPop()
+    navigate('/curriculum')
+  }, [navigate])
+
+  const progressPercent = useMemo(() => {
+    if (exercises.length === 0) return 0
+    const completedSteps = currentIndex + (submittedResult !== null ? 1 : 0)
+    return Math.min(100, Math.round((completedSteps / exercises.length) * 100))
+  }, [currentIndex, exercises.length, submittedResult])
+
+  const resolvedCorrectAnswer = useMemo(() => {
+    const raw = submittedResult?.correct_answer ?? ''
+    if (!raw || !parsedContent) return raw
+    const matchedOption = parsedContent.choiceOptions.find((opt) => opt.id === raw)
+    return matchedOption ? matchedOption.text : raw
+  }, [parsedContent, submittedResult?.correct_answer])
+
+  const lessonErrorMessage = lessonQuery.isError
+    ? extractApiErrorMessage(
+        lessonQuery.error,
+        'Gagal memuat detail pelajaran dari server.'
+      )
+    : null
 
   return {
-    quest: currentQuest,
-    userCode,
-    setUserCode,
-    resetUserCode,
-    isRunningTests,
-    testResult,
-    isSubmitting,
-    submitResult,
-    dismissModal: () => setSubmitResult(null),
-    isLoading,
-    error,
-    handleRunTests,
-    handleSubmit,
-    clearWorkspace,
+    lessonId: id,
+    lesson,
+    exercises,
+    currentExercise,
+    currentExerciseType,
+    parsedContent,
+    currentIndex,
+    progressPercent,
+    resolvedCorrectAnswer,
+    selectedTokenIndices,
+    selectedTokens,
+    selectedOptionValue,
+    textInput,
+    submittedResult,
+    submitError,
+    showHint,
+    isGrammarDrawerOpen,
+    setIsGrammarDrawerOpen,
+    isSpeakingAudio,
+    isRecordingSpeech,
+    speechRecognitionSupported,
+    audioPlaybackError,
+    totalSessionXp,
+    correctCount: correctExerciseIds.length,
+    canCheckAnswer,
+    isLastExercise,
+    isLoading: lessonQuery.isLoading,
+    isError: lessonQuery.isError,
+    lessonErrorMessage,
+    isChecking: submitAnswerMutation.isPending,
+    isCompleting: completeLessonMutation.isPending,
+    refetchLesson: lessonQuery.refetch,
+    handleAddToken,
+    handleRemoveToken,
+    handleClearTokens,
+    handleSelectOption,
+    handleSetTextInput,
+    handleConfirmSpokenSample,
+    handlePlayAudio,
+    handleToggleRecording,
+    handleCheckAnswer,
+    handleContinue,
+    handleToggleHint,
+    handleExitToCurriculum,
   }
 }
