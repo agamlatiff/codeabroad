@@ -216,7 +216,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
           >
             {node.isTrophy
               ? node.status === 'completed'
-                ? 'ULANGI EVALUASI UNIT'
+                ? 'LIHAT STATUS EVALUASI'
                 : 'IKUTI EVALUASI UNIT'
               : node.status === 'completed'
                 ? 'ULANGI LATIHAN LESSON'
