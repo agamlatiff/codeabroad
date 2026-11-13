@@ -128,6 +128,9 @@ export const CurriculumPage = () => {
             <CurriculumMapView
               curriculum={curriculum.data}
               isLoading={status.isLoading}
+              isViewingInactiveTrack={curriculum.isViewingInactiveTrack}
+              isActivatingTrack={status.isSwitchingLanguage}
+              onActivateTrack={actions.handleActivateCurrentTrack}
               onStartLesson={actions.handleStartLesson}
             />
           ) : (
@@ -192,3 +195,4 @@ export const CurriculumPage = () => {
     </div>
   )
 }
+

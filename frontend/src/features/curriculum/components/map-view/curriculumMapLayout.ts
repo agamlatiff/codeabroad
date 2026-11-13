@@ -92,3 +92,4 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
     isUnitActive,
   }
 }
+

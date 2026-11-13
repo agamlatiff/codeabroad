@@ -54,3 +54,4 @@ export const CurriculumAccordionView: FC<CurriculumAccordionViewProps> = ({
     </div>
   )
 }
+

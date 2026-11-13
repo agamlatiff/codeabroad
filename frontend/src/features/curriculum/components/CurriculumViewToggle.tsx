@@ -168,3 +168,4 @@ export const CurriculumViewToggle: FC<CurriculumViewToggleProps> = ({
     </div>
   )
 }
+

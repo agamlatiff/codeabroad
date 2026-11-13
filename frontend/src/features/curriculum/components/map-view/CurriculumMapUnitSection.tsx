@@ -34,6 +34,12 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
     isUnitActive,
   } = useMemo(() => assembleUnitNodes(unit), [unit])
 
+  const dashConfig = isUnitCompleted
+    ? MAP_TRACK_TOKENS.dash.completed
+    : isUnitActive
+      ? MAP_TRACK_TOKENS.dash.active
+      : MAP_TRACK_TOKENS.dash.locked
+
   return (
     <section className="space-y-4">
       {/* ── UNIT BANNER HEADER ── */}
@@ -135,24 +141,14 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
                 strokeLinecap="round"
               />
 
-              {(() => {
-                const dashConfig = isUnitCompleted
-                  ? MAP_TRACK_TOKENS.dash.completed
-                  : isUnitActive
-                    ? MAP_TRACK_TOKENS.dash.active
-                    : MAP_TRACK_TOKENS.dash.locked
-
-                return (
-                  <path
-                    d={svgPathString}
-                    stroke={dashConfig.stroke}
-                    strokeWidth={MAP_TRACK_TOKENS.dash.strokeWidth}
-                    strokeDasharray={MAP_TRACK_TOKENS.dash.dashArray}
-                    strokeLinecap="round"
-                    opacity={dashConfig.opacity}
-                  />
-                )
-              })()}
+              <path
+                d={svgPathString}
+                stroke={dashConfig.stroke}
+                strokeWidth={MAP_TRACK_TOKENS.dash.strokeWidth}
+                strokeDasharray={MAP_TRACK_TOKENS.dash.dashArray}
+                strokeLinecap="round"
+                opacity={dashConfig.opacity}
+              />
             </svg>
 
             {/* ── STEPPING STONE NODES ── */}
@@ -171,3 +167,4 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
     </section>
   )
 }
+

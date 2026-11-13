@@ -49,3 +49,4 @@ export const useCurriculumMapView = ({ curriculum = null }: UseCurriculumMapView
     handleCloseModal,
   }
 }
+

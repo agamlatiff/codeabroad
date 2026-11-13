@@ -19,3 +19,4 @@ export const useCurriculumStore = create<CurriculumState>()(
     }
   )
 )
+

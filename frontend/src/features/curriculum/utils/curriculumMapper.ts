@@ -131,6 +131,7 @@ export const mapEnrollmentsToTrackOptions = (
       badgeLabel: enrollment.is_active ? 'Aktif' : 'Terdaftar',
       badgeVariant: enrollment.is_active ? 'active' : 'available',
       isActive: enrollment.is_active,
+      isEnrolled: true,
       group: 'career',
     })
   }
@@ -146,9 +147,10 @@ export const mapEnrollmentsToTrackOptions = (
       subtitle: `Kurikulum Bahasa ${lang.name}`,
       category: 'language',
       iconType: resolveTrackIconType(lang.code),
-      badgeLabel: 'Tersedia',
+      badgeLabel: 'Belum Terdaftar',
       badgeVariant: 'available',
       isActive: false,
+      isEnrolled: false,
       group: 'foundation',
     })
   }
@@ -248,3 +250,4 @@ export const mapCareerPathsToTrackOptions = (
 
   return options
 }
+

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
@@ -10,6 +10,7 @@ import {
   ListChecks,
   RocketLaunch,
   Translate,
+  LockSimple,
 } from '@phosphor-icons/react'
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import {
@@ -76,7 +77,18 @@ const TrackSwitcherDialog = ({
   const [selectedTrack, setSelectedTrack] = useState<string>(currentTrack)
   const [selectedView, setSelectedView] = useState<'map' | 'syllabus'>(viewMode)
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
   const handleTrackCardClick = (track: CareerTrackOption) => {
+    if (track.isEnrolled === false) return
     triggerHaptic('tap')
     setSelectedTrack(track.slug)
   }
@@ -86,7 +98,8 @@ const TrackSwitcherDialog = ({
     setSelectedView(nextMode)
   }
 
-  const applyAndClose = () => {
+  const handleConfirm = () => {
+    triggerHaptic('success')
     if (selectedTrack && selectedTrack !== currentTrack) {
       onSelectTrack(selectedTrack)
     }
@@ -96,17 +109,15 @@ const TrackSwitcherDialog = ({
     onClose()
   }
 
-  const handleConfirm = () => {
-    triggerHaptic('success')
-    applyAndClose()
-  }
-
+  const enrolledLanguages = trackOptions.filter((t) => t.isEnrolled !== false)
+  const catalogLanguages = trackOptions.filter((t) => t.isEnrolled === false)
   const foundationOptions = trackOptions.filter((t) => t.group === 'foundation')
   const specializationOptions = trackOptions.filter((t) => t.group === 'career')
 
   const renderTrackCard = (track: CareerTrackOption) => {
+    const isUnenrolled = track.isEnrolled === false
     const isCurrent = track.slug === currentTrack || track.id === currentTrack
-    const isSelected = track.slug === selectedTrack || track.id === selectedTrack
+    const isSelected = !isUnenrolled && (track.slug === selectedTrack || track.id === selectedTrack)
     const stats = trackProgressMap?.[track.slug] || trackProgressMap?.[track.id]
     const completed = stats?.completed ?? 0
     const total = stats?.total ?? 0
@@ -115,11 +126,22 @@ const TrackSwitcherDialog = ({
     return (
       <div
         key={track.id}
+        role={isUnenrolled ? undefined : 'button'}
+        tabIndex={isUnenrolled ? undefined : 0}
+        aria-disabled={isUnenrolled}
         onClick={() => handleTrackCardClick(track)}
-        className={`group relative rounded-2xl p-4 border-2 transition-all cursor-pointer ${
-          isSelected
-            ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-2 ring-blue-400/30'
-            : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
+        onKeyDown={(e) => {
+          if (!isUnenrolled && (e.key === 'Enter' || e.key === ' ')) {
+            e.preventDefault()
+            handleTrackCardClick(track)
+          }
+        }}
+        className={`group relative rounded-2xl p-4 border-2 transition-all ${
+          isUnenrolled
+            ? 'bg-slate-50/70 border-slate-200/80 opacity-65 cursor-not-allowed'
+            : isSelected
+              ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-2 ring-blue-400/30 cursor-pointer'
+              : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 cursor-pointer'
         }`}
       >
         <div className="flex items-start justify-between gap-3">
@@ -149,8 +171,9 @@ const TrackSwitcherDialog = ({
                     {track.badgeLabel}
                   </span>
                 ) : track.badgeVariant === 'available' ? (
-                  <span className="bg-slate-100 text-slate-700 font-brand font-bold text-[10px] px-2 py-0.5 rounded-full">
-                    {track.badgeLabel}
+                  <span className="bg-slate-100 text-slate-700 font-brand font-bold text-[10px] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
+                    {isUnenrolled && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
+                    <span>{track.badgeLabel}</span>
                   </span>
                 ) : null}
               </div>
@@ -177,9 +200,11 @@ const TrackSwitcherDialog = ({
             </div>
           </div>
 
-          <div className="shrink-0 pt-1 text-slate-400 group-hover:text-slate-700 transition-colors">
-            <CaretRight weight="bold" className="w-4 h-4" />
-          </div>
+          {!isUnenrolled && (
+            <div className="shrink-0 pt-1 text-slate-400 group-hover:text-slate-700 transition-colors">
+              <CaretRight weight="bold" className="w-4 h-4" />
+            </div>
+          )}
         </div>
       </div>
     )
@@ -187,7 +212,7 @@ const TrackSwitcherDialog = ({
 
   return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none">
-      <div className="absolute inset-0" onClick={applyAndClose} />
+      <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative z-10 w-full max-w-lg bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col animate-pop">
         {/* Header */}
@@ -212,7 +237,7 @@ const TrackSwitcherDialog = ({
 
           <button
             type="button"
-            onClick={applyAndClose}
+            onClick={onClose}
             className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
             aria-label="Tutup pengalih kurikulum"
           >
@@ -313,26 +338,42 @@ const TrackSwitcherDialog = ({
 
           {/* ── 2. AVAILABLE LANGUAGES OR TRACKS ── */}
           {mode === 'language' ? (
-            <div className="space-y-2.5 pt-2 border-t border-slate-100">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                  <Translate weight="bold" className="w-3.5 h-3.5" />
-                  <span>BAHASA TARGET ANDA</span>
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  Progres per bahasa tersimpan terpisah
-                </span>
+            <>
+              <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                <div className="flex items-center justify-between px-1">
+                  <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                    <Translate weight="bold" className="w-3.5 h-3.5" />
+                    <span>BAHASA TERDAFTAR ANDA</span>
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium">
+                    Progres per bahasa tersimpan terpisah
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {enrolledLanguages.length === 0 ? (
+                    <p className="text-xs text-slate-500 text-center py-6">
+                      Memuat daftar bahasa terdaftar...
+                    </p>
+                  ) : (
+                    enrolledLanguages.map(renderTrackCard)
+                  )}
+                </div>
               </div>
-              <div className="space-y-2.5">
-                {trackOptions.length === 0 ? (
-                  <p className="text-xs text-slate-500 text-center py-6">
-                    Memuat daftar bahasa tersedia...
-                  </p>
-                ) : (
-                  trackOptions.map(renderTrackCard)
-                )}
-              </div>
-            </div>
+
+              {catalogLanguages.length > 0 && (
+                <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-[10px] font-brand font-black text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                      KATALOG BAHASA LAINNYA
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-medium">
+                      Pendaftaran bahasa tambahan segera hadir
+                    </span>
+                  </div>
+                  <div className="space-y-2.5">{catalogLanguages.map(renderTrackCard)}</div>
+                </div>
+              )}
+            </>
           ) : (
             <>
               {foundationOptions.length > 0 && (
@@ -410,6 +451,7 @@ export const TrackSwitcherModal = ({
   mode = 'career',
 }: TrackSwitcherModalProps) => {
   const { trackOptions: languageOptions } = useCurriculumSwitcherModal({
+    enabled: isOpen && mode === 'language',
     onSelectTrack,
     onClose,
   })
@@ -417,7 +459,7 @@ export const TrackSwitcherModal = ({
   const { data: careerPaths = [] } = useQuery({
     queryKey: CAREER_PATHS_QUERY_KEY,
     queryFn: onboardingService.getCareerPaths,
-    enabled: mode === 'career',
+    enabled: isOpen && mode === 'career',
     staleTime: 1000 * 60 * 10,
   })
 

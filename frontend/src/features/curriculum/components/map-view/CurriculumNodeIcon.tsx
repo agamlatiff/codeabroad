@@ -84,3 +84,4 @@ export const CurriculumModalNodeIcon: FC<CurriculumModalNodeIconProps> = ({
     </div>
   )
 }
+

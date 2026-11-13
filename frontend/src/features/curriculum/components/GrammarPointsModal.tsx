@@ -148,3 +148,4 @@ export const GrammarPointsModal: FC<GrammarPointsModalProps> = ({
     document.body
   )
 }
+

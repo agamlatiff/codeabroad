@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import type { FC, MouseEvent } from 'react'
+import type { FC, KeyboardEvent, MouseEvent } from 'react'
 import {
   Check,
   LockSimple,
@@ -52,14 +52,25 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
     }
   }
 
+  const handleKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onClick(node)
+    }
+  }
+
   return (
     <div
-      className="absolute -translate-x-1/2 flex flex-col items-center group cursor-pointer"
+      role="button"
+      tabIndex={0}
+      aria-label={`${node.title} (${node.status === 'completed' ? 'selesai' : node.status === 'active' ? 'aktif' : 'terkunci'})`}
+      className="absolute -translate-x-1/2 flex flex-col items-center group cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/50 rounded-2xl"
       style={{
         left: `${leftPercent}%`,
         top: `${topPx}px`,
       }}
       onClick={() => onClick(node)}
+      onKeyDown={handleKeyDown}
       onMouseEnter={() => playSound('node_hover')}
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
@@ -245,3 +256,4 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
     </div>
   )
 }
+

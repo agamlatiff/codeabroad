@@ -241,6 +241,7 @@ export interface CareerTrackOption {
   badgeLabel: string
   badgeVariant: 'active' | 'available' | 'featured'
   isActive: boolean
+  isEnrolled?: boolean
   group?: 'foundation' | 'career'
 }
 
@@ -292,3 +293,4 @@ export interface PathMapNode {
   isChest?: boolean
   isTrophy?: boolean
 }
+

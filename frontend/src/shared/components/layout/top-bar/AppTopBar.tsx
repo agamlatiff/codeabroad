@@ -65,7 +65,7 @@ export const AppTopBar = ({
               onOpenCourseSwitcher()
             }}
             className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink min-w-0"
-            title="Peminatan karier saat ini. Klik untuk beralih jalur belajar."
+            title="Bahasa dan jalur belajar saat ini. Klik untuk beralih."
           >
             <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
               {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-3.5 h-3.5" />}
@@ -127,7 +127,7 @@ export const AppTopBar = ({
             {/* XP Star Chip */}
             <div
               className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all"
-              title={`Total Pengalaman Koding: ${userXp} XP`}
+              title={`Total Pengalaman Belajar: ${userXp} XP`}
             >
               <Star weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
               <span>{userXp}</span>

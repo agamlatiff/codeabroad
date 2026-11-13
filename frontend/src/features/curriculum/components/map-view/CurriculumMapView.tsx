@@ -9,6 +9,9 @@ export interface CurriculumMapViewProps {
   className?: string
   curriculum?: CurriculumResponse | null
   isLoading?: boolean
+  isViewingInactiveTrack?: boolean
+  isActivatingTrack?: boolean
+  onActivateTrack?: () => void
   onStartLesson?: (route: string) => void
 }
 
@@ -20,6 +23,9 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
   className = '',
   curriculum = null,
   isLoading = false,
+  isViewingInactiveTrack = false,
+  isActivatingTrack = false,
+  onActivateTrack,
   onStartLesson,
 }) => {
   const {
@@ -49,6 +55,9 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
         node={activeModalNode}
         onClose={handleCloseModal}
         onStartLesson={onStartLesson}
+        isViewingInactiveTrack={isViewingInactiveTrack}
+        isActivatingTrack={isActivatingTrack}
+        onActivateTrack={onActivateTrack}
       />
 
       {/* ── UNIFIED ADVENTURE GAME STAGE ── */}

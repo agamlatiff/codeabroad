@@ -27,6 +27,28 @@ export const unwrapApiResponse = <T>(
     throw new Error(response.data.error || fallbackError)
 }
 
+/**
+ * Extracts a human-readable backend error message from AxiosError or native Error instances.
+ */
+export const extractApiErrorMessage = (
+    error: unknown,
+    fallback: string = 'Terjadi kesalahan pada server'
+): string => {
+    if (axios.isAxiosError(error)) {
+        const data = error.response?.data as { error?: unknown; message?: unknown } | undefined
+        if (typeof data?.error === 'string' && data.error.trim().length > 0) {
+            return data.error
+        }
+        if (typeof data?.message === 'string' && data.message.trim().length > 0) {
+            return data.message
+        }
+    }
+    if (error instanceof Error && error.message.trim().length > 0) {
+        return error.message
+    }
+    return fallback
+}
+
 export const api = axios.create({
     baseURL: API_BASE_URL,
     timeout: 15000, // 15 seconds request timeout

@@ -1,6 +1,7 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { extractApiErrorMessage } from "@/shared/services/api"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { useCurriculumStore } from "@/features/curriculum/store/curriculumStore"
 import {
@@ -124,7 +125,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     currentEnrollment && !currentEnrollment.is_active
   )
 
-  const error = queryError instanceof Error ? queryError.message : null
+  const error = queryError ? extractApiErrorMessage(queryError, 'Gagal memuat kurikulum belajar.') : null
 
   // ── 2b. SOUNDSCAPE & CULTURAL BGM SYNCHRONIZATION ──
   useEffect(() => {
@@ -194,8 +195,9 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     staleTime: 1000 * 60 * 10,
   })
 
-  const grammarError =
-    grammarQueryError instanceof Error ? grammarQueryError.message : null
+  const grammarError = grammarQueryError
+    ? extractApiErrorMessage(grammarQueryError, 'Gagal memuat daftar grammar level.')
+    : null
 
   const openGrammarModal = useCallback(() => {
     triggerHaptic('tap')
@@ -257,10 +259,10 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         ])
         navigate('/curriculum', { replace: true })
       } catch (err: unknown) {
-        const msg =
-          err instanceof Error
-            ? err.message
-            : 'Gagal mengganti bahasa aktif. Pastikan bahasa sudah terdaftar.'
+        const msg = extractApiErrorMessage(
+          err,
+          'Gagal mengganti bahasa aktif. Pastikan bahasa sudah terdaftar.'
+        )
         showNotification(msg, true)
       } finally {
         setIsSwitchingLanguage(false)
@@ -385,3 +387,4 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     },
   }
 }
+

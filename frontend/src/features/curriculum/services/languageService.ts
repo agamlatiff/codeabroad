@@ -69,3 +69,4 @@ export const languageService = {
     return unwrapApiResponse(response, 'Gagal mengganti bahasa belajar aktif.')
   },
 }
+

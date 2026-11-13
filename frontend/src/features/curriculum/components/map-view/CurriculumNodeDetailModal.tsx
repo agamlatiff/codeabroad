@@ -1,12 +1,13 @@
+import { useEffect, type FC } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import type { FC } from 'react'
 import {
   X,
   Translate,
   Lightning,
   Diamond,
   CheckCircle,
+  Sparkle,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { KodiCharacter, type KodiEmotion } from "@/shared/components/ui/KodiCharacter"
@@ -21,6 +22,9 @@ export interface CurriculumNodeDetailModalProps {
   node: PathMapNode | null
   onClose: () => void
   onStartLesson?: (route: string) => void
+  isViewingInactiveTrack?: boolean
+  isActivatingTrack?: boolean
+  onActivateTrack?: () => void
 }
 
 const resolveMascotEmotion = (node: PathMapNode): KodiEmotion => {
@@ -34,8 +38,22 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
   node,
   onClose,
   onStartLesson,
+  isViewingInactiveTrack = false,
+  isActivatingTrack = false,
+  onActivateTrack,
 }) => {
   const navigate = useNavigate()
+
+  useEffect(() => {
+    if (!node) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [node, onClose])
 
   if (!node || typeof document === 'undefined') {
     return null
@@ -43,6 +61,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
 
   const catTokens = resolveMapCategoryTokens(node.category)
   const mascotEmotion = resolveMascotEmotion(node)
+  const isLockedPreview = node.status === 'locked' && isViewingInactiveTrack
 
   const modalIconBg =
     node.status === 'completed'
@@ -63,6 +82,11 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
     } else {
       navigate(targetRoute)
     }
+  }
+
+  const handleActivateAndClose = () => {
+    onClose()
+    onActivateTrack?.()
   }
 
   return createPortal(
@@ -94,7 +118,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400">
-                {MAP_MODAL_TOKENS.statusBadge[node.status]}
+                {isLockedPreview ? 'Mode Pratinjau' : MAP_MODAL_TOKENS.statusBadge[node.status]}
               </span>
               {node.badgeLabel && (
                 <span
@@ -114,11 +138,13 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
         </div>
 
         <p className="text-xs text-slate-600 font-medium leading-relaxed">
-          {node.status === 'locked'
-            ? MAP_MODAL_TOKENS.lockedDescription
-            : node.isSkipped
-              ? 'Lesson ini telah dilewati otomatis berdasarkan hasil tes penempatan level Anda.'
-              : node.subtitle}
+          {isLockedPreview
+            ? 'Anda sedang mempratinjau kurikulum bahasa non-aktif. Aktifkan bahasa ini terlebih dahulu untuk membuka akses dan mulai belajar.'
+            : node.status === 'locked'
+              ? MAP_MODAL_TOKENS.lockedDescription
+              : node.isSkipped
+                ? 'Lesson ini telah dilewati otomatis berdasarkan hasil tes penempatan level Anda.'
+                : node.subtitle}
         </p>
 
         <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-700">
@@ -139,7 +165,32 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
           ) : null}
         </div>
 
-        {node.status === 'locked' ? (
+        {isLockedPreview ? (
+          <div className="space-y-2">
+            {onActivateTrack && (
+              <Button3D
+                variant="amber"
+                size="md"
+                fullWidth
+                icon={<Sparkle weight="fill" className="w-4 h-4" />}
+                onClick={handleActivateAndClose}
+                disabled={isActivatingTrack}
+                className="text-xs py-2.5"
+              >
+                {isActivatingTrack ? 'MENGAKTIFKAN BAHASA...' : 'AKTIFKAN BAHASA INI'}
+              </Button3D>
+            )}
+            <Button3D
+              variant="white"
+              size="md"
+              fullWidth
+              onClick={onClose}
+              className="text-xs py-2"
+            >
+              TUTUP PRATINJAU
+            </Button3D>
+          </div>
+        ) : node.status === 'locked' ? (
           <Button3D
             variant="white"
             size="md"
