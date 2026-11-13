@@ -178,45 +178,47 @@ export const useLearnWorkspace = () => {
     questionStartedAtRef.current = Date.now()
   }, [stopMediaSession])
 
-  const handleAddToken = useCallback(
-    (tokenIndex: number) => {
+  const runUnlockedTap = useCallback(
+    (action: () => void) => {
       if (submittedResult !== null) return
       triggerHaptic('tap')
       audioEngine.playPop()
-      setSelectedTokenIndices((prev) =>
-        prev.includes(tokenIndex) ? prev : [...prev, tokenIndex]
-      )
+      action()
     },
     [submittedResult]
+  )
+
+  const handleAddToken = useCallback(
+    (tokenIndex: number) => {
+      runUnlockedTap(() => {
+        setSelectedTokenIndices((prev) =>
+          prev.includes(tokenIndex) ? prev : [...prev, tokenIndex]
+        )
+      })
+    },
+    [runUnlockedTap]
   )
 
   const handleRemoveToken = useCallback(
     (selectedPosition: number) => {
-      if (submittedResult !== null) return
-      triggerHaptic('tap')
-      audioEngine.playPop()
-      setSelectedTokenIndices((prev) =>
-        prev.filter((_, idx) => idx !== selectedPosition)
-      )
+      runUnlockedTap(() => {
+        setSelectedTokenIndices((prev) =>
+          prev.filter((_, idx) => idx !== selectedPosition)
+        )
+      })
     },
-    [submittedResult]
+    [runUnlockedTap]
   )
 
   const handleClearTokens = useCallback(() => {
-    if (submittedResult !== null) return
-    triggerHaptic('tap')
-    audioEngine.playPop()
-    setSelectedTokenIndices([])
-  }, [submittedResult])
+    runUnlockedTap(() => setSelectedTokenIndices([]))
+  }, [runUnlockedTap])
 
   const handleSelectOption = useCallback(
     (optionValue: string) => {
-      if (submittedResult !== null) return
-      triggerHaptic('tap')
-      audioEngine.playPop()
-      setSelectedOptionValue(optionValue)
+      runUnlockedTap(() => setSelectedOptionValue(optionValue))
     },
-    [submittedResult]
+    [runUnlockedTap]
   )
 
   const handleSetTextInput = useCallback(
@@ -228,11 +230,10 @@ export const useLearnWorkspace = () => {
   )
 
   const handleConfirmSpokenSample = useCallback(() => {
-    if (submittedResult !== null || !parsedContent?.displayText) return
-    triggerHaptic('tap')
-    audioEngine.playPop()
-    setTextInput(parsedContent.displayText)
-  }, [parsedContent, submittedResult])
+    if (!parsedContent?.displayText) return
+    const sample = parsedContent.displayText
+    runUnlockedTap(() => setTextInput(sample))
+  }, [parsedContent, runUnlockedTap])
 
   const handlePlayAudio = useCallback(() => {
     if (!parsedContent) return

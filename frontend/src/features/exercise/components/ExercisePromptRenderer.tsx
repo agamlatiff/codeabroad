@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from 'react'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type {
   ParsedExerciseContent,
@@ -72,6 +73,13 @@ export const ExercisePromptRenderer = ({
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
   }
   const isLocked = submittedResult !== null
+
+  const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === 'Enter' && !isLocked && onEnterKey) {
+      event.preventDefault()
+      onEnterKey()
+    }
+  }
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
@@ -326,12 +334,7 @@ export const ExercisePromptRenderer = ({
               disabled={isLocked}
               value={textInput}
               onChange={(e) => onSetTextInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isLocked && onEnterKey) {
-                  e.preventDefault()
-                  onEnterKey()
-                }
-              }}
+              onKeyDown={handleInputKeyDown}
               placeholder={
                 parsedContent.displayText || 'Ketik atau rekam pelafalan kalimat...'
               }
@@ -395,12 +398,7 @@ export const ExercisePromptRenderer = ({
               disabled={isLocked}
               value={textInput}
               onChange={(e) => onSetTextInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !isLocked && onEnterKey) {
-                  e.preventDefault()
-                  onEnterKey()
-                }
-              }}
+              onKeyDown={handleInputKeyDown}
               placeholder="Ketik jawaban Anda di sini..."
               className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-white border-2 border-slate-200 focus:border-blue-500 outline-none font-bold text-slate-900"
             />
