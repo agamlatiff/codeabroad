@@ -42,7 +42,7 @@ export const useAppLeftSidebar = () => {
   const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>('adventurer')
 
   const srsDueQuery = useQuery({
-    queryKey: [...SRS_DUE_QUERY_KEY, 20],
+    queryKey: [...SRS_DUE_QUERY_KEY, user?.id ?? 'anonymous', 20],
     queryFn: ({ signal }) => exerciseService.getDueReviews(20, { signal }),
     enabled: Boolean(user),
     staleTime: 60_000,
