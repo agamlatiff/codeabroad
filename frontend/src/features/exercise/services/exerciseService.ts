@@ -14,6 +14,7 @@ import type {
 
 export const SRS_DUE_QUERY_KEY = ['srs', 'due'] as const
 export const EXAM_QUESTIONS_QUERY_KEY = ['exams', 'questions'] as const
+export const EXAM_RESULT_QUERY_KEY = ['exams', 'result'] as const
 
 export const exerciseService = {
   /**
@@ -65,11 +66,27 @@ export const exerciseService = {
     levelId: string,
     options?: RequestOptions
   ): Promise<CurriculumExercise[]> => {
+    const encodedId = encodeURIComponent(levelId.trim())
     const response = await api.get<ApiResponse<CurriculumExercise[]>>(
-      `/exams/questions/${levelId}`,
+      `/exams/questions/${encodedId}`,
       { signal: options?.signal }
     )
     return unwrapApiResponse(response, 'Gagal memuat soal ujian kesiapan.')
+  },
+
+  /**
+   * Retrieves the latest passed readiness exam attempt and certificate for a level.
+   */
+  getExamResult: async (
+    levelId: string,
+    options?: RequestOptions
+  ): Promise<ReadinessExamResponse> => {
+    const encodedId = encodeURIComponent(levelId.trim())
+    const response = await api.get<ApiResponse<ReadinessExamResponse>>(
+      `/exams/result/${encodedId}`,
+      { signal: options?.signal }
+    )
+    return unwrapApiResponse(response, 'Gagal memuat hasil ujian kesiapan.')
   },
 
   /**

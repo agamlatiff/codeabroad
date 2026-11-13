@@ -59,6 +59,8 @@ export const useExerciseMedia = ({
 
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
   const activeHtmlAudioRef = useRef<HTMLAudioElement | null>(null)
+  const audioSessionIdRef = useRef(0)
+  const speechSessionIdRef = useRef(0)
 
   const speechRecognitionSupported = useMemo(
     () => getSpeechRecognitionConstructor() !== null,
@@ -66,36 +68,58 @@ export const useExerciseMedia = ({
   )
 
   const stopActiveAudio = useCallback(() => {
-    if (activeHtmlAudioRef.current) {
-      activeHtmlAudioRef.current.pause()
+    audioSessionIdRef.current += 1
+    const activeAudio = activeHtmlAudioRef.current
+    if (activeAudio) {
+      activeAudio.onended = null
+      activeAudio.onerror = null
+      activeAudio.pause()
       activeHtmlAudioRef.current = null
     }
     audioEngine.stopSpeech()
     setIsSpeakingAudio(false)
   }, [])
 
+  const stopActiveRecognition = useCallback(() => {
+    speechSessionIdRef.current += 1
+    const recognition = recognitionRef.current
+    if (recognition) {
+      recognition.onresult = null
+      recognition.onerror = null
+      recognition.onend = null
+      try {
+        recognition.stop()
+      } catch {
+        // Ignore browser errors when stopping an already terminated session
+      }
+      recognitionRef.current = null
+    }
+  }, [])
+
   const stopMediaSession = useCallback(() => {
-    recognitionRef.current?.stop()
+    stopActiveRecognition()
     stopActiveAudio()
     setIsRecordingSpeech(false)
     setAudioPlaybackError(null)
-  }, [stopActiveAudio])
+  }, [stopActiveAudio, stopActiveRecognition])
 
   useEffect(() => {
     return () => {
-      recognitionRef.current?.stop()
+      stopActiveRecognition()
       stopActiveAudio()
     }
-  }, [stopActiveAudio])
+  }, [stopActiveAudio, stopActiveRecognition])
 
   const handlePlayAudio = useCallback(
     (audioUrl?: string, spokenText?: string) => {
       setAudioPlaybackError(null)
       triggerHaptic('tap')
       stopActiveAudio()
+      const sessionId = audioSessionIdRef.current
       setIsSpeakingAudio(true)
 
       const speakFallback = () => {
+        if (sessionId !== audioSessionIdRef.current) return
         if (!spokenText) {
           setIsSpeakingAudio(false)
           setAudioPlaybackError('Teks audio tidak tersedia untuk latihan ini.')
@@ -104,8 +128,13 @@ export const useExerciseMedia = ({
         audioEngine.speakLanguage(
           spokenText,
           speechLocale,
-          () => setIsSpeakingAudio(false),
           () => {
+            if (sessionId === audioSessionIdRef.current) {
+              setIsSpeakingAudio(false)
+            }
+          },
+          () => {
+            if (sessionId !== audioSessionIdRef.current) return
             setIsSpeakingAudio(false)
             setAudioPlaybackError(
               'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
@@ -117,14 +146,18 @@ export const useExerciseMedia = ({
       if (audioUrl && typeof Audio !== 'undefined') {
         let fallbackTriggered = false
         const triggerFallbackOnce = () => {
-          if (fallbackTriggered) return
+          if (fallbackTriggered || sessionId !== audioSessionIdRef.current) return
           fallbackTriggered = true
           speakFallback()
         }
 
         const audio = new Audio(audioUrl)
         activeHtmlAudioRef.current = audio
-        audio.onended = () => setIsSpeakingAudio(false)
+        audio.onended = () => {
+          if (sessionId === audioSessionIdRef.current) {
+            setIsSpeakingAudio(false)
+          }
+        }
         audio.onerror = triggerFallbackOnce
         void audio.play().catch(triggerFallbackOnce)
         return
@@ -139,7 +172,7 @@ export const useExerciseMedia = ({
     if (isLocked) return
 
     if (isRecordingSpeech && recognitionRef.current) {
-      recognitionRef.current.stop()
+      stopActiveRecognition()
       setIsRecordingSpeech(false)
       return
     }
@@ -153,6 +186,8 @@ export const useExerciseMedia = ({
     }
 
     try {
+      stopActiveRecognition()
+      const sessionId = speechSessionIdRef.current
       setAudioPlaybackError(null)
       const recognition = new RecognitionCtor()
       recognition.lang = speechLocale
@@ -160,18 +195,21 @@ export const useExerciseMedia = ({
       recognition.maxAlternatives = 1
 
       recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
+        if (sessionId !== speechSessionIdRef.current) return
         const transcript = event.results[0]?.[0]?.transcript?.trim() ?? ''
         if (transcript) {
           onTranscript(transcript)
         }
       }
       recognition.onerror = () => {
+        if (sessionId !== speechSessionIdRef.current) return
         setIsRecordingSpeech(false)
         setAudioPlaybackError(
           'Mikrofon gagal menangkap suara. Coba ulangi atau ketik manual.'
         )
       }
       recognition.onend = () => {
+        if (sessionId !== speechSessionIdRef.current) return
         setIsRecordingSpeech(false)
       }
 
@@ -182,7 +220,7 @@ export const useExerciseMedia = ({
     } catch {
       setIsRecordingSpeech(false)
     }
-  }, [isLocked, isRecordingSpeech, onTranscript, speechLocale])
+  }, [isLocked, isRecordingSpeech, onTranscript, speechLocale, stopActiveRecognition])
 
   return {
     isSpeakingAudio,

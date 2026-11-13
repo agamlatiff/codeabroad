@@ -1,4 +1,5 @@
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
+import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { SrsReviewRatingBar } from '@/features/exercise/components/SrsReviewRatingBar'
 import { useSrsReviewPage } from '@/features/exercise/hooks/useSrsReviewPage'
 import { Button3D } from '@/shared/components/ui/Button3D'
@@ -37,6 +38,7 @@ export const SrsReviewPage = () => {
     isChecking,
     isSubmittingRating,
     isSessionFinished,
+    hasMoreReviewsAfterBatch,
     refetchQueue,
     handleAddToken,
     handleRemoveToken,
@@ -56,50 +58,25 @@ export const SrsReviewPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 gap-4 font-sans">
-        <KodiCharacter emotion="thinking" size="md" interactive={false} />
-        <p className="text-sm font-bold text-slate-600">
-          Memuat antrean ulasan memori (SRS)...
-        </p>
-      </div>
+      <ExerciseSessionStatusView
+        mode="loading"
+        message="Memuat antrean ulasan memori (SRS)..."
+      />
     )
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full p-6 rounded-3xl bg-white border-2 border-slate-200 shadow-sm text-center space-y-4">
-          <KodiCharacter emotion="worried" size="md" interactive={false} />
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-brand font-extrabold text-slate-900">
-              Gagal Memuat Ulasan SRS
-            </h1>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {queueErrorMessage}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button3D
-              type="button"
-              variant="blue"
-              size="md"
-              fullWidth
-              onClick={handleBackToCurriculum}
-            >
-              Kembali ke Kurikulum
-            </Button3D>
-            <Button3D
-              type="button"
-              variant="white"
-              size="md"
-              fullWidth
-              onClick={() => void refetchQueue()}
-            >
-              Coba Lagi
-            </Button3D>
-          </div>
-        </div>
-      </div>
+      <ExerciseSessionStatusView
+        mode="status"
+        emotion="worried"
+        title="Gagal Memuat Ulasan SRS"
+        message={queueErrorMessage ?? 'Terjadi kesalahan saat memuat antrean ulasan SRS.'}
+        primaryLabel="Kembali ke Kurikulum"
+        onPrimary={handleBackToCurriculum}
+        secondaryLabel="Coba Lagi"
+        onSecondary={() => void refetchQueue()}
+      />
     )
   }
 
@@ -137,13 +114,13 @@ export const SrsReviewPage = () => {
             >
               Lanjut Belajar Kurikulum
             </Button3D>
-            {completedAll && totalDue > reviewedCount && (
+            {completedAll && hasMoreReviewsAfterBatch && (
               <Button3D
                 type="button"
                 variant="white"
                 size="md"
                 fullWidth
-                onClick={handleRestartQueue}
+                onClick={() => void handleRestartQueue()}
               >
                 Ulas Batch Berikutnya
               </Button3D>

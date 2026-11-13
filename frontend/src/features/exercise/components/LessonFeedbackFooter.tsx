@@ -1,6 +1,11 @@
 import type { SubmitExerciseAnswerResponse } from '@/features/exercise/types/exercise'
 import { Button3D } from '@/shared/components/ui/Button3D'
-import { CheckCircle, Sparkle, XCircle } from '@phosphor-icons/react'
+import {
+  ArrowCounterClockwise,
+  CheckCircle,
+  Sparkle,
+  XCircle,
+} from '@phosphor-icons/react'
 
 interface LessonFeedbackFooterProps {
   submittedResult: SubmitExerciseAnswerResponse | null
@@ -10,9 +15,10 @@ interface LessonFeedbackFooterProps {
   isChecking: boolean
   isCompleting: boolean
   isLastExercise: boolean
-  hasExercises: boolean
+  canRetryLesson?: boolean
   onCheckAnswer: () => void
   onContinue: () => void
+  onRetryLesson?: () => void
 }
 
 /**
@@ -26,9 +32,10 @@ export const LessonFeedbackFooter = ({
   isChecking,
   isCompleting,
   isLastExercise,
-  hasExercises,
+  canRetryLesson = false,
   onCheckAnswer,
   onContinue,
+  onRetryLesson,
 }: LessonFeedbackFooterProps) => {
   const isCorrect = submittedResult?.is_correct === true
   const isIncorrect = submittedResult?.is_correct === false
@@ -109,24 +116,22 @@ export const LessonFeedbackFooter = ({
 
           {!submittedResult && !submitError && (
             <p className="text-xs sm:text-sm font-semibold text-slate-400">
-              {hasExercises
-                ? 'Pilih atau susun jawabanmu lalu tekan Periksa.'
-                : 'Siap menyelesaikan pelajaran ini.'}
+              Pilih atau susun jawabanmu lalu tekan Periksa.
             </p>
           )}
         </div>
 
         <div className="shrink-0 w-full sm:w-auto">
-          {!hasExercises ? (
+          {canRetryLesson && onRetryLesson ? (
             <Button3D
               type="button"
-              variant="emerald"
+              variant="blue"
               size="md"
               fullWidth
-              loading={isCompleting}
-              onClick={onContinue}
+              onClick={onRetryLesson}
+              icon={<ArrowCounterClockwise weight="bold" className="w-4 h-4" />}
             >
-              Selesaikan Pelajaran
+              Ulangi Pelajaran
             </Button3D>
           ) : submittedResult === null ? (
             <Button3D

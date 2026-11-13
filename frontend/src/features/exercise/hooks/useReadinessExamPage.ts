@@ -1,15 +1,15 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { CURRICULUM_QUERY_KEY } from '@/features/curriculum/services/curriculumService'
-import {
-  LANGUAGE_ENROLLMENTS_QUERY_KEY,
-  languageService,
-} from '@/features/curriculum/services/languageService'
+import { LANGUAGE_ENROLLMENTS_QUERY_KEY } from '@/features/curriculum/services/languageService'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { useExerciseMedia } from '@/features/exercise/hooks/useExerciseMedia'
 import {
   EXAM_QUESTIONS_QUERY_KEY,
+  EXAM_RESULT_QUERY_KEY,
   exerciseService,
 } from '@/features/exercise/services/exerciseService'
 import type {
@@ -19,7 +19,7 @@ import type {
 import {
   formatUserAnswerForSubmission,
   parseExerciseContent,
-  resolveSpeechLocale,
+  resolveExerciseSpokenText,
 } from '@/features/exercise/utils/exerciseHelpers'
 import { PROFILE_QUERY_KEY } from '@/features/user/services/userService'
 import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
@@ -29,6 +29,10 @@ import type { ApiResponse } from '@/shared/types/api'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
+const isExamAlreadyPassedError = (err: unknown): boolean =>
+  isAxiosError<ApiResponse<unknown>>(err) &&
+  err.response?.data?.code === 'EXAM_ALREADY_PASSED'
+
 /**
  * Headless controller hook powering the 4-pillar level Readiness Exam (/exam/:levelId).
  */
@@ -36,7 +40,9 @@ export const useReadinessExamPage = () => {
   const { levelId } = useParams<{ levelId: string }>()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const userId = useAuthStore((state) => state.user?.id ?? 'anonymous')
 
+  const [trackedLevelId, setTrackedLevelId] = useState<string | undefined>(levelId)
   const [currentIndex, setCurrentIndex] = useState(0)
   const [tokenIndicesById, setTokenIndicesById] = useState<Record<string, number[]>>({})
   const [optionById, setOptionById] = useState<Record<string, string>>({})
@@ -44,30 +50,42 @@ export const useReadinessExamPage = () => {
   const [showHint, setShowHint] = useState(false)
   const [examResult, setExamResult] = useState<ReadinessExamResponse | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
+  const [isAlreadyPassed, setIsAlreadyPassed] = useState(false)
+
+  if (levelId !== trackedLevelId) {
+    setTrackedLevelId(levelId)
+    setCurrentIndex(0)
+    setTokenIndicesById({})
+    setOptionById({})
+    setTextById({})
+    setShowHint(false)
+    setExamResult(null)
+    setSubmitError(null)
+    setIsAlreadyPassed(false)
+  }
 
   const questionsQuery = useQuery({
-    queryKey: [...EXAM_QUESTIONS_QUERY_KEY, levelId],
+    queryKey: [...EXAM_QUESTIONS_QUERY_KEY, userId, levelId],
     queryFn: ({ signal }) => exerciseService.getExamQuestions(levelId!, { signal }),
     enabled: Boolean(levelId),
     retry: false,
   })
 
-  const enrollmentsQuery = useQuery({
-    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
-    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
-    staleTime: 60_000,
+  const isQuestionsAlreadyPassed =
+    questionsQuery.isError && isExamAlreadyPassedError(questionsQuery.error)
+  const shouldLoadPassedResult =
+    Boolean(levelId) && (isQuestionsAlreadyPassed || isAlreadyPassed)
+
+  const passedResultQuery = useQuery({
+    queryKey: [...EXAM_RESULT_QUERY_KEY, userId, levelId],
+    queryFn: ({ signal }) => exerciseService.getExamResult(levelId!, { signal }),
+    enabled: shouldLoadPassedResult,
     retry: false,
   })
 
-  const activeEnrollment = useMemo(() => {
-    const enrollments = enrollmentsQuery.data ?? []
-    return enrollments.find((item) => item.is_active) ?? enrollments[0] ?? null
-  }, [enrollmentsQuery.data])
+  const resolvedExamResult = examResult ?? passedResultQuery.data ?? null
 
-  const speechLocale = useMemo(
-    () => resolveSpeechLocale(activeEnrollment?.language?.code),
-    [activeEnrollment?.language?.code]
-  )
+  const speechLocale = useActiveSpeechLocale()
 
   const questions = useMemo(() => questionsQuery.data ?? [], [questionsQuery.data])
   const currentExercise = questions[currentIndex] ?? null
@@ -130,10 +148,10 @@ export const useReadinessExamPage = () => {
 
   const handleTranscript = useCallback(
     (transcript: string) => {
-      if (!currentExercise || examResult !== null) return
+      if (!currentExercise || resolvedExamResult !== null) return
       setTextById((prev) => ({ ...prev, [currentExercise.id]: transcript }))
     },
-    [currentExercise, examResult]
+    [currentExercise, resolvedExamResult]
   )
 
   const {
@@ -146,9 +164,13 @@ export const useReadinessExamPage = () => {
     handleToggleRecording,
   } = useExerciseMedia({
     speechLocale,
-    isLocked: examResult !== null,
+    isLocked: resolvedExamResult !== null,
     onTranscript: handleTranscript,
   })
+
+  useEffect(() => {
+    stopMediaSession()
+  }, [levelId, stopMediaSession])
 
   const submitExamMutation = useMutation({
     mutationFn: (payload: {
@@ -159,12 +181,12 @@ export const useReadinessExamPage = () => {
 
   const runUnlockedTap = useCallback(
     (action: () => void) => {
-      if (!currentExercise || examResult !== null) return
+      if (!currentExercise || resolvedExamResult !== null) return
       triggerHaptic('tap')
       audioEngine.playPop()
       action()
     },
-    [currentExercise, examResult]
+    [currentExercise, resolvedExamResult]
   )
 
   const handleAddToken = useCallback(
@@ -220,10 +242,10 @@ export const useReadinessExamPage = () => {
 
   const handleSetTextInput = useCallback(
     (value: string) => {
-      if (!currentExercise || examResult !== null) return
+      if (!currentExercise || resolvedExamResult !== null) return
       setTextById((prev) => ({ ...prev, [currentExercise.id]: value }))
     },
-    [currentExercise, examResult]
+    [currentExercise, resolvedExamResult]
   )
 
   const handleConfirmSpokenSample = useCallback(() => {
@@ -237,12 +259,11 @@ export const useReadinessExamPage = () => {
 
   const handlePlayAudio = useCallback(() => {
     if (!currentParsedContent) return
-    const spokenText =
-      currentParsedContent.audioText ??
-      currentParsedContent.displayText ??
-      currentExercise?.prompt
-    playExerciseAudio(currentParsedContent.audioUrl, spokenText)
-  }, [currentExercise, currentParsedContent, playExerciseAudio])
+    playExerciseAudio(
+      currentParsedContent.audioUrl,
+      resolveExerciseSpokenText(currentParsedContent, currentExercise?.prompt)
+    )
+  }, [currentExercise?.prompt, currentParsedContent, playExerciseAudio])
 
   const handleToggleHint = useCallback(() => {
     triggerHaptic('tap')
@@ -317,14 +338,18 @@ export const useReadinessExamPage = () => {
         queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: EXAM_QUESTIONS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: EXAM_RESULT_QUERY_KEY }),
       ])
     } catch (err) {
-      const message =
-        isAxiosError<ApiResponse<unknown>>(err) &&
-        err.response?.data?.code === 'EXAM_ALREADY_PASSED'
-          ? 'Kamu sudah lulus ujian kesiapan untuk level ini.'
-          : extractApiErrorMessage(err, 'Gagal mengumpulkan jawaban ujian kesiapan.')
-      setSubmitError(message)
+      if (isExamAlreadyPassedError(err)) {
+        setIsAlreadyPassed(true)
+        triggerHaptic('tap')
+        audioEngine.playPop()
+        return
+      }
+      setSubmitError(
+        extractApiErrorMessage(err, 'Gagal mengumpulkan jawaban ujian kesiapan.')
+      )
       triggerHaptic('error')
       audioEngine.playError()
     }
@@ -339,13 +364,18 @@ export const useReadinessExamPage = () => {
   ])
 
   const handleRetryExam = useCallback(() => {
+    stopMediaSession()
     triggerHaptic('tap')
     audioEngine.playPop()
     setExamResult(null)
     setSubmitError(null)
+    setIsAlreadyPassed(false)
     setCurrentIndex(0)
+    setTokenIndicesById({})
+    setOptionById({})
+    setTextById({})
     setShowHint(false)
-  }, [])
+  }, [stopMediaSession])
 
   const handleBackToCurriculum = useCallback(() => {
     stopMediaSession()
@@ -386,10 +416,14 @@ export const useReadinessExamPage = () => {
     isFirstQuestion,
     isLastQuestion,
     allAnswered,
-    examResult,
+    examResult: resolvedExamResult,
+    isAlreadyPassed:
+      shouldLoadPassedResult && !resolvedExamResult && !passedResultQuery.isLoading,
     submitError,
-    isLoading: questionsQuery.isLoading,
-    isError: questionsQuery.isError,
+    isLoading:
+      questionsQuery.isLoading ||
+      (shouldLoadPassedResult && passedResultQuery.isLoading),
+    isError: questionsQuery.isError && !shouldLoadPassedResult,
     loadErrorMessage,
     isSubmitting: submitExamMutation.isPending,
     refetchQuestions: questionsQuery.refetch,
@@ -411,4 +445,3 @@ export const useReadinessExamPage = () => {
     handleBackToCurriculum,
   }
 }
-

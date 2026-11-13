@@ -23,7 +23,7 @@ export const useLessonCompletePage = () => {
   const state = (location.state ?? null) as LessonCompletionNavigationState | null
 
   const fallbackLessonQuery = useQuery({
-    queryKey: [...LESSON_DETAIL_QUERY_KEY, id],
+    queryKey: [...LESSON_DETAIL_QUERY_KEY, user?.id ?? 'anonymous', id],
     queryFn: ({ signal }) => curriculumService.getLessonDetail(id!, { signal }),
     enabled: state === null && Boolean(id),
     retry: false,
@@ -53,14 +53,16 @@ export const useLessonCompletePage = () => {
   const lesson = state?.lesson ?? fallbackLessonQuery.data ?? null
 
   const lessonTitle = lesson?.title ?? 'Pelajaran Kurikulum'
-  const xpEarned = state?.totalXpEarned ?? lesson?.xp_reward ?? 0
+  const xpEarned =
+    state?.totalXpEarned ??
+    (lesson?.is_skipped ? 0 : lesson?.xp_reward ?? 0)
   const totalXp = completionResult?.gamification?.xp ?? user?.xp ?? xpEarned
   const streakDays = completionResult?.gamification?.streak ?? user?.streak ?? 0
   const currentLevel =
     completionResult?.gamification?.current_level ?? user?.current_level ?? 1
   const accuracyPercent =
-    state?.accuracyPercent ??
     completionResult?.progress?.score ??
+    state?.accuracyPercent ??
     lesson?.score ??
     0
   const unlockedNextLessonId = completionResult?.unlocked_next_lesson_id ?? null

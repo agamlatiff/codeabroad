@@ -1,23 +1,22 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   CURRICULUM_QUERY_KEY,
   LESSON_DETAIL_QUERY_KEY,
   curriculumService,
 } from '@/features/curriculum/services/curriculumService'
-import {
-  LANGUAGE_ENROLLMENTS_QUERY_KEY,
-  languageService,
-} from '@/features/curriculum/services/languageService'
+import { LANGUAGE_ENROLLMENTS_QUERY_KEY } from '@/features/curriculum/services/languageService'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { useExerciseMedia } from '@/features/exercise/hooks/useExerciseMedia'
-import { exerciseService } from '@/features/exercise/services/exerciseService'
+import { useExerciseQuestionInputs } from '@/features/exercise/hooks/useExerciseQuestionInputs'
 import {
-  formatUserAnswerForSubmission,
-  parseExerciseContent,
-  resolveSpeechLocale,
-} from '@/features/exercise/utils/exerciseHelpers'
+  SRS_DUE_QUERY_KEY,
+  exerciseService,
+} from '@/features/exercise/services/exerciseService'
+import { resolveExerciseSpokenText } from '@/features/exercise/utils/exerciseHelpers'
 import type {
   LessonCompletionNavigationState,
   SubmitExerciseAnswerResponse,
@@ -29,6 +28,7 @@ import {
 } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { ACTIVITY_LOGS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useStreakSection'
 import { extractApiErrorMessage } from '@/shared/services/api'
+import type { ApiResponse } from '@/shared/types/api'
 import { audioService } from '@/shared/services/audioService'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -38,66 +38,68 @@ export const useLearnWorkspace = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const updateUser = useAuthStore((state) => state.updateUser)
+  const userId = useAuthStore((state) => state.user?.id ?? 'anonymous')
 
   // Session state keyed per route lesson ID cleanly during render on route change
   const [trackedLessonId, setTrackedLessonId] = useState<string | undefined>(id)
   const [currentIndex, setCurrentIndex] = useState(0)
-  const [selectedTokenIndices, setSelectedTokenIndices] = useState<number[]>([])
-  const [selectedOptionValue, setSelectedOptionValue] = useState('')
-  const [textInput, setTextInput] = useState('')
   const [submittedResult, setSubmittedResult] =
     useState<SubmitExerciseAnswerResponse | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
-  const [showHint, setShowHint] = useState(false)
+  const [isScoreTooLowError, setIsScoreTooLowError] = useState(false)
   const [isGrammarDrawerOpen, setIsGrammarDrawerOpen] = useState(false)
   const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>([])
 
   const questionStartedAtRef = useRef<number>(0)
 
-  if (id !== trackedLessonId) {
-    setTrackedLessonId(id)
-    setCurrentIndex(0)
-    setSelectedTokenIndices([])
-    setSelectedOptionValue('')
-    setTextInput('')
-    setSubmittedResult(null)
-    setSubmitError(null)
-    setShowHint(false)
-    setIsGrammarDrawerOpen(false)
-    setCorrectExerciseIds([])
-  }
-
-  useEffect(() => {
-    questionStartedAtRef.current = Date.now()
-  }, [id, currentIndex])
-
-  // Ambient soundscape while inside lesson player
-  useEffect(() => {
-    audioService.playBgm('universal')
-    return () => {
-      audioService.stopBgm()
-    }
-  }, [])
-
   const lessonQuery = useQuery({
-    queryKey: [...LESSON_DETAIL_QUERY_KEY, id],
+    queryKey: [...LESSON_DETAIL_QUERY_KEY, userId, id],
     queryFn: ({ signal }) => curriculumService.getLessonDetail(id!, { signal }),
     enabled: Boolean(id),
     retry: false,
   })
 
-  const enrollmentsQuery = useQuery({
-    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
-    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
-    staleTime: 60_000,
-    retry: false,
+  const lesson = lessonQuery.data ?? null
+  const exercises = useMemo(() => lesson?.exercises ?? [], [lesson])
+  const currentExercise = exercises[currentIndex] ?? null
+  const currentExerciseType = currentExercise?.exercise_type ?? ''
+
+  const speechLocale = useActiveSpeechLocale()
+
+  const {
+    parsedContent,
+    selectedTokenIndices,
+    selectedTokens,
+    selectedOptionValue,
+    textInput,
+    setTextInput,
+    showHint,
+    currentUserAnswer,
+    canCheckAnswer,
+    resolvedCorrectAnswer,
+    resetInputs,
+    handleAddToken,
+    handleRemoveToken,
+    handleClearTokens,
+    handleSelectOption,
+    handleSetTextInput,
+    handleConfirmSpokenSample,
+    handleToggleHint,
+  } = useExerciseQuestionInputs({
+    currentExercise,
+    submittedResult,
   })
 
-  const speechLocale = useMemo(() => {
-    const enrollments = enrollmentsQuery.data ?? []
-    const active = enrollments.find((item) => item.is_active) ?? enrollments[0]
-    return resolveSpeechLocale(active?.language?.code)
-  }, [enrollmentsQuery.data])
+  if (id !== trackedLessonId) {
+    setTrackedLessonId(id)
+    setCurrentIndex(0)
+    setSubmittedResult(null)
+    setSubmitError(null)
+    setIsScoreTooLowError(false)
+    setIsGrammarDrawerOpen(false)
+    setCorrectExerciseIds([])
+    resetInputs()
+  }
 
   const {
     isSpeakingAudio,
@@ -114,39 +116,20 @@ export const useLearnWorkspace = () => {
   })
 
   useEffect(() => {
+    questionStartedAtRef.current = Date.now()
+  }, [id, currentIndex])
+
+  useEffect(() => {
     stopMediaSession()
   }, [id, stopMediaSession])
 
-  const lesson = lessonQuery.data ?? null
-  const exercises = useMemo(() => lesson?.exercises ?? [], [lesson])
-  const currentExercise = exercises[currentIndex] ?? null
-  const parsedContent = useMemo(
-    () => (currentExercise ? parseExerciseContent(currentExercise) : null),
-    [currentExercise]
-  )
-
-  const selectedTokens = useMemo(() => {
-    if (!parsedContent) return []
-    return selectedTokenIndices
-      .map((tokenIdx) => parsedContent.tokens[tokenIdx])
-      .filter((token): token is string => typeof token === 'string')
-  }, [parsedContent, selectedTokenIndices])
-
-  const currentExerciseType = currentExercise?.exercise_type ?? ''
-
-  const currentUserAnswer = useMemo(() => {
-    if (!currentExercise) return ''
-    return formatUserAnswerForSubmission(currentExercise, {
-      selectedTokens,
-      selectedOptionValue,
-      textInput,
-    })
-  }, [currentExercise, selectedTokens, selectedOptionValue, textInput])
-
-  const canCheckAnswer =
-    currentExercise !== null &&
-    submittedResult === null &&
-    currentUserAnswer.length > 0
+  // Ambient soundscape while inside lesson player
+  useEffect(() => {
+    audioService.playBgm('universal')
+    return () => {
+      audioService.stopBgm()
+    }
+  }, [])
 
   const isLastExercise =
     exercises.length > 0 && currentIndex >= exercises.length - 1
@@ -169,78 +152,33 @@ export const useLearnWorkspace = () => {
 
   const resetQuestionInputs = useCallback(() => {
     stopMediaSession()
-    setSelectedTokenIndices([])
-    setSelectedOptionValue('')
-    setTextInput('')
+    resetInputs()
     setSubmittedResult(null)
     setSubmitError(null)
-    setShowHint(false)
+    setIsScoreTooLowError(false)
     questionStartedAtRef.current = Date.now()
-  }, [stopMediaSession])
+  }, [resetInputs, stopMediaSession])
 
-  const runUnlockedTap = useCallback(
-    (action: () => void) => {
-      if (submittedResult !== null) return
-      triggerHaptic('tap')
-      audioEngine.playPop()
-      action()
-    },
-    [submittedResult]
-  )
-
-  const handleAddToken = useCallback(
-    (tokenIndex: number) => {
-      runUnlockedTap(() => {
-        setSelectedTokenIndices((prev) =>
-          prev.includes(tokenIndex) ? prev : [...prev, tokenIndex]
-        )
-      })
-    },
-    [runUnlockedTap]
-  )
-
-  const handleRemoveToken = useCallback(
-    (selectedPosition: number) => {
-      runUnlockedTap(() => {
-        setSelectedTokenIndices((prev) =>
-          prev.filter((_, idx) => idx !== selectedPosition)
-        )
-      })
-    },
-    [runUnlockedTap]
-  )
-
-  const handleClearTokens = useCallback(() => {
-    runUnlockedTap(() => setSelectedTokenIndices([]))
-  }, [runUnlockedTap])
-
-  const handleSelectOption = useCallback(
-    (optionValue: string) => {
-      runUnlockedTap(() => setSelectedOptionValue(optionValue))
-    },
-    [runUnlockedTap]
-  )
-
-  const handleSetTextInput = useCallback(
-    (value: string) => {
-      if (submittedResult !== null) return
-      setTextInput(value)
-    },
-    [submittedResult]
-  )
-
-  const handleConfirmSpokenSample = useCallback(() => {
-    if (!parsedContent?.displayText) return
-    const sample = parsedContent.displayText
-    runUnlockedTap(() => setTextInput(sample))
-  }, [parsedContent, runUnlockedTap])
+  const handleRetryLesson = useCallback(() => {
+    stopMediaSession()
+    triggerHaptic('tap')
+    audioEngine.playPop()
+    resetInputs()
+    setCurrentIndex(0)
+    setCorrectExerciseIds([])
+    setSubmittedResult(null)
+    setSubmitError(null)
+    setIsScoreTooLowError(false)
+    questionStartedAtRef.current = Date.now()
+  }, [resetInputs, stopMediaSession])
 
   const handlePlayAudio = useCallback(() => {
     if (!parsedContent) return
-    const spokenText =
-      parsedContent.audioText ?? parsedContent.displayText ?? currentExercise?.prompt
-    playExerciseAudio(parsedContent.audioUrl, spokenText)
-  }, [currentExercise, parsedContent, playExerciseAudio])
+    playExerciseAudio(
+      parsedContent.audioUrl,
+      resolveExerciseSpokenText(parsedContent, currentExercise?.prompt)
+    )
+  }, [currentExercise?.prompt, parsedContent, playExerciseAudio])
 
   const handleCheckAnswer = useCallback(async () => {
     if (!currentExercise || !canCheckAnswer || submitAnswerMutation.isPending) {
@@ -289,6 +227,7 @@ export const useLearnWorkspace = () => {
     if (!lesson || completeLessonMutation.isPending) return
 
     setSubmitError(null)
+    setIsScoreTooLowError(false)
     const total = Math.max(1, exercises.length)
     const accuracyPercent = Math.round((correctExerciseIds.length / total) * 100)
 
@@ -322,6 +261,7 @@ export const useLearnWorkspace = () => {
         queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
       ])
 
       triggerHaptic('success')
@@ -340,12 +280,23 @@ export const useLearnWorkspace = () => {
         state: navState,
       })
     } catch (err) {
-      setSubmitError(
-        extractApiErrorMessage(
-          err,
-          'Gagal menyelesaikan pelajaran. Pastikan semua soal telah terjawab.'
+      const errorCode = isAxiosError<ApiResponse<unknown>>(err)
+        ? err.response?.data?.code
+        : undefined
+      if (errorCode === 'LESSON_SCORE_TOO_LOW') {
+        setIsScoreTooLowError(true)
+        setSubmitError(
+          `Akurasi sesi kamu ${accuracyPercent}% (minimal 60% untuk lulus). Ulangi latihan untuk melanjutkan.`
         )
-      )
+      } else {
+        setIsScoreTooLowError(false)
+        setSubmitError(
+          extractApiErrorMessage(
+            err,
+            'Gagal menyelesaikan pelajaran. Pastikan semua soal telah terjawab.'
+          )
+        )
+      }
       triggerHaptic('error')
       audioEngine.playError()
     }
@@ -379,12 +330,6 @@ export const useLearnWorkspace = () => {
     submittedResult,
   ])
 
-  const handleToggleHint = useCallback(() => {
-    audioEngine.playPop()
-    triggerHaptic('tap')
-    setShowHint((prev) => !prev)
-  }, [])
-
   const handleExitToCurriculum = useCallback(() => {
     audioEngine.playPop()
     navigate('/curriculum')
@@ -401,13 +346,6 @@ export const useLearnWorkspace = () => {
     const completedSteps = currentIndex + (submittedResult !== null ? 1 : 0)
     return Math.min(100, Math.round((completedSteps / exercises.length) * 100))
   }, [currentIndex, exercises.length, submittedResult])
-
-  const resolvedCorrectAnswer = useMemo(() => {
-    const raw = submittedResult?.correct_answer ?? ''
-    if (!raw || !parsedContent) return raw
-    const matchedOption = parsedContent.choiceOptions.find((opt) => opt.id === raw)
-    return matchedOption ? matchedOption.text : raw
-  }, [parsedContent, submittedResult?.correct_answer])
 
   const lessonErrorMessage = lessonQuery.isError
     ? extractApiErrorMessage(
@@ -432,6 +370,7 @@ export const useLearnWorkspace = () => {
     textInput,
     submittedResult,
     submitError,
+    isScoreTooLowError,
     showHint,
     isGrammarDrawerOpen,
     setIsGrammarDrawerOpen,
@@ -458,6 +397,7 @@ export const useLearnWorkspace = () => {
     handleToggleRecording,
     handleCheckAnswer,
     handleContinue,
+    handleRetryLesson,
     handleToggleHint,
     handleExitToCurriculum,
     handleEnterShortcut,

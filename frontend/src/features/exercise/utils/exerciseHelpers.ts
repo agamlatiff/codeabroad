@@ -164,6 +164,15 @@ export const SKILL_PILLAR_LABELS: Record<string, { label: string; badgeClass: st
 }
 
 /**
+ * Resolves the spoken text fallback chain for exercise audio playback.
+ */
+export const resolveExerciseSpokenText = (
+  parsedContent: ParsedExerciseContent | null,
+  fallbackPrompt?: string
+): string | undefined =>
+  parsedContent?.audioText ?? parsedContent?.displayText ?? fallbackPrompt
+
+/**
  * Maps language ISO codes returned by backend curriculum APIs to BCP-47 speech synthesis locales.
  */
 export const resolveSpeechLocale = (languageCode?: string): string => {

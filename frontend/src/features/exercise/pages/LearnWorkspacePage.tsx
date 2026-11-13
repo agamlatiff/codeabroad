@@ -1,9 +1,8 @@
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
+import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { LessonFeedbackFooter } from '@/features/exercise/components/LessonFeedbackFooter'
 import { LessonGrammarDrawer } from '@/features/exercise/components/LessonGrammarDrawer'
-import { Button3D } from '@/shared/components/ui/Button3D'
-import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { BookOpen, Sparkle, X } from '@phosphor-icons/react'
 
 /**
@@ -24,6 +23,7 @@ export const LearnWorkspacePage = () => {
     textInput,
     submittedResult,
     submitError,
+    isScoreTooLowError,
     showHint,
     isGrammarDrawerOpen,
     setIsGrammarDrawerOpen,
@@ -49,6 +49,7 @@ export const LearnWorkspacePage = () => {
     handleToggleRecording,
     handleCheckAnswer,
     handleContinue,
+    handleRetryLesson,
     handleToggleHint,
     handleExitToCurriculum,
     handleEnterShortcut,
@@ -56,51 +57,41 @@ export const LearnWorkspacePage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 gap-4 font-sans">
-        <KodiCharacter emotion="thinking" size="md" interactive={false} />
-        <p className="text-sm font-bold text-slate-600">
-          Menyiapkan materi pelajaran...
-        </p>
-      </div>
+      <ExerciseSessionStatusView
+        mode="loading"
+        message="Menyiapkan materi pelajaran..."
+      />
     )
   }
 
   if (isError || !lesson) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full p-6 rounded-3xl bg-white border-2 border-slate-200 shadow-sm text-center space-y-4">
-          <KodiCharacter emotion="worried" size="md" interactive={false} />
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-brand font-extrabold text-slate-900">
-              Pelajaran Tidak Dapat Dibuka
-            </h1>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {lessonErrorMessage ||
-                'Pelajaran tidak ditemukan atau masih terkunci.'}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button3D
-              type="button"
-              variant="blue"
-              size="md"
-              fullWidth
-              onClick={handleExitToCurriculum}
-            >
-              Kembali ke Kurikulum
-            </Button3D>
-            <Button3D
-              type="button"
-              variant="white"
-              size="md"
-              fullWidth
-              onClick={() => void refetchLesson()}
-            >
-              Coba Lagi
-            </Button3D>
-          </div>
-        </div>
-      </div>
+      <ExerciseSessionStatusView
+        mode="status"
+        emotion="worried"
+        title="Pelajaran Tidak Dapat Dibuka"
+        message={
+          lessonErrorMessage ||
+          'Pelajaran tidak ditemukan atau masih terkunci.'
+        }
+        primaryLabel="Kembali ke Kurikulum"
+        onPrimary={handleExitToCurriculum}
+        secondaryLabel="Coba Lagi"
+        onSecondary={() => void refetchLesson()}
+      />
+    )
+  }
+
+  if (exercises.length === 0 || !currentExercise || !parsedContent) {
+    return (
+      <ExerciseSessionStatusView
+        mode="status"
+        emotion="thinking"
+        title="Belum Ada Soal Latihan"
+        message="Materi soal untuk pelajaran ini belum tersedia di kurikulum."
+        primaryLabel="Kembali ke Kurikulum"
+        onPrimary={handleExitToCurriculum}
+      />
     )
   }
 
@@ -159,40 +150,30 @@ export const LearnWorkspacePage = () => {
             {lesson.title}
           </p>
 
-          {currentExercise && parsedContent ? (
-            <ExercisePromptRenderer
-              exercise={currentExercise}
-              parsedContent={parsedContent}
-              selectedTokenIndices={selectedTokenIndices}
-              selectedTokens={selectedTokens}
-              selectedOptionValue={selectedOptionValue}
-              textInput={textInput}
-              submittedResult={submittedResult}
-              showHint={showHint}
-              isSpeakingAudio={isSpeakingAudio}
-              isRecordingSpeech={isRecordingSpeech}
-              speechRecognitionSupported={speechRecognitionSupported}
-              audioPlaybackError={audioPlaybackError}
-              onAddToken={handleAddToken}
-              onRemoveToken={handleRemoveToken}
-              onClearTokens={handleClearTokens}
-              onSelectOption={handleSelectOption}
-              onSetTextInput={handleSetTextInput}
-              onConfirmSpokenSample={handleConfirmSpokenSample}
-              onPlayAudio={handlePlayAudio}
-              onToggleRecording={handleToggleRecording}
-              onToggleHint={handleToggleHint}
-              onEnterKey={handleEnterShortcut}
-            />
-          ) : (
-            <div className="p-8 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-3">
-              <KodiCharacter emotion="happy" size="md" interactive={false} />
-              <p className="text-base font-bold text-slate-700">
-                Belum ada soal latihan di pelajaran ini. Kamu dapat langsung
-                menyelesaikannya.
-              </p>
-            </div>
-          )}
+          <ExercisePromptRenderer
+            exercise={currentExercise}
+            parsedContent={parsedContent}
+            selectedTokenIndices={selectedTokenIndices}
+            selectedTokens={selectedTokens}
+            selectedOptionValue={selectedOptionValue}
+            textInput={textInput}
+            submittedResult={submittedResult}
+            showHint={showHint}
+            isSpeakingAudio={isSpeakingAudio}
+            isRecordingSpeech={isRecordingSpeech}
+            speechRecognitionSupported={speechRecognitionSupported}
+            audioPlaybackError={audioPlaybackError}
+            onAddToken={handleAddToken}
+            onRemoveToken={handleRemoveToken}
+            onClearTokens={handleClearTokens}
+            onSelectOption={handleSelectOption}
+            onSetTextInput={handleSetTextInput}
+            onConfirmSpokenSample={handleConfirmSpokenSample}
+            onPlayAudio={handlePlayAudio}
+            onToggleRecording={handleToggleRecording}
+            onToggleHint={handleToggleHint}
+            onEnterKey={handleEnterShortcut}
+          />
         </div>
       </main>
 
@@ -205,9 +186,10 @@ export const LearnWorkspacePage = () => {
         isChecking={isChecking}
         isCompleting={isCompleting}
         isLastExercise={isLastExercise}
-        hasExercises={exercises.length > 0}
+        canRetryLesson={isScoreTooLowError}
         onCheckAnswer={() => void handleCheckAnswer()}
         onContinue={handleContinue}
+        onRetryLesson={handleRetryLesson}
       />
 
       {/* Grammar Reference Drawer */}

@@ -73,6 +73,11 @@ export const ExercisePromptRenderer = ({
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
   }
   const isLocked = submittedResult !== null
+  const selectedChoiceLabel = parsedContent.choiceOptions.find(
+    (opt) => opt.id === selectedOptionValue
+  )?.text
+  const blankPreviewValue =
+    selectedChoiceLabel ?? (selectedOptionValue || textInput.trim())
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
     if (event.key === 'Enter' && !isLocked && onEnterKey) {
@@ -127,9 +132,9 @@ export const ExercisePromptRenderer = ({
       {parsedContent.sentenceTemplate && (
         <div className="p-5 rounded-2xl bg-white border-2 border-slate-200 space-y-2 shadow-sm">
           <p className="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed">
-            {parsedContent.sentenceTemplate.replace(
+            {parsedContent.sentenceTemplate.replaceAll(
               '[blank]',
-              selectedOptionValue ? ` 「${selectedOptionValue}」 ` : ' ______ '
+              blankPreviewValue ? ` 「${blankPreviewValue}」 ` : ' ______ '
             )}
           </p>
           {parsedContent.translation && (

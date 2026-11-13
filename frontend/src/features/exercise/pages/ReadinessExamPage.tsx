@@ -1,8 +1,8 @@
 import { ExamResultSummary } from '@/features/exercise/components/ExamResultSummary'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
+import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { useReadinessExamPage } from '@/features/exercise/hooks/useReadinessExamPage'
 import { Button3D } from '@/shared/components/ui/Button3D'
-import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { ArrowLeft, ArrowRight, Certificate, X } from '@phosphor-icons/react'
 
 /**
@@ -33,6 +33,7 @@ export const ReadinessExamPage = () => {
     submitError,
     isLoading,
     isError,
+    isAlreadyPassed,
     loadErrorMessage,
     isSubmitting,
     refetchQuestions,
@@ -56,50 +57,39 @@ export const ReadinessExamPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 gap-4 font-sans">
-        <KodiCharacter emotion="thinking" size="md" interactive={false} />
-        <p className="text-sm font-bold text-slate-600">
-          Menyiapkan soal ujian kesiapan level...
-        </p>
-      </div>
+      <ExerciseSessionStatusView
+        mode="loading"
+        message="Menyiapkan soal ujian kesiapan level..."
+      />
+    )
+  }
+
+  if (isAlreadyPassed) {
+    return (
+      <ExerciseSessionStatusView
+        mode="status"
+        emotion="celebrate"
+        title="Ujian Kesiapan Sudah Lulus"
+        message="Kamu sudah lulus evaluasi kesiapan untuk unit ini dan akses ke tingkat berikutnya sudah terbuka."
+        primaryLabel="Kembali ke Kurikulum"
+        primaryVariant="emerald"
+        onPrimary={handleBackToCurriculum}
+      />
     )
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full p-6 rounded-3xl bg-white border-2 border-slate-200 shadow-sm text-center space-y-4">
-          <KodiCharacter emotion="worried" size="md" interactive={false} />
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-brand font-extrabold text-slate-900">
-              Ujian Tidak Dapat Dibuka
-            </h1>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              {loadErrorMessage}
-            </p>
-          </div>
-          <div className="flex flex-col sm:flex-row gap-3 pt-2">
-            <Button3D
-              type="button"
-              variant="blue"
-              size="md"
-              fullWidth
-              onClick={handleBackToCurriculum}
-            >
-              Kembali ke Kurikulum
-            </Button3D>
-            <Button3D
-              type="button"
-              variant="white"
-              size="md"
-              fullWidth
-              onClick={() => void refetchQuestions()}
-            >
-              Coba Lagi
-            </Button3D>
-          </div>
-        </div>
-      </div>
+      <ExerciseSessionStatusView
+        mode="status"
+        emotion="worried"
+        title="Ujian Tidak Dapat Dibuka"
+        message={loadErrorMessage ?? 'Terjadi kesalahan saat memuat soal ujian.'}
+        primaryLabel="Kembali ke Kurikulum"
+        onPrimary={handleBackToCurriculum}
+        secondaryLabel="Coba Lagi"
+        onSecondary={() => void refetchQuestions()}
+      />
     )
   }
 
@@ -115,28 +105,14 @@ export const ReadinessExamPage = () => {
 
   if (questions.length === 0) {
     return (
-      <div className="min-h-screen bg-[#FAFAF9] flex flex-col items-center justify-center p-6 font-sans">
-        <div className="max-w-md w-full p-6 rounded-3xl bg-white border-2 border-slate-200 shadow-sm text-center space-y-4">
-          <KodiCharacter emotion="thinking" size="md" interactive={false} />
-          <div className="space-y-1.5">
-            <h1 className="text-xl font-brand font-extrabold text-slate-900">
-              Belum Ada Soal Ujian
-            </h1>
-            <p className="text-sm text-slate-600 leading-relaxed">
-              Soal evaluasi kesiapan untuk level ini belum tersedia.
-            </p>
-          </div>
-          <Button3D
-            type="button"
-            variant="blue"
-            size="md"
-            fullWidth
-            onClick={handleBackToCurriculum}
-          >
-            Kembali ke Kurikulum
-          </Button3D>
-        </div>
-      </div>
+      <ExerciseSessionStatusView
+        mode="status"
+        emotion="thinking"
+        title="Belum Ada Soal Ujian"
+        message="Soal evaluasi kesiapan untuk level ini belum tersedia."
+        primaryLabel="Kembali ke Kurikulum"
+        onPrimary={handleBackToCurriculum}
+      />
     )
   }
 
