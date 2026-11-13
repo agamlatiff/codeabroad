@@ -237,5 +237,33 @@ func TestHTTP_SubmitExam_SerializesZeroScorePercent(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetExamResult_Returns404Then200WhenPassed(t *testing.T) {
+	r, _, _, examRepo := setupExerciseTestRouter()
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/exams/result/22222222-2222-2222-2222-222222222222", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 Not Found before passing exam, got: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	examRepo.Attempts = append(examRepo.Attempts, exercise.ReadinessExamAttempt{
+		ID:           "att-passed",
+		UserID:       "usr-123",
+		LevelID:      "22222222-2222-2222-2222-222222222222",
+		ScorePercent: 100,
+		IsPassed:     true,
+	})
+
+	req2, _ := http.NewRequest(http.MethodGet, "/api/v1/exams/result/22222222-2222-2222-2222-222222222222", nil)
+	w2 := httptest.NewRecorder()
+	r.ServeHTTP(w2, req2)
+
+	if w2.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for passed exam result, got: %d, body: %s", w2.Code, w2.Body.String())
+	}
+}
+
 
 

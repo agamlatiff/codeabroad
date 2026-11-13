@@ -312,6 +312,14 @@ func (u *usecase) GetExamQuestions(ctx context.Context, userID string, levelID s
 		return nil, err
 	}
 
+	prevPassed, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify previous exam status: %w", err)
+	}
+	if prevPassed != nil {
+		return nil, ErrExamAlreadyPassed
+	}
+
 	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, levelID)
 	if err != nil {
 		return nil, err
@@ -491,11 +499,34 @@ func (u *usecase) persistExamSubmission(
 	return nil
 }
 
+func extractAttemptScoreCounts(attempt *ReadinessExamAttempt) (score int, maxScore int) {
+	if attempt == nil {
+		return 0, 0
+	}
+	if answersRaw, ok := attempt.AnalysisReport["answers"].(map[string]any); ok && len(answersRaw) > 0 {
+		correctCount := 0
+		for _, entry := range answersRaw {
+			if entryMap, ok := entry.(map[string]any); ok {
+				if isCorrect, ok := entryMap["is_correct"].(bool); ok && isCorrect {
+					correctCount++
+				}
+			}
+		}
+		return correctCount, len(answersRaw)
+	}
+	if attempt.MaxScore > 0 {
+		return (attempt.ScorePercent * attempt.MaxScore) / 100, attempt.MaxScore
+	}
+	return attempt.ScorePercent, 100
+}
+
 func (u *usecase) buildExamCertificate(
 	ctx context.Context,
 	userID string,
 	lvl *language.ProficiencyLevel,
-	graded *examGradingResult,
+	score int,
+	maxScore int,
+	scorePercent int,
 	issuedAt time.Time,
 ) *ExamCertificate {
 	usr, _ := u.userRepo.GetByID(ctx, userID)
@@ -504,16 +535,54 @@ func (u *usecase) buildExamCertificate(
 		name = usr.Name
 	}
 
+	effectiveIssuedAt := issuedAt
+	if effectiveIssuedAt.IsZero() {
+		effectiveIssuedAt = time.Now().UTC()
+	}
+
 	return &ExamCertificate{
-		CertificateID: fmt.Sprintf("CERT-%s-%s", lvl.Code, issuedAt.Format("20060102")),
+		CertificateID: fmt.Sprintf("CERT-%s-%s", lvl.Code, effectiveIssuedAt.Format("20060102")),
 		ExamName:      lvl.OfficialExamName,
 		LevelCode:     lvl.Code,
 		CandidateName: name,
-		Score:         graded.totalScore,
-		MaxScore:      graded.maxScore,
-		Percentage:    graded.scorePercent,
-		IssuedAt:      issuedAt,
+		Score:         score,
+		MaxScore:      maxScore,
+		Percentage:    scorePercent,
+		IssuedAt:      effectiveIssuedAt,
 	}
+}
+
+// GetExamResult retrieves the latest passed readiness exam attempt and certificate for a level
+func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID string) (*ReadinessExamResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	if levelID == "" {
+		return nil, apperror.ErrBadRequest
+	}
+	lvl, _, err := u.verifyLevelExamAccess(ctx, userID, levelID)
+	if err != nil {
+		return nil, err
+	}
+
+	passedAttempt, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query passed exam attempt: %w", err)
+	}
+	if passedAttempt == nil {
+		return nil, ErrExamResultNotFound
+	}
+
+	score, maxScore := extractAttemptScoreCounts(passedAttempt)
+	if passedAttempt.MaxScore <= 0 && maxScore > 0 {
+		passedAttempt.MaxScore = maxScore
+	}
+	cert := u.buildExamCertificate(ctx, userID, lvl, score, maxScore, passedAttempt.ScorePercent, passedAttempt.AttemptedAt)
+
+	return &ReadinessExamResponse{
+		Attempt:     *passedAttempt,
+		Certificate: cert,
+	}, nil
 }
 
 // SubmitExam grades all answers for a mock exam and issues certification if score exceeds passing grade
@@ -581,7 +650,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 
 	var cert *ExamCertificate
 	if graded.isPassed {
-		cert = u.buildExamCertificate(ctx, userID, lvl, graded, now)
+		cert = u.buildExamCertificate(ctx, userID, lvl, graded.totalScore, graded.maxScore, graded.scorePercent, now)
 	}
 
 	return &ReadinessExamResponse{

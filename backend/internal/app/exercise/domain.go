@@ -15,6 +15,7 @@ var (
 	ErrExerciseLessonLocked = apperror.NewForbiddenError("LESSON_LOCKED", "previous lesson nodes must be completed first", nil)
 	ErrReviewNotFound       = apperror.NewNotFoundError("SRS_REVIEW_NOT_FOUND", "srs review item not found")
 	ErrExamAlreadyPassed    = apperror.NewConflictError("EXAM_ALREADY_PASSED", "readiness exam already passed for this level")
+	ErrExamResultNotFound   = apperror.NewNotFoundError("EXAM_RESULT_NOT_FOUND", "no passed readiness exam result found for this level")
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "quality rating must be between 0 and 5", nil)
 )
 
@@ -228,6 +229,7 @@ type SRSUsecase interface {
 // ReadinessExamUsecase specifies official diagnostic and readiness certification workflows
 type ReadinessExamUsecase interface {
 	GetExamQuestions(ctx context.Context, userID string, levelID string) ([]Exercise, error)
+	GetExamResult(ctx context.Context, userID string, levelID string) (*ReadinessExamResponse, error)
 	SubmitExam(ctx context.Context, userID string, req *SubmitReadinessExamRequest) (*ReadinessExamResponse, error)
 }
 

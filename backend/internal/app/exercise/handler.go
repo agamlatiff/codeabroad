@@ -137,6 +137,17 @@ func (h *Handler) ProcessReview(c *gin.Context) {
 	response.Success(c, http.StatusOK, "SRS review processed successfully", review)
 }
 
+func bindLevelIDURI(c *gin.Context) (string, bool) {
+	var uri struct {
+		LevelID string `uri:"level_id" binding:"required,uuid"`
+	}
+	if err := c.ShouldBindUri(&uri); err != nil {
+		response.BadRequest(c, "invalid level_id parameter format, must be a valid UUID")
+		return "", false
+	}
+	return uri.LevelID, true
+}
+
 // GetExamQuestions handles GET /api/v1/exams/questions/:level_id
 func (h *Handler) GetExamQuestions(c *gin.Context) {
 	userID, ok := requireUserID(c)
@@ -144,21 +155,39 @@ func (h *Handler) GetExamQuestions(c *gin.Context) {
 		return
 	}
 
-	var uri struct {
-		LevelID string `uri:"level_id" binding:"required,uuid"`
-	}
-	if err := c.ShouldBindUri(&uri); err != nil {
-		response.BadRequest(c, "invalid level_id parameter format, must be a valid UUID")
+	levelID, ok := bindLevelIDURI(c)
+	if !ok {
 		return
 	}
 
-	questions, err := h.examUsecase.GetExamQuestions(c.Request.Context(), userID, uri.LevelID)
+	questions, err := h.examUsecase.GetExamQuestions(c.Request.Context(), userID, levelID)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
 	response.Success(c, http.StatusOK, "readiness exam questions retrieved successfully", questions)
+}
+
+// GetExamResult handles GET /api/v1/exams/result/:level_id
+func (h *Handler) GetExamResult(c *gin.Context) {
+	userID, ok := requireUserID(c)
+	if !ok {
+		return
+	}
+
+	levelID, ok := bindLevelIDURI(c)
+	if !ok {
+		return
+	}
+
+	result, err := h.examUsecase.GetExamResult(c.Request.Context(), userID, levelID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "readiness exam result retrieved successfully", result)
 }
 
 // SubmitExam handles POST /api/v1/exams/submit
@@ -238,6 +267,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	}
 	{
 		exams.GET("/questions/:level_id", h.GetExamQuestions)
+		exams.GET("/result/:level_id", h.GetExamResult)
 		exams.POST("/submit", h.SubmitExam)
 	}
 }

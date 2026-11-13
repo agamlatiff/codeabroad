@@ -856,6 +856,97 @@ func TestExtractDiagnosticFeedback_ShortRuneGuard(t *testing.T) {
 	}
 }
 
+func TestGetExamQuestions_RejectsAlreadyPassedLevel(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{{ID: "q-1", SkillPillar: "reading"}}
+	examRepo.Attempts = append(examRepo.Attempts, exercise.ReadinessExamAttempt{
+		ID:       "att-1",
+		UserID:   "user-1",
+		LevelID:  "lvl-n5",
+		IsPassed: true,
+	})
+
+	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), examRepo, langRepo, user.NewMockRepository())
+	_, err := uc.GetExamQuestions(context.Background(), "user-1", "lvl-n5")
+	if !errors.Is(err, exercise.ErrExamAlreadyPassed) {
+		t.Fatalf("expected ErrExamAlreadyPassed when level already passed, got %v", err)
+	}
+}
+
+func TestGetExamResult_ReturnsAttemptAndCertificate(t *testing.T) {
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+	userRepo := user.NewMockRepository()
+
+	_ = userRepo.Create(context.Background(), &user.User{
+		UserAccount: user.UserAccount{ID: "user-1", Email: "budi@example.com"},
+		UserProfile: user.UserProfile{Name: "Budi", Username: "budi"},
+	})
+	lvlN5 := &language.ProficiencyLevel{
+		ID:                  "lvl-n5",
+		LanguageID:          "lang-ja",
+		Code:                "N5",
+		OfficialExamName:    "JLPT N5 Readiness",
+		PassingScorePercent: 60,
+		OrderIndex:          1,
+	}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	uc := exercise.NewUsecase(exercise.NewMockRepository(), exercise.NewMockSRSRepository(), examRepo, langRepo, userRepo)
+
+	if _, err := uc.GetExamResult(context.Background(), "user-1", "lvl-n5"); !errors.Is(err, exercise.ErrExamResultNotFound) {
+		t.Fatalf("expected ErrExamResultNotFound before any passed attempt, got %v", err)
+	}
+
+	examRepo.Attempts = append(examRepo.Attempts, exercise.ReadinessExamAttempt{
+		ID:           "att-1",
+		UserID:       "user-1",
+		LevelID:      "lvl-n5",
+		ReadingScore: 100,
+		ScorePercent: 80,
+		IsPassed:     true,
+		AttemptedAt:  time.Date(2026, 11, 10, 8, 0, 0, 0, time.UTC),
+		AnalysisReport: map[string]any{
+			"answers": map[string]any{
+				"q-1": map[string]any{"is_correct": true},
+				"q-2": map[string]any{"is_correct": true},
+				"q-3": map[string]any{"is_correct": true},
+				"q-4": map[string]any{"is_correct": true},
+				"q-5": map[string]any{"is_correct": false},
+			},
+		},
+	})
+
+	res, err := uc.GetExamResult(context.Background(), "user-1", "lvl-n5")
+	if err != nil {
+		t.Fatalf("expected GetExamResult to succeed, got %v", err)
+	}
+	if res.Certificate == nil || res.Certificate.CandidateName != "Budi" || res.Certificate.Score != 4 || res.Certificate.MaxScore != 5 {
+		t.Fatalf("unexpected certificate payload: %+v", res.Certificate)
+	}
+}
+
 
 
 
