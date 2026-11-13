@@ -810,6 +810,52 @@ func TestGetDailyVocabularies_ReturnsItems(t *testing.T) {
 	}
 }
 
+func TestSubmitAnswer_WrongPreservesExistingEaseFactor(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	sRepo := exercise.NewMockSRSRepository()
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		Prompt:        "Test",
+		CorrectAnswer: "Correct",
+	}
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:              "srs-1",
+		UserID:          "user-1",
+		ExerciseID:      "ex-1",
+		RepetitionCount: 3,
+		IntervalDays:    6,
+		EaseFactor:      1.85,
+	}
+
+	uc := exercise.NewUsecase(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository())
+
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-1",
+		UserAnswer: "Wrong",
+	}); err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	updated := sRepo.Reviews["user-1:ex-1"]
+	if updated.RepetitionCount != 0 || updated.IntervalDays != 1 || updated.EaseFactor != 1.85 {
+		t.Fatalf("expected reps=0 interval=1 preserved ease=1.85, got %+v", updated)
+	}
+}
+
+func TestExtractDiagnosticFeedback_ShortRuneGuard(t *testing.T) {
+	h := exercise.NewHelper()
+	rubric := map[string]any{
+		"は": "Partikel topik.",
+	}
+
+	if fb := h.ExtractDiagnosticFeedback(rubric, "おはよう"); fb != nil {
+		t.Fatalf("expected single-rune particle key not to false-match inside unrelated word, got %q", *fb)
+	}
+	if fb := h.ExtractDiagnosticFeedback(rubric, "わたし は がくせい"); fb == nil || *fb != "Partikel topik." {
+		t.Fatalf("expected token match on isolated particle, got %v", fb)
+	}
+}
+
 
 
 

@@ -11,6 +11,7 @@ import {
   LANGUAGE_ENROLLMENTS_QUERY_KEY,
   languageService,
 } from '@/features/curriculum/services/languageService'
+import { useExerciseMedia } from '@/features/exercise/hooks/useExerciseMedia'
 import { exerciseService } from '@/features/exercise/services/exerciseService'
 import {
   formatUserAnswerForSubmission,
@@ -32,42 +33,6 @@ import { audioService } from '@/shared/services/audioService'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
-interface BrowserSpeechRecognitionAlternative {
-  transcript: string
-}
-
-interface BrowserSpeechRecognitionResult {
-  [index: number]: BrowserSpeechRecognitionAlternative | undefined
-}
-
-interface BrowserSpeechRecognitionEvent {
-  results: {
-    [index: number]: BrowserSpeechRecognitionResult | undefined
-  }
-}
-
-interface BrowserSpeechRecognition {
-  lang: string
-  interimResults: boolean
-  maxAlternatives: number
-  onresult: ((event: BrowserSpeechRecognitionEvent) => void) | null
-  onerror: (() => void) | null
-  onend: (() => void) | null
-  start: () => void
-  stop: () => void
-}
-
-type SpeechRecognitionConstructor = new () => BrowserSpeechRecognition
-
-const getSpeechRecognitionConstructor = (): SpeechRecognitionConstructor | null => {
-  if (typeof window === 'undefined') return null
-  const win = window as unknown as {
-    SpeechRecognition?: SpeechRecognitionConstructor
-    webkitSpeechRecognition?: SpeechRecognitionConstructor
-  }
-  return win.SpeechRecognition ?? win.webkitSpeechRecognition ?? null
-}
-
 export const useLearnWorkspace = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -86,12 +51,7 @@ export const useLearnWorkspace = () => {
   const [showHint, setShowHint] = useState(false)
   const [isGrammarDrawerOpen, setIsGrammarDrawerOpen] = useState(false)
   const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>([])
-  const [isSpeakingAudio, setIsSpeakingAudio] = useState(false)
-  const [isRecordingSpeech, setIsRecordingSpeech] = useState(false)
-  const [audioPlaybackError, setAudioPlaybackError] = useState<string | null>(null)
 
-  const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
-  const activeHtmlAudioRef = useRef<HTMLAudioElement | null>(null)
   const questionStartedAtRef = useRef<number>(0)
 
   if (id !== trackedLessonId) {
@@ -105,7 +65,6 @@ export const useLearnWorkspace = () => {
     setShowHint(false)
     setIsGrammarDrawerOpen(false)
     setCorrectExerciseIds([])
-    setAudioPlaybackError(null)
   }
 
   useEffect(() => {
@@ -117,12 +76,6 @@ export const useLearnWorkspace = () => {
     audioService.playBgm('universal')
     return () => {
       audioService.stopBgm()
-      audioService.stopSpeech()
-      recognitionRef.current?.stop()
-      if (activeHtmlAudioRef.current) {
-        activeHtmlAudioRef.current.pause()
-        activeHtmlAudioRef.current = null
-      }
     }
   }, [])
 
@@ -146,10 +99,23 @@ export const useLearnWorkspace = () => {
     return resolveSpeechLocale(active?.language?.code)
   }, [enrollmentsQuery.data])
 
-  const speechRecognitionSupported = useMemo(
-    () => getSpeechRecognitionConstructor() !== null,
-    []
-  )
+  const {
+    isSpeakingAudio,
+    isRecordingSpeech,
+    speechRecognitionSupported,
+    audioPlaybackError,
+    stopMediaSession,
+    handlePlayAudio: playExerciseAudio,
+    handleToggleRecording,
+  } = useExerciseMedia({
+    speechLocale,
+    isLocked: submittedResult !== null,
+    onTranscript: setTextInput,
+  })
+
+  useEffect(() => {
+    stopMediaSession()
+  }, [id, stopMediaSession])
 
   const lesson = lessonQuery.data ?? null
   const exercises = useMemo(() => lesson?.exercises ?? [], [lesson])
@@ -201,28 +167,16 @@ export const useLearnWorkspace = () => {
       }),
   })
 
-  const stopActiveAudio = useCallback(() => {
-    if (activeHtmlAudioRef.current) {
-      activeHtmlAudioRef.current.pause()
-      activeHtmlAudioRef.current = null
-    }
-    audioEngine.stopSpeech()
-    setIsSpeakingAudio(false)
-  }, [])
-
   const resetQuestionInputs = useCallback(() => {
-    recognitionRef.current?.stop()
-    stopActiveAudio()
-    setIsRecordingSpeech(false)
+    stopMediaSession()
     setSelectedTokenIndices([])
     setSelectedOptionValue('')
     setTextInput('')
     setSubmittedResult(null)
     setSubmitError(null)
     setShowHint(false)
-    setAudioPlaybackError(null)
     questionStartedAtRef.current = Date.now()
-  }, [stopActiveAudio])
+  }, [stopMediaSession])
 
   const handleAddToken = useCallback(
     (tokenIndex: number) => {
@@ -284,99 +238,8 @@ export const useLearnWorkspace = () => {
     if (!parsedContent) return
     const spokenText =
       parsedContent.audioText ?? parsedContent.displayText ?? currentExercise?.prompt
-
-    setAudioPlaybackError(null)
-    triggerHaptic('tap')
-
-    const speakFallback = () => {
-      if (!spokenText) {
-        setIsSpeakingAudio(false)
-        setAudioPlaybackError('Teks audio tidak tersedia untuk latihan ini.')
-        return
-      }
-      audioEngine.speakLanguage(
-        spokenText,
-        speechLocale,
-        () => setIsSpeakingAudio(false),
-        () => {
-          setIsSpeakingAudio(false)
-          setAudioPlaybackError(
-            'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
-          )
-        }
-      )
-    }
-
-    stopActiveAudio()
-    setIsSpeakingAudio(true)
-
-    let fallbackTriggered = false
-    const triggerFallbackOnce = () => {
-      if (fallbackTriggered) return
-      fallbackTriggered = true
-      speakFallback()
-    }
-
-    if (parsedContent.audioUrl && typeof Audio !== 'undefined') {
-      const audio = new Audio(parsedContent.audioUrl)
-      activeHtmlAudioRef.current = audio
-      audio.onended = () => setIsSpeakingAudio(false)
-      audio.onerror = triggerFallbackOnce
-      void audio.play().catch(triggerFallbackOnce)
-      return
-    }
-
-    speakFallback()
-  }, [currentExercise, parsedContent, speechLocale, stopActiveAudio])
-
-  const handleToggleRecording = useCallback(() => {
-    if (submittedResult !== null) return
-
-    if (isRecordingSpeech && recognitionRef.current) {
-      recognitionRef.current.stop()
-      setIsRecordingSpeech(false)
-      return
-    }
-
-    const RecognitionCtor = getSpeechRecognitionConstructor()
-    if (!RecognitionCtor) {
-      setAudioPlaybackError(
-        'Pengenalan suara browser tidak tersedia. Ketik atau konfirmasi pelafalan secara manual.'
-      )
-      return
-    }
-
-    try {
-      setAudioPlaybackError(null)
-      const recognition = new RecognitionCtor()
-      recognition.lang = speechLocale
-      recognition.interimResults = false
-      recognition.maxAlternatives = 1
-
-      recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
-        const transcript = event.results[0]?.[0]?.transcript?.trim() ?? ''
-        if (transcript) {
-          setTextInput(transcript)
-        }
-      }
-      recognition.onerror = () => {
-        setIsRecordingSpeech(false)
-        setAudioPlaybackError(
-          'Mikrofon gagal menangkap suara. Coba ulangi atau ketik manual.'
-        )
-      }
-      recognition.onend = () => {
-        setIsRecordingSpeech(false)
-      }
-
-      recognitionRef.current = recognition
-      setIsRecordingSpeech(true)
-      recognition.start()
-      triggerHaptic('tap')
-    } catch {
-      setIsRecordingSpeech(false)
-    }
-  }, [isRecordingSpeech, speechLocale, submittedResult])
+    playExerciseAudio(parsedContent.audioUrl, spokenText)
+  }, [currentExercise, parsedContent, playExerciseAudio])
 
   const handleCheckAnswer = useCallback(async () => {
     if (!currentExercise || !canCheckAnswer || submitAnswerMutation.isPending) {
@@ -460,7 +323,6 @@ export const useLearnWorkspace = () => {
         queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
       ])
 
-      audioEngine.playFanfare()
       triggerHaptic('success')
 
       const navState: LessonCompletionNavigationState = {
@@ -527,6 +389,12 @@ export const useLearnWorkspace = () => {
     navigate('/curriculum')
   }, [navigate])
 
+  const handleEnterShortcut = useCallback(() => {
+    if (submittedResult === null && canCheckAnswer) {
+      void handleCheckAnswer()
+    }
+  }, [canCheckAnswer, handleCheckAnswer, submittedResult])
+
   const progressPercent = useMemo(() => {
     if (exercises.length === 0) return 0
     const completedSteps = currentIndex + (submittedResult !== null ? 1 : 0)
@@ -591,5 +459,6 @@ export const useLearnWorkspace = () => {
     handleContinue,
     handleToggleHint,
     handleExitToCurriculum,
+    handleEnterShortcut,
   }
 }

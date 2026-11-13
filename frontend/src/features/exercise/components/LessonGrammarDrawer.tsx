@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
 import { BookOpen, X } from '@phosphor-icons/react'
 
@@ -15,10 +16,26 @@ export const LessonGrammarDrawer = ({
   grammarPoints,
   onClose,
 }: LessonGrammarDrawerProps) => {
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isOpen, onClose])
+
   if (!isOpen) return null
 
   return (
     <div
+      onClick={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose()
+        }
+      }}
       className="fixed inset-0 z-50 flex justify-end bg-slate-900/45 backdrop-blur-xs"
       role="dialog"
       aria-modal="true"

@@ -133,6 +133,17 @@ func hydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptabl
 	}
 }
 
+const (
+	exerciseSelectColumns = `
+		id, lesson_id, grammar_point_id, skill_pillar, exercise_type, prompt,
+		content, correct_answer, acceptable_answers, diagnostic_rubric, explanation, order_index, created_at
+	`
+	prefixedExerciseSelectColumns = `
+		e.id, e.lesson_id, e.grammar_point_id, e.skill_pillar, e.exercise_type, e.prompt,
+		e.content, e.correct_answer, e.acceptable_answers, e.diagnostic_rubric, e.explanation, e.order_index, e.created_at
+	`
+)
+
 func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, error) {
 	var ex Exercise
 	var contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte
@@ -148,45 +159,36 @@ func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, e
 	return &ex, nil
 }
 
+func scanExerciseRows(rows pgx.Rows, capHint int, errLabel string) ([]Exercise, error) {
+	exercises := make([]Exercise, 0, capHint)
+	for rows.Next() {
+		ex, err := scanExerciseRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan %s row: %w", errLabel, err)
+		}
+		exercises = append(exercises, *ex)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in %s: %w", errLabel, err)
+	}
+	return exercises, nil
+}
+
 // GetExercisesByLessonID retrieves all exercises belonging to a specific lesson node
 func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonID string) ([]Exercise, error) {
-	query := `
-		SELECT 
-			id, lesson_id, grammar_point_id, skill_pillar, exercise_type, prompt, 
-			content, correct_answer, acceptable_answers, diagnostic_rubric, explanation, order_index, created_at
-		FROM exercises
-		WHERE lesson_id = $1
-		ORDER BY order_index ASC, id ASC
-	`
+	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE lesson_id = $1 ORDER BY order_index ASC, id ASC`
 	rows, err := r.db.Pool.Query(ctx, query, lessonID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query exercises by lesson id: %w", err)
 	}
 	defer rows.Close()
 
-	exercises := make([]Exercise, 0, 10)
-	for rows.Next() {
-		ex, err := scanExerciseRow(rows)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan exercise row: %w", err)
-		}
-		exercises = append(exercises, *ex)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in exercises: %w", err)
-	}
-	return exercises, nil
+	return scanExerciseRows(rows, 10, "exercise")
 }
 
 // GetExerciseByID retrieves a single exercise by UUID
 func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*Exercise, error) {
-	query := `
-		SELECT 
-			id, lesson_id, grammar_point_id, skill_pillar, exercise_type, prompt, 
-			content, correct_answer, acceptable_answers, diagnostic_rubric, explanation, order_index, created_at
-		FROM exercises
-		WHERE id = $1
-	`
+	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE id = $1`
 	ex, err := scanExerciseRow(r.db.Pool.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -200,9 +202,7 @@ func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*E
 // GetPlacementExercises retrieves diagnostic placement test exercises for a destination language
 func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, languageID string, limit int) ([]Exercise, error) {
 	query := `
-		SELECT 
-			e.id, e.lesson_id, e.grammar_point_id, e.skill_pillar, e.exercise_type, e.prompt,
-			e.content, e.correct_answer, e.acceptable_answers, e.diagnostic_rubric, e.explanation, e.order_index, e.created_at
+		SELECT ` + prefixedExerciseSelectColumns + `
 		FROM exercises e
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
@@ -217,26 +217,13 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 	}
 	defer rows.Close()
 
-	exercises := make([]Exercise, 0, limit)
-	for rows.Next() {
-		ex, err := scanExerciseRow(rows)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan placement exercise row: %w", err)
-		}
-		exercises = append(exercises, *ex)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in placement exercises: %w", err)
-	}
-	return exercises, nil
+	return scanExerciseRows(rows, limit, "placement exercise")
 }
 
 // GetReadinessExamExercises retrieves all sectional questions for an official mock exam
 func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, levelID string) ([]Exercise, error) {
 	query := `
-		SELECT 
-			e.id, e.lesson_id, e.grammar_point_id, e.skill_pillar, e.exercise_type, e.prompt,
-			e.content, e.correct_answer, e.acceptable_answers, e.diagnostic_rubric, e.explanation, e.order_index, e.created_at
+		SELECT ` + prefixedExerciseSelectColumns + `
 		FROM exercises e
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
@@ -250,27 +237,12 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 	}
 	defer rows.Close()
 
-	exercises := make([]Exercise, 0, 20)
-	for rows.Next() {
-		ex, err := scanExerciseRow(rows)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan readiness exam exercise row: %w", err)
-		}
-		exercises = append(exercises, *ex)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in readiness exam exercises: %w", err)
-	}
-	return exercises, nil
+	return scanExerciseRows(rows, 20, "readiness exam exercise")
 }
 
 // GetDailyVocabularies extracts contextual workplace vocabulary cards from active curriculum exercises
 func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
-	if limit <= 0 {
-		limit = 10
-	} else if limit > 50 {
-		limit = 50
-	}
+	limit = normalizeLimit(limit, 10, 50)
 
 	query := `
 		SELECT
@@ -387,11 +359,7 @@ func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExe
 
 // GetAttemptsByUserID retrieves the most recent answer attempts for user analytics
 func (r *PostgresRepository) GetAttemptsByUserID(ctx context.Context, userID string, limit int) ([]UserExerciseAttempt, error) {
-	if limit <= 0 {
-		limit = 20
-	} else if limit > 100 {
-		limit = 100
-	}
+	limit = normalizeLimit(limit, 20, 100)
 	query := `
 		SELECT id, user_id, exercise_id, is_correct, selected_answer, time_spent_seconds, created_at
 		FROM user_exercise_attempts
@@ -653,37 +621,43 @@ func (r *PostgresRepository) RecordExamSubmissionTx(
 	return levelAdvanced, nil
 }
 
+const examAttemptSelectFrom = `
+	SELECT 
+		a.id, a.user_id, a.level_id, a.reading_score, a.listening_score, a.writing_score, a.speaking_score, a.overall_score,
+		a.is_passed, a.analysis_report, a.attempted_at,
+		pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
+	FROM readiness_exam_attempts a
+	JOIN proficiency_levels pl ON a.level_id = pl.id
+`
+
+func scanExamAttemptRow(scanner interface{ Scan(dest ...any) error }) (*ReadinessExamAttempt, error) {
+	var a ReadinessExamAttempt
+	var pl language.ProficiencyLevel
+	var reportJSON []byte
+
+	if err := scanner.Scan(
+		&a.ID, &a.UserID, &a.LevelID,
+		&a.ReadingScore, &a.ListeningScore, &a.WritingScore, &a.SpeakingScore, &a.OverallScore,
+		&a.IsPassed, &reportJSON, &a.AttemptedAt,
+		&pl.ID, &pl.LanguageID, &pl.Code, &pl.Name, &pl.Tier, &pl.OfficialExamName, &pl.PassingScorePercent, &pl.OrderIndex, &pl.CreatedAt,
+	); err != nil {
+		return nil, err
+	}
+	if len(reportJSON) > 0 {
+		_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
+	}
+	a.ScorePercent = a.OverallScore
+	a.Level = &pl
+	return &a, nil
+}
+
 // GetExamAttemptsByUserID retrieves previous mock exam results for a user
 func (r *PostgresRepository) GetExamAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]ReadinessExamAttempt, error) {
-	var query string
-	var rows pgx.Rows
-	var err error
-
-	if levelID != "" {
-		query = `
-			SELECT 
-				a.id, a.user_id, a.level_id, a.reading_score, a.listening_score, a.writing_score, a.speaking_score, a.overall_score,
-				a.is_passed, a.analysis_report, a.attempted_at,
-				pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
-			FROM readiness_exam_attempts a
-			JOIN proficiency_levels pl ON a.level_id = pl.id
-			WHERE a.user_id = $1 AND a.level_id = $2::uuid
-			ORDER BY a.attempted_at DESC, a.id ASC
-		`
-		rows, err = r.db.Pool.Query(ctx, query, userID, levelID)
-	} else {
-		query = `
-			SELECT 
-				a.id, a.user_id, a.level_id, a.reading_score, a.listening_score, a.writing_score, a.speaking_score, a.overall_score,
-				a.is_passed, a.analysis_report, a.attempted_at,
-				pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
-			FROM readiness_exam_attempts a
-			JOIN proficiency_levels pl ON a.level_id = pl.id
-			WHERE a.user_id = $1
-			ORDER BY a.attempted_at DESC, a.id ASC
-		`
-		rows, err = r.db.Pool.Query(ctx, query, userID)
-	}
+	query := examAttemptSelectFrom + `
+		WHERE a.user_id = $1 AND ($2 = '' OR a.level_id = NULLIF($2, '')::uuid)
+		ORDER BY a.attempted_at DESC, a.id ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, userID, levelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query readiness exam attempts: %w", err)
 	}
@@ -691,24 +665,11 @@ func (r *PostgresRepository) GetExamAttemptsByUserID(ctx context.Context, userID
 
 	attempts := make([]ReadinessExamAttempt, 0, 8)
 	for rows.Next() {
-		var a ReadinessExamAttempt
-		var pl language.ProficiencyLevel
-		var reportJSON []byte
-
-		if err := rows.Scan(
-			&a.ID, &a.UserID, &a.LevelID,
-			&a.ReadingScore, &a.ListeningScore, &a.WritingScore, &a.SpeakingScore, &a.OverallScore,
-			&a.IsPassed, &reportJSON, &a.AttemptedAt,
-			&pl.ID, &pl.LanguageID, &pl.Code, &pl.Name, &pl.Tier, &pl.OfficialExamName, &pl.PassingScorePercent, &pl.OrderIndex, &pl.CreatedAt,
-		); err != nil {
+		a, err := scanExamAttemptRow(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan readiness exam attempt row: %w", err)
 		}
-		if len(reportJSON) > 0 {
-			_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
-		}
-		a.ScorePercent = a.OverallScore
-		a.Level = &pl
-		attempts = append(attempts, a)
+		attempts = append(attempts, *a)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("rows iteration error in readiness exam attempts: %w", err)
@@ -718,38 +679,18 @@ func (r *PostgresRepository) GetExamAttemptsByUserID(ctx context.Context, userID
 
 // GetLatestPassedAttempt retrieves the most recent passed exam for certificate rendering
 func (r *PostgresRepository) GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error) {
-	query := `
-		SELECT 
-			a.id, a.user_id, a.level_id, a.reading_score, a.listening_score, a.writing_score, a.speaking_score, a.overall_score,
-			a.is_passed, a.analysis_report, a.attempted_at,
-			pl.id, pl.language_id, pl.code, pl.name, pl.tier, pl.official_exam_name, pl.passing_score_percent, pl.order_index, pl.created_at
-		FROM readiness_exam_attempts a
-		JOIN proficiency_levels pl ON a.level_id = pl.id
+	query := examAttemptSelectFrom + `
 		WHERE a.user_id = $1 AND a.level_id = $2::uuid AND a.is_passed = true
 		ORDER BY a.attempted_at DESC, a.id ASC
 		LIMIT 1
 	`
-	var a ReadinessExamAttempt
-	var pl language.ProficiencyLevel
-	var reportJSON []byte
-
-	err := r.db.Pool.QueryRow(ctx, query, userID, levelID).Scan(
-		&a.ID, &a.UserID, &a.LevelID,
-		&a.ReadingScore, &a.ListeningScore, &a.WritingScore, &a.SpeakingScore, &a.OverallScore,
-		&a.IsPassed, &reportJSON, &a.AttemptedAt,
-		&pl.ID, &pl.LanguageID, &pl.Code, &pl.Name, &pl.Tier, &pl.OfficialExamName, &pl.PassingScorePercent, &pl.OrderIndex, &pl.CreatedAt,
-	)
+	a, err := scanExamAttemptRow(r.db.Pool.QueryRow(ctx, query, userID, levelID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to query latest passed exam attempt: %w", err)
 	}
-	if len(reportJSON) > 0 {
-		_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
-	}
-	a.ScorePercent = a.OverallScore
-	a.Level = &pl
-	return &a, nil
+	return a, nil
 }
 

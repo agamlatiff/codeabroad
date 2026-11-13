@@ -107,12 +107,7 @@ func (u *usecase) GetDailyVocabularies(ctx context.Context, userID string, limit
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if limit <= 0 {
-		limit = 10
-	} else if limit > 50 {
-		limit = 50
-	}
-	return u.exerciseRepo.GetDailyVocabularies(ctx, userID, limit)
+	return u.exerciseRepo.GetDailyVocabularies(ctx, userID, normalizeLimit(limit, 10, 50))
 }
 
 // SubmitAnswer evaluates a single exercise response, logs telemetry, and injects into SRS on error
@@ -158,20 +153,27 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	var nextDue *time.Time
 
 	if !isCorrect {
-		tomorrow := now.AddDate(0, 0, 1)
+		prevEase := 2.5
+		if existing, revErr := u.srsRepo.GetReview(ctx, userID, req.ExerciseID); revErr == nil && existing != nil {
+			prevEase = existing.EaseFactor
+		} else if revErr != nil && !errors.Is(revErr, ErrReviewNotFound) {
+			log.Printf("exercise: failed to fetch existing srs card for user %s exercise %s: %v", userID, req.ExerciseID, revErr)
+		}
+
+		sm2 := u.helper.CalculateSM2(0, 0, 1, prevEase, now)
 		srsCard := &UserSRSReview{
 			UserID:          userID,
 			ExerciseID:      req.ExerciseID,
-			RepetitionCount: 0,
-			IntervalDays:    1,
-			EaseFactor:      2.5,
-			NextReviewAt:    tomorrow,
+			RepetitionCount: sm2.Repetitions,
+			IntervalDays:    sm2.IntervalDays,
+			EaseFactor:      sm2.EaseFactor,
+			NextReviewAt:    sm2.DueDate,
 			LastReviewedAt:  &now,
 		}
 		if srsErr := u.srsRepo.UpsertReview(ctx, srsCard); srsErr != nil {
 			log.Printf("exercise: failed to upsert srs card for user %s exercise %s: %v", userID, req.ExerciseID, srsErr)
 		} else {
-			nextDue = &tomorrow
+			nextDue = &sm2.DueDate
 		}
 	}
 
@@ -191,11 +193,7 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if limit <= 0 {
-		limit = 20
-	} else if limit > 100 {
-		limit = 100
-	}
+	limit = normalizeLimit(limit, 20, 100)
 
 	now := time.Now().UTC()
 	reviews, err := u.srsRepo.GetDueReviews(ctx, userID, now, limit)

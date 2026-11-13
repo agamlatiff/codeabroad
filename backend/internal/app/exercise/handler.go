@@ -77,6 +77,16 @@ func (h *Handler) SubmitAnswer(c *gin.Context) {
 	response.Success(c, http.StatusOK, "exercise answer submitted successfully", res)
 }
 
+func parseLimitQuery(c *gin.Context, defaultVal int) (int, bool) {
+	limitStr := c.DefaultQuery("limit", strconv.Itoa(defaultVal))
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		response.BadRequest(c, "invalid limit query parameter, must be an integer")
+		return 0, false
+	}
+	return limit, true
+}
+
 // GetDueReviews handles GET /api/v1/srs/due
 func (h *Handler) GetDueReviews(c *gin.Context) {
 	userID := c.GetString("userID")
@@ -85,10 +95,8 @@ func (h *Handler) GetDueReviews(c *gin.Context) {
 		return
 	}
 
-	limitStr := c.DefaultQuery("limit", "20")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		response.BadRequest(c, "invalid limit query parameter, must be an integer")
+	limit, ok := parseLimitQuery(c, 20)
+	if !ok {
 		return
 	}
 
@@ -180,10 +188,8 @@ func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 		return
 	}
 
-	limitStr := c.DefaultQuery("limit", "10")
-	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		response.BadRequest(c, "invalid limit query parameter, must be an integer")
+	limit, ok := parseLimitQuery(c, 10)
+	if !ok {
 		return
 	}
 

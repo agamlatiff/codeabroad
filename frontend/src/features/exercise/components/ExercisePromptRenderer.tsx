@@ -36,6 +36,7 @@ interface ExercisePromptRendererProps {
   onPlayAudio: () => void
   onToggleRecording: () => void
   onToggleHint: () => void
+  onEnterKey?: () => void
 }
 
 /**
@@ -63,6 +64,7 @@ export const ExercisePromptRenderer = ({
   onPlayAudio,
   onToggleRecording,
   onToggleHint,
+  onEnterKey,
 }: ExercisePromptRendererProps) => {
   const exerciseType = exercise.exercise_type
   const pillarMeta = SKILL_PILLAR_LABELS[exercise.skill_pillar] ?? {
@@ -324,6 +326,12 @@ export const ExercisePromptRenderer = ({
               disabled={isLocked}
               value={textInput}
               onChange={(e) => onSetTextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLocked && onEnterKey) {
+                  e.preventDefault()
+                  onEnterKey()
+                }
+              }}
               placeholder={
                 parsedContent.displayText || 'Ketik atau rekam pelafalan kalimat...'
               }
@@ -387,6 +395,12 @@ export const ExercisePromptRenderer = ({
               disabled={isLocked}
               value={textInput}
               onChange={(e) => onSetTextInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !isLocked && onEnterKey) {
+                  e.preventDefault()
+                  onEnterKey()
+                }
+              }}
               placeholder="Ketik jawaban Anda di sini..."
               className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-white border-2 border-slate-200 focus:border-blue-500 outline-none font-bold text-slate-900"
             />

@@ -5,7 +5,18 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode/utf8"
 )
+
+func normalizeLimit(limit int, defaultLimit int, maxLimit int) int {
+	if limit <= 0 {
+		return defaultLimit
+	}
+	if limit > maxLimit {
+		return maxLimit
+	}
+	return limit
+}
 
 func normalizeComparableAnswer(raw string) (withSpaces string, collapsed string) {
 	cleaned := strings.ToLower(strings.TrimSpace(raw))
@@ -156,7 +167,7 @@ func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer str
 				break
 			}
 		}
-		if !matched && strings.Contains(lowerUser, lowerKey) {
+		if !matched && utf8.RuneCountInString(lowerKey) >= 2 && strings.Contains(lowerUser, lowerKey) {
 			matched = true
 		}
 		if matched {

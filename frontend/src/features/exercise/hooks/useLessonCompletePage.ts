@@ -1,4 +1,4 @@
-import { useCallback, useEffect } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -18,6 +18,7 @@ export const useLessonCompletePage = () => {
   const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const user = useAuthStore((state) => state.user)
+  const fanfarePlayedRef = useRef(false)
 
   const state = (location.state ?? null) as LessonCompletionNavigationState | null
 
@@ -29,8 +30,24 @@ export const useLessonCompletePage = () => {
   })
 
   useEffect(() => {
+    if (state !== null) return
+    if (fallbackLessonQuery.isError) {
+      navigate('/curriculum', { replace: true })
+      return
+    }
+    if (fallbackLessonQuery.data && !fallbackLessonQuery.data.is_completed) {
+      navigate(id ? `/learn/${id}` : '/curriculum', { replace: true })
+    }
+  }, [fallbackLessonQuery.data, fallbackLessonQuery.isError, id, navigate, state])
+
+  const isConfirmedCompleted =
+    state !== null || fallbackLessonQuery.data?.is_completed === true
+
+  useEffect(() => {
+    if (!isConfirmedCompleted || fanfarePlayedRef.current) return
+    fanfarePlayedRef.current = true
     audioEngine.playFanfare()
-  }, [])
+  }, [isConfirmedCompleted])
 
   const completionResult = state?.completionResult
   const lesson = state?.lesson ?? fallbackLessonQuery.data ?? null

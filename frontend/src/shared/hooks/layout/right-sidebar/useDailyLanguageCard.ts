@@ -93,7 +93,11 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
   }, [user?.country])
 
   const { data: rawVocabs = [], isLoading } = useQuery({
-    queryKey: DAILY_VOCABULARIES_QUERY_KEY,
+    queryKey: [
+      ...DAILY_VOCABULARIES_QUERY_KEY,
+      user?.id ?? 'anonymous',
+      languageMeta.countryCode,
+    ],
     queryFn: ({ signal }) => vocabularyService.getDailyVocabularies({ signal }),
     staleTime: 1000 * 60 * 10,
     retry: false,

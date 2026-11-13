@@ -51,6 +51,7 @@ export const LearnWorkspacePage = () => {
     handleContinue,
     handleToggleHint,
     handleExitToCurriculum,
+    handleEnterShortcut,
   } = useLearnWorkspace()
 
   if (isLoading) {
@@ -181,6 +182,7 @@ export const LearnWorkspacePage = () => {
               onPlayAudio={handlePlayAudio}
               onToggleRecording={handleToggleRecording}
               onToggleHint={handleToggleHint}
+              onEnterKey={handleEnterShortcut}
             />
           ) : (
             <div className="p-8 rounded-3xl bg-white border-2 border-slate-200 text-center space-y-3">
