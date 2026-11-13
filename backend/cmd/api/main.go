@@ -79,7 +79,8 @@ func main() {
 
 	// 6. Initialize Handlers & Middlewares
 	healthHandler := health.NewHandler(pg, rdb)
-	authHandler := auth.NewHandler(authUsecase)
+	authLimiter := middleware.RateLimitMiddleware(10, time.Minute)
+	authHandler := auth.NewHandlerWithRateLimiter(authUsecase, authLimiter)
 	userHandler := user.NewHandler(userUsecase)
 	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
 	langHandler := language.NewHandler(langUsecase)

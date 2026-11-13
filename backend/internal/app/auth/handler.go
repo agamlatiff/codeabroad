@@ -2,17 +2,10 @@ package auth
 
 import (
 	"net/http"
-	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/shared/middleware"
 	"codeabroad/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
-)
-
-const (
-	defaultAuthRateLimitMaxRequests = 10
-	defaultAuthRateLimitWindow      = 1 * time.Minute
 )
 
 // Handler handles HTTP requests for user authentication and session management
@@ -21,12 +14,9 @@ type Handler struct {
 	rateLimiter gin.HandlerFunc
 }
 
-// NewHandler creates a new Auth Handler instance with default per-IP brute-force rate limiting (10 req/min)
+// NewHandler creates a new Auth Handler instance without built-in middleware wiring
 func NewHandler(authUsecase Usecase) *Handler {
-	return &Handler{
-		authUsecase: authUsecase,
-		rateLimiter: middleware.RateLimitMiddleware(defaultAuthRateLimitMaxRequests, defaultAuthRateLimitWindow),
-	}
+	return NewHandlerWithRateLimiter(authUsecase, nil)
 }
 
 // NewHandlerWithRateLimiter creates a new Auth Handler instance with a custom rate limiter middleware

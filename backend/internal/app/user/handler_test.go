@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"codeabroad/backend/internal/shared/middleware"
+	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -17,7 +18,7 @@ import (
 const testJWTSecret = "test-secret-at-least-32-chars-long-key-12345"
 
 func generateTestToken(userID, email string) string {
-	claims := middleware.JWTClaims{
+	claims := auth.JWTClaims{
 		UserID: userID,
 		Email:  email,
 		RegisteredClaims: jwt.RegisteredClaims{

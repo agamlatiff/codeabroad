@@ -6,32 +6,24 @@ import (
 	"net/http"
 	"strings"
 
+	"codeabroad/backend/internal/app/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
-
-// JWTClaims defines the cryptographic token payload claims shared across Auth Usecase and Middleware
-type JWTClaims struct {
-	UserID    string `json:"user_id"`
-	SessionID string `json:"session_id,omitempty"`
-	Email     string `json:"email"`
-	Username  string `json:"username"`
-	jwt.RegisteredClaims
-}
 
 var (
 	errInvalidAuthHeaderFormat = errors.New("authorization header format must be Bearer {token}")
 	errInvalidOrExpiredToken   = errors.New("invalid or expired token")
 )
 
-func parseBearerToken(authHeader string, jwtSecret string) (*JWTClaims, error) {
+func parseBearerToken(authHeader string, jwtSecret string) (*auth.JWTClaims, error) {
 	parts := strings.SplitN(authHeader, " ", 2)
 	if len(parts) != 2 || parts[0] != "Bearer" || strings.TrimSpace(parts[1]) == "" {
 		return nil, errInvalidAuthHeaderFormat
 	}
 
 	tokenString := parts[1]
-	token, err := jwt.ParseWithClaims(tokenString, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &auth.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
@@ -41,14 +33,14 @@ func parseBearerToken(authHeader string, jwtSecret string) (*JWTClaims, error) {
 		return nil, errInvalidOrExpiredToken
 	}
 
-	claims, ok := token.Claims.(*JWTClaims)
+	claims, ok := token.Claims.(*auth.JWTClaims)
 	if !ok {
 		return nil, errInvalidOrExpiredToken
 	}
 	return claims, nil
 }
 
-func injectClaimsIntoContext(c *gin.Context, claims *JWTClaims) {
+func injectClaimsIntoContext(c *gin.Context, claims *auth.JWTClaims) {
 	c.Set("userID", claims.UserID)
 	c.Set("sessionID", claims.SessionID)
 	c.Set("email", claims.Email)
