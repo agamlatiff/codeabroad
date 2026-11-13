@@ -508,10 +508,6 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 		if lvl.ID == levelID {
 			if i+1 < len(sortedLevels) {
 				nextLevel := sortedLevels[i+1]
-				nextUnits, uErr := u.curriculumRepo.GetUnitsByLevelID(ctx, nextLevel.ID, userID)
-				if uErr != nil || len(nextUnits) == 0 {
-					return
-				}
 				nextLessons, lErr := u.curriculumRepo.GetLessonsByLevelID(ctx, nextLevel.ID, userID)
 				if lErr != nil || len(nextLessons) == 0 {
 					return

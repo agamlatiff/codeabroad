@@ -79,7 +79,10 @@ func (m *MockRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID 
 		}
 	}
 	sort.Slice(res, func(i, j int) bool {
-		return res[i].OrderIndex < res[j].OrderIndex
+		if res[i].OrderIndex != res[j].OrderIndex {
+			return res[i].OrderIndex < res[j].OrderIndex
+		}
+		return res[i].ID < res[j].ID
 	})
 	return res, nil
 }
@@ -149,7 +152,7 @@ func (m *MockRepository) GetUnitByID(ctx context.Context, id string) (*Unit, err
 	}
 	u, ok := m.Units[id]
 	if !ok {
-		return nil, nil
+		return nil, ErrUnitNotFound
 	}
 	return &Unit{
 		ID:          u.ID,
@@ -384,8 +387,13 @@ func (m *MockRepository) SkipPrecedingLessons(ctx context.Context, userID string
 		return m.SkipPrecedingErr
 	}
 	for _, l := range m.Lessons {
-		if u, ok := m.Units[l.UnitID]; ok && !isCurriculumUnit(u) {
-			continue
+		if u, ok := m.Units[l.UnitID]; ok {
+			if !isCurriculumUnit(u) {
+				continue
+			}
+			if lvlOrder, hasOrder := m.LevelOrders[u.LevelID]; hasOrder && lvlOrder >= upToLevelOrder {
+				continue
+			}
 		}
 		key := fmt.Sprintf("%s:%s", userID, l.ID)
 		m.LessonProgress[key] = &UserLessonProgress{

@@ -239,44 +239,58 @@ func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonI
 	return &nextID, nil
 }
 
+const targetCurriculumLessonCTESQL = `
+	WITH target_lesson AS (
+		SELECT
+			l.id,
+			l.xp_reward,
+			u.id AS unit_id,
+			u.level_id,
+			u.order_index AS unit_order,
+			l.order_index AS lesson_order,
+			pl.language_id,
+			pl.order_index AS level_order
+		FROM lessons l
+		JOIN units u ON l.unit_id = u.id
+		JOIN proficiency_levels pl ON u.level_id = pl.id
+		WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
+	)
+`
+
+const curriculumUnlockPredicateSQL = `
+	EXISTS (
+		SELECT 1
+		FROM user_language_enrollments ule
+		JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
+		WHERE ule.user_id = $2::uuid
+		  AND ule.language_id = tl.language_id
+		  AND ule.is_active = true
+		  AND tl.level_order <= user_pl.order_index
+		  AND NOT EXISTS (
+			SELECT 1
+			FROM lessons prev_l
+			JOIN units prev_u ON prev_l.unit_id = prev_u.id
+			LEFT JOIN user_lesson_progress prev_ulp
+			  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
+			WHERE prev_u.level_id = tl.level_id
+			  AND prev_u.unit_type = 'curriculum'
+			  AND COALESCE(prev_ulp.is_completed, false) = false
+			  AND (
+				(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
+				OR (
+					prev_u.id = tl.unit_id
+					AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
+				)
+			  )
+		  )
+	)
+`
+
 // IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
 // and enforces that the lesson belongs to a proficiency level <= the user's enrolled level in that language.
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
-	query := `
-		WITH current_target AS (
-			SELECT l.id, u.id AS unit_id, u.level_id, pl.language_id, pl.order_index AS level_order, u.order_index AS unit_order, l.order_index AS lesson_order
-			FROM lessons l
-			JOIN units u ON l.unit_id = u.id
-			JOIN proficiency_levels pl ON u.level_id = pl.id
-			WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
-		)
-		SELECT 
-			CASE 
-				WHEN NOT EXISTS (SELECT 1 FROM current_target) THEN false
-				WHEN NOT EXISTS (
-					SELECT 1
-					FROM current_target ct
-					JOIN user_language_enrollments ule ON ule.user_id = $2::uuid AND ule.language_id = ct.language_id AND ule.is_active = true
-					JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
-					WHERE ct.level_order <= user_pl.order_index
-				) THEN false
-				ELSE NOT EXISTS (
-					SELECT 1
-					FROM current_target ct
-					JOIN units prev_u ON prev_u.level_id = ct.level_id AND prev_u.unit_type = 'curriculum'
-					JOIN lessons prev_l ON prev_l.unit_id = prev_u.id
-					LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
-					WHERE (
-						prev_u.order_index < ct.unit_order
-						OR (prev_u.order_index = ct.unit_order AND prev_u.id < ct.unit_id)
-						OR (prev_u.order_index = ct.unit_order AND prev_u.id = ct.unit_id AND (
-							prev_l.order_index < ct.lesson_order
-							OR (prev_l.order_index = ct.lesson_order AND prev_l.id < ct.id)
-						))
-					)
-					AND (ulp.is_completed IS NULL OR ulp.is_completed = false)
-				)
-			END AS is_unlocked
+	query := targetCurriculumLessonCTESQL + `
+		SELECT COALESCE((SELECT ` + curriculumUnlockPredicateSQL + ` FROM target_lesson tl), false) AS is_unlocked
 	`
 	var isUnlocked bool
 	err := r.db.Pool.QueryRow(ctx, query, lessonID, userID).Scan(&isUnlocked)
@@ -357,51 +371,11 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	var canonicalLessonID string
 	var lessonXPReward int
 	var isEligible bool
-	eligibilityQuery := `
-		WITH target_lesson AS (
-			SELECT
-				l.id,
-				l.xp_reward,
-				u.id AS unit_id,
-				u.level_id,
-				u.order_index AS unit_order,
-				l.order_index AS lesson_order,
-				pl.language_id,
-				pl.order_index AS level_order
-			FROM lessons l
-			JOIN units u ON l.unit_id = u.id
-			JOIN proficiency_levels pl ON u.level_id = pl.id
-			WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
-		)
+	eligibilityQuery := targetCurriculumLessonCTESQL + `
 		SELECT
 			tl.id::text,
 			tl.xp_reward,
-			EXISTS (
-				SELECT 1
-				FROM user_language_enrollments ule
-				JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
-				WHERE ule.user_id = $2::uuid
-				  AND ule.language_id = tl.language_id
-				  AND ule.is_active = true
-				  AND tl.level_order <= user_pl.order_index
-				  AND NOT EXISTS (
-					SELECT 1
-					FROM lessons prev_l
-					JOIN units prev_u ON prev_l.unit_id = prev_u.id
-					LEFT JOIN user_lesson_progress prev_ulp
-					  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
-					WHERE prev_u.level_id = tl.level_id
-					  AND prev_u.unit_type = 'curriculum'
-					  AND COALESCE(prev_ulp.is_completed, false) = false
-					  AND (
-						(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
-						OR (
-							prev_u.id = tl.unit_id
-							AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
-						)
-					  )
-				  )
-			)
+			` + curriculumUnlockPredicateSQL + `
 		FROM target_lesson tl
 	`
 	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&canonicalLessonID, &lessonXPReward, &isEligible); err != nil {
