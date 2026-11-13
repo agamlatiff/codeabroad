@@ -65,14 +65,14 @@ export interface UserSRSReview {
   exercise_id: string
   ease_factor: number
   interval_days: number
-  repetitions: number
-  due_date: string
+  repetition_count: number
+  next_review_at: string
   last_reviewed_at?: string | null
   exercise?: CurriculumExercise
 }
 
 export interface SRSQueueResponse {
-  due_count: number
+  total_due: number
   items: UserSRSReview[]
 }
 

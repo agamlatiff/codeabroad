@@ -131,7 +131,6 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		ExerciseID:       req.ExerciseID,
 		IsCorrect:        isCorrect,
 		SelectedAnswer:   map[string]any{"user_answer": req.UserAnswer},
-		UserAnswer:       req.UserAnswer,
 		TimeSpentSeconds: req.TimeSpentSeconds,
 	}
 	if err := u.exerciseRepo.CreateAttempt(ctx, attempt); err != nil {
@@ -140,7 +139,6 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 
 	now := time.Now().UTC()
 	var nextDue *time.Time
-	var xpEarned int
 
 	if !isCorrect {
 		tomorrow := now.AddDate(0, 0, 1)
@@ -148,22 +146,15 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 			UserID:          userID,
 			ExerciseID:      req.ExerciseID,
 			RepetitionCount: 0,
-			Repetitions:     0,
 			IntervalDays:    1,
 			EaseFactor:      2.5,
 			NextReviewAt:    tomorrow,
-			DueDate:         tomorrow,
 			LastReviewedAt:  &now,
 		}
 		if srsErr := u.srsRepo.UpsertReview(ctx, srsCard); srsErr != nil {
 			log.Printf("exercise: failed to upsert srs card for user %s exercise %s: %v", userID, req.ExerciseID, srsErr)
 		} else {
 			nextDue = &tomorrow
-		}
-	} else {
-		xpEarned = ex.XPReward
-		if xpEarned <= 0 {
-			xpEarned = 5
 		}
 	}
 
@@ -172,13 +163,13 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		CorrectAnswer:      ex.CorrectAnswer,
 		Explanation:        ex.Explanation,
 		DiagnosticFeedback: diagnosticFeedback,
-		XPEarned:           xpEarned,
+		XPEarned:           0,
 		StreakBonus:        0,
 		NextReviewDue:      nextDue,
 	}, nil
 }
 
-// GetDueReviews retrieves pending spaced repetition cards due today
+// GetDueReviews retrieves pending spaced repetition cards due today with solution fields stripped
 func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (*SRSQueueResponse, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
@@ -193,6 +184,13 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 	reviews, err := u.srsRepo.GetDueReviews(ctx, userID, now, limit)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query due reviews: %w", err)
+	}
+
+	for i := range reviews {
+		if reviews[i].Exercise != nil {
+			sanitized := SanitizeExercises([]Exercise{*reviews[i].Exercise})
+			reviews[i].Exercise = &sanitized[0]
+		}
 	}
 
 	dueCount, err := u.srsRepo.GetDueCount(ctx, userID, now)
@@ -211,34 +209,47 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if req == nil || req.ExerciseID == "" {
+	if req == nil || req.ExerciseID == "" || req.Quality == nil {
 		return nil, apperror.ErrBadRequest
 	}
-	if req.Quality < 0 || req.Quality > 5 {
+	quality := *req.Quality
+	if quality < 0 || quality > 5 {
 		return nil, ErrInvalidQualityRating
+	}
+
+	ex, err := u.exerciseRepo.GetExerciseByID(ctx, req.ExerciseID)
+	if err != nil {
+		return nil, err
+	}
+	if ex == nil {
+		return nil, ErrExerciseNotFound
 	}
 
 	currentReview, err := u.srsRepo.GetReview(ctx, userID, req.ExerciseID)
 	prevReps := 0
 	prevInterval := 1
 	prevEase := 2.5
-	if err == nil && currentReview != nil {
-		prevReps = currentReview.Repetitions
+	if err != nil {
+		if !errors.Is(err, ErrReviewNotFound) {
+			return nil, fmt.Errorf("failed to query existing srs review: %w", err)
+		}
+	} else if currentReview != nil {
+		prevReps = currentReview.RepetitionCount
 		prevInterval = currentReview.IntervalDays
 		prevEase = currentReview.EaseFactor
 	}
 
 	now := time.Now().UTC()
-	sm2 := u.helper.CalculateSM2(req.Quality, prevReps, prevInterval, prevEase, now)
+	sm2 := u.helper.CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
 
 	updatedReview := &UserSRSReview{
-		UserID:         userID,
-		ExerciseID:     req.ExerciseID,
-		Repetitions:    sm2.Repetitions,
-		IntervalDays:   sm2.IntervalDays,
-		EaseFactor:     sm2.EaseFactor,
-		DueDate:        sm2.DueDate,
-		LastReviewedAt: &now,
+		UserID:          userID,
+		ExerciseID:      req.ExerciseID,
+		RepetitionCount: sm2.Repetitions,
+		IntervalDays:    sm2.IntervalDays,
+		EaseFactor:      sm2.EaseFactor,
+		NextReviewAt:    sm2.DueDate,
+		LastReviewedAt:  &now,
 	}
 
 	if err := u.srsRepo.UpsertReview(ctx, updatedReview); err != nil {
@@ -303,21 +314,37 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		return nil, err
 	}
 
+	prevPassed, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, req.LevelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify previous exam status: %w", err)
+	}
+	if prevPassed != nil {
+		return nil, ErrExamAlreadyPassed
+	}
+
 	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, req.LevelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load exam questions: %w", err)
 	}
+	if len(questions) == 0 {
+		return nil, apperror.NewNotFoundError("EXAM_QUESTIONS_NOT_FOUND", "no readiness exam questions configured for this level")
+	}
 
-	questionsMap := make(map[string]Exercise)
+	questionsMap := make(map[string]Exercise, len(questions))
+	pillarCatalogTotal := make(map[string]int)
 	for _, q := range questions {
 		questionsMap[q.ID] = q
+		pillar := q.SkillPillar
+		if pillar == "" {
+			pillar = "reading"
+		}
+		pillarCatalogTotal[pillar]++
 	}
 
 	totalScore := 0
 	maxScore := len(questions)
 	answersPayload := make(map[string]any)
 
-	pillarTotal := make(map[string]int)
 	pillarCorrect := make(map[string]int)
 	seenExerciseIDs := make(map[string]bool, len(req.Answers))
 
@@ -335,7 +362,6 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		if pillar == "" {
 			pillar = "reading"
 		}
-		pillarTotal[pillar]++
 
 		isCorrect := u.helper.EvaluateAnswer(q.CorrectAnswer, q.AcceptableAnswers, ans.UserAnswer)
 		if isCorrect {
@@ -354,7 +380,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	}
 
 	calcPillarScore := func(pillar string) int {
-		total := pillarTotal[pillar]
+		total := pillarCatalogTotal[pillar]
 		if total == 0 {
 			return scorePercent
 		}
@@ -381,7 +407,6 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		WritingScore:   writingScore,
 		SpeakingScore:  speakingScore,
 		OverallScore:   scorePercent,
-		TotalScore:     totalScore,
 		MaxScore:       maxScore,
 		ScorePercent:   scorePercent,
 		IsPassed:       isPassed,
@@ -394,9 +419,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 				"speaking":  speakingScore,
 			},
 		},
-		AnswersPayload: answersPayload,
-		AttemptedAt:    now,
-		CompletedAt:    now,
+		AttemptedAt: now,
 	}
 
 	if err := u.examRepo.CreateExamAttempt(ctx, attempt); err != nil {

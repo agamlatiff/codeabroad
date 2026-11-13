@@ -67,11 +67,9 @@ func (m *MockRepository) GetPlacementExercises(ctx context.Context, languageID s
 	}
 	var res []Exercise
 	for _, ex := range m.Exercises {
-		if ex.Type == ExerciseTypePlacementTest {
-			res = append(res, *ex)
-			if limit > 0 && len(res) >= limit {
-				break
-			}
+		res = append(res, *ex)
+		if limit > 0 && len(res) >= limit {
+			break
 		}
 	}
 	return res, nil
@@ -145,11 +143,7 @@ func (m *MockSRSRepository) GetDueReviews(ctx context.Context, userID string, no
 	}
 	var res []UserSRSReview
 	for _, r := range m.Reviews {
-		due := r.NextReviewAt
-		if due.IsZero() {
-			due = r.DueDate
-		}
-		if r.UserID == userID && !due.After(now) {
+		if r.UserID == userID && !r.NextReviewAt.After(now) {
 			res = append(res, *r)
 			if limit > 0 && len(res) >= limit {
 				break
@@ -166,7 +160,7 @@ func (m *MockSRSRepository) GetReview(ctx context.Context, userID string, exerci
 	key := fmt.Sprintf("%s:%s", userID, exerciseID)
 	r, ok := m.Reviews[key]
 	if !ok {
-		return nil, nil
+		return nil, ErrReviewNotFound
 	}
 	return r, nil
 }
@@ -189,11 +183,7 @@ func (m *MockSRSRepository) GetDueCount(ctx context.Context, userID string, now 
 	}
 	count := 0
 	for _, r := range m.Reviews {
-		due := r.NextReviewAt
-		if due.IsZero() {
-			due = r.DueDate
-		}
-		if r.UserID == userID && !due.After(now) {
+		if r.UserID == userID && !r.NextReviewAt.After(now) {
 			count++
 		}
 	}
@@ -222,8 +212,8 @@ func (m *MockReadinessExamRepository) CreateExamAttempt(ctx context.Context, att
 	if attempt.ID == "" {
 		attempt.ID = fmt.Sprintf("exam_%d", len(m.Attempts)+1)
 	}
-	if attempt.CompletedAt.IsZero() {
-		attempt.CompletedAt = time.Now()
+	if attempt.AttemptedAt.IsZero() {
+		attempt.AttemptedAt = time.Now().UTC()
 	}
 	m.Attempts = append(m.Attempts, *attempt)
 	return nil

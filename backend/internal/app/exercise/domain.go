@@ -34,14 +34,11 @@ func SanitizeExercises(exercises []Exercise) []Exercise {
 
 // ExerciseType enumeration constants aligned with database CHECK constraint
 const (
-	ExerciseTypeSentenceBuilder      = "sentence_builder"
-	ExerciseTypeFillBlank            = "fill_blank"
-	ExerciseTypeListeningChoice      = "listening_choice"
-	ExerciseTypeSpeakingRepeat       = "speaking_repeat"
-	ExerciseTypeDialogueRoleplay     = "dialogue_roleplay"
-	ExerciseTypeMultipleChoice       = "multiple_choice"
-	ExerciseTypePlacementTest        = "placement_test"
-	ExerciseTypeReadingComprehension = "reading_comprehension"
+	ExerciseTypeSentenceBuilder  = "sentence_builder"
+	ExerciseTypeFillBlank        = "fill_blank"
+	ExerciseTypeListeningChoice  = "listening_choice"
+	ExerciseTypeSpeakingRepeat   = "speaking_repeat"
+	ExerciseTypeDialogueRoleplay = "dialogue_roleplay"
 )
 
 // Exercise represents an interactive pedagogical question (exercises table)
@@ -51,9 +48,7 @@ type Exercise struct {
 	GrammarPointID    *string        `json:"grammar_point_id,omitempty"`
 	SkillPillar       string         `json:"skill_pillar"`
 	ExerciseType      string         `json:"exercise_type"`
-	Type              string         `json:"type,omitempty"` // Backward-compatible alias
 	Prompt            string         `json:"prompt"`
-	QuestionText      string         `json:"question_text,omitempty"` // Backward-compatible alias
 	Content           map[string]any `json:"content,omitempty"`
 	Options           []string       `json:"options,omitempty"` // Extracted from content.options for frontend
 	CorrectAnswer     string         `json:"correct_answer,omitempty"`
@@ -74,7 +69,6 @@ type UserExerciseAttempt struct {
 	ExerciseID       string         `json:"exercise_id"`
 	IsCorrect        bool           `json:"is_correct"`
 	SelectedAnswer   map[string]any `json:"selected_answer,omitempty"`
-	UserAnswer       string         `json:"user_answer"` // Backward-compatible alias
 	TimeSpentSeconds int            `json:"time_spent_seconds"`
 	CreatedAt        time.Time      `json:"created_at"`
 }
@@ -85,11 +79,9 @@ type UserSRSReview struct {
 	UserID          string     `json:"user_id"`
 	ExerciseID      string     `json:"exercise_id"`
 	RepetitionCount int        `json:"repetition_count"`
-	Repetitions     int        `json:"repetitions,omitempty"` // Backward-compatible alias
 	IntervalDays    int        `json:"interval_days"`
 	EaseFactor      float64    `json:"ease_factor"`
 	NextReviewAt    time.Time  `json:"next_review_at"`
-	DueDate         time.Time  `json:"due_date,omitempty"` // Backward-compatible alias
 	LastReviewedAt  *time.Time `json:"last_reviewed_at,omitempty"`
 	Exercise        *Exercise  `json:"exercise,omitempty"`
 }
@@ -104,14 +96,11 @@ type ReadinessExamAttempt struct {
 	WritingScore   int                        `json:"writing_score"`
 	SpeakingScore  int                        `json:"speaking_score"`
 	OverallScore   int                        `json:"overall_score"`
-	TotalScore     int                        `json:"total_score,omitempty"` // Backward-compatible alias
 	MaxScore       int                        `json:"max_score,omitempty"`
 	ScorePercent   int                        `json:"score_percent,omitempty"`
 	IsPassed       bool                       `json:"is_passed"`
 	AnalysisReport map[string]any             `json:"analysis_report,omitempty"`
-	AnswersPayload map[string]any             `json:"answers_payload,omitempty"` // Backward-compatible alias
 	AttemptedAt    time.Time                  `json:"attempted_at"`
-	CompletedAt    time.Time                  `json:"completed_at,omitempty"` // Backward-compatible alias
 	Level          *language.ProficiencyLevel `json:"level,omitempty"`
 }
 
@@ -136,7 +125,7 @@ type SubmitExerciseAnswerResponse struct {
 // SubmitSRSReviewRequest defines the SM-2 quality grade (0-5) after reviewing a card
 type SubmitSRSReviewRequest struct {
 	ExerciseID string `json:"exercise_id" binding:"required,uuid"`
-	Quality    int    `json:"quality" binding:"min=0,max=5"`
+	Quality    *int   `json:"quality" binding:"required,min=0,max=5"`
 }
 
 // SRSQueueResponse provides the batch of due spaced repetition reviews

@@ -86,7 +86,6 @@ export const useLearnWorkspace = () => {
   const [showHint, setShowHint] = useState(false)
   const [isGrammarDrawerOpen, setIsGrammarDrawerOpen] = useState(false)
   const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>([])
-  const [totalSessionXp, setTotalSessionXp] = useState(0)
   const [isSpeakingAudio, setIsSpeakingAudio] = useState(false)
   const [isRecordingSpeech, setIsRecordingSpeech] = useState(false)
   const [audioPlaybackError, setAudioPlaybackError] = useState<string | null>(null)
@@ -106,7 +105,6 @@ export const useLearnWorkspace = () => {
     setShowHint(false)
     setIsGrammarDrawerOpen(false)
     setCorrectExerciseIds([])
-    setTotalSessionXp(0)
     setAudioPlaybackError(null)
   }
 
@@ -392,7 +390,6 @@ export const useLearnWorkspace = () => {
         setCorrectExerciseIds((prev) =>
           prev.includes(currentExercise.id) ? prev : [...prev, currentExercise.id]
         )
-        setTotalSessionXp((prev) => prev + res.xp_earned + res.streak_bonus)
       } else {
         triggerHaptic('error')
         audioEngine.playError()
@@ -419,6 +416,7 @@ export const useLearnWorkspace = () => {
     const accuracyPercent = Math.round((correctExerciseIds.length / total) * 100)
 
     try {
+      const previousUser = useAuthStore.getState().user
       const completionResult = await completeLessonMutation.mutateAsync({
         lessonId: lesson.id,
         score: accuracyPercent,
@@ -433,6 +431,11 @@ export const useLearnWorkspace = () => {
           last_active_at: completionResult.gamification.last_active_at,
         })
       }
+
+      const actualXpEarned =
+        completionResult.gamification && previousUser
+          ? Math.max(0, completionResult.gamification.xp - previousUser.xp)
+          : lesson.xp_reward
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
@@ -452,8 +455,7 @@ export const useLearnWorkspace = () => {
         lesson,
         totalExercises: exercises.length,
         correctCount: correctExerciseIds.length,
-        totalXpEarned:
-          totalSessionXp > 0 ? totalSessionXp : lesson.xp_reward,
+        totalXpEarned: actualXpEarned,
         accuracyPercent,
       }
 
@@ -478,7 +480,6 @@ export const useLearnWorkspace = () => {
     lesson,
     navigate,
     queryClient,
-    totalSessionXp,
     updateUser,
   ])
 
@@ -556,7 +557,6 @@ export const useLearnWorkspace = () => {
     isRecordingSpeech,
     speechRecognitionSupported,
     audioPlaybackError,
-    totalSessionXp,
     correctCount: correctExerciseIds.length,
     canCheckAnswer,
     isLastExercise,

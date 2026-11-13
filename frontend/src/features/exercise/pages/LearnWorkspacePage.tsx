@@ -31,7 +31,6 @@ export const LearnWorkspacePage = () => {
     isRecordingSpeech,
     speechRecognitionSupported,
     audioPlaybackError,
-    totalSessionXp,
     canCheckAnswer,
     isLastExercise,
     isLoading,
@@ -132,11 +131,11 @@ export const LearnWorkspacePage = () => {
           </span>
         </div>
 
-        {/* Session XP & Grammar Reference Button */}
+        {/* Lesson XP Reward & Grammar Reference Button */}
         <div className="flex items-center gap-2 shrink-0">
           <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700">
             <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
-            +{totalSessionXp} XP
+            +{lesson.xp_reward} XP
           </span>
 
           {lesson.grammar_points.length > 0 && (

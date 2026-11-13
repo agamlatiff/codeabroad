@@ -47,8 +47,8 @@ func setupExerciseTestRouter() (*gin.Engine, *exercise.MockRepository, *exercise
 	exerciseRepo.Exercises[exID] = &exercise.Exercise{
 		ID:            exID,
 		LessonID:      &lesID,
-		Type:          exercise.ExerciseTypeMultipleChoice,
-		QuestionText:  "Choose the correct greeting",
+		ExerciseType:  exercise.ExerciseTypeFillBlank,
+		Prompt:        "Choose the correct greeting",
 		Options:       []string{"Konnichiwa", "Sayonara"},
 		CorrectAnswer: "Konnichiwa",
 	}
@@ -153,9 +153,10 @@ func TestHTTP_GetExamQuestions_InvalidUUID_Returns400(t *testing.T) {
 func TestHTTP_ProcessReview_AllowsZeroQuality(t *testing.T) {
 	r, _, _, _ := setupExerciseTestRouter()
 
+	q := 0
 	body, _ := json.Marshal(exercise.SubmitSRSReviewRequest{
 		ExerciseID: "44444444-4444-4444-4444-444444444444",
-		Quality:    0,
+		Quality:    &q,
 	})
 
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/srs/review", bytes.NewBuffer(body))
@@ -165,6 +166,20 @@ func TestHTTP_ProcessReview_AllowsZeroQuality(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK when submitting SM-2 quality 0, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_ProcessReview_MissingQualityReturns400(t *testing.T) {
+	r, _, _, _ := setupExerciseTestRouter()
+
+	body := []byte(`{"exercise_id":"44444444-4444-4444-4444-444444444444"}`)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/srs/review", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request when quality is missing, got: %d, body: %s", w.Code, w.Body.String())
 	}
 }
 

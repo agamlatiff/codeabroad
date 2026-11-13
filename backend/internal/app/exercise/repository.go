@@ -91,8 +91,6 @@ func ParseAcceptableAnswersJSON(acceptableJSON []byte) []string {
 }
 
 func hydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte) {
-	ex.Type = ex.ExerciseType
-	ex.QuestionText = ex.Prompt
 	ex.XPReward = 10
 
 	if len(contentJSON) > 0 {
@@ -268,8 +266,8 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 // CreateAttempt logs telemetry data for an answered exercise
 func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error {
 	selectedPayload := attempt.SelectedAnswer
-	if len(selectedPayload) == 0 {
-		selectedPayload = map[string]any{"user_answer": attempt.UserAnswer}
+	if selectedPayload == nil {
+		selectedPayload = map[string]any{}
 	}
 	selectedJSON, err := json.Marshal(selectedPayload)
 	if err != nil {
@@ -294,6 +292,11 @@ func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExe
 
 // GetAttemptsByUserID retrieves the most recent answer attempts for user analytics
 func (r *PostgresRepository) GetAttemptsByUserID(ctx context.Context, userID string, limit int) ([]UserExerciseAttempt, error) {
+	if limit <= 0 {
+		limit = 20
+	} else if limit > 100 {
+		limit = 100
+	}
 	query := `
 		SELECT id, user_id, exercise_id, is_correct, selected_answer, time_spent_seconds, created_at
 		FROM user_exercise_attempts
@@ -318,11 +321,6 @@ func (r *PostgresRepository) GetAttemptsByUserID(ctx context.Context, userID str
 		}
 		if len(selectedJSON) > 0 {
 			_ = json.Unmarshal(selectedJSON, &a.SelectedAnswer)
-			if ans, ok := a.SelectedAnswer["user_answer"].(string); ok {
-				a.UserAnswer = ans
-			} else {
-				a.UserAnswer = string(selectedJSON)
-			}
 		}
 		attempts = append(attempts, a)
 	}
@@ -365,9 +363,6 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 			return nil, fmt.Errorf("failed to scan srs review row: %w", err)
 		}
 		hydrateExerciseJSONFields(&ex, contentJSON, correctJSON, acceptableJSON, diagnosticJSON)
-
-		rev.Repetitions = rev.RepetitionCount
-		rev.DueDate = rev.NextReviewAt
 		rev.Exercise = &ex
 		reviews = append(reviews, rev)
 	}
@@ -394,21 +389,12 @@ func (r *PostgresRepository) GetReview(ctx context.Context, userID string, exerc
 		}
 		return nil, fmt.Errorf("failed to query srs review: %w", err)
 	}
-	rev.Repetitions = rev.RepetitionCount
-	rev.DueDate = rev.NextReviewAt
 	return &rev, nil
 }
 
 // UpsertReview records or updates an SM-2 scheduling record atomically
 func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSReview) error {
-	reps := review.RepetitionCount
-	if reps == 0 && review.Repetitions > 0 {
-		reps = review.Repetitions
-	}
 	nextReview := review.NextReviewAt
-	if nextReview.IsZero() && !review.DueDate.IsZero() {
-		nextReview = review.DueDate
-	}
 	if nextReview.IsZero() {
 		nextReview = time.Now().UTC().AddDate(0, 0, 1)
 	}
@@ -434,13 +420,11 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 	`
 	err := r.db.Pool.QueryRow(
 		ctx, query,
-		review.UserID, review.ExerciseID, reps, review.IntervalDays, review.EaseFactor, nextReview, review.LastReviewedAt,
+		review.UserID, review.ExerciseID, review.RepetitionCount, review.IntervalDays, review.EaseFactor, nextReview, review.LastReviewedAt,
 	).Scan(&review.ID, &review.RepetitionCount, &review.NextReviewAt)
 	if err != nil {
 		return fmt.Errorf("failed to upsert srs review: %w", err)
 	}
-	review.Repetitions = review.RepetitionCount
-	review.DueDate = review.NextReviewAt
 	return nil
 }
 
@@ -462,9 +446,6 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 // CreateExamAttempt records a completed diagnostic mock exam submission
 func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error {
 	report := attempt.AnalysisReport
-	if len(report) == 0 && len(attempt.AnswersPayload) > 0 {
-		report = attempt.AnswersPayload
-	}
 	if report == nil {
 		report = make(map[string]any)
 	}
@@ -478,11 +459,7 @@ func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *Rea
 		overall = attempt.ScorePercent
 	}
 	if attempt.AttemptedAt.IsZero() {
-		if !attempt.CompletedAt.IsZero() {
-			attempt.AttemptedAt = attempt.CompletedAt
-		} else {
-			attempt.AttemptedAt = time.Now().UTC()
-		}
+		attempt.AttemptedAt = time.Now().UTC()
 	}
 
 	query := `
@@ -501,9 +478,7 @@ func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *Rea
 		return fmt.Errorf("failed to insert readiness exam attempt: %w", err)
 	}
 	attempt.OverallScore = overall
-	attempt.TotalScore = overall
 	attempt.ScorePercent = overall
-	attempt.CompletedAt = attempt.AttemptedAt
 	attempt.AnalysisReport = report
 	return nil
 }
@@ -561,10 +536,7 @@ func (r *PostgresRepository) GetExamAttemptsByUserID(ctx context.Context, userID
 		if len(reportJSON) > 0 {
 			_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
 		}
-		a.TotalScore = a.OverallScore
 		a.ScorePercent = a.OverallScore
-		a.CompletedAt = a.AttemptedAt
-		a.AnswersPayload = a.AnalysisReport
 		a.Level = &pl
 		attempts = append(attempts, a)
 	}
@@ -606,10 +578,7 @@ func (r *PostgresRepository) GetLatestPassedAttempt(ctx context.Context, userID 
 	if len(reportJSON) > 0 {
 		_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
 	}
-	a.TotalScore = a.OverallScore
 	a.ScorePercent = a.OverallScore
-	a.CompletedAt = a.AttemptedAt
-	a.AnswersPayload = a.AnalysisReport
 	a.Level = &pl
 	return &a, nil
 }
