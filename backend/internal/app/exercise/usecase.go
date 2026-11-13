@@ -83,6 +83,22 @@ func (u *usecase) verifyLessonUnlocked(ctx context.Context, userID string, lesso
 	return nil
 }
 
+func (u *usecase) loadAuthorizedExercise(ctx context.Context, userID string, exerciseID string) (*Exercise, error) {
+	ex, err := u.exerciseRepo.GetExerciseByID(ctx, exerciseID)
+	if err != nil {
+		return nil, err
+	}
+	if ex == nil {
+		return nil, ErrExerciseNotFound
+	}
+	if ex.LessonID != nil {
+		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
+			return nil, err
+		}
+	}
+	return ex, nil
+}
+
 // GetExercisesByLesson returns sanitized interactive exercises for an unlocked lesson node
 func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error) {
 	if userID == "" {
@@ -119,17 +135,9 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		return nil, apperror.ErrBadRequest
 	}
 
-	ex, err := u.exerciseRepo.GetExerciseByID(ctx, req.ExerciseID)
+	ex, err := u.loadAuthorizedExercise(ctx, userID, req.ExerciseID)
 	if err != nil {
 		return nil, err
-	}
-	if ex == nil {
-		return nil, ErrExerciseNotFound
-	}
-	if ex.LessonID != nil {
-		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
-			return nil, err
-		}
 	}
 
 	isCorrect := u.helper.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, req.UserAnswer)
@@ -232,17 +240,8 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 		return nil, ErrInvalidQualityRating
 	}
 
-	ex, err := u.exerciseRepo.GetExerciseByID(ctx, req.ExerciseID)
-	if err != nil {
+	if _, err := u.loadAuthorizedExercise(ctx, userID, req.ExerciseID); err != nil {
 		return nil, err
-	}
-	if ex == nil {
-		return nil, ErrExerciseNotFound
-	}
-	if ex.LessonID != nil {
-		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
-			return nil, err
-		}
 	}
 
 	currentReview, err := u.srsRepo.GetReview(ctx, userID, req.ExerciseID)
@@ -320,36 +319,23 @@ func (u *usecase) GetExamQuestions(ctx context.Context, userID string, levelID s
 	return SanitizeExercises(questions), nil
 }
 
-// SubmitExam grades all answers for a mock exam and issues certification if score exceeds passing grade
-func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitReadinessExamRequest) (*ReadinessExamResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
-	if req == nil || req.LevelID == "" || len(req.Answers) == 0 {
-		return nil, apperror.ErrBadRequest
-	}
+type examGradingResult struct {
+	totalScore     int
+	maxScore       int
+	scorePercent   int
+	readingScore   int
+	listeningScore int
+	writingScore   int
+	speakingScore  int
+	isPassed       bool
+	analysisReport map[string]any
+}
 
-	lvl, enrollment, err := u.verifyLevelExamAccess(ctx, userID, req.LevelID)
-	if err != nil {
-		return nil, err
-	}
-
-	prevPassed, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, req.LevelID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify previous exam status: %w", err)
-	}
-	if prevPassed != nil {
-		return nil, ErrExamAlreadyPassed
-	}
-
-	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, req.LevelID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to load exam questions: %w", err)
-	}
-	if len(questions) == 0 {
-		return nil, apperror.NewNotFoundError("EXAM_QUESTIONS_NOT_FOUND", "no readiness exam questions configured for this level")
-	}
-
+func (u *usecase) gradeExamSubmission(
+	questions []Exercise,
+	answers []SubmitExerciseAnswerRequest,
+	passingScorePercent int,
+) (*examGradingResult, error) {
 	questionsMap := make(map[string]Exercise, len(questions))
 	pillarCatalogTotal := make(map[string]int)
 	for _, q := range questions {
@@ -364,11 +350,10 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	totalScore := 0
 	maxScore := len(questions)
 	answersPayload := make(map[string]any)
-
 	pillarCorrect := make(map[string]int)
-	seenExerciseIDs := make(map[string]bool, len(req.Answers))
+	seenExerciseIDs := make(map[string]bool, len(answers))
 
-	for _, ans := range req.Answers {
+	for _, ans := range answers {
 		if seenExerciseIDs[ans.ExerciseID] {
 			continue
 		}
@@ -416,25 +401,21 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	writingScore := calcPillarScore("writing")
 	speakingScore := calcPillarScore("speaking")
 
-	passingScore := lvl.PassingScorePercent
+	passingScore := passingScorePercent
 	if passingScore <= 0 {
 		passingScore = 60
 	}
-	isPassed := scorePercent >= passingScore
 
-	now := time.Now().UTC()
-	attempt := &ReadinessExamAttempt{
-		UserID:         userID,
-		LevelID:        req.LevelID,
-		ReadingScore:   readingScore,
-		ListeningScore: listeningScore,
-		WritingScore:   writingScore,
-		SpeakingScore:  speakingScore,
-		OverallScore:   scorePercent,
-		MaxScore:       maxScore,
-		ScorePercent:   scorePercent,
-		IsPassed:       isPassed,
-		AnalysisReport: map[string]any{
+	return &examGradingResult{
+		totalScore:     totalScore,
+		maxScore:       maxScore,
+		scorePercent:   scorePercent,
+		readingScore:   readingScore,
+		listeningScore: listeningScore,
+		writingScore:   writingScore,
+		speakingScore:  speakingScore,
+		isPassed:       scorePercent >= passingScore,
+		analysisReport: map[string]any{
 			"answers": answersPayload,
 			"pillars": map[string]int{
 				"reading":   readingScore,
@@ -443,73 +424,164 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 				"speaking":  speakingScore,
 			},
 		},
-		AttemptedAt: now,
-	}
+	}, nil
+}
 
-	var enrollmentID, expectedLevelID, nextLevelID string
-	if isPassed && enrollment != nil && enrollment.CurrentLevel != nil && enrollment.CurrentLevel.ID == lvl.ID {
-		levels, lvErr := u.langRepo.GetLevelsByLanguageID(ctx, lvl.LanguageID)
-		if lvErr != nil {
-			return nil, fmt.Errorf("failed to resolve next proficiency level: %w", lvErr)
-		}
-		sort.Slice(levels, func(i, j int) bool {
-			return levels[i].OrderIndex < levels[j].OrderIndex
-		})
-		for _, nextLvl := range levels {
-			if nextLvl.OrderIndex > lvl.OrderIndex {
-				enrollmentID = enrollment.ID
-				expectedLevelID = lvl.ID
-				nextLevelID = nextLvl.ID
-				break
-			}
+func (u *usecase) resolveNextLevelTarget(
+	ctx context.Context,
+	lvl *language.ProficiencyLevel,
+	enrollment *language.UserLanguageEnrollment,
+) (enrollmentID, expectedLevelID, nextLevelID string, err error) {
+	if enrollment == nil || enrollment.CurrentLevel == nil || enrollment.CurrentLevel.ID != lvl.ID {
+		return "", "", "", nil
+	}
+	levels, lvErr := u.langRepo.GetLevelsByLanguageID(ctx, lvl.LanguageID)
+	if lvErr != nil {
+		return "", "", "", fmt.Errorf("failed to resolve next proficiency level: %w", lvErr)
+	}
+	sort.Slice(levels, func(i, j int) bool {
+		return levels[i].OrderIndex < levels[j].OrderIndex
+	})
+	for _, nextLvl := range levels {
+		if nextLvl.OrderIndex > lvl.OrderIndex {
+			return enrollment.ID, lvl.ID, nextLvl.ID, nil
 		}
 	}
+	return "", "", "", nil
+}
 
+func (u *usecase) invalidateCurriculumSafely(ctx context.Context, userID string) {
+	if u.cacheInvalidator == nil {
+		return
+	}
+	if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
+		log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
+	}
+}
+
+func (u *usecase) persistExamSubmission(
+	ctx context.Context,
+	userID string,
+	attempt *ReadinessExamAttempt,
+	enrollmentID, expectedLevelID, nextLevelID string,
+) error {
 	if txRepo, ok := u.examRepo.(TransactionalExamRecorder); ok {
 		advanced, err := txRepo.RecordExamSubmissionTx(ctx, attempt, enrollmentID, expectedLevelID, nextLevelID)
 		if err != nil {
+			return err
+		}
+		if advanced {
+			u.invalidateCurriculumSafely(ctx, userID)
+		}
+		return nil
+	}
+
+	if err := u.examRepo.CreateExamAttempt(ctx, attempt); err != nil {
+		return fmt.Errorf("failed to record exam attempt: %w", err)
+	}
+	if nextLevelID != "" {
+		if updErr := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, enrollmentID, expectedLevelID, nextLevelID); updErr != nil {
+			if !errors.Is(updErr, language.ErrEnrollmentLevelChanged) {
+				return fmt.Errorf("failed to advance enrollment level: %w", updErr)
+			}
+		} else {
+			u.invalidateCurriculumSafely(ctx, userID)
+		}
+	}
+	return nil
+}
+
+func (u *usecase) buildExamCertificate(
+	ctx context.Context,
+	userID string,
+	lvl *language.ProficiencyLevel,
+	graded *examGradingResult,
+	issuedAt time.Time,
+) *ExamCertificate {
+	usr, _ := u.userRepo.GetByID(ctx, userID)
+	name := "Learner"
+	if usr != nil && usr.Name != "" {
+		name = usr.Name
+	}
+
+	return &ExamCertificate{
+		CertificateID: fmt.Sprintf("CERT-%s-%s", lvl.Code, issuedAt.Format("20060102")),
+		ExamName:      lvl.OfficialExamName,
+		LevelCode:     lvl.Code,
+		CandidateName: name,
+		Score:         graded.totalScore,
+		MaxScore:      graded.maxScore,
+		Percentage:    graded.scorePercent,
+		IssuedAt:      issuedAt,
+	}
+}
+
+// SubmitExam grades all answers for a mock exam and issues certification if score exceeds passing grade
+func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitReadinessExamRequest) (*ReadinessExamResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	if req == nil || req.LevelID == "" || len(req.Answers) == 0 {
+		return nil, apperror.ErrBadRequest
+	}
+
+	lvl, enrollment, err := u.verifyLevelExamAccess(ctx, userID, req.LevelID)
+	if err != nil {
+		return nil, err
+	}
+
+	prevPassed, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, req.LevelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify previous exam status: %w", err)
+	}
+	if prevPassed != nil {
+		return nil, ErrExamAlreadyPassed
+	}
+
+	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, req.LevelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load exam questions: %w", err)
+	}
+	if len(questions) == 0 {
+		return nil, apperror.NewNotFoundError("EXAM_QUESTIONS_NOT_FOUND", "no readiness exam questions configured for this level")
+	}
+
+	graded, err := u.gradeExamSubmission(questions, req.Answers, lvl.PassingScorePercent)
+	if err != nil {
+		return nil, err
+	}
+
+	now := time.Now().UTC()
+	attempt := &ReadinessExamAttempt{
+		UserID:         userID,
+		LevelID:        req.LevelID,
+		ReadingScore:   graded.readingScore,
+		ListeningScore: graded.listeningScore,
+		WritingScore:   graded.writingScore,
+		SpeakingScore:  graded.speakingScore,
+		OverallScore:   graded.scorePercent,
+		MaxScore:       graded.maxScore,
+		ScorePercent:   graded.scorePercent,
+		IsPassed:       graded.isPassed,
+		AnalysisReport: graded.analysisReport,
+		AttemptedAt:    now,
+	}
+
+	var enrollmentID, expectedLevelID, nextLevelID string
+	if graded.isPassed {
+		enrollmentID, expectedLevelID, nextLevelID, err = u.resolveNextLevelTarget(ctx, lvl, enrollment)
+		if err != nil {
 			return nil, err
-		}
-		if advanced && u.cacheInvalidator != nil {
-			if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
-				log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
-			}
-		}
-	} else {
-		if err := u.examRepo.CreateExamAttempt(ctx, attempt); err != nil {
-			return nil, fmt.Errorf("failed to record exam attempt: %w", err)
-		}
-		if nextLevelID != "" {
-			if updErr := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, enrollmentID, expectedLevelID, nextLevelID); updErr != nil {
-				if !errors.Is(updErr, language.ErrEnrollmentLevelChanged) {
-					return nil, fmt.Errorf("failed to advance enrollment level: %w", updErr)
-				}
-			} else if u.cacheInvalidator != nil {
-				if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
-					log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
-				}
-			}
 		}
 	}
 
-	var cert *ExamCertificate
-	if isPassed {
-		usr, _ := u.userRepo.GetByID(ctx, userID)
-		name := "Learner"
-		if usr != nil && usr.Name != "" {
-			name = usr.Name
-		}
+	if err := u.persistExamSubmission(ctx, userID, attempt, enrollmentID, expectedLevelID, nextLevelID); err != nil {
+		return nil, err
+	}
 
-		cert = &ExamCertificate{
-			CertificateID: fmt.Sprintf("CERT-%s-%s", lvl.Code, now.Format("20060102")),
-			ExamName:      lvl.OfficialExamName,
-			LevelCode:     lvl.Code,
-			CandidateName: name,
-			Score:         totalScore,
-			MaxScore:      maxScore,
-			Percentage:    scorePercent,
-			IssuedAt:      now,
-		}
+	var cert *ExamCertificate
+	if graded.isPassed {
+		cert = u.buildExamCertificate(ctx, userID, lvl, graded, now)
 	}
 
 	return &ReadinessExamResponse{

@@ -29,11 +29,19 @@ func NewHandler(
 	}
 }
 
-// GetExercisesByLesson handles GET /api/v1/exercises/lesson/:lesson_id
-func (h *Handler) GetExercisesByLesson(c *gin.Context) {
+func requireUserID(c *gin.Context) (string, bool) {
 	userID := c.GetString("userID")
 	if userID == "" {
 		response.Error(c, apperror.ErrUnauthorized)
+		return "", false
+	}
+	return userID, true
+}
+
+// GetExercisesByLesson handles GET /api/v1/exercises/lesson/:lesson_id
+func (h *Handler) GetExercisesByLesson(c *gin.Context) {
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -56,9 +64,8 @@ func (h *Handler) GetExercisesByLesson(c *gin.Context) {
 
 // SubmitAnswer handles POST /api/v1/exercises/submit
 func (h *Handler) SubmitAnswer(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -89,9 +96,8 @@ func parseLimitQuery(c *gin.Context, defaultVal int) (int, bool) {
 
 // GetDueReviews handles GET /api/v1/srs/due
 func (h *Handler) GetDueReviews(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -111,9 +117,8 @@ func (h *Handler) GetDueReviews(c *gin.Context) {
 
 // ProcessReview handles POST /api/v1/srs/review
 func (h *Handler) ProcessReview(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -134,9 +139,8 @@ func (h *Handler) ProcessReview(c *gin.Context) {
 
 // GetExamQuestions handles GET /api/v1/exams/questions/:level_id
 func (h *Handler) GetExamQuestions(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -159,9 +163,8 @@ func (h *Handler) GetExamQuestions(c *gin.Context) {
 
 // SubmitExam handles POST /api/v1/exams/submit
 func (h *Handler) SubmitExam(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 
@@ -182,9 +185,8 @@ func (h *Handler) SubmitExam(c *gin.Context) {
 
 // GetDailyVocabularies handles GET /api/v1/vocabularies/daily
 func (h *Handler) GetDailyVocabularies(c *gin.Context) {
-	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
+	userID, ok := requireUserID(c)
+	if !ok {
 		return
 	}
 

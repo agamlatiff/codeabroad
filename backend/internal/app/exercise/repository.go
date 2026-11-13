@@ -144,19 +144,32 @@ const (
 	`
 )
 
-func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, error) {
-	var ex Exercise
-	var contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte
+type exerciseScanBuf struct {
+	ex             Exercise
+	contentJSON    []byte
+	correctJSON    []byte
+	acceptableJSON []byte
+	diagnosticJSON []byte
+}
 
-	if err := scanner.Scan(
-		&ex.ID, &ex.LessonID, &ex.GrammarPointID, &ex.SkillPillar, &ex.ExerciseType, &ex.Prompt,
-		&contentJSON, &correctJSON, &acceptableJSON, &diagnosticJSON, &ex.Explanation, &ex.OrderIndex, &ex.CreatedAt,
-	); err != nil {
+func (b *exerciseScanBuf) dests() []any {
+	return []any{
+		&b.ex.ID, &b.ex.LessonID, &b.ex.GrammarPointID, &b.ex.SkillPillar, &b.ex.ExerciseType, &b.ex.Prompt,
+		&b.contentJSON, &b.correctJSON, &b.acceptableJSON, &b.diagnosticJSON, &b.ex.Explanation, &b.ex.OrderIndex, &b.ex.CreatedAt,
+	}
+}
+
+func (b *exerciseScanBuf) materialize() *Exercise {
+	hydrateExerciseJSONFields(&b.ex, b.contentJSON, b.correctJSON, b.acceptableJSON, b.diagnosticJSON)
+	return &b.ex
+}
+
+func scanExerciseRow(scanner interface{ Scan(dest ...any) error }) (*Exercise, error) {
+	var buf exerciseScanBuf
+	if err := scanner.Scan(buf.dests()...); err != nil {
 		return nil, err
 	}
-
-	hydrateExerciseJSONFields(&ex, contentJSON, correctJSON, acceptableJSON, diagnosticJSON)
-	return &ex, nil
+	return buf.materialize(), nil
 }
 
 func scanExerciseRows(rows pgx.Rows, capHint int, errLabel string) ([]Exercise, error) {
@@ -398,8 +411,7 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 	query := `
 		SELECT 
 			r.id, r.user_id, r.exercise_id, r.repetition_count, r.interval_days, r.ease_factor, r.next_review_at, r.last_reviewed_at,
-			e.id, e.lesson_id, e.grammar_point_id, e.skill_pillar, e.exercise_type, e.prompt,
-			e.content, e.correct_answer, e.acceptable_answers, e.diagnostic_rubric, e.explanation, e.order_index, e.created_at
+			` + prefixedExerciseSelectColumns + `
 		FROM user_srs_reviews r
 		JOIN exercises e ON r.exercise_id = e.id
 		WHERE r.user_id = $1 AND r.next_review_at <= $2
@@ -415,18 +427,16 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 	reviews := make([]UserSRSReview, 0, limit)
 	for rows.Next() {
 		var rev UserSRSReview
-		var ex Exercise
-		var contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte
+		var exBuf exerciseScanBuf
+		scanArgs := append([]any{
+			&rev.ID, &rev.UserID, &rev.ExerciseID, &rev.RepetitionCount,
+			&rev.IntervalDays, &rev.EaseFactor, &rev.NextReviewAt, &rev.LastReviewedAt,
+		}, exBuf.dests()...)
 
-		if err := rows.Scan(
-			&rev.ID, &rev.UserID, &rev.ExerciseID, &rev.RepetitionCount, &rev.IntervalDays, &rev.EaseFactor, &rev.NextReviewAt, &rev.LastReviewedAt,
-			&ex.ID, &ex.LessonID, &ex.GrammarPointID, &ex.SkillPillar, &ex.ExerciseType, &ex.Prompt,
-			&contentJSON, &correctJSON, &acceptableJSON, &diagnosticJSON, &ex.Explanation, &ex.OrderIndex, &ex.CreatedAt,
-		); err != nil {
+		if err := rows.Scan(scanArgs...); err != nil {
 			return nil, fmt.Errorf("failed to scan srs review row: %w", err)
 		}
-		hydrateExerciseJSONFields(&ex, contentJSON, correctJSON, acceptableJSON, diagnosticJSON)
-		rev.Exercise = &ex
+		rev.Exercise = exBuf.materialize()
 		reviews = append(reviews, rev)
 	}
 	if err := rows.Err(); err != nil {
