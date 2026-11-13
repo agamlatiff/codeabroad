@@ -100,7 +100,11 @@ const TrackSwitcherDialog = ({
 
   const handleConfirm = () => {
     triggerHaptic('success')
-    if (selectedTrack && selectedTrack !== currentTrack) {
+    const selectedOption = trackOptions.find(
+      (t) => t.slug === selectedTrack || t.id === selectedTrack
+    )
+    const shouldActivatePreview = mode === 'language' && selectedOption && !selectedOption.isActive
+    if (selectedTrack && (selectedTrack !== currentTrack || shouldActivatePreview)) {
       onSelectTrack(selectedTrack)
     }
     if (onChangeViewMode && selectedView !== viewMode) {

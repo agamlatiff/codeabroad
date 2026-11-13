@@ -87,7 +87,7 @@ export const CurriculumViewToggle: FC<CurriculumViewToggleProps> = ({
           <button
             type="button"
             onClick={() => handleSelect('map')}
-            className={`min-h-[38px] px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
+            className={`min-h-[44px] px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
               viewMode === 'map'
                 ? VIEW_TOGGLE_TOKENS.buttonActive
                 : VIEW_TOGGLE_TOKENS.buttonInactive
@@ -104,7 +104,7 @@ export const CurriculumViewToggle: FC<CurriculumViewToggleProps> = ({
           <button
             type="button"
             onClick={() => handleSelect('syllabus')}
-            className={`min-h-[38px] px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
+            className={`min-h-[44px] px-3 sm:px-4 py-1.5 rounded-xl text-xs flex items-center gap-2 transition-all cursor-pointer ${
               viewMode === 'syllabus'
                 ? VIEW_TOGGLE_TOKENS.buttonActive
                 : VIEW_TOGGLE_TOKENS.buttonInactive

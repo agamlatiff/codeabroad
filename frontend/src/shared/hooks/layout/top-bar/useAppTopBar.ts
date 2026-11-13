@@ -23,7 +23,7 @@ export const useAppTopBar = (activeTrack: string) => {
   const { data } = useUser()
   const activeUser = data.user
 
-  const { data: enrollments = [] } = useQuery({
+  const { data: enrollments = [], isLoading: isLoadingEnrollments } = useQuery({
     queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
     staleTime: 1000 * 60 * 5,
@@ -38,6 +38,7 @@ export const useAppTopBar = (activeTrack: string) => {
   const { data: careerPaths = [] } = useQuery({
     queryKey: CAREER_PATHS_QUERY_KEY,
     queryFn: onboardingService.getCareerPaths,
+    enabled: !isLoadingEnrollments && enrollments.length === 0,
     staleTime: 1000 * 60 * 10,
   })
 

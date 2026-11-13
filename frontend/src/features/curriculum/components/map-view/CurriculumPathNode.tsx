@@ -61,16 +61,11 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
 
   return (
     <div
-      role="button"
-      tabIndex={0}
-      aria-label={`${node.title} (${node.status === 'completed' ? 'selesai' : node.status === 'active' ? 'aktif' : 'terkunci'})`}
-      className="absolute -translate-x-1/2 flex flex-col items-center group cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/50 rounded-2xl"
+      className="absolute -translate-x-1/2 flex flex-col items-center group"
       style={{
         left: `${leftPercent}%`,
         top: `${topPx}px`,
       }}
-      onClick={() => onClick(node)}
-      onKeyDown={handleKeyDown}
       onMouseEnter={() => playSound('node_hover')}
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
@@ -137,7 +132,14 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
       )}
 
       {/* ── STEPPING STONE 3D DISC ── */}
-      <div className="relative z-10">
+      <div
+        role="button"
+        tabIndex={0}
+        aria-label={`${node.title} (${node.status === 'completed' ? 'selesai' : node.status === 'active' ? 'aktif' : 'terkunci'})`}
+        onClick={() => onClick(node)}
+        onKeyDown={handleKeyDown}
+        className="relative z-10 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/50 rounded-2xl"
+      >
         {node.isChest ? (
           <div
             className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
