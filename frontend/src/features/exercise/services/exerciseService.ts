@@ -12,25 +12,10 @@ import type {
   UserSRSReview,
 } from '@/features/exercise/types/exercise'
 
-export const EXERCISES_BY_LESSON_QUERY_KEY = ['exercises', 'lesson'] as const
 export const SRS_DUE_QUERY_KEY = ['srs', 'due'] as const
 export const EXAM_QUESTIONS_QUERY_KEY = ['exams', 'questions'] as const
 
 export const exerciseService = {
-  /**
-   * Retrieves sanitized interactive exercises belonging to an unlocked lesson node.
-   */
-  getExercisesByLesson: async (
-    lessonId: string,
-    options?: RequestOptions
-  ): Promise<CurriculumExercise[]> => {
-    const response = await api.get<ApiResponse<CurriculumExercise[]>>(
-      `/exercises/lesson/${lessonId}`,
-      { signal: options?.signal }
-    )
-    return unwrapApiResponse(response, 'Gagal memuat daftar latihan pelajaran.')
-  },
-
   /**
    * Submits a single exercise answer to backend for evaluation, XP credit, and SRS scheduling.
    */

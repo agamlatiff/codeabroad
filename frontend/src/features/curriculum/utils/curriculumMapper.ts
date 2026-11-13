@@ -57,7 +57,10 @@ export const mapCurriculumUnitsToSequentialUnits = (
               : 'Pemula',
         estimatedMinutes: 10,
         xpReward: lesson.xp_reward || 15,
-        route: `/learn/${lesson.id}`,
+        route:
+          unit.unit_type === 'diagnostic_exam' && curriculum.level?.id
+            ? `/exam/${curriculum.level.id}`
+            : `/learn/${lesson.id}`,
         score: lesson.score,
         is_skipped: lesson.is_skipped,
         is_completed: lesson.is_completed,

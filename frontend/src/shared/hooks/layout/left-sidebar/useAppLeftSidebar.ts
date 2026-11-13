@@ -1,7 +1,8 @@
 import { useState, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
-import { useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  Brain,
   SquaresFour,
   Target,
   Trophy,
@@ -9,6 +10,10 @@ import {
 import type { Icon } from '@phosphor-icons/react'
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { useLogout } from "@/features/auth/hooks/useLogout"
+import {
+  SRS_DUE_QUERY_KEY,
+  exerciseService,
+} from '@/features/exercise/services/exerciseService'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import type { AvatarStyle } from "@/features/user/utils/avatar"
 import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
@@ -36,6 +41,16 @@ export const useAppLeftSidebar = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>('adventurer')
 
+  const srsDueQuery = useQuery({
+    queryKey: [...SRS_DUE_QUERY_KEY, 20],
+    queryFn: ({ signal }) => exerciseService.getDueReviews(20, { signal }),
+    enabled: Boolean(user),
+    staleTime: 60_000,
+    retry: false,
+  })
+
+  const srsDueCount = srsDueQuery.data?.total_due ?? 0
+
   const navItems: LeftSidebarNavItem[] = useMemo(() => {
     const rawItems = [
       {
@@ -43,6 +58,16 @@ export const useAppLeftSidebar = () => {
         tooltip: 'Belajar • Peta & Silabus',
         href: '/curriculum',
         icon: SquaresFour,
+      },
+      {
+        label: 'Ulasan',
+        tooltip:
+          srsDueCount > 0
+            ? `Ulasan SRS • ${srsDueCount} kartu jatuh tempo`
+            : 'Ulasan SRS • Memori Harian',
+        href: '/review',
+        icon: Brain,
+        hasBadge: srsDueCount > 0,
       },
       {
         label: 'Misi',
@@ -66,7 +91,7 @@ export const useAppLeftSidebar = () => {
         (item.href === '/curriculum' &&
           location.pathname.startsWith('/curriculum')),
     }))
-  }, [location.pathname])
+  }, [location.pathname, srsDueCount])
 
   const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
     setAvatarStyleState(style)
@@ -102,4 +127,3 @@ export const useAppLeftSidebar = () => {
     handleLogout,
   }
 }
-

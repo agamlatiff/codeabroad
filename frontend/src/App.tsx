@@ -7,6 +7,8 @@ import { CurriculumPage } from '@/features/curriculum/pages/CurriculumPage'
 import { QuestLogPage } from '@/features/gamification/pages/QuestLogPage'
 import { LearnWorkspacePage } from '@/features/exercise/pages/LearnWorkspacePage'
 import { QuestCompletePage } from '@/features/exercise/pages/QuestCompletePage'
+import { ReadinessExamPage } from '@/features/exercise/pages/ReadinessExamPage'
+import { SrsReviewPage } from '@/features/exercise/pages/SrsReviewPage'
 import { LeaderboardPage } from '@/features/leaderboard/pages/LeaderboardPage'
 import { NotFoundPage } from '@/shared/pages/NotFoundPage'
 import { ErrorBoundary } from '@/shared/components/ui/ErrorBoundary'
@@ -38,6 +40,8 @@ function App() {
             <Route path="/leaderboard" element={<LeaderboardPage />} />
             <Route path="/learn/:id" element={<LearnWorkspacePage />} />
             <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
+            <Route path="/review" element={<SrsReviewPage />} />
+            <Route path="/exam/:levelId" element={<ReadinessExamPage />} />
             <Route path="/career" element={<Navigate to="/curriculum" replace />} />
           </Route>
 
