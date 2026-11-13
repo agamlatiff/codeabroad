@@ -183,5 +183,59 @@ func TestHTTP_ProcessReview_MissingQualityReturns400(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetDueReviews_InvalidLimitReturns400(t *testing.T) {
+	r, _, _, _ := setupExerciseTestRouter()
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/srs/due?limit=abc", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request on invalid limit, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_GetDailyVocabularies_Success(t *testing.T) {
+	r, exRepo, _, _ := setupExerciseTestRouter()
+	exRepo.DailyVocabularies = []exercise.VocabularyItem{
+		{ID: "v-1", Term: "おはよう", Reading: "おはよう • Ohayou", Meaning: "Selamat pagi", Category: "greeting", DifficultyLevel: "N5"},
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/vocabularies/daily?limit=5", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on /vocabularies/daily, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_SubmitExam_SerializesZeroScorePercent(t *testing.T) {
+	r, _, _, _ := setupExerciseTestRouter()
+
+	body := []byte(`{"level_id":"22222222-2222-2222-2222-222222222222","answers":[{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"Wrong"}]}`)
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/exams/submit", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK on exam submit, got: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	var parsed struct {
+		Data struct {
+			Attempt map[string]any `json:"attempt"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to parse response JSON: %v", err)
+	}
+	val, exists := parsed.Data.Attempt["score_percent"]
+	if !exists || val != float64(0) {
+		t.Fatalf("expected score_percent=0 to be present in JSON, got exists=%v val=%v", exists, val)
+	}
+}
+
 
 

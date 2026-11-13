@@ -1,7 +1,9 @@
 import type {
   CompleteLessonResponse,
+  CurriculumBadgeDefinition,
   CurriculumExercise,
   LessonDetailResponse,
+  ProficiencyLevel,
 } from '@/features/curriculum/types/curriculum'
 
 export type ExerciseType =
@@ -10,9 +12,6 @@ export type ExerciseType =
   | 'listening_choice'
   | 'speaking_repeat'
   | 'dialogue_roleplay'
-  | 'multiple_choice'
-  | 'placement_test'
-  | 'reading_comprehension'
   | string
 
 export type SkillPillar = 'reading' | 'listening' | 'speaking' | 'writing' | string
@@ -91,17 +90,38 @@ export interface ReadinessExamSubmissionRequest {
   answers: ReadinessExamAnswerItem[]
 }
 
-export interface ReadinessExamResponse {
+export interface ReadinessExamAttempt {
   id: string
   user_id: string
   level_id: string
-  score_percent: number
   reading_score: number
   listening_score: number
-  speaking_score: number
   writing_score: number
+  speaking_score: number
+  overall_score: number
+  max_score?: number
+  score_percent: number
   is_passed: boolean
-  taken_at: string
+  analysis_report?: Record<string, unknown>
+  attempted_at: string
+  level?: ProficiencyLevel
+}
+
+export interface ExamCertificate {
+  certificate_id: string
+  exam_name: string
+  level_code: string
+  candidate_name: string
+  score: number
+  max_score: number
+  percentage: number
+  issued_at: string
+}
+
+export interface ReadinessExamResponse {
+  attempt: ReadinessExamAttempt
+  certificate?: ExamCertificate
+  awarded_badges?: CurriculumBadgeDefinition[]
 }
 
 export interface LessonCompletionNavigationState {

@@ -36,7 +36,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
     handleSpeak,
   } = useDailyLanguageCard({ onReview })
 
-  if (isLoading || !currentVocab) {
+  if (isLoading) {
     return (
       <div id="daily-language-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
         <div className="flex items-center justify-between">
@@ -52,6 +52,28 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
         <div className="h-16 bg-rose-50/40 border border-rose-100 rounded-2xl animate-pulse" />
         <div className="h-12 bg-slate-50 border border-slate-100 rounded-xl animate-pulse" />
         <div className="h-8 bg-blue-50 border border-blue-100 rounded-xl animate-pulse" />
+      </div>
+    )
+  }
+
+  if (!currentVocab) {
+    return (
+      <div id="daily-language-card" className={`space-y-2 select-none scroll-mt-20 ${className}`}>
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 text-xs">
+            {languageMeta.flagEmoji ? (
+              <span className="text-sm leading-none">{languageMeta.flagEmoji}</span>
+            ) : (
+              <Translate weight="bold" className="w-4 h-4 text-rose-600" />
+            )}
+          </div>
+          <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
+            {languageMeta.languageTitle}
+          </h4>
+        </div>
+        <p className="text-xs text-slate-500 font-medium p-3 rounded-xl bg-slate-50 border border-slate-100">
+          Kosakata harian akan muncul setelah modul kurikulum tersedia.
+        </p>
       </div>
     )
   }

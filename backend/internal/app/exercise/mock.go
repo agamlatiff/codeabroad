@@ -11,11 +11,13 @@ type MockRepository struct {
 	Exercises                map[string]*Exercise
 	PlacementExercises       map[string][]Exercise
 	ReadinessExamExercises   map[string][]Exercise
+	DailyVocabularies        []VocabularyItem
 	Attempts                 []UserExerciseAttempt
 	GetExercisesByLessonErr  error
 	GetExerciseByIDErr       error
 	GetPlacementExercisesErr error
 	GetReadinessExamErr      error
+	GetDailyVocabulariesErr  error
 	CreateAttemptErr         error
 	GetAttemptsByUserIDErr   error
 }
@@ -117,6 +119,16 @@ func (m *MockRepository) GetAttemptsByUserID(ctx context.Context, userID string,
 		}
 	}
 	return res, nil
+}
+
+func (m *MockRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
+	if m.GetDailyVocabulariesErr != nil {
+		return nil, m.GetDailyVocabulariesErr
+	}
+	if limit > 0 && len(m.DailyVocabularies) > limit {
+		return append([]VocabularyItem(nil), m.DailyVocabularies[:limit]...), nil
+	}
+	return append([]VocabularyItem(nil), m.DailyVocabularies...), nil
 }
 
 // MockSRSRepository implements SRSRepository for unit testing

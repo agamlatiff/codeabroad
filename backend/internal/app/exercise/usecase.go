@@ -69,6 +69,20 @@ func NewUsecase(
 	return NewUsecaseWithAccessChecker(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, nil)
 }
 
+func (u *usecase) verifyLessonUnlocked(ctx context.Context, userID string, lessonID string) error {
+	if u.accessChecker == nil || lessonID == "" {
+		return nil
+	}
+	unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, lessonID)
+	if err != nil {
+		return fmt.Errorf("failed to verify lesson access: %w", err)
+	}
+	if !unlocked {
+		return ErrExerciseLessonLocked
+	}
+	return nil
+}
+
 // GetExercisesByLesson returns sanitized interactive exercises for an unlocked lesson node
 func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error) {
 	if userID == "" {
@@ -77,14 +91,8 @@ func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lesso
 	if lessonID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	if u.accessChecker != nil {
-		unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, lessonID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to verify lesson access: %w", err)
-		}
-		if !unlocked {
-			return nil, ErrExerciseLessonLocked
-		}
+	if err := u.verifyLessonUnlocked(ctx, userID, lessonID); err != nil {
+		return nil, err
 	}
 
 	exercises, err := u.exerciseRepo.GetExercisesByLessonID(ctx, lessonID)
@@ -92,6 +100,19 @@ func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lesso
 		return nil, err
 	}
 	return SanitizeExercises(exercises), nil
+}
+
+// GetDailyVocabularies returns daily contextual vocabulary cards derived from active curriculum content
+func (u *usecase) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 50 {
+		limit = 50
+	}
+	return u.exerciseRepo.GetDailyVocabularies(ctx, userID, limit)
 }
 
 // SubmitAnswer evaluates a single exercise response, logs telemetry, and injects into SRS on error
@@ -110,13 +131,9 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	if ex == nil {
 		return nil, ErrExerciseNotFound
 	}
-	if u.accessChecker != nil && ex.LessonID != nil && *ex.LessonID != "" {
-		unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, *ex.LessonID)
-		if err != nil {
-			return nil, fmt.Errorf("failed to verify lesson access: %w", err)
-		}
-		if !unlocked {
-			return nil, ErrExerciseLessonLocked
+	if ex.LessonID != nil {
+		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
+			return nil, err
 		}
 	}
 
@@ -223,6 +240,11 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	}
 	if ex == nil {
 		return nil, ErrExerciseNotFound
+	}
+	if ex.LessonID != nil {
+		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
+			return nil, err
+		}
 	}
 
 	currentReview, err := u.srsRepo.GetReview(ctx, userID, req.ExerciseID)
@@ -356,7 +378,11 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 
 		q, exists := questionsMap[ans.ExerciseID]
 		if !exists {
-			continue
+			return nil, apperror.NewBadRequestError(
+				"INVALID_EXAM_EXERCISE",
+				"one or more submitted exercise_id values do not belong to this readiness exam",
+				map[string]any{"exercise_id": ans.ExerciseID},
+			)
 		}
 		pillar := q.SkillPillar
 		if pillar == "" {
@@ -422,8 +448,50 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		AttemptedAt: now,
 	}
 
-	if err := u.examRepo.CreateExamAttempt(ctx, attempt); err != nil {
-		return nil, fmt.Errorf("failed to record exam attempt: %w", err)
+	var enrollmentID, expectedLevelID, nextLevelID string
+	if isPassed && enrollment != nil && enrollment.CurrentLevel != nil && enrollment.CurrentLevel.ID == lvl.ID {
+		levels, lvErr := u.langRepo.GetLevelsByLanguageID(ctx, lvl.LanguageID)
+		if lvErr != nil {
+			return nil, fmt.Errorf("failed to resolve next proficiency level: %w", lvErr)
+		}
+		sort.Slice(levels, func(i, j int) bool {
+			return levels[i].OrderIndex < levels[j].OrderIndex
+		})
+		for _, nextLvl := range levels {
+			if nextLvl.OrderIndex > lvl.OrderIndex {
+				enrollmentID = enrollment.ID
+				expectedLevelID = lvl.ID
+				nextLevelID = nextLvl.ID
+				break
+			}
+		}
+	}
+
+	if txRepo, ok := u.examRepo.(TransactionalExamRecorder); ok {
+		advanced, err := txRepo.RecordExamSubmissionTx(ctx, attempt, enrollmentID, expectedLevelID, nextLevelID)
+		if err != nil {
+			return nil, err
+		}
+		if advanced && u.cacheInvalidator != nil {
+			if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
+				log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
+			}
+		}
+	} else {
+		if err := u.examRepo.CreateExamAttempt(ctx, attempt); err != nil {
+			return nil, fmt.Errorf("failed to record exam attempt: %w", err)
+		}
+		if nextLevelID != "" {
+			if updErr := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, enrollmentID, expectedLevelID, nextLevelID); updErr != nil {
+				if !errors.Is(updErr, language.ErrEnrollmentLevelChanged) {
+					return nil, fmt.Errorf("failed to advance enrollment level: %w", updErr)
+				}
+			} else if u.cacheInvalidator != nil {
+				if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
+					log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
+				}
+			}
+		}
 	}
 
 	var cert *ExamCertificate
@@ -443,28 +511,6 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 			MaxScore:      maxScore,
 			Percentage:    scorePercent,
 			IssuedAt:      now,
-		}
-
-		if enrollment != nil && enrollment.CurrentLevel != nil && enrollment.CurrentLevel.ID == lvl.ID {
-			if levels, lvErr := u.langRepo.GetLevelsByLanguageID(ctx, lvl.LanguageID); lvErr == nil {
-				sort.Slice(levels, func(i, j int) bool {
-					return levels[i].OrderIndex < levels[j].OrderIndex
-				})
-				for _, nextLvl := range levels {
-					if nextLvl.OrderIndex > lvl.OrderIndex {
-						if updErr := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, enrollment.ID, lvl.ID, nextLvl.ID); updErr != nil {
-							if !errors.Is(updErr, language.ErrEnrollmentLevelChanged) {
-								log.Printf("exercise: failed to advance enrollment %s to level %s: %v", enrollment.ID, nextLvl.ID, updErr)
-							}
-						} else if u.cacheInvalidator != nil {
-							if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
-								log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
-							}
-						}
-						break
-					}
-				}
-			}
 		}
 	}
 

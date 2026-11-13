@@ -12,8 +12,3 @@ export interface VocabularyItem {
   created_at?: string
   updated_at?: string
 }
-
-export interface PaginatedVocabularyResponse {
-  vocabularies: VocabularyItem[]
-  total: number
-}

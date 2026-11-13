@@ -117,6 +117,7 @@ export const useLearnWorkspace = () => {
     audioService.playBgm('universal')
     return () => {
       audioService.stopBgm()
+      audioService.stopSpeech()
       recognitionRef.current?.stop()
       if (activeHtmlAudioRef.current) {
         activeHtmlAudioRef.current.pause()
@@ -165,8 +166,7 @@ export const useLearnWorkspace = () => {
       .filter((token): token is string => typeof token === 'string')
   }, [parsedContent, selectedTokenIndices])
 
-  const currentExerciseType =
-    currentExercise?.exercise_type || currentExercise?.type || ''
+  const currentExerciseType = currentExercise?.exercise_type ?? ''
 
   const currentUserAnswer = useMemo(() => {
     if (!currentExercise) return ''
@@ -201,8 +201,18 @@ export const useLearnWorkspace = () => {
       }),
   })
 
+  const stopActiveAudio = useCallback(() => {
+    if (activeHtmlAudioRef.current) {
+      activeHtmlAudioRef.current.pause()
+      activeHtmlAudioRef.current = null
+    }
+    audioEngine.stopSpeech()
+    setIsSpeakingAudio(false)
+  }, [])
+
   const resetQuestionInputs = useCallback(() => {
     recognitionRef.current?.stop()
+    stopActiveAudio()
     setIsRecordingSpeech(false)
     setSelectedTokenIndices([])
     setSelectedOptionValue('')
@@ -212,7 +222,7 @@ export const useLearnWorkspace = () => {
     setShowHint(false)
     setAudioPlaybackError(null)
     questionStartedAtRef.current = Date.now()
-  }, [])
+  }, [stopActiveAudio])
 
   const handleAddToken = useCallback(
     (tokenIndex: number) => {
@@ -297,24 +307,27 @@ export const useLearnWorkspace = () => {
       )
     }
 
-    if (activeHtmlAudioRef.current) {
-      activeHtmlAudioRef.current.pause()
-      activeHtmlAudioRef.current = null
-    }
-
+    stopActiveAudio()
     setIsSpeakingAudio(true)
+
+    let fallbackTriggered = false
+    const triggerFallbackOnce = () => {
+      if (fallbackTriggered) return
+      fallbackTriggered = true
+      speakFallback()
+    }
 
     if (parsedContent.audioUrl && typeof Audio !== 'undefined') {
       const audio = new Audio(parsedContent.audioUrl)
       activeHtmlAudioRef.current = audio
       audio.onended = () => setIsSpeakingAudio(false)
-      audio.onerror = () => speakFallback()
-      void audio.play().catch(() => speakFallback())
+      audio.onerror = triggerFallbackOnce
+      void audio.play().catch(triggerFallbackOnce)
       return
     }
 
     speakFallback()
-  }, [currentExercise, parsedContent, speechLocale])
+  }, [currentExercise, parsedContent, speechLocale, stopActiveAudio])
 
   const handleToggleRecording = useCallback(() => {
     if (submittedResult !== null) return

@@ -1,6 +1,11 @@
 import { useCallback, useEffect } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import {
+  curriculumService,
+  LESSON_DETAIL_QUERY_KEY,
+} from '@/features/curriculum/services/curriculumService'
 import type { LessonCompletionNavigationState } from '@/features/exercise/types/exercise'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -16,21 +21,31 @@ export const useLessonCompletePage = () => {
 
   const state = (location.state ?? null) as LessonCompletionNavigationState | null
 
+  const fallbackLessonQuery = useQuery({
+    queryKey: [...LESSON_DETAIL_QUERY_KEY, id],
+    queryFn: ({ signal }) => curriculumService.getLessonDetail(id!, { signal }),
+    enabled: state === null && Boolean(id),
+    retry: false,
+  })
+
   useEffect(() => {
     audioEngine.playFanfare()
   }, [])
 
   const completionResult = state?.completionResult
-  const lesson = state?.lesson
+  const lesson = state?.lesson ?? fallbackLessonQuery.data ?? null
 
   const lessonTitle = lesson?.title ?? 'Pelajaran Kurikulum'
-  const xpEarned = state?.totalXpEarned ?? lesson?.xp_reward ?? 15
+  const xpEarned = state?.totalXpEarned ?? lesson?.xp_reward ?? 0
   const totalXp = completionResult?.gamification?.xp ?? user?.xp ?? xpEarned
-  const streakDays = completionResult?.gamification?.streak ?? user?.streak ?? 1
+  const streakDays = completionResult?.gamification?.streak ?? user?.streak ?? 0
   const currentLevel =
     completionResult?.gamification?.current_level ?? user?.current_level ?? 1
   const accuracyPercent =
-    state?.accuracyPercent ?? completionResult?.progress?.score ?? 100
+    state?.accuracyPercent ??
+    completionResult?.progress?.score ??
+    lesson?.score ??
+    0
   const unlockedNextLessonId = completionResult?.unlocked_next_lesson_id ?? null
   const awardedBadges = completionResult?.awarded_badges ?? []
 

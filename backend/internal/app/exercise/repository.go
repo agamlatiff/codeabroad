@@ -263,6 +263,101 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 	}
 	return exercises, nil
 }
+
+// GetDailyVocabularies extracts contextual workplace vocabulary cards from active curriculum exercises
+func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 50 {
+		limit = 50
+	}
+
+	query := `
+		SELECT
+			e.id::text,
+			COALESCE(
+				NULLIF(e.content->>'display_text', ''),
+				NULLIF(e.content->>'audio_text', ''),
+				NULLIF(gp.formula, ''),
+				e.prompt
+			) AS term,
+			COALESCE(NULLIF(e.content->>'romaji', ''), '') AS romaji,
+			COALESCE(
+				NULLIF(e.content->>'target_translation', ''),
+				NULLIF(e.content->>'translation', ''),
+				NULLIF(gp.title, ''),
+				e.prompt
+			) AS meaning,
+			COALESCE(NULLIF(gp.category, ''), e.skill_pillar) AS category,
+			COALESCE(
+				NULLIF(e.content->>'audio_text', ''),
+				NULLIF(e.content->>'display_text', ''),
+				NULLIF(e.content->>'sentence_template', ''),
+				e.prompt
+			) AS example_ja,
+			COALESCE(
+				NULLIF(e.content->>'translation', ''),
+				NULLIF(e.content->>'target_translation', ''),
+				e.explanation
+			) AS example_id,
+			pl.code AS difficulty_level
+		FROM exercises e
+		JOIN lessons l ON e.lesson_id = l.id
+		JOIN units u ON l.unit_id = u.id
+		JOIN proficiency_levels pl ON u.level_id = pl.id
+		LEFT JOIN grammar_points gp ON e.grammar_point_id = gp.id
+		WHERE u.unit_type = 'curriculum'
+		  AND (
+			NULLIF($1, '')::uuid IS NULL
+			OR EXISTS (
+				SELECT 1 FROM user_language_enrollments ule
+				WHERE ule.user_id = NULLIF($1, '')::uuid
+				  AND ule.is_active = true
+				  AND ule.language_id = pl.language_id
+			)
+			OR NOT EXISTS (
+				SELECT 1 FROM user_language_enrollments ule
+				WHERE ule.user_id = NULLIF($1, '')::uuid
+				  AND ule.is_active = true
+			)
+		  )
+		  AND (
+			COALESCE(e.content->>'display_text', '') <> ''
+			OR COALESCE(e.content->>'audio_text', '') <> ''
+			OR COALESCE(e.content->>'romaji', '') <> ''
+		  )
+		ORDER BY pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
+		LIMIT $2
+	`
+
+	rows, err := r.db.Pool.Query(ctx, query, userID, limit)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query daily vocabularies: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]VocabularyItem, 0, limit)
+	for rows.Next() {
+		var item VocabularyItem
+		var romaji string
+		if err := rows.Scan(
+			&item.ID, &item.Term, &romaji, &item.Meaning, &item.Category, &item.ExampleJA, &item.ExampleID, &item.DifficultyLevel,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan daily vocabulary row: %w", err)
+		}
+		if romaji != "" {
+			item.Reading = fmt.Sprintf("%s • %s", item.Term, romaji)
+		} else {
+			item.Reading = item.Term
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in daily vocabularies: %w", err)
+	}
+	return items, nil
+}
+
 // CreateAttempt logs telemetry data for an answered exercise
 func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error {
 	selectedPayload := attempt.SelectedAnswer
@@ -443,8 +538,7 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 	return count, nil
 }
 
-// CreateExamAttempt records a completed diagnostic mock exam submission
-func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error {
+func prepareExamAttemptFields(attempt *ReadinessExamAttempt) (map[string]any, []byte, int) {
 	report := attempt.AnalysisReport
 	if report == nil {
 		report = make(map[string]any)
@@ -461,15 +555,22 @@ func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *Rea
 	if attempt.AttemptedAt.IsZero() {
 		attempt.AttemptedAt = time.Now().UTC()
 	}
+	return report, reportJSON, overall
+}
 
-	query := `
-		INSERT INTO readiness_exam_attempts (
-			user_id, level_id, reading_score, listening_score, writing_score, speaking_score, overall_score, is_passed, analysis_report, attempted_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-		RETURNING id
-	`
-	err = r.db.Pool.QueryRow(
-		ctx, query,
+const insertExamAttemptQuery = `
+	INSERT INTO readiness_exam_attempts (
+		user_id, level_id, reading_score, listening_score, writing_score, speaking_score, overall_score, is_passed, analysis_report, attempted_at
+	) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+	RETURNING id
+`
+
+// CreateExamAttempt records a completed diagnostic mock exam submission
+func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error {
+	report, reportJSON, overall := prepareExamAttemptFields(attempt)
+
+	err := r.db.Pool.QueryRow(
+		ctx, insertExamAttemptQuery,
 		attempt.UserID, attempt.LevelID,
 		attempt.ReadingScore, attempt.ListeningScore, attempt.WritingScore, attempt.SpeakingScore,
 		overall, attempt.IsPassed, reportJSON, attempt.AttemptedAt,
@@ -481,6 +582,75 @@ func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *Rea
 	attempt.ScorePercent = overall
 	attempt.AnalysisReport = report
 	return nil
+}
+
+var _ TransactionalExamRecorder = (*PostgresRepository)(nil)
+
+// RecordExamSubmissionTx atomically guards against duplicate passed exams, inserts the attempt,
+// and advances the active enrollment proficiency level inside a single database transaction.
+func (r *PostgresRepository) RecordExamSubmissionTx(
+	ctx context.Context,
+	attempt *ReadinessExamAttempt,
+	enrollmentID string,
+	expectedLevelID string,
+	nextLevelID string,
+) (bool, error) {
+	report, reportJSON, overall := prepareExamAttemptFields(attempt)
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to begin exam submission transaction: %w", err)
+	}
+	defer func() {
+		_ = tx.Rollback(ctx)
+	}()
+
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2))", attempt.UserID, attempt.LevelID); err != nil {
+		return false, fmt.Errorf("failed to acquire exam lock: %w", err)
+	}
+
+	var alreadyPassed bool
+	if err := tx.QueryRow(
+		ctx,
+		`SELECT EXISTS(SELECT 1 FROM readiness_exam_attempts WHERE user_id = $1 AND level_id = $2::uuid AND is_passed = true)`,
+		attempt.UserID, attempt.LevelID,
+	).Scan(&alreadyPassed); err != nil {
+		return false, fmt.Errorf("failed to verify existing passed exam inside tx: %w", err)
+	}
+	if alreadyPassed {
+		return false, ErrExamAlreadyPassed
+	}
+
+	if err := tx.QueryRow(
+		ctx, insertExamAttemptQuery,
+		attempt.UserID, attempt.LevelID,
+		attempt.ReadingScore, attempt.ListeningScore, attempt.WritingScore, attempt.SpeakingScore,
+		overall, attempt.IsPassed, reportJSON, attempt.AttemptedAt,
+	).Scan(&attempt.ID); err != nil {
+		return false, fmt.Errorf("failed to insert readiness exam attempt: %w", err)
+	}
+
+	levelAdvanced := false
+	if attempt.IsPassed && enrollmentID != "" && expectedLevelID != "" && nextLevelID != "" {
+		tag, err := tx.Exec(
+			ctx,
+			`UPDATE user_language_enrollments SET current_level_id = $2 WHERE id = $1 AND current_level_id = $3`,
+			enrollmentID, nextLevelID, expectedLevelID,
+		)
+		if err != nil {
+			return false, fmt.Errorf("failed to advance enrollment level: %w", err)
+		}
+		levelAdvanced = tag.RowsAffected() > 0
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("failed to commit exam submission transaction: %w", err)
+	}
+
+	attempt.OverallScore = overall
+	attempt.ScorePercent = overall
+	attempt.AnalysisReport = report
+	return levelAdvanced, nil
 }
 
 // GetExamAttemptsByUserID retrieves previous mock exam results for a user

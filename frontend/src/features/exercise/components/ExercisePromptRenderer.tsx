@@ -64,7 +64,7 @@ export const ExercisePromptRenderer = ({
   onToggleRecording,
   onToggleHint,
 }: ExercisePromptRendererProps) => {
-  const exerciseType = exercise.exercise_type || exercise.type || ''
+  const exerciseType = exercise.exercise_type
   const pillarMeta = SKILL_PILLAR_LABELS[exercise.skill_pillar] ?? {
     label: exercise.skill_pillar,
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
@@ -95,7 +95,7 @@ export const ExercisePromptRenderer = ({
         </div>
 
         <h1 className="text-xl sm:text-2xl font-brand font-extrabold text-slate-900 leading-snug whitespace-pre-line">
-          {exercise.prompt || exercise.question_text}
+          {exercise.prompt}
         </h1>
 
         {showHint && parsedContent.hint && (

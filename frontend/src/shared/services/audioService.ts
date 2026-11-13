@@ -426,6 +426,12 @@ class AudioService {
   public playSpeech(text: string, lang = 'ja-JP'): void {
     this.speakLanguage(text, lang)
   }
+
+  public stopSpeech(): void {
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel()
+    }
+  }
 }
 
 export const audioService = new AudioService()

@@ -86,7 +86,11 @@ func (h *Handler) GetDueReviews(c *gin.Context) {
 	}
 
 	limitStr := c.DefaultQuery("limit", "20")
-	limit, _ := strconv.Atoi(limitStr)
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		response.BadRequest(c, "invalid limit query parameter, must be an integer")
+		return
+	}
 
 	queue, err := h.srsUsecase.GetDueReviews(c.Request.Context(), userID, limit)
 	if err != nil {
@@ -168,6 +172,30 @@ func (h *Handler) SubmitExam(c *gin.Context) {
 	response.Success(c, http.StatusOK, "readiness exam submitted successfully", res)
 }
 
+// GetDailyVocabularies handles GET /api/v1/vocabularies/daily
+func (h *Handler) GetDailyVocabularies(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	limitStr := c.DefaultQuery("limit", "10")
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		response.BadRequest(c, "invalid limit query parameter, must be an integer")
+		return
+	}
+
+	items, err := h.exerciseUsecase.GetDailyVocabularies(c.Request.Context(), userID, limit)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "daily vocabularies retrieved successfully", items)
+}
+
 // RegisterRoutes registers exercise, SRS, and readiness exam endpoints
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	exercises := rg.Group("/exercises")
@@ -177,6 +205,14 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	{
 		exercises.GET("/lesson/:lesson_id", h.GetExercisesByLesson)
 		exercises.POST("/submit", h.SubmitAnswer)
+	}
+
+	vocabularies := rg.Group("/vocabularies")
+	if authMiddleware != nil {
+		vocabularies.Use(authMiddleware)
+	}
+	{
+		vocabularies.GET("/daily", h.GetDailyVocabularies)
 	}
 
 	srs := rg.Group("/srs")

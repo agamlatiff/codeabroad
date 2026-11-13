@@ -97,9 +97,7 @@ export interface CurriculumExercise {
   grammar_point_id?: string | null
   skill_pillar: string
   exercise_type: string
-  type?: string
   prompt: string
-  question_text?: string
   content?: Record<string, unknown>
   options?: string[]
   hint?: string | null

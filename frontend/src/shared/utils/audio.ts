@@ -76,6 +76,10 @@ class AudioEngineProxy {
   public playSpeech(text: string, lang = 'ja-JP'): void {
     audioService.playSpeech(text, lang)
   }
+
+  public stopSpeech(): void {
+    audioService.stopSpeech()
+  }
 }
 
 export const soundEngine = new AudioEngineProxy()

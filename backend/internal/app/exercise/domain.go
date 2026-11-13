@@ -97,7 +97,7 @@ type ReadinessExamAttempt struct {
 	SpeakingScore  int                        `json:"speaking_score"`
 	OverallScore   int                        `json:"overall_score"`
 	MaxScore       int                        `json:"max_score,omitempty"`
-	ScorePercent   int                        `json:"score_percent,omitempty"`
+	ScorePercent   int                        `json:"score_percent"`
 	IsPassed       bool                       `json:"is_passed"`
 	AnalysisReport map[string]any             `json:"analysis_report,omitempty"`
 	AttemptedAt    time.Time                  `json:"attempted_at"`
@@ -159,12 +159,25 @@ type ReadinessExamResponse struct {
 	AwardedBadges []gamification.BadgeDefinition `json:"awarded_badges,omitempty"`
 }
 
+// VocabularyItem represents a daily contextual vocabulary/expression card derived from active curriculum exercises
+type VocabularyItem struct {
+	ID              string `json:"id"`
+	Term            string `json:"term"`
+	Reading         string `json:"reading"`
+	Meaning         string `json:"meaning"`
+	Category        string `json:"category"`
+	ExampleJA       string `json:"example_ja"`
+	ExampleID       string `json:"example_id"`
+	DifficultyLevel string `json:"difficulty_level"`
+}
+
 // Repository specifies persistence operations for exercises and telemetry
 type Repository interface {
 	GetExercisesByLessonID(ctx context.Context, lessonID string) ([]Exercise, error)
 	GetExerciseByID(ctx context.Context, id string) (*Exercise, error)
 	GetPlacementExercises(ctx context.Context, languageID string, limit int) ([]Exercise, error)
 	GetReadinessExamExercises(ctx context.Context, levelID string) ([]Exercise, error)
+	GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error)
 	CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error
 	GetAttemptsByUserID(ctx context.Context, userID string, limit int) ([]UserExerciseAttempt, error)
 }
@@ -184,6 +197,11 @@ type ReadinessExamRepository interface {
 	GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error)
 }
 
+// TransactionalExamRecorder atomically checks duplicate passes, stores an exam attempt, and advances enrollment level
+type TransactionalExamRecorder interface {
+	RecordExamSubmissionTx(ctx context.Context, attempt *ReadinessExamAttempt, enrollmentID string, expectedLevelID string, nextLevelID string) (bool, error)
+}
+
 // LessonAccessChecker verifies whether a learner has unlocked a target curriculum lesson node
 type LessonAccessChecker interface {
 	IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error)
@@ -198,6 +216,7 @@ type CurriculumCacheInvalidator interface {
 type Usecase interface {
 	GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error)
 	SubmitAnswer(ctx context.Context, userID string, req *SubmitExerciseAnswerRequest) (*SubmitExerciseAnswerResponse, error)
+	GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error)
 }
 
 // SRSUsecase specifies spaced repetition review workflows

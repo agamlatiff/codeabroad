@@ -63,14 +63,42 @@ const readChoiceOptions = (
   return []
 }
 
+const shuffleTokensDeterministically = (tokens: string[], seedKey: string): string[] => {
+  if (tokens.length <= 1) return [...tokens]
+
+  const result = [...tokens]
+  let seed = 2166136261
+  for (let i = 0; i < seedKey.length; i++) {
+    seed ^= seedKey.charCodeAt(i)
+    seed = Math.imul(seed, 16777619)
+  }
+
+  for (let i = result.length - 1; i > 0; i--) {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0
+    const j = seed % (i + 1)
+    const tmp = result[i]
+    result[i] = result[j]
+    result[j] = tmp
+  }
+
+  const unchanged = result.every((token, idx) => token === tokens[idx])
+  const hasDistinctTokens = new Set(tokens).size > 1
+  if (unchanged && hasDistinctTokens) {
+    return [...result.slice(1), result[0]]
+  }
+
+  return result
+}
+
 /**
  * Safely normalizes dynamic backend JSONB `exercise.content` into strongly typed UI structures.
  */
 export const parseExerciseContent = (exercise: CurriculumExercise): ParsedExerciseContent => {
   const raw = isRecord(exercise.content) ? exercise.content : {}
+  const rawTokens = readStringArray(raw, 'tokens')
 
   return {
-    tokens: readStringArray(raw, 'tokens'),
+    tokens: shuffleTokensDeterministically(rawTokens, exercise.id),
     targetTranslation: readString(raw, 'target_translation'),
     sentenceTemplate: readString(raw, 'sentence_template'),
     passage: readString(raw, 'passage'),
@@ -99,7 +127,7 @@ export const formatUserAnswerForSubmission = (
   exercise: CurriculumExercise,
   input: ExerciseSubmissionInput
 ): string => {
-  const exerciseType = exercise.exercise_type || exercise.type || ''
+  const exerciseType = exercise.exercise_type
 
   if (exerciseType === 'sentence_builder') {
     return input.selectedTokens.join(' ').trim()

@@ -94,8 +94,9 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
 
   const { data: rawVocabs = [], isLoading } = useQuery({
     queryKey: DAILY_VOCABULARIES_QUERY_KEY,
-    queryFn: () => vocabularyService.getDailyVocabularies(),
+    queryFn: ({ signal }) => vocabularyService.getDailyVocabularies({ signal }),
     staleTime: 1000 * 60 * 10,
+    retry: false,
   })
 
   const vocabList: LanguageVocabItem[] = useMemo(() => {
