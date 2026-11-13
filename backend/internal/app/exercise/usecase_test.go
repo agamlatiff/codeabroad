@@ -2,6 +2,7 @@ package exercise_test
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"codeabroad/backend/internal/app/exercise"
@@ -209,5 +210,91 @@ func TestSubmitExam_4PillarScoring_Success(t *testing.T) {
 		t.Errorf("expected certificate to be issued")
 	}
 }
+
+type stubLessonAccessChecker struct {
+	unlocked bool
+	err      error
+}
+
+func (s *stubLessonAccessChecker) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	return s.unlocked, s.err
+}
+
+func TestGetExercisesByLesson_SanitizesAndChecksLock(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-locked"
+	expl := "Secret explanation"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:                "ex-1",
+		LessonID:          &lessonID,
+		Prompt:            "Translate 'hello'",
+		CorrectAnswer:     "こんにちは",
+		AcceptableAnswers: []string{"konnichiwa"},
+		DiagnosticRubric:  map[string]any{"x": "y"},
+		Explanation:       &expl,
+	}
+
+	ucLocked := exercise.NewUsecaseWithAccessChecker(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: false},
+	)
+
+	if _, err := ucLocked.GetExercisesByLesson(context.Background(), "user-1", lessonID); !errors.Is(err, exercise.ErrExerciseLessonLocked) {
+		t.Fatalf("expected ErrExerciseLessonLocked for locked lesson, got %v", err)
+	}
+
+	ucUnlocked := exercise.NewUsecaseWithAccessChecker(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: true},
+	)
+
+	list, err := ucUnlocked.GetExercisesByLesson(context.Background(), "user-1", lessonID)
+	if err != nil {
+		t.Fatalf("expected unlocked lesson exercises to succeed, got %v", err)
+	}
+	if len(list) != 1 {
+		t.Fatalf("expected 1 exercise, got %d", len(list))
+	}
+	if list[0].CorrectAnswer != "" || list[0].AcceptableAnswers != nil || list[0].DiagnosticRubric != nil || list[0].Explanation != nil {
+		t.Fatalf("expected exercise answers to be sanitized, got %+v", list[0])
+	}
+}
+
+func TestSubmitAnswer_LockedLesson_Blocked(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-locked"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	uc := exercise.NewUsecaseWithAccessChecker(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: false},
+	)
+
+	_, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-1",
+		UserAnswer: "A",
+	})
+	if !errors.Is(err, exercise.ErrExerciseLessonLocked) {
+		t.Fatalf("expected ErrExerciseLessonLocked when submitting answer for locked lesson, got %v", err)
+	}
+}
+
 
 

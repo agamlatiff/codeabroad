@@ -43,7 +43,7 @@ type Unit struct {
 	Title       string    `json:"title"`
 	Description *string   `json:"description,omitempty"`
 	UnitType    string    `json:"unit_type"` // curriculum | diagnostic_exam
-	OrderIndex  int       `json:"order_index"`
+	OrdeerIndex  int       `json:"order_index"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -129,8 +129,8 @@ type LessonDetailResponse struct {
 	Score         int                 `json:"score"`
 	IsSkipped     bool                `json:"is_skipped"`
 	CompletedAt   *time.Time          `json:"completed_at,omitempty"`
-	GrammarPoints []GrammarPoint      `json:"grammar_points,omitempty"`
-	Exercises     []exercise.Exercise `json:"exercises,omitempty"`
+	GrammarPoints []GrammarPoint      `json:"grammar_points"`
+	Exercises     []exercise.Exercise `json:"exercises"`
 	CreatedAt     time.Time           `json:"created_at"`
 }
 
@@ -140,16 +140,28 @@ type CompleteLessonRequest struct {
 	Score    int    `json:"score" binding:"min=0,max=100"`
 }
 
+// LessonAttemptSummary aggregates server-side attempt counts and accuracy for a learner's lesson session
+type LessonAttemptSummary struct {
+	TotalExercises          int `json:"total_exercises"`
+	AttemptedExercises      int `json:"attempted_exercises"`
+	CorrectExercises        int `json:"correct_exercises"`
+	FreshAttemptedExercises int `json:"fresh_attempted_exercises"`
+	FreshCorrectExercises   int `json:"fresh_correct_exercises"`
+}
+
 // LessonCompletionPayload encapsulates data required to record lesson completion atomically in a single transaction
 type LessonCompletionPayload struct {
-	Progress     *UserLessonProgress `json:"progress"`
-	XPEarned     int                 `json:"xp_earned"`
-	NewXP        int                 `json:"new_xp"`
-	NewLevel     int                 `json:"new_level"`
-	NewStreak    int                 `json:"new_streak"`
-	LastActiveAt time.Time           `json:"last_active_at"`
-	ActivityType string              `json:"activity_type"`
-	Metadata     map[string]any      `json:"metadata,omitempty"`
+	Progress       *UserLessonProgress `json:"progress"`
+	XPEarned       int                 `json:"xp_earned"`
+	NewXP          int                 `json:"new_xp"`
+	NewLevel       int                 `json:"new_level"`
+	NewStreak      int                 `json:"new_streak"`
+	NewGems        int                 `json:"new_gems"`
+	PreviousStreak int                 `json:"-"`
+	WasCompleted   bool                `json:"-"`
+	LastActiveAt   time.Time           `json:"last_active_at"`
+	ActivityType   string              `json:"activity_type"`
+	Metadata       map[string]any      `json:"metadata,omitempty"`
 }
 
 // CompleteLessonResponse returns updated progression, gamification rewards, and the next unlocked node
@@ -192,13 +204,15 @@ type LessonProgressRepository interface {
 	UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error
 	RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
-	CountLessonExerciseAttempts(ctx context.Context, userID string, lessonID string) (totalExercises int, attemptedExercises int, err error)
+	GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error)
 }
 
 // RoadmapCacheRepository specifies the caching contract for active curriculum roadmaps (Redis)
 type RoadmapCacheRepository interface {
+	GetRoadmapVersion(ctx context.Context, userID string) (string, error)
 	GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error)
 	SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error
+	SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error
 	InvalidateRoadmap(ctx context.Context, userID string) error
 }
 
@@ -215,6 +229,6 @@ type Usecase interface {
 	GetRoadmap(ctx context.Context, userID string, req *GetRoadmapRequest) (*RoadmapResponse, error)
 	GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error)
 	CompleteLesson(ctx context.Context, userID string, req *CompleteLessonRequest) (*CompleteLessonResponse, error)
-	GetGrammarPoints(ctx context.Context, levelID string) ([]GrammarPoint, error)
+	GetGrammarPoints(ctx context.Context, userID string, levelID string) ([]GrammarPoint, error)
 }
 

@@ -2,8 +2,10 @@ package curriculum
 
 import (
 	"net/http"
+	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/middleware"
 	"codeabroad/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
@@ -100,6 +102,12 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 
 // GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=...
 func (h *Handler) GetGrammarPoints(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
 	var query struct {
 		LevelID string `form:"level_id" binding:"required,uuid"`
 	}
@@ -108,7 +116,7 @@ func (h *Handler) GetGrammarPoints(c *gin.Context) {
 		return
 	}
 
-	points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), query.LevelID)
+	points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), userID, query.LevelID)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -123,10 +131,15 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	if authMiddleware != nil {
 		curriculum.Use(authMiddleware)
 	}
+	completeRateLimiter := middleware.UserOrIPRateLimitMiddleware(
+		30,
+		time.Minute,
+		"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
+	)
 	{
 		curriculum.GET("/roadmap", h.GetRoadmap)
 		curriculum.GET("/lessons/:id", h.GetLessonDetail)
-		curriculum.POST("/lessons/:id/complete", h.CompleteLesson)
+		curriculum.POST("/lessons/:id/complete", completeRateLimiter, h.CompleteLesson)
 		curriculum.GET("/grammar-points", h.GetGrammarPoints)
 	}
 }

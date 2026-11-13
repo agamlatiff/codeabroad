@@ -31,6 +31,12 @@ func NewHandler(
 
 // GetExercisesByLesson handles GET /api/v1/exercises/lesson/:lesson_id
 func (h *Handler) GetExercisesByLesson(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
 	var uri struct {
 		LessonID string `uri:"lesson_id" binding:"required,uuid"`
 	}
@@ -39,7 +45,7 @@ func (h *Handler) GetExercisesByLesson(c *gin.Context) {
 		return
 	}
 
-	exercises, err := h.exerciseUsecase.GetExercisesByLesson(c.Request.Context(), uri.LessonID)
+	exercises, err := h.exerciseUsecase.GetExercisesByLesson(c.Request.Context(), userID, uri.LessonID)
 	if err != nil {
 		response.Error(c, err)
 		return

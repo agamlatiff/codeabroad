@@ -11,12 +11,33 @@ import (
 )
 
 type usecase struct {
-	exerciseRepo Repository
-	srsRepo      SRSRepository
-	examRepo     ReadinessExamRepository
-	langRepo     language.Repository
-	userRepo     user.Repository
-	helper       *Helper
+	exerciseRepo  Repository
+	srsRepo       SRSRepository
+	examRepo      ReadinessExamRepository
+	langRepo      language.Repository
+	userRepo      user.Repository
+	accessChecker LessonAccessChecker
+	helper        *Helper
+}
+
+// NewUsecaseWithAccessChecker creates a combined exercise, SRS, and readiness exam usecase with lesson lock enforcement
+func NewUsecaseWithAccessChecker(
+	exerciseRepo Repository,
+	srsRepo SRSRepository,
+	examRepo ReadinessExamRepository,
+	langRepo language.Repository,
+	userRepo user.Repository,
+	accessChecker LessonAccessChecker,
+) *usecase {
+	return &usecase{
+		exerciseRepo:  exerciseRepo,
+		srsRepo:       srsRepo,
+		examRepo:      examRepo,
+		langRepo:      langRepo,
+		userRepo:      userRepo,
+		accessChecker: accessChecker,
+		helper:        NewHelper(),
+	}
 }
 
 // NewUsecase creates a combined exercise, SRS, and readiness exam usecase
@@ -27,22 +48,32 @@ func NewUsecase(
 	langRepo language.Repository,
 	userRepo user.Repository,
 ) *usecase {
-	return &usecase{
-		exerciseRepo: exerciseRepo,
-		srsRepo:      srsRepo,
-		examRepo:     examRepo,
-		langRepo:     langRepo,
-		userRepo:     userRepo,
-		helper:       NewHelper(),
-	}
+	return NewUsecaseWithAccessChecker(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, nil)
 }
 
-// GetExercisesByLesson returns the interactive exercises for a daily lesson
-func (u *usecase) GetExercisesByLesson(ctx context.Context, lessonID string) ([]Exercise, error) {
+// GetExercisesByLesson returns sanitized interactive exercises for an unlocked lesson node
+func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
 	if lessonID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	return u.exerciseRepo.GetExercisesByLessonID(ctx, lessonID)
+	if u.accessChecker != nil {
+		unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, lessonID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify lesson access: %w", err)
+		}
+		if !unlocked {
+			return nil, ErrExerciseLessonLocked
+		}
+	}
+
+	exercises, err := u.exerciseRepo.GetExercisesByLessonID(ctx, lessonID)
+	if err != nil {
+		return nil, err
+	}
+	return SanitizeExercises(exercises), nil
 }
 
 // SubmitAnswer evaluates a single exercise response, logs telemetry, and injects into SRS on error
@@ -57,6 +88,18 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	ex, err := u.exerciseRepo.GetExerciseByID(ctx, req.ExerciseID)
 	if err != nil {
 		return nil, err
+	}
+	if ex == nil {
+		return nil, ErrExerciseNotFound
+	}
+	if u.accessChecker != nil && ex.LessonID != nil && *ex.LessonID != "" {
+		unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, *ex.LessonID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify lesson access: %w", err)
+		}
+		if !unlocked {
+			return nil, ErrExerciseLessonLocked
+		}
 	}
 
 	isCorrect := u.helper.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, req.UserAnswer)

@@ -15,17 +15,56 @@ type redisRoadmapCacheRepository struct {
 	rdb *infraRedis.RedisClient
 }
 
+var setRoadmapIfVersionScript = redis.NewScript(`
+local currentVer = redis.call("GET", KEYS[1])
+if not currentVer then
+	currentVer = "0"
+end
+if currentVer ~= ARGV[1] then
+	return 0
+end
+redis.call("SET", KEYS[2], ARGV[2], "PX", ARGV[3])
+return 1
+`)
+
 // NewRoadmapCacheRepository creates a new Redis-backed roadmap cache repository
 func NewRoadmapCacheRepository(rdb *infraRedis.RedisClient) RoadmapCacheRepository {
 	return &redisRoadmapCacheRepository{rdb: rdb}
 }
 
-// GetRoadmap retrieves a cached roadmap response from Redis
+func roadmapVersionKey(userID string) string {
+	return fmt.Sprintf("curriculum:roadmap:{%s}:ver", userID)
+}
+
+func roadmapCacheKey(userID string, version string, languageID string) string {
+	return fmt.Sprintf("curriculum:roadmap:{%s}:v%s:%s", userID, version, languageID)
+}
+
+// GetRoadmapVersion retrieves the current invalidation epoch for a user's roadmap cache
+func (c *redisRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, userID string) (string, error) {
+	if c.rdb == nil || c.rdb.Client == nil {
+		return "0", nil
+	}
+	ver, err := c.rdb.Client.Get(ctx, roadmapVersionKey(userID)).Result()
+	if err != nil {
+		if errors.Is(err, redis.Nil) {
+			return "0", nil
+		}
+		return "", err
+	}
+	return ver, nil
+}
+
+// GetRoadmap retrieves a cached roadmap response from Redis under the user's current version epoch
 func (c *redisRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
 	if c.rdb == nil || c.rdb.Client == nil {
 		return nil, nil
 	}
-	key := fmt.Sprintf("curriculum:roadmap:%s:%s", userID, languageID)
+	ver, err := c.GetRoadmapVersion(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	key := roadmapCacheKey(userID, ver, languageID)
 	data, err := c.rdb.Client.Get(ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -41,36 +80,45 @@ func (c *redisRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID str
 	return &roadmap, nil
 }
 
-// SetRoadmap stores a decorated roadmap in Redis with a specified TTL
+// SetRoadmap stores a decorated roadmap in Redis using the current version epoch
 func (c *redisRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error {
 	if c.rdb == nil || c.rdb.Client == nil || roadmap == nil {
 		return nil
 	}
-	key := fmt.Sprintf("curriculum:roadmap:%s:%s", userID, languageID)
+	ver, err := c.GetRoadmapVersion(ctx, userID)
+	if err != nil {
+		return err
+	}
+	return c.SetRoadmapIfVersion(ctx, userID, languageID, ver, roadmap, ttl)
+}
+
+// SetRoadmapIfVersion atomically stores a roadmap only if the user's cache version epoch still matches expectedVersion,
+// eliminating stale-write races when a lesson completes concurrently during cache population.
+func (c *redisRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error {
+	if c.rdb == nil || c.rdb.Client == nil || roadmap == nil {
+		return nil
+	}
+	if expectedVersion == "" {
+		expectedVersion = "0"
+	}
 	data, err := json.Marshal(roadmap)
 	if err != nil {
 		return fmt.Errorf("failed to marshal roadmap for cache: %w", err)
 	}
-	return c.rdb.Client.Set(ctx, key, data, ttl).Err()
+	verKey := roadmapVersionKey(userID)
+	dataKey := roadmapCacheKey(userID, expectedVersion, languageID)
+	ttlMs := ttl.Milliseconds()
+	if ttlMs <= 0 {
+		ttlMs = (15 * time.Minute).Milliseconds()
+	}
+	return setRoadmapIfVersionScript.Run(ctx, c.rdb.Client, []string{verKey, dataKey}, expectedVersion, data, ttlMs).Err()
 }
 
-// InvalidateRoadmap purges all cached roadmaps for a user across all languages
+// InvalidateRoadmap atomically advances the user's roadmap cache epoch in O(1) without SCAN wildcards
 func (c *redisRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, userID string) error {
 	if c.rdb == nil || c.rdb.Client == nil {
 		return nil
 	}
-	pattern := fmt.Sprintf("curriculum:roadmap:%s:*", userID)
-	iter := c.rdb.Client.Scan(ctx, 0, pattern, 100).Iterator()
-	var keys []string
-	for iter.Next(ctx) {
-		keys = append(keys, iter.Val())
-	}
-	if err := iter.Err(); err != nil {
-		return err
-	}
-	if len(keys) > 0 {
-		return c.rdb.Client.Del(ctx, keys...).Err()
-	}
-	return nil
+	return c.rdb.Client.Incr(ctx, roadmapVersionKey(userID)).Err()
 }
 

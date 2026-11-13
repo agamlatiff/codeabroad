@@ -3,6 +3,7 @@ package onboarding
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	"codeabroad/backend/internal/app/curriculum"
@@ -158,7 +159,9 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 	if assignedLevel.OrderIndex > 1 {
 		_ = u.curriculumRepo.SkipPrecedingLessons(ctx, userID, assignedLevel.OrderIndex, req.LanguageID)
 		if u.cacheRepo != nil {
-			_ = u.cacheRepo.InvalidateRoadmap(ctx, userID)
+			if invErr := u.cacheRepo.InvalidateRoadmap(ctx, userID); invErr != nil {
+				log.Printf("onboarding: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
+			}
 		}
 	}
 

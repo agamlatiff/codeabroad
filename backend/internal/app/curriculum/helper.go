@@ -1,6 +1,13 @@
 package curriculum
 
-import "time"
+import (
+	"fmt"
+	"time"
+
+	"codeabroad/backend/internal/shared/apperror"
+)
+
+const xpPerLevel = 100
 
 // Helper encapsulates business logic for roadmap unlocks and lesson completion evaluation
 type Helper struct{}
@@ -94,5 +101,53 @@ func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time,
 	}
 
 	return newStreak, newStreak != currentStreak
+}
+
+// CalculateLevel computes user level from total XP (100 XP per level, minimum level 1).
+func (h *Helper) CalculateLevel(xp int) int {
+	if xp < 0 {
+		return 1
+	}
+	return (xp / xpPerLevel) + 1
+}
+
+// ComputeVerifiedLessonScore validates exercise attempt completeness and calculates server-verified lesson accuracy.
+func (h *Helper) ComputeVerifiedLessonScore(reqScore int, summary *LessonAttemptSummary, isReplay bool) (int, error) {
+	if summary != nil && summary.TotalExercises > 0 {
+		attempted := summary.AttemptedExercises
+		correct := summary.CorrectExercises
+		if isReplay {
+			attempted = summary.FreshAttemptedExercises
+			correct = summary.FreshCorrectExercises
+		}
+
+		if attempted < summary.TotalExercises {
+			return 0, apperror.NewBadRequestError(
+				"EXERCISES_NOT_ATTEMPTED",
+				fmt.Sprintf("You must attempt all %d exercises before completing this lesson", summary.TotalExercises),
+				map[string]any{
+					"total_exercises":     summary.TotalExercises,
+					"attempted_exercises": attempted,
+					"is_replay":           isReplay,
+				},
+			)
+		}
+
+		if correct < 0 {
+			correct = 0
+		}
+		if correct > summary.TotalExercises {
+			correct = summary.TotalExercises
+		}
+		return (correct * 100) / summary.TotalExercises, nil
+	}
+
+	if reqScore < 0 {
+		return 0, nil
+	}
+	if reqScore > 100 {
+		return 100, nil
+	}
+	return reqScore, nil
 }
 

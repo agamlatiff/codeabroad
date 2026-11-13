@@ -12,10 +12,25 @@ import (
 // Specific Exercise, SRS & Exam Domain Errors
 var (
 	ErrExerciseNotFound     = apperror.NewNotFoundError("EXERCISE_NOT_FOUND", "exercise not found")
+	ErrExerciseLessonLocked = apperror.NewForbiddenError("LESSON_LOCKED", "previous lesson nodes must be completed first", nil)
 	ErrReviewNotFound       = apperror.NewNotFoundError("SRS_REVIEW_NOT_FOUND", "srs review item not found")
 	ErrExamAlreadyPassed    = apperror.NewConflictError("EXAM_ALREADY_PASSED", "readiness exam already passed for this level")
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "quality rating must be between 0 and 5", nil)
 )
+
+// SanitizeExercises returns a copy of exercises with answer keys, rubrics, and explanations stripped
+// so clients cannot inspect solutions before submitting answers.
+func SanitizeExercises(exercises []Exercise) []Exercise {
+	sanitized := make([]Exercise, len(exercises))
+	for i, ex := range exercises {
+		ex.CorrectAnswer = ""
+		ex.AcceptableAnswers = nil
+		ex.DiagnosticRubric = nil
+		ex.Explanation = nil
+		sanitized[i] = ex
+	}
+	return sanitized
+}
 
 // ExerciseType enumeration constants aligned with database CHECK constraint
 const (
@@ -180,9 +195,14 @@ type ReadinessExamRepository interface {
 	GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error)
 }
 
+// LessonAccessChecker verifies whether a learner has unlocked a target curriculum lesson node
+type LessonAccessChecker interface {
+	IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error)
+}
+
 // Usecase specifies business operations for answering exercises and logging telemetry
 type Usecase interface {
-	GetExercisesByLesson(ctx context.Context, lessonID string) ([]Exercise, error)
+	GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error)
 	SubmitAnswer(ctx context.Context, userID string, req *SubmitExerciseAnswerRequest) (*SubmitExerciseAnswerResponse, error)
 }
 

@@ -115,18 +115,13 @@ func (l *ipRateLimiter) allow(ip string, now time.Time) (allowed bool, remaining
 	return true, l.maxRequests - visitor.count, 0
 }
 
-// RateLimitMiddleware enforces per-IP rate limiting within the given time window
-func RateLimitMiddleware(maxRequests int, window time.Duration) gin.HandlerFunc {
+func buildRateLimitHandler(maxRequests int, window time.Duration, keyFn func(*gin.Context) string, message string) gin.HandlerFunc {
 	limiter := newIPRateLimiter(maxRequests, window)
 
 	return func(c *gin.Context) {
-		clientIP := c.ClientIP()
-		if clientIP == "" {
-			clientIP = c.Request.RemoteAddr
-		}
-
+		key := keyFn(c)
 		now := time.Now()
-		allowed, remaining, retryAfter := limiter.allow(clientIP, now)
+		allowed, remaining, retryAfter := limiter.allow(key, now)
 
 		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", maxRequests))
 		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
@@ -135,7 +130,7 @@ func RateLimitMiddleware(maxRequests int, window time.Duration) gin.HandlerFunc 
 			c.Header("Retry-After", fmt.Sprintf("%d", retryAfter))
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
 				"success": false,
-				"error":   "terlalu banyak percobaan autentikasi, silakan coba lagi beberapa saat",
+				"error":   message,
 				"code":    "TOO_MANY_REQUESTS",
 			})
 			return
@@ -143,5 +138,31 @@ func RateLimitMiddleware(maxRequests int, window time.Duration) gin.HandlerFunc 
 
 		c.Next()
 	}
+}
+
+// RateLimitMiddleware enforces per-IP rate limiting within the given time window
+func RateLimitMiddleware(maxRequests int, window time.Duration) gin.HandlerFunc {
+	return buildRateLimitHandler(maxRequests, window, func(c *gin.Context) string {
+		if ip := c.ClientIP(); ip != "" {
+			return ip
+		}
+		return c.Request.RemoteAddr
+	}, "terlalu banyak percobaan autentikasi, silakan coba lagi beberapa saat")
+}
+
+// UserOrIPRateLimitMiddleware enforces rate limiting keyed by authenticated userID (falling back to client IP).
+func UserOrIPRateLimitMiddleware(maxRequests int, window time.Duration, message string) gin.HandlerFunc {
+	if message == "" {
+		message = "terlalu banyak permintaan, silakan coba lagi beberapa saat"
+	}
+	return buildRateLimitHandler(maxRequests, window, func(c *gin.Context) string {
+		if userID := c.GetString("userID"); userID != "" {
+			return "user:" + userID
+		}
+		if ip := c.ClientIP(); ip != "" {
+			return "ip:" + ip
+		}
+		return "ip:" + c.Request.RemoteAddr
+	}, message)
 }
 

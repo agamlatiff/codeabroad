@@ -17,44 +17,53 @@ type MockRepository struct {
 	Units                    map[string]*UnitNodeResponse
 	Lessons                  map[string]*LessonNodeResponse
 	LessonProgress           map[string]*UserLessonProgress
-	LevelOrders              map[string]int
-	UserMaxLevelOrder        map[string]int
-	TotalLessonExercises     map[string]int
-	AttemptedLessonExercises map[string]int
-	UserXP                   map[string]int
-	NextLessonID             *string
-	GetGrammarPointsErr      error
-	GetGrammarPointErr       error
-	GetUnitsErr              error
-	GetUnitByIDErr           error
-	GetLessonsErr            error
-	GetLessonByIDErr         error
-	GetNextLessonIDErr       error
-	GetLessonProgressErr     error
-	UpsertProgressErr        error
-	RecordCompletionErr      error
-	SkipPrecedingErr         error
-	CountAttemptsErr         error
+	LevelOrders          map[string]int
+	UserMaxLevelOrder    map[string]int
+	UserInactiveLevels   map[string]bool
+	AttemptSummaries     map[string]*LessonAttemptSummary
+	DailyReplayXP          map[string]int
+	UserXP               map[string]int
+	UserGems             map[string]int
+	UserStreak           map[string]int
+	NextLessonID         *string
+	GetGrammarPointsErr  error
+	GetGrammarPointErr   error
+	GetUnitsErr          error
+	GetUnitByIDErr       error
+	GetLessonsErr        error
+	GetLessonByIDErr     error
+	GetNextLessonIDErr   error
+	GetLessonProgressErr error
+	UpsertProgressErr    error
+	RecordCompletionErr  error
+	SkipPrecedingErr     error
+	GetAttemptSummaryErr error
 }
 
 // NewMockRepository creates an in-memory mock curriculum Repository
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		GrammarPoints:            make(map[string]*GrammarPoint),
-		Units:                    make(map[string]*UnitNodeResponse),
-		Lessons:                  make(map[string]*LessonNodeResponse),
-		LessonProgress:           make(map[string]*UserLessonProgress),
-		LevelOrders:              make(map[string]int),
-		UserMaxLevelOrder:        make(map[string]int),
-		TotalLessonExercises:     make(map[string]int),
-		AttemptedLessonExercises: make(map[string]int),
-		UserXP:                   make(map[string]int),
+		GrammarPoints:     make(map[string]*GrammarPoint),
+		Units:             make(map[string]*UnitNodeResponse),
+		Lessons:           make(map[string]*LessonNodeResponse),
+		LessonProgress:    make(map[string]*UserLessonProgress),
+		LevelOrders:        make(map[string]int),
+		UserMaxLevelOrder:  make(map[string]int),
+		UserInactiveLevels: make(map[string]bool),
+		AttemptSummaries:   make(map[string]*LessonAttemptSummary),
+		DailyReplayXP:     make(map[string]int),
+		UserXP:            make(map[string]int),
+		UserGems:          make(map[string]int),
+		UserStreak:        make(map[string]int),
 	}
 }
 
 var _ Repository = (*MockRepository)(nil)
 
 func (m *MockRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetGrammarPointsErr != nil {
 		return nil, m.GetGrammarPointsErr
 	}
@@ -71,6 +80,9 @@ func (m *MockRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID 
 }
 
 func (m *MockRepository) GetGrammarPointByID(ctx context.Context, id string) (*GrammarPoint, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetGrammarPointErr != nil {
 		return nil, m.GetGrammarPointErr
 	}
@@ -82,6 +94,9 @@ func (m *MockRepository) GetGrammarPointByID(ctx context.Context, id string) (*G
 }
 
 func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetGrammarPointsErr != nil {
 		return nil, m.GetGrammarPointsErr
 	}
@@ -93,6 +108,9 @@ func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonI
 }
 
 func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, userID string) ([]UnitNodeResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetUnitsErr != nil {
 		return nil, m.GetUnitsErr
 	}
@@ -109,6 +127,9 @@ func (m *MockRepository) GetUnitsByLevelID(ctx context.Context, levelID string, 
 }
 
 func (m *MockRepository) GetUnitByID(ctx context.Context, id string) (*Unit, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetUnitByIDErr != nil {
 		return nil, m.GetUnitByIDErr
 	}
@@ -128,6 +149,9 @@ func (m *MockRepository) GetUnitByID(ctx context.Context, id string) (*Unit, err
 }
 
 func (m *MockRepository) GetLessonsByLevelID(ctx context.Context, levelID string, userID string) ([]LessonNodeResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetLessonsErr != nil {
 		return nil, m.GetLessonsErr
 	}
@@ -155,6 +179,9 @@ func (m *MockRepository) GetLessonsByLevelID(ctx context.Context, levelID string
 }
 
 func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, userID string) ([]LessonNodeResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetLessonsErr != nil {
 		return nil, m.GetLessonsErr
 	}
@@ -222,6 +249,9 @@ func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, le
 		return false, ErrLessonNotFound
 	}
 	curUnit := m.Units[curLesson.UnitID]
+	if curUnit != nil && m.UserInactiveLevels[fmt.Sprintf("%s:%s", userID, curUnit.LevelID)] {
+		return false, nil
+	}
 	if maxOrder, ok := m.UserMaxLevelOrder[userID]; ok && curUnit != nil {
 		if targetOrder, exists := m.LevelOrders[curUnit.LevelID]; exists && targetOrder > maxOrder {
 			return false, nil
@@ -257,6 +287,9 @@ func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, le
 }
 
 func (m *MockRepository) GetUserLessonProgress(ctx context.Context, userID string, lessonID string) (*UserLessonProgress, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetLessonProgressErr != nil {
 		return nil, m.GetLessonProgressErr
 	}
@@ -295,6 +328,9 @@ func (m *MockRepository) upsertLessonProgressLocked(progress *UserLessonProgress
 }
 
 func (m *MockRepository) SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.SkipPrecedingErr != nil {
 		return m.SkipPrecedingErr
 	}
@@ -328,12 +364,42 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	if _, exists := m.UserXP[userID]; !exists {
 		m.UserXP[userID] = payload.NewXP - payload.XPEarned
 	}
+	if _, exists := m.UserGems[userID]; !exists {
+		m.UserGems[userID] = payload.NewGems
+	}
+	payload.PreviousStreak = m.UserStreak[userID]
 
 	key := fmt.Sprintf("%s:%s", userID, payload.Progress.LessonID)
 	if existing, ok := m.LessonProgress[key]; ok && existing.IsCompleted {
+		payload.WasCompleted = true
 		payload.XPEarned = 5
-		if payload.Metadata != nil {
-			payload.Metadata["is_replay"] = true
+		if payload.Metadata == nil {
+			payload.Metadata = make(map[string]any)
+		}
+		payload.Metadata["is_practice"] = true
+		payload.Metadata["is_replay"] = true
+
+		loc, locErr := time.LoadLocation("Asia/Jakarta")
+		if locErr != nil {
+			loc = time.FixedZone("WIB", 7*3600)
+		}
+		now := payload.LastActiveAt
+		if now.IsZero() {
+			now = time.Now().UTC()
+		}
+		dayKey := fmt.Sprintf("%s:%s", userID, now.In(loc).Format("2006-01-02"))
+		used := m.DailyReplayXP[dayKey]
+		if used+payload.XPEarned > dailyReplayXPCap {
+			remaining := dailyReplayXPCap - used
+			if remaining < 0 {
+				remaining = 0
+			}
+			payload.XPEarned = remaining
+		}
+		m.DailyReplayXP[dayKey] += payload.XPEarned
+
+		if !existing.CompletedAt.IsZero() {
+			payload.Progress.CompletedAt = existing.CompletedAt
 		}
 	}
 
@@ -343,25 +409,33 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 
 	m.UserXP[userID] += payload.XPEarned
 	payload.NewXP = m.UserXP[userID]
-	payload.NewLevel = (payload.NewXP / 100) + 1
+	payload.NewLevel = NewHelper().CalculateLevel(payload.NewXP)
+	payload.NewGems = m.UserGems[userID]
+	m.UserStreak[userID] = payload.NewStreak
 	return nil
 }
 
-func (m *MockRepository) CountLessonExerciseAttempts(ctx context.Context, userID string, lessonID string) (int, int, error) {
+func (m *MockRepository) GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.CountAttemptsErr != nil {
-		return 0, 0, m.CountAttemptsErr
+	if m.GetAttemptSummaryErr != nil {
+		return nil, m.GetAttemptSummaryErr
 	}
-	total := m.TotalLessonExercises[lessonID]
-	attempted := m.AttemptedLessonExercises[fmt.Sprintf("%s:%s", userID, lessonID)]
-	return total, attempted, nil
+	key := fmt.Sprintf("%s:%s", userID, lessonID)
+	s, ok := m.AttemptSummaries[key]
+	if !ok || s == nil {
+		return &LessonAttemptSummary{}, nil
+	}
+	copyVal := *s
+	return &copyVal, nil
 }
 
 // MockRoadmapCacheRepository provides an in-memory mock for RoadmapCacheRepository
 type MockRoadmapCacheRepository struct {
+	mu                  sync.Mutex
 	Cache               map[string][]byte
+	Versions            map[string]int
 	GetRoadmapErr       error
 	SetRoadmapErr       error
 	InvalidateErr       error
@@ -373,13 +447,27 @@ type MockRoadmapCacheRepository struct {
 // NewMockRoadmapCacheRepository creates an in-memory mock cache repository
 func NewMockRoadmapCacheRepository() *MockRoadmapCacheRepository {
 	return &MockRoadmapCacheRepository{
-		Cache: make(map[string][]byte),
+		Cache:    make(map[string][]byte),
+		Versions: make(map[string]int),
 	}
 }
 
 var _ RoadmapCacheRepository = (*MockRoadmapCacheRepository)(nil)
 
+func (m *MockRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, userID string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.GetRoadmapErr != nil {
+		return "", m.GetRoadmapErr
+	}
+	return fmt.Sprintf("%d", m.Versions[userID]), nil
+}
+
 func (m *MockRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.GetRoadmapCallCount++
 	if m.GetRoadmapErr != nil {
 		return nil, m.GetRoadmapErr
@@ -397,6 +485,9 @@ func (m *MockRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID stri
 }
 
 func (m *MockRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.SetRoadmapCallCount++
 	if m.SetRoadmapErr != nil {
 		return m.SetRoadmapErr
@@ -410,11 +501,39 @@ func (m *MockRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID stri
 	return nil
 }
 
+func (m *MockRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	m.SetRoadmapCallCount++
+	if m.SetRoadmapErr != nil {
+		return m.SetRoadmapErr
+	}
+	if expectedVersion == "" {
+		expectedVersion = "0"
+	}
+	currentVersion := fmt.Sprintf("%d", m.Versions[userID])
+	if expectedVersion != currentVersion {
+		return nil
+	}
+	key := fmt.Sprintf("%s:%s", userID, languageID)
+	data, err := json.Marshal(roadmap)
+	if err != nil {
+		return err
+	}
+	m.Cache[key] = data
+	return nil
+}
+
 func (m *MockRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, userID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	m.InvalidateCallCount++
 	if m.InvalidateErr != nil {
 		return m.InvalidateErr
 	}
+	m.Versions[userID]++
 	prefix := userID + ":"
 	for k := range m.Cache {
 		if strings.HasPrefix(k, prefix) {
