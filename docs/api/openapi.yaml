@@ -2,9 +2,11 @@ openapi: 3.0.3
 info:
   title: CodeAbroad API Documentation
   description: >
-    Official RESTful API documentation for CodeAbroad — The Duolingo-style gamified coding and career accelerator platform.
-    Features include Curriculum Roadmaps, Auth & JWT Tokens, Onboarding, Quests & Code Runner, Vocabularies, Leaderboards, and Gamification.
-  version: 2.2.0
+    Official RESTful API documentation for CodeAbroad — Global Language Mastery Platform,
+    Anki SRS & Diagnostic Exam Engine.
+    Covers Authentication, User Profiles, Onboarding, Languages, Curriculum, Exercises,
+    Vocabularies, Spaced Repetition (SRS), Mock Exams, Gamification, and Leaderboards.
+  version: 3.0.0
   contact:
     name: CodeAbroad Engineering Team
     url: https://github.com/agamlatiff/codeabroad
@@ -13,611 +15,15 @@ servers:
   - url: http://localhost:8080/api/v1
     description: Local Development API Server
 
-paths:
-  # ==========================================
-  # SYSTEM HEALTH
-  # ==========================================
-  /health:
-    get:
-      tags:
-        - System Health
-      summary: Check system connectivity and health status
-      description: Returns health status of PostgreSQL and Redis connections.
-      responses:
-        "200":
-          description: System is operational
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthResponse"
-
-  # ==========================================
-  # AUTHENTICATION & USERS
-  # ==========================================
-  /auth/register:
-    post:
-      tags:
-        - Authentication
-      summary: Register a new developer user account
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RegisterRequest"
-      responses:
-        "201":
-          description: User registered successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponseWrapper"
-        "400":
-          $ref: "#/components/responses/BadRequestError"
-        "409":
-          $ref: "#/components/responses/ConflictError"
-
-  /auth/login:
-    post:
-      tags:
-        - Authentication
-      summary: Authenticate user credentials and issue JWT tokens
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/LoginRequest"
-      responses:
-        "200":
-          description: Login successful
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponseWrapper"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-  /auth/refresh:
-    post:
-      tags:
-        - Authentication
-      summary: Renew expired access token using refresh token
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/RefreshTokenRequest"
-      responses:
-        "200":
-          description: Tokens refreshed successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AuthResponseWrapper"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-  /auth/logout:
-    post:
-      tags:
-        - Authentication
-      summary: Invalidate user session and revoke token
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Logout successful
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-  /users/me:
-    get:
-      tags:
-        - User Profile
-      summary: Get logged-in user profile with gamification stats
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: User profile retrieved
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserProfileWrapper"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-    patch:
-      tags:
-        - User Profile
-      summary: Update user profile and preferences
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpdateProfileRequest"
-      responses:
-        "200":
-          description: Profile updated
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/UserProfileWrapper"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-
-  /users/me/activity-logs:
-    get:
-      tags:
-        - User Profile
-      summary: Retrieve weekly activity log and XP breakdown
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Activity logs retrieved
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ActivityLogsWrapper"
-
-  /users/me/daily-rewards:
-    get:
-      tags:
-        - Gamification
-      summary: Check status of daily login rewards
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Daily rewards status
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/DailyRewardsStatusWrapper"
-
-  /users/me/daily-rewards/claim:
-    post:
-      tags:
-        - Gamification
-      summary: Claim daily login streak bonus
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Reward claimed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  # ==========================================
-  # ONBOARDING & CAREER TRACKS
-  # ==========================================
-  /countries:
-    get:
-      tags:
-        - Onboarding
-      summary: List target relocation destination countries
-      responses:
-        "200":
-          description: List of countries
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CountriesWrapper"
-
-  /career-paths:
-    get:
-      tags:
-        - Onboarding
-      summary: List available career tracks and primary tech stacks
-      description: Returns tracks such as Go Backend (`golang`), Frontend (`react`), DevOps (`devops_aws`), Computer Science (`cs_fundamental`).
-      responses:
-        "200":
-          description: List of career paths
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/CareerPathsWrapper"
-
-  /onboarding:
-    post:
-      tags:
-        - Onboarding
-      summary: Submit onboarding questionnaire and initialize user track
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/CompleteOnboardingRequest"
-      responses:
-        "200":
-          description: Onboarding completed successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  # ==========================================
-  # CURRICULUM ROADMAPS
-  # ==========================================
-  /roadmaps/active:
-    get:
-      tags:
-        - Roadmaps
-      summary: Retrieve complete syllabus tree for active user track
-      description: >
-        Fetches composite tree (TechStack -> Modules -> Chapters -> Quests) with user completion status,
-        module progress rates, and Duolingo 80% progression gating.
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Active roadmap syllabus retrieved
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoadmapResponseWrapper"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "404":
-          $ref: "#/components/responses/NotFoundError"
-
-  /roadmaps/{track_slug}:
-    get:
-      tags:
-        - Roadmaps
-      summary: Retrieve complete syllabus tree for a specific track slug
-      description: Track slugs include `golang`, `react`, `devops_aws`, `cs_fundamental`.
-      parameters:
-        - name: track_slug
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "golang"
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Track roadmap syllabus retrieved
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RoadmapResponseWrapper"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
-        "404":
-          $ref: "#/components/responses/NotFoundError"
-
-  # ==========================================
-  # QUESTS & CODE RUNNER
-  # ==========================================
-  /quests:
-    get:
-      tags:
-        - Quests
-      summary: List available coding quests with optional filtering
-      parameters:
-        - name: chapter_id
-          in: query
-          schema:
-            type: string
-        - name: difficulty
-          in: query
-          schema:
-            type: string
-            enum: [easy, medium, hard]
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Quests list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/QuestsListWrapper"
-
-  /quests/daily:
-    get:
-      tags:
-        - Quests
-      summary: Get daily quest challenges
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Daily quests list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/QuestsListWrapper"
-
-  /quests/{id}:
-    get:
-      tags:
-        - Quests
-      summary: Get quest details with instructions and starter code
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-            example: "quest-uuid-1"
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Quest details retrieved
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/QuestDetailWrapper"
-
-  /quests/{id}/run-tests:
-    post:
-      tags:
-        - Quests
-      summary: Execute code runner against unit test suite
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [code]
-              properties:
-                code:
-                  type: string
-                  example: "package main\n\nfunc Solution() string { return \"ok\" }"
-      responses:
-        "200":
-          description: Test execution result
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/RunTestsResponseWrapper"
-
-  /quests/{id}/submit:
-    post:
-      tags:
-        - Quests
-      summary: Submit finished quest solution, award XP and unlock progression
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: string
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [code]
-              properties:
-                code:
-                  type: string
-      responses:
-        "200":
-          description: Quest completed successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  # ==========================================
-  # VOCABULARIES (TECHNICAL JAPANESE / ENGLISH)
-  # ==========================================
-  /vocabularies:
-    get:
-      tags:
-        - Vocabularies
-      summary: List tech vocabulary flashcards with pagination
-      parameters:
-        - name: category
-          in: query
-          schema:
-            type: string
-        - name: page
-          in: query
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          schema:
-            type: integer
-            default: 20
-      responses:
-        "200":
-          description: Vocabularies list
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/VocabulariesWrapper"
-
-  /vocabularies/daily:
-    get:
-      tags:
-        - Vocabularies
-      summary: Get daily Japanese technical vocabulary cards
-      responses:
-        "200":
-          description: Daily vocabularies
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  # ==========================================
-  # LEADERBOARDS
-  # ==========================================
-  /leaderboard/weekly:
-    get:
-      tags:
-        - Leaderboards
-      summary: Get weekly developer ranking leaderboard
-      description: Publicly viewable; if Authorization token is provided, includes caller's current rank position.
-      responses:
-        "200":
-          description: Weekly leaderboard
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/LeaderboardWrapper"
-
-  # ==========================================
-  # GAMIFICATION & SHOP
-  # ==========================================
-  /gamification/status:
-    get:
-      tags:
-        - Gamification
-      summary: Get user gamification status (streak, hearts, level, gems)
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Gamification status
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  /gamification/chests/claim:
-    post:
-      tags:
-        - Gamification
-      summary: Open daily reward chest
-      security:
-        - BearerAuth: []
-      responses:
-        "200":
-          description: Chest claimed
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  /gamification/shop/buy:
-    post:
-      tags:
-        - Gamification
-      summary: Purchase items using earned gems (Heart Refill, Streak Freeze, Double XP)
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [item_id]
-              properties:
-                item_id:
-                  type: string
-                  example: "streak_freeze"
-      responses:
-        "200":
-          description: Item purchased successfully
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-  /gamification/coaching/submit:
-    post:
-      tags:
-        - Gamification
-      summary: Submit 1-on-1 career mentor coaching application
-      security:
-        - BearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [topic, preferred_date]
-              properties:
-                topic:
-                  type: string
-                  example: "Resume review & Japan visa technical interview prep"
-                preferred_date:
-                  type: string
-                  format: date-time
-      responses:
-        "200":
-          description: Coaching submission received
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/BaseSuccessResponse"
-
-# ==========================================
-# COMPONENTS & SCHEMAS
-# ==========================================
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
-      description: Provide JWT Bearer token obtained from `/auth/login` or `/auth/register`.
-
-  responses:
-    BadRequestError:
-      description: Invalid request payload or parameter format
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    UnauthorizedError:
-      description: Authentication required or invalid/expired token
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    NotFoundError:
-      description: Requested resource was not found
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
-    ConflictError:
-      description: Resource conflict (e.g., email/username already taken)
-      content:
-        application/json:
-          schema:
-            $ref: "#/components/schemas/ErrorResponse"
 
   schemas:
-    BaseSuccessResponse:
+    SuccessResponse:
       type: object
       properties:
         success:
@@ -625,9 +31,10 @@ components:
           example: true
         message:
           type: string
-          example: "operation completed successfully"
+          example: Operation completed successfully
         data:
           type: object
+          nullable: true
 
     ErrorResponse:
       type: object
@@ -637,479 +44,743 @@ components:
           example: false
         error:
           type: string
-          example: "authorization header is required"
+          example: Human-readable error explanation
         code:
           type: string
-          example: "UNAUTHORIZED"
+          example: SPECIFIC_ERROR_CODE
 
-    HealthResponse:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "system is fully operational"
-        data:
-          type: object
-          properties:
-            status:
-              type: string
-              example: "healthy"
-            postgres:
-              type: string
-              example: "connected"
-            redis:
-              type: string
-              example: "connected"
+  responses:
+    BadRequestError:
+      description: Invalid request payload or parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnauthorizedError:
+      description: Missing, invalid, or expired authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    ConflictError:
+      description: Resource conflict (e.g., duplicate email or username)
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
 
-    RegisterRequest:
-      type: object
-      required: [name, username, email, password]
-      properties:
-        name:
-          type: string
-          example: "Budi Pratama"
-        username:
-          type: string
-          example: "budipratama"
-        email:
-          type: string
-          format: email
-          example: "budi@example.com"
-        password:
-          type: string
-          format: password
-          minLength: 8
-          example: "supersecret123"
+paths:
+  # ==========================================
+  # SYSTEM HEALTH
+  # ==========================================
+  /health:
+    get:
+      tags: [System Health]
+      summary: Check system connectivity and health status
+      responses:
+        "200":
+          description: System is operational
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties:
-        email:
-          type: string
-          format: email
-          example: "budi@example.com"
-        password:
-          type: string
-          format: password
-          example: "supersecret123"
-        remember_me:
-          type: boolean
-          default: false
+  # ==========================================
+  # AUTHENTICATION
+  # ==========================================
+  /auth/register:
+    post:
+      tags: [Authentication]
+      summary: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  minLength: 8
+                name:
+                  type: string
+      responses:
+        "201":
+          description: User registered successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
 
-    RefreshTokenRequest:
-      type: object
-      required: [refresh_token]
-      properties:
-        refresh_token:
-          type: string
-          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+  /auth/login:
+    post:
+      tags: [Authentication]
+      summary: Authenticate user credentials and issue JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+      responses:
+        "200":
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    AuthResponse:
-      type: object
-      properties:
-        access_token:
-          type: string
-        refresh_token:
-          type: string
-        user:
-          $ref: "#/components/schemas/User"
+  /auth/refresh:
+    post:
+      tags: [Authentication]
+      summary: Rotate refresh token and issue a new access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refresh_token]
+              properties:
+                refresh_token:
+                  type: string
+      responses:
+        "200":
+          description: Token refreshed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    AuthResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-        data:
-          $ref: "#/components/schemas/AuthResponse"
+  /auth/logout:
+    post:
+      tags: [Authentication]
+      security: [{ BearerAuth: [] }]
+      summary: Revoke current session token
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    User:
-      type: object
-      properties:
-        id:
-          type: string
-          example: "d3b07384-d113-4f91-8e3b-b26a6327e7d6"
-        name:
-          type: string
-          example: "Budi Pratama"
-        username:
-          type: string
-          example: "budipratama"
-        email:
-          type: string
-          example: "budi@example.com"
-        level:
-          type: string
-          example: "mid"
-        primary_stack:
-          type: string
-          example: "golang"
-        xp:
-          type: integer
-          example: 450
-        current_level:
-          type: integer
-          example: 3
-        streak:
-          type: integer
-          example: 5
-        gems:
-          type: integer
-          example: 120
-        is_onboarded:
-          type: boolean
-          example: true
+  /auth/logout-all:
+    post:
+      tags: [Authentication]
+      security: [{ BearerAuth: [] }]
+      summary: Revoke all active sessions for the current user
+      responses:
+        "200":
+          description: All sessions revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    UserProfileWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          $ref: "#/components/schemas/User"
+  # ==========================================
+  # USERS
+  # ==========================================
+  /users/me:
+    get:
+      tags: [Users]
+      security: [{ BearerAuth: [] }]
+      summary: Get authenticated user profile
+      responses:
+        "200":
+          description: User profile retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+    patch:
+      tags: [Users]
+      security: [{ BearerAuth: [] }]
+      summary: Update authenticated user profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    UpdateProfileRequest:
-      type: object
-      properties:
-        name:
-          type: string
-        bio:
-          type: string
-        github_url:
-          type: string
-        linkedin_url:
-          type: string
+  /users/me/activity-logs:
+    get:
+      tags: [Users]
+      security: [{ BearerAuth: [] }]
+      summary: Get 7-day learning activity logs and streak status
+      responses:
+        "200":
+          description: Activity logs retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    ActivityLogsWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            weekly_xp:
-              type: integer
-              example: 180
-            activity_count:
-              type: integer
-              example: 12
+  /users/me/daily-rewards:
+    get:
+      tags: [Users]
+      security: [{ BearerAuth: [] }]
+      summary: Get daily rewards status
+      responses:
+        "200":
+          description: Daily rewards status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    DailyRewardsStatusWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            vocab_quest_claimed:
-              type: boolean
-              example: true
-            golden_chest_claimed:
-              type: boolean
-              example: false
+  /users/me/daily-rewards/claim:
+    post:
+      tags: [Users]
+      security: [{ BearerAuth: [] }]
+      summary: Claim daily reward
+      responses:
+        "200":
+          description: Daily reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    CompleteOnboardingRequest:
-      type: object
-      required: [country_id, career_path_id, primary_stack, level, target_timeline, language_level]
-      properties:
-        country_id:
-          type: string
-          example: "japan-uuid"
-        career_path_id:
-          type: string
-          example: "backend-uuid"
-        primary_stack:
-          type: string
-          example: "golang"
-        level:
-          type: string
-          enum: [junior, mid, senior]
-          example: "mid"
-        target_timeline:
-          type: string
-          example: "6_months"
-        language_level:
-          type: string
-          example: "n3"
+  # ==========================================
+  # ONBOARDING
+  # ==========================================
+  /onboarding/languages:
+    get:
+      tags: [Onboarding]
+      summary: List available target languages for onboarding
+      responses:
+        "200":
+          description: Onboarding languages retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
-    CountriesWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              name:
-                type: string
-                example: "Japan"
-              slug:
-                type: string
-                example: "japan"
-              code:
-                type: string
-                example: "JP"
+  /onboarding/placement-questions/{language_id}:
+    get:
+      tags: [Onboarding]
+      summary: Get placement test questions for a target language
+      parameters:
+        - name: language_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Placement questions retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
-    CareerPathsWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            type: object
-            properties:
-              id:
-                type: string
-              slug:
-                type: string
-                example: "backend"
-              label:
-                type: string
-                example: "Backend Engineering"
-              stacks:
-                type: array
-                items:
-                  type: object
-                  properties:
-                    id:
-                      type: string
-                    slug:
-                      type: string
-                      example: "golang"
-                    label:
-                      type: string
-                      example: "Go (Golang)"
+  /onboarding:
+    post:
+      tags: [Onboarding]
+      security: [{ BearerAuth: [] }]
+      summary: Complete user onboarding and initial language enrollment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Onboarding completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    RoadmapResponse:
-      type: object
-      properties:
-        id:
-          type: string
-          example: "ts-golang-uuid"
-        slug:
-          type: string
-          example: "golang"
-        title:
-          type: string
-          example: "Go (Golang) Specialist Track"
-        badge:
-          type: string
-          example: "gopher-ninja"
-        is_active:
-          type: boolean
-          example: true
-        modules:
-          type: array
-          items:
-            $ref: "#/components/schemas/ModuleResponse"
+  # ==========================================
+  # LANGUAGES
+  # ==========================================
+  /languages:
+    get:
+      tags: [Languages]
+      summary: List all supported languages
+      responses:
+        "200":
+          description: Languages retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
-    ModuleResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        module_number:
-          type: integer
-          example: 1
-        title:
-          type: string
-          example: "Unit 1: Go Syntax & Concurrency Fundamentals"
-        description:
-          type: string
-        is_unlocked:
-          type: boolean
-          example: true
-        is_completed:
-          type: boolean
-          example: false
-        progress_rate:
-          type: number
-          format: float
-          example: 80.0
-        chapters:
-          type: array
-          items:
-            $ref: "#/components/schemas/ChapterResponse"
+  /languages/{id}:
+    get:
+      tags: [Languages]
+      summary: Get language details and proficiency levels
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Language details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
-    ChapterResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        chapter_number:
-          type: integer
-          example: 1
-        title:
-          type: string
-          example: "Chapter 1: Goroutines & Channels"
-        is_unlocked:
-          type: boolean
-          example: true
-        is_completed:
-          type: boolean
-          example: true
-        quests:
-          type: array
-          items:
-            $ref: "#/components/schemas/QuestSummaryResponse"
+  /languages/enrollments:
+    get:
+      tags: [Languages]
+      security: [{ BearerAuth: [] }]
+      summary: Get current user's language enrollments
+      responses:
+        "200":
+          description: Enrollments retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    QuestSummaryResponse:
-      type: object
-      properties:
-        id:
-          type: string
-        title:
-          type: string
-          example: "Worker Pool Implementation"
-        type:
-          type: string
-          example: "coding"
-        format:
-          type: string
-          example: "code_challenge"
-        difficulty:
-          type: string
-          enum: [easy, medium, hard]
-          example: "medium"
-        xp_reward:
-          type: integer
-          example: 50
-        gems_reward:
-          type: integer
-          example: 15
-        order_index:
-          type: integer
-          example: 1
-        status:
-          type: string
-          enum: [available, in_progress, completed]
-          example: "completed"
+  /languages/switch:
+    post:
+      tags: [Languages]
+      security: [{ BearerAuth: [] }]
+      summary: Switch active learning language
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [language_id]
+              properties:
+                language_id:
+                  type: string
+      responses:
+        "200":
+          description: Active language switched
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    RoadmapResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        message:
-          type: string
-          example: "active roadmap retrieved successfully"
-        data:
-          $ref: "#/components/schemas/RoadmapResponse"
+  # ==========================================
+  # CURRICULUM
+  # ==========================================
+  /curriculum:
+    get:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Get curriculum units and lessons for active enrollment
+      responses:
+        "200":
+          description: Curriculum retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    QuestsListWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: array
-          items:
-            $ref: "#/components/schemas/QuestSummaryResponse"
+  /curriculum/lessons/{id}:
+    get:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Get lesson details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lesson details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    QuestDetailWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            id:
-              type: string
-            title:
-              type: string
-            instructions:
-              type: string
-            starter_code:
-              type: string
+  /curriculum/lessons/{id}/complete:
+    post:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Mark lesson as completed and award XP
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Lesson completed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    RunTestsResponseWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            tests_passed:
-              type: integer
-              example: 3
-            total_tests:
-              type: integer
-              example: 3
-            output:
-              type: string
-              example: "PASS: TestWorkerPool (0.01s)"
+  /curriculum/grammar-points:
+    get:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Get grammar points reference
+      responses:
+        "200":
+          description: Grammar points retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    VocabulariesWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            vocabularies:
-              type: array
-              items:
-                type: object
-                properties:
-                  id:
-                    type: string
-                  term:
-                    type: string
-                    example: "非同期処理 (Asynchronous Processing)"
-                  meaning:
-                    type: string
-            total:
-              type: integer
-            page:
-              type: integer
+  # ==========================================
+  # EXERCISES
+  # ==========================================
+  /exercises/lesson/{lesson_id}:
+    get:
+      tags: [Exercises]
+      security: [{ BearerAuth: [] }]
+      summary: Get exercises for a specific lesson
+      parameters:
+        - name: lesson_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exercises retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
 
-    LeaderboardWrapper:
-      type: object
-      properties:
-        success:
-          type: boolean
-          example: true
-        data:
-          type: object
-          properties:
-            rankings:
-              type: array
-              items:
-                type: object
-                properties:
-                  rank:
-                    type: integer
-                    example: 1
-                  user_id:
-                    type: string
-                  username:
-                    type: string
-                  xp:
-                    type: integer
+  /exercises/submit:
+    post:
+      tags: [Exercises]
+      security: [{ BearerAuth: [] }]
+      summary: Submit exercise answer for evaluation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Answer evaluated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  # ==========================================
+  # VOCABULARIES
+  # ==========================================
+  /vocabularies/daily:
+    get:
+      tags: [Vocabularies]
+      security: [{ BearerAuth: [] }]
+      summary: Get daily vocabulary set
+      responses:
+        "200":
+          description: Daily vocabularies retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  # ==========================================
+  # SPACED REPETITION (SRS)
+  # ==========================================
+  /srs/due:
+    get:
+      tags: [SRS]
+      security: [{ BearerAuth: [] }]
+      summary: Get due SRS review cards
+      responses:
+        "200":
+          description: Due SRS cards retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /srs/review:
+    post:
+      tags: [SRS]
+      security: [{ BearerAuth: [] }]
+      summary: Submit SRS review rating (SM-2)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: SRS review processed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  # ==========================================
+  # EXAMS
+  # ==========================================
+  /exams/questions/{level_id}:
+    get:
+      tags: [Exams]
+      security: [{ BearerAuth: [] }]
+      summary: Get diagnostic mock exam questions for a proficiency level
+      parameters:
+        - name: level_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam questions retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /exams/result/{level_id}:
+    get:
+      tags: [Exams]
+      security: [{ BearerAuth: [] }]
+      summary: Get mock exam result for a proficiency level
+      parameters:
+        - name: level_id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Exam result retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /exams/submit:
+    post:
+      tags: [Exams]
+      security: [{ BearerAuth: [] }]
+      summary: Submit mock exam answers
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Exam submitted and graded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  # ==========================================
+  # GAMIFICATION
+  # ==========================================
+  /gamification/status:
+    get:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Get user gamification status (XP, level, streak, gems)
+      responses:
+        "200":
+          description: Gamification status retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/shop:
+    get:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: List available shop items
+      responses:
+        "200":
+          description: Shop items retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/shop/buy:
+    post:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Purchase a shop item using gems
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Item purchased
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/badges:
+    get:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: List user badges
+      responses:
+        "200":
+          description: Badges retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/chests/claim:
+    post:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Claim daily golden chest
+      responses:
+        "200":
+          description: Daily chest claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/coaching:
+    post:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Submit coaching check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Coaching submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  # ==========================================
+  # LEADERBOARD
+  # ==========================================
+  /leaderboard/weekly:
+    get:
+      tags: [Leaderboard]
+      summary: Get weekly leaderboard rankings
+      responses:
+        "200":
+          description: Weekly leaderboard retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
