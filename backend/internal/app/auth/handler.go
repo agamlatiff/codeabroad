@@ -78,7 +78,7 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	response.Success(c, http.StatusOK, "token refreshed successfully", res)
 }
 
-// Logout handles POST /api/v1/auth/logout (terminates active device session, or all devices if ?all=true)
+// Logout handles POST /api/v1/auth/logout (terminates active device session)
 func (h *Handler) Logout(c *gin.Context) {
 	userID := c.GetString("userID")
 	sessionID := c.GetString("sessionID")
@@ -87,17 +87,9 @@ func (h *Handler) Logout(c *gin.Context) {
 		return
 	}
 
-	all := c.Query("all") == "true"
-	if all {
-		if err := h.authUsecase.LogoutAll(c.Request.Context(), userID); err != nil {
-			response.Error(c, err)
-			return
-		}
-	} else {
-		if err := h.authUsecase.Logout(c.Request.Context(), userID, sessionID); err != nil {
-			response.Error(c, err)
-			return
-		}
+	if err := h.authUsecase.Logout(c.Request.Context(), userID, sessionID); err != nil {
+		response.Error(c, err)
+		return
 	}
 
 	response.Success(c, http.StatusOK, "user logged out successfully", nil)
