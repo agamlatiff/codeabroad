@@ -19,6 +19,7 @@ type usecase struct {
 	curriculumRepo   curriculum.Repository
 	exerciseRepo     exercise.Repository
 	gamificationRepo gamification.Repository
+	cacheRepo        curriculum.RoadmapCacheRepository
 	helper           *Helper
 }
 
@@ -36,6 +37,26 @@ func NewUsecase(
 		curriculumRepo:   curriculumRepo,
 		exerciseRepo:     exerciseRepo,
 		gamificationRepo: gamificationRepo,
+		helper:           NewHelper(),
+	}
+}
+
+// NewUsecaseWithCache creates an Onboarding Usecase instance with roadmap cache invalidation support
+func NewUsecaseWithCache(
+	userRepo user.Repository,
+	langRepo language.Repository,
+	curriculumRepo curriculum.Repository,
+	exerciseRepo exercise.Repository,
+	gamificationRepo gamification.Repository,
+	cacheRepo curriculum.RoadmapCacheRepository,
+) Usecase {
+	return &usecase{
+		userRepo:         userRepo,
+		langRepo:         langRepo,
+		curriculumRepo:   curriculumRepo,
+		exerciseRepo:     exerciseRepo,
+		gamificationRepo: gamificationRepo,
+		cacheRepo:        cacheRepo,
 		helper:           NewHelper(),
 	}
 }
@@ -133,9 +154,12 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		assignedLevel = &levels[0]
 	}
 
-	// 5. If placed into Level > 1, skip prior curriculum lessons in batch
+	// 5. If placed into Level > 1, skip prior curriculum lessons in batch and invalidate roadmap cache
 	if assignedLevel.OrderIndex > 1 {
 		_ = u.curriculumRepo.SkipPrecedingLessons(ctx, userID, assignedLevel.OrderIndex, req.LanguageID)
+		if u.cacheRepo != nil {
+			_ = u.cacheRepo.InvalidateRoadmap(ctx, userID)
+		}
 	}
 
 	// 6. Record Language Enrollment

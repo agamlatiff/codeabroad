@@ -192,6 +192,7 @@ type LessonProgressRepository interface {
 	UpsertLessonProgress(ctx context.Context, progress *UserLessonProgress) error
 	RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
+	CountLessonExerciseAttempts(ctx context.Context, userID string, lessonID string) (totalExercises int, attemptedExercises int, err error)
 }
 
 // RoadmapCacheRepository specifies the caching contract for active curriculum roadmaps (Redis)

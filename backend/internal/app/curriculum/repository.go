@@ -293,23 +293,32 @@ func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonI
 }
 
 // IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
+// and enforces that the lesson belongs to a proficiency level <= the user's enrolled level in that language.
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
 	query := `
 		WITH current_target AS (
-			SELECT l.id, u.level_id, u.order_index AS unit_order, l.order_index AS lesson_order
+			SELECT l.id, u.level_id, pl.language_id, pl.order_index AS level_order, u.order_index AS unit_order, l.order_index AS lesson_order
 			FROM lessons l
 			JOIN units u ON l.unit_id = u.id
-			WHERE l.id = $1
+			JOIN proficiency_levels pl ON u.level_id = pl.id
+			WHERE l.id = $1::uuid
 		)
 		SELECT 
 			CASE 
 				WHEN NOT EXISTS (SELECT 1 FROM current_target) THEN false
+				WHEN NOT EXISTS (
+					SELECT 1
+					FROM current_target ct
+					JOIN user_language_enrollments ule ON ule.user_id = $2::uuid AND ule.language_id = ct.language_id AND ule.is_active = true
+					JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
+					WHERE ct.level_order <= user_pl.order_index
+				) THEN false
 				ELSE NOT EXISTS (
 					SELECT 1
 					FROM current_target ct
 					JOIN units prev_u ON prev_u.level_id = ct.level_id
 					JOIN lessons prev_l ON prev_l.unit_id = prev_u.id
-					LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2
+					LEFT JOIN user_lesson_progress ulp ON prev_l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
 					WHERE (
 						prev_u.order_index < ct.unit_order
 						OR (prev_u.order_index = ct.unit_order AND prev_l.order_index < ct.lesson_order)
@@ -377,7 +386,7 @@ func (r *PostgresRepository) UpsertLessonProgress(ctx context.Context, progress 
 func (r *PostgresRepository) SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error {
 	query := `
 		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
-		SELECT $1, l.id, true, 100, true, NOW()
+		SELECT $1::uuid, l.id, true, 100, true, NOW()
 		FROM lessons l
 		JOIN units u ON l.unit_id = u.id
 		JOIN proficiency_levels pl ON u.level_id = pl.id
@@ -397,6 +406,7 @@ func (r *PostgresRepository) SkipPrecedingLessons(ctx context.Context, userID st
 }
 
 // RecordLessonCompletionTx executes an atomic database transaction recording lesson completion,
+// serializing per-user updates via FOR UPDATE to prevent TOCTOU replay/XP inflation races,
 // updating user progression/streak in user_gamification, and appending an activity telemetry record.
 func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error {
 	if payload == nil || payload.Progress == nil {
@@ -409,7 +419,47 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	}
 	defer tx.Rollback(ctx)
 
-	// 1. Atomic upsert of user_lesson_progress
+	if payload.Progress.CompletedAt.IsZero() {
+		payload.Progress.CompletedAt = payload.LastActiveAt
+	}
+
+	// 1. Acquire row-level FOR UPDATE lock on user_gamification first to serialize concurrent completions per user
+	var lockedStreak int
+	var lockedLastActiveAt *time.Time
+	lockGamificationQuery := `
+		SELECT streak, last_active_at
+		FROM user_gamification
+		WHERE user_id = $1::uuid
+		FOR UPDATE
+	`
+	err = tx.QueryRow(ctx, lockGamificationQuery, payload.Progress.UserID).Scan(&lockedStreak, &lockedLastActiveAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.ErrUserNotFound
+		}
+		return fmt.Errorf("failed to lock user gamification in tx: %w", err)
+	}
+
+	// 2. Check existing completion status inside the serialized transaction to prevent TOCTOU double-XP
+	var wasCompleted bool
+	lockProgressQuery := `
+		SELECT is_completed
+		FROM user_lesson_progress
+		WHERE user_id = $1::uuid AND lesson_id = $2::uuid
+		FOR UPDATE
+	`
+	err = tx.QueryRow(ctx, lockProgressQuery, payload.Progress.UserID, payload.Progress.LessonID).Scan(&wasCompleted)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to check lesson progress in tx: %w", err)
+	}
+	if err == nil && wasCompleted {
+		payload.XPEarned = 5
+		if payload.Metadata != nil {
+			payload.Metadata["is_replay"] = true
+		}
+	}
+
+	// 3. Atomic upsert of user_lesson_progress
 	upsertQuery := `
 		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
 		VALUES ($1, $2, $3, $4, $5, $6)
@@ -421,10 +471,6 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 			completed_at = EXCLUDED.completed_at
 		RETURNING id, score, is_completed, is_skipped, completed_at
 	`
-	if payload.Progress.CompletedAt.IsZero() {
-		payload.Progress.CompletedAt = payload.LastActiveAt
-	}
-
 	err = tx.QueryRow(
 		ctx, upsertQuery,
 		payload.Progress.UserID, payload.Progress.LessonID, payload.Progress.IsCompleted,
@@ -437,24 +483,33 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		return fmt.Errorf("failed to upsert user lesson progress in tx: %w", err)
 	}
 
-	// 2. Atomic update of user_gamification (XP, level, streak, last_active_at)
+	// 4. Recompute streak from locked DB state & apply relative atomic XP increment
+	helper := NewHelper()
+	newStreak, _ := helper.EvaluateDailyStreak(lockedStreak, lockedLastActiveAt, payload.LastActiveAt)
+	payload.NewStreak = newStreak
+
 	updateGamificationQuery := `
 		UPDATE user_gamification
-		SET xp = $2, current_level = $3, streak = $4, last_active_at = $5, updated_at = NOW()
-		WHERE user_id = $1
+		SET xp = xp + $2,
+			current_level = ((xp + $2) / 100) + 1,
+			streak = $3,
+			last_active_at = $4,
+			updated_at = NOW()
+		WHERE user_id = $1::uuid
+		RETURNING xp, current_level, streak
 	`
-	tag, err := tx.Exec(
+	err = tx.QueryRow(
 		ctx, updateGamificationQuery,
-		payload.Progress.UserID, payload.NewXP, payload.NewLevel, payload.NewStreak, payload.LastActiveAt,
-	)
+		payload.Progress.UserID, payload.XPEarned, newStreak, payload.LastActiveAt,
+	).Scan(&payload.NewXP, &payload.NewLevel, &payload.NewStreak)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.ErrUserNotFound
+		}
 		return fmt.Errorf("failed to update gamification in tx: %w", err)
 	}
-	if tag.RowsAffected() == 0 {
-		return user.ErrUserNotFound
-	}
 
-	// 3. Telemetry activity log insertion
+	// 5. Telemetry activity log insertion reflecting the exact verified XPEarned
 	activityQuery := `
 		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
 		VALUES ($1, $2, $3, $4, $5)
@@ -475,5 +530,24 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	}
 
 	return tx.Commit(ctx)
+}
+
+// CountLessonExerciseAttempts counts the total exercises configured for a lesson and how many
+// distinct exercises within that lesson the learner has attempted.
+func (r *PostgresRepository) CountLessonExerciseAttempts(ctx context.Context, userID string, lessonID string) (int, int, error) {
+	query := `
+		SELECT
+			COUNT(e.id) AS total_exercises,
+			COUNT(DISTINCT uea.exercise_id) AS attempted_exercises
+		FROM exercises e
+		LEFT JOIN user_exercise_attempts uea
+			ON uea.exercise_id = e.id AND uea.user_id = $1::uuid
+		WHERE e.lesson_id = $2::uuid
+	`
+	var totalExercises, attemptedExercises int
+	if err := r.db.Pool.QueryRow(ctx, query, userID, lessonID).Scan(&totalExercises, &attemptedExercises); err != nil {
+		return 0, 0, fmt.Errorf("failed to count lesson exercise attempts: %w", err)
+	}
+	return totalExercises, attemptedExercises, nil
 }
 

@@ -60,7 +60,7 @@ func (c *redisRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, use
 		return nil
 	}
 	pattern := fmt.Sprintf("curriculum:roadmap:%s:*", userID)
-	iter := c.rdb.Client.Scan(ctx, 0, pattern, 0).Iterator()
+	iter := c.rdb.Client.Scan(ctx, 0, pattern, 100).Iterator()
 	var keys []string
 	for iter.Next(ctx) {
 		keys = append(keys, iter.Val())

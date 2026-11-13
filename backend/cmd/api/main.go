@@ -70,7 +70,7 @@ func main() {
 	// 5. Initialize Usecases (Business Logic Services)
 	authUsecase := auth.NewUsecase(userRepo, sessionRepo, cfg)
 	userUsecase := user.NewUsecase(userRepo)
-	onboardingUsecase := onboarding.NewUsecase(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo)
+	onboardingUsecase := onboarding.NewUsecaseWithCache(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, curriculumCache)
 	langUsecase := language.NewUsecase(langRepo)
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
 	exerciseUsecase := exercise.NewUsecase(exerciseRepo, srsRepo, examRepo, langRepo, userRepo)

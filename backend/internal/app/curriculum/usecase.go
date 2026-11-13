@@ -64,19 +64,19 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		languageID = req.LanguageID
 	}
 
-	// 1. Check Redis cache first if cache repository is configured
-	if u.cacheRepo != nil {
-		if cached, err := u.cacheRepo.GetRoadmap(ctx, userID, languageID); err == nil && cached != nil {
-			return cached, nil
-		}
-	}
-
 	enrollment, err := u.langRepo.GetActiveEnrollment(ctx, userID, languageID)
 	if err != nil {
 		return nil, err
 	}
 	if enrollment == nil || enrollment.Language == nil || enrollment.CurrentLevel == nil {
 		return nil, language.ErrEnrollmentNotFound
+	}
+
+	// 1. Check Redis cache using resolved canonical Language.ID to prevent cross-language collision
+	if u.cacheRepo != nil {
+		if cached, err := u.cacheRepo.GetRoadmap(ctx, userID, enrollment.Language.ID); err == nil && cached != nil {
+			return cached, nil
+		}
 	}
 
 	units, err := u.curriculumRepo.GetUnitsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
@@ -124,12 +124,9 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		Units:            unlockedUnits,
 	}
 
-	// 2. Cache roadmap response for subsequent requests (15 min TTL)
+	// 2. Cache roadmap response using canonical enrollment.Language.ID (15 min TTL)
 	if u.cacheRepo != nil {
 		_ = u.cacheRepo.SetRoadmap(ctx, userID, enrollment.Language.ID, res, 15*time.Minute)
-		if languageID != "" && languageID != enrollment.Language.ID {
-			_ = u.cacheRepo.SetRoadmap(ctx, userID, languageID, res, 15*time.Minute)
-		}
 	}
 
 	return res, nil
@@ -147,6 +144,9 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 	lesson, err := u.curriculumRepo.GetLessonByID(ctx, lessonID, userID)
 	if err != nil {
 		return nil, err
+	}
+	if lesson == nil {
+		return nil, ErrLessonNotFound
 	}
 
 	if !lesson.IsCompleted {
@@ -166,10 +166,15 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 	if err != nil {
 		return nil, fmt.Errorf("failed to query exercises for lesson: %w", err)
 	}
-	if exercises == nil {
-		exercises = []exercise.Exercise{}
+	sanitizedExercises := make([]exercise.Exercise, len(exercises))
+	for i, ex := range exercises {
+		ex.CorrectAnswer = ""
+		ex.AcceptableAnswers = nil
+		ex.DiagnosticRubric = nil
+		ex.Explanation = nil
+		sanitizedExercises[i] = ex
 	}
-	lesson.Exercises = exercises
+	lesson.Exercises = sanitizedExercises
 
 	gps, err := u.curriculumRepo.GetGrammarPointsByLessonID(ctx, lessonID)
 	if err == nil && len(gps) > 0 {
@@ -194,6 +199,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	if err != nil {
 		return nil, err
 	}
+	if lesson == nil {
+		return nil, ErrLessonNotFound
+	}
 
 	if !lesson.IsCompleted {
 		unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, req.LessonID)
@@ -203,6 +211,15 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		if !unlocked {
 			return nil, ErrLessonLocked
 		}
+	}
+
+	// Verify learner has attempted at least one exercise if the lesson contains exercises
+	totalEx, attemptedEx, err := u.curriculumRepo.CountLessonExerciseAttempts(ctx, userID, req.LessonID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to verify lesson exercise attempts: %w", err)
+	}
+	if totalEx > 0 && attemptedEx == 0 {
+		return nil, apperror.NewBadRequestError("EXERCISES_NOT_ATTEMPTED", "You must attempt at least one exercise before completing this lesson", nil)
 	}
 
 	// Fail-fast: Validate user existence before modifying progress state
@@ -268,9 +285,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	return &CompleteLessonResponse{
 		Progress: *progress,
 		Gamification: user.UserGamificationStats{
-			XP:           newXP,
-			CurrentLevel: newLevel,
-			Streak:       newStreak,
+			XP:           payload.NewXP,
+			CurrentLevel: payload.NewLevel,
+			Streak:       payload.NewStreak,
 			Gems:         usr.Gems,
 			LastActiveAt: &now,
 		},
