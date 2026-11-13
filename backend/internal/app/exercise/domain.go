@@ -200,6 +200,11 @@ type LessonAccessChecker interface {
 	IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error)
 }
 
+// RoadmapCacheInvalidator invalidates cached curriculum roadmaps when level progression advances
+type RoadmapCacheInvalidator interface {
+	InvalidateRoadmap(ctx context.Context, userID string) error
+}
+
 // Usecase specifies business operations for answering exercises and logging telemetry
 type Usecase interface {
 	GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error)
@@ -214,7 +219,7 @@ type SRSUsecase interface {
 
 // ReadinessExamUsecase specifies official diagnostic and readiness certification workflows
 type ReadinessExamUsecase interface {
-	GetExamQuestions(ctx context.Context, levelID string) ([]Exercise, error)
+	GetExamQuestions(ctx context.Context, userID string, levelID string) ([]Exercise, error)
 	SubmitExam(ctx context.Context, userID string, req *SubmitReadinessExamRequest) (*ReadinessExamResponse, error)
 }
 

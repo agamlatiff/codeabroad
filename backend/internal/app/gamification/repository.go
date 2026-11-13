@@ -411,13 +411,21 @@ func (r *PostgresRepository) GetUserBadges(ctx context.Context, userID string) (
 	return badges, nil
 }
 
-// AwardBadge grants an achievement badge to a user and deposits its bonus XP atomically
-func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*UserBadge, error) {
+// AwardBadge grants an achievement badge to a user idempotently and deposits its bonus XP atomically
+// under a row lock so concurrent callers cannot double-credit XP or overwrite current_level with stale values.
+func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, _ int) (*UserBadge, error) {
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin award badge tx: %w", err)
 	}
 	defer tx.Rollback(ctx)
+
+	var lockedXP int
+	err = tx.QueryRow(ctx, `SELECT xp FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`, userID).Scan(&lockedXP)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return nil, fmt.Errorf("failed to lock user gamification for badge award: %w", err)
+	}
+	hasGamificationRow := (err == nil)
 
 	var bd BadgeDefinition
 	err = tx.QueryRow(
@@ -437,20 +445,36 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 	insertQuery := `
 		INSERT INTO user_badges (user_id, badge_key, awarded_at)
 		VALUES ($1, $2, NOW())
-		ON CONFLICT (user_id, badge_key) DO UPDATE SET awarded_at = user_badges.awarded_at
+		ON CONFLICT (user_id, badge_key) DO NOTHING
 		RETURNING id, user_id, badge_key, awarded_at
 	`
 	err = tx.QueryRow(ctx, insertQuery, userID, badgeKey).Scan(&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			// Badge was already awarded previously or by a concurrent tx: return existing record without re-crediting XP or Badge metadata
+			fetchExisting := `SELECT id, user_id, badge_key, awarded_at FROM user_badges WHERE user_id = $1 AND badge_key = $2`
+			if scanErr := tx.QueryRow(ctx, fetchExisting, userID, badgeKey).Scan(&ub.ID, &ub.UserID, &ub.BadgeKey, &ub.AwardedAt); scanErr != nil {
+				return nil, fmt.Errorf("failed to fetch existing user badge: %w", scanErr)
+			}
+			if commitErr := tx.Commit(ctx); commitErr != nil {
+				return nil, fmt.Errorf("failed to commit idempotent badge check: %w", commitErr)
+			}
+			return &ub, nil
+		}
 		return nil, fmt.Errorf("failed to record user badge: %w", err)
 	}
 	ub.Badge = &bd
 
-	if bd.XPReward > 0 {
+	if hasGamificationRow && bd.XPReward > 0 {
+		newXP := lockedXP + bd.XPReward
+		computedLevel := (newXP / 100) + 1
+		if computedLevel < 1 {
+			computedLevel = 1
+		}
 		_, err = tx.Exec(
 			ctx,
-			`UPDATE user_gamification SET xp = xp + $2, current_level = $3, updated_at = NOW() WHERE user_id = $1`,
-			userID, bd.XPReward, newLevel,
+			`UPDATE user_gamification SET xp = $2, current_level = $3, updated_at = NOW() WHERE user_id = $1::uuid`,
+			userID, newXP, computedLevel,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to award badge bonus xp: %w", err)

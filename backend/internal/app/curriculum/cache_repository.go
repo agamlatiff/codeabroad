@@ -15,6 +15,14 @@ type redisRoadmapCacheRepository struct {
 	rdb *infraRedis.RedisClient
 }
 
+const roadmapEpochTTL = 7 * 24 * time.Hour
+
+var incrRoadmapVersionScript = redis.NewScript(`
+local v = redis.call("INCR", KEYS[1])
+redis.call("PEXPIRE", KEYS[1], ARGV[1])
+return v
+`)
+
 var setRoadmapIfVersionScript = redis.NewScript(`
 local currentVer = redis.call("GET", KEYS[1])
 if not currentVer then
@@ -57,27 +65,34 @@ func (c *redisRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, use
 
 // GetRoadmap retrieves a cached roadmap response from Redis under the user's current version epoch
 func (c *redisRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
+	roadmap, _, err := c.GetRoadmapWithVersion(ctx, userID, languageID)
+	return roadmap, err
+}
+
+// GetRoadmapWithVersion retrieves a cached roadmap response along with the user's current invalidation epoch
+// in minimal Redis calls so callers never issue duplicate version lookups or silently fall back on errors.
+func (c *redisRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, userID string, languageID string) (*RoadmapResponse, string, error) {
 	if c.rdb == nil || c.rdb.Client == nil {
-		return nil, nil
+		return nil, "0", nil
 	}
 	ver, err := c.GetRoadmapVersion(ctx, userID)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	key := roadmapCacheKey(userID, ver, languageID)
 	data, err := c.rdb.Client.Get(ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
-			return nil, nil
+			return nil, ver, nil
 		}
-		return nil, err
+		return nil, ver, err
 	}
 
 	var roadmap RoadmapResponse
 	if err := json.Unmarshal(data, &roadmap); err != nil {
-		return nil, err
+		return nil, ver, err
 	}
-	return &roadmap, nil
+	return &roadmap, ver, nil
 }
 
 // SetRoadmap stores a decorated roadmap in Redis using the current version epoch
@@ -114,11 +129,11 @@ func (c *redisRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, u
 	return setRoadmapIfVersionScript.Run(ctx, c.rdb.Client, []string{verKey, dataKey}, expectedVersion, data, ttlMs).Err()
 }
 
-// InvalidateRoadmap atomically advances the user's roadmap cache epoch in O(1) without SCAN wildcards
+// InvalidateRoadmap atomically advances the user's roadmap cache epoch in O(1) with a bounded long TTL
 func (c *redisRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, userID string) error {
 	if c.rdb == nil || c.rdb.Client == nil {
 		return nil
 	}
-	return c.rdb.Client.Incr(ctx, roadmapVersionKey(userID)).Err()
+	return incrRoadmapVersionScript.Run(ctx, c.rdb.Client, []string{roadmapVersionKey(userID)}, roadmapEpochTTL.Milliseconds()).Err()
 }
 

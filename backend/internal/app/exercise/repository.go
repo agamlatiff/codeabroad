@@ -204,6 +204,7 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
 		WHERE u.level_id = $1::uuid
+		  AND u.unit_type = 'diagnostic_exam'
 		ORDER BY e.skill_pillar ASC, e.order_index ASC, e.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID)

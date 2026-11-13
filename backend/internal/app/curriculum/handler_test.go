@@ -50,6 +50,13 @@ func setupCurriculumTestRouter() (*gin.Engine, *curriculum.MockRepository, *lang
 		Title:      "Hiragana Basics",
 		OrderIndex: 1,
 	}
+	curriculumRepo.AttemptSummaries["usr-123:"+lessonID] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          2,
+		AttemptedExercises:      2,
+		CorrectExercises:        2,
+		FreshAttemptedExercises: 2,
+		FreshCorrectExercises:   2,
+	}
 
 	_ = userRepo.Create(context.Background(), &user.User{
 		UserAccount: user.UserAccount{ID: "usr-123", Email: "test@example.com"},

@@ -2,7 +2,10 @@ package exercise
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"sort"
 	"time"
 
 	"codeabroad/backend/internal/app/language"
@@ -11,13 +14,36 @@ import (
 )
 
 type usecase struct {
-	exerciseRepo  Repository
-	srsRepo       SRSRepository
-	examRepo      ReadinessExamRepository
-	langRepo      language.Repository
-	userRepo      user.Repository
-	accessChecker LessonAccessChecker
-	helper        *Helper
+	exerciseRepo     Repository
+	srsRepo          SRSRepository
+	examRepo         ReadinessExamRepository
+	langRepo         language.Repository
+	userRepo         user.Repository
+	accessChecker    LessonAccessChecker
+	cacheInvalidator RoadmapCacheInvalidator
+	helper           *Helper
+}
+
+// NewUsecaseFull creates an exercise, SRS, and readiness exam usecase with lesson lock checks and roadmap cache invalidation
+func NewUsecaseFull(
+	exerciseRepo Repository,
+	srsRepo SRSRepository,
+	examRepo ReadinessExamRepository,
+	langRepo language.Repository,
+	userRepo user.Repository,
+	accessChecker LessonAccessChecker,
+	cacheInvalidator RoadmapCacheInvalidator,
+) *usecase {
+	return &usecase{
+		exerciseRepo:     exerciseRepo,
+		srsRepo:          srsRepo,
+		examRepo:         examRepo,
+		langRepo:         langRepo,
+		userRepo:         userRepo,
+		accessChecker:    accessChecker,
+		cacheInvalidator: cacheInvalidator,
+		helper:           NewHelper(),
+	}
 }
 
 // NewUsecaseWithAccessChecker creates a combined exercise, SRS, and readiness exam usecase with lesson lock enforcement
@@ -29,15 +55,7 @@ func NewUsecaseWithAccessChecker(
 	userRepo user.Repository,
 	accessChecker LessonAccessChecker,
 ) *usecase {
-	return &usecase{
-		exerciseRepo:  exerciseRepo,
-		srsRepo:       srsRepo,
-		examRepo:      examRepo,
-		langRepo:      langRepo,
-		userRepo:      userRepo,
-		accessChecker: accessChecker,
-		helper:        NewHelper(),
-	}
+	return NewUsecaseFull(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, accessChecker, nil)
 }
 
 // NewUsecase creates a combined exercise, SRS, and readiness exam usecase
@@ -223,12 +241,45 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	return updatedReview, nil
 }
 
-// GetExamQuestions returns questions for an official sectional mock certification exam
-func (u *usecase) GetExamQuestions(ctx context.Context, levelID string) ([]Exercise, error) {
+func (u *usecase) verifyLevelExamAccess(ctx context.Context, userID string, levelID string) (*language.ProficiencyLevel, *language.UserLanguageEnrollment, error) {
+	lvl, err := u.langRepo.GetLevelByID(ctx, levelID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if lvl == nil {
+		return nil, nil, language.ErrProficiencyLevelNotFound
+	}
+
+	enrollment, err := u.langRepo.GetActiveEnrollment(ctx, userID, lvl.LanguageID)
+	if err != nil {
+		if errors.Is(err, language.ErrEnrollmentNotFound) {
+			return nil, nil, apperror.ErrForbidden
+		}
+		return nil, nil, err
+	}
+	if enrollment == nil || enrollment.CurrentLevel == nil || lvl.OrderIndex > enrollment.CurrentLevel.OrderIndex {
+		return nil, nil, apperror.ErrForbidden
+	}
+	return lvl, enrollment, nil
+}
+
+// GetExamQuestions returns sanitized questions for an official sectional mock certification exam on an unlocked level
+func (u *usecase) GetExamQuestions(ctx context.Context, userID string, levelID string) ([]Exercise, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	return u.exerciseRepo.GetReadinessExamExercises(ctx, levelID)
+	if _, _, err := u.verifyLevelExamAccess(ctx, userID, levelID); err != nil {
+		return nil, err
+	}
+
+	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, levelID)
+	if err != nil {
+		return nil, err
+	}
+	return SanitizeExercises(questions), nil
 }
 
 // SubmitExam grades all answers for a mock exam and issues certification if score exceeds passing grade
@@ -240,7 +291,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		return nil, apperror.ErrBadRequest
 	}
 
-	lvl, err := u.langRepo.GetLevelByID(ctx, req.LevelID)
+	lvl, enrollment, err := u.verifyLevelExamAccess(ctx, userID, req.LevelID)
 	if err != nil {
 		return nil, err
 	}
@@ -356,6 +407,26 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 			MaxScore:      maxScore,
 			Percentage:    scorePercent,
 			IssuedAt:      now,
+		}
+
+		if enrollment != nil && enrollment.CurrentLevel != nil && enrollment.CurrentLevel.ID == lvl.ID {
+			if levels, lvErr := u.langRepo.GetLevelsByLanguageID(ctx, lvl.LanguageID); lvErr == nil {
+				sort.Slice(levels, func(i, j int) bool {
+					return levels[i].OrderIndex < levels[j].OrderIndex
+				})
+				for _, nextLvl := range levels {
+					if nextLvl.OrderIndex > lvl.OrderIndex {
+						if updErr := u.langRepo.UpdateEnrollmentLevel(ctx, enrollment.ID, nextLvl.ID); updErr != nil {
+							log.Printf("exercise: failed to advance enrollment %s to level %s: %v", enrollment.ID, nextLvl.ID, updErr)
+						} else if u.cacheInvalidator != nil {
+							if invErr := u.cacheInvalidator.InvalidateRoadmap(ctx, userID); invErr != nil {
+								log.Printf("exercise: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
+							}
+						}
+						break
+					}
+				}
+			}
 		}
 	}
 

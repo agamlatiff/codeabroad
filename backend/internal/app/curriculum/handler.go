@@ -12,12 +12,28 @@ import (
 
 // Handler handles HTTP requests for curriculum navigation, roadmaps, and lesson completion
 type Handler struct {
-	curriculumUsecase Usecase
+	curriculumUsecase   Usecase
+	completeRateLimiter gin.HandlerFunc
 }
 
 // NewHandler creates a new Curriculum Handler instance
 func NewHandler(curriculumUsecase Usecase) *Handler {
-	return &Handler{curriculumUsecase: curriculumUsecase}
+	return NewHandlerWithRateLimiter(curriculumUsecase, nil)
+}
+
+// NewHandlerWithRateLimiter creates a new Curriculum Handler instance with a custom lesson-completion rate limiter
+func NewHandlerWithRateLimiter(curriculumUsecase Usecase, completeRateLimiter gin.HandlerFunc) *Handler {
+	if completeRateLimiter == nil {
+		completeRateLimiter = middleware.UserOrIPRateLimitMiddleware(
+			30,
+			time.Minute,
+			"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
+		)
+	}
+	return &Handler{
+		curriculumUsecase:   curriculumUsecase,
+		completeRateLimiter: completeRateLimiter,
+	}
 }
 
 // GetRoadmap handles GET /api/v1/curriculum/roadmap
@@ -131,11 +147,14 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	if authMiddleware != nil {
 		curriculum.Use(authMiddleware)
 	}
-	completeRateLimiter := middleware.UserOrIPRateLimitMiddleware(
-		30,
-		time.Minute,
-		"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
-	)
+	completeRateLimiter := h.completeRateLimiter
+	if completeRateLimiter == nil {
+		completeRateLimiter = middleware.UserOrIPRateLimitMiddleware(
+			30,
+			time.Minute,
+			"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
+		)
+	}
 	{
 		curriculum.GET("/roadmap", h.GetRoadmap)
 		curriculum.GET("/lessons/:id", h.GetLessonDetail)

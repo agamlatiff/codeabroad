@@ -112,42 +112,40 @@ func (h *Helper) CalculateLevel(xp int) int {
 }
 
 // ComputeVerifiedLessonScore validates exercise attempt completeness and calculates server-verified lesson accuracy.
-func (h *Helper) ComputeVerifiedLessonScore(reqScore int, summary *LessonAttemptSummary, isReplay bool) (int, error) {
-	if summary != nil && summary.TotalExercises > 0 {
-		attempted := summary.AttemptedExercises
-		correct := summary.CorrectExercises
-		if isReplay {
-			attempted = summary.FreshAttemptedExercises
-			correct = summary.FreshCorrectExercises
-		}
-
-		if attempted < summary.TotalExercises {
-			return 0, apperror.NewBadRequestError(
-				"EXERCISES_NOT_ATTEMPTED",
-				fmt.Sprintf("You must attempt all %d exercises before completing this lesson", summary.TotalExercises),
-				map[string]any{
-					"total_exercises":     summary.TotalExercises,
-					"attempted_exercises": attempted,
-					"is_replay":           isReplay,
-				},
-			)
-		}
-
-		if correct < 0 {
-			correct = 0
-		}
-		if correct > summary.TotalExercises {
-			correct = summary.TotalExercises
-		}
-		return (correct * 100) / summary.TotalExercises, nil
+func (h *Helper) ComputeVerifiedLessonScore(_ int, summary *LessonAttemptSummary, isReplay bool) (int, error) {
+	if summary == nil || summary.TotalExercises <= 0 {
+		return 0, apperror.NewBadRequestError(
+			"LESSON_EXERCISES_REQUIRED",
+			"Lesson must have configured exercises before completion",
+			map[string]any{"total_exercises": 0},
+		)
 	}
 
-	if reqScore < 0 {
-		return 0, nil
+	attempted := summary.AttemptedExercises
+	correct := summary.CorrectExercises
+	if isReplay {
+		attempted = summary.FreshAttemptedExercises
+		correct = summary.FreshCorrectExercises
 	}
-	if reqScore > 100 {
-		return 100, nil
+
+	if attempted < summary.TotalExercises {
+		return 0, apperror.NewBadRequestError(
+			"EXERCISES_NOT_ATTEMPTED",
+			fmt.Sprintf("You must attempt all %d exercises before completing this lesson", summary.TotalExercises),
+			map[string]any{
+				"total_exercises":     summary.TotalExercises,
+				"attempted_exercises": attempted,
+				"is_replay":           isReplay,
+			},
+		)
 	}
-	return reqScore, nil
+
+	if correct < 0 {
+		correct = 0
+	}
+	if correct > summary.TotalExercises {
+		correct = summary.TotalExercises
+	}
+	return (correct * 100) / summary.TotalExercises, nil
 }
 

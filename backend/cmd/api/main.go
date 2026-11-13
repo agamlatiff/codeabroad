@@ -73,7 +73,7 @@ func main() {
 	onboardingUsecase := onboarding.NewUsecaseWithCache(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, curriculumCache)
 	langUsecase := language.NewUsecase(langRepo)
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
-	exerciseUsecase := exercise.NewUsecaseWithAccessChecker(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, curriculumRepo)
+	exerciseUsecase := exercise.NewUsecaseFull(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, curriculumRepo, curriculumCache)
 	gamificationUsecase := gamification.NewUsecase(gamificationRepo)
 	leaderboardUsecase := leaderboard.NewUsecase(leaderboardRepo)
 
@@ -83,7 +83,14 @@ func main() {
 	userHandler := user.NewHandler(userUsecase)
 	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
 	langHandler := language.NewHandler(langUsecase)
-	curriculumHandler := curriculum.NewHandler(curriculumUsecase)
+	curriculumLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"curriculum:complete",
+		30,
+		time.Minute,
+		"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
+	)
+	curriculumHandler := curriculum.NewHandlerWithRateLimiter(curriculumUsecase, curriculumLimiter)
 	exerciseHandler := exercise.NewHandler(exerciseUsecase, exerciseUsecase, exerciseUsecase)
 	gamificationHandler := gamification.NewHandler(gamificationUsecase)
 	leaderboardHandler := leaderboard.NewHandler(leaderboardUsecase)

@@ -122,6 +122,12 @@ func (h *Handler) ProcessReview(c *gin.Context) {
 
 // GetExamQuestions handles GET /api/v1/exams/questions/:level_id
 func (h *Handler) GetExamQuestions(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
 	var uri struct {
 		LevelID string `uri:"level_id" binding:"required,uuid"`
 	}
@@ -130,7 +136,7 @@ func (h *Handler) GetExamQuestions(c *gin.Context) {
 		return
 	}
 
-	questions, err := h.examUsecase.GetExamQuestions(c.Request.Context(), uri.LevelID)
+	questions, err := h.examUsecase.GetExamQuestions(c.Request.Context(), userID, uri.LevelID)
 	if err != nil {
 		response.Error(c, err)
 		return

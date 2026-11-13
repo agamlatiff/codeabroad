@@ -82,6 +82,7 @@ func (u *usecase) GetPlacementQuestions(ctx context.Context, languageID string) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to query placement questions: %w", err)
 	}
+	questions = exercise.SanitizeExercises(questions)
 
 	genericQuestions := make([]any, len(questions))
 	for i, q := range questions {
@@ -157,7 +158,9 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 
 	// 5. If placed into Level > 1, skip prior curriculum lessons in batch and invalidate roadmap cache
 	if assignedLevel.OrderIndex > 1 {
-		_ = u.curriculumRepo.SkipPrecedingLessons(ctx, userID, assignedLevel.OrderIndex, req.LanguageID)
+		if err := u.curriculumRepo.SkipPrecedingLessons(ctx, userID, assignedLevel.OrderIndex, req.LanguageID); err != nil {
+			return nil, fmt.Errorf("failed to skip preceding curriculum lessons: %w", err)
+		}
 		if u.cacheRepo != nil {
 			if invErr := u.cacheRepo.InvalidateRoadmap(ctx, userID); invErr != nil {
 				log.Printf("onboarding: failed to invalidate roadmap cache for user %s: %v", userID, invErr)

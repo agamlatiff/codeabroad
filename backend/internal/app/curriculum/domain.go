@@ -43,7 +43,7 @@ type Unit struct {
 	Title       string    `json:"title"`
 	Description *string   `json:"description,omitempty"`
 	UnitType    string    `json:"unit_type"` // curriculum | diagnostic_exam
-	OrdeerIndex  int       `json:"order_index"`
+	OrderIndex  int       `json:"order_index"`
 	CreatedAt   time.Time `json:"created_at"`
 }
 
@@ -211,6 +211,7 @@ type LessonProgressRepository interface {
 type RoadmapCacheRepository interface {
 	GetRoadmapVersion(ctx context.Context, userID string) (string, error)
 	GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error)
+	GetRoadmapWithVersion(ctx context.Context, userID string, languageID string) (*RoadmapResponse, string, error)
 	SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error
 	SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error
 	InvalidateRoadmap(ctx context.Context, userID string) error

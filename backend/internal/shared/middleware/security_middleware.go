@@ -2,12 +2,14 @@ package middleware
 
 import (
 	"fmt"
+	"log"
 	"net/http"
 	"sync"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 // DefaultMaxBodyBytes limits incoming HTTP request payloads to 1 MB to prevent memory exhaustion DoS
@@ -164,5 +166,82 @@ func UserOrIPRateLimitMiddleware(maxRequests int, window time.Duration, message 
 		}
 		return "ip:" + c.Request.RemoteAddr
 	}, message)
+}
+
+var distributedRateLimitScript = redis.NewScript(`
+local current = redis.call("INCR", KEYS[1])
+if current == 1 then
+	redis.call("PEXPIRE", KEYS[1], ARGV[1])
+else
+	local ttl = redis.call("PTTL", KEYS[1])
+	if ttl < 0 then
+		redis.call("PEXPIRE", KEYS[1], ARGV[1])
+	end
+end
+local pttl = redis.call("PTTL", KEYS[1])
+return {current, pttl}
+`)
+
+// DistributedUserOrIPRateLimitMiddleware enforces distributed Redis-backed rate limiting keyed by userID
+// (or client IP), falling back to an in-memory per-instance limiter if Redis is unavailable.
+func DistributedUserOrIPRateLimitMiddleware(rdb *redis.Client, keyPrefix string, maxRequests int, window time.Duration, message string) gin.HandlerFunc {
+	if message == "" {
+		message = "terlalu banyak permintaan, silakan coba lagi beberapa saat"
+	}
+	fallback := UserOrIPRateLimitMiddleware(maxRequests, window, message)
+	if rdb == nil {
+		return fallback
+	}
+	if keyPrefix == "" {
+		keyPrefix = "default"
+	}
+	windowMs := window.Milliseconds()
+	if windowMs <= 0 {
+		windowMs = time.Minute.Milliseconds()
+	}
+
+	return func(c *gin.Context) {
+		subject := "ip:" + c.ClientIP()
+		if userID := c.GetString("userID"); userID != "" {
+			subject = "user:" + userID
+		} else if subject == "ip:" {
+			subject = "ip:" + c.Request.RemoteAddr
+		}
+		key := fmt.Sprintf("rl:%s:%s", keyPrefix, subject)
+
+		vals, err := distributedRateLimitScript.Run(c.Request.Context(), rdb, []string{key}, windowMs).Int64Slice()
+		if err != nil || len(vals) < 2 {
+			if err != nil {
+				log.Printf("middleware: redis rate limit fallback (%s): %v", keyPrefix, err)
+			}
+			fallback(c)
+			return
+		}
+
+		count := int(vals[0])
+		pttlMs := vals[1]
+		remaining := maxRequests - count
+		if remaining < 0 {
+			remaining = 0
+		}
+		c.Header("X-RateLimit-Limit", fmt.Sprintf("%d", maxRequests))
+		c.Header("X-RateLimit-Remaining", fmt.Sprintf("%d", remaining))
+
+		if count > maxRequests {
+			retryAfter := int((pttlMs + 999) / 1000)
+			if retryAfter < 1 {
+				retryAfter = 1
+			}
+			c.Header("Retry-After", fmt.Sprintf("%d", retryAfter))
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{
+				"success": false,
+				"error":   message,
+				"code":    "TOO_MANY_REQUESTS",
+			})
+			return
+		}
+
+		c.Next()
+	}
 }
 

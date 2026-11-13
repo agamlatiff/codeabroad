@@ -58,6 +58,11 @@ func TestCompleteLesson_Success(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     2,
+		AttemptedExercises: 2,
+		CorrectExercises:   2,
+	}
 	nextID := "lesson-2"
 	cRepo.NextLessonID = &nextID
 
@@ -139,6 +144,13 @@ func TestCompleteLesson_Replay_AntiExploitPracticeXP(t *testing.T) {
 	// Lesson was ALREADY completed previously
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
 	cRepo.LessonProgress["user-1:lesson-1"] = &curriculum.UserLessonProgress{UserID: "user-1", LessonID: "lesson-1", IsCompleted: true}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          2,
+		AttemptedExercises:      2,
+		CorrectExercises:        2,
+		FreshAttemptedExercises: 2,
+		FreshCorrectExercises:   2,
+	}
 
 	lRepo := language.NewMockRepository()
 	eRepo := exercise.NewMockRepository()
@@ -196,6 +208,11 @@ func TestCompleteLesson_ZeroScore_Allowed(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     2,
+		AttemptedExercises: 2,
+		CorrectExercises:   0,
+	}
 
 	lRepo := language.NewMockRepository()
 	eRepo := exercise.NewMockRepository()
@@ -229,6 +246,13 @@ func TestCompleteLesson_ScoreGreatestPreserved(t *testing.T) {
 		LessonID:    "lesson-1",
 		IsCompleted: true,
 		Score:       95,
+	}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          5,
+		AttemptedExercises:      5,
+		CorrectExercises:        3,
+		FreshAttemptedExercises: 5,
+		FreshCorrectExercises:   3,
 	}
 
 	lRepo := language.NewMockRepository()
@@ -338,6 +362,11 @@ func TestCompleteLesson_InvalidatesRoadmapCache(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     2,
+		AttemptedExercises: 2,
+		CorrectExercises:   2,
+	}
 
 	lRepo := language.NewMockRepository()
 	eRepo := exercise.NewMockRepository()
@@ -524,15 +553,27 @@ func TestCompleteLesson_ConcurrentBurst_AntiExploit(t *testing.T) {
 	wg.Wait()
 	close(errCh)
 
+	successCount := 0
+	blockedCount := 0
 	for err := range errCh {
-		if err != nil {
+		if err == nil {
+			successCount++
+			continue
+		}
+		var domErr *apperror.DomainError
+		if errors.As(err, &domErr) && domErr.Code == "EXERCISES_NOT_ATTEMPTED" {
+			blockedCount++
+		} else {
 			t.Fatalf("unexpected error during concurrent completion: %v", err)
 		}
 	}
 
-	// 1st serialized completion = 15 XP; 4 concurrent replays = 4 * 5 XP => 35 XP total (never 75 XP)
-	if gotXP := cRepo.UserXP["user-1"]; gotXP != 35 {
-		t.Errorf("expected 35 XP after serialized concurrent burst, got %d", gotXP)
+	if successCount != 1 || blockedCount != workers-1 {
+		t.Fatalf("expected exactly 1 winner and %d blocked concurrent bursts, got success=%d blocked=%d", workers-1, successCount, blockedCount)
+	}
+	// 1st serialized completion = 15 XP; 4 concurrent bursts rejected inside TX lock => 15 XP total
+	if gotXP := cRepo.UserXP["user-1"]; gotXP != 15 {
+		t.Errorf("expected 15 XP after serialized concurrent burst, got %d", gotXP)
 	}
 }
 
@@ -675,16 +716,16 @@ func TestCompleteLesson_ReplayRequiresFreshAttempts_AndDailyCap(t *testing.T) {
 		t.Fatalf("expected replay without fresh post-completion attempts to be blocked")
 	}
 
-	// Grant fresh attempts and replay 12 times: daily replay XP cap is 50 (10 * 5 XP) -> max 65 total XP
-	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
-		TotalExercises:          2,
-		AttemptedExercises:      2,
-		CorrectExercises:        2,
-		FreshAttemptedExercises: 2,
-		FreshCorrectExercises:   2,
-	}
+	// Re-submit fresh attempts before each replay (12 times): daily replay XP cap is 50 (10 * 5 XP) -> max 65 total XP
 	var lastRes *curriculum.CompleteLessonResponse
 	for i := 0; i < 12; i++ {
+		cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+			TotalExercises:          2,
+			AttemptedExercises:      2,
+			CorrectExercises:        2,
+			FreshAttemptedExercises: 2,
+			FreshCorrectExercises:   2,
+		}
 		res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{LessonID: "lesson-1", Score: 100})
 		if err != nil {
 			t.Fatalf("replay #%d failed unexpectedly: %v", i+1, err)
@@ -770,13 +811,26 @@ func TestCompleteLesson_AwardsBadgesIdempotently(t *testing.T) {
 		t.Errorf("expected 65 XP (15 lesson + 50 badge), got %d", res1.Gamification.XP)
 	}
 
-	// 2. Replay must not re-award "first_step" or grant extra badge XP
+	// 2. Replay with fresh attempts must not re-award "first_step" or grant extra badge XP
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          2,
+		AttemptedExercises:      2,
+		CorrectExercises:        2,
+		FreshAttemptedExercises: 2,
+		FreshCorrectExercises:   2,
+	}
 	res2, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{LessonID: "lesson-1", Score: 100})
 	if err != nil {
 		t.Fatalf("replay completion failed: %v", err)
 	}
 	if len(res2.AwardedBadges) != 0 {
 		t.Errorf("expected no duplicate badges on replay, got %+v", res2.AwardedBadges)
+	}
+	if res2.Gamification.XP != 20 {
+		t.Errorf("expected 20 XP from lesson repo on replay (15 initial + 5 replay, 0 extra badge XP), got %d", res2.Gamification.XP)
+	}
+	if gRepo.Stats["user-1"].XP != 50 {
+		t.Errorf("expected badge XP in gamification repo to remain 50 (awarded once), got %d", gRepo.Stats["user-1"].XP)
 	}
 }
 
@@ -845,6 +899,151 @@ func TestGetGrammarPoints_AuthorizationAnd404(t *testing.T) {
 	// Unenrolled user returns ErrForbidden (403)
 	if _, err := uc.GetGrammarPoints(context.Background(), "stranger-user", "lvl-n5"); !errors.Is(err, apperror.ErrForbidden) {
 		t.Errorf("expected ErrForbidden for unenrolled user, got %v", err)
+	}
+}
+
+func TestCompleteLesson_EmptyLessonBlocked(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-empty"] = &curriculum.LessonNodeResponse{ID: "lesson-empty", UnitID: "unit-1", Title: "Empty", XPReward: 15, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-empty"] = &curriculum.LessonAttemptSummary{
+		TotalExercises: 0,
+	}
+
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 0, CurrentLevel: 1},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, language.NewMockRepository(), exercise.NewMockRepository(), uRepo, nil)
+
+	_, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-empty",
+		Score:    100,
+	})
+	var domErr *apperror.DomainError
+	if !errors.As(err, &domErr) || domErr.Code != "LESSON_EXERCISES_REQUIRED" {
+		t.Fatalf("expected LESSON_EXERCISES_REQUIRED when TotalExercises == 0, got %v", err)
+	}
+	if gotXP := cRepo.UserXP["user-1"]; gotXP != 0 {
+		t.Errorf("expected 0 XP after rejected empty-lesson completion, got %d", gotXP)
+	}
+}
+
+func TestCompleteLesson_AdvancesLevelWhenAllLevelLessonsCompleted(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "L1", XPReward: 15, OrderIndex: 1}
+	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-1", Title: "L2", XPReward: 15, OrderIndex: 2}
+	for _, lessonID := range []string{"lesson-1", "lesson-2"} {
+		cRepo.AttemptSummaries["user-1:"+lessonID] = &curriculum.LessonAttemptSummary{
+			TotalExercises:          2,
+			AttemptedExercises:      2,
+			CorrectExercises:        2,
+			FreshAttemptedExercises: 2,
+			FreshCorrectExercises:   2,
+		}
+	}
+
+	lRepo := language.NewMockRepository()
+	langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", Name: "JLPT N5", OrderIndex: 1}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", Name: "JLPT N4", OrderIndex: 2}
+	lRepo.Languages["lang-ja"] = langJA
+	lRepo.Levels["lvl-n5"] = lvlN5
+	lRepo.Levels["lvl-n4"] = lvlN4
+	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		Language:       langJA,
+		CurrentLevel:   lvlN5,
+	}
+
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 0, CurrentLevel: 1},
+	}
+
+	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), uRepo, nil, cacheRepo)
+
+	// Completing lesson 1/2 should keep user on N5
+	if _, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{LessonID: "lesson-1", Score: 100}); err != nil {
+		t.Fatalf("lesson-1 completion failed: %v", err)
+	}
+	if got := *lRepo.Enrollments["enr-1"].CurrentLevelID; got != "lvl-n5" {
+		t.Fatalf("expected enrollment to remain at lvl-n5 until all lessons complete, got %s", got)
+	}
+	if cacheRepo.InvalidateCallCount != 1 {
+		t.Fatalf("expected 1 cache invalidation after lesson-1, got %d", cacheRepo.InvalidateCallCount)
+	}
+
+	// Completing lesson 2/2 completes the entire level and advances N5 -> N4 + invalidates cache again
+	if _, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{LessonID: "lesson-2", Score: 100}); err != nil {
+		t.Fatalf("lesson-2 completion failed: %v", err)
+	}
+	if got := *lRepo.Enrollments["enr-1"].CurrentLevelID; got != "lvl-n4" {
+		t.Errorf("expected enrollment to advance to lvl-n4 after completing all N5 lessons, got %s", got)
+	}
+	if cacheRepo.InvalidateCallCount != 3 {
+		t.Errorf("expected 3 cache invalidations (lesson-1, lesson-2, level advance), got %d", cacheRepo.InvalidateCallCount)
+	}
+}
+
+func TestGetRoadmap_UsesSingleVersionLookupAndHandlesCacheError(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-ja"] = &curriculum.UnitNodeResponse{ID: "unit-ja", LevelID: "lvl-n5", Title: "JA Basics", OrderIndex: 1}
+
+	lRepo := language.NewMockRepository()
+	langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", Name: "JLPT N5", OrderIndex: 1}
+	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		Language:       langJA,
+		CurrentLevel:   lvlN5,
+	}
+
+	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo.GetRoadmapErr = errors.New("redis connection refused")
+	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
+
+	// Redis read error falls back to DB cleanly without caching under bogus fallback version "0"
+	res, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{})
+	if err != nil {
+		t.Fatalf("expected DB fallback to succeed on Redis error, got %v", err)
+	}
+	if res.Language.ID != "lang-ja" {
+		t.Errorf("expected lang-ja roadmap, got %s", res.Language.ID)
+	}
+	if cacheRepo.GetRoadmapCallCount != 1 {
+		t.Errorf("expected 1 single GetRoadmapWithVersion call, got %d", cacheRepo.GetRoadmapCallCount)
+	}
+	if cacheRepo.SetRoadmapCallCount != 0 {
+		t.Errorf("expected SetRoadmapIfVersion NOT to be called when version lookup errored, got %d calls", cacheRepo.SetRoadmapCallCount)
+	}
+
+	// Recover Redis: single GetRoadmapWithVersion miss -> SetRoadmapIfVersion, then hit
+	cacheRepo.GetRoadmapErr = nil
+	if _, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{}); err != nil {
+		t.Fatalf("expected healthy GetRoadmap to succeed, got %v", err)
+	}
+	if cacheRepo.SetRoadmapCallCount != 1 {
+		t.Errorf("expected SetRoadmapIfVersion called once on healthy miss, got %d", cacheRepo.SetRoadmapCallCount)
+	}
+	if _, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{}); err != nil {
+		t.Fatalf("expected cached GetRoadmap hit to succeed, got %v", err)
+	}
+	if cacheRepo.SetRoadmapCallCount != 1 {
+		t.Errorf("expected cache hit not to re-write Redis, got %d Set calls", cacheRepo.SetRoadmapCallCount)
 	}
 }
 

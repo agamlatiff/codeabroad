@@ -3,6 +3,7 @@ package gamification
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"codeabroad/backend/internal/app/user"
@@ -10,6 +11,7 @@ import (
 
 // MockRepository implements Repository for unit testing
 type MockRepository struct {
+	mu                  sync.Mutex
 	Stats               map[string]*user.UserGamificationStats
 	ShopItems           map[string]*ShopItem
 	Inventory           map[string][]UserInventoryItem
@@ -278,15 +280,40 @@ func (m *MockRepository) GetUserBadges(ctx context.Context, userID string) ([]Us
 	return res, nil
 }
 
-func (m *MockRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*UserBadge, error) {
+func (m *MockRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, _ int) (*UserBadge, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.AwardBadgeErr != nil {
 		return nil, m.AwardBadgeErr
 	}
+	for _, existing := range m.UserBadges[userID] {
+		if existing.BadgeKey == badgeKey {
+			cp := existing
+			cp.Badge = nil
+			return &cp, nil
+		}
+	}
+
 	ub := UserBadge{
 		ID:        fmt.Sprintf("ub_%d", len(m.UserBadges[userID])+1),
 		UserID:    userID,
 		BadgeKey:  badgeKey,
 		AwardedAt: time.Now(),
+	}
+	if def, ok := m.Badges[badgeKey]; ok && def != nil {
+		bd := *def
+		if bd.XPReward == 0 && bd.XPBonus > 0 {
+			bd.XPReward = bd.XPBonus
+		}
+		if bd.XPBonus == 0 && bd.XPReward > 0 {
+			bd.XPBonus = bd.XPReward
+		}
+		ub.Badge = &bd
+		if st := m.Stats[userID]; st != nil && bd.XPReward > 0 {
+			st.XP += bd.XPReward
+			st.CurrentLevel = (st.XP / 100) + 1
+		}
 	}
 	m.UserBadges[userID] = append(m.UserBadges[userID], ub)
 	return &ub, nil

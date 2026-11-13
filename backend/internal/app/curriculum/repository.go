@@ -461,11 +461,26 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	}
 	payload.WasCompleted = (err == nil && wasCompleted)
 
+	// 2b. Verify attempt completeness & compute server-authoritative score inside the serialized transaction
+	// to prevent parallel-burst TOCTOU replay/first-completion XP farming.
+	helper := NewHelper()
+	attemptSummary, err := scanLessonAttemptSummary(ctx, tx, payload.Progress.UserID, payload.Progress.LessonID)
+	if err != nil {
+		return err
+	}
+	verifiedScore, err := helper.ComputeVerifiedLessonScore(payload.Progress.Score, attemptSummary, payload.WasCompleted)
+	if err != nil {
+		return err
+	}
+	payload.Progress.Score = verifiedScore
+	if payload.Metadata == nil {
+		payload.Metadata = make(map[string]any)
+	}
+	payload.Metadata["score"] = verifiedScore
+	payload.Metadata["is_practice"] = payload.WasCompleted
+
 	if payload.WasCompleted {
 		payload.XPEarned = 5
-		if payload.Metadata == nil {
-			payload.Metadata = make(map[string]any)
-		}
 		payload.Metadata["is_practice"] = true
 		payload.Metadata["is_replay"] = true
 
@@ -526,7 +541,6 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	}
 
 	// 4. Recompute streak & level via shared domain helper from locked DB state
-	helper := NewHelper()
 	newStreak, _ := helper.EvaluateDailyStreak(lockedStreak, lockedLastActiveAt, payload.LastActiveAt)
 	newLevel := helper.CalculateLevel(lockedXP + payload.XPEarned)
 
@@ -574,46 +588,49 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	return tx.Commit(ctx)
 }
 
-// GetLessonAttemptSummary retrieves total exercises, attempted distinct exercises, correct counts,
-// and fresh-attempt counts submitted after the user's most recent completion of that lesson.
-func (r *PostgresRepository) GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error) {
-	query := `
-		WITH last_completion AS (
-			SELECT GREATEST(
-				COALESCE((SELECT completed_at FROM user_lesson_progress WHERE user_id = $1::uuid AND lesson_id = $2::uuid LIMIT 1), '-infinity'::timestamptz),
-				COALESCE((SELECT MAX(created_at) FROM user_activity_logs WHERE user_id = $1::uuid AND activity_type = 'lesson_completed' AND metadata->>'lesson_id' = $2), '-infinity'::timestamptz)
-			) AS cutoff_at
-		),
-		latest_overall AS (
-			SELECT DISTINCT ON (uea.exercise_id) uea.exercise_id, uea.is_correct
-			FROM user_exercise_attempts uea
-			JOIN exercises e ON e.id = uea.exercise_id
-			WHERE uea.user_id = $1::uuid AND e.lesson_id = $2::uuid
-			ORDER BY uea.exercise_id, uea.created_at DESC, uea.id DESC
-		),
-		latest_fresh AS (
-			SELECT DISTINCT ON (uea.exercise_id) uea.exercise_id, uea.is_correct
-			FROM user_exercise_attempts uea
-			JOIN exercises e ON e.id = uea.exercise_id
-			CROSS JOIN last_completion lc
-			WHERE uea.user_id = $1::uuid
-			  AND e.lesson_id = $2::uuid
-			  AND uea.created_at > lc.cutoff_at
-			ORDER BY uea.exercise_id, uea.created_at DESC, uea.id DESC
-		)
-		SELECT
-			COUNT(e.id) AS total_exercises,
-			COUNT(lo.exercise_id) AS attempted_exercises,
-			COUNT(lo.exercise_id) FILTER (WHERE lo.is_correct = true) AS correct_exercises,
-			COUNT(lf.exercise_id) AS fresh_attempted_exercises,
-			COUNT(lf.exercise_id) FILTER (WHERE lf.is_correct = true) AS fresh_correct_exercises
-		FROM exercises e
-		LEFT JOIN latest_overall lo ON lo.exercise_id = e.id
-		LEFT JOIN latest_fresh lf ON lf.exercise_id = e.id
-		WHERE e.lesson_id = $2::uuid
-	`
+type rowQueryer interface {
+	QueryRow(context.Context, string, ...any) pgx.Row
+}
+
+const lessonAttemptSummaryQuery = `
+	WITH last_completion AS (
+		SELECT GREATEST(
+			COALESCE((SELECT completed_at FROM user_lesson_progress WHERE user_id = $1::uuid AND lesson_id = $2::uuid LIMIT 1), '-infinity'::timestamptz),
+			COALESCE((SELECT MAX(created_at) FROM user_activity_logs WHERE user_id = $1::uuid AND activity_type = 'lesson_completed' AND metadata->>'lesson_id' = $2), '-infinity'::timestamptz)
+		) AS cutoff_at
+	),
+	latest_overall AS (
+		SELECT DISTINCT ON (uea.exercise_id) uea.exercise_id, uea.is_correct
+		FROM user_exercise_attempts uea
+		JOIN exercises e ON e.id = uea.exercise_id
+		WHERE uea.user_id = $1::uuid AND e.lesson_id = $2::uuid
+		ORDER BY uea.exercise_id, uea.created_at DESC, uea.id DESC
+	),
+	latest_fresh AS (
+		SELECT DISTINCT ON (uea.exercise_id) uea.exercise_id, uea.is_correct
+		FROM user_exercise_attempts uea
+		JOIN exercises e ON e.id = uea.exercise_id
+		CROSS JOIN last_completion lc
+		WHERE uea.user_id = $1::uuid
+		  AND e.lesson_id = $2::uuid
+		  AND uea.created_at > lc.cutoff_at
+		ORDER BY uea.exercise_id, uea.created_at DESC, uea.id DESC
+	)
+	SELECT
+		COUNT(e.id) AS total_exercises,
+		COUNT(lo.exercise_id) AS attempted_exercises,
+		COUNT(lo.exercise_id) FILTER (WHERE lo.is_correct = true) AS correct_exercises,
+		COUNT(lf.exercise_id) AS fresh_attempted_exercises,
+		COUNT(lf.exercise_id) FILTER (WHERE lf.is_correct = true) AS fresh_correct_exercises
+	FROM exercises e
+	LEFT JOIN latest_overall lo ON lo.exercise_id = e.id
+	LEFT JOIN latest_fresh lf ON lf.exercise_id = e.id
+	WHERE e.lesson_id = $2::uuid
+`
+
+func scanLessonAttemptSummary(ctx context.Context, q rowQueryer, userID string, lessonID string) (*LessonAttemptSummary, error) {
 	var summary LessonAttemptSummary
-	if err := r.db.Pool.QueryRow(ctx, query, userID, lessonID).Scan(
+	if err := q.QueryRow(ctx, lessonAttemptSummaryQuery, userID, lessonID).Scan(
 		&summary.TotalExercises,
 		&summary.AttemptedExercises,
 		&summary.CorrectExercises,
@@ -623,5 +640,11 @@ func (r *PostgresRepository) GetLessonAttemptSummary(ctx context.Context, userID
 		return nil, fmt.Errorf("failed to get lesson attempt summary: %w", err)
 	}
 	return &summary, nil
+}
+
+// GetLessonAttemptSummary retrieves total exercises, attempted distinct exercises, correct counts,
+// and fresh-attempt counts submitted after the user's most recent completion of that lesson.
+func (r *PostgresRepository) GetLessonAttemptSummary(ctx context.Context, userID string, lessonID string) (*LessonAttemptSummary, error) {
+	return scanLessonAttemptSummary(ctx, r.db.Pool, userID, lessonID)
 }
 

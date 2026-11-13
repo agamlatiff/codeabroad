@@ -8,6 +8,7 @@ import (
 	"codeabroad/backend/internal/app/exercise"
 	"codeabroad/backend/internal/app/language"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 )
 
 func TestSubmitAnswer_Correct(t *testing.T) {
@@ -173,10 +174,22 @@ func TestSubmitExam_4PillarScoring_Success(t *testing.T) {
 	langRepo := language.NewMockRepository()
 	userRepo := user.NewMockRepository()
 
-	langRepo.Levels["lvl-1"] = &language.ProficiencyLevel{
-		ID:                  "lvl-1",
+	lvlID := "lvl-1"
+	lvl1 := &language.ProficiencyLevel{
+		ID:                  lvlID,
+		LanguageID:          "lang-ja",
 		Code:                "N5",
+		OrderIndex:          1,
 		PassingScorePercent: 60,
+	}
+	langRepo.Levels[lvlID] = lvl1
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlID,
+		IsActive:       true,
+		CurrentLevel:   lvl1,
 	}
 
 	eRepo.ReadinessExamExercises["lvl-1"] = []exercise.Exercise{
@@ -293,6 +306,104 @@ func TestSubmitAnswer_LockedLesson_Blocked(t *testing.T) {
 	})
 	if !errors.Is(err, exercise.ErrExerciseLessonLocked) {
 		t.Fatalf("expected ErrExerciseLessonLocked when submitting answer for locked lesson, got %v", err)
+	}
+}
+
+type stubCacheInvalidator struct {
+	calls int
+}
+
+func (s *stubCacheInvalidator) InvalidateRoadmap(ctx context.Context, userID string) error {
+	s.calls++
+	return nil
+}
+
+func TestGetExamQuestions_SanitizesAndChecksLevelAccess(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	expl := "Exam explanation"
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{
+			ID:                "q-n5",
+			SkillPillar:       "reading",
+			CorrectAnswer:     "A",
+			AcceptableAnswers: []string{"A"},
+			DiagnosticRubric:  map[string]any{"hint": "no"},
+			Explanation:       &expl,
+		},
+	}
+	eRepo.ReadinessExamExercises["lvl-n4"] = []exercise.Exercise{
+		{ID: "q-n4", SkillPillar: "reading", CorrectAnswer: "B"},
+	}
+
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Levels["lvl-n4"] = lvlN4
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), langRepo, user.NewMockRepository())
+
+	// Locked higher level (N4 while enrolled at N5) must return Forbidden
+	if _, err := uc.GetExamQuestions(context.Background(), "user-1", "lvl-n4"); !errors.Is(err, apperror.ErrForbidden) {
+		t.Fatalf("expected ErrForbidden for locked level exam, got %v", err)
+	}
+
+	// Enrolled N5 succeeds with sanitized answers
+	qs, err := uc.GetExamQuestions(context.Background(), "user-1", "lvl-n5")
+	if err != nil {
+		t.Fatalf("expected N5 exam questions to succeed, got %v", err)
+	}
+	if len(qs) != 1 || qs[0].CorrectAnswer != "" || qs[0].AcceptableAnswers != nil || qs[0].DiagnosticRubric != nil || qs[0].Explanation != nil {
+		t.Fatalf("expected sanitized exam questions, got %+v", qs)
+	}
+}
+
+func TestSubmitExam_PassedAdvancesLevelAndInvalidatesCache(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+	}
+
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2, PassingScorePercent: 60}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Levels["lvl-n4"] = lvlN4
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	inv := &stubCacheInvalidator{}
+	uc := exercise.NewUsecaseFull(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), langRepo, user.NewMockRepository(), nil, inv)
+
+	res, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: "lvl-n5",
+		Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: "A"}},
+	})
+	if err != nil {
+		t.Fatalf("expected exam submission to succeed, got %v", err)
+	}
+	if !res.Attempt.IsPassed {
+		t.Fatalf("expected exam attempt to pass")
+	}
+	if langRepo.Enrollments["enr-1"].CurrentLevelID == nil || *langRepo.Enrollments["enr-1"].CurrentLevelID != "lvl-n4" {
+		t.Errorf("expected enrollment current_level_id to advance to lvl-n4, got %v", langRepo.Enrollments["enr-1"].CurrentLevelID)
+	}
+	if inv.calls != 1 {
+		t.Errorf("expected roadmap cache invalidation to be called once, got %d", inv.calls)
 	}
 }
 

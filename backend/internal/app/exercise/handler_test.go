@@ -26,11 +26,23 @@ func setupExerciseTestRouter() (*gin.Engine, *exercise.MockRepository, *exercise
 	exID := "44444444-4444-4444-4444-444444444444"
 	lesID := "33333333-3333-3333-3333-333333333333"
 	lvlID := "22222222-2222-2222-2222-222222222222"
+	langID := "11111111-1111-1111-1111-111111111111"
 
 	_ = userRepo.Create(context.Background(), &user.User{
 		UserAccount: user.UserAccount{ID: "usr-123", Email: "test@example.com"},
 		UserProfile: user.UserProfile{Username: "tester"},
 	})
+
+	lvl := &language.ProficiencyLevel{ID: lvlID, LanguageID: langID, Code: "N5", OrderIndex: 1}
+	langRepo.Levels[lvlID] = lvl
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "usr-123",
+		LanguageID:     langID,
+		CurrentLevelID: &lvlID,
+		IsActive:       true,
+		CurrentLevel:   lvl,
+	}
 
 	exerciseRepo.Exercises[exID] = &exercise.Exercise{
 		ID:            exID,

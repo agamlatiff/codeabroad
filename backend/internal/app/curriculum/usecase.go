@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"sort"
 	"time"
 
 	"codeabroad/backend/internal/app/exercise"
@@ -106,14 +107,19 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		return nil, language.ErrEnrollmentNotFound
 	}
 
-	// Capture cache version epoch before DB queries so stale reads cannot overwrite subsequent invalidations
-	cacheVer := "0"
+	// Capture cache version epoch and lookup cached roadmap in a single round-trip
+	cacheVer := ""
+	canCache := false
 	if u.cacheRepo != nil {
-		if v, verErr := u.cacheRepo.GetRoadmapVersion(ctx, userID); verErr == nil && v != "" {
-			cacheVer = v
-		}
-		if cached, err := u.cacheRepo.GetRoadmap(ctx, userID, enrollment.Language.ID); err == nil && cached != nil {
-			return cached, nil
+		cached, ver, cacheErr := u.cacheRepo.GetRoadmapWithVersion(ctx, userID, enrollment.Language.ID)
+		if cacheErr != nil {
+			log.Printf("curriculum: failed to read roadmap cache for user %s: %v", userID, cacheErr)
+		} else {
+			cacheVer = ver
+			canCache = true
+			if cached != nil {
+				return cached, nil
+			}
 		}
 	}
 
@@ -162,8 +168,8 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		Units:            unlockedUnits,
 	}
 
-	// 2. Cache roadmap response only if version epoch has not advanced during DB read
-	if u.cacheRepo != nil {
+	// 2. Cache roadmap response only if version lookup succeeded and epoch has not advanced during DB read
+	if u.cacheRepo != nil && canCache {
 		if setErr := u.cacheRepo.SetRoadmapIfVersion(ctx, userID, enrollment.Language.ID, cacheVer, res, 15*time.Minute); setErr != nil {
 			log.Printf("curriculum: failed to cache roadmap for user %s: %v", userID, setErr)
 		}
@@ -219,18 +225,14 @@ func (u *usecase) evaluateLessonBadges(ctx context.Context, userID string, paylo
 		return nil, 0
 	}
 
-	var candidates []string
-	if !payload.WasCompleted {
-		candidates = append(candidates, "first_step")
-	}
-	if payload.PreviousStreak < 7 && payload.NewStreak >= 7 {
+	// Always include first_step so transient post-commit failures self-heal on subsequent completions;
+	// DB ON CONFLICT DO NOTHING guarantees first_step and streak badges cannot be double-awarded.
+	candidates := []string{"first_step"}
+	if payload.NewStreak >= 7 {
 		candidates = append(candidates, "streak_7")
 	}
-	if payload.PreviousStreak < 30 && payload.NewStreak >= 30 {
+	if payload.NewStreak >= 30 {
 		candidates = append(candidates, "streak_30")
-	}
-	if len(candidates) == 0 {
-		return nil, 0
 	}
 
 	existingBadges, err := u.gamificationRepo.GetUserBadges(ctx, userID)
@@ -265,9 +267,6 @@ func (u *usecase) evaluateLessonBadges(ctx context.Context, userID string, paylo
 		if ub != nil && ub.Badge != nil {
 			awarded = append(awarded, *ub.Badge)
 			extraXP += ub.Badge.XPReward
-		} else if def.ID != "" {
-			awarded = append(awarded, def)
-			extraXP += def.XPReward
 		}
 	}
 	return awarded, extraXP
@@ -298,16 +297,6 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, ErrLessonLocked
 	}
 
-	// Verify attempt completeness (including fresh attempts on replay) and derive server-authoritative score
-	attemptSummary, err := u.curriculumRepo.GetLessonAttemptSummary(ctx, userID, req.LessonID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify lesson exercise attempts: %w", err)
-	}
-	verifiedScore, err := u.helper.ComputeVerifiedLessonScore(req.Score, attemptSummary, lesson.IsCompleted)
-	if err != nil {
-		return nil, err
-	}
-
 	// Fail-fast: Validate user existence before modifying progress state
 	usr, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
@@ -333,7 +322,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		UserID:      userID,
 		LessonID:    req.LessonID,
 		IsCompleted: true,
-		Score:       verifiedScore,
+		Score:       req.Score,
 		IsSkipped:   false,
 		CompletedAt: now,
 	}
@@ -342,7 +331,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	newXP := usr.XP + xpEarned
 	newLevel := u.helper.CalculateLevel(newXP)
 
-	// Atomic Unit-of-Work: update lesson progress, gamification stats, and activity log in a single DB transaction
+	// Atomic Unit-of-Work: verify attempts, derive score, update progress, gamification stats, and activity log under TX lock
 	payload := &LessonCompletionPayload{
 		Progress:     progress,
 		XPEarned:     xpEarned,
@@ -352,10 +341,14 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		NewGems:      usr.Gems,
 		LastActiveAt: now,
 		ActivityType: activityType,
-		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": verifiedScore, "is_practice": lesson.IsCompleted},
+		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score, "is_practice": lesson.IsCompleted},
 	}
 
 	if err := u.curriculumRepo.RecordLessonCompletionTx(ctx, payload); err != nil {
+		var domainErr *apperror.DomainError
+		if errors.As(err, &domainErr) || errors.Is(err, user.ErrUserNotFound) {
+			return nil, err
+		}
 		return nil, fmt.Errorf("failed to record lesson completion tx: %w", err)
 	}
 
@@ -365,6 +358,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 			log.Printf("curriculum: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
 		}
 	}
+
+	// Automatically advance current_level_id if every lesson in the user's current level is now complete
+	u.maybeAdvanceEnrollmentLevel(ctx, userID, lesson.UnitID)
 
 	awardedBadges, extraBadgeXP := u.evaluateLessonBadges(ctx, userID, payload)
 	finalXP := payload.NewXP + extraBadgeXP
@@ -387,6 +383,71 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		UnlockedNextLessonID: nextLessonID,
 		AwardedBadges:        awardedBadges,
 	}, nil
+}
+
+func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string, unitID string) {
+	if unitID == "" || u.langRepo == nil || u.curriculumRepo == nil {
+		return
+	}
+
+	unit, err := u.curriculumRepo.GetUnitByID(ctx, unitID)
+	if err != nil || unit == nil || unit.LevelID == "" {
+		return
+	}
+
+	enrollments, err := u.langRepo.GetEnrollmentsByUserID(ctx, userID)
+	if err != nil {
+		return
+	}
+
+	var targetEnrollment *language.UserLanguageEnrollment
+	for i := range enrollments {
+		enr := &enrollments[i]
+		if enr.CurrentLevelID != nil && *enr.CurrentLevelID == unit.LevelID {
+			targetEnrollment = enr
+			break
+		}
+	}
+	if targetEnrollment == nil {
+		return
+	}
+
+	lessons, err := u.curriculumRepo.GetLessonsByLevelID(ctx, unit.LevelID, userID)
+	if err != nil || len(lessons) == 0 {
+		return
+	}
+	for _, l := range lessons {
+		if !l.IsCompleted {
+			return
+		}
+	}
+
+	levels, err := u.langRepo.GetLevelsByLanguageID(ctx, targetEnrollment.LanguageID)
+	if err != nil || len(levels) == 0 {
+		return
+	}
+	sortedLevels := make([]language.ProficiencyLevel, len(levels))
+	copy(sortedLevels, levels)
+	sort.Slice(sortedLevels, func(i, j int) bool {
+		return sortedLevels[i].OrderIndex < sortedLevels[j].OrderIndex
+	})
+
+	for i, lvl := range sortedLevels {
+		if lvl.ID == unit.LevelID {
+			if i+1 < len(sortedLevels) {
+				if err := u.langRepo.UpdateEnrollmentLevel(ctx, targetEnrollment.ID, sortedLevels[i+1].ID); err != nil {
+					log.Printf("curriculum: failed to advance enrollment level for user %s: %v", userID, err)
+					return
+				}
+				if u.cacheRepo != nil {
+					if invErr := u.cacheRepo.InvalidateRoadmap(ctx, userID); invErr != nil {
+						log.Printf("curriculum: failed to invalidate roadmap cache after level advance for user %s: %v", userID, invErr)
+					}
+				}
+			}
+			return
+		}
+	}
 }
 
 // GetGrammarPoints retrieves all grammar points belonging to an unlocked proficiency level

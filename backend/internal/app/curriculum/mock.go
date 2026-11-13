@@ -164,7 +164,15 @@ func (m *MockRepository) GetLessonsByLevelID(ctx context.Context, levelID string
 	var res []LessonNodeResponse
 	for _, l := range m.Lessons {
 		if unitMap[l.UnitID] {
-			res = append(res, *l)
+			item := *l
+			if p, ok := m.LessonProgress[fmt.Sprintf("%s:%s", userID, l.ID)]; ok {
+				item.IsCompleted = p.IsCompleted
+				item.Score = p.Score
+				item.IsSkipped = p.IsSkipped
+				cAt := p.CompletedAt
+				item.CompletedAt = &cAt
+			}
+			res = append(res, item)
 		}
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -188,7 +196,15 @@ func (m *MockRepository) GetLessonsByUnitID(ctx context.Context, unitID string, 
 	var res []LessonNodeResponse
 	for _, l := range m.Lessons {
 		if l.UnitID == unitID {
-			res = append(res, *l)
+			item := *l
+			if p, ok := m.LessonProgress[fmt.Sprintf("%s:%s", userID, l.ID)]; ok {
+				item.IsCompleted = p.IsCompleted
+				item.Score = p.Score
+				item.IsSkipped = p.IsSkipped
+				cAt := p.CompletedAt
+				item.CompletedAt = &cAt
+			}
+			res = append(res, item)
 		}
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -370,12 +386,32 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	payload.PreviousStreak = m.UserStreak[userID]
 
 	key := fmt.Sprintf("%s:%s", userID, payload.Progress.LessonID)
-	if existing, ok := m.LessonProgress[key]; ok && existing.IsCompleted {
-		payload.WasCompleted = true
+	existing, hasExisting := m.LessonProgress[key]
+	payload.WasCompleted = hasExisting && existing.IsCompleted
+
+	// Mirror PostgreSQL transactional verification & score derivation under mutex lock
+	if m.GetAttemptSummaryErr != nil {
+		return m.GetAttemptSummaryErr
+	}
+	summaryCopy := &LessonAttemptSummary{}
+	if s, ok := m.AttemptSummaries[key]; ok && s != nil {
+		copyVal := *s
+		summaryCopy = &copyVal
+	}
+	helper := NewHelper()
+	verifiedScore, err := helper.ComputeVerifiedLessonScore(payload.Progress.Score, summaryCopy, payload.WasCompleted)
+	if err != nil {
+		return err
+	}
+	payload.Progress.Score = verifiedScore
+	if payload.Metadata == nil {
+		payload.Metadata = make(map[string]any)
+	}
+	payload.Metadata["score"] = verifiedScore
+	payload.Metadata["is_practice"] = payload.WasCompleted
+
+	if payload.WasCompleted {
 		payload.XPEarned = 5
-		if payload.Metadata == nil {
-			payload.Metadata = make(map[string]any)
-		}
 		payload.Metadata["is_practice"] = true
 		payload.Metadata["is_replay"] = true
 
@@ -407,9 +443,15 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 		return err
 	}
 
+	// Mirror PostgreSQL monotonic cutoff_at = NOW() consuming fresh attempts upon completion
+	if s, ok := m.AttemptSummaries[key]; ok && s != nil {
+		s.FreshAttemptedExercises = 0
+		s.FreshCorrectExercises = 0
+	}
+
 	m.UserXP[userID] += payload.XPEarned
 	payload.NewXP = m.UserXP[userID]
-	payload.NewLevel = NewHelper().CalculateLevel(payload.NewXP)
+	payload.NewLevel = helper.CalculateLevel(payload.NewXP)
 	payload.NewGems = m.UserGems[userID]
 	m.UserStreak[userID] = payload.NewStreak
 	return nil
@@ -464,24 +506,30 @@ func (m *MockRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, user
 	return fmt.Sprintf("%d", m.Versions[userID]), nil
 }
 
-func (m *MockRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
+func (m *MockRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, userID string, languageID string) (*RoadmapResponse, string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
 	m.GetRoadmapCallCount++
 	if m.GetRoadmapErr != nil {
-		return nil, m.GetRoadmapErr
+		return nil, "", m.GetRoadmapErr
 	}
+	ver := fmt.Sprintf("%d", m.Versions[userID])
 	key := fmt.Sprintf("%s:%s", userID, languageID)
 	data, ok := m.Cache[key]
 	if !ok {
-		return nil, nil
+		return nil, ver, nil
 	}
 	var res RoadmapResponse
 	if err := json.Unmarshal(data, &res); err != nil {
-		return nil, err
+		return nil, ver, err
 	}
-	return &res, nil
+	return &res, ver, nil
+}
+
+func (m *MockRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
+	res, _, err := m.GetRoadmapWithVersion(ctx, userID, languageID)
+	return res, err
 }
 
 func (m *MockRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error {
