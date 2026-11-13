@@ -313,7 +313,7 @@ type stubCacheInvalidator struct {
 	calls int
 }
 
-func (s *stubCacheInvalidator) InvalidateRoadmap(ctx context.Context, userID string) error {
+func (s *stubCacheInvalidator) InvalidateCurriculum(ctx context.Context, userID string) error {
 	s.calls++
 	return nil
 }
@@ -403,7 +403,7 @@ func TestSubmitExam_PassedAdvancesLevelAndInvalidatesCache(t *testing.T) {
 		t.Errorf("expected enrollment current_level_id to advance to lvl-n4, got %v", langRepo.Enrollments["enr-1"].CurrentLevelID)
 	}
 	if inv.calls != 1 {
-		t.Errorf("expected roadmap cache invalidation to be called once, got %d", inv.calls)
+		t.Errorf("expected curriculum cache invalidation to be called once, got %d", inv.calls)
 	}
 }
 

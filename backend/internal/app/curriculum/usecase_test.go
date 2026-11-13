@@ -15,7 +15,7 @@ import (
 	"codeabroad/backend/internal/shared/apperror"
 )
 
-func TestGetRoadmap_Success(t *testing.T) {
+func TestGetCurriculum_Success(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", Title: "Unit 1: Basics", TotalLessons: 2, CompletedLessons: 2, OrderIndex: 1}
 	cRepo.Units["unit-2"] = &curriculum.UnitNodeResponse{ID: "unit-2", LevelID: "lvl-n5", Title: "Unit 2: Daily Life", TotalLessons: 2, CompletedLessons: 0, OrderIndex: 2}
@@ -42,15 +42,15 @@ func TestGetRoadmap_Success(t *testing.T) {
 	}
 
 	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
-	roadmap, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
+	res, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{LanguageID: "lang-ja"})
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if len(roadmap.Units) != 2 {
-		t.Fatalf("expected 2 units, got %d", len(roadmap.Units))
+	if len(res.Units) != 2 {
+		t.Fatalf("expected 2 units, got %d", len(res.Units))
 	}
-	if !roadmap.Units[0].IsUnlocked || !roadmap.Units[1].IsUnlocked {
-		t.Errorf("expected both units to be unlocked, got unit1=%v, unit2=%v", roadmap.Units[0].IsUnlocked, roadmap.Units[1].IsUnlocked)
+	if !res.Units[0].IsUnlocked || !res.Units[1].IsUnlocked {
+		t.Errorf("expected both units to be unlocked, got unit1=%v, unit2=%v", res.Units[0].IsUnlocked, res.Units[1].IsUnlocked)
 	}
 }
 
@@ -334,7 +334,7 @@ func TestCompleteLesson_UserNotFound_FailFast(t *testing.T) {
 	}
 }
 
-func TestGetRoadmap_RedisCacheHitAndMiss(t *testing.T) {
+func TestGetCurriculum_RedisCacheHitAndMiss(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", Title: "Unit 1: Basics", TotalLessons: 1, CompletedLessons: 1, OrderIndex: 1}
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
@@ -355,38 +355,38 @@ func TestGetRoadmap_RedisCacheHitAndMiss(t *testing.T) {
 
 	eRepo := exercise.NewMockRepository()
 	uRepo := user.NewMockRepository()
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, eRepo, uRepo, nil, cacheRepo)
 
 	// First call: Cache miss -> queries DB and populates cache
-	roadmap1, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
+	res1, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{LanguageID: "lang-ja"})
 	if err != nil {
-		t.Fatalf("first GetRoadmap failed: %v", err)
+		t.Fatalf("first GetCurriculum failed: %v", err)
 	}
-	if roadmap1 == nil || len(roadmap1.Units) != 1 {
-		t.Fatalf("expected 1 unit, got %v", roadmap1)
+	if res1 == nil || len(res1.Units) != 1 {
+		t.Fatalf("expected 1 unit, got %v", res1)
 	}
-	if cacheRepo.SetRoadmapCallCount == 0 {
-		t.Errorf("expected SetRoadmap to be called on cache miss")
+	if cacheRepo.SetCurriculumCallCount == 0 {
+		t.Errorf("expected SetCurriculum to be called on cache miss")
 	}
 
 	// Mutate DB repo to verify second call serves strictly from cache
 	delete(cRepo.Units, "unit-1")
 
-	roadmap2, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
+	res2, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{LanguageID: "lang-ja"})
 	if err != nil {
-		t.Fatalf("second GetRoadmap failed: %v", err)
+		t.Fatalf("second GetCurriculum failed: %v", err)
 	}
-	if len(roadmap2.Units) != 1 {
-		t.Errorf("expected cached roadmap to retain 1 unit, got %d", len(roadmap2.Units))
+	if len(res2.Units) != 1 {
+		t.Errorf("expected cached curriculum to retain 1 unit, got %d", len(res2.Units))
 	}
-	if cacheRepo.GetRoadmapCallCount < 2 {
-		t.Errorf("expected GetRoadmap cache calls >= 2, got %d", cacheRepo.GetRoadmapCallCount)
+	if cacheRepo.GetCurriculumCallCount < 2 {
+		t.Errorf("expected GetCurriculum cache calls >= 2, got %d", cacheRepo.GetCurriculumCallCount)
 	}
 }
 
-func TestCompleteLesson_InvalidatesRoadmapCache(t *testing.T) {
+func TestCompleteLesson_InvalidatesCurriculumCache(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1}
@@ -403,7 +403,7 @@ func TestCompleteLesson_InvalidatesRoadmapCache(t *testing.T) {
 		UserAccount:           user.UserAccount{ID: "user-1"},
 		UserGamificationStats: user.UserGamificationStats{XP: 10, CurrentLevel: 1, Streak: 1},
 	}
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, eRepo, uRepo, nil, cacheRepo)
 
@@ -415,7 +415,7 @@ func TestCompleteLesson_InvalidatesRoadmapCache(t *testing.T) {
 		t.Fatalf("CompleteLesson failed: %v", err)
 	}
 	if cacheRepo.InvalidateCallCount != 1 {
-		t.Errorf("expected InvalidateRoadmap to be called once, got %d", cacheRepo.InvalidateCallCount)
+		t.Errorf("expected InvalidateCurriculum to be called once, got %d", cacheRepo.InvalidateCallCount)
 	}
 }
 
@@ -605,7 +605,7 @@ func TestCompleteLesson_ConcurrentBurst_AntiExploit(t *testing.T) {
 	}
 }
 
-func TestGetRoadmap_LanguageSwitch_NoCacheCollision(t *testing.T) {
+func TestGetCurriculum_LanguageSwitch_NoCacheCollision(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-ja"] = &curriculum.UnitNodeResponse{ID: "unit-ja", LevelID: "lvl-n5", Title: "JA Basics", OrderIndex: 1}
 	cRepo.Units["unit-ko"] = &curriculum.UnitNodeResponse{ID: "unit-ko", LevelID: "lvl-topik1", Title: "KO Basics", OrderIndex: 1}
@@ -635,13 +635,13 @@ func TestGetRoadmap_LanguageSwitch_NoCacheCollision(t *testing.T) {
 		CurrentLevel:   lvlTopik,
 	}
 
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
 
-	// 1. Default GetRoadmap (empty LanguageID) caches under canonical "lang-ja", NOT ""
-	res1, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{})
+	// 1. Default GetCurriculum (empty LanguageID) caches under canonical "lang-ja", NOT ""
+	res1, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
 	if err != nil {
-		t.Fatalf("first GetRoadmap failed: %v", err)
+		t.Fatalf("first GetCurriculum failed: %v", err)
 	}
 	if res1.Language.ID != "lang-ja" {
 		t.Fatalf("expected lang-ja, got %s", res1.Language.ID)
@@ -650,14 +650,14 @@ func TestGetRoadmap_LanguageSwitch_NoCacheCollision(t *testing.T) {
 		t.Fatalf("expected no cache entry under empty language key user-1:")
 	}
 
-	// 2. Switch active language to Korean and call GetRoadmap with empty LanguageID again
+	// 2. Switch active language to Korean and call GetCurriculum with empty LanguageID again
 	_ = lRepo.SetActiveLanguage(context.Background(), "user-1", "lang-ko")
-	res2, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{})
+	res2, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
 	if err != nil {
-		t.Fatalf("second GetRoadmap after language switch failed: %v", err)
+		t.Fatalf("second GetCurriculum after language switch failed: %v", err)
 	}
 	if res2.Language.ID != "lang-ko" {
-		t.Errorf("expected Korean roadmap after language switch without cache collision, got %s", res2.Language.ID)
+		t.Errorf("expected Korean curriculum after language switch without cache collision, got %s", res2.Language.ID)
 	}
 }
 
@@ -862,7 +862,7 @@ func TestCompleteLesson_AwardsBadgesIdempotently(t *testing.T) {
 	}
 }
 
-func TestGetRoadmap_StaleVersionDoesNotOverwriteInvalidatedCache(t *testing.T) {
+func TestGetCurriculum_StaleVersionDoesNotOverwriteInvalidatedCache(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-ko"] = &curriculum.UnitNodeResponse{ID: "unit-ko", LevelID: "lvl-topik1", Title: "KO Basics", OrderIndex: 1}
 
@@ -878,24 +878,24 @@ func TestGetRoadmap_StaleVersionDoesNotOverwriteInvalidatedCache(t *testing.T) {
 		ID: "enr-ko", UserID: "user-1", LanguageID: "lang-ko", CurrentLevelID: &lvlTopik.ID, IsActive: false, Language: langKO, CurrentLevel: lvlTopik,
 	}
 
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
 
 	// 1. Requesting an enrolled inactive language via explicit LanguageID succeeds
-	koRoadmap, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ko"})
+	koCurriculum, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{LanguageID: "lang-ko"})
 	if err != nil {
-		t.Fatalf("expected enrolled inactive language roadmap via ?language_id to succeed, got %v", err)
+		t.Fatalf("expected enrolled inactive language curriculum via ?language_id to succeed, got %v", err)
 	}
-	if koRoadmap.Language.ID != "lang-ko" {
-		t.Errorf("expected lang-ko roadmap, got %s", koRoadmap.Language.ID)
+	if koCurriculum.Language.ID != "lang-ko" {
+		t.Errorf("expected lang-ko curriculum, got %s", koCurriculum.Language.ID)
 	}
 
 	// 2. Simulating mid-flight invalidation prevents stale version write
-	ver, _ := cacheRepo.GetRoadmapVersion(context.Background(), "user-1")
-	_ = cacheRepo.InvalidateRoadmap(context.Background(), "user-1")
-	_ = cacheRepo.SetRoadmapIfVersion(context.Background(), "user-1", "lang-ja", ver, koRoadmap, time.Minute)
+	ver, _ := cacheRepo.GetCurriculumVersion(context.Background(), "user-1")
+	_ = cacheRepo.InvalidateCurriculum(context.Background(), "user-1")
+	_ = cacheRepo.SetCurriculumIfVersion(context.Background(), "user-1", "lang-ja", ver, koCurriculum, time.Minute)
 	if _, exists := cacheRepo.Cache["user-1:lang-ja"]; exists {
-		t.Errorf("expected stale SetRoadmapIfVersion write after invalidation to be discarded")
+		t.Errorf("expected stale SetCurriculumIfVersion write after invalidation to be discarded")
 	}
 }
 
@@ -999,7 +999,7 @@ func TestCompleteLesson_AdvancesLevelWhenAllLevelLessonsCompleted(t *testing.T) 
 		UserGamificationStats: user.UserGamificationStats{XP: 0, CurrentLevel: 1},
 	}
 
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), uRepo, nil, cacheRepo)
 
 	// Completing lesson 1/2 should keep user on N5
@@ -1025,7 +1025,7 @@ func TestCompleteLesson_AdvancesLevelWhenAllLevelLessonsCompleted(t *testing.T) 
 	}
 }
 
-func TestGetRoadmap_UsesSingleVersionLookupAndHandlesCacheError(t *testing.T) {
+func TestGetCurriculum_UsesSingleVersionLookupAndHandlesCacheError(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-ja"] = &curriculum.UnitNodeResponse{ID: "unit-ja", LevelID: "lvl-n5", Title: "JA Basics", OrderIndex: 1}
 
@@ -1042,38 +1042,38 @@ func TestGetRoadmap_UsesSingleVersionLookupAndHandlesCacheError(t *testing.T) {
 		CurrentLevel:   lvlN5,
 	}
 
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
-	cacheRepo.GetRoadmapErr = errors.New("redis connection refused")
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
+	cacheRepo.GetCurriculumErr = errors.New("redis connection refused")
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
 
 	// Redis read error falls back to DB cleanly without caching under bogus fallback version "0"
-	res, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{})
+	res, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
 	if err != nil {
 		t.Fatalf("expected DB fallback to succeed on Redis error, got %v", err)
 	}
 	if res.Language.ID != "lang-ja" {
-		t.Errorf("expected lang-ja roadmap, got %s", res.Language.ID)
+		t.Errorf("expected lang-ja curriculum, got %s", res.Language.ID)
 	}
-	if cacheRepo.GetRoadmapCallCount != 1 {
-		t.Errorf("expected 1 single GetRoadmapWithVersion call, got %d", cacheRepo.GetRoadmapCallCount)
+	if cacheRepo.GetCurriculumCallCount != 1 {
+		t.Errorf("expected 1 single GetCurriculumWithVersion call, got %d", cacheRepo.GetCurriculumCallCount)
 	}
-	if cacheRepo.SetRoadmapCallCount != 0 {
-		t.Errorf("expected SetRoadmapIfVersion NOT to be called when version lookup errored, got %d calls", cacheRepo.SetRoadmapCallCount)
+	if cacheRepo.SetCurriculumCallCount != 0 {
+		t.Errorf("expected SetCurriculumIfVersion NOT to be called when version lookup errored, got %d calls", cacheRepo.SetCurriculumCallCount)
 	}
 
-	// Recover Redis: single GetRoadmapWithVersion miss -> SetRoadmapIfVersion, then hit
-	cacheRepo.GetRoadmapErr = nil
-	if _, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{}); err != nil {
-		t.Fatalf("expected healthy GetRoadmap to succeed, got %v", err)
+	// Recover Redis: single GetCurriculumWithVersion miss -> SetCurriculumIfVersion, then hit
+	cacheRepo.GetCurriculumErr = nil
+	if _, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{}); err != nil {
+		t.Fatalf("expected healthy GetCurriculum to succeed, got %v", err)
 	}
-	if cacheRepo.SetRoadmapCallCount != 1 {
-		t.Errorf("expected SetRoadmapIfVersion called once on healthy miss, got %d", cacheRepo.SetRoadmapCallCount)
+	if cacheRepo.SetCurriculumCallCount != 1 {
+		t.Errorf("expected SetCurriculumIfVersion called once on healthy miss, got %d", cacheRepo.SetCurriculumCallCount)
 	}
-	if _, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{}); err != nil {
-		t.Fatalf("expected cached GetRoadmap hit to succeed, got %v", err)
+	if _, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{}); err != nil {
+		t.Fatalf("expected cached GetCurriculum hit to succeed, got %v", err)
 	}
-	if cacheRepo.SetRoadmapCallCount != 1 {
-		t.Errorf("expected cache hit not to re-write Redis, got %d Set calls", cacheRepo.SetRoadmapCallCount)
+	if cacheRepo.SetCurriculumCallCount != 1 {
+		t.Errorf("expected cache hit not to re-write Redis, got %d Set calls", cacheRepo.SetCurriculumCallCount)
 	}
 }
 
@@ -1155,15 +1155,15 @@ func TestDiagnosticExamUnitExcludedAndNonBlocking(t *testing.T) {
 
 	uc := curriculum.NewUsecase(cRepo, lRepo, exercise.NewMockRepository(), uRepo, nil)
 
-	// 1. Roadmap excludes both placement and unit-2 diagnostic_exam nodes
-	roadmap, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{})
+	// 1. Curriculum excludes both placement and unit-2 diagnostic_exam nodes
+	res, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
 	if err != nil {
-		t.Fatalf("GetRoadmap failed: %v", err)
+		t.Fatalf("GetCurriculum failed: %v", err)
 	}
-	if len(roadmap.Units) != 2 || roadmap.Units[0].ID != "unit-0" || roadmap.Units[1].ID != "unit-3" {
-		t.Fatalf("expected only curriculum units [unit-0, unit-3], got %+v", roadmap.Units)
+	if len(res.Units) != 2 || res.Units[0].ID != "unit-0" || res.Units[1].ID != "unit-3" {
+		t.Fatalf("expected only curriculum units [unit-0, unit-3], got %+v", res.Units)
 	}
-	if !roadmap.Units[0].IsUnlocked || !roadmap.Units[0].Lessons[0].IsUnlocked {
+	if !res.Units[0].IsUnlocked || !res.Units[0].Lessons[0].IsUnlocked {
 		t.Errorf("expected unit-0 / lesson-0 to be unlocked without waiting on placement exam")
 	}
 
@@ -1184,7 +1184,7 @@ func TestDiagnosticExamUnitExcludedAndNonBlocking(t *testing.T) {
 	}
 }
 
-func TestGetRoadmap_InactiveTrackMarksNodesLocked(t *testing.T) {
+func TestGetCurriculum_InactiveTrackMarksNodesLocked(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-ja"] = &curriculum.UnitNodeResponse{ID: "unit-ja", LevelID: "lvl-n5", Title: "JA Basics", UnitType: "curriculum", OrderIndex: 1}
 	cRepo.Lessons["lesson-ja-1"] = &curriculum.LessonNodeResponse{ID: "lesson-ja-1", UnitID: "unit-ja", Title: "L1", OrderIndex: 1}
@@ -1206,12 +1206,12 @@ func TestGetRoadmap_InactiveTrackMarksNodesLocked(t *testing.T) {
 		CurrentLevel:   lvlN5,
 	}
 
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
 
-	res, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{LanguageID: "lang-ja"})
+	res, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{LanguageID: "lang-ja"})
 	if err != nil {
-		t.Fatalf("expected inactive roadmap query to succeed, got %v", err)
+		t.Fatalf("expected inactive curriculum query to succeed, got %v", err)
 	}
 	if res.CurrentLessonID != nil {
 		t.Errorf("expected nil CurrentLessonID for inactive track, got %v", *res.CurrentLessonID)
@@ -1226,12 +1226,12 @@ func TestGetRoadmap_InactiveTrackMarksNodesLocked(t *testing.T) {
 			}
 		}
 	}
-	if cacheRepo.SetRoadmapCallCount != 0 {
-		t.Errorf("expected inactive track roadmap not to populate shared active cache, got %d Set calls", cacheRepo.SetRoadmapCallCount)
+	if cacheRepo.SetCurriculumCallCount != 0 {
+		t.Errorf("expected inactive track curriculum not to populate shared active cache, got %d Set calls", cacheRepo.SetCurriculumCallCount)
 	}
 }
 
-func TestGetRoadmap_CorruptCacheSelfHeals(t *testing.T) {
+func TestGetCurriculum_CorruptCacheSelfHeals(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.Units["unit-ja"] = &curriculum.UnitNodeResponse{ID: "unit-ja", LevelID: "lvl-n5", Title: "JA Basics", UnitType: "curriculum", OrderIndex: 1}
 
@@ -1248,19 +1248,19 @@ func TestGetRoadmap_CorruptCacheSelfHeals(t *testing.T) {
 		CurrentLevel:   lvlN5,
 	}
 
-	cacheRepo := curriculum.NewMockRoadmapCacheRepository()
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
 	cacheRepo.Cache["user-1:lang-ja"] = []byte("{corrupt-json")
 	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
 
-	res, err := uc.GetRoadmap(context.Background(), "user-1", &curriculum.GetRoadmapRequest{})
+	res, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
 	if err != nil {
 		t.Fatalf("expected corrupt cache to self-heal via DB fallback, got %v", err)
 	}
 	if len(res.Units) != 1 || res.Units[0].ID != "unit-ja" {
-		t.Errorf("unexpected roadmap after corrupt cache recovery: %+v", res.Units)
+		t.Errorf("unexpected curriculum after corrupt cache recovery: %+v", res.Units)
 	}
-	if cacheRepo.SetRoadmapCallCount != 1 {
-		t.Errorf("expected SetRoadmapIfVersion to overwrite corrupt cache key once, got %d", cacheRepo.SetRoadmapCallCount)
+	if cacheRepo.SetCurriculumCallCount != 1 {
+		t.Errorf("expected SetCurriculumIfVersion to overwrite corrupt cache key once, got %d", cacheRepo.SetCurriculumCallCount)
 	}
 }
 
@@ -1338,7 +1338,7 @@ func TestRecordLessonCompletionTx_BlocksSkippedPrerequisiteDirectly(t *testing.T
 	}
 }
 
-func TestCalculateRoadmapUnlocks_ComputesCountsWithoutPreAggregation(t *testing.T) {
+func TestCalculateCurriculumUnlocks_ComputesCountsWithoutPreAggregation(t *testing.T) {
 	helper := curriculum.NewHelper()
 	units := []curriculum.UnitNodeResponse{
 		{
@@ -1358,7 +1358,7 @@ func TestCalculateRoadmapUnlocks_ComputesCountsWithoutPreAggregation(t *testing.
 		},
 	}
 
-	out, total, completed, _, currentID := helper.CalculateRoadmapUnlocks(units)
+	out, total, completed, _, currentID := helper.CalculateCurriculumUnlocks(units)
 	if total != 3 || completed != 1 {
 		t.Fatalf("expected totals 3/1, got %d/%d", total, completed)
 	}

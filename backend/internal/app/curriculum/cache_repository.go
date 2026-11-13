@@ -12,19 +12,19 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-type redisRoadmapCacheRepository struct {
+type redisCurriculumCacheRepository struct {
 	rdb *infraRedis.RedisClient
 }
 
-const roadmapEpochTTL = 7 * 24 * time.Hour
+const curriculumEpochTTL = 7 * 24 * time.Hour
 
-var incrRoadmapVersionScript = redis.NewScript(`
+var incrCurriculumVersionScript = redis.NewScript(`
 local v = redis.call("INCR", KEYS[1])
 redis.call("PEXPIRE", KEYS[1], ARGV[1])
 return v
 `)
 
-var setRoadmapIfVersionScript = redis.NewScript(`
+var setCurriculumIfVersionScript = redis.NewScript(`
 local currentVer = redis.call("GET", KEYS[1])
 if not currentVer then
 	currentVer = "0"
@@ -36,25 +36,25 @@ redis.call("SET", KEYS[2], ARGV[2], "PX", ARGV[3])
 return 1
 `)
 
-// NewRoadmapCacheRepository creates a new Redis-backed roadmap cache repository
-func NewRoadmapCacheRepository(rdb *infraRedis.RedisClient) RoadmapCacheRepository {
-	return &redisRoadmapCacheRepository{rdb: rdb}
+// NewCurriculumCacheRepository creates a new Redis-backed curriculum cache repository
+func NewCurriculumCacheRepository(rdb *infraRedis.RedisClient) CurriculumCacheRepository {
+	return &redisCurriculumCacheRepository{rdb: rdb}
 }
 
-func roadmapVersionKey(userID string) string {
-	return fmt.Sprintf("curriculum:roadmap:{%s}:ver", userID)
+func curriculumVersionKey(userID string) string {
+	return fmt.Sprintf("curriculum:{%s}:ver", userID)
 }
 
-func roadmapCacheKey(userID string, version string, languageID string) string {
-	return fmt.Sprintf("curriculum:roadmap:{%s}:v%s:%s", userID, version, languageID)
+func curriculumCacheKey(userID string, version string, languageID string) string {
+	return fmt.Sprintf("curriculum:{%s}:v%s:%s", userID, version, languageID)
 }
 
-// GetRoadmapVersion retrieves the current invalidation epoch for a user's roadmap cache
-func (c *redisRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, userID string) (string, error) {
+// GetCurriculumVersion retrieves the current invalidation epoch for a user's curriculum cache
+func (c *redisCurriculumCacheRepository) GetCurriculumVersion(ctx context.Context, userID string) (string, error) {
 	if c.rdb == nil || c.rdb.Client == nil {
 		return "0", nil
 	}
-	ver, err := c.rdb.Client.Get(ctx, roadmapVersionKey(userID)).Result()
+	ver, err := c.rdb.Client.Get(ctx, curriculumVersionKey(userID)).Result()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
 			return "0", nil
@@ -64,23 +64,23 @@ func (c *redisRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, use
 	return ver, nil
 }
 
-// GetRoadmap retrieves a cached roadmap response from Redis under the user's current version epoch
-func (c *redisRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
-	roadmap, _, err := c.GetRoadmapWithVersion(ctx, userID, languageID)
-	return roadmap, err
+// GetCurriculum retrieves a cached curriculum response from Redis under the user's current version epoch
+func (c *redisCurriculumCacheRepository) GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
+	curriculum, _, err := c.GetCurriculumWithVersion(ctx, userID, languageID)
+	return curriculum, err
 }
 
-// GetRoadmapWithVersion retrieves a cached roadmap response along with the user's current invalidation epoch
+// GetCurriculumWithVersion retrieves a cached curriculum response along with the user's current invalidation epoch
 // in minimal Redis calls so callers never issue duplicate version lookups or silently fall back on errors.
-func (c *redisRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, userID string, languageID string) (*RoadmapResponse, string, error) {
+func (c *redisCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Context, userID string, languageID string) (*CurriculumResponse, string, error) {
 	if c.rdb == nil || c.rdb.Client == nil {
 		return nil, "0", nil
 	}
-	ver, err := c.GetRoadmapVersion(ctx, userID)
+	ver, err := c.GetCurriculumVersion(ctx, userID)
 	if err != nil {
 		return nil, "", err
 	}
-	key := roadmapCacheKey(userID, ver, languageID)
+	key := curriculumCacheKey(userID, ver, languageID)
 	data, err := c.rdb.Client.Get(ctx, key).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
@@ -89,54 +89,54 @@ func (c *redisRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context,
 		return nil, ver, err
 	}
 
-	var roadmap RoadmapResponse
-	if err := json.Unmarshal(data, &roadmap); err != nil {
-		log.Printf("curriculum: corrupt roadmap cache entry %s: %v", key, err)
+	var curriculum CurriculumResponse
+	if err := json.Unmarshal(data, &curriculum); err != nil {
+		log.Printf("curriculum: corrupt curriculum cache entry %s: %v", key, err)
 		_ = c.rdb.Client.Del(ctx, key).Err()
 		return nil, ver, nil
 	}
-	return &roadmap, ver, nil
+	return &curriculum, ver, nil
 }
 
-// SetRoadmap stores a decorated roadmap in Redis using the current version epoch
-func (c *redisRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error {
-	if c.rdb == nil || c.rdb.Client == nil || roadmap == nil {
+// SetCurriculum stores a decorated curriculum in Redis using the current version epoch
+func (c *redisCurriculumCacheRepository) SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error {
+	if c.rdb == nil || c.rdb.Client == nil || curriculum == nil {
 		return nil
 	}
-	ver, err := c.GetRoadmapVersion(ctx, userID)
+	ver, err := c.GetCurriculumVersion(ctx, userID)
 	if err != nil {
 		return err
 	}
-	return c.SetRoadmapIfVersion(ctx, userID, languageID, ver, roadmap, ttl)
+	return c.SetCurriculumIfVersion(ctx, userID, languageID, ver, curriculum, ttl)
 }
 
-// SetRoadmapIfVersion atomically stores a roadmap only if the user's cache version epoch still matches expectedVersion,
+// SetCurriculumIfVersion atomically stores a curriculum only if the user's cache version epoch still matches expectedVersion,
 // eliminating stale-write races when a lesson completes concurrently during cache population.
-func (c *redisRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error {
-	if c.rdb == nil || c.rdb.Client == nil || roadmap == nil {
+func (c *redisCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error {
+	if c.rdb == nil || c.rdb.Client == nil || curriculum == nil {
 		return nil
 	}
 	if expectedVersion == "" {
 		expectedVersion = "0"
 	}
-	data, err := json.Marshal(roadmap)
+	data, err := json.Marshal(curriculum)
 	if err != nil {
-		return fmt.Errorf("failed to marshal roadmap for cache: %w", err)
+		return fmt.Errorf("failed to marshal curriculum for cache: %w", err)
 	}
-	verKey := roadmapVersionKey(userID)
-	dataKey := roadmapCacheKey(userID, expectedVersion, languageID)
+	verKey := curriculumVersionKey(userID)
+	dataKey := curriculumCacheKey(userID, expectedVersion, languageID)
 	ttlMs := ttl.Milliseconds()
 	if ttlMs <= 0 {
 		ttlMs = (15 * time.Minute).Milliseconds()
 	}
-	return setRoadmapIfVersionScript.Run(ctx, c.rdb.Client, []string{verKey, dataKey}, expectedVersion, data, ttlMs).Err()
+	return setCurriculumIfVersionScript.Run(ctx, c.rdb.Client, []string{verKey, dataKey}, expectedVersion, data, ttlMs).Err()
 }
 
-// InvalidateRoadmap atomically advances the user's roadmap cache epoch in O(1) with a bounded long TTL
-func (c *redisRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, userID string) error {
+// InvalidateCurriculum atomically advances the user's curriculum cache epoch in O(1) with a bounded long TTL
+func (c *redisCurriculumCacheRepository) InvalidateCurriculum(ctx context.Context, userID string) error {
 	if c.rdb == nil || c.rdb.Client == nil {
 		return nil
 	}
-	return incrRoadmapVersionScript.Run(ctx, c.rdb.Client, []string{roadmapVersionKey(userID)}, roadmapEpochTTL.Milliseconds()).Err()
+	return incrCurriculumVersionScript.Run(ctx, c.rdb.Client, []string{curriculumVersionKey(userID)}, curriculumEpochTTL.Milliseconds()).Err()
 }
 

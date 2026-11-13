@@ -538,46 +538,46 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	return nil
 }
 
-// MockRoadmapCacheRepository provides an in-memory mock for RoadmapCacheRepository
-type MockRoadmapCacheRepository struct {
-	mu                  sync.Mutex
-	Cache               map[string][]byte
-	Versions            map[string]int
-	GetRoadmapErr       error
-	SetRoadmapErr       error
-	InvalidateErr       error
-	GetRoadmapCallCount int
-	SetRoadmapCallCount int
-	InvalidateCallCount int
+// MockCurriculumCacheRepository provides an in-memory mock for CurriculumCacheRepository
+type MockCurriculumCacheRepository struct {
+	mu                     sync.Mutex
+	Cache                  map[string][]byte
+	Versions               map[string]int
+	GetCurriculumErr       error
+	SetCurriculumErr       error
+	InvalidateErr          error
+	GetCurriculumCallCount int
+	SetCurriculumCallCount int
+	InvalidateCallCount    int
 }
 
-// NewMockRoadmapCacheRepository creates an in-memory mock cache repository
-func NewMockRoadmapCacheRepository() *MockRoadmapCacheRepository {
-	return &MockRoadmapCacheRepository{
+// NewMockCurriculumCacheRepository creates an in-memory mock cache repository
+func NewMockCurriculumCacheRepository() *MockCurriculumCacheRepository {
+	return &MockCurriculumCacheRepository{
 		Cache:    make(map[string][]byte),
 		Versions: make(map[string]int),
 	}
 }
 
-var _ RoadmapCacheRepository = (*MockRoadmapCacheRepository)(nil)
+var _ CurriculumCacheRepository = (*MockCurriculumCacheRepository)(nil)
 
-func (m *MockRoadmapCacheRepository) GetRoadmapVersion(ctx context.Context, userID string) (string, error) {
+func (m *MockCurriculumCacheRepository) GetCurriculumVersion(ctx context.Context, userID string) (string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	if m.GetRoadmapErr != nil {
-		return "", m.GetRoadmapErr
+	if m.GetCurriculumErr != nil {
+		return "", m.GetCurriculumErr
 	}
 	return fmt.Sprintf("%d", m.Versions[userID]), nil
 }
 
-func (m *MockRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, userID string, languageID string) (*RoadmapResponse, string, error) {
+func (m *MockCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Context, userID string, languageID string) (*CurriculumResponse, string, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.GetRoadmapCallCount++
-	if m.GetRoadmapErr != nil {
-		return nil, "", m.GetRoadmapErr
+	m.GetCurriculumCallCount++
+	if m.GetCurriculumErr != nil {
+		return nil, "", m.GetCurriculumErr
 	}
 	ver := fmt.Sprintf("%d", m.Versions[userID])
 	key := fmt.Sprintf("%s:%s", userID, languageID)
@@ -585,7 +585,7 @@ func (m *MockRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, 
 	if !ok {
 		return nil, ver, nil
 	}
-	var res RoadmapResponse
+	var res CurriculumResponse
 	if err := json.Unmarshal(data, &res); err != nil {
 		delete(m.Cache, key)
 		return nil, ver, nil
@@ -593,21 +593,21 @@ func (m *MockRoadmapCacheRepository) GetRoadmapWithVersion(ctx context.Context, 
 	return &res, ver, nil
 }
 
-func (m *MockRoadmapCacheRepository) GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error) {
-	res, _, err := m.GetRoadmapWithVersion(ctx, userID, languageID)
+func (m *MockCurriculumCacheRepository) GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
+	res, _, err := m.GetCurriculumWithVersion(ctx, userID, languageID)
 	return res, err
 }
 
-func (m *MockRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error {
+func (m *MockCurriculumCacheRepository) SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.SetRoadmapCallCount++
-	if m.SetRoadmapErr != nil {
-		return m.SetRoadmapErr
+	m.SetCurriculumCallCount++
+	if m.SetCurriculumErr != nil {
+		return m.SetCurriculumErr
 	}
 	key := fmt.Sprintf("%s:%s", userID, languageID)
-	data, err := json.Marshal(roadmap)
+	data, err := json.Marshal(curriculum)
 	if err != nil {
 		return err
 	}
@@ -615,13 +615,13 @@ func (m *MockRoadmapCacheRepository) SetRoadmap(ctx context.Context, userID stri
 	return nil
 }
 
-func (m *MockRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error {
+func (m *MockCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
-	m.SetRoadmapCallCount++
-	if m.SetRoadmapErr != nil {
-		return m.SetRoadmapErr
+	m.SetCurriculumCallCount++
+	if m.SetCurriculumErr != nil {
+		return m.SetCurriculumErr
 	}
 	if expectedVersion == "" {
 		expectedVersion = "0"
@@ -631,7 +631,7 @@ func (m *MockRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, us
 		return nil
 	}
 	key := fmt.Sprintf("%s:%s", userID, languageID)
-	data, err := json.Marshal(roadmap)
+	data, err := json.Marshal(curriculum)
 	if err != nil {
 		return err
 	}
@@ -639,7 +639,7 @@ func (m *MockRoadmapCacheRepository) SetRoadmapIfVersion(ctx context.Context, us
 	return nil
 }
 
-func (m *MockRoadmapCacheRepository) InvalidateRoadmap(ctx context.Context, userID string) error {
+func (m *MockCurriculumCacheRepository) InvalidateCurriculum(ctx context.Context, userID string) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 

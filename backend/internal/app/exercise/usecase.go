@@ -20,11 +20,11 @@ type usecase struct {
 	langRepo         language.Repository
 	userRepo         user.Repository
 	accessChecker    LessonAccessChecker
-	cacheInvalidator RoadmapCacheInvalidator
+	cacheInvalidator CurriculumCacheInvalidator
 	helper           *Helper
 }
 
-// NewUsecaseFull creates an exercise, SRS, and readiness exam usecase with lesson lock checks and roadmap cache invalidation
+// NewUsecaseFull creates an exercise, SRS, and readiness exam usecase with lesson lock checks and curriculum cache invalidation
 func NewUsecaseFull(
 	exerciseRepo Repository,
 	srsRepo SRSRepository,
@@ -32,7 +32,7 @@ func NewUsecaseFull(
 	langRepo language.Repository,
 	userRepo user.Repository,
 	accessChecker LessonAccessChecker,
-	cacheInvalidator RoadmapCacheInvalidator,
+	cacheInvalidator CurriculumCacheInvalidator,
 ) *usecase {
 	return &usecase{
 		exerciseRepo:     exerciseRepo,
@@ -421,8 +421,8 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 								log.Printf("exercise: failed to advance enrollment %s to level %s: %v", enrollment.ID, nextLvl.ID, updErr)
 							}
 						} else if u.cacheInvalidator != nil {
-							if invErr := u.cacheInvalidator.InvalidateRoadmap(ctx, userID); invErr != nil {
-								log.Printf("exercise: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
+							if invErr := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); invErr != nil {
+								log.Printf("exercise: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
 							}
 						}
 						break

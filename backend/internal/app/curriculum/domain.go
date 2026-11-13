@@ -72,7 +72,7 @@ type UserLessonProgress struct {
 // 2. DATA TRANSFER OBJECTS (Explicit Request & Response View Models)
 // ============================================================================
 
-// LessonNodeResponse represents a decorated lesson node on the learner's interactive roadmap
+// LessonNodeResponse represents a decorated lesson node on the learner's interactive curriculum
 type LessonNodeResponse struct {
 	ID          string     `json:"id"`
 	UnitID      string     `json:"unit_id"`
@@ -101,13 +101,13 @@ type UnitNodeResponse struct {
 	CreatedAt        time.Time            `json:"created_at"`
 }
 
-// GetRoadmapRequest defines query filters for retrieving the curriculum roadmap
-type GetRoadmapRequest struct {
+// GetCurriculumRequest defines query filters for retrieving the curriculum
+type GetCurriculumRequest struct {
 	LanguageID string `form:"language_id" binding:"omitempty,uuid"`
 }
 
-// RoadmapResponse encapsulates the full active language curriculum tree with level metrics
-type RoadmapResponse struct {
+// CurriculumResponse encapsulates the full active language curriculum tree with level metrics
+type CurriculumResponse struct {
 	Language         language.Language         `json:"language"`
 	Level            language.ProficiencyLevel `json:"level"`
 	TotalLessons     int                       `json:"total_lessons"`
@@ -204,14 +204,14 @@ type LessonProgressRepository interface {
 	SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error
 }
 
-// RoadmapCacheRepository specifies the caching contract for active curriculum roadmaps (Redis)
-type RoadmapCacheRepository interface {
-	GetRoadmapVersion(ctx context.Context, userID string) (string, error)
-	GetRoadmap(ctx context.Context, userID string, languageID string) (*RoadmapResponse, error)
-	GetRoadmapWithVersion(ctx context.Context, userID string, languageID string) (*RoadmapResponse, string, error)
-	SetRoadmap(ctx context.Context, userID string, languageID string, roadmap *RoadmapResponse, ttl time.Duration) error
-	SetRoadmapIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, roadmap *RoadmapResponse, ttl time.Duration) error
-	InvalidateRoadmap(ctx context.Context, userID string) error
+// CurriculumCacheRepository specifies the caching contract for active curricula (Redis)
+type CurriculumCacheRepository interface {
+	GetCurriculumVersion(ctx context.Context, userID string) (string, error)
+	GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error)
+	GetCurriculumWithVersion(ctx context.Context, userID string, languageID string) (*CurriculumResponse, string, error)
+	SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error
+	SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error
+	InvalidateCurriculum(ctx context.Context, userID string) error
 }
 
 // Repository combines segregated curriculum contracts into a unified composite interface
@@ -222,9 +222,9 @@ type Repository interface {
 	LessonProgressRepository
 }
 
-// Usecase specifies business operations for roadmap and lesson navigation
+// Usecase specifies business operations for curriculum and lesson navigation
 type Usecase interface {
-	GetRoadmap(ctx context.Context, userID string, req *GetRoadmapRequest) (*RoadmapResponse, error)
+	GetCurriculum(ctx context.Context, userID string, req *GetCurriculumRequest) (*CurriculumResponse, error)
 	GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error)
 	CompleteLesson(ctx context.Context, userID string, req *CompleteLessonRequest) (*CompleteLessonResponse, error)
 	GetGrammarPoints(ctx context.Context, userID string, levelID string) ([]GrammarPoint, error)

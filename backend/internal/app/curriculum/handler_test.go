@@ -78,10 +78,10 @@ func setupCurriculumTestRouter() (*gin.Engine, *curriculum.MockRepository, *lang
 	return r, curriculumRepo, langRepo
 }
 
-func TestHTTP_GetRoadmap(t *testing.T) {
+func TestHTTP_GetCurriculum(t *testing.T) {
 	r, _, _ := setupCurriculumTestRouter()
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/roadmap?language_id=11111111-1111-1111-1111-111111111111", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum?language_id=11111111-1111-1111-1111-111111111111", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
@@ -90,10 +90,10 @@ func TestHTTP_GetRoadmap(t *testing.T) {
 	}
 }
 
-func TestHTTP_GetRoadmap_InvalidLanguageID_Returns400(t *testing.T) {
+func TestHTTP_GetCurriculum_InvalidLanguageID_Returns400(t *testing.T) {
 	r, _, _ := setupCurriculumTestRouter()
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/roadmap?language_id=not-a-valid-uuid", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum?language_id=not-a-valid-uuid", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

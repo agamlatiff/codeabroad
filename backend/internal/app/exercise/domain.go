@@ -200,9 +200,9 @@ type LessonAccessChecker interface {
 	IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error)
 }
 
-// RoadmapCacheInvalidator invalidates cached curriculum roadmaps when level progression advances
-type RoadmapCacheInvalidator interface {
-	InvalidateRoadmap(ctx context.Context, userID string) error
+// CurriculumCacheInvalidator invalidates cached curricula when level progression advances
+type CurriculumCacheInvalidator interface {
+	InvalidateCurriculum(ctx context.Context, userID string) error
 }
 
 // Usecase specifies business operations for answering exercises and logging telemetry

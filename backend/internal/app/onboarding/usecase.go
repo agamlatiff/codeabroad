@@ -20,7 +20,7 @@ type usecase struct {
 	curriculumRepo   curriculum.Repository
 	exerciseRepo     exercise.Repository
 	gamificationRepo gamification.Repository
-	cacheRepo        curriculum.RoadmapCacheRepository
+	cacheRepo        curriculum.CurriculumCacheRepository
 	helper           *Helper
 }
 
@@ -42,14 +42,14 @@ func NewUsecase(
 	}
 }
 
-// NewUsecaseWithCache creates an Onboarding Usecase instance with roadmap cache invalidation support
+// NewUsecaseWithCache creates an Onboarding Usecase instance with curriculum cache invalidation support
 func NewUsecaseWithCache(
 	userRepo user.Repository,
 	langRepo language.Repository,
 	curriculumRepo curriculum.Repository,
 	exerciseRepo exercise.Repository,
 	gamificationRepo gamification.Repository,
-	cacheRepo curriculum.RoadmapCacheRepository,
+	cacheRepo curriculum.CurriculumCacheRepository,
 ) Usecase {
 	return &usecase{
 		userRepo:         userRepo,
@@ -156,14 +156,14 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		assignedLevel = &levels[0]
 	}
 
-	// 5. If placed into Level > 1, skip prior curriculum lessons in batch and invalidate roadmap cache
+	// 5. If placed into Level > 1, skip prior curriculum lessons in batch and invalidate curriculum cache
 	if assignedLevel.OrderIndex > 1 {
 		if err := u.curriculumRepo.SkipPrecedingLessons(ctx, userID, assignedLevel.OrderIndex, req.LanguageID); err != nil {
 			return nil, fmt.Errorf("failed to skip preceding curriculum lessons: %w", err)
 		}
 		if u.cacheRepo != nil {
-			if invErr := u.cacheRepo.InvalidateRoadmap(ctx, userID); invErr != nil {
-				log.Printf("onboarding: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
+			if invErr := u.cacheRepo.InvalidateCurriculum(ctx, userID); invErr != nil {
+				log.Printf("onboarding: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
 			}
 		}
 	}

@@ -9,7 +9,7 @@ import (
 
 const xpPerLevel = 100
 
-// Helper encapsulates business logic for roadmap unlocks and lesson completion evaluation
+// Helper encapsulates business logic for curriculum unlocks and lesson completion evaluation
 type Helper struct{}
 
 // NewHelper creates a new curriculum Helper instance
@@ -17,8 +17,8 @@ func NewHelper() *Helper {
 	return &Helper{}
 }
 
-// CalculateRoadmapUnlocks computes unlock statuses, overall progression metrics, and locates current active lesson
-func (h *Helper) CalculateRoadmapUnlocks(units []UnitNodeResponse) ([]UnitNodeResponse, int, int, int, *string) {
+// CalculateCurriculumUnlocks computes unlock statuses, overall progression metrics, and locates current active lesson
+func (h *Helper) CalculateCurriculumUnlocks(units []UnitNodeResponse) ([]UnitNodeResponse, int, int, int, *string) {
 	allPreviousUnitsCompleted := true
 	totalLessons := 0
 	completedLessons := 0

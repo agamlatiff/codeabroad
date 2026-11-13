@@ -10,7 +10,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// Handler handles HTTP requests for curriculum navigation, roadmaps, and lesson completion
+// Handler handles HTTP requests for curriculum navigation and lesson completion
 type Handler struct {
 	curriculumUsecase   Usecase
 	completeRateLimiter gin.HandlerFunc
@@ -36,27 +36,27 @@ func NewHandlerWithRateLimiter(curriculumUsecase Usecase, completeRateLimiter gi
 	}
 }
 
-// GetRoadmap handles GET /api/v1/curriculum/roadmap
-func (h *Handler) GetRoadmap(c *gin.Context) {
+// GetCurriculum handles GET /api/v1/curriculum
+func (h *Handler) GetCurriculum(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
 		response.Error(c, apperror.ErrUnauthorized)
 		return
 	}
 
-	var req GetRoadmapRequest
+	var req GetCurriculumRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
 		response.BadRequest(c, "invalid language_id query parameter format")
 		return
 	}
 
-	roadmap, err := h.curriculumUsecase.GetRoadmap(c.Request.Context(), userID, &req)
+	res, err := h.curriculumUsecase.GetCurriculum(c.Request.Context(), userID, &req)
 	if err != nil {
 		response.Error(c, err)
 		return
 	}
 
-	response.Success(c, http.StatusOK, "curriculum roadmap retrieved successfully", roadmap)
+	response.Success(c, http.StatusOK, "curriculum retrieved successfully", res)
 }
 
 // GetLessonDetail handles GET /api/v1/curriculum/lessons/:id
@@ -156,7 +156,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		)
 	}
 	{
-		curriculum.GET("/roadmap", h.GetRoadmap)
+		curriculum.GET("", h.GetCurriculum)
 		curriculum.GET("/lessons/:id", h.GetLessonDetail)
 		curriculum.POST("/lessons/:id/complete", completeRateLimiter, h.CompleteLesson)
 		curriculum.GET("/grammar-points", h.GetGrammarPoints)

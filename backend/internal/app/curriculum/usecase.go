@@ -21,18 +21,18 @@ type usecase struct {
 	exerciseRepo     exercise.Repository
 	userRepo         user.Repository
 	gamificationRepo gamification.Repository
-	cacheRepo        RoadmapCacheRepository
+	cacheRepo        CurriculumCacheRepository
 	helper           *Helper
 }
 
-// NewUsecaseWithCache creates a new Curriculum Usecase instance with roadmap Redis caching support
+// NewUsecaseWithCache creates a new Curriculum Usecase instance with curriculum Redis caching support
 func NewUsecaseWithCache(
 	curriculumRepo Repository,
 	langRepo language.Repository,
 	exerciseRepo exercise.Repository,
 	userRepo user.Repository,
 	gamificationRepo gamification.Repository,
-	cacheRepo RoadmapCacheRepository,
+	cacheRepo CurriculumCacheRepository,
 ) Usecase {
 	return &usecase{
 		curriculumRepo:   curriculumRepo,
@@ -56,7 +56,7 @@ func NewUsecase(
 	return NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, nil)
 }
 
-func (u *usecase) resolveEnrollmentForRoadmap(ctx context.Context, userID string, languageID string) (*language.UserLanguageEnrollment, error) {
+func (u *usecase) resolveEnrollmentForCurriculum(ctx context.Context, userID string, languageID string) (*language.UserLanguageEnrollment, error) {
 	enrollment, err := u.langRepo.GetActiveEnrollment(ctx, userID, languageID)
 	if err == nil && enrollment != nil {
 		return enrollment, nil
@@ -88,8 +88,8 @@ func (u *usecase) resolveEnrollmentForRoadmap(ctx context.Context, userID string
 	return nil, language.ErrEnrollmentNotFound
 }
 
-// GetRoadmap retrieves the full active language curriculum tree with calculated unit unlocks
-func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmapRequest) (*RoadmapResponse, error) {
+// GetCurriculum retrieves the full active language curriculum tree with calculated unit unlocks
+func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurriculumRequest) (*CurriculumResponse, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
@@ -99,7 +99,7 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		languageID = req.LanguageID
 	}
 
-	enrollment, err := u.resolveEnrollmentForRoadmap(ctx, userID, languageID)
+	enrollment, err := u.resolveEnrollmentForCurriculum(ctx, userID, languageID)
 	if err != nil {
 		return nil, err
 	}
@@ -107,13 +107,13 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		return nil, language.ErrEnrollmentNotFound
 	}
 
-	// Capture cache version epoch and lookup cached roadmap in a single round-trip for active tracks only
+	// Capture cache version epoch and lookup cached curriculum in a single round-trip for active tracks only
 	cacheVer := ""
 	canCache := false
 	if u.cacheRepo != nil && enrollment.IsActive {
-		cached, ver, cacheErr := u.cacheRepo.GetRoadmapWithVersion(ctx, userID, enrollment.Language.ID)
+		cached, ver, cacheErr := u.cacheRepo.GetCurriculumWithVersion(ctx, userID, enrollment.Language.ID)
 		if cacheErr != nil {
-			log.Printf("curriculum: failed to read roadmap cache for user %s: %v", userID, cacheErr)
+			log.Printf("curriculum: failed to read curriculum cache for user %s: %v", userID, cacheErr)
 		} else {
 			cacheVer = ver
 			canCache = true
@@ -153,7 +153,7 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		}
 	}
 
-	unlockedUnits, totalLessons, completedLessons, progressPercent, currentLessonID := u.helper.CalculateRoadmapUnlocks(units)
+	unlockedUnits, totalLessons, completedLessons, progressPercent, currentLessonID := u.helper.CalculateCurriculumUnlocks(units)
 	if unlockedUnits == nil {
 		unlockedUnits = []UnitNodeResponse{}
 	}
@@ -167,7 +167,7 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		currentLessonID = nil
 	}
 
-	res := &RoadmapResponse{
+	res := &CurriculumResponse{
 		Language:         *enrollment.Language,
 		Level:            *enrollment.CurrentLevel,
 		TotalLessons:     totalLessons,
@@ -177,10 +177,10 @@ func (u *usecase) GetRoadmap(ctx context.Context, userID string, req *GetRoadmap
 		Units:            unlockedUnits,
 	}
 
-	// 2. Cache roadmap response only if version lookup succeeded and epoch has not advanced during DB read
+	// 2. Cache curriculum response only if version lookup succeeded and epoch has not advanced during DB read
 	if u.cacheRepo != nil && canCache {
-		if setErr := u.cacheRepo.SetRoadmapIfVersion(ctx, userID, enrollment.Language.ID, cacheVer, res, 15*time.Minute); setErr != nil {
-			log.Printf("curriculum: failed to cache roadmap for user %s: %v", userID, setErr)
+		if setErr := u.cacheRepo.SetCurriculumIfVersion(ctx, userID, enrollment.Language.ID, cacheVer, res, 15*time.Minute); setErr != nil {
+			log.Printf("curriculum: failed to cache curriculum for user %s: %v", userID, setErr)
 		}
 	}
 
@@ -388,10 +388,10 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, fmt.Errorf("failed to record lesson completion tx: %w", err)
 	}
 
-	// Invalidate user's cached roadmap atomically via epoch increment
+	// Invalidate user's cached curriculum atomically via epoch increment
 	if u.cacheRepo != nil {
-		if invErr := u.cacheRepo.InvalidateRoadmap(ctx, userID); invErr != nil {
-			log.Printf("curriculum: failed to invalidate roadmap cache for user %s: %v", userID, invErr)
+		if invErr := u.cacheRepo.InvalidateCurriculum(ctx, userID); invErr != nil {
+			log.Printf("curriculum: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
 		}
 	}
 
@@ -519,8 +519,8 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 					return
 				}
 				if u.cacheRepo != nil {
-					if invErr := u.cacheRepo.InvalidateRoadmap(ctx, userID); invErr != nil {
-						log.Printf("curriculum: failed to invalidate roadmap cache after level advance for user %s: %v", userID, invErr)
+					if invErr := u.cacheRepo.InvalidateCurriculum(ctx, userID); invErr != nil {
+						log.Printf("curriculum: failed to invalidate curriculum cache after level advance for user %s: %v", userID, invErr)
 					}
 				}
 			}
@@ -546,7 +546,7 @@ func (u *usecase) GetGrammarPoints(ctx context.Context, userID string, levelID s
 		return nil, language.ErrProficiencyLevelNotFound
 	}
 
-	enrollment, err := u.resolveEnrollmentForRoadmap(ctx, userID, lvl.LanguageID)
+	enrollment, err := u.resolveEnrollmentForCurriculum(ctx, userID, lvl.LanguageID)
 	if err != nil {
 		if errors.Is(err, language.ErrEnrollmentNotFound) {
 			return nil, apperror.ErrForbidden

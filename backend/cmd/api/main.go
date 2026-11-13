@@ -60,7 +60,7 @@ func main() {
 	sessionRepo := auth.NewSessionRepository(rdb)
 	langRepo := language.NewRepository(pg)
 	curriculumRepo := curriculum.NewRepository(pg)
-	curriculumCache := curriculum.NewRoadmapCacheRepository(rdb)
+	curriculumCache := curriculum.NewCurriculumCacheRepository(rdb)
 	exerciseRepo := exercise.NewRepository(pg)
 	srsRepo := exercise.NewSRSRepository(pg)
 	examRepo := exercise.NewReadinessExamRepository(pg)
