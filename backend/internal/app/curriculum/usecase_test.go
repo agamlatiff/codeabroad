@@ -965,6 +965,7 @@ func TestCompleteLesson_AdvancesLevelWhenAllLevelLessonsCompleted(t *testing.T) 
 	cRepo.Units["unit-n4"] = &curriculum.UnitNodeResponse{ID: "unit-n4", LevelID: "lvl-n4", Title: "N4 Basics", UnitType: "curriculum", OrderIndex: 1}
 	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "L1", XPReward: 15, OrderIndex: 1}
 	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-1", Title: "L2", XPReward: 15, OrderIndex: 2}
+	cRepo.Lessons["lesson-n4-1"] = &curriculum.LessonNodeResponse{ID: "lesson-n4-1", UnitID: "unit-n4", Title: "N4 L1", XPReward: 20, OrderIndex: 1}
 	for _, lessonID := range []string{"lesson-1", "lesson-2"} {
 		cRepo.AttemptSummaries["user-1:"+lessonID] = &curriculum.LessonAttemptSummary{
 			TotalExercises:          2,
@@ -1431,6 +1432,106 @@ func TestCompleteLesson_DynamicNextLessonAndAuthoritativeXPSync(t *testing.T) {
 		t.Errorf("expected authoritative XP/level synced from userRepo after badge award (250 / lvl 3), got %d / lvl %d", res.Gamification.XP, res.Gamification.CurrentLevel)
 	}
 }
+
+func TestRecordLessonCompletionTx_DerivesAuthoritativeXPAndMetadataLessonID(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "L1", XPReward: 25, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          2,
+		AttemptedExercises:      2,
+		CorrectExercises:        2,
+		FreshAttemptedExercises: 2,
+		FreshCorrectExercises:   2,
+	}
+
+	payload := &curriculum.LessonCompletionPayload{
+		Progress: &curriculum.UserLessonProgress{
+			UserID:      "user-1",
+			LessonID:    "lesson-1",
+			IsCompleted: true,
+			Score:       100,
+			CompletedAt: time.Now(),
+		},
+		XPEarned: 999,
+		NewXP:    999,
+	}
+	if err := cRepo.RecordLessonCompletionTx(context.Background(), payload); err != nil {
+		t.Fatalf("expected direct tx completion to succeed, got %v", err)
+	}
+	if payload.XPEarned != 25 || payload.NewXP != 25 {
+		t.Errorf("expected authoritative first-completion XP 25 overriding caller 999, got XPEarned=%d NewXP=%d", payload.XPEarned, payload.NewXP)
+	}
+	if payload.Metadata["lesson_id"] != "lesson-1" {
+		t.Errorf("expected metadata['lesson_id'] normalized to 'lesson-1', got %v", payload.Metadata["lesson_id"])
+	}
+	if payload.ActivityType != "lesson_completed" {
+		t.Errorf("expected default ActivityType 'lesson_completed', got %q", payload.ActivityType)
+	}
+}
+
+type trackingGamificationRepo struct {
+	*gamification.MockRepository
+	getBadgesCalls int
+}
+
+func (r *trackingGamificationRepo) GetBadges(ctx context.Context) ([]gamification.BadgeDefinition, error) {
+	r.getBadgesCalls++
+	return r.MockRepository.GetBadges(ctx)
+}
+
+func TestCompleteLesson_SkipsGetBadgesAndDoesNotAdvanceIntoEmptyLessonUnit(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Units["unit-n4"] = &curriculum.UnitNodeResponse{ID: "unit-n4", LevelID: "lvl-n4", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "L1", XPReward: 15, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     2,
+		AttemptedExercises: 2,
+		CorrectExercises:   2,
+	}
+
+	lRepo := language.NewMockRepository()
+	langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+	lRepo.Languages["lang-ja"] = langJA
+	lRepo.Levels["lvl-n5"] = lvlN5
+	lRepo.Levels["lvl-n4"] = lvlN4
+	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		Language:       langJA,
+		CurrentLevel:   lvlN5,
+	}
+
+	gRepo := &trackingGamificationRepo{MockRepository: gamification.NewMockRepository()}
+	gRepo.UserBadges["user-1"] = []gamification.UserBadge{{UserID: "user-1", BadgeKey: "first_step"}}
+
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 0, CurrentLevel: 1},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, exercise.NewMockRepository(), uRepo, gRepo)
+	if _, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    100,
+	}); err != nil {
+		t.Fatalf("expected CompleteLesson to succeed, got %v", err)
+	}
+	if gRepo.getBadgesCalls != 0 {
+		t.Errorf("expected GetBadges NOT to be queried when all candidate badges are already owned, got %d calls", gRepo.getBadgesCalls)
+	}
+	if got := *lRepo.Enrollments["enr-1"].CurrentLevelID; got != "lvl-n5" {
+		t.Errorf("expected enrollment to remain on lvl-n5 when lvl-n4 unit has zero lessons, got %s", got)
+	}
+}
+
 
 
 

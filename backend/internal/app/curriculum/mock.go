@@ -413,11 +413,18 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	}
 
 	userID := payload.Progress.UserID
-	if _, hasLesson := m.Lessons[payload.Progress.LessonID]; hasLesson {
+	curLesson, hasLesson := m.Lessons[payload.Progress.LessonID]
+	if hasLesson {
 		unlocked, lockErr := m.isLessonUnlockedLocked(userID, payload.Progress.LessonID)
 		if lockErr != nil || !unlocked {
 			return ErrLessonLocked
 		}
+		if curLesson.ID != "" {
+			payload.Progress.LessonID = curLesson.ID
+		}
+	}
+	if payload.ActivityType == "" {
+		payload.ActivityType = "lesson_completed"
 	}
 	if _, exists := m.UserXP[userID]; !exists {
 		m.UserXP[userID] = payload.NewXP - payload.XPEarned
@@ -449,6 +456,7 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	if payload.Metadata == nil {
 		payload.Metadata = make(map[string]any)
 	}
+	payload.Metadata["lesson_id"] = payload.Progress.LessonID
 	payload.Metadata["score"] = verifiedScore
 	payload.Metadata["is_practice"] = payload.WasCompleted
 
@@ -479,6 +487,12 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 		if !existing.CompletedAt.IsZero() {
 			payload.Progress.CompletedAt = existing.CompletedAt
 		}
+	} else if hasLesson {
+		reward := curLesson.XPReward
+		if reward <= 0 {
+			reward = 15
+		}
+		payload.XPEarned = reward
 	}
 
 	if payload.Metadata != nil {

@@ -354,11 +354,14 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	payload.LastActiveAt = dbNow
 
 	// 1c. Verify curriculum eligibility, active enrollment progression, and sequential prerequisite inside TX before mutating state
+	var canonicalLessonID string
+	var lessonXPReward int
 	var isEligible bool
 	eligibilityQuery := `
 		WITH target_lesson AS (
 			SELECT
 				l.id,
+				l.xp_reward,
 				u.id AS unit_id,
 				u.level_id,
 				u.order_index AS unit_order,
@@ -370,39 +373,49 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 			JOIN proficiency_levels pl ON u.level_id = pl.id
 			WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
 		)
-		SELECT EXISTS (
-			SELECT 1
-			FROM target_lesson tl
-			JOIN user_language_enrollments ule
-			  ON ule.user_id = $2::uuid
-			 AND ule.language_id = tl.language_id
-			 AND ule.is_active = true
-			JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
-			WHERE tl.level_order <= user_pl.order_index
-			  AND NOT EXISTS (
+		SELECT
+			tl.id::text,
+			tl.xp_reward,
+			EXISTS (
 				SELECT 1
-				FROM lessons prev_l
-				JOIN units prev_u ON prev_l.unit_id = prev_u.id
-				LEFT JOIN user_lesson_progress prev_ulp
-				  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
-				WHERE prev_u.level_id = tl.level_id
-				  AND prev_u.unit_type = 'curriculum'
-				  AND COALESCE(prev_ulp.is_completed, false) = false
-				  AND (
-					(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
-					OR (
-						prev_u.id = tl.unit_id
-						AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
-					)
+				FROM user_language_enrollments ule
+				JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
+				WHERE ule.user_id = $2::uuid
+				  AND ule.language_id = tl.language_id
+				  AND ule.is_active = true
+				  AND tl.level_order <= user_pl.order_index
+				  AND NOT EXISTS (
+					SELECT 1
+					FROM lessons prev_l
+					JOIN units prev_u ON prev_l.unit_id = prev_u.id
+					LEFT JOIN user_lesson_progress prev_ulp
+					  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
+					WHERE prev_u.level_id = tl.level_id
+					  AND prev_u.unit_type = 'curriculum'
+					  AND COALESCE(prev_ulp.is_completed, false) = false
+					  AND (
+						(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
+						OR (
+							prev_u.id = tl.unit_id
+							AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
+						)
+					  )
 				  )
-			  )
-		)
+			)
+		FROM target_lesson tl
 	`
-	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&isEligible); err != nil {
+	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&canonicalLessonID, &lessonXPReward, &isEligible); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrLessonNotFound
+		}
 		return fmt.Errorf("failed to verify lesson eligibility in tx: %w", err)
 	}
 	if !isEligible {
 		return ErrLessonLocked
+	}
+	payload.Progress.LessonID = canonicalLessonID
+	if payload.ActivityType == "" {
+		payload.ActivityType = "lesson_completed"
 	}
 
 	// 2. Check existing completion status inside the serialized transaction to prevent TOCTOU double-XP
@@ -434,6 +447,7 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	if payload.Metadata == nil {
 		payload.Metadata = make(map[string]any)
 	}
+	payload.Metadata["lesson_id"] = canonicalLessonID
 	payload.Metadata["score"] = verifiedScore
 	payload.Metadata["is_practice"] = payload.WasCompleted
 
@@ -462,6 +476,11 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 			}
 			payload.XPEarned = remaining
 		}
+	} else {
+		if lessonXPReward <= 0 {
+			lessonXPReward = 15
+		}
+		payload.XPEarned = lessonXPReward
 	}
 
 	// 3. Atomic upsert of user_lesson_progress using monotonic DB clock NOW() for initial completion

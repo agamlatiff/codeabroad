@@ -226,7 +226,7 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 
 	gps, err := u.curriculumRepo.GetGrammarPointsByLessonID(ctx, canonicalLessonID)
 	if err != nil {
-		log.Printf("curriculum: failed to query grammar points for lesson %s: %v", lessonID, err)
+		log.Printf("curriculum: failed to query grammar points for lesson %s: %v", canonicalLessonID, err)
 		lesson.GrammarPoints = []GrammarPoint{}
 	} else if len(gps) > 0 {
 		lesson.GrammarPoints = gps
@@ -260,6 +260,17 @@ func (u *usecase) evaluateLessonBadges(ctx context.Context, userID string, paylo
 	owned := make(map[string]bool, len(existingBadges))
 	for _, ub := range existingBadges {
 		owned[ub.BadgeKey] = true
+	}
+
+	hasPendingCandidate := false
+	for _, key := range candidates {
+		if !owned[key] {
+			hasPendingCandidate = true
+			break
+		}
+	}
+	if !hasPendingCandidate {
+		return nil, 0
 	}
 
 	badgeDefByID := make(map[string]gamification.BadgeDefinition)
@@ -403,7 +414,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	}
 
 	var nextLessonID *string
-	if nextID, err := u.curriculumRepo.GetNextLessonID(ctx, canonicalLessonID); err == nil && nextID != nil {
+	if nextID, nextErr := u.curriculumRepo.GetNextLessonID(ctx, canonicalLessonID); nextErr != nil {
+		log.Printf("curriculum: failed to resolve next lesson id after %s: %v", canonicalLessonID, nextErr)
+	} else if nextID != nil {
 		nextLessonID = nextID
 	}
 
@@ -449,8 +462,10 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 	}
 
 	var targetEnrollment *language.UserLanguageEnrollment
-	if activeEnr, err := u.langRepo.GetActiveEnrollment(ctx, userID, ""); err == nil && activeEnr != nil &&
-		activeEnr.IsActive && activeEnr.CurrentLevelID != nil && *activeEnr.CurrentLevelID == levelID {
+	if activeEnr, actErr := u.langRepo.GetActiveEnrollment(ctx, userID, ""); actErr == nil && activeEnr != nil {
+		if !activeEnr.IsActive || activeEnr.CurrentLevelID == nil || *activeEnr.CurrentLevelID != levelID {
+			return
+		}
 		targetEnrollment = activeEnr
 	} else {
 		enrollments, err := u.langRepo.GetEnrollmentsByUserID(ctx, userID)
@@ -495,6 +510,10 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 				nextLevel := sortedLevels[i+1]
 				nextUnits, uErr := u.curriculumRepo.GetUnitsByLevelID(ctx, nextLevel.ID, userID)
 				if uErr != nil || len(nextUnits) == 0 {
+					return
+				}
+				nextLessons, lErr := u.curriculumRepo.GetLessonsByLevelID(ctx, nextLevel.ID, userID)
+				if lErr != nil || len(nextLessons) == 0 {
 					return
 				}
 				if err := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, targetEnrollment.ID, levelID, nextLevel.ID); err != nil {
