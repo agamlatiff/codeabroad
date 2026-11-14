@@ -33,9 +33,13 @@ func NewUsecase(
 
 // Register creates a new user account, hashes the password, and returns auth tokens
 func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error) {
+	if req == nil {
+		return nil, apperror.NewBadRequestError("INVALID_REQUEST", "registration request cannot be nil", nil)
+	}
+
 	u.helper.NormalizeRegisterInput(req)
 
-	if err := u.helper.ValidateUsername(req.Username); err != nil {
+	if err := u.helper.ValidateRegisterInput(req); err != nil {
 		return nil, err
 	}
 
@@ -76,7 +80,9 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 	}
 
 	if err := u.sessionRepo.SetSession(ctx, newUser.ID, sessionID, refreshToken, sessionTTL); err != nil {
-		return nil, fmt.Errorf("failed to store session: %w", err)
+		// User creation has already committed; degrade gracefully instead of returning an ambiguous 500 that causes 409 conflicts on retry.
+		log.Printf("[WARN] [auth.Register] failed to store session for user %s: %v", newUser.ID, err)
+		refreshToken = ""
 	}
 
 	return &AuthResponse{

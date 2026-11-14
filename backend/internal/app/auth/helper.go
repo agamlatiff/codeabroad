@@ -6,6 +6,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"codeabroad/backend/config"
 	"codeabroad/backend/internal/app/user"
@@ -48,6 +49,37 @@ func (h *Helper) ValidateUsername(username string) error {
 	return nil
 }
 
+// ValidatePassword ensures the password is not whitespace-only and does not exceed bcrypt's 72-byte UTF-8 limit
+func (h *Helper) ValidatePassword(rawPassword string) error {
+	if strings.TrimSpace(rawPassword) == "" {
+		return ErrInvalidPassword
+	}
+	if len([]byte(rawPassword)) > 72 {
+		return ErrPasswordTooLong
+	}
+	return nil
+}
+
+// ValidateRegisterInput validates trimmed registration fields and password rules before database queries or hashing
+func (h *Helper) ValidateRegisterInput(req *RegisterRequest) error {
+	if req == nil {
+		return ErrInvalidName
+	}
+	if utf8.RuneCountInString(req.Name) < 2 {
+		return ErrInvalidName
+	}
+	if req.Email == "" {
+		return ErrInvalidEmail
+	}
+	if req.Username == "" {
+		return ErrInvalidUsername
+	}
+	if err := h.ValidateUsername(req.Username); err != nil {
+		return err
+	}
+	return h.ValidatePassword(req.Password)
+}
+
 // NormalizeLoginInput trims whitespace and normalizes email to lowercase
 func (h *Helper) NormalizeLoginInput(req *LoginRequest) {
 	req.Email = strings.ToLower(strings.TrimSpace(req.Email))
@@ -55,6 +87,9 @@ func (h *Helper) NormalizeLoginInput(req *LoginRequest) {
 
 // HashPassword hashes a plaintext password using Bcrypt
 func (h *Helper) HashPassword(rawPassword string) (string, error) {
+	if err := h.ValidatePassword(rawPassword); err != nil {
+		return "", err
+	}
 	hashed, err := bcrypt.GenerateFromPassword([]byte(rawPassword), bcrypt.DefaultCost)
 	if err != nil {
 		return "", fmt.Errorf("failed to hash password: %w", err)
@@ -135,9 +170,11 @@ func (h *Helper) BuildNewUser(req *RegisterRequest, hashedPassword string) *user
 			PasswordHash: hashedPassword,
 		},
 		UserProfile: user.UserProfile{
-			Name:        req.Name,
-			Username:    req.Username,
-			IsOnboarded: false,
+			Name:                 req.Name,
+			Username:             req.Username,
+			DailyGoalMinutes:     15,
+			IsOnboarded:          false,
+			PreferredRoadmapView: "map",
 		},
 		UserGamificationStats: user.UserGamificationStats{
 			XP:           0,

@@ -2,12 +2,15 @@ package auth_test
 
 import (
 	"context"
+	"errors"
+	"strings"
 	"testing"
 	"time"
 
 	"codeabroad/backend/config"
 	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -47,9 +50,21 @@ func TestRegister_Success(t *testing.T) {
 		t.Fatalf("expected email test@example.com, got: %s", res.User.Email)
 	}
 
+	if res.User.DailyGoalMinutes != 15 {
+		t.Fatalf("expected DailyGoalMinutes 15, got: %d", res.User.DailyGoalMinutes)
+	}
+
+	if res.User.PreferredRoadmapView != "map" {
+		t.Fatalf("expected PreferredRoadmapView 'map', got: %s", res.User.PreferredRoadmapView)
+	}
+
 	savedUser, err := userRepo.GetByEmail(ctx, "test@example.com")
 	if err != nil || savedUser == nil {
 		t.Fatal("expected user to be persisted in repository")
+	}
+
+	if savedUser.DailyGoalMinutes != 15 || savedUser.PreferredRoadmapView != "map" {
+		t.Fatalf("expected persisted defaults DailyGoalMinutes=15 and PreferredRoadmapView='map', got %d and %q", savedUser.DailyGoalMinutes, savedUser.PreferredRoadmapView)
 	}
 
 	if len(sessionRepo.Sessions) == 0 {
@@ -456,5 +471,172 @@ func TestEvaluateLoginStreak_TimezoneAware(t *testing.T) {
 	}
 	if newStreakSameDay != 2 {
 		t.Fatalf("expected streak to remain 2, got: %d", newStreakSameDay)
+	}
+}
+
+func TestRegister_InvalidNamePostTrim(t *testing.T) {
+	invalidNames := []string{
+		"",
+		"   ",
+		"\t\n",
+		" a ",
+		" あ ",
+	}
+
+	for _, name := range invalidNames {
+		authUc, userRepo, _ := setupTestUsecase()
+		ctx := context.Background()
+
+		req := &auth.RegisterRequest{
+			Name:     name,
+			Username: "valid_user",
+			Email:    "valid@example.com",
+			Password: "Password123!",
+		}
+
+		_, err := authUc.Register(ctx, req)
+		if !errors.Is(err, apperror.ErrBadRequest) || !errors.Is(err, auth.ErrInvalidName) {
+			t.Fatalf("expected BadRequest ErrInvalidName for %q, got: %v", name, err)
+		}
+		if len(userRepo.Users) != 0 {
+			t.Fatalf("expected no user persisted for invalid name %q", name)
+		}
+	}
+
+	authUc, _, _ := setupTestUsecase()
+	res, err := authUc.Register(context.Background(), &auth.RegisterRequest{
+		Name:     "  Budi Pratama  ",
+		Username: "budi_pratama",
+		Email:    "budi.trimmed@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("expected valid trimmed name to succeed, got: %v", err)
+	}
+	if res.User.Name != "Budi Pratama" {
+		t.Fatalf("expected trimmed name 'Budi Pratama', got: %q", res.User.Name)
+	}
+}
+
+func TestRegister_EmptyEmailPostTrim(t *testing.T) {
+	emptyEmails := []string{"", "   ", "\t\n"}
+
+	for _, email := range emptyEmails {
+		authUc, userRepo, _ := setupTestUsecase()
+		ctx := context.Background()
+
+		req := &auth.RegisterRequest{
+			Name:     "Valid Name",
+			Username: "valid_user",
+			Email:    email,
+			Password: "Password123!",
+		}
+
+		_, err := authUc.Register(ctx, req)
+		if !errors.Is(err, apperror.ErrBadRequest) || !errors.Is(err, auth.ErrInvalidEmail) {
+			t.Fatalf("expected BadRequest ErrInvalidEmail for %q, got: %v", email, err)
+		}
+		if len(userRepo.Users) != 0 {
+			t.Fatalf("expected no user persisted for empty email %q", email)
+		}
+	}
+}
+
+func TestRegister_PasswordValidation(t *testing.T) {
+	whitespacePasswords := []string{"", "        ", "\t\n\r   "}
+	for _, pwd := range whitespacePasswords {
+		authUc, userRepo, _ := setupTestUsecase()
+		_, err := authUc.Register(context.Background(), &auth.RegisterRequest{
+			Name:     "Valid Name",
+			Username: "valid_user",
+			Email:    "ws@example.com",
+			Password: pwd,
+		})
+		if !errors.Is(err, apperror.ErrBadRequest) || !errors.Is(err, auth.ErrInvalidPassword) {
+			t.Fatalf("expected BadRequest ErrInvalidPassword for whitespace password %q, got: %v", pwd, err)
+		}
+		if len(userRepo.Users) != 0 {
+			t.Fatalf("expected no user persisted for whitespace password")
+		}
+	}
+
+	tooLongPasswords := []struct {
+		name string
+		pwd  string
+	}{
+		{name: "25_3byte_chars_75_bytes", pwd: strings.Repeat("あ", 25)},
+		{name: "19_4byte_emojis_76_bytes", pwd: strings.Repeat("🔒", 19)},
+		{name: "73_ascii_bytes", pwd: strings.Repeat("a", 73)},
+	}
+
+	for _, tc := range tooLongPasswords {
+		authUc, userRepo, _ := setupTestUsecase()
+		_, err := authUc.Register(context.Background(), &auth.RegisterRequest{
+			Name:     "Valid Name",
+			Username: "valid_user",
+			Email:    "longpwd@example.com",
+			Password: tc.pwd,
+		})
+		if !errors.Is(err, apperror.ErrBadRequest) || !errors.Is(err, auth.ErrPasswordTooLong) {
+			t.Fatalf("%s: expected BadRequest ErrPasswordTooLong, got: %v", tc.name, err)
+		}
+		if len(userRepo.Users) != 0 {
+			t.Fatalf("%s: expected no user persisted", tc.name)
+		}
+	}
+
+	helper := auth.NewHelper(&config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"})
+	if _, err := helper.HashPassword(strings.Repeat("あ", 25)); !errors.Is(err, apperror.ErrBadRequest) || !errors.Is(err, auth.ErrPasswordTooLong) {
+		t.Fatalf("expected HashPassword to return BadRequest ErrPasswordTooLong, got: %v", err)
+	}
+
+	// Exact 72-byte multi-byte UTF-8 boundary (24 * 3 bytes = 72 bytes) must succeed
+	authUc, _, _ := setupTestUsecase()
+	_, err := authUc.Register(context.Background(), &auth.RegisterRequest{
+		Name:     "Boundary User",
+		Username: "boundary_user",
+		Email:    "boundary72@example.com",
+		Password: strings.Repeat("あ", 24),
+	})
+	if err != nil {
+		t.Fatalf("expected 72-byte multi-byte UTF-8 password to succeed, got: %v", err)
+	}
+}
+
+func TestRegister_SetSessionFailure_GracefulDegradation(t *testing.T) {
+	authUc, userRepo, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+	sessionRepo.SetSessionErr = errors.New("redis connection refused")
+
+	req := &auth.RegisterRequest{
+		Name:     "Graceful User",
+		Username: "graceful_user",
+		Email:    "graceful@example.com",
+		Password: "Password123!",
+	}
+
+	res, err := authUc.Register(ctx, req)
+	if err != nil {
+		t.Fatalf("expected Register to succeed gracefully when SetSession fails, got: %v", err)
+	}
+	if res == nil {
+		t.Fatal("expected non-nil AuthResponse")
+	}
+	if res.AccessToken == "" {
+		t.Fatal("expected AccessToken to be issued")
+	}
+	if res.RefreshToken != "" {
+		t.Fatalf("expected empty RefreshToken when session persistence fails, got: %q", res.RefreshToken)
+	}
+	if res.User.DailyGoalMinutes != 15 || res.User.PreferredRoadmapView != "map" {
+		t.Fatalf("expected user defaults DailyGoalMinutes=15 and PreferredRoadmapView='map', got %d and %q", res.User.DailyGoalMinutes, res.User.PreferredRoadmapView)
+	}
+
+	savedUser, err := userRepo.GetByEmail(ctx, "graceful@example.com")
+	if err != nil || savedUser == nil {
+		t.Fatal("expected user to remain persisted in repository")
+	}
+	if len(sessionRepo.Sessions) != 0 {
+		t.Fatalf("expected 0 stored sessions in session repository, got: %d", len(sessionRepo.Sessions))
 	}
 }

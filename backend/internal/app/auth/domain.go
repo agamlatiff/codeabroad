@@ -14,6 +14,10 @@ var (
 	ErrInvalidCredentials = apperror.NewUnauthorizedError("INVALID_CREDENTIALS", "invalid email or password")
 	ErrTokenExpired       = apperror.NewUnauthorizedError("TOKEN_EXPIRED", "token has expired or revoked")
 	ErrInvalidUsername    = apperror.NewBadRequestError("INVALID_USERNAME", "username can only contain letters, numbers, underscores, and hyphens (3-30 characters)", nil)
+	ErrInvalidName        = apperror.NewBadRequestError("INVALID_NAME", "name must be at least 2 characters", nil)
+	ErrInvalidEmail       = apperror.NewBadRequestError("INVALID_EMAIL", "email is required", nil)
+	ErrInvalidPassword    = apperror.NewBadRequestError("INVALID_PASSWORD", "password cannot be empty or whitespace only", nil)
+	ErrPasswordTooLong    = apperror.NewBadRequestError("PASSWORD_TOO_LONG", "password must not exceed 72 bytes", nil)
 )
 
 // JWTClaims defines the cryptographic token payload claims shared across Auth Usecase and Middleware
