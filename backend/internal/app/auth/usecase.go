@@ -2,9 +2,11 @@ package auth
 
 import (
 	"context"
+	"crypto/subtle"
 	"errors"
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"codeabroad/backend/config"
@@ -74,12 +76,13 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 
 	sessionTTL := u.helper.DefaultRefreshTTL()
 	sessionID := u.helper.GenerateSessionID()
-	accessToken, refreshToken, err := u.helper.GenerateTokenPair(newUser, sessionID, sessionTTL)
+	accessToken, refreshToken, err := u.helper.GenerateTokenPair(newUser, sessionID, sessionTTL, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	if err := u.sessionRepo.SetSession(ctx, newUser.ID, sessionID, refreshToken, sessionTTL); err != nil {
+	tokenHash := u.helper.HashToken(refreshToken)
+	if err := u.sessionRepo.SetSession(ctx, newUser.ID, sessionID, tokenHash, sessionTTL); err != nil {
 		// User creation has already committed; degrade gracefully instead of returning an ambiguous 500 that causes 409 conflicts on retry.
 		log.Printf("[WARN] [auth.Register] failed to store session for user %s: %v", newUser.ID, err)
 		refreshToken = ""
@@ -112,12 +115,13 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 
 	sessionTTL := u.helper.ResolveSessionTTL(req.RememberMe)
 	sessionID := u.helper.GenerateSessionID()
-	accessToken, refreshToken, err := u.helper.GenerateTokenPair(usr, sessionID, sessionTTL)
+	accessToken, refreshToken, err := u.helper.GenerateTokenPair(usr, sessionID, sessionTTL, req.RememberMe)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	if err := u.sessionRepo.SetSession(ctx, usr.ID, sessionID, refreshToken, sessionTTL); err != nil {
+	tokenHash := u.helper.HashToken(refreshToken)
+	if err := u.sessionRepo.SetSession(ctx, usr.ID, sessionID, tokenHash, sessionTTL); err != nil {
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
 
@@ -146,15 +150,26 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}, nil
 }
 
-// RefreshToken validates an existing refresh token and generates a new pair (token rotation per session)
+// RefreshToken validates an existing refresh token and atomically rotates the session token pair
 func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error) {
 	claims, err := u.helper.ParseRefreshToken(refreshToken)
 	if err != nil {
 		return nil, err
 	}
 
-	storedToken, err := u.sessionRepo.GetSession(ctx, claims.UserID, claims.SessionID)
-	if err != nil || storedToken != refreshToken {
+	expectedHash := u.helper.HashToken(refreshToken)
+	storedHash, err := u.sessionRepo.GetSession(ctx, claims.UserID, claims.SessionID)
+	if err != nil {
+		if errors.Is(err, ErrTokenExpired) {
+			return nil, ErrTokenExpired
+		}
+		return nil, fmt.Errorf("failed to retrieve session: %w", err)
+	}
+	if subtle.ConstantTimeCompare([]byte(storedHash), []byte(expectedHash)) != 1 {
+		// Token reuse detected: revoke the active session for this device.
+		if delErr := u.sessionRepo.DeleteSession(ctx, claims.UserID, claims.SessionID); delErr != nil {
+			log.Printf("[WARN] [auth.RefreshToken] failed to revoke compromised session %s for user %s: %v", claims.SessionID, claims.UserID, delErr)
+		}
 		return nil, ErrTokenExpired
 	}
 
@@ -163,17 +178,24 @@ func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthR
 		return nil, fmt.Errorf("failed to fetch user: %w", err)
 	}
 	if usr == nil {
-		return nil, user.ErrUserNotFound
+		if delErr := u.sessionRepo.DeleteSession(ctx, claims.UserID, claims.SessionID); delErr != nil {
+			log.Printf("[WARN] [auth.RefreshToken] failed to delete orphaned session %s for missing user %s: %v", claims.SessionID, claims.UserID, delErr)
+		}
+		return nil, ErrTokenExpired
 	}
 
-	sessionTTL := u.helper.DefaultRefreshTTL()
-	newAccessToken, newRefreshToken, err := u.helper.GenerateTokenPair(usr, claims.SessionID, sessionTTL)
+	sessionTTL := u.helper.ResolveSessionTTL(claims.RememberMe)
+	newAccessToken, newRefreshToken, err := u.helper.GenerateTokenPair(usr, claims.SessionID, sessionTTL, claims.RememberMe)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
 
-	if err := u.sessionRepo.SetSession(ctx, usr.ID, claims.SessionID, newRefreshToken, sessionTTL); err != nil {
-		return nil, fmt.Errorf("failed to update session: %w", err)
+	newHash := u.helper.HashToken(newRefreshToken)
+	if err := u.sessionRepo.RotateSession(ctx, usr.ID, claims.SessionID, expectedHash, newHash, sessionTTL); err != nil {
+		if errors.Is(err, ErrTokenExpired) {
+			return nil, ErrTokenExpired
+		}
+		return nil, fmt.Errorf("failed to rotate session: %w", err)
 	}
 
 	return &AuthResponse{
@@ -185,18 +207,15 @@ func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthR
 
 // Logout invalidates the active device session in Redis
 func (u *usecase) Logout(ctx context.Context, userID string, sessionID string) error {
-	if userID == "" {
+	if strings.TrimSpace(userID) == "" || strings.TrimSpace(sessionID) == "" {
 		return apperror.ErrUnauthorized
-	}
-	if sessionID == "" {
-		return u.sessionRepo.DeleteAllSessions(ctx, userID)
 	}
 	return u.sessionRepo.DeleteSession(ctx, userID, sessionID)
 }
 
 // LogoutAll invalidates all active device sessions for the given user in Redis
 func (u *usecase) LogoutAll(ctx context.Context, userID string) error {
-	if userID == "" {
+	if strings.TrimSpace(userID) == "" {
 		return apperror.ErrUnauthorized
 	}
 	return u.sessionRepo.DeleteAllSessions(ctx, userID)

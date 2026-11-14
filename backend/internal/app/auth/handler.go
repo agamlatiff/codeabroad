@@ -1,6 +1,9 @@
 package auth
 
 import (
+	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
 
 	"codeabroad/backend/internal/shared/apperror"
@@ -27,11 +30,20 @@ func NewHandlerWithRateLimiter(authUsecase Usecase, rateLimiter gin.HandlerFunc)
 	}
 }
 
+func sanitizedBindErrorMessage(err error) string {
+	var syntaxErr *json.SyntaxError
+	var typeErr *json.UnmarshalTypeError
+	if errors.As(err, &syntaxErr) || errors.As(err, &typeErr) || errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return "invalid JSON request body"
+	}
+	return "invalid request payload: please check required fields and input format"
+}
+
 // Register handles POST /api/v1/auth/register
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, sanitizedBindErrorMessage(err))
 		return
 	}
 
@@ -48,7 +60,7 @@ func (h *Handler) Register(c *gin.Context) {
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, sanitizedBindErrorMessage(err))
 		return
 	}
 
@@ -65,7 +77,7 @@ func (h *Handler) Login(c *gin.Context) {
 func (h *Handler) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, sanitizedBindErrorMessage(err))
 		return
 	}
 
@@ -82,7 +94,7 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 func (h *Handler) Logout(c *gin.Context) {
 	userID := c.GetString("userID")
 	sessionID := c.GetString("sessionID")
-	if userID == "" {
+	if userID == "" || sessionID == "" {
 		response.Error(c, apperror.ErrUnauthorized)
 		return
 	}

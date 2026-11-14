@@ -34,7 +34,7 @@ func parseBearerToken(authHeader string, jwtSecret string) (*auth.JWTClaims, err
 	}
 
 	claims, ok := token.Claims.(*auth.JWTClaims)
-	if !ok {
+	if !ok || claims.TokenType != auth.TokenTypeAccess {
 		return nil, errInvalidOrExpiredToken
 	}
 	return claims, nil

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/internal/app/user"
 	"codeabroad/backend/internal/shared/apperror"
+	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -640,3 +642,333 @@ func TestRegister_SetSessionFailure_GracefulDegradation(t *testing.T) {
 		t.Fatalf("expected 0 stored sessions in session repository, got: %d", len(sessionRepo.Sessions))
 	}
 }
+
+func TestHelper_TokenTypeSeparation_AndParseRefreshToken(t *testing.T) {
+	cfg := &config.Config{
+		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
+		JWTAccessExpirationMinutes: 15,
+		JWTRefreshExpirationDays:   30,
+	}
+	helper := auth.NewHelper(cfg)
+	u := &user.User{
+		UserAccount: user.UserAccount{ID: "usr_toktype", Email: "tok@example.com"},
+		UserProfile: user.UserProfile{Username: "tokuser"},
+	}
+
+	accessTok, refreshTok, err := helper.GenerateTokenPair(u, "sess_tok_1", 24*time.Hour, false)
+	if err != nil {
+		t.Fatalf("GenerateTokenPair failed: %v", err)
+	}
+
+	parsedAccess, err := jwt.ParseWithClaims(accessTok, &auth.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(cfg.JWTSecret), nil
+	})
+	if err != nil || !parsedAccess.Valid {
+		t.Fatalf("expected valid access token, got err=%v", err)
+	}
+	accessClaims := parsedAccess.Claims.(*auth.JWTClaims)
+	if accessClaims.TokenType != auth.TokenTypeAccess {
+		t.Fatalf("expected access TokenType=%q, got %q", auth.TokenTypeAccess, accessClaims.TokenType)
+	}
+
+	refreshClaims, err := helper.ParseRefreshToken(refreshTok)
+	if err != nil {
+		t.Fatalf("expected ParseRefreshToken to accept refresh token, got: %v", err)
+	}
+	if refreshClaims.TokenType != auth.TokenTypeRefresh {
+		t.Fatalf("expected refresh TokenType=%q, got %q", auth.TokenTypeRefresh, refreshClaims.TokenType)
+	}
+	if refreshClaims.RememberMe {
+		t.Fatal("expected RememberMe=false on refresh claims")
+	}
+
+	if _, err := helper.ParseRefreshToken(accessTok); !errors.Is(err, auth.ErrTokenExpired) {
+		t.Fatalf("expected ParseRefreshToken to reject access token with ErrTokenExpired, got: %v", err)
+	}
+
+	// Token with missing TokenType must also be rejected
+	legacyClaims := &auth.JWTClaims{
+		UserID:    u.ID,
+		SessionID: "sess_legacy",
+		Email:     u.Email,
+		Username:  u.Username,
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
+		},
+	}
+	legacyTok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, legacyClaims).SignedString([]byte(cfg.JWTSecret))
+	if err != nil {
+		t.Fatalf("failed to sign legacy token: %v", err)
+	}
+	if _, err := helper.ParseRefreshToken(legacyTok); !errors.Is(err, auth.ErrTokenExpired) {
+		t.Fatalf("expected ParseRefreshToken to reject token without TokenType, got: %v", err)
+	}
+
+	// Usecase RefreshToken must reject an access token
+	authUc, _, _ := setupTestUsecase()
+	regRes, err := authUc.Register(context.Background(), &auth.RegisterRequest{
+		Name:     "Token Type User",
+		Username: "tokentypeuser",
+		Email:    "tokentype@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+	if _, err := authUc.RefreshToken(context.Background(), regRes.AccessToken); !errors.Is(err, auth.ErrTokenExpired) {
+		t.Fatalf("expected RefreshToken to reject access token with ErrTokenExpired, got: %v", err)
+	}
+}
+
+func TestRefreshToken_StoresHashedTokenInSessionRepo(t *testing.T) {
+	authUc, _, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+	helper := auth.NewHelper(&config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"})
+
+	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
+		Name:     "Hash Check User",
+		Username: "hashcheck",
+		Email:    "hashcheck@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+
+	claims, err := helper.ParseRefreshToken(regRes.RefreshToken)
+	if err != nil {
+		t.Fatalf("ParseRefreshToken failed: %v", err)
+	}
+
+	stored, err := sessionRepo.GetSession(ctx, regRes.User.ID, claims.SessionID)
+	if err != nil {
+		t.Fatalf("GetSession failed: %v", err)
+	}
+	if stored == regRes.RefreshToken {
+		t.Fatal("expected hashed token in session repo, found raw JWT")
+	}
+	expectedHash := helper.HashToken(regRes.RefreshToken)
+	if len(expectedHash) != 64 || stored != expectedHash {
+		t.Fatalf("expected SHA-256 hex hash %q in session repo, got %q", expectedHash, stored)
+	}
+
+	refreshed, err := authUc.RefreshToken(ctx, regRes.RefreshToken)
+	if err != nil {
+		t.Fatalf("RefreshToken failed: %v", err)
+	}
+
+	storedAfter, err := sessionRepo.GetSession(ctx, regRes.User.ID, claims.SessionID)
+	if err != nil {
+		t.Fatalf("GetSession after refresh failed: %v", err)
+	}
+	if storedAfter == refreshed.RefreshToken {
+		t.Fatal("expected rotated hashed token in session repo, found raw JWT")
+	}
+	if storedAfter != helper.HashToken(refreshed.RefreshToken) {
+		t.Fatalf("expected rotated hash %q, got %q", helper.HashToken(refreshed.RefreshToken), storedAfter)
+	}
+}
+
+func TestRefreshToken_PreservesRememberMeTTL(t *testing.T) {
+	helper := auth.NewHelper(&config.Config{
+		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
+		JWTAccessExpirationMinutes: 15,
+		JWTRefreshExpirationDays:   30,
+	})
+
+	testCases := []struct {
+		name        string
+		rememberMe  bool
+		expectedTTL time.Duration
+	}{
+		{name: "RememberMe_False_Preserves_24h", rememberMe: false, expectedTTL: 24 * time.Hour},
+		{name: "RememberMe_True_Preserves_30d", rememberMe: true, expectedTTL: 30 * 24 * time.Hour},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			authUc, userRepo, sessionRepo := setupTestUsecase()
+			ctx := context.Background()
+
+			password := "Password123!"
+			hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+			u := &user.User{
+				UserAccount: user.UserAccount{
+					ID:           "usr_" + tc.name,
+					Email:        strings.ToLower(tc.name) + "@example.com",
+					PasswordHash: string(hashedPassword),
+				},
+				UserProfile: user.UserProfile{
+					Name:     "TTL User",
+					Username: "ttl_" + strings.ToLower(tc.name),
+				},
+			}
+			_ = userRepo.Create(ctx, u)
+
+			loginRes, err := authUc.Login(ctx, &auth.LoginRequest{
+				Email:      u.Email,
+				Password:   password,
+				RememberMe: tc.rememberMe,
+			})
+			if err != nil {
+				t.Fatalf("login failed: %v", err)
+			}
+
+			if got := sessionRepo.TTLs[u.ID]; got != tc.expectedTTL {
+				t.Fatalf("expected initial TTL %v, got %v", tc.expectedTTL, got)
+			}
+
+			refreshed, err := authUc.RefreshToken(ctx, loginRes.RefreshToken)
+			if err != nil {
+				t.Fatalf("refresh failed: %v", err)
+			}
+
+			if got := sessionRepo.TTLs[u.ID]; got != tc.expectedTTL {
+				t.Fatalf("expected refreshed TTL %v, got %v", tc.expectedTTL, got)
+			}
+
+			claims, err := helper.ParseRefreshToken(refreshed.RefreshToken)
+			if err != nil {
+				t.Fatalf("ParseRefreshToken failed: %v", err)
+			}
+			if claims.RememberMe != tc.rememberMe {
+				t.Fatalf("expected RememberMe=%v on rotated refresh token, got %v", tc.rememberMe, claims.RememberMe)
+			}
+			actualLifetime := claims.ExpiresAt.Sub(claims.IssuedAt.Time)
+			if actualLifetime != tc.expectedTTL {
+				t.Fatalf("expected rotated JWT lifetime %v, got %v", tc.expectedTTL, actualLifetime)
+			}
+		})
+	}
+}
+
+func TestRefreshToken_ReuseDetection_RevokesSession(t *testing.T) {
+	authUc, _, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
+		Name:     "Reuse User",
+		Username: "reuseuser",
+		Email:    "reuse@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+
+	rotatedRes, err := authUc.RefreshToken(ctx, regRes.RefreshToken)
+	if err != nil {
+		t.Fatalf("first refresh failed: %v", err)
+	}
+	if rotatedRes.RefreshToken == regRes.RefreshToken {
+		t.Fatal("expected rotated refresh token to differ from original token")
+	}
+
+	// Replay the already-rotated refresh token: must fail and revoke the active session.
+	if _, err := authUc.RefreshToken(ctx, regRes.RefreshToken); !errors.Is(err, auth.ErrTokenExpired) {
+		t.Fatalf("expected ErrTokenExpired on refresh token reuse, got: %v", err)
+	}
+	if len(sessionRepo.Sessions) != 0 {
+		t.Fatalf("expected compromised session to be revoked, remaining sessions: %d", len(sessionRepo.Sessions))
+	}
+
+	// Even the legitimate latest token must now fail because the session was revoked.
+	if _, err := authUc.RefreshToken(ctx, rotatedRes.RefreshToken); !errors.Is(err, auth.ErrTokenExpired) {
+		t.Fatalf("expected ErrTokenExpired after session revocation, got: %v", err)
+	}
+}
+
+func TestRefreshToken_ConcurrentRotation_OnlyOneSucceeds(t *testing.T) {
+	authUc, _, _ := setupTestUsecase()
+	ctx := context.Background()
+
+	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
+		Name:     "Concurrent User",
+		Username: "concurrentuser",
+		Email:    "concurrent@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+
+	const workers = 5
+	start := make(chan struct{})
+	errs := make(chan error, workers)
+	var wg sync.WaitGroup
+	wg.Add(workers)
+
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			<-start
+			_, refreshErr := authUc.RefreshToken(ctx, regRes.RefreshToken)
+			errs <- refreshErr
+		}()
+	}
+
+	close(start)
+	wg.Wait()
+	close(errs)
+
+	successCount := 0
+	expiredCount := 0
+	for refreshErr := range errs {
+		if refreshErr == nil {
+			successCount++
+		} else if errors.Is(refreshErr, auth.ErrTokenExpired) {
+			expiredCount++
+		} else {
+			t.Fatalf("unexpected error during concurrent refresh: %v", refreshErr)
+		}
+	}
+
+	if successCount != 1 || expiredCount != workers-1 {
+		t.Fatalf("expected 1 success and %d ErrTokenExpired, got success=%d expired=%d", workers-1, successCount, expiredCount)
+	}
+}
+
+func TestRefreshToken_MissingUserReturnsTokenExpired(t *testing.T) {
+	authUc, userRepo, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
+		Name:     "Deleted User",
+		Username: "deleteduser",
+		Email:    "deleted@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+
+	delete(userRepo.Users, regRes.User.ID)
+
+	if _, err := authUc.RefreshToken(ctx, regRes.RefreshToken); !errors.Is(err, auth.ErrTokenExpired) {
+		t.Fatalf("expected ErrTokenExpired when user no longer exists, got: %v", err)
+	}
+	if len(sessionRepo.Sessions) != 0 {
+		t.Fatalf("expected orphaned session to be deleted, remaining: %d", len(sessionRepo.Sessions))
+	}
+}
+
+func TestAuthUsecase_Logout_RejectsEmptySessionID(t *testing.T) {
+	authUc, _, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	userID := "usr_logout_guard"
+	_ = sessionRepo.SetSession(ctx, userID, "sess_1", "hash_1", 24*time.Hour)
+	_ = sessionRepo.SetSession(ctx, userID, "sess_2", "hash_2", 24*time.Hour)
+
+	for _, emptySess := range []string{"", "   "} {
+		err := authUc.Logout(ctx, userID, emptySess)
+		if !errors.Is(err, apperror.ErrUnauthorized) {
+			t.Fatalf("expected ErrUnauthorized for sessionID=%q, got: %v", emptySess, err)
+		}
+	}
+
+	if len(sessionRepo.Sessions) != 2 {
+		t.Fatalf("expected all existing sessions to remain untouched, got: %d", len(sessionRepo.Sessions))
+	}
+}
+

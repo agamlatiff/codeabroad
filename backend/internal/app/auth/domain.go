@@ -20,12 +20,20 @@ var (
 	ErrPasswordTooLong    = apperror.NewBadRequestError("PASSWORD_TOO_LONG", "password must not exceed 72 bytes", nil)
 )
 
+// Token type identifiers embedded in JWT claims to prevent cross-token misuse
+const (
+	TokenTypeAccess  = "access"
+	TokenTypeRefresh = "refresh"
+)
+
 // JWTClaims defines the cryptographic token payload claims shared across Auth Usecase and Middleware
 type JWTClaims struct {
 	UserID    string `json:"user_id"`
 	SessionID string `json:"session_id,omitempty"`
 	Email     string `json:"email"`
 	Username  string `json:"username"`
+	TokenType  string `json:"token_type"`
+	RememberMe bool   `json:"remember_me,omitempty"`
 	jwt.RegisteredClaims
 }
 
@@ -58,8 +66,9 @@ type AuthResponse struct {
 
 // SessionRepository specifies the caching contract for active user sessions (Redis)
 type SessionRepository interface {
-	SetSession(ctx context.Context, userID string, sessionID string, token string, ttl time.Duration) error
+	SetSession(ctx context.Context, userID string, sessionID string, tokenHash string, ttl time.Duration) error
 	GetSession(ctx context.Context, userID string, sessionID string) (string, error)
+	RotateSession(ctx context.Context, userID string, sessionID string, expectedTokenHash string, newTokenHash string, ttl time.Duration) error
 	DeleteSession(ctx context.Context, userID string, sessionID string) error
 	DeleteAllSessions(ctx context.Context, userID string) error
 }

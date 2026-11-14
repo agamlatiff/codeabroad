@@ -2,6 +2,8 @@ package auth
 
 import (
 	"crypto/rand"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strings"
@@ -120,10 +122,16 @@ func (h *Helper) GenerateSessionID() string {
 	return fmt.Sprintf("%x-%x-%x-%x-%x", b[0:4], b[4:6], b[6:8], b[8:10], b[10:])
 }
 
+// HashToken computes a deterministic lowercase SHA-256 hex digest of a raw token for secure session storage.
+func (h *Helper) HashToken(token string) string {
+	sum := sha256.Sum256([]byte(token))
+	return hex.EncodeToString(sum[:])
+}
+
 // ResolveSessionTTL determines refresh session TTL based on RememberMe preference
 func (h *Helper) ResolveSessionTTL(rememberMe bool) time.Duration {
 	if rememberMe {
-		return time.Duration(h.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
+		return h.DefaultRefreshTTL()
 	}
 	return 24 * time.Hour
 }
@@ -185,7 +193,7 @@ func (h *Helper) BuildNewUser(req *RegisterRequest, hashedPassword string) *user
 }
 
 // GenerateTokenPair produces a signed access token and dynamic duration refresh token bound to a sessionID
-func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDuration time.Duration) (string, string, error) {
+func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDuration time.Duration, rememberMe bool) (string, string, error) {
 	now := time.Now()
 
 	accessClaims := &JWTClaims{
@@ -193,7 +201,9 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 		SessionID: sessionID,
 		Email:     u.Email,
 		Username:  u.Username,
+		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        h.GenerateSessionID(),
 			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(h.cfg.JWTAccessExpirationMinutes) * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
@@ -208,11 +218,14 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 	}
 
 	refreshClaims := &JWTClaims{
-		UserID:    u.ID,
-		SessionID: sessionID,
-		Email:     u.Email,
-		Username:  u.Username,
+		UserID:     u.ID,
+		SessionID:  sessionID,
+		Email:      u.Email,
+		Username:   u.Username,
+		TokenType:  TokenTypeRefresh,
+		RememberMe: rememberMe,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        h.GenerateSessionID(),
 			ExpiresAt: jwt.NewNumericDate(now.Add(refreshDuration)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
@@ -243,7 +256,7 @@ func (h *Helper) ParseRefreshToken(refreshToken string) (*JWTClaims, error) {
 	}
 
 	claims, ok := token.Claims.(*JWTClaims)
-	if !ok {
+	if !ok || claims.TokenType != TokenTypeRefresh || claims.UserID == "" || claims.SessionID == "" {
 		return nil, ErrTokenExpired
 	}
 	return claims, nil

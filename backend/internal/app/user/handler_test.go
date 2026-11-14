@@ -19,8 +19,9 @@ const testJWTSecret = "test-secret-at-least-32-chars-long-key-12345"
 
 func generateTestToken(userID, email string) string {
 	claims := auth.JWTClaims{
-		UserID: userID,
-		Email:  email,
+		UserID:    userID,
+		Email:     email,
+		TokenType: auth.TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(15 * time.Minute)),
 		},

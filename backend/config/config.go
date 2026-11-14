@@ -1,10 +1,12 @@
 package config
 
 import (
-	"github.com/joho/godotenv"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -33,18 +35,27 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
+const defaultDevJWTSecret = "super-secret-jwt-key-must-be-at-least-32-chars-long"
+
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(".env"); err != nil {
 		_ = godotenv.Load("../.env")
 	}
 
+	env := strings.ToLower(strings.TrimSpace(getEnv("ENV", "development")))
+
+	jwtSecret := strings.TrimSpace(getEnv("JWT_SECRET", defaultDevJWTSecret))
+	if env == "production" && (jwtSecret == "" || jwtSecret == defaultDevJWTSecret || len(jwtSecret) < 32) {
+		return nil, fmt.Errorf("JWT_SECRET must be set to a non-default value of at least 32 characters in production")
+	}
+
 	jwtExpMin, err := strconv.Atoi(getEnv("JWT_EXPIRATION_MINUTES", "15"))
-	if err != nil {
+	if err != nil || jwtExpMin < 1 {
 		jwtExpMin = 15
 	}
 
 	jwtRefreshExpDays, err := strconv.Atoi(getEnv("JWT_REFRESH_EXPIRATION_DAYS", "30"))
-	if err != nil {
+	if err != nil || jwtRefreshExpDays < 1 {
 		jwtRefreshExpDays = 30
 	}
 
@@ -62,7 +73,7 @@ func LoadConfig() (*Config, error) {
 
 	return &Config{
 		Port:                       getEnv("PORT", "8080"),
-		Env:                        getEnv("ENV", "development"),
+		Env:                        env,
 		DBHost:                     getEnv("DB_HOST", "localhost"),
 		DBPort:                     getEnv("DB_PORT", "5432"),
 		DBUser:                     getEnv("DB_USER", "codeabroad"),
@@ -73,7 +84,7 @@ func LoadConfig() (*Config, error) {
 		RedisPort:                  getEnv("REDIS_PORT", "6379"),
 		RedisPassword:              getEnv("REDIS_PASSWORD", ""),
 		KafkaBrokers:               getEnv("KAFKA_BROKERS", "localhost:9092"),
-		JWTSecret:                  getEnv("JWT_SECRET", "super-secret-jwt-key-must-be-at-least-32-chars-long"),
+		JWTSecret:                  jwtSecret,
 		JWTAccessExpirationMinutes: jwtExpMin,
 		JWTRefreshExpirationDays:   jwtRefreshExpDays,
 		CORSAllowedOrigins:         corsOrigins,
