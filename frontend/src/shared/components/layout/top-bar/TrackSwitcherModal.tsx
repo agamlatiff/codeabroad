@@ -90,7 +90,7 @@ const TrackSwitcherDialog = ({
   const handleTrackCardClick = (track: CareerTrackOption) => {
     if (track.isEnrolled === false) return
     triggerHaptic('tap')
-    setSelectedTrack(track.slug)
+    setSelectedTrack(mode === 'language' ? track.id : track.slug)
   }
 
   const handleViewModeCardClick = (nextMode: 'map' | 'syllabus') => {
@@ -103,9 +103,11 @@ const TrackSwitcherDialog = ({
     const selectedOption = trackOptions.find(
       (t) => t.slug === selectedTrack || t.id === selectedTrack
     )
+    const targetIdentifier =
+      mode === 'language' && selectedOption ? selectedOption.id : selectedTrack
     const shouldActivatePreview = mode === 'language' && selectedOption && !selectedOption.isActive
-    if (selectedTrack && (selectedTrack !== currentTrack || shouldActivatePreview)) {
-      onSelectTrack(selectedTrack)
+    if (targetIdentifier && (targetIdentifier !== currentTrack || shouldActivatePreview)) {
+      onSelectTrack(targetIdentifier)
     }
     if (onChangeViewMode && selectedView !== viewMode) {
       onChangeViewMode(selectedView)

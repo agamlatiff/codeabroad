@@ -119,7 +119,7 @@ export const CurriculumViewToggle: FC<CurriculumViewToggleProps> = ({
               <span>Silabus Unit</span>
               {totalUnitsCount && totalUnitsCount > 0 ? (
                 <span
-                  className={`text-[10px] px-1.5 py-0.2 rounded-md ${
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md ${
                     viewMode === 'syllabus'
                       ? VIEW_TOGGLE_TOKENS.badgeActive
                       : VIEW_TOGGLE_TOKENS.badgeInactive

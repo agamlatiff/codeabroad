@@ -33,6 +33,7 @@ export const transformCurriculumToMapUnits = (
   }
 
   let globalLessonCounter = 1
+  let hasAssignedActiveNode = false
   const langCode = curriculum.language?.code?.toUpperCase() || 'LANG'
   const levelCode = curriculum.level?.code || ''
 
@@ -43,12 +44,18 @@ export const transformCurriculumToMapUnits = (
 
     const parts: CurriculumPartNode[] = lessons.map((lesson) => {
       const lessonNum = globalLessonCounter++
-      const isCurrentLesson = curriculum.current_lesson_id === lesson.id
+      const isCurrentLesson =
+        curriculum.current_lesson_id === lesson.id ||
+        (!curriculum.current_lesson_id && !lesson.is_completed && lesson.is_unlocked && !hasAssignedActiveNode)
+      const canBeActive = !hasAssignedActiveNode && (isCurrentLesson || (!lesson.is_completed && lesson.is_unlocked && !curriculum.current_lesson_id))
       const status = resolveLessonStatus(
         lesson.is_completed,
-        lesson.is_unlocked,
+        lesson.is_unlocked && (canBeActive || !curriculum.current_lesson_id),
         isCurrentLesson
       )
+      if (status === 'active') {
+        hasAssignedActiveNode = true
+      }
 
       const subtitle = lesson.is_skipped
         ? 'Dilewati otomatis via placement'
