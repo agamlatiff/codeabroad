@@ -18,7 +18,7 @@ export const EXAM_RESULT_QUERY_KEY = ['exams', 'result'] as const
 
 export const exerciseService = {
   /**
-   * Submits a single exercise answer to backend for evaluation, XP credit, and SRS scheduling.
+   * Submits a single exercise answer to backend for evaluation, XP credit, and optional SRS scheduling (skipped when skip_srs_schedule is true).
    */
   submitAnswer: async (
     payload: SubmitExerciseAnswerRequest,

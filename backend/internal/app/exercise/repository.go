@@ -414,6 +414,12 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 			` + prefixedExerciseSelectColumns + `
 		FROM user_srs_reviews r
 		JOIN exercises e ON r.exercise_id = e.id
+		JOIN lessons l ON e.lesson_id = l.id
+		JOIN units u ON l.unit_id = u.id
+		JOIN proficiency_levels pl ON u.level_id = pl.id
+		JOIN user_language_enrollments ule ON ule.language_id = pl.language_id
+		  AND ule.user_id = r.user_id
+		  AND ule.is_active = true
 		WHERE r.user_id = $1 AND r.next_review_at <= $2
 		ORDER BY r.next_review_at ASC, r.repetition_count ASC, r.id ASC
 		LIMIT $3
@@ -475,7 +481,7 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 		review.IntervalDays = 1
 	}
 	if review.EaseFactor < 1.30 {
-		review.EaseFactor = 2.50
+		review.EaseFactor = 1.30
 	}
 
 	query := `
@@ -505,8 +511,15 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now time.Time) (int, error) {
 	query := `
 		SELECT COUNT(*)
-		FROM user_srs_reviews
-		WHERE user_id = $1 AND next_review_at <= $2
+		FROM user_srs_reviews r
+		JOIN exercises e ON r.exercise_id = e.id
+		JOIN lessons l ON e.lesson_id = l.id
+		JOIN units u ON l.unit_id = u.id
+		JOIN proficiency_levels pl ON u.level_id = pl.id
+		JOIN user_language_enrollments ule ON ule.language_id = pl.language_id
+		  AND ule.user_id = r.user_id
+		  AND ule.is_active = true
+		WHERE r.user_id = $1 AND r.next_review_at <= $2
 	`
 	var count int
 	err := r.db.Pool.QueryRow(ctx, query, userID, now).Scan(&count)

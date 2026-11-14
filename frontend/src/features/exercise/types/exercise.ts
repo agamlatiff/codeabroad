@@ -46,6 +46,7 @@ export interface SubmitExerciseAnswerRequest {
   exercise_id: string
   user_answer: string
   time_spent_seconds: number
+  skip_srs_schedule?: boolean
 }
 
 export interface SubmitExerciseAnswerResponse {

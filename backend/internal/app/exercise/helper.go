@@ -65,13 +65,14 @@ func (h *Helper) CalculateSM2(
 	prevEaseFactor float64,
 	now time.Time,
 ) SM2Result {
-	if prevEaseFactor < 1.3 {
+	if prevEaseFactor <= 0 {
 		prevEaseFactor = 2.5
+	} else if prevEaseFactor < 1.3 {
+		prevEaseFactor = 1.3
 	}
 
 	var repetitions int
 	var intervalDays int
-	var easeFactor float64
 
 	if quality >= 3 {
 		if prevRepetitions == 0 {
@@ -85,16 +86,15 @@ func (h *Helper) CalculateSM2(
 			}
 		}
 		repetitions = prevRepetitions + 1
-
-		qDiff := 5.0 - float64(quality)
-		easeFactor = prevEaseFactor + (0.1 - qDiff*(0.08+qDiff*0.02))
-		if easeFactor < 1.3 {
-			easeFactor = 1.3
-		}
 	} else {
 		repetitions = 0
 		intervalDays = 1
-		easeFactor = prevEaseFactor
+	}
+
+	qDiff := 5.0 - float64(quality)
+	easeFactor := prevEaseFactor + (0.1 - qDiff*(0.08+qDiff*0.02))
+	if easeFactor < 1.3 {
+		easeFactor = 1.3
 	}
 
 	dueDate := now.AddDate(0, 0, intervalDays)

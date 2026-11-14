@@ -110,6 +110,7 @@ type SubmitExerciseAnswerRequest struct {
 	ExerciseID       string `json:"exercise_id" binding:"required,uuid"`
 	UserAnswer       string `json:"user_answer" binding:"required"`
 	TimeSpentSeconds int    `json:"time_spent_seconds" binding:"min=0"`
+	SkipSRSSchedule  bool   `json:"skip_srs_schedule"`
 }
 
 // SubmitExerciseAnswerResponse returns validation, correction, and reward feedback

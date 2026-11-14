@@ -9,7 +9,10 @@ import {
   SRS_DUE_QUERY_KEY,
   exerciseService,
 } from '@/features/exercise/services/exerciseService'
-import type { SubmitExerciseAnswerResponse } from '@/features/exercise/types/exercise'
+import type {
+  SubmitExerciseAnswerRequest,
+  SubmitExerciseAnswerResponse,
+} from '@/features/exercise/types/exercise'
 import { resolveExerciseSpokenText } from '@/features/exercise/utils/exerciseHelpers'
 import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { ACTIVITY_LOGS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useStreakSection'
@@ -97,11 +100,8 @@ export const useSrsReviewPage = () => {
   }, [currentIndex, currentExercise?.id])
 
   const submitAnswerMutation = useMutation({
-    mutationFn: (payload: {
-      exercise_id: string
-      user_answer: string
-      time_spent_seconds: number
-    }) => exerciseService.submitAnswer(payload),
+    mutationFn: (payload: SubmitExerciseAnswerRequest) =>
+      exerciseService.submitAnswer(payload),
   })
 
   const processReviewMutation = useMutation({
@@ -141,6 +141,7 @@ export const useSrsReviewPage = () => {
         exercise_id: currentExercise.id,
         user_answer: currentUserAnswer,
         time_spent_seconds: elapsedSeconds,
+        skip_srs_schedule: true,
       })
 
       setSubmittedResult(res)
