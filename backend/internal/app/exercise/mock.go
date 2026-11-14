@@ -51,8 +51,8 @@ func (m *MockRepository) GetExerciseByID(ctx context.Context, id string) (*Exerc
 		return nil, m.GetExerciseByIDErr
 	}
 	ex, ok := m.Exercises[id]
-	if !ok {
-		return nil, nil
+	if !ok || ex == nil {
+		return nil, ErrExerciseNotFound
 	}
 	return ex, nil
 }
@@ -84,11 +84,7 @@ func (m *MockRepository) GetReadinessExamExercises(ctx context.Context, levelID 
 	if list, ok := m.ReadinessExamExercises[levelID]; ok {
 		return list, nil
 	}
-	var res []Exercise
-	for _, ex := range m.Exercises {
-		res = append(res, *ex)
-	}
-	return res, nil
+	return nil, nil
 }
 
 func (m *MockRepository) CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error {
@@ -256,4 +252,32 @@ func (m *MockReadinessExamRepository) GetLatestPassedAttempt(ctx context.Context
 	}
 	return nil, nil
 }
+
+// MockLessonAccessChecker implements LessonAccessChecker for unit and handler tests
+type MockLessonAccessChecker struct {
+	DefaultUnlocked bool
+	UnlockedLessons map[string]bool
+	Err             error
+}
+
+// NewMockLessonAccessChecker creates a configurable mock LessonAccessChecker
+func NewMockLessonAccessChecker(defaultUnlocked bool) *MockLessonAccessChecker {
+	return &MockLessonAccessChecker{
+		DefaultUnlocked: defaultUnlocked,
+		UnlockedLessons: make(map[string]bool),
+	}
+}
+
+var _ LessonAccessChecker = (*MockLessonAccessChecker)(nil)
+
+func (m *MockLessonAccessChecker) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	if m.Err != nil {
+		return false, m.Err
+	}
+	if unlocked, ok := m.UnlockedLessons[lessonID]; ok {
+		return unlocked, nil
+	}
+	return m.DefaultUnlocked, nil
+}
+
 

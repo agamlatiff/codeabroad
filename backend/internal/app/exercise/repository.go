@@ -596,7 +596,7 @@ func (r *PostgresRepository) RecordExamSubmissionTx(
 		_ = tx.Rollback(ctx)
 	}()
 
-	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtext($1 || ':' || $2))", attempt.UserID, attempt.LevelID); err != nil {
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1 || ':' || $2, 0))", attempt.UserID, attempt.LevelID); err != nil {
 		return false, fmt.Errorf("failed to acquire exam lock: %w", err)
 	}
 

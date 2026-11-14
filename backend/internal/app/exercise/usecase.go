@@ -73,8 +73,11 @@ func NewUsecase(
 }
 
 func (u *usecase) verifyLessonUnlocked(ctx context.Context, userID string, lessonID string) error {
-	if u.accessChecker == nil || lessonID == "" {
-		return nil
+	if lessonID == "" {
+		return apperror.ErrForbidden
+	}
+	if u.accessChecker == nil {
+		return fmt.Errorf("lesson access checker is not configured: %w", apperror.ErrInternal)
 	}
 	unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, lessonID)
 	if err != nil {
@@ -94,10 +97,11 @@ func (u *usecase) loadAuthorizedExercise(ctx context.Context, userID string, exe
 	if ex == nil {
 		return nil, ErrExerciseNotFound
 	}
-	if ex.LessonID != nil {
-		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
-			return nil, err
-		}
+	if ex.LessonID == nil || *ex.LessonID == "" {
+		return nil, apperror.ErrForbidden
+	}
+	if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
+		return nil, err
 	}
 	return ex, nil
 }
@@ -451,10 +455,20 @@ func (u *usecase) resolveNextLevelTarget(
 		return "", "", "", fmt.Errorf("failed to resolve next proficiency level: %w", lvErr)
 	}
 	sort.Slice(levels, func(i, j int) bool {
-		return levels[i].OrderIndex < levels[j].OrderIndex
+		if levels[i].OrderIndex != levels[j].OrderIndex {
+			return levels[i].OrderIndex < levels[j].OrderIndex
+		}
+		return levels[i].ID < levels[j].ID
 	})
 	for _, nextLvl := range levels {
 		if nextLvl.OrderIndex > lvl.OrderIndex {
+			nextExamExercises, exErr := u.exerciseRepo.GetReadinessExamExercises(ctx, nextLvl.ID)
+			if exErr != nil {
+				return "", "", "", fmt.Errorf("failed to verify readiness exam exercises for next level: %w", exErr)
+			}
+			if len(nextExamExercises) == 0 {
+				return "", "", "", nil
+			}
 			return enrollment.ID, lvl.ID, nextLvl.ID, nil
 		}
 	}
@@ -571,9 +585,30 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	lvl, _, err := u.verifyLevelExamAccess(ctx, userID, levelID)
+	lvl, err := u.langRepo.GetLevelByID(ctx, levelID)
 	if err != nil {
 		return nil, err
+	}
+	if lvl == nil {
+		return nil, language.ErrProficiencyLevelNotFound
+	}
+
+	enrollments, err := u.langRepo.GetEnrollmentsByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, language.ErrEnrollmentNotFound) {
+			return nil, apperror.ErrForbidden
+		}
+		return nil, err
+	}
+	hasEnrollment := false
+	for _, enr := range enrollments {
+		if enr.LanguageID == lvl.LanguageID {
+			hasEnrollment = true
+			break
+		}
+	}
+	if !hasEnrollment {
+		return nil, apperror.ErrForbidden
 	}
 
 	passedAttempt, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)

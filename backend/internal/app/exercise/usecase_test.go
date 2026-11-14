@@ -21,14 +21,16 @@ func TestSubmitAnswer_Correct(t *testing.T) {
 	langRepo := language.NewMockRepository()
 	userRepo := user.NewMockRepository()
 
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		Prompt:        "What is 'Konnichiwa'?",
 		CorrectAnswer: "Hello",
 		XPReward:      10,
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, examRepo, langRepo, userRepo)
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	res, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
 		ExerciseID: "ex-1",
@@ -52,14 +54,16 @@ func TestSubmitAnswer_Wrong_InjectsSRS(t *testing.T) {
 	langRepo := language.NewMockRepository()
 	userRepo := user.NewMockRepository()
 
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		Prompt:        "What is 'Konnichiwa'?",
 		CorrectAnswer: "Hello",
 		XPReward:      10,
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, examRepo, langRepo, userRepo)
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	res, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
 		ExerciseID: "ex-1",
@@ -86,14 +90,16 @@ func TestProcessReview_SM2(t *testing.T) {
 	langRepo := language.NewMockRepository()
 	userRepo := user.NewMockRepository()
 
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		ExerciseType:  exercise.ExerciseTypeFillBlank,
 		Prompt:        "Review prompt",
 		CorrectAnswer: "Answer",
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, examRepo, langRepo, userRepo)
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	q := 4
 	review, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
@@ -118,15 +124,17 @@ func TestSubmitAnswer_AcceptableAnswer_Matches(t *testing.T) {
 	langRepo := language.NewMockRepository()
 	userRepo := user.NewMockRepository()
 
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-2"] = &exercise.Exercise{
 		ID:                "ex-2",
+		LessonID:          &lessonID,
 		Prompt:            "Type 'Tokyo' in Japanese",
 		CorrectAnswer:     "東京",
 		AcceptableAnswers: []string{"とうきょう", "tokyo"},
 		XPReward:          10,
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, examRepo, langRepo, userRepo)
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	// User types romaji "tokyo" which is in acceptable answers
 	res, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
@@ -151,8 +159,10 @@ func TestSubmitAnswer_DiagnosticFeedback_Surfaces(t *testing.T) {
 	langRepo := language.NewMockRepository()
 	userRepo := user.NewMockRepository()
 
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-3"] = &exercise.Exercise{
 		ID:            "ex-3",
+		LessonID:      &lessonID,
 		Prompt:        "Choose particle for direction",
 		CorrectAnswer: "へ",
 		DiagnosticRubric: map[string]any{
@@ -161,7 +171,7 @@ func TestSubmitAnswer_DiagnosticFeedback_Surfaces(t *testing.T) {
 		XPReward: 10,
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, examRepo, langRepo, userRepo)
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	res, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
 		ExerciseID: "ex-3",
@@ -382,6 +392,9 @@ func TestSubmitExam_PassedAdvancesLevelAndInvalidatesCache(t *testing.T) {
 	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
 		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
 	}
+	eRepo.ReadinessExamExercises["lvl-n4"] = []exercise.Exercise{
+		{ID: "q-n4-1", SkillPillar: "reading", CorrectAnswer: "B"},
+	}
 
 	langRepo := language.NewMockRepository()
 	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
@@ -494,26 +507,28 @@ func TestSubmitExam_DeduplicatesRepeatedExerciseID(t *testing.T) {
 func TestSubmitAnswer_CreateAttemptErrorPropagates(t *testing.T) {
 	eRepo := exercise.NewMockRepository()
 	eRepo.CreateAttemptErr = errors.New("db write error")
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		Prompt:        "Test",
 		CorrectAnswer: "A",
 	}
 
-	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository())
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), exercise.NewMockLessonAccessChecker(true))
 
 	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
 		ExerciseID: "ex-1",
 		UserAnswer: "A",
-	}); err == nil {
-		t.Fatalf("expected error when CreateAttempt fails")
+	}); !errors.Is(err, eRepo.CreateAttemptErr) {
+		t.Fatalf("expected CreateAttempt error to propagate, got %v", err)
 	}
 }
 
 func TestProcessReview_MissingExerciseAndDBError(t *testing.T) {
 	eRepo := exercise.NewMockRepository()
 	sRepo := exercise.NewMockSRSRepository()
-	uc := exercise.NewUsecase(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository())
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), exercise.NewMockLessonAccessChecker(true))
 
 	q := 4
 	_, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
@@ -524,8 +539,10 @@ func TestProcessReview_MissingExerciseAndDBError(t *testing.T) {
 		t.Fatalf("expected ErrExerciseNotFound, got %v", err)
 	}
 
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		Prompt:        "Prompt",
 		CorrectAnswer: "Answer",
 	}
@@ -759,6 +776,9 @@ func TestSubmitExam_UsesTransactionalRecorderAndRollsBackOnError(t *testing.T) {
 	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
 		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
 	}
+	eRepo.ReadinessExamExercises["lvl-n4"] = []exercise.Exercise{
+		{ID: "q-n4-1", SkillPillar: "reading", CorrectAnswer: "B"},
+	}
 
 	langRepo := language.NewMockRepository()
 	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
@@ -815,13 +835,16 @@ func TestGetDailyVocabularies_ReturnsItems(t *testing.T) {
 func TestSubmitAnswer_WrongLowersExistingEaseFactorWithFloor(t *testing.T) {
 	eRepo := exercise.NewMockRepository()
 	sRepo := exercise.NewMockSRSRepository()
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		Prompt:        "Test 1",
 		CorrectAnswer: "Correct",
 	}
 	eRepo.Exercises["ex-2"] = &exercise.Exercise{
 		ID:            "ex-2",
+		LessonID:      &lessonID,
 		Prompt:        "Test 2",
 		CorrectAnswer: "Correct",
 	}
@@ -842,7 +865,7 @@ func TestSubmitAnswer_WrongLowersExistingEaseFactorWithFloor(t *testing.T) {
 		EaseFactor:      1.85,
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository())
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), exercise.NewMockLessonAccessChecker(true))
 
 	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
 		ExerciseID: "ex-1",
@@ -975,13 +998,16 @@ func TestGetExamResult_ReturnsAttemptAndCertificate(t *testing.T) {
 func TestSubmitAnswer_SkipSRSSchedule_PreservesExistingSRSState(t *testing.T) {
 	eRepo := exercise.NewMockRepository()
 	sRepo := exercise.NewMockSRSRepository()
+	lessonID := "lesson-1"
 	eRepo.Exercises["ex-1"] = &exercise.Exercise{
 		ID:            "ex-1",
+		LessonID:      &lessonID,
 		Prompt:        "Test 1",
 		CorrectAnswer: "Correct",
 	}
 	eRepo.Exercises["ex-2"] = &exercise.Exercise{
 		ID:            "ex-2",
+		LessonID:      &lessonID,
 		Prompt:        "Test 2",
 		CorrectAnswer: "Correct",
 	}
@@ -997,7 +1023,7 @@ func TestSubmitAnswer_SkipSRSSchedule_PreservesExistingSRSState(t *testing.T) {
 		NextReviewAt:    existingDue,
 	}
 
-	uc := exercise.NewUsecase(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository())
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), exercise.NewMockLessonAccessChecker(true))
 
 	res1, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
 		ExerciseID:      "ex-1",
@@ -1206,5 +1232,208 @@ func TestHelper_CalculateSM2_FailLowersEaseAndFloorsAt130(t *testing.T) {
 				t.Fatalf("got %+v, want reps=%d interval=%d ease=%.2f", got, tc.wantReps, tc.wantInterval, tc.wantEase)
 			}
 		})
+	}
+}
+
+func TestLoadAuthorizedExercise_RejectsDetachedExercise(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	eRepo.Exercises["ex-detached"] = &exercise.Exercise{
+		ID:            "ex-detached",
+		LessonID:      nil,
+		Prompt:        "Detached",
+		CorrectAnswer: "A",
+	}
+	emptyLesson := ""
+	eRepo.Exercises["ex-empty-lesson"] = &exercise.Exercise{
+		ID:            "ex-empty-lesson",
+		LessonID:      &emptyLesson,
+		Prompt:        "Empty Lesson",
+		CorrectAnswer: "A",
+	}
+
+	uc := exercise.NewUsecaseWithAccessChecker(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		exercise.NewMockLessonAccessChecker(true),
+	)
+
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-detached",
+		UserAnswer: "A",
+	}); !errors.Is(err, apperror.ErrForbidden) {
+		t.Fatalf("expected apperror.ErrForbidden for detached exercise SubmitAnswer, got %v", err)
+	}
+
+	q := 4
+	if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-detached",
+		Quality:    &q,
+	}); !errors.Is(err, apperror.ErrForbidden) {
+		t.Fatalf("expected apperror.ErrForbidden for detached exercise ProcessReview, got %v", err)
+	}
+
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-empty-lesson",
+		UserAnswer: "A",
+	}); !errors.Is(err, apperror.ErrForbidden) {
+		t.Fatalf("expected apperror.ErrForbidden for empty LessonID SubmitAnswer, got %v", err)
+	}
+}
+
+func TestVerifyLessonUnlocked_MissingAccessCheckerRejected(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	uc := exercise.NewUsecase(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+	)
+
+	if _, err := uc.GetExercisesByLesson(context.Background(), "user-1", lessonID); !errors.Is(err, apperror.ErrInternal) {
+		t.Fatalf("expected apperror.ErrInternal when accessChecker is nil on GetExercisesByLesson, got %v", err)
+	}
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-1",
+		UserAnswer: "A",
+	}); !errors.Is(err, apperror.ErrInternal) {
+		t.Fatalf("expected apperror.ErrInternal when accessChecker is nil on SubmitAnswer, got %v", err)
+	}
+	q := 4
+	if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-1",
+		Quality:    &q,
+	}); !errors.Is(err, apperror.ErrInternal) {
+		t.Fatalf("expected apperror.ErrInternal when accessChecker is nil on ProcessReview, got %v", err)
+	}
+}
+
+func TestGetExamResult_SucceedsWhenLanguageEnrollmentInactive(t *testing.T) {
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+	userRepo := user.NewMockRepository()
+
+	_ = userRepo.Create(context.Background(), &user.User{
+		UserAccount: user.UserAccount{ID: "user-1", Email: "budi@example.com"},
+		UserProfile: user.UserProfile{Name: "Budi", Username: "budi"},
+	})
+	lvlN5 := &language.ProficiencyLevel{
+		ID:                  "lvl-n5",
+		LanguageID:          "lang-ja",
+		Code:                "N5",
+		OfficialExamName:    "JLPT N5 Readiness",
+		PassingScorePercent: 60,
+		OrderIndex:          1,
+	}
+	lvlA1 := &language.ProficiencyLevel{
+		ID:                  "lvl-a1",
+		LanguageID:          "lang-de",
+		Code:                "A1",
+		OfficialExamName:    "Goethe A1",
+		PassingScorePercent: 60,
+		OrderIndex:          1,
+	}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Levels["lvl-a1"] = lvlA1
+	langRepo.Enrollments["enr-ja"] = &language.UserLanguageEnrollment{
+		ID:             "enr-ja",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       false,
+		CurrentLevel:   lvlN5,
+	}
+	langRepo.Enrollments["enr-de"] = &language.UserLanguageEnrollment{
+		ID:             "enr-de",
+		UserID:         "user-1",
+		LanguageID:     "lang-de",
+		CurrentLevelID: &lvlA1.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlA1,
+	}
+
+	examRepo.Attempts = append(examRepo.Attempts, exercise.ReadinessExamAttempt{
+		ID:           "att-ja-1",
+		UserID:       "user-1",
+		LevelID:      "lvl-n5",
+		ScorePercent: 85,
+		IsPassed:     true,
+		AttemptedAt:  time.Date(2026, 11, 10, 8, 0, 0, 0, time.UTC),
+	})
+
+	uc := exercise.NewUsecase(exercise.NewMockRepository(), exercise.NewMockSRSRepository(), examRepo, langRepo, userRepo)
+
+	res, err := uc.GetExamResult(context.Background(), "user-1", "lvl-n5")
+	if err != nil {
+		t.Fatalf("expected GetExamResult to succeed for inactive language enrollment, got %v", err)
+	}
+	if res.Certificate == nil || res.Certificate.LevelCode != "N5" || res.Certificate.CandidateName != "Budi" {
+		t.Fatalf("unexpected certificate payload: %+v", res.Certificate)
+	}
+
+	// Unenrolled user must still be rejected with ErrForbidden
+	if _, err := uc.GetExamResult(context.Background(), "user-other", "lvl-n5"); !errors.Is(err, apperror.ErrForbidden) {
+		t.Fatalf("expected apperror.ErrForbidden for user without language enrollment, got %v", err)
+	}
+}
+
+func TestSubmitExam_DoesNotAdvanceToUnconfiguredNextLevel(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+	}
+	// Note: lvl-n4 has no readiness exam exercises configured
+
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2, PassingScorePercent: 60}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Levels["lvl-n4"] = lvlN4
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	inv := &stubCacheInvalidator{}
+	uc := exercise.NewUsecaseFull(eRepo, exercise.NewMockSRSRepository(), exercise.NewMockReadinessExamRepository(), langRepo, user.NewMockRepository(), nil, inv)
+
+	res, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: "lvl-n5",
+		Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: "A"}},
+	})
+	if err != nil {
+		t.Fatalf("expected exam submission to succeed even when next level is unconfigured, got %v", err)
+	}
+	if !res.Attempt.IsPassed || res.Certificate == nil {
+		t.Fatalf("expected passed attempt and certificate")
+	}
+	if langRepo.Enrollments["enr-1"].CurrentLevelID == nil || *langRepo.Enrollments["enr-1"].CurrentLevelID != "lvl-n5" {
+		t.Fatalf("expected enrollment level to stay at lvl-n5 when lvl-n4 has no configured exercises, got %v", langRepo.Enrollments["enr-1"].CurrentLevelID)
+	}
+	if inv.calls != 0 {
+		t.Fatalf("expected no curriculum cache invalidation when level did not advance, got %d", inv.calls)
+	}
+}
+
+func TestMockRepository_GetExerciseByID_ReturnsNotFound(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	ex, err := eRepo.GetExerciseByID(context.Background(), "missing-id")
+	if !errors.Is(err, exercise.ErrExerciseNotFound) || ex != nil {
+		t.Fatalf("expected (nil, ErrExerciseNotFound), got (%v, %v)", ex, err)
 	}
 }

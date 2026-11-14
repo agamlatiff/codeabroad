@@ -3,17 +3,29 @@ package exercise
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/middleware"
 	"codeabroad/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
 
 // Handler handles HTTP requests for exercise interactions, SRS reviews, and diagnostic readiness exams
 type Handler struct {
-	exerciseUsecase Usecase
-	srsUsecase      SRSUsecase
-	examUsecase     ReadinessExamUsecase
+	exerciseUsecase   Usecase
+	srsUsecase        SRSUsecase
+	examUsecase       ReadinessExamUsecase
+	submitRateLimiter gin.HandlerFunc
+	reviewRateLimiter gin.HandlerFunc
+	examRateLimiter   gin.HandlerFunc
+}
+
+func resolveRateLimiter(custom gin.HandlerFunc, maxRequests int, message string) gin.HandlerFunc {
+	if custom != nil {
+		return custom
+	}
+	return middleware.UserOrIPRateLimitMiddleware(maxRequests, time.Minute, message)
 }
 
 // NewHandler creates a new combined Exercise, SRS, and Exam Handler instance
@@ -22,10 +34,37 @@ func NewHandler(
 	srsUsecase SRSUsecase,
 	examUsecase ReadinessExamUsecase,
 ) *Handler {
+	return NewHandlerWithRateLimiters(exerciseUsecase, srsUsecase, examUsecase, nil, nil, nil)
+}
+
+// NewHandlerWithRateLimiters creates a Handler with custom rate limiter middlewares for mutating routes
+func NewHandlerWithRateLimiters(
+	exerciseUsecase Usecase,
+	srsUsecase SRSUsecase,
+	examUsecase ReadinessExamUsecase,
+	submitRateLimiter gin.HandlerFunc,
+	reviewRateLimiter gin.HandlerFunc,
+	examRateLimiter gin.HandlerFunc,
+) *Handler {
 	return &Handler{
 		exerciseUsecase: exerciseUsecase,
 		srsUsecase:      srsUsecase,
 		examUsecase:     examUsecase,
+		submitRateLimiter: resolveRateLimiter(
+			submitRateLimiter,
+			30,
+			"too many exercise submissions, please wait a moment",
+		),
+		reviewRateLimiter: resolveRateLimiter(
+			reviewRateLimiter,
+			30,
+			"too many SRS review submissions, please wait a moment",
+		),
+		examRateLimiter: resolveRateLimiter(
+			examRateLimiter,
+			10,
+			"too many readiness exam submissions, please wait a moment",
+		),
 	}
 }
 
@@ -235,13 +274,29 @@ func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 
 // RegisterRoutes registers exercise, SRS, and readiness exam endpoints
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+	submitRateLimiter := resolveRateLimiter(
+		h.submitRateLimiter,
+		30,
+		"too many exercise submissions, please wait a moment",
+	)
+	reviewRateLimiter := resolveRateLimiter(
+		h.reviewRateLimiter,
+		30,
+		"too many SRS review submissions, please wait a moment",
+	)
+	examRateLimiter := resolveRateLimiter(
+		h.examRateLimiter,
+		10,
+		"too many readiness exam submissions, please wait a moment",
+	)
+
 	exercises := rg.Group("/exercises")
 	if authMiddleware != nil {
 		exercises.Use(authMiddleware)
 	}
 	{
 		exercises.GET("/lesson/:lesson_id", h.GetExercisesByLesson)
-		exercises.POST("/submit", h.SubmitAnswer)
+		exercises.POST("/submit", submitRateLimiter, h.SubmitAnswer)
 	}
 
 	vocabularies := rg.Group("/vocabularies")
@@ -258,7 +313,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	}
 	{
 		srs.GET("/due", h.GetDueReviews)
-		srs.POST("/review", h.ProcessReview)
+		srs.POST("/review", reviewRateLimiter, h.ProcessReview)
 	}
 
 	exams := rg.Group("/exams")
@@ -268,7 +323,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	{
 		exams.GET("/questions/:level_id", h.GetExamQuestions)
 		exams.GET("/result/:level_id", h.GetExamResult)
-		exams.POST("/submit", h.SubmitExam)
+		exams.POST("/submit", examRateLimiter, h.SubmitExam)
 	}
 }
 
