@@ -11,7 +11,6 @@ import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
 import {
   resolveLoginErrorMessage,
   resolvePostAuthPath,
-  // redirectToGoogleOAuth,
 } from './authHelpers'
 
 /**

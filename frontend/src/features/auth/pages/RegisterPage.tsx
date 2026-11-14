@@ -1,16 +1,15 @@
 import { Link } from 'react-router-dom'
+import { useWatch } from 'react-hook-form'
 import { useRegister } from "@/features/auth/hooks/useRegister"
 import { AuthLayout } from "@/features/auth/components/AuthLayout"
 import { Input } from "@/shared/components/ui/Input"
 import { PasswordStrengthMeter } from "@/features/auth/components/PasswordStrengthMeter"
-// import { SocialAuthButton } from "@/features/auth/components/SocialAuthButton"
-// import { AuthDivider } from "@/features/auth/components/AuthDivider"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { User, At, EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const RegisterPage = () => {
-  const { register, watch, errors, status, actions } = useRegister()
-  const password = watch('password') ?? ''
+  const { register, control, errors, status, actions } = useRegister()
+  const password = useWatch({ control, name: 'password', defaultValue: '' }) ?? ''
 
   return (
     <AuthLayout
@@ -85,15 +84,7 @@ export const RegisterPage = () => {
         </Button3D>
       </form>
 
-      {/* ── 2. DIVIDER & GOOGLE OAUTH BUTTON (TEMPORARILY DISABLED) ── */}
-      {/* <AuthDivider text="atau daftar dengan" className="my-3 sm:my-3.5" />
-      <div className="space-y-3">
-        <SocialAuthButton provider="google" onClick={actions.googleRegister}>
-          Daftar dengan Google
-        </SocialAuthButton>
-      </div> */}
-
-      {/* ── 4. LOGIN FOOTER ── */}
+      {/* ── LOGIN FOOTER ── */}
       <div className="mt-3.5 sm:mt-4 text-center text-xs text-slate-500 font-normal">
         Sudah punya akun?{' '}
         <Link to="/login" className="text-blue-600 font-semibold hover:underline">

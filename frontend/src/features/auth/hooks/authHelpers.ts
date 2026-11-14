@@ -1,5 +1,4 @@
 import { isAxiosError } from 'axios'
-// import { API_BASE_URL } from "@/shared/services/api"
 import type { User } from "@/features/user/types/user"
 
 /**
@@ -141,8 +140,3 @@ export const resolveRegisterErrorMessage = (err: unknown): RegisterErrorResult =
 
   return { type: 'general', message: 'Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.' }
 }
-
-/** Redirects the browser to the backend Google OAuth entrypoint (Temporarily disabled). */
-// export const redirectToGoogleOAuth = () => {
-//   window.location.href = `${API_BASE_URL}/auth/google`
-// }

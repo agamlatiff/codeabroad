@@ -64,13 +64,13 @@ const loadInitialSession = (): AuthSessionData => {
 
   // 1. Check persistent localStorage session (rememberMe: true)
   const storedLocal = safeParseSession(local?.getItem(AUTH_STORAGE_KEY) ?? null)
-  if (storedLocal?.refreshToken) {
+  if (storedLocal?.refreshToken && storedLocal?.user) {
     return { ...storedLocal, rememberMe: true }
   }
 
   // 2. Check transient sessionStorage session (rememberMe: false)
   const storedSession = safeParseSession(session?.getItem(AUTH_STORAGE_KEY) ?? null)
-  if (storedSession?.refreshToken) {
+  if (storedSession?.refreshToken && storedSession?.user) {
     return { ...storedSession, rememberMe: false }
   }
 
@@ -89,7 +89,7 @@ const persistSession = (data: AuthSessionData | null, rememberMe: boolean) => {
   const primary = rememberMe ? local : session
   const secondary = rememberMe ? session : local
 
-  if (data?.refreshToken) {
+  if (data?.refreshToken && data?.user) {
     primary?.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
     secondary?.removeItem(AUTH_STORAGE_KEY)
   } else {
@@ -105,7 +105,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: initialSession.accessToken,
   refreshToken: initialSession.refreshToken,
   rememberMe: initialSession.rememberMe,
-  isAuthenticated: Boolean(initialSession.refreshToken),
+  isAuthenticated: Boolean(initialSession.refreshToken && initialSession.user),
 
   setAuth: (user, accessToken, refreshToken, rememberMe = false) => {
     const sessionData: AuthSessionData = {
@@ -117,7 +117,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     persistSession(sessionData, rememberMe)
     set({
       ...sessionData,
-      isAuthenticated: true,
+      isAuthenticated: Boolean(refreshToken && user),
     })
   },
 
@@ -133,7 +133,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       accessToken,
       refreshToken,
-      isAuthenticated: true,
+      isAuthenticated: Boolean(refreshToken && state.user),
     })
   },
 
@@ -144,8 +144,6 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const newUser: User = {
       ...state.user,
       ...updatedFields,
-      country: updatedFields.country !== undefined ? updatedFields.country : state.user.country,
-      career_path: updatedFields.career_path !== undefined ? updatedFields.career_path : state.user.career_path,
     }
 
     const sessionData: AuthSessionData = {
@@ -175,7 +173,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
     if (event.key === AUTH_STORAGE_KEY) {
       const parsed = safeParseSession(event.newValue)
-      if (parsed?.refreshToken) {
+      if (parsed?.refreshToken && parsed?.user) {
         useAuthStore.setState({
           user: parsed.user,
           accessToken: parsed.accessToken,

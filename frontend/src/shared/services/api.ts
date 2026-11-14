@@ -94,12 +94,11 @@ api.interceptors.response.use(
 
         // If 401 Unauthorized and request has not been retried yet
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-            // Prevent infinite refresh loop on auth endpoints (including logout)
+            // Prevent infinite refresh loop on auth endpoints
             if (
                 originalRequest.url?.includes('/auth/login') ||
                 originalRequest.url?.includes('/auth/register') ||
-                originalRequest.url?.includes('/auth/refresh') ||
-                originalRequest.url?.includes('/auth/logout')
+                originalRequest.url?.includes('/auth/refresh')
             ) {
                 return Promise.reject(error)
             }
@@ -119,7 +118,13 @@ api.interceptors.response.use(
                 return new Promise((resolve, reject) => {
                     failedQueue.push({ resolve, reject })
                 })
-                    .then(() => api(originalRequest))
+                    .then(() => {
+                        const latestToken = useAuthStore.getState().accessToken
+                        if (latestToken && originalRequest.headers) {
+                            originalRequest.headers.Authorization = `Bearer ${latestToken}`
+                        }
+                        return api(originalRequest)
+                    })
                     .catch((err) => Promise.reject(err))
             }
 
@@ -149,10 +154,35 @@ api.interceptors.response.use(
                     throw new Error('Refresh token rejected')
                 }
             } catch (refreshErr) {
+                // Cross-tab race guard: if another tab rotated the session while our refresh was in flight, reuse it
+                const latestState = useAuthStore.getState()
+                if (
+                    latestState.refreshToken &&
+                    latestState.refreshToken !== refreshToken &&
+                    latestState.accessToken
+                ) {
+                    processQueue(null)
+                    if (originalRequest.headers) {
+                        originalRequest.headers.Authorization = `Bearer ${latestState.accessToken}`
+                    }
+                    return api(originalRequest)
+                }
+
                 processQueue(refreshErr)
 
-                logout()
-                window.location.href = '/login'
+                // Only wipe local session on explicit auth rejection (401/403) or invalid refresh payload, not transient network blips
+                const status = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
+                const isExplicitAuthRejection =
+                    status === 401 ||
+                    status === 403 ||
+                    (refreshErr instanceof Error && refreshErr.message === 'Refresh token rejected')
+
+                if (isExplicitAuthRejection) {
+                    logout()
+                    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+                        window.location.href = '/login'
+                    }
+                }
                 return Promise.reject(refreshErr)
             } finally {
                 isRefreshing = false

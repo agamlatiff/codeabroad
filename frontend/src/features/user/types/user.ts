@@ -23,6 +23,7 @@ export interface UserProfile {
   tech_stack_id?: string | null
   primary_stack?: string | null
   is_onboarded: boolean
+  daily_goal_minutes?: number
   has_seen_roadmap_tour?: boolean
   preferred_roadmap_view?: 'map' | 'syllabus' | null
   country?: CountrySummary | null
@@ -51,6 +52,7 @@ export interface User extends UserAccount, UserProfile, UserGamificationStats {}
 export interface UpdateProfilePayload {
   name?: string
   bio?: string
+  daily_goal_minutes?: number
   country_id?: string
   career_path_id?: string
   tech_stack_id?: string

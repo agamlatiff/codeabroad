@@ -1,9 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useLogin } from "@/features/auth/hooks/useLogin"
 import { AuthLayout } from "@/features/auth/components/AuthLayout"
-// import { SocialAuthButton } from "@/features/auth/components/SocialAuthButton"
 import { Input } from "@/shared/components/ui/Input"
-// import { AuthDivider } from "@/features/auth/components/AuthDivider"
 import { AuthCheckbox } from "@/features/auth/components/AuthCheckbox"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
@@ -42,7 +40,7 @@ export const LoginPage = () => {
           {...register('password')}
         />
 
-        {/* Remember Me Row (Forgot Password temporarily disabled) */}
+        {/* Remember Me Row */}
         <div className="flex items-center justify-between pt-0.5">
           <AuthCheckbox
             id="remember"
@@ -64,15 +62,7 @@ export const LoginPage = () => {
         </Button3D>
       </form>
 
-      {/* ── 2. DIVIDER & GOOGLE OAUTH BUTTON (TEMPORARILY DISABLED) ── */}
-      {/* <AuthDivider text="atau lanjutkan dengan" className="my-3.5 sm:my-4" />
-      <div className="space-y-3">
-        <SocialAuthButton provider="google" onClick={actions.googleLogin}>
-          Masuk dengan Google
-        </SocialAuthButton>
-      </div> */}
-
-      {/* ── 4. REGISTRATION FOOTER ── */}
+      {/* ── REGISTRATION FOOTER ── */}
       <div className="mt-4 sm:mt-5 text-center text-xs text-slate-500 font-normal">
         Belum punya akun?{' '}
         <Link to="/register" className="text-blue-600 font-semibold hover:underline">
