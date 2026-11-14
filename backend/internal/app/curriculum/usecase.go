@@ -56,10 +56,56 @@ func NewUsecase(
 	return NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, nil)
 }
 
+func sortProficiencyLevels(levels []language.ProficiencyLevel) []language.ProficiencyLevel {
+	sorted := make([]language.ProficiencyLevel, len(levels))
+	copy(sorted, levels)
+	sort.Slice(sorted, func(i, j int) bool {
+		if sorted[i].OrderIndex != sorted[j].OrderIndex {
+			return sorted[i].OrderIndex < sorted[j].OrderIndex
+		}
+		return sorted[i].ID < sorted[j].ID
+	})
+	return sorted
+}
+
+func (u *usecase) hydrateEnrollment(ctx context.Context, enr *language.UserLanguageEnrollment) (*language.UserLanguageEnrollment, error) {
+	if enr == nil {
+		return nil, language.ErrEnrollmentNotFound
+	}
+	copyEnr := *enr
+	if copyEnr.Language == nil && copyEnr.LanguageID != "" {
+		if lang, lErr := u.langRepo.GetLanguageByID(ctx, copyEnr.LanguageID); lErr == nil && lang != nil {
+			copyEnr.Language = lang
+		}
+	}
+	if copyEnr.CurrentLevel == nil && copyEnr.CurrentLevelID != nil && *copyEnr.CurrentLevelID != "" {
+		lvl, lvErr := u.langRepo.GetLevelByID(ctx, *copyEnr.CurrentLevelID)
+		if lvErr == nil && lvl != nil {
+			copyEnr.CurrentLevel = lvl
+		} else if lvErr != nil && !errors.Is(lvErr, language.ErrProficiencyLevelNotFound) {
+			return nil, lvErr
+		}
+	}
+	// Fallback for nullable current_level_id (ERD ON DELETE SET NULL) when the referenced level was removed
+	if copyEnr.CurrentLevel == nil && copyEnr.LanguageID != "" {
+		levels, lErr := u.langRepo.GetLevelsByLanguageID(ctx, copyEnr.LanguageID)
+		if lErr != nil {
+			return nil, lErr
+		}
+		if len(levels) > 0 {
+			sorted := sortProficiencyLevels(levels)
+			fallback := sorted[0]
+			copyEnr.CurrentLevel = &fallback
+			copyEnr.CurrentLevelID = &fallback.ID
+		}
+	}
+	return &copyEnr, nil
+}
+
 func (u *usecase) resolveEnrollmentForCurriculum(ctx context.Context, userID string, languageID string) (*language.UserLanguageEnrollment, error) {
 	enrollment, err := u.langRepo.GetActiveEnrollment(ctx, userID, languageID)
 	if err == nil && enrollment != nil {
-		return enrollment, nil
+		return u.hydrateEnrollment(ctx, enrollment)
 	}
 	if languageID == "" || !errors.Is(err, language.ErrEnrollmentNotFound) {
 		return nil, err
@@ -71,18 +117,7 @@ func (u *usecase) resolveEnrollmentForCurriculum(ctx context.Context, userID str
 	}
 	for i := range enrollments {
 		if enrollments[i].LanguageID == languageID {
-			enr := enrollments[i]
-			if enr.Language == nil {
-				if lang, lErr := u.langRepo.GetLanguageByID(ctx, languageID); lErr == nil {
-					enr.Language = lang
-				}
-			}
-			if enr.CurrentLevel == nil && enr.CurrentLevelID != nil {
-				if lvl, lvErr := u.langRepo.GetLevelByID(ctx, *enr.CurrentLevelID); lvErr == nil {
-					enr.CurrentLevel = lvl
-				}
-			}
-			return &enr, nil
+			return u.hydrateEnrollment(ctx, &enrollments[i])
 		}
 	}
 	return nil, language.ErrEnrollmentNotFound
@@ -99,28 +134,42 @@ func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurr
 		languageID = req.LanguageID
 	}
 
+	// Capture cache version epoch BEFORE resolving enrollment/units/lessons from Postgres
+	// so concurrent level-up invalidations cannot let stale data populate the new epoch.
+	cacheVer := ""
+	canCache := false
+	if u.cacheRepo != nil {
+		ver, verErr := u.cacheRepo.GetCurriculumVersion(ctx, userID)
+		if verErr != nil {
+			log.Printf("curriculum: failed to read curriculum cache version for user %s: %v", userID, verErr)
+		} else if ver != "" {
+			cacheVer = ver
+			canCache = true
+		}
+	}
+
 	enrollment, err := u.resolveEnrollmentForCurriculum(ctx, userID, languageID)
 	if err != nil {
 		return nil, err
 	}
-	if enrollment == nil || enrollment.Language == nil || enrollment.CurrentLevel == nil {
+	if enrollment == nil || enrollment.Language == nil {
 		return nil, language.ErrEnrollmentNotFound
 	}
+	if enrollment.CurrentLevel == nil {
+		return nil, language.ErrProficiencyLevelNotFound
+	}
 
-	// Capture cache version epoch and lookup cached curriculum in a single round-trip for active tracks only
-	cacheVer := ""
-	canCache := false
-	if u.cacheRepo != nil && enrollment.IsActive {
-		cached, ver, cacheErr := u.cacheRepo.GetCurriculumWithVersion(ctx, userID, enrollment.Language.ID)
+	// Lookup cached curriculum for active tracks only; preserve the pre-DB cacheVer on miss.
+	if u.cacheRepo != nil && enrollment.IsActive && canCache {
+		cached, _, cacheErr := u.cacheRepo.GetCurriculumWithVersion(ctx, userID, enrollment.Language.ID)
 		if cacheErr != nil {
 			log.Printf("curriculum: failed to read curriculum cache for user %s: %v", userID, cacheErr)
-		} else {
-			cacheVer = ver
-			canCache = true
-			if cached != nil {
-				return cached, nil
-			}
+			canCache = false
+		} else if cached != nil {
+			return cached, nil
 		}
+	} else {
+		canCache = false
 	}
 
 	units, err := u.curriculumRepo.GetUnitsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
@@ -348,9 +397,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	}
 	activityType := "lesson_completed"
 
-	// Anti-exploit: Replaying an already mastered lesson awards practice XP instead of full reward
+	// Anti-exploit: Replaying an already mastered lesson awards practice XP only when passing accuracy is met
 	if lesson.IsCompleted {
-		xpEarned = 5
+		xpEarned = u.helper.CalculateReplayXP(req.Score)
 	}
 
 	now := time.Now().UTC()
@@ -388,15 +437,15 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, fmt.Errorf("failed to record lesson completion tx: %w", err)
 	}
 
-	// Invalidate user's cached curriculum atomically via epoch increment
+	// Automatically advance current_level_id if every lesson in the user's current level is now complete
+	u.maybeAdvanceEnrollmentLevel(ctx, userID, lesson.UnitID, lesson.LevelID, lesson.UnitType)
+
+	// Invalidate user's cached curriculum atomically via epoch increment after any level advancement
 	if u.cacheRepo != nil {
 		if invErr := u.cacheRepo.InvalidateCurriculum(ctx, userID); invErr != nil {
 			log.Printf("curriculum: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
 		}
 	}
-
-	// Automatically advance current_level_id if every lesson in the user's current level is now complete
-	u.maybeAdvanceEnrollmentLevel(ctx, userID, lesson.UnitID, lesson.LevelID, lesson.UnitType)
 
 	awardedBadges, extraBadgeXP := u.evaluateLessonBadges(ctx, userID, payload)
 	finalXP := payload.NewXP + extraBadgeXP
@@ -498,11 +547,7 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 	if err != nil || len(levels) == 0 {
 		return
 	}
-	sortedLevels := make([]language.ProficiencyLevel, len(levels))
-	copy(sortedLevels, levels)
-	sort.Slice(sortedLevels, func(i, j int) bool {
-		return sortedLevels[i].OrderIndex < sortedLevels[j].OrderIndex
-	})
+	sortedLevels := sortProficiencyLevels(levels)
 
 	for i, lvl := range sortedLevels {
 		if lvl.ID == levelID {
@@ -517,11 +562,6 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 						log.Printf("curriculum: failed to advance enrollment level for user %s: %v", userID, err)
 					}
 					return
-				}
-				if u.cacheRepo != nil {
-					if invErr := u.cacheRepo.InvalidateCurriculum(ctx, userID); invErr != nil {
-						log.Printf("curriculum: failed to invalidate curriculum cache after level advance for user %s: %v", userID, invErr)
-					}
 				}
 			}
 			return

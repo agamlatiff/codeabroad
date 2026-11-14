@@ -469,28 +469,30 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	payload.Metadata["is_practice"] = payload.WasCompleted
 
 	if payload.WasCompleted {
-		payload.XPEarned = 5
+		payload.XPEarned = helper.CalculateReplayXP(verifiedScore)
 		payload.Metadata["is_practice"] = true
 		payload.Metadata["is_replay"] = true
 
-		loc, locErr := time.LoadLocation("Asia/Jakarta")
-		if locErr != nil {
-			loc = time.FixedZone("WIB", 7*3600)
-		}
-		now := payload.LastActiveAt
-		if now.IsZero() {
-			now = time.Now().UTC()
-		}
-		dayKey := fmt.Sprintf("%s:%s", userID, now.In(loc).Format("2006-01-02"))
-		used := m.DailyReplayXP[dayKey]
-		if used+payload.XPEarned > dailyReplayXPCap {
-			remaining := dailyReplayXPCap - used
-			if remaining < 0 {
-				remaining = 0
+		if payload.XPEarned > 0 {
+			loc, locErr := time.LoadLocation("Asia/Jakarta")
+			if locErr != nil {
+				loc = time.FixedZone("WIB", 7*3600)
 			}
-			payload.XPEarned = remaining
+			now := payload.LastActiveAt
+			if now.IsZero() {
+				now = time.Now().UTC()
+			}
+			dayKey := fmt.Sprintf("%s:%s", userID, now.In(loc).Format("2006-01-02"))
+			used := m.DailyReplayXP[dayKey]
+			if used+payload.XPEarned > dailyReplayXPCap {
+				remaining := dailyReplayXPCap - used
+				if remaining < 0 {
+					remaining = 0
+				}
+				payload.XPEarned = remaining
+			}
+			m.DailyReplayXP[dayKey] += payload.XPEarned
 		}
-		m.DailyReplayXP[dayKey] += payload.XPEarned
 
 		if !existing.CompletedAt.IsZero() {
 			payload.Progress.CompletedAt = existing.CompletedAt
@@ -546,6 +548,7 @@ type MockCurriculumCacheRepository struct {
 	GetCurriculumErr       error
 	SetCurriculumErr       error
 	InvalidateErr          error
+	GetVersionCallCount    int
 	GetCurriculumCallCount int
 	SetCurriculumCallCount int
 	InvalidateCallCount    int
@@ -565,6 +568,7 @@ func (m *MockCurriculumCacheRepository) GetCurriculumVersion(ctx context.Context
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	m.GetVersionCallCount++
 	if m.GetCurriculumErr != nil {
 		return "", m.GetCurriculumErr
 	}
@@ -623,8 +627,8 @@ func (m *MockCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Conte
 	if m.SetCurriculumErr != nil {
 		return m.SetCurriculumErr
 	}
-	if expectedVersion == "" {
-		expectedVersion = "0"
+	if curriculum == nil || userID == "" || languageID == "" || expectedVersion == "" {
+		return nil
 	}
 	currentVersion := fmt.Sprintf("%d", m.Versions[userID])
 	if expectedVersion != currentVersion {

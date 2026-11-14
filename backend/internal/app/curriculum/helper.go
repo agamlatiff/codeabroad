@@ -134,7 +134,18 @@ func (h *Helper) CalculateLevel(xp int) int {
 }
 
 // ComputeVerifiedLessonScore validates exercise attempt completeness and calculates server-verified lesson accuracy.
-const minLessonPassScore = 60
+const (
+	minLessonPassScore = 60
+	replayPracticeXP   = 5
+)
+
+// CalculateReplayXP awards practice XP for a completed lesson replay only when accuracy meets minLessonPassScore.
+func (h *Helper) CalculateReplayXP(score int) int {
+	if score < minLessonPassScore {
+		return 0
+	}
+	return replayPracticeXP
+}
 
 // ComputeVerifiedLessonScore derives a lesson's score strictly from verified exercise_attempts rows
 func (h *Helper) ComputeVerifiedLessonScore(_ int, summary *LessonAttemptSummary, isReplay bool) (int, error) {

@@ -113,11 +113,8 @@ func (c *redisCurriculumCacheRepository) SetCurriculum(ctx context.Context, user
 // SetCurriculumIfVersion atomically stores a curriculum only if the user's cache version epoch still matches expectedVersion,
 // eliminating stale-write races when a lesson completes concurrently during cache population.
 func (c *redisCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error {
-	if c.rdb == nil || c.rdb.Client == nil || curriculum == nil {
+	if c.rdb == nil || c.rdb.Client == nil || curriculum == nil || userID == "" || languageID == "" || expectedVersion == "" {
 		return nil
-	}
-	if expectedVersion == "" {
-		expectedVersion = "0"
 	}
 	data, err := json.Marshal(curriculum)
 	if err != nil {

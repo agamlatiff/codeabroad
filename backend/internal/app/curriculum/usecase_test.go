@@ -1013,15 +1013,15 @@ func TestCompleteLesson_AdvancesLevelWhenAllLevelLessonsCompleted(t *testing.T) 
 		t.Fatalf("expected 1 cache invalidation after lesson-1, got %d", cacheRepo.InvalidateCallCount)
 	}
 
-	// Completing lesson 2/2 completes the entire level and advances N5 -> N4 + invalidates cache again
+	// Completing lesson 2/2 completes the entire level and advances N5 -> N4 + invalidates cache once after advancement
 	if _, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{LessonID: "lesson-2", Score: 100}); err != nil {
 		t.Fatalf("lesson-2 completion failed: %v", err)
 	}
 	if got := *lRepo.Enrollments["enr-1"].CurrentLevelID; got != "lvl-n4" {
 		t.Errorf("expected enrollment to advance to lvl-n4 after completing all N5 lessons, got %s", got)
 	}
-	if cacheRepo.InvalidateCallCount != 3 {
-		t.Errorf("expected 3 cache invalidations (lesson-1, lesson-2, level advance), got %d", cacheRepo.InvalidateCallCount)
+	if cacheRepo.InvalidateCallCount != 2 {
+		t.Errorf("expected 2 cache invalidations (1 after lesson-1, 1 single invalidation after lesson-2 + level advance), got %d", cacheRepo.InvalidateCallCount)
 	}
 }
 
@@ -1054,8 +1054,11 @@ func TestGetCurriculum_UsesSingleVersionLookupAndHandlesCacheError(t *testing.T)
 	if res.Language.ID != "lang-ja" {
 		t.Errorf("expected lang-ja curriculum, got %s", res.Language.ID)
 	}
-	if cacheRepo.GetCurriculumCallCount != 1 {
-		t.Errorf("expected 1 single GetCurriculumWithVersion call, got %d", cacheRepo.GetCurriculumCallCount)
+	if cacheRepo.GetVersionCallCount != 1 {
+		t.Errorf("expected 1 single pre-DB GetCurriculumVersion call, got %d", cacheRepo.GetVersionCallCount)
+	}
+	if cacheRepo.GetCurriculumCallCount != 0 {
+		t.Errorf("expected GetCurriculumWithVersion skipped after version lookup error, got %d", cacheRepo.GetCurriculumCallCount)
 	}
 	if cacheRepo.SetCurriculumCallCount != 0 {
 		t.Errorf("expected SetCurriculumIfVersion NOT to be called when version lookup errored, got %d calls", cacheRepo.SetCurriculumCallCount)
@@ -1532,7 +1535,327 @@ func TestCompleteLesson_SkipsGetBadgesAndDoesNotAdvanceIntoEmptyLessonUnit(t *te
 	}
 }
 
+func TestCompleteLesson_FailedReplayEarnsZeroXP(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1", XPReward: 15, OrderIndex: 1, IsCompleted: true}
+	cRepo.LessonProgress["user-1:lesson-1"] = &curriculum.UserLessonProgress{
+		UserID:      "user-1",
+		LessonID:    "lesson-1",
+		IsCompleted: true,
+		Score:       90,
+	}
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          5,
+		AttemptedExercises:      5,
+		CorrectExercises:        5,
+		FreshAttemptedExercises: 5,
+		FreshCorrectExercises:   2, // 40% < 60%
+	}
 
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 100, CurrentLevel: 2, Streak: 1},
+	}
 
+	uc := curriculum.NewUsecase(cRepo, language.NewMockRepository(), exercise.NewMockRepository(), uRepo, nil)
 
+	// 1. Failed replay (40%) with forged request score=100 must earn 0 XP and preserve high score 90
+	res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    100,
+	})
+	if err != nil {
+		t.Fatalf("expected failed replay to complete cleanly with 0 XP, got %v", err)
+	}
+	if res.Gamification.XP != 100 || cRepo.UserXP["user-1"] != 100 {
+		t.Errorf("expected 0 XP earned on 40%% failed replay (stay at 100 XP), got resp=%d repo=%d", res.Gamification.XP, cRepo.UserXP["user-1"])
+	}
+	if res.Progress.Score != 90 {
+		t.Errorf("expected preserved high score 90, got %d", res.Progress.Score)
+	}
 
+	// 2. Failed replay (0%) must also earn 0 XP
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          5,
+		AttemptedExercises:      5,
+		CorrectExercises:        5,
+		FreshAttemptedExercises: 5,
+		FreshCorrectExercises:   0,
+	}
+	resZero, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    0,
+	})
+	if err != nil {
+		t.Fatalf("expected 0%% replay to complete cleanly with 0 XP, got %v", err)
+	}
+	if resZero.Gamification.XP != 100 || cRepo.UserXP["user-1"] != 100 {
+		t.Errorf("expected 0 XP earned on 0%% failed replay (stay at 100 XP), got resp=%d repo=%d", resZero.Gamification.XP, cRepo.UserXP["user-1"])
+	}
+
+	// 3. Subsequent passing replay (60%) earns 5 practice XP
+	cRepo.AttemptSummaries["user-1:lesson-1"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          5,
+		AttemptedExercises:      5,
+		CorrectExercises:        5,
+		FreshAttemptedExercises: 5,
+		FreshCorrectExercises:   3, // 60%
+	}
+	resPass, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-1",
+		Score:    60,
+	})
+	if err != nil {
+		t.Fatalf("expected 60%% passing replay to succeed, got %v", err)
+	}
+	if resPass.Gamification.XP != 105 || cRepo.UserXP["user-1"] != 105 {
+		t.Errorf("expected 105 XP after passing replay (+5 XP), got resp=%d repo=%d", resPass.Gamification.XP, cRepo.UserXP["user-1"])
+	}
+}
+
+type orderTrackingCacheRepo struct {
+	*curriculum.MockCurriculumCacheRepository
+	onInvalidate func()
+}
+
+func (r *orderTrackingCacheRepo) InvalidateCurriculum(ctx context.Context, userID string) error {
+	if r.onInvalidate != nil {
+		r.onInvalidate()
+	}
+	return r.MockCurriculumCacheRepository.InvalidateCurriculum(ctx, userID)
+}
+
+type fixedOrderLangRepo struct {
+	*language.MockRepository
+	orderedLevels []language.ProficiencyLevel
+}
+
+func (r *fixedOrderLangRepo) GetLevelsByLanguageID(ctx context.Context, languageID string) ([]language.ProficiencyLevel, error) {
+	if r.GetLevelsErr != nil {
+		return nil, r.GetLevelsErr
+	}
+	return r.orderedLevels, nil
+}
+
+func TestCompleteLesson_SingleInvalidationAfterAdvance_AndDeterministicLevelSort(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-n5"] = &curriculum.UnitNodeResponse{ID: "unit-n5", LevelID: "lvl-n5", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Units["unit-n4-b"] = &curriculum.UnitNodeResponse{ID: "unit-n4-b", LevelID: "lvl-n4-b", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Units["unit-n4-a"] = &curriculum.UnitNodeResponse{ID: "unit-n4-a", LevelID: "lvl-n4-a", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-n5"] = &curriculum.LessonNodeResponse{ID: "lesson-n5", UnitID: "unit-n5", Title: "N5 Final", XPReward: 15, OrderIndex: 1}
+	cRepo.Lessons["lesson-n4-b"] = &curriculum.LessonNodeResponse{ID: "lesson-n4-b", UnitID: "unit-n4-b", Title: "N4 B", XPReward: 20, OrderIndex: 1}
+	cRepo.Lessons["lesson-n4-a"] = &curriculum.LessonNodeResponse{ID: "lesson-n4-a", UnitID: "unit-n4-a", Title: "N4 A", XPReward: 20, OrderIndex: 1}
+	cRepo.AttemptSummaries["user-1:lesson-n5"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     2,
+		AttemptedExercises: 2,
+		CorrectExercises:   2,
+	}
+
+	baseLangRepo := language.NewMockRepository()
+	langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lvlN4B := &language.ProficiencyLevel{ID: "lvl-n4-b", LanguageID: "lang-ja", Code: "N4B", OrderIndex: 2}
+	lvlN4A := &language.ProficiencyLevel{ID: "lvl-n4-a", LanguageID: "lang-ja", Code: "N4A", OrderIndex: 2}
+	baseLangRepo.Languages["lang-ja"] = langJA
+	baseLangRepo.Levels["lvl-n5"] = lvlN5
+	baseLangRepo.Levels["lvl-n4-b"] = lvlN4B
+	baseLangRepo.Levels["lvl-n4-a"] = lvlN4A
+	baseLangRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		Language:       langJA,
+		CurrentLevel:   lvlN5,
+	}
+	lRepo := &fixedOrderLangRepo{
+		MockRepository: baseLangRepo,
+		orderedLevels:  []language.ProficiencyLevel{*lvlN4B, *lvlN4A, *lvlN5},
+	}
+
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount:           user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{XP: 0, CurrentLevel: 1},
+	}
+
+	baseCache := curriculum.NewMockCurriculumCacheRepository()
+	levelAtInvalidate := ""
+	cacheRepo := &orderTrackingCacheRepo{
+		MockCurriculumCacheRepository: baseCache,
+		onInvalidate: func() {
+			if enr := baseLangRepo.Enrollments["enr-1"]; enr != nil && enr.CurrentLevelID != nil {
+				levelAtInvalidate = *enr.CurrentLevelID
+			}
+		},
+	}
+
+	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), uRepo, nil, cacheRepo)
+	if _, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{
+		LessonID: "lesson-n5",
+		Score:    100,
+	}); err != nil {
+		t.Fatalf("CompleteLesson failed: %v", err)
+	}
+
+	if baseCache.InvalidateCallCount != 1 {
+		t.Errorf("expected exactly 1 InvalidateCurriculum call after level advancement, got %d", baseCache.InvalidateCallCount)
+	}
+	if levelAtInvalidate != "lvl-n4-a" {
+		t.Errorf("expected enrollment level already advanced to deterministic lvl-n4-a before InvalidateCurriculum, got %q", levelAtInvalidate)
+	}
+	if got := *baseLangRepo.Enrollments["enr-1"].CurrentLevelID; got != "lvl-n4-a" {
+		t.Errorf("expected final enrollment CurrentLevelID lvl-n4-a via ID tie-break, got %s", got)
+	}
+}
+
+type racingLangRepo struct {
+	*language.MockRepository
+	onActiveEnrollment func()
+}
+
+func (r *racingLangRepo) GetActiveEnrollment(ctx context.Context, userID string, languageID string) (*language.UserLanguageEnrollment, error) {
+	enr, err := r.MockRepository.GetActiveEnrollment(ctx, userID, languageID)
+	if err == nil && enr != nil && r.onActiveEnrollment != nil {
+		snapshot := *enr
+		r.onActiveEnrollment()
+		return &snapshot, nil
+	}
+	return enr, err
+}
+
+func TestGetCurriculum_EpochMismatchPreventsStaleCacheWrite(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-n5"] = &curriculum.UnitNodeResponse{ID: "unit-n5", LevelID: "lvl-n5", Title: "N5 Unit", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-n5"] = &curriculum.LessonNodeResponse{ID: "lesson-n5", UnitID: "unit-n5", Title: "N5 L1", OrderIndex: 1}
+	cRepo.Units["unit-n4"] = &curriculum.UnitNodeResponse{ID: "unit-n4", LevelID: "lvl-n4", Title: "N4 Unit", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons["lesson-n4"] = &curriculum.LessonNodeResponse{ID: "lesson-n4", UnitID: "unit-n4", Title: "N4 L1", OrderIndex: 1}
+
+	baseLangRepo := language.NewMockRepository()
+	langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+	baseLangRepo.Languages["lang-ja"] = langJA
+	baseLangRepo.Levels["lvl-n5"] = lvlN5
+	baseLangRepo.Levels["lvl-n4"] = lvlN4
+	baseLangRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		Language:       langJA,
+		CurrentLevel:   lvlN5,
+	}
+
+	cacheRepo := curriculum.NewMockCurriculumCacheRepository()
+	triggered := false
+	lRepo := &racingLangRepo{
+		MockRepository: baseLangRepo,
+		onActiveEnrollment: func() {
+			if triggered {
+				return
+			}
+			triggered = true
+			baseLangRepo.Enrollments["enr-1"].CurrentLevelID = &lvlN4.ID
+			baseLangRepo.Enrollments["enr-1"].CurrentLevel = lvlN4
+			_ = cacheRepo.InvalidateCurriculum(context.Background(), "user-1")
+		},
+	}
+
+	uc := curriculum.NewUsecaseWithCache(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil, cacheRepo)
+
+	// 1. Concurrent level-up + invalidation occurs right after enrollment snapshot is read;
+	// stale N5 data must NOT be written under the new cache epoch.
+	res1, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
+	if err != nil {
+		t.Fatalf("first GetCurriculum failed: %v", err)
+	}
+	if res1.Level.ID != "lvl-n5" {
+		t.Fatalf("expected in-flight snapshot response lvl-n5, got %s", res1.Level.ID)
+	}
+	if _, exists := cacheRepo.Cache["user-1:lang-ja"]; exists {
+		t.Fatalf("expected stale N5 curriculum NOT to be cached after epoch mismatch")
+	}
+
+	// 2. Subsequent GetCurriculum reads fresh N4 from DB and caches N4 under the new epoch
+	res2, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
+	if err != nil {
+		t.Fatalf("second GetCurriculum failed: %v", err)
+	}
+	if res2.Level.ID != "lvl-n4" {
+		t.Errorf("expected fresh lvl-n4 curriculum on subsequent request, got %s", res2.Level.ID)
+	}
+	if _, exists := cacheRepo.Cache["user-1:lang-ja"]; !exists {
+		t.Errorf("expected fresh N4 curriculum to be cached under current epoch")
+	}
+
+	// 3. Direct SetCurriculumIfVersion with empty expectedVersion must not write to cache
+	delete(cacheRepo.Cache, "user-1:lang-ja")
+	_ = cacheRepo.SetCurriculumIfVersion(context.Background(), "user-1", "lang-ja", "", res2, time.Minute)
+	if _, exists := cacheRepo.Cache["user-1:lang-ja"]; exists {
+		t.Errorf("expected SetCurriculumIfVersion with empty expectedVersion to be rejected")
+	}
+}
+
+func TestGetCurriculum_NilCurrentLevelFallbackAndMissingLevels(t *testing.T) {
+	t.Run("falls back to lowest proficiency level when current_level_id is nil", func(t *testing.T) {
+		cRepo := curriculum.NewMockRepository()
+		cRepo.Units["unit-n5"] = &curriculum.UnitNodeResponse{ID: "unit-n5", LevelID: "lvl-n5", Title: "N5 Unit", UnitType: "curriculum", OrderIndex: 1}
+		cRepo.Lessons["lesson-n5"] = &curriculum.LessonNodeResponse{ID: "lesson-n5", UnitID: "unit-n5", Title: "N5 L1", OrderIndex: 1}
+
+		lRepo := language.NewMockRepository()
+		langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+		lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+		lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+		lRepo.Languages["lang-ja"] = langJA
+		lRepo.Levels["lvl-n4"] = lvlN4
+		lRepo.Levels["lvl-n5"] = lvlN5
+		lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+			ID:             "enr-1",
+			UserID:         "user-1",
+			LanguageID:     "lang-ja",
+			CurrentLevelID: nil,
+			CurrentLevel:   nil,
+			IsActive:       true,
+			Language:       langJA,
+		}
+
+		uc := curriculum.NewUsecase(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil)
+		res, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
+		if err != nil {
+			t.Fatalf("expected fallback to lowest level without error/panic, got %v", err)
+		}
+		if res.Level.ID != "lvl-n5" {
+			t.Errorf("expected fallback level lvl-n5, got %s", res.Level.ID)
+		}
+		if len(res.Units) != 1 || res.Units[0].ID != "unit-n5" {
+			t.Errorf("expected N5 units loaded via fallback, got %+v", res.Units)
+		}
+	})
+
+	t.Run("returns ErrProficiencyLevelNotFound when language has no levels", func(t *testing.T) {
+		cRepo := curriculum.NewMockRepository()
+		lRepo := language.NewMockRepository()
+		langJA := &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+		lRepo.Languages["lang-ja"] = langJA
+		lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+			ID:             "enr-1",
+			UserID:         "user-1",
+			LanguageID:     "lang-ja",
+			CurrentLevelID: nil,
+			CurrentLevel:   nil,
+			IsActive:       true,
+			Language:       langJA,
+		}
+
+		uc := curriculum.NewUsecase(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil)
+		_, err := uc.GetCurriculum(context.Background(), "user-1", &curriculum.GetCurriculumRequest{})
+		if !errors.Is(err, language.ErrProficiencyLevelNotFound) {
+			t.Fatalf("expected ErrProficiencyLevelNotFound when no levels exist, got %v", err)
+		}
+	})
+}

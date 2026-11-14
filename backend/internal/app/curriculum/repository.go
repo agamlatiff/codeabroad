@@ -426,29 +426,31 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	payload.Metadata["is_practice"] = payload.WasCompleted
 
 	if payload.WasCompleted {
-		payload.XPEarned = 5
+		payload.XPEarned = helper.CalculateReplayXP(verifiedScore)
 		payload.Metadata["is_practice"] = true
 		payload.Metadata["is_replay"] = true
 
-		// Enforce daily replay XP cap per WIB day using the DB transaction clock
-		var dailyReplayXP int
-		capQuery := `
-			SELECT COALESCE(SUM(xp_earned), 0)
-			FROM user_activity_logs
-			WHERE user_id = $1::uuid
-			  AND activity_type = 'lesson_completed'
-			  AND COALESCE((metadata->>'is_replay')::boolean, false) = true
-			  AND created_at >= $2
-		`
-		if err := tx.QueryRow(ctx, capQuery, payload.Progress.UserID, dayStartUTC).Scan(&dailyReplayXP); err != nil {
-			return fmt.Errorf("failed to verify daily replay xp cap in tx: %w", err)
-		}
-		if dailyReplayXP+payload.XPEarned > dailyReplayXPCap {
-			remaining := dailyReplayXPCap - dailyReplayXP
-			if remaining < 0 {
-				remaining = 0
+		if payload.XPEarned > 0 {
+			// Enforce daily replay XP cap per WIB day using the DB transaction clock
+			var dailyReplayXP int
+			capQuery := `
+				SELECT COALESCE(SUM(xp_earned), 0)
+				FROM user_activity_logs
+				WHERE user_id = $1::uuid
+				  AND activity_type = 'lesson_completed'
+				  AND COALESCE((metadata->>'is_replay')::boolean, false) = true
+				  AND created_at >= $2
+			`
+			if err := tx.QueryRow(ctx, capQuery, payload.Progress.UserID, dayStartUTC).Scan(&dailyReplayXP); err != nil {
+				return fmt.Errorf("failed to verify daily replay xp cap in tx: %w", err)
 			}
-			payload.XPEarned = remaining
+			if dailyReplayXP+payload.XPEarned > dailyReplayXPCap {
+				remaining := dailyReplayXPCap - dailyReplayXP
+				if remaining < 0 {
+					remaining = 0
+				}
+				payload.XPEarned = remaining
+			}
 		}
 	} else {
 		if lessonXPReward <= 0 {
