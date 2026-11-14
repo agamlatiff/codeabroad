@@ -61,6 +61,16 @@ export const useExerciseMedia = ({
   const activeHtmlAudioRef = useRef<HTMLAudioElement | null>(null)
   const audioSessionIdRef = useRef(0)
   const speechSessionIdRef = useRef(0)
+  const isLockedRef = useRef(isLocked)
+  const onTranscriptRef = useRef(onTranscript)
+
+  useEffect(() => {
+    isLockedRef.current = isLocked
+  }, [isLocked])
+
+  useEffect(() => {
+    onTranscriptRef.current = onTranscript
+  }, [onTranscript])
 
   const speechRecognitionSupported = useMemo(
     () => getSpeechRecognitionConstructor() !== null,
@@ -102,6 +112,12 @@ export const useExerciseMedia = ({
     setIsRecordingSpeech(false)
     setAudioPlaybackError(null)
   }, [stopActiveAudio, stopActiveRecognition])
+
+  useEffect(() => {
+    if (isLocked) {
+      stopActiveRecognition()
+    }
+  }, [isLocked, stopActiveRecognition])
 
   useEffect(() => {
     return () => {
@@ -169,7 +185,7 @@ export const useExerciseMedia = ({
   )
 
   const handleToggleRecording = useCallback(() => {
-    if (isLocked) return
+    if (isLockedRef.current) return
 
     if (isRecordingSpeech && recognitionRef.current) {
       stopActiveRecognition()
@@ -195,10 +211,10 @@ export const useExerciseMedia = ({
       recognition.maxAlternatives = 1
 
       recognition.onresult = (event: BrowserSpeechRecognitionEvent) => {
-        if (sessionId !== speechSessionIdRef.current) return
+        if (sessionId !== speechSessionIdRef.current || isLockedRef.current) return
         const transcript = event.results[0]?.[0]?.transcript?.trim() ?? ''
         if (transcript) {
-          onTranscript(transcript)
+          onTranscriptRef.current(transcript)
         }
       }
       recognition.onerror = () => {
@@ -220,7 +236,7 @@ export const useExerciseMedia = ({
     } catch {
       setIsRecordingSpeech(false)
     }
-  }, [isLocked, isRecordingSpeech, onTranscript, speechLocale, stopActiveRecognition])
+  }, [isRecordingSpeech, speechLocale, stopActiveRecognition])
 
   return {
     isSpeakingAudio,

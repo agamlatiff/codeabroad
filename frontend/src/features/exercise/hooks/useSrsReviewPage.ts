@@ -63,7 +63,6 @@ export const useSrsReviewPage = () => {
     selectedTokens,
     selectedOptionValue,
     textInput,
-    setTextInput,
     showHint,
     currentUserAnswer,
     canCheckAnswer,
@@ -92,19 +91,25 @@ export const useSrsReviewPage = () => {
   } = useExerciseMedia({
     speechLocale,
     isLocked: submittedResult !== null,
-    onTranscript: setTextInput,
+    onTranscript: handleSetTextInput,
   })
 
   useEffect(() => {
     questionStartedAtRef.current = Date.now()
   }, [currentIndex, currentExercise?.id])
 
-  const submitAnswerMutation = useMutation({
+  const {
+    mutateAsync: submitAnswerAsync,
+    isPending: isSubmittingAnswer,
+  } = useMutation({
     mutationFn: (payload: SubmitExerciseAnswerRequest) =>
       exerciseService.submitAnswer(payload),
   })
 
-  const processReviewMutation = useMutation({
+  const {
+    mutateAsync: processReviewAsync,
+    isPending: isProcessingReview,
+  } = useMutation({
     mutationFn: (payload: { exercise_id: string; quality: number }) =>
       exerciseService.processReview(payload),
   })
@@ -126,10 +131,11 @@ export const useSrsReviewPage = () => {
   }, [currentExercise?.prompt, parsedContent, playExerciseAudio])
 
   const handleCheckAnswer = useCallback(async () => {
-    if (!currentExercise || !canCheckAnswer || submitAnswerMutation.isPending) {
+    if (!currentExercise || !canCheckAnswer || isSubmittingAnswer) {
       return
     }
 
+    stopMediaSession()
     setActionError(null)
     const elapsedSeconds =
       questionStartedAtRef.current > 0
@@ -137,7 +143,7 @@ export const useSrsReviewPage = () => {
         : 1
 
     try {
-      const res = await submitAnswerMutation.mutateAsync({
+      const res = await submitAnswerAsync({
         exercise_id: currentExercise.id,
         user_answer: currentUserAnswer,
         time_spent_seconds: elapsedSeconds,
@@ -159,15 +165,22 @@ export const useSrsReviewPage = () => {
       triggerHaptic('error')
       audioEngine.playError()
     }
-  }, [canCheckAnswer, currentExercise, currentUserAnswer, submitAnswerMutation])
+  }, [
+    canCheckAnswer,
+    currentExercise,
+    currentUserAnswer,
+    isSubmittingAnswer,
+    stopMediaSession,
+    submitAnswerAsync,
+  ])
 
   const handleRateQuality = useCallback(
     async (quality: number) => {
-      if (!currentExercise || processReviewMutation.isPending) return
+      if (!currentExercise || isProcessingReview) return
 
       setActionError(null)
       try {
-        await processReviewMutation.mutateAsync({
+        await processReviewAsync({
           exercise_id: currentExercise.id,
           quality,
         })
@@ -203,8 +216,9 @@ export const useSrsReviewPage = () => {
     [
       currentExercise,
       currentIndex,
+      isProcessingReview,
       items.length,
-      processReviewMutation,
+      processReviewAsync,
       queryClient,
       resetCardInputs,
       reviewedCount,
@@ -289,8 +303,8 @@ export const useSrsReviewPage = () => {
     isLoading: dueQueueQuery.isLoading || isRefetchingBatch,
     isError: dueQueueQuery.isError,
     queueErrorMessage,
-    isChecking: submitAnswerMutation.isPending,
-    isSubmittingRating: processReviewMutation.isPending,
+    isChecking: isSubmittingAnswer,
+    isSubmittingRating: isProcessingReview,
     isSessionFinished,
     hasMoreReviewsAfterBatch,
     refetchQueue: dueQueueQuery.refetch,

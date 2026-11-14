@@ -33,7 +33,7 @@ interface ExercisePromptRendererProps {
   onClearTokens: () => void
   onSelectOption: (value: string) => void
   onSetTextInput: (value: string) => void
-  onConfirmSpokenSample: () => void
+  onConfirmSpokenSample?: () => void
   onPlayAudio: () => void
   onToggleRecording: () => void
   onToggleHint: () => void
@@ -312,7 +312,7 @@ export const ExercisePromptRenderer = ({
               </Button3D>
             )}
 
-            {parsedContent.displayText && (
+            {onConfirmSpokenSample && parsedContent.displayText && (
               <Button3D
                 type="button"
                 variant="emerald"
