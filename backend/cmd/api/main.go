@@ -71,7 +71,7 @@ func main() {
 	authUsecase := auth.NewUsecase(userRepo, sessionRepo, cfg)
 	userUsecase := user.NewUsecase(userRepo)
 	onboardingUsecase := onboarding.NewUsecaseWithCache(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, curriculumCache)
-	langUsecase := language.NewUsecase(langRepo)
+	langUsecase := language.NewUsecaseWithCache(langRepo, curriculumCache)
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
 	exerciseUsecase := exercise.NewUsecaseFull(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, curriculumRepo, curriculumCache)
 	gamificationUsecase := gamification.NewUsecase(gamificationRepo)

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"codeabroad/backend/internal/app/user"
 )
 
 // MockRepository implements Repository for unit testing
@@ -21,6 +23,7 @@ type MockRepository struct {
 	LevelOrders          map[string]int
 	UserMaxLevelOrder    map[string]int
 	UserInactiveLevels   map[string]bool
+	MissingUsers         map[string]bool
 	AttemptSummaries     map[string]*LessonAttemptSummary
 	DailyReplayXP        map[string]int
 	UserXP               map[string]int
@@ -54,6 +57,7 @@ func NewMockRepository() *MockRepository {
 		LevelOrders:         make(map[string]int),
 		UserMaxLevelOrder:   make(map[string]int),
 		UserInactiveLevels:  make(map[string]bool),
+		MissingUsers:        make(map[string]bool),
 		AttemptSummaries:    make(map[string]*LessonAttemptSummary),
 		DailyReplayXP:       make(map[string]int),
 		UserXP:              make(map[string]int),
@@ -96,7 +100,7 @@ func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonI
 	if m.GetGrammarPointsErr != nil {
 		return nil, m.GetGrammarPointsErr
 	}
-	var res []GrammarPoint
+	res := make([]GrammarPoint, 0)
 	if gpIDs, ok := m.LessonGrammarPoints[lessonID]; ok {
 		allowed := make(map[string]bool, len(gpIDs))
 		for _, id := range gpIDs {
@@ -106,10 +110,6 @@ func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonI
 			if allowed[gp.ID] {
 				res = append(res, *gp)
 			}
-		}
-	} else {
-		for _, gp := range m.GrammarPoints {
-			res = append(res, *gp)
 		}
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -220,11 +220,11 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 	}
 	l, ok := m.Lessons[id]
 	if !ok {
-		return nil, nil
+		return nil, ErrLessonNotFound
 	}
 	u, hasUnit := m.Units[l.UnitID]
 	if hasUnit && !isCurriculumUnit(u) {
-		return nil, nil
+		return nil, ErrLessonNotFound
 	}
 	var levelID, unitType string
 	if u != nil {
@@ -421,24 +421,42 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	}
 
 	userID := payload.Progress.UserID
+	if m.MissingUsers[userID] {
+		return user.ErrUserNotFound
+	}
 	curLesson, hasLesson := m.Lessons[payload.Progress.LessonID]
-	if hasLesson {
-		unlocked, lockErr := m.isLessonUnlockedLocked(userID, payload.Progress.LessonID)
-		if lockErr != nil || !unlocked {
-			return ErrLessonLocked
-		}
-		if curLesson.ID != "" {
-			payload.Progress.LessonID = curLesson.ID
-		}
+	if !hasLesson {
+		return ErrLessonNotFound
+	}
+	if curUnit, hasUnit := m.Units[curLesson.UnitID]; hasUnit && !isCurriculumUnit(curUnit) {
+		return ErrLessonNotFound
+	}
+	unlocked, lockErr := m.isLessonUnlockedLocked(userID, payload.Progress.LessonID)
+	if lockErr != nil {
+		return lockErr
+	}
+	if !unlocked {
+		return ErrLessonLocked
+	}
+	if curLesson.ID != "" {
+		payload.Progress.LessonID = curLesson.ID
 	}
 	if payload.ActivityType == "" {
 		payload.ActivityType = "lesson_completed"
 	}
 	if _, exists := m.UserXP[userID]; !exists {
-		m.UserXP[userID] = payload.NewXP - payload.XPEarned
+		if initialXP := payload.NewXP - payload.XPEarned; initialXP > 0 {
+			m.UserXP[userID] = initialXP
+		} else {
+			m.UserXP[userID] = 0
+		}
 	}
 	if _, exists := m.UserGems[userID]; !exists {
-		m.UserGems[userID] = payload.NewGems
+		if payload.NewGems > 0 {
+			m.UserGems[userID] = payload.NewGems
+		} else {
+			m.UserGems[userID] = 0
+		}
 	}
 	payload.PreviousStreak = m.UserStreak[userID]
 
@@ -525,10 +543,8 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	if now.IsZero() {
 		now = time.Now().UTC()
 	}
-	if lastActive, hasTracked := m.UserLastActiveAt[userID]; hasTracked {
-		newStreak, _ := helper.EvaluateDailyStreak(m.UserStreak[userID], lastActive, now)
-		payload.NewStreak = newStreak
-	}
+	newStreak, _ := helper.EvaluateDailyStreak(m.UserStreak[userID], m.UserLastActiveAt[userID], now)
+	payload.NewStreak = newStreak
 	nowCopy := now
 	m.UserLastActiveAt[userID] = &nowCopy
 

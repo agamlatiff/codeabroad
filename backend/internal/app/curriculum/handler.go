@@ -1,7 +1,11 @@
 package curriculum
 
 import (
+	"encoding/json"
+	"errors"
+	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
@@ -101,9 +105,11 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 	}
 
 	var req CompleteLessonRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid request payload: score must be an integer between 0 and 100")
-		return
+	if c.Request.Body != nil && c.Request.Body != http.NoBody {
+		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+			response.BadRequest(c, completeLessonBindErrorMessage(err))
+			return
+		}
 	}
 	req.LessonID = uri.ID
 
@@ -114,6 +120,29 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 	}
 
 	response.Success(c, http.StatusOK, "lesson completed successfully", res)
+}
+
+func completeLessonBindErrorMessage(err error) string {
+	var unmarshalErr *json.UnmarshalTypeError
+	if errors.As(err, &unmarshalErr) {
+		switch unmarshalErr.Field {
+		case "score":
+			return "invalid request payload: score must be an integer between 0 and 100"
+		case "lesson_id":
+			return "invalid request payload: lesson_id must be a valid UUID"
+		default:
+			return "invalid request payload"
+		}
+	}
+
+	errMsg := err.Error()
+	if strings.Contains(errMsg, "CompleteLessonRequest.LessonID") {
+		return "invalid request payload: lesson_id must be a valid UUID"
+	}
+	if strings.Contains(errMsg, "CompleteLessonRequest.Score") {
+		return "invalid request payload: score must be an integer between 0 and 100"
+	}
+	return "invalid request payload"
 }
 
 // GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=...

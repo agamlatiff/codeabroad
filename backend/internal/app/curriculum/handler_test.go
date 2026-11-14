@@ -210,3 +210,183 @@ func TestHTTP_GetGrammarPoints_InvalidLevelID_Returns400(t *testing.T) {
 		t.Fatalf("expected 400 Bad Request, got: %d", w.Code)
 	}
 }
+
+func TestHTTP_CompleteLesson_EmptyAndNilBody(t *testing.T) {
+	lessonID := "33333333-3333-3333-3333-333333333333"
+
+	t.Run("empty EOF body succeeds", func(t *testing.T) {
+		r, _, _ := setupCurriculumTestRouter()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBuffer(nil))
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for empty body, got %d, body: %s", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("empty EOF body with JSON content type succeeds", func(t *testing.T) {
+		r, _, _ := setupCurriculumTestRouter()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBuffer(nil))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for empty JSON body, got %d, body: %s", w.Code, w.Body.String())
+		}
+	})
+
+	t.Run("nil request body succeeds", func(t *testing.T) {
+		r, _, _ := setupCurriculumTestRouter()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for nil body, got %d, body: %s", w.Code, w.Body.String())
+		}
+	})
+}
+
+func TestHTTP_CompleteLesson_InvalidNonScoreBody_SanitizedMessage(t *testing.T) {
+	lessonID := "33333333-3333-3333-3333-333333333333"
+
+	t.Run("invalid lesson_id in body does not emit score error", func(t *testing.T) {
+		r, _, _ := setupCurriculumTestRouter()
+		body := []byte(`{"lesson_id": "not-a-uuid", "score": 90}`)
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request, got %d, body: %s", w.Code, w.Body.String())
+		}
+		var errResp struct {
+			Success bool   `json:"success"`
+			Error   string `json:"error"`
+			Code    string `json:"code"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &errResp); err != nil {
+			t.Fatalf("failed to decode response body: %v", err)
+		}
+		if errResp.Code != "BAD_REQUEST" {
+			t.Errorf("expected BAD_REQUEST code, got %q", errResp.Code)
+		}
+		if bytes.Contains(bytes.ToLower(w.Body.Bytes()), []byte("score")) {
+			t.Errorf("expected non-score validation error not to mention score, got %s", w.Body.String())
+		}
+	})
+
+	t.Run("malformed JSON does not emit score error", func(t *testing.T) {
+		r, _, _ := setupCurriculumTestRouter()
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBufferString("{bad-json"))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request, got %d, body: %s", w.Code, w.Body.String())
+		}
+		if bytes.Contains(bytes.ToLower(w.Body.Bytes()), []byte("score")) {
+			t.Errorf("expected malformed JSON error not to mention score, got %s", w.Body.String())
+		}
+	})
+}
+
+func TestHTTP_CompleteLesson_Locked_Returns403(t *testing.T) {
+	r, cRepo, _ := setupCurriculumTestRouter()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{
+		ID:         "unit-1",
+		LevelID:    "22222222-2222-2222-2222-222222222222",
+		UnitType:   "curriculum",
+		OrderIndex: 1,
+	}
+	lesson2ID := "44444444-4444-4444-4444-444444444444"
+	cRepo.Lessons[lesson2ID] = &curriculum.LessonNodeResponse{
+		ID:         lesson2ID,
+		UnitID:     "unit-1",
+		Title:      "Katakana Basics",
+		OrderIndex: 2,
+	}
+	cRepo.AttemptSummaries["usr-123:"+lesson2ID] = &curriculum.LessonAttemptSummary{
+		TotalExercises:          2,
+		AttemptedExercises:      2,
+		CorrectExercises:        2,
+		FreshAttemptedExercises: 2,
+		FreshCorrectExercises:   2,
+	}
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lesson2ID+"/complete", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusForbidden {
+		t.Fatalf("expected 403 Forbidden for locked lesson, got %d, body: %s", w.Code, w.Body.String())
+	}
+	var errResp struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &errResp); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if errResp.Code != "LESSON_LOCKED" {
+		t.Errorf("expected code LESSON_LOCKED, got %q", errResp.Code)
+	}
+}
+
+func TestHTTP_CompleteLesson_NotFound_Returns404(t *testing.T) {
+	r, _, _ := setupCurriculumTestRouter()
+	unknownID := "99999999-9999-9999-9999-999999999999"
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+unknownID+"/complete", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusNotFound {
+		t.Fatalf("expected 404 Not Found for unknown lesson, got %d, body: %s", w.Code, w.Body.String())
+	}
+	var errResp struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &errResp); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if errResp.Code != "LESSON_NOT_FOUND" {
+		t.Errorf("expected code LESSON_NOT_FOUND, got %q", errResp.Code)
+	}
+}
+
+func TestHTTP_CompleteLesson_Unauthorized_Returns401(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	uc := curriculum.NewUsecase(
+		curriculum.NewMockRepository(),
+		language.NewMockRepository(),
+		exercise.NewMockRepository(),
+		user.NewMockRepository(),
+		gamification.NewMockRepository(),
+	)
+	h := curriculum.NewHandler(uc)
+	r := gin.New()
+	v1 := r.Group("/api/v1")
+	h.RegisterRoutes(v1, nil)
+
+	lessonID := "33333333-3333-3333-3333-333333333333"
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 Unauthorized when userID is missing, got %d, body: %s", w.Code, w.Body.String())
+	}
+	var errResp struct {
+		Code string `json:"code"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &errResp); err != nil {
+		t.Fatalf("failed to decode response body: %v", err)
+	}
+	if errResp.Code != "UNAUTHORIZED" {
+		t.Errorf("expected code UNAUTHORIZED, got %q", errResp.Code)
+	}
+}

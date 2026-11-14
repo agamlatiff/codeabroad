@@ -374,23 +374,6 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		canonicalLessonID = req.LessonID
 	}
 
-	unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, canonicalLessonID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify lesson unlock status: %w", err)
-	}
-	if !unlocked {
-		return nil, ErrLessonLocked
-	}
-
-	// Fail-fast: Validate user existence before modifying progress state
-	usr, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch user: %w", err)
-	}
-	if usr == nil {
-		return nil, user.ErrUserNotFound
-	}
-
 	xpEarned := lesson.XPReward
 	if xpEarned <= 0 {
 		xpEarned = 15
@@ -412,18 +395,12 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		CompletedAt: now,
 	}
 
-	newStreak, _ := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now)
-	newXP := usr.XP + xpEarned
-	newLevel := u.helper.CalculateLevel(newXP)
-
-	// Atomic Unit-of-Work: verify attempts, derive score, update progress, gamification stats, and activity log under TX lock
+	// Atomic Unit-of-Work: verify user, lesson eligibility, attempts, derived score, progress, gamification stats, and activity log under TX lock
 	payload := &LessonCompletionPayload{
 		Progress:     progress,
 		XPEarned:     xpEarned,
-		NewXP:        newXP,
-		NewLevel:     newLevel,
-		NewStreak:    newStreak,
-		NewGems:      usr.Gems,
+		NewXP:        xpEarned,
+		NewLevel:     u.helper.CalculateLevel(xpEarned),
 		LastActiveAt: now,
 		ActivityType: activityType,
 		Metadata:     map[string]any{"lesson_id": canonicalLessonID, "score": req.Score, "is_practice": lesson.IsCompleted},
@@ -438,7 +415,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	}
 
 	// Automatically advance current_level_id if every lesson in the user's current level is now complete
-	u.maybeAdvanceEnrollmentLevel(ctx, userID, lesson.UnitID, lesson.LevelID, lesson.UnitType)
+	advancedNextLessonID := u.maybeAdvanceEnrollmentLevel(ctx, userID, lesson.UnitID, lesson.LevelID, lesson.UnitType)
 
 	// Invalidate user's cached curriculum atomically via epoch increment after any level advancement
 	if u.cacheRepo != nil {
@@ -468,6 +445,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	} else if nextID != nil {
 		nextLessonID = nextID
 	}
+	if nextLessonID == nil && advancedNextLessonID != nil {
+		nextLessonID = advancedNextLessonID
+	}
 
 	lastActive := payload.LastActiveAt
 	if lastActive.IsZero() {
@@ -488,18 +468,18 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	}, nil
 }
 
-func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string, unitID string, levelID string, unitType string) {
+func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string, unitID string, levelID string, unitType string) *string {
 	if u.langRepo == nil || u.curriculumRepo == nil {
-		return
+		return nil
 	}
 
 	if levelID == "" {
 		if unitID == "" {
-			return
+			return nil
 		}
 		unit, err := u.curriculumRepo.GetUnitByID(ctx, unitID)
 		if err != nil || unit == nil || unit.LevelID == "" {
-			return
+			return nil
 		}
 		levelID = unit.LevelID
 		if unitType == "" {
@@ -507,19 +487,19 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 		}
 	}
 	if unitType != "" && unitType != "curriculum" {
-		return
+		return nil
 	}
 
 	var targetEnrollment *language.UserLanguageEnrollment
 	if activeEnr, actErr := u.langRepo.GetActiveEnrollment(ctx, userID, ""); actErr == nil && activeEnr != nil {
 		if !activeEnr.IsActive || activeEnr.CurrentLevelID == nil || *activeEnr.CurrentLevelID != levelID {
-			return
+			return nil
 		}
 		targetEnrollment = activeEnr
 	} else {
 		enrollments, err := u.langRepo.GetEnrollmentsByUserID(ctx, userID)
 		if err != nil {
-			return
+			return nil
 		}
 		for i := range enrollments {
 			enr := &enrollments[i]
@@ -530,22 +510,22 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 		}
 	}
 	if targetEnrollment == nil {
-		return
+		return nil
 	}
 
 	lessons, err := u.curriculumRepo.GetLessonsByLevelID(ctx, levelID, userID)
 	if err != nil || len(lessons) == 0 {
-		return
+		return nil
 	}
 	for _, l := range lessons {
 		if !l.IsCompleted || l.Score < minLessonPassScore {
-			return
+			return nil
 		}
 	}
 
 	levels, err := u.langRepo.GetLevelsByLanguageID(ctx, targetEnrollment.LanguageID)
 	if err != nil || len(levels) == 0 {
-		return
+		return nil
 	}
 	sortedLevels := sortProficiencyLevels(levels)
 
@@ -555,18 +535,21 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 				nextLevel := sortedLevels[i+1]
 				nextLessons, lErr := u.curriculumRepo.GetLessonsByLevelID(ctx, nextLevel.ID, userID)
 				if lErr != nil || len(nextLessons) == 0 {
-					return
+					return nil
 				}
 				if err := u.langRepo.UpdateEnrollmentLevelIfCurrent(ctx, targetEnrollment.ID, levelID, nextLevel.ID); err != nil {
 					if !errors.Is(err, language.ErrEnrollmentLevelChanged) {
 						log.Printf("curriculum: failed to advance enrollment level for user %s: %v", userID, err)
 					}
-					return
+					return nil
 				}
+				nextLessonID := nextLessons[0].ID
+				return &nextLessonID
 			}
-			return
+			return nil
 		}
 	}
+	return nil
 }
 
 // GetGrammarPoints retrieves all grammar points belonging to an unlocked proficiency level
