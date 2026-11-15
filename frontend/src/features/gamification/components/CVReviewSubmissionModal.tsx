@@ -18,7 +18,7 @@ export const CVReviewSubmissionModal = ({
 }: CVReviewSubmissionModalProps) => {
   const [githubUrl, setGithubUrl] = useState('')
   const [resumeUrl, setResumeUrl] = useState('')
-  const [targetRole, setTargetRole] = useState('Golang Backend Engineer')
+  const [targetRole, setTargetRole] = useState('Persiapan Kerja Jepang (JLPT N4–N2)')
   const [notes, setNotes] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
 
@@ -87,17 +87,17 @@ export const CVReviewSubmissionModal = ({
             {/* Target Role Field */}
             <div className="space-y-1">
               <label className="text-xs font-brand font-black text-slate-700 block">
-                Target Posisi Pekerjaan di Tokyo
+                Target Sertifikasi / Tujuan Bahasa
               </label>
               <select
                 value={targetRole}
                 onChange={(e) => setTargetRole(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:border-blue-500 focus:outline-none transition-all"
               >
-                <option value="Golang Backend Engineer">Golang Backend Engineer (Tokyo Spec)</option>
-                <option value="Fullstack React & Node.js">Fullstack React &amp; Node.js Engineer</option>
-                <option value="DevOps & Cloud Engineer">DevOps &amp; Cloud Platform Engineer</option>
-                <option value="Bilingual Junior SWE">Bilingual Junior SWE (English/Nihongo)</option>
+                <option value="Persiapan Kerja Jepang (JLPT N4–N2)">Persiapan Kerja Jepang (JLPT N4–N2)</option>
+                <option value="Business Japanese & Keigo">Business Japanese &amp; Keigo Profesional</option>
+                <option value="Goethe-Zertifikat Jerman (A2–B2)">Goethe-Zertifikat Jerman (A2–B2)</option>
+                <option value="Global English / IELTS">Global English / IELTS Profesional</option>
               </select>
             </div>
 

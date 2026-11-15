@@ -160,37 +160,5 @@ export const mapEnrollmentsToTrackOptions = (
   return options
 }
 
-/**
- * Universal foundation tracks retained for legacy settings compatibility.
- */
-export const UNIVERSAL_FOUNDATION_TRACKS: CareerTrackOption[] = [
-  {
-    id: 'foundation-cs-fundamental',
-    slug: 'cs_fundamental',
-    title: 'Computer Science & Algorithm',
-    shortTitle: 'CS Fundamental',
-    subtitle: 'Fondasi struktur data, algoritma, Big-O, pointers, dan sistem operasi.',
-    category: 'coding',
-    iconType: 'fundamental',
-    badgeLabel: 'Fondasi Utama',
-    badgeVariant: 'featured',
-    isActive: true,
-    group: 'foundation',
-  },
-  {
-    id: 'foundation-web-fundamental',
-    slug: 'web_fundamental',
-    title: 'Web Fundamental (HTML/CSS/JS)',
-    shortTitle: 'Web Fundamental',
-    subtitle: 'Fondasi web modern, semantic HTML, modern CSS, a11y, dan JavaScript DOM.',
-    category: 'coding',
-    iconType: 'frontend',
-    badgeLabel: 'Fondasi Web',
-    badgeVariant: 'available',
-    isActive: true,
-    group: 'foundation',
-  },
-]
-
 
 

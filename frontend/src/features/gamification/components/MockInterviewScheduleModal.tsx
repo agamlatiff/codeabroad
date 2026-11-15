@@ -18,7 +18,7 @@ export const MockInterviewScheduleModal = ({
 }: MockInterviewScheduleModalProps) => {
   const [language, setLanguage] = useState<'bilingual' | 'nihongo' | 'english'>('bilingual')
   const [discordHandle, setDiscordHandle] = useState('')
-  const [focusTopic, setFocusTopic] = useState('Golang & System Concurrency')
+  const [focusTopic, setFocusTopic] = useState('Japanese Business Culture & Jikoshoukai')
   const [preferredTime, setPreferredTime] = useState('Weekend Malam (JST/WIB)')
   const [isSuccess, setIsSuccess] = useState(false)
 
@@ -138,10 +138,10 @@ export const MockInterviewScheduleModal = ({
                 onChange={(e) => setFocusTopic(e.target.value)}
                 className="w-full bg-slate-50 border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-800 focus:border-purple-500 focus:outline-none transition-all"
               >
-                <option value="Golang & System Concurrency">Golang &amp; Concurrency (Worker Pool &amp; Channels)</option>
-                <option value="Clean Architecture & Microservices">Clean Architecture &amp; Database Optimization</option>
-                <option value="Live Coding & Data Structures">Live Algorithmic Coding Problem Solving</option>
-                <option value="Japanese Tech Culture & Jikoshoukai">Wawancara Budaya &amp; Jikoshoukai (自己紹介)</option>
+                <option value="Japanese Business Culture & Jikoshoukai">Wawancara Budaya &amp; Jikoshoukai (自己紹介)</option>
+                <option value="Keigo & Workplace Conversation">Latihan Keigo &amp; Percakapan Kantor</option>
+                <option value="JLPT Speaking & Listening Drill">Simulasi Speaking &amp; Listening JLPT</option>
+                <option value="Global Bilingual Interview">Simulasi Wawancara Kerja Bilingual</option>
               </select>
             </div>
 

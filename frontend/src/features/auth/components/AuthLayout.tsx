@@ -39,10 +39,10 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
         <div className="my-auto pt-4 pb-2 z-10 max-w-md">
           <div className="mb-8 text-left">
             <h2 className="text-3xl lg:text-[38px] font-extrabold text-white tracking-tight leading-[1.18] font-['Plus_Jakarta_Sans',sans-serif]">
-              {heroTitle || 'Buka Peluang Karir Duniamu'}
+              {heroTitle || 'Kuasai Bahasa Asing untuk Dunia'}
             </h2>
             <p className="text-white/80 text-sm font-normal mt-3 leading-relaxed font-['Plus_Jakarta_Sans',sans-serif] max-w-sm">
-              {heroSubtitle || 'Persiapan coding interview global lebih terarah bersama Kodi.'}
+              {heroSubtitle || 'Latihan bahasa terstruktur dari nol hingga siap kerja global bersama Kodi.'}
             </p>
           </div>
 

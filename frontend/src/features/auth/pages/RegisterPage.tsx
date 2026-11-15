@@ -14,11 +14,11 @@ export const RegisterPage = () => {
   return (
     <AuthLayout
       title="Daftar Akun Baru"
-      subtitle="Lengkapi data di bawah ini untuk memulai petualangan karir tech global."
-      heroTitle="Mulai Langkah Karir Global Impianmu"
-      heroSubtitle="Bergabung bersama ribuan developer Indonesia untuk menembus coding interview ke Jepang, Jerman, dan Singapura."
-      heroEmotion="coding"
-      speechBubble="Yuk mulai petualangan coding globalmu bareng aku! ✨"
+      subtitle="Lengkapi data di bawah ini untuk memulai perjalanan penguasaan bahasa globalmu."
+      heroTitle="Kuasai Bahasa Impianmu Secara Terstruktur"
+      heroSubtitle="Bergabung bersama ribuan pembelajar Indonesia untuk menguasai bahasa Jepang, Jerman, dan Inggris standar global."
+      heroEmotion="happy"
+      speechBubble="Yuk mulai petualangan bahasamu bareng aku! ✨"
       error={status.error}
     >
       {/* ── 1. REGISTRATION FORM (FIRST) ── */}

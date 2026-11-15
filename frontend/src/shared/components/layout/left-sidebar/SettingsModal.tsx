@@ -166,7 +166,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               rows={2}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Contoh: Backend engineer spesialis Golang menargetkan karier di startup Tokyo 2026."
+              placeholder="Contoh: Sedang mengejar target JLPT N4 untuk bekerja dan tinggal di Tokyo."
               className="w-full bg-white text-xs font-medium p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs resize-none"
             />
           </div>

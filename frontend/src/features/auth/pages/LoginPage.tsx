@@ -12,8 +12,8 @@ export const LoginPage = () => {
   return (
     <AuthLayout
       title="Selamat Datang"
-      subtitle="Masuk ke akunmu untuk melanjutkan persiapan karir tech."
-      speechBubble="Halo! Siap lanjut push code hari ini? 🚀"
+      subtitle="Masuk ke akunmu untuk melanjutkan latihan bahasa harianmu."
+      speechBubble="Halo! Siap lanjut latihan bahasa hari ini? 🚀"
       error={status.error}
     >
       {/* ── 1. EMAIL & PASSWORD FORM (FIRST) ── */}
