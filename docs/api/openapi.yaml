@@ -396,6 +396,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Placement questions retrieved
@@ -403,6 +404,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
   /onboarding:
     post:
@@ -415,6 +420,31 @@ paths:
           application/json:
             schema:
               type: object
+              required: [language_id, daily_goal_minutes, initial_placement_type]
+              properties:
+                language_id:
+                  type: string
+                  format: uuid
+                daily_goal_minutes:
+                  type: integer
+                  enum: [5, 15, 30, 45]
+                initial_placement_type:
+                  type: string
+                  enum: [zero_beginner, placement_test, manual_select]
+                manual_level_id:
+                  type: string
+                  format: uuid
+                placement_answers:
+                  type: array
+                  items:
+                    type: object
+                    required: [exercise_id, user_answer]
+                    properties:
+                      exercise_id:
+                        type: string
+                        format: uuid
+                      user_answer:
+                        type: string
       responses:
         "200":
           description: Onboarding completed
@@ -422,6 +452,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
         "400":
           $ref: "#/components/responses/BadRequestError"
         "401":

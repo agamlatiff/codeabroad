@@ -8,14 +8,49 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func isValidUUID(s string) bool {
+	if len(s) != 36 {
+		return false
+	}
+	for i := 0; i < 36; i++ {
+		if i == 8 || i == 13 || i == 18 || i == 23 {
+			if s[i] != '-' {
+				return false
+			}
+			continue
+		}
+		c := s[i]
+		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
+			return false
+		}
+	}
+	return true
+}
+
+const (
+	// DefaultOnboardingCompleteLimit caps onboarding completion attempts per user per minute
+	DefaultOnboardingCompleteLimit = 10
+	// DefaultOnboardingCompleteMessage is returned when onboarding rate limit is exceeded
+	DefaultOnboardingCompleteMessage = "terlalu banyak percobaan penyelesaian onboarding, silakan tunggu sebentar"
+)
+
 // Handler handles HTTP requests for language destination onboarding
 type Handler struct {
 	onboardingUsecase Usecase
+	completeLimiter   gin.HandlerFunc
 }
 
 // NewHandler creates a new Onboarding Handler instance
 func NewHandler(onboardingUsecase Usecase) *Handler {
 	return &Handler{onboardingUsecase: onboardingUsecase}
+}
+
+// NewHandlerWithRateLimiter creates an Onboarding Handler with an optional rate limiter on POST /onboarding
+func NewHandlerWithRateLimiter(onboardingUsecase Usecase, completeLimiter gin.HandlerFunc) *Handler {
+	return &Handler{
+		onboardingUsecase: onboardingUsecase,
+		completeLimiter:   completeLimiter,
+	}
 }
 
 // GetLanguages handles GET /api/v1/onboarding/languages
@@ -32,8 +67,8 @@ func (h *Handler) GetLanguages(c *gin.Context) {
 // GetPlacementQuestions handles GET /api/v1/onboarding/placement-questions/:language_id
 func (h *Handler) GetPlacementQuestions(c *gin.Context) {
 	languageID := c.Param("language_id")
-	if languageID == "" {
-		response.BadRequest(c, "language_id parameter is required")
+	if !isValidUUID(languageID) {
+		response.BadRequest(c, "language_id harus berupa UUID yang valid")
 		return
 	}
 
@@ -82,7 +117,11 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		onboardingProtected.Use(authMiddleware)
 	}
 	{
-		onboardingProtected.POST("", h.CompleteOnboarding)
+		if h.completeLimiter != nil {
+			onboardingProtected.POST("", h.completeLimiter, h.CompleteOnboarding)
+		} else {
+			onboardingProtected.POST("", h.CompleteOnboarding)
+		}
 	}
 }
 

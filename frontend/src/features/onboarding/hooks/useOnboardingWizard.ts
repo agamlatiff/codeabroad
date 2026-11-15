@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { onboardingService } from "@/features/onboarding/services/onboardingService"
+import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { useOnboardingStore } from "@/features/onboarding/store/onboardingStore"
 import type { CareerPath } from "@/features/onboarding/types/onboarding"
@@ -17,6 +18,7 @@ import {
  */
 export const useOnboardingWizard = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { user, updateUser } = useAuthStore()
 
   // 1. Grouped Form & Navigation State from Zustand
@@ -80,6 +82,13 @@ export const useOnboardingWizard = () => {
     mutationFn: onboardingService.completeOnboarding,
     onSuccess: (result) => {
       setCompletionResult(result)
+      updateUser({
+        is_onboarded: true,
+        xp: result.xp,
+        current_level: result.current_level,
+        streak: result.streak,
+      })
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       setTimeout(() => {
         setIsLanding(false)
         setStep(4)
@@ -178,7 +187,13 @@ export const useOnboardingWizard = () => {
     setIsLanding(true)
     setFormError(null)
 
+    const dailyGoalMinutes: 5 | 15 | 30 | 45 =
+      form.timeline === '6_months' ? 30 : form.timeline === 'exploring' ? 5 : 15
+
     completeMutation.mutate({
+      language_id: form.countryId,
+      daily_goal_minutes: dailyGoalMinutes,
+      initial_placement_type: 'zero_beginner',
       country_id: form.countryId,
       career_path_id: form.careerPathId,
       primary_stack: form.stackSlug,

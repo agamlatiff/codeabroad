@@ -104,7 +104,14 @@ func main() {
 		user.DefaultDailyRewardClaimMessage,
 	)
 	userHandler := user.NewHandlerWithRateLimiters(userUsecase, userProfileLimiter, userDailyRewardLimiter)
-	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
+	onboardingLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"onboarding:complete",
+		onboarding.DefaultOnboardingCompleteLimit,
+		time.Minute,
+		onboarding.DefaultOnboardingCompleteMessage,
+	)
+	onboardingHandler := onboarding.NewHandlerWithRateLimiter(onboardingUsecase, onboardingLimiter)
 	langHandler := language.NewHandler(langUsecase)
 	curriculumLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,

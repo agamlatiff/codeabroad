@@ -44,13 +44,77 @@ export interface CareerPath {
 export type TargetTimeline = '6_months' | '1_year' | 'exploring'
 export type LanguageLevel = 'none' | 'basic' | 'conversational' | 'fluent'
 
+export interface OnboardingLanguage {
+  id: string
+  code: string
+  name: string
+  supported_scripts?: string[]
+  is_active: boolean
+}
+
+export interface OnboardingPlacementAnswer {
+  exercise_id: string
+  user_answer: string
+}
+
+export interface OnboardingV3Payload {
+  language_id: string
+  daily_goal_minutes: 5 | 15 | 30 | 45
+  initial_placement_type: 'zero_beginner' | 'placement_test' | 'manual_select'
+  manual_level_id?: string
+  placement_answers?: OnboardingPlacementAnswer[]
+}
+
+export interface OnboardingV3ResultResponse {
+  user: {
+    id: string
+    email: string
+    created_at: string
+  }
+  profile: {
+    name: string
+    username: string
+    bio?: string | null
+    daily_goal_minutes: number
+    is_onboarded: boolean
+    has_seen_roadmap_tour?: boolean
+    preferred_roadmap_view?: 'map' | 'syllabus'
+  }
+  enrollment: {
+    id: string
+    language_id: string
+    current_level_id?: string | null
+    initial_placement_type: string
+    placement_score_percent?: number | null
+  }
+  assigned_level: {
+    id: string
+    code: string
+    name: string
+    tier: string
+  }
+  placement_score_percent?: number | null
+  gamification_stats: {
+    xp: number
+    current_level: number
+    streak: number
+    gems?: number
+    last_active_at?: string | null
+  }
+}
+
 export interface OnboardingPayload {
-  country_id: string
-  career_path_id: string
-  primary_stack: string
-  level: 'beginner' | 'intermediate'
-  target_timeline: TargetTimeline
-  language_level: LanguageLevel
+  language_id: string
+  daily_goal_minutes: 5 | 15 | 30 | 45
+  initial_placement_type: 'zero_beginner' | 'placement_test' | 'manual_select'
+  manual_level_id?: string
+  placement_answers?: OnboardingPlacementAnswer[]
+  country_id?: string
+  career_path_id?: string
+  primary_stack?: string
+  level?: 'beginner' | 'intermediate'
+  target_timeline?: TargetTimeline
+  language_level?: LanguageLevel
 }
 
 export interface CountrySummary {

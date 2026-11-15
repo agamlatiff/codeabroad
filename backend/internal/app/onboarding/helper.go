@@ -78,14 +78,15 @@ func (h *Helper) ResolveTargetLevel(
 
 	switch placementType {
 	case "manual_select":
-		if manualLevelID != nil {
-			for _, lvl := range levels {
-				if lvl.ID == *manualLevelID {
-					return &lvl
-				}
+		if manualLevelID == nil || *manualLevelID == "" {
+			return nil
+		}
+		for _, lvl := range levels {
+			if lvl.ID == *manualLevelID {
+				return &lvl
 			}
 		}
-		return &levels[0]
+		return nil
 
 	case "placement_test":
 		if scorePercent >= 80 && len(levels) > 1 {

@@ -137,3 +137,59 @@ func TestCompleteOnboarding_PlacementTest_DeduplicatesRepeatedAnswersAndNormaliz
 	}
 }
 
+func TestCompleteOnboarding_ManualSelect_InvalidLevel_And_StreakPreservation(t *testing.T) {
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1"},
+		UserProfile: user.UserProfile{IsOnboarded: false, PreferredRoadmapView: "syllabus"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           10,
+			CurrentLevel: 1,
+			Streak:       5,
+		},
+	}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lRepo.Levels["lvl-n4"] = &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+
+	uc := onboarding.NewUsecase(uRepo, lRepo, curriculum.NewMockRepository(), exercise.NewMockRepository(), gamification.NewMockRepository())
+
+	// Missing manual_level_id must return error
+	if _, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     15,
+		InitialPlacementType: "manual_select",
+	}); err == nil {
+		t.Fatal("expected error when manual_level_id is missing")
+	}
+
+	// Non-existent manual_level_id must return error instead of falling back to N5
+	unknown := "lvl-unknown"
+	if _, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     15,
+		InitialPlacementType: "manual_select",
+		ManualLevelID:        &unknown,
+	}); err == nil {
+		t.Fatal("expected error when manual_level_id does not belong to language")
+	}
+
+	// Valid zero_beginner must preserve existing streak of 5 and PreferredRoadmapView
+	res, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     15,
+		InitialPlacementType: "zero_beginner",
+	})
+	if err != nil {
+		t.Fatalf("expected valid onboarding to succeed, got %v", err)
+	}
+	if res.GamificationStats.Streak != 5 {
+		t.Errorf("expected existing streak 5 to be preserved, got %d", res.GamificationStats.Streak)
+	}
+	if res.Profile.PreferredRoadmapView != "syllabus" {
+		t.Errorf("expected PreferredRoadmapView 'syllabus', got %q", res.Profile.PreferredRoadmapView)
+	}
+}
+

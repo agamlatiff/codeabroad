@@ -13,6 +13,7 @@ import (
 var (
 	ErrInvalidPaceTarget    = apperror.NewBadRequestError("INVALID_PACE_TARGET", "target harian harus 5, 15, 30, atau 45 menit", nil)
 	ErrInvalidPlacementType = apperror.NewBadRequestError("INVALID_PLACEMENT_TYPE", "metode penempatan tidak valid (harus zero_beginner, placement_test, atau manual_select)", nil)
+	ErrManualLevelRequired  = apperror.NewBadRequestError("MANUAL_LEVEL_REQUIRED", "manual_level_id wajib diisi untuk metode manual_select", nil)
 	ErrAlreadyOnboarded     = apperror.NewConflictError("ALREADY_ONBOARDED", "pengguna telah menyelesaikan onboarding")
 )
 
