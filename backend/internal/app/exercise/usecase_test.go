@@ -1437,3 +1437,149 @@ func TestMockRepository_GetExerciseByID_ReturnsNotFound(t *testing.T) {
 		t.Fatalf("expected (nil, ErrExerciseNotFound), got (%v, %v)", ex, err)
 	}
 }
+
+type spySRSRepository struct {
+	*exercise.MockSRSRepository
+	dueCountCalls int
+	txReviewCalls int
+	enableTx      bool
+}
+
+func (s *spySRSRepository) GetDueCount(ctx context.Context, userID string, now time.Time) (int, error) {
+	s.dueCountCalls++
+	return s.MockSRSRepository.GetDueCount(ctx, userID, now)
+}
+
+func (s *spySRSRepository) ApplyReviewTx(
+	ctx context.Context,
+	userID, exerciseID string,
+	compute func(prevReps, prevInterval int, prevEase float64) *exercise.UserSRSReview,
+) (*exercise.UserSRSReview, error) {
+	s.txReviewCalls++
+	if !s.enableTx {
+		return nil, errors.New("unexpected tx call")
+	}
+	prevReps, prevInterval, prevEase := 0, 1, 2.5
+	if cur, err := s.MockSRSRepository.GetReview(ctx, userID, exerciseID); err == nil && cur != nil {
+		prevReps = cur.RepetitionCount
+		prevInterval = cur.IntervalDays
+		prevEase = cur.EaseFactor
+	}
+	updated := compute(prevReps, prevInterval, prevEase)
+	if err := s.MockSRSRepository.UpsertReview(ctx, updated); err != nil {
+		return nil, err
+	}
+	return updated, nil
+}
+
+func TestGetDueReviews_SkipsGetDueCountWhenBelowLimit(t *testing.T) {
+	sRepo := &spySRSRepository{MockSRSRepository: exercise.NewMockSRSRepository()}
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
+	}
+
+	uc := exercise.NewUsecase(
+		exercise.NewMockRepository(),
+		sRepo,
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+	)
+
+	queue, err := uc.GetDueReviews(context.Background(), "user-1", 10)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if queue.TotalDue != 1 || sRepo.dueCountCalls != 0 {
+		t.Fatalf("expected TotalDue=1 and 0 GetDueCount calls when len<limit, got TotalDue=%d calls=%d", queue.TotalDue, sRepo.dueCountCalls)
+	}
+
+	// When len(reviews) == limit, GetDueCount must be queried for accurate total_due.
+	sRepo.Reviews["user-1:ex-2"] = &exercise.UserSRSReview{
+		ID:           "srs-2",
+		UserID:       "user-1",
+		ExerciseID:   "ex-2",
+		NextReviewAt: time.Now().UTC().Add(-2 * time.Hour),
+	}
+	queue2, err := uc.GetDueReviews(context.Background(), "user-1", 1)
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if queue2.TotalDue != 2 || sRepo.dueCountCalls != 1 {
+		t.Fatalf("expected TotalDue=2 and 1 GetDueCount call when len>=limit, got TotalDue=%d calls=%d", queue2.TotalDue, sRepo.dueCountCalls)
+	}
+}
+
+func TestSubmitAnswer_ClampsExcessiveTimeSpentSeconds(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	uc := exercise.NewUsecaseFull(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: true},
+		nil,
+	)
+
+	_, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID:       "ex-1",
+		UserAnswer:       "A",
+		TimeSpentSeconds: 999999,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if len(eRepo.Attempts) != 1 || eRepo.Attempts[0].TimeSpentSeconds != 86400 {
+		t.Fatalf("expected TimeSpentSeconds clamped to 86400, got %+v", eRepo.Attempts)
+	}
+}
+
+func TestProcessReview_UsesTransactionalSRSReviewerWhenSupported(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	sRepo := &spySRSRepository{
+		MockSRSRepository: exercise.NewMockSRSRepository(),
+		enableTx:          true,
+	}
+	uc := exercise.NewUsecaseFull(
+		eRepo,
+		sRepo,
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: true},
+		nil,
+	)
+
+	q := 5
+	rev, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-1",
+		Quality:    &q,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if sRepo.txReviewCalls != 1 || rev.RepetitionCount != 1 {
+		t.Fatalf("expected ApplyReviewTx called once and RepetitionCount=1, got calls=%d reps=%d", sRepo.txReviewCalls, rev.RepetitionCount)
+	}
+}
+

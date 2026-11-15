@@ -108,7 +108,7 @@ type ReadinessExamAttempt struct {
 // SubmitExerciseAnswerRequest defines the payload when answering an in-lesson exercise
 type SubmitExerciseAnswerRequest struct {
 	ExerciseID       string `json:"exercise_id" binding:"required,uuid"`
-	UserAnswer       string `json:"user_answer" binding:"required"`
+	UserAnswer       string `json:"user_answer" binding:"required,max=2000"`
 	TimeSpentSeconds int    `json:"time_spent_seconds" binding:"min=0"`
 	SkipSRSSchedule  bool   `json:"skip_srs_schedule"`
 }
@@ -139,7 +139,7 @@ type SRSQueueResponse struct {
 // SubmitReadinessExamRequest encapsulates all answers for a full mock exam
 type SubmitReadinessExamRequest struct {
 	LevelID string                        `json:"level_id" binding:"required,uuid"`
-	Answers []SubmitExerciseAnswerRequest `json:"answers" binding:"required,min=1"`
+	Answers []SubmitExerciseAnswerRequest `json:"answers" binding:"required,min=1,max=200"`
 }
 
 // ExamCertificate provides official certification proof for passed readiness exams
@@ -189,6 +189,11 @@ type SRSRepository interface {
 	GetReview(ctx context.Context, userID string, exerciseID string) (*UserSRSReview, error)
 	UpsertReview(ctx context.Context, review *UserSRSReview) error
 	GetDueCount(ctx context.Context, userID string, now time.Time) (int, error)
+}
+
+// TransactionalSRSReviewer atomically locks, reads, computes, and persists an SM-2 SRS card update
+type TransactionalSRSReviewer interface {
+	ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error)
 }
 
 // ReadinessExamRepository specifies persistence operations for diagnostic mock exams

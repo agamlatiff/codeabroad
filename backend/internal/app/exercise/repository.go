@@ -435,8 +435,7 @@ func (r *PostgresRepository) GetReview(ctx context.Context, userID string, exerc
 	return &rev, nil
 }
 
-// UpsertReview records or updates an SM-2 scheduling record atomically
-func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSReview) error {
+func normalizeReviewForUpsert(review *UserSRSReview) time.Time {
 	nextReview := review.NextReviewAt
 	if nextReview.IsZero() {
 		nextReview = time.Now().UTC().AddDate(0, 0, 1)
@@ -447,28 +446,85 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 	if review.EaseFactor < 1.30 {
 		review.EaseFactor = 1.30
 	}
+	return nextReview
+}
 
-	query := `
-		INSERT INTO user_srs_reviews (
-			user_id, exercise_id, repetition_count, interval_days, ease_factor, next_review_at, last_reviewed_at
-		) VALUES ($1, $2, $3, $4, $5, $6, $7)
-		ON CONFLICT (user_id, exercise_id)
-		DO UPDATE SET
-			repetition_count = EXCLUDED.repetition_count,
-			interval_days = EXCLUDED.interval_days,
-			ease_factor = EXCLUDED.ease_factor,
-			next_review_at = EXCLUDED.next_review_at,
-			last_reviewed_at = EXCLUDED.last_reviewed_at
-		RETURNING id, repetition_count, next_review_at
-	`
+const upsertSRSReviewQuery = `
+	INSERT INTO user_srs_reviews (
+		user_id, exercise_id, repetition_count, interval_days, ease_factor, next_review_at, last_reviewed_at
+	) VALUES ($1, $2, $3, $4, $5, $6, $7)
+	ON CONFLICT (user_id, exercise_id)
+	DO UPDATE SET
+		repetition_count = EXCLUDED.repetition_count,
+		interval_days = EXCLUDED.interval_days,
+		ease_factor = EXCLUDED.ease_factor,
+		next_review_at = EXCLUDED.next_review_at,
+		last_reviewed_at = EXCLUDED.last_reviewed_at
+	RETURNING id, repetition_count, next_review_at
+`
+
+// UpsertReview records or updates an SM-2 scheduling record atomically
+func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSReview) error {
+	nextReview := normalizeReviewForUpsert(review)
 	err := r.db.Pool.QueryRow(
-		ctx, query,
+		ctx, upsertSRSReviewQuery,
 		review.UserID, review.ExerciseID, review.RepetitionCount, review.IntervalDays, review.EaseFactor, nextReview, review.LastReviewedAt,
 	).Scan(&review.ID, &review.RepetitionCount, &review.NextReviewAt)
 	if err != nil {
 		return fmt.Errorf("failed to upsert srs review: %w", err)
 	}
 	return nil
+}
+
+// ApplyReviewTx atomically locks, reads, computes, and upserts an SM-2 SRS card within a single transaction.
+func (r *PostgresRepository) ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error) {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin srs review tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	// Serialize concurrent first-time inserts or updates for the same (user, exercise) pair.
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended($1 || ':' || $2, 0))`, userID, exerciseID); err != nil {
+		return nil, fmt.Errorf("failed to acquire srs review lock: %w", err)
+	}
+
+	prevReps := 0
+	prevInterval := 1
+	prevEase := 2.5
+
+	var rev UserSRSReview
+	selectQuery := `
+		SELECT repetition_count, interval_days, ease_factor
+		FROM user_srs_reviews
+		WHERE user_id = $1 AND exercise_id = $2
+		FOR UPDATE
+	`
+	err = tx.QueryRow(ctx, selectQuery, userID, exerciseID).Scan(&rev.RepetitionCount, &rev.IntervalDays, &rev.EaseFactor)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("failed to lock existing srs review: %w", err)
+		}
+	} else {
+		prevReps = rev.RepetitionCount
+		prevInterval = rev.IntervalDays
+		prevEase = rev.EaseFactor
+	}
+
+	updated := compute(prevReps, prevInterval, prevEase)
+	nextReview := normalizeReviewForUpsert(updated)
+	err = tx.QueryRow(
+		ctx, upsertSRSReviewQuery,
+		updated.UserID, updated.ExerciseID, updated.RepetitionCount, updated.IntervalDays, updated.EaseFactor, nextReview, updated.LastReviewedAt,
+	).Scan(&updated.ID, &updated.RepetitionCount, &updated.NextReviewAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to upsert srs review in tx: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit srs review tx: %w", err)
+	}
+	return updated, nil
 }
 
 // GetDueCount counts all pending spaced repetition cards due on or before now

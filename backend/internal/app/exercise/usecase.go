@@ -153,12 +153,19 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		diagnosticFeedback = u.helper.ExtractDiagnosticFeedback(ex.DiagnosticRubric, req.UserAnswer)
 	}
 
+	timeSpent := req.TimeSpentSeconds
+	if timeSpent < 0 {
+		timeSpent = 0
+	} else if timeSpent > 86400 {
+		timeSpent = 86400
+	}
+
 	attempt := &UserExerciseAttempt{
 		UserID:           userID,
 		ExerciseID:       req.ExerciseID,
 		IsCorrect:        isCorrect,
 		SelectedAnswer:   map[string]any{"user_answer": req.UserAnswer},
-		TimeSpentSeconds: req.TimeSpentSeconds,
+		TimeSpentSeconds: timeSpent,
 	}
 	if err := u.exerciseRepo.CreateAttempt(ctx, attempt); err != nil {
 		return nil, fmt.Errorf("failed to record exercise attempt: %w", err)
@@ -168,27 +175,23 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	var nextDue *time.Time
 
 	if !isCorrect && !req.SkipSRSSchedule {
-		prevEase := 2.5
-		if existing, revErr := u.srsRepo.GetReview(ctx, userID, req.ExerciseID); revErr == nil && existing != nil {
-			prevEase = existing.EaseFactor
-		} else if revErr != nil && !errors.Is(revErr, ErrReviewNotFound) {
-			log.Printf("exercise: failed to fetch existing srs card for user %s exercise %s: %v", userID, req.ExerciseID, revErr)
-		}
-
-		sm2 := u.helper.CalculateSM2(0, 0, 1, prevEase, now)
-		srsCard := &UserSRSReview{
-			UserID:          userID,
-			ExerciseID:      req.ExerciseID,
-			RepetitionCount: sm2.Repetitions,
-			IntervalDays:    sm2.IntervalDays,
-			EaseFactor:      sm2.EaseFactor,
-			NextReviewAt:    sm2.DueDate,
-			LastReviewedAt:  &now,
-		}
-		if srsErr := u.srsRepo.UpsertReview(ctx, srsCard); srsErr != nil {
-			log.Printf("exercise: failed to upsert srs card for user %s exercise %s: %v", userID, req.ExerciseID, srsErr)
-		} else {
-			nextDue = &sm2.DueDate
+		updatedCard, srsErr := u.applySRSReview(ctx, userID, req.ExerciseID, func(_ int, _ int, prevEase float64) *UserSRSReview {
+			sm2 := u.helper.CalculateSM2(0, 0, 1, prevEase, now)
+			return &UserSRSReview{
+				UserID:          userID,
+				ExerciseID:      req.ExerciseID,
+				RepetitionCount: sm2.Repetitions,
+				IntervalDays:    sm2.IntervalDays,
+				EaseFactor:      sm2.EaseFactor,
+				NextReviewAt:    sm2.DueDate,
+				LastReviewedAt:  &now,
+			}
+		})
+		if srsErr != nil {
+			log.Printf("exercise: failed to update srs card for user %s exercise %s: %v", userID, req.ExerciseID, srsErr)
+		} else if updatedCard != nil {
+			due := updatedCard.NextReviewAt
+			nextDue = &due
 		}
 	}
 
@@ -223,9 +226,11 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 		}
 	}
 
-	dueCount, err := u.srsRepo.GetDueCount(ctx, userID, now)
-	if err != nil {
-		dueCount = len(reviews)
+	dueCount := len(reviews)
+	if len(reviews) >= limit {
+		if count, err := u.srsRepo.GetDueCount(ctx, userID, now); err == nil {
+			dueCount = count
+		}
 	}
 
 	return &SRSQueueResponse{
@@ -251,7 +256,32 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 		return nil, err
 	}
 
-	currentReview, err := u.srsRepo.GetReview(ctx, userID, req.ExerciseID)
+	now := time.Now().UTC()
+	return u.applySRSReview(ctx, userID, req.ExerciseID, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
+		sm2 := u.helper.CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
+		return &UserSRSReview{
+			UserID:          userID,
+			ExerciseID:      req.ExerciseID,
+			RepetitionCount: sm2.Repetitions,
+			IntervalDays:    sm2.IntervalDays,
+			EaseFactor:      sm2.EaseFactor,
+			NextReviewAt:    sm2.DueDate,
+			LastReviewedAt:  &now,
+		}
+	})
+}
+
+func (u *usecase) applySRSReview(
+	ctx context.Context,
+	userID string,
+	exerciseID string,
+	compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview,
+) (*UserSRSReview, error) {
+	if txReviewer, ok := u.srsRepo.(TransactionalSRSReviewer); ok {
+		return txReviewer.ApplyReviewTx(ctx, userID, exerciseID, compute)
+	}
+
+	currentReview, err := u.srsRepo.GetReview(ctx, userID, exerciseID)
 	prevReps := 0
 	prevInterval := 1
 	prevEase := 2.5
@@ -265,23 +295,10 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 		prevEase = currentReview.EaseFactor
 	}
 
-	now := time.Now().UTC()
-	sm2 := u.helper.CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
-
-	updatedReview := &UserSRSReview{
-		UserID:          userID,
-		ExerciseID:      req.ExerciseID,
-		RepetitionCount: sm2.Repetitions,
-		IntervalDays:    sm2.IntervalDays,
-		EaseFactor:      sm2.EaseFactor,
-		NextReviewAt:    sm2.DueDate,
-		LastReviewedAt:  &now,
-	}
-
+	updatedReview := compute(prevReps, prevInterval, prevEase)
 	if err := u.srsRepo.UpsertReview(ctx, updatedReview); err != nil {
 		return nil, fmt.Errorf("failed to update srs review: %w", err)
 	}
-
 	return updatedReview, nil
 }
 

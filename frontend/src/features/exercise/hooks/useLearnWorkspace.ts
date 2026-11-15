@@ -194,7 +194,10 @@ export const useLearnWorkspace = () => {
     setSubmitError(null)
     const elapsedSeconds =
       questionStartedAtRef.current > 0
-        ? Math.max(1, Math.round((Date.now() - questionStartedAtRef.current) / 1000))
+        ? Math.min(
+            86400,
+            Math.max(1, Math.round((Date.now() - questionStartedAtRef.current) / 1000))
+          )
         : 1
 
     try {
