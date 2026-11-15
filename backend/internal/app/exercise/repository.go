@@ -104,6 +104,21 @@ func appendUniqueFold(items []string, candidate string, excludeFold string) []st
 	return append(items, trimmed)
 }
 
+func parseObjectOptionPair(raw any) (id string, text string, ok bool) {
+	m, isMap := raw.(map[string]any)
+	if !isMap {
+		return "", "", false
+	}
+	rawID, _ := m["id"].(string)
+	rawText, _ := m["text"].(string)
+	id = strings.TrimSpace(rawID)
+	text = strings.TrimSpace(rawText)
+	if id == "" || text == "" {
+		return "", "", false
+	}
+	return id, text, true
+}
+
 func syncObjectOptionAcceptableAnswers(ex *Exercise) {
 	if ex == nil || len(ex.Content) == 0 {
 		return
@@ -117,15 +132,8 @@ func syncObjectOptionAcceptableAnswers(ex *Exercise) {
 		return
 	}
 	for _, o := range rawOpts {
-		m, ok := o.(map[string]any)
+		id, text, ok := parseObjectOptionPair(o)
 		if !ok {
-			continue
-		}
-		rawID, _ := m["id"].(string)
-		rawText, _ := m["text"].(string)
-		id := strings.TrimSpace(rawID)
-		text := strings.TrimSpace(rawText)
-		if id == "" || text == "" {
 			continue
 		}
 		if strings.EqualFold(correct, id) {
@@ -135,6 +143,41 @@ func syncObjectOptionAcceptableAnswers(ex *Exercise) {
 		} else if strings.EqualFold(correct, text) {
 			ex.AcceptableAnswers = appendUniqueFold(ex.AcceptableAnswers, id, correct)
 			return
+		}
+	}
+}
+
+func findRubricValueFold(rubric map[string]any, key string) (any, bool) {
+	if val, ok := rubric[key]; ok {
+		return val, true
+	}
+	for k, v := range rubric {
+		if strings.EqualFold(strings.TrimSpace(k), key) {
+			return v, true
+		}
+	}
+	return nil, false
+}
+
+func syncObjectOptionDiagnosticRubric(ex *Exercise) {
+	if ex == nil || len(ex.Content) == 0 || len(ex.DiagnosticRubric) == 0 {
+		return
+	}
+	rawOpts, ok := ex.Content["options"].([]any)
+	if !ok {
+		return
+	}
+	for _, o := range rawOpts {
+		id, text, ok := parseObjectOptionPair(o)
+		if !ok {
+			continue
+		}
+		idVal, hasID := findRubricValueFold(ex.DiagnosticRubric, id)
+		textVal, hasText := findRubricValueFold(ex.DiagnosticRubric, text)
+		if hasID && !hasText {
+			ex.DiagnosticRubric[text] = idVal
+		} else if hasText && !hasID {
+			ex.DiagnosticRubric[id] = textVal
 		}
 	}
 }
@@ -188,6 +231,7 @@ func HydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptabl
 	syncObjectOptionAcceptableAnswers(ex)
 
 	ex.DiagnosticRubric = unmarshalJSONMap(diagnosticJSON, fmt.Sprintf("exercise diagnostic_rubric (%s)", ex.ID))
+	syncObjectOptionDiagnosticRubric(ex)
 }
 
 const (
@@ -272,13 +316,28 @@ func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*E
 // GetPlacementExercises retrieves diagnostic placement test exercises for a destination language
 func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, languageID string, limit int) ([]Exercise, error) {
 	query := `
+		WITH placement_unit_exists AS (
+			SELECT EXISTS (
+				SELECT 1
+				FROM units u
+				JOIN proficiency_levels pl ON u.level_id = pl.id
+				WHERE pl.language_id = NULLIF($1, '')::uuid
+				  AND u.unit_type = 'diagnostic_exam'
+				  AND u.order_index = 0
+			) AS has_placement
+		)
 		SELECT ` + prefixedExerciseSelectColumns + `
 		FROM exercises e
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
 		JOIN proficiency_levels pl ON u.level_id = pl.id
-		WHERE pl.language_id = $1::uuid
-		ORDER BY CASE WHEN u.unit_type = 'diagnostic_exam' THEN 0 ELSE 1 END ASC, pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
+		CROSS JOIN placement_unit_exists pue
+		WHERE pl.language_id = NULLIF($1, '')::uuid
+		  AND (
+			(pue.has_placement AND u.unit_type = 'diagnostic_exam' AND u.order_index = 0)
+			OR (NOT pue.has_placement AND u.unit_type = 'curriculum')
+		  )
+		ORDER BY pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
 		LIMIT $2
 	`
 	rows, err := r.db.Pool.Query(ctx, query, languageID, limit)
@@ -297,7 +356,7 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 		FROM exercises e
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
-		WHERE u.level_id = $1::uuid
+		WHERE u.level_id = NULLIF($1, '')::uuid
 		  AND u.unit_type = 'diagnostic_exam'
 		  AND u.order_index > 0
 		ORDER BY e.skill_pillar ASC, e.order_index ASC, e.id ASC
@@ -442,7 +501,7 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 		JOIN user_language_enrollments ule ON ule.language_id = pl.language_id
 		  AND ule.user_id = r.user_id
 		  AND ule.is_active = true
-		WHERE r.user_id = $1 AND r.next_review_at <= $2
+		WHERE r.user_id = NULLIF($1, '')::uuid AND r.next_review_at <= $2
 		ORDER BY r.next_review_at ASC, r.repetition_count ASC, r.id ASC
 		LIMIT $3
 	`

@@ -172,7 +172,7 @@ export const SrsReviewPage = () => {
               <span>Ulasan Pengingat Memori (SM-2)</span>
               <span className="px-2.5 py-1 rounded-lg bg-slate-100 border border-slate-200 font-mono text-[11px] text-slate-600">
                 Rep {currentReviewItem.repetition_count} • Interval{' '}
-                {currentReviewItem.interval_days}h • Ease{' '}
+                {currentReviewItem.interval_days} hari • Ease{' '}
                 {currentReviewItem.ease_factor.toFixed(2)}
               </span>
             </div>

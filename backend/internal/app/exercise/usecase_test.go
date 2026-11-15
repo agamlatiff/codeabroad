@@ -1907,7 +1907,7 @@ func TestHydrateExerciseJSONFields_SyncsObjectOptionIDAndTextAcceptableAnswers(t
 		contentJSON,
 		[]byte(`{"selected":"Insinyur (Bukan dokter)"}`),
 		[]byte(`["OPT_1"]`),
-		nil,
+		[]byte(`{"Dokter (Bukan insinyur)":"Perhatikan bentuk negatif -masen"}`),
 	)
 
 	if len(byText.AcceptableAnswers) != 1 {
@@ -1918,6 +1918,24 @@ func TestHydrateExerciseJSONFields_SyncsObjectOptionIDAndTextAcceptableAnswers(t
 	}
 	if !h.EvaluateAnswer(byText.CorrectAnswer, byText.AcceptableAnswers, "Insinyur (Bukan dokter)") {
 		t.Fatalf("expected option text to pass EvaluateAnswer")
+	}
+	if fb := h.ExtractDiagnosticFeedback(byText.DiagnosticRubric, "opt_2"); fb == nil || *fb != "Perhatikan bentuk negatif -masen" {
+		t.Fatalf("expected reverse-synced DiagnosticRubric feedback for 'opt_2', got %v", fb)
+	}
+
+	var withRubricByID exercise.Exercise
+	exercise.HydrateExerciseJSONFields(
+		&withRubricByID,
+		contentJSON,
+		[]byte(`{"selected_id":"opt_1"}`),
+		[]byte(`[]`),
+		[]byte(`{"opt_2":"Perhatikan bentuk negatif -masen"}`),
+	)
+	if fb := h.ExtractDiagnosticFeedback(withRubricByID.DiagnosticRubric, "opt_2"); fb == nil || *fb != "Perhatikan bentuk negatif -masen" {
+		t.Fatalf("expected DiagnosticRubric feedback for 'opt_2', got %v", fb)
+	}
+	if fb := h.ExtractDiagnosticFeedback(withRubricByID.DiagnosticRubric, "Dokter (Bukan insinyur)"); fb == nil || *fb != "Perhatikan bentuk negatif -masen" {
+		t.Fatalf("expected synced DiagnosticRubric feedback for option text, got %v", fb)
 	}
 }
 

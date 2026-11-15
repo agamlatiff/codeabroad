@@ -382,6 +382,10 @@ func (u *usecase) applySRSReview(
 }
 
 func (u *usecase) verifyLevelExamAccess(ctx context.Context, userID string, levelID string) (*language.ProficiencyLevel, *language.UserLanguageEnrollment, error) {
+	levelID = strings.TrimSpace(levelID)
+	if levelID == "" {
+		return nil, nil, apperror.ErrBadRequest
+	}
 	lvl, err := u.langRepo.GetLevelByID(ctx, levelID)
 	if err != nil {
 		return nil, nil, err
@@ -408,6 +412,7 @@ func (u *usecase) GetExamQuestions(ctx context.Context, userID string, levelID s
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
+	levelID = strings.TrimSpace(levelID)
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
@@ -713,6 +718,7 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
+	levelID = strings.TrimSpace(levelID)
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
@@ -770,19 +776,23 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if req == nil || req.LevelID == "" || len(req.Answers) == 0 {
+	if req == nil || len(req.Answers) == 0 {
+		return nil, apperror.ErrBadRequest
+	}
+	levelID := strings.TrimSpace(req.LevelID)
+	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
 	if u.exerciseRepo == nil || u.examRepo == nil || u.langRepo == nil {
 		return nil, fmt.Errorf("exam dependencies are not configured: %w", apperror.ErrInternal)
 	}
 
-	lvl, enrollment, err := u.verifyLevelExamAccess(ctx, userID, req.LevelID)
+	lvl, enrollment, err := u.verifyLevelExamAccess(ctx, userID, levelID)
 	if err != nil {
 		return nil, err
 	}
 
-	prevPassed, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, req.LevelID)
+	prevPassed, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to verify previous exam status: %w", err)
 	}
@@ -790,7 +800,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		return nil, ErrExamAlreadyPassed
 	}
 
-	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, req.LevelID)
+	questions, err := u.exerciseRepo.GetReadinessExamExercises(ctx, levelID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load exam questions: %w", err)
 	}
@@ -806,7 +816,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	now := time.Now().UTC()
 	attempt := &ReadinessExamAttempt{
 		UserID:         userID,
-		LevelID:        req.LevelID,
+		LevelID:        levelID,
 		ReadingScore:   graded.readingScore,
 		ListeningScore: graded.listeningScore,
 		WritingScore:   graded.writingScore,
@@ -843,7 +853,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	}
 
 	u.logActivitySafely(ctx, userID, "readiness_exam_completed", badgeXP, map[string]any{
-		"level_id":      req.LevelID,
+		"level_id":      levelID,
 		"attempt_id":    attempt.ID,
 		"score_percent": graded.scorePercent,
 		"is_passed":     graded.isPassed,

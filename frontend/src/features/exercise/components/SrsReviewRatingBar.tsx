@@ -134,24 +134,33 @@ export const SrsReviewRatingBar = ({
         )}
 
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-          {SRS_RATING_OPTIONS.map((option) => (
-            <Button3D
-              key={option.quality}
-              type="button"
-              variant={option.variant}
-              size="sm"
-              fullWidth
-              disabled={isSubmittingRating}
-              onClick={() => onRateQuality(option.quality)}
-            >
-              <span className="flex flex-col leading-tight">
-                <span>{option.label}</span>
-                <span className="text-[10px] font-medium opacity-85">
-                  {option.hint}
+          {SRS_RATING_OPTIONS.map((option, index) => {
+            const shortcutKey = String(index + 1)
+            return (
+              <Button3D
+                key={option.quality}
+                type="button"
+                variant={option.variant}
+                size="sm"
+                fullWidth
+                disabled={isSubmittingRating}
+                aria-keyshortcuts={shortcutKey}
+                onClick={() => onRateQuality(option.quality)}
+              >
+                <span className="flex flex-col leading-tight">
+                  <span className="inline-flex items-center justify-center gap-1.5">
+                    <span>{option.label}</span>
+                    <kbd className="hidden sm:inline-block rounded bg-black/15 px-1 py-0.5 font-mono text-[10px] font-bold leading-none">
+                      {shortcutKey}
+                    </kbd>
+                  </span>
+                  <span className="text-[10px] font-medium opacity-85">
+                    {option.hint}
+                  </span>
                 </span>
-              </span>
-            </Button3D>
-          ))}
+              </Button3D>
+            )
+          })}
         </div>
       </div>
     </footer>
