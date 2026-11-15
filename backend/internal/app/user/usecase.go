@@ -67,18 +67,10 @@ func (u *usecase) GetActivityLogs(ctx context.Context, userID string) (*UserActi
 	todayStr := now.In(u.helper.DefaultLocation()).Format("2006-01-02")
 	startOfToday, startOfTomorrow, calendarStart := u.helper.ResolveCalendarWindow(now)
 
-	alreadyActiveToday, err := u.userRepo.HasActivityInRange(ctx, userID, startOfToday, startOfTomorrow)
+	loggedToday, err := u.userRepo.EnsureDailyLogin(ctx, userID, todayStr, startOfToday, startOfTomorrow)
 	if err != nil {
-		log.Printf("[WARN] [user.GetActivityLogs] failed to check daily activity for user %s: %v", userID, err)
-	} else if !alreadyActiveToday {
-		if err := u.userRepo.LogActivity(ctx, &UserActivityLog{
-			UserID:       userID,
-			ActivityType: "daily_login",
-			XPEarned:     0,
-			Metadata:     map[string]interface{}{"date": todayStr},
-		}); err != nil {
-			log.Printf("[WARN] [user.GetActivityLogs] failed to log daily login activity for user %s: %v", userID, err)
-		}
+		log.Printf("[WARN] [user.GetActivityLogs] failed to ensure daily login for user %s: %v", userID, err)
+	} else if loggedToday {
 		if newStreak, changed := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now); changed {
 			usr.Streak = newStreak
 			usr.LastActiveAt = &now

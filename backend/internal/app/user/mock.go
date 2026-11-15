@@ -164,6 +164,23 @@ func (m *MockRepository) HasActivityInRange(ctx context.Context, userID string, 
 	return false, nil
 }
 
+func (m *MockRepository) EnsureDailyLogin(ctx context.Context, userID string, dateStr string, startTime time.Time, endTime time.Time) (bool, error) {
+	exists, err := m.HasActivityInRange(ctx, userID, startTime, endTime)
+	if err != nil || exists {
+		return false, err
+	}
+	if err := m.LogActivity(ctx, &UserActivityLog{
+		UserID:       userID,
+		ActivityType: "daily_login",
+		XPEarned:     0,
+		Metadata:     map[string]any{"date": dateStr},
+		CreatedAt:    time.Now().UTC(),
+	}); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
 func (m *MockRepository) GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]DailyActivityStat, error) {
 	stats := make(map[string]DailyActivityStat)
 	for _, l := range m.ActivityLogs {

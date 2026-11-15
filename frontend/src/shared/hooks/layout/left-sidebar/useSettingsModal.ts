@@ -100,14 +100,20 @@ export const useSettingsModal = ({
     async (e: React.FormEvent) => {
       e.preventDefault()
       triggerHaptic('tap')
+      const trimmedName = name.trim()
+      if (!trimmedName) {
+        setErrorMessage('Nama lengkap tidak boleh kosong')
+        triggerHaptic('error')
+        return
+      }
       setSaveSuccess(false)
       setErrorMessage(null)
       setIsSubmitting(true)
 
       try {
         await userActions.updateProfile({
-          name: name.trim() || undefined,
-          bio: bio.trim() || undefined,
+          name: trimmedName,
+          bio: bio.trim(),
           primary_stack: primaryStack,
         })
         setSaveSuccess(true)

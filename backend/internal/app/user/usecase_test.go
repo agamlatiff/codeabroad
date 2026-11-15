@@ -129,3 +129,40 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 	}
 }
 
+func TestGetActivityLogs_IdempotentDailyLogin(t *testing.T) {
+	repo := user.NewMockRepository()
+	repo.Users["user-123"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@codeabroad.io"},
+		UserProfile: user.UserProfile{Name: "Learner", Username: "learner123"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           20,
+			CurrentLevel: 1,
+			Streak:       0,
+		},
+	}
+
+	uc := user.NewUsecase(repo)
+	res1, err := uc.GetActivityLogs(context.Background(), "user-123")
+	if err != nil {
+		t.Fatalf("first GetActivityLogs failed: %v", err)
+	}
+	if res1.CurrentStreak != 1 {
+		t.Errorf("expected streak 1 after first daily login, got %d", res1.CurrentStreak)
+	}
+	if len(repo.ActivityLogs) != 1 {
+		t.Fatalf("expected 1 daily_login activity log, got %d", len(repo.ActivityLogs))
+	}
+
+	// Second call on same day must not create duplicate daily_login logs
+	res2, err := uc.GetActivityLogs(context.Background(), "user-123")
+	if err != nil {
+		t.Fatalf("second GetActivityLogs failed: %v", err)
+	}
+	if res2.CurrentStreak != 1 {
+		t.Errorf("expected streak to remain 1, got %d", res2.CurrentStreak)
+	}
+	if len(repo.ActivityLogs) != 1 {
+		t.Errorf("expected still 1 daily_login activity log on repeat call, got %d", len(repo.ActivityLogs))
+	}
+}
+

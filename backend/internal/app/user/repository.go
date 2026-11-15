@@ -304,6 +304,65 @@ func (r *PostgresRepository) HasActivityInRange(
 	return exists, nil
 }
 
+// EnsureDailyLogin atomically logs a daily_login activity if no activity exists in [startTime, endTime)
+func (r *PostgresRepository) EnsureDailyLogin(
+	ctx context.Context,
+	userID string,
+	dateStr string,
+	startTime time.Time,
+	endTime time.Time,
+) (bool, error) {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return false, fmt.Errorf("failed to begin daily login transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('daily_login:' || $1 || ':' || $2))`, userID, dateStr); err != nil {
+		return false, fmt.Errorf("failed to acquire daily login lock: %w", err)
+	}
+
+	var exists bool
+	checkQuery := `
+		SELECT EXISTS (
+			SELECT 1 FROM user_activity_logs
+			WHERE user_id = NULLIF($1, '')::uuid
+			  AND created_at >= $2
+			  AND created_at < $3
+		)
+	`
+	if err := tx.QueryRow(ctx, checkQuery, userID, startTime, endTime).Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to check daily activity in transaction: %w", err)
+	}
+	if exists {
+		return false, nil
+	}
+
+	metaJSON, err := json.Marshal(map[string]interface{}{"date": dateStr})
+	if err != nil {
+		return false, fmt.Errorf("failed to marshal daily login metadata: %w", err)
+	}
+
+	insertQuery := `
+		WITH inserted_log AS (
+			INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+			VALUES (NULLIF($1, '')::uuid, 'daily_login', 0, $2, NOW())
+		)
+		UPDATE user_gamification
+		SET last_active_at = NOW(),
+		    updated_at = NOW()
+		WHERE user_id = NULLIF($1, '')::uuid
+	`
+	if _, err := tx.Exec(ctx, insertQuery, userID, metaJSON); err != nil {
+		return false, fmt.Errorf("failed to insert daily login activity: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return false, fmt.Errorf("failed to commit daily login transaction: %w", err)
+	}
+	return true, nil
+}
+
 // GetDailyActivityStatsSince aggregates daily XP and completed lesson counts since a cutoff time
 func (r *PostgresRepository) GetDailyActivityStatsSince(
 	ctx context.Context,

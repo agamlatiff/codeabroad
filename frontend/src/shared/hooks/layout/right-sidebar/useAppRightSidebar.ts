@@ -84,9 +84,17 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   }, [])
 
   const claimRewardMutation = useMutation({
-    mutationFn: (rewardType: 'vocab_quest' | 'golden_chest') =>
+    mutationFn: ({ rewardType }: { rewardType: 'vocab_quest' | 'golden_chest'; clientX?: number; clientY?: number }) =>
       userService.claimDailyReward(rewardType),
-    onSuccess: (res) => {
+    onSuccess: (res, variables) => {
+      triggerHaptic('success')
+      if (variables.rewardType === 'golden_chest') {
+        audioEngine.playChestClaim()
+        spawnFloatingReward(GOLDEN_CHEST_REWARD_XP, variables.clientX, variables.clientY)
+      } else {
+        audioEngine.playRewardClaim()
+        spawnFloatingReward(VOCAB_QUEST_REWARD_XP, variables.clientX, variables.clientY)
+      }
       updateUser({
         xp: res.current_xp,
         current_level: res.current_level,
@@ -96,6 +104,9 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
       void queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY })
+    },
+    onError: () => {
+      triggerHaptic('error')
     },
   })
 
@@ -109,23 +120,25 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   const handleClaimVocabQuest = useCallback(
     (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
       if (isVocabQuestClaimed || claimRewardMutation.isPending) return
-      triggerHaptic('success')
-      audioEngine.playRewardClaim()
-      spawnFloatingReward(VOCAB_QUEST_REWARD_XP, e?.clientX, e?.clientY)
-      claimRewardMutation.mutate('vocab_quest')
+      claimRewardMutation.mutate({
+        rewardType: 'vocab_quest',
+        clientX: e?.clientX,
+        clientY: e?.clientY,
+      })
     },
-    [isVocabQuestClaimed, claimRewardMutation, spawnFloatingReward]
+    [isVocabQuestClaimed, claimRewardMutation]
   )
 
   const handleClaimChest = useCallback(
     (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
       if (isChestClaimedToday || claimRewardMutation.isPending) return
-      triggerHaptic('success')
-      audioEngine.playChestClaim()
-      spawnFloatingReward(GOLDEN_CHEST_REWARD_XP, e?.clientX, e?.clientY)
-      claimRewardMutation.mutate('golden_chest')
+      claimRewardMutation.mutate({
+        rewardType: 'golden_chest',
+        clientX: e?.clientX,
+        clientY: e?.clientY,
+      })
     },
-    [isChestClaimedToday, claimRewardMutation, spawnFloatingReward]
+    [isChestClaimedToday, claimRewardMutation]
   )
 
   const handleFocusLanguageCard = useCallback(() => {
