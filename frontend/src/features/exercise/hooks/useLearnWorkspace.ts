@@ -343,9 +343,10 @@ export const useLearnWorkspace = () => {
   ])
 
   const handleExitToCurriculum = useCallback(() => {
+    stopMediaSession()
     audioEngine.playPop()
     navigate('/curriculum')
-  }, [navigate])
+  }, [navigate, stopMediaSession])
 
   const handleEnterShortcut = useCallback(() => {
     if (isSubmittingAnswer || isCompletingLesson || isScoreTooLowError) return

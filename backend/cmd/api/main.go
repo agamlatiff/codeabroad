@@ -100,7 +100,35 @@ func main() {
 		"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
 	)
 	curriculumHandler := curriculum.NewHandlerWithRateLimiter(curriculumUsecase, curriculumLimiter)
-	exerciseHandler := exercise.NewHandler(exerciseUsecase, exerciseUsecase, exerciseUsecase)
+	exerciseSubmitLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"exercise:submit",
+		30,
+		time.Minute,
+		"too many exercise submissions, please wait a moment",
+	)
+	srsReviewLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"srs:review",
+		30,
+		time.Minute,
+		"too many SRS review submissions, please wait a moment",
+	)
+	examSubmitLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"exam:submit",
+		10,
+		time.Minute,
+		"too many readiness exam submissions, please wait a moment",
+	)
+	exerciseHandler := exercise.NewHandlerWithRateLimiters(
+		exerciseUsecase,
+		exerciseUsecase,
+		exerciseUsecase,
+		exerciseSubmitLimiter,
+		srsReviewLimiter,
+		examSubmitLimiter,
+	)
 	gamificationHandler := gamification.NewHandler(gamificationUsecase)
 	leaderboardHandler := leaderboard.NewHandler(leaderboardUsecase)
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)

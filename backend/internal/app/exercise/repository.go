@@ -705,6 +705,9 @@ func scanExamAttemptRow(scanner interface{ Scan(dest ...any) error }) (*Readines
 	if len(reportJSON) > 0 {
 		_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
 	}
+	if maxScore, ok := extractReportInt(a.AnalysisReport, "max_score"); ok && maxScore > 0 {
+		a.MaxScore = maxScore
+	}
 	a.ScorePercent = a.OverallScore
 	a.Level = &pl
 	return &a, nil

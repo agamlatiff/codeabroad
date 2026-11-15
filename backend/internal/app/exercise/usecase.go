@@ -494,7 +494,9 @@ func (u *usecase) gradeExamSubmission(
 		speakingScore:  speakingScore,
 		isPassed:       scorePercent >= passingScore,
 		analysisReport: map[string]any{
-			"answers": answersPayload,
+			"total_score": totalScore,
+			"max_score":   maxScore,
+			"answers":     answersPayload,
 			"pillars": map[string]int{
 				"reading":   readingScore,
 				"listening": listeningScore,
@@ -579,9 +581,30 @@ func (u *usecase) persistExamSubmission(
 	return nil
 }
 
+func extractReportInt(report map[string]any, key string) (int, bool) {
+	if report == nil {
+		return 0, false
+	}
+	switch v := report[key].(type) {
+	case int:
+		return v, true
+	case int64:
+		return int(v), true
+	case float64:
+		return int(v), true
+	default:
+		return 0, false
+	}
+}
+
 func extractAttemptScoreCounts(attempt *ReadinessExamAttempt) (score int, maxScore int) {
 	if attempt == nil {
 		return 0, 0
+	}
+	totalScore, hasTotal := extractReportInt(attempt.AnalysisReport, "total_score")
+	catalogMax, hasMax := extractReportInt(attempt.AnalysisReport, "max_score")
+	if hasTotal && hasMax && catalogMax > 0 {
+		return totalScore, catalogMax
 	}
 	if answersRaw, ok := attempt.AnalysisReport["answers"].(map[string]any); ok && len(answersRaw) > 0 {
 		correctCount := 0
@@ -592,7 +615,13 @@ func extractAttemptScoreCounts(attempt *ReadinessExamAttempt) (score int, maxSco
 				}
 			}
 		}
+		if hasMax && catalogMax > 0 {
+			return correctCount, catalogMax
+		}
 		return correctCount, len(answersRaw)
+	}
+	if hasMax && catalogMax > 0 {
+		return (attempt.ScorePercent * catalogMax) / 100, catalogMax
 	}
 	if attempt.MaxScore > 0 {
 		return (attempt.ScorePercent * attempt.MaxScore) / 100, attempt.MaxScore

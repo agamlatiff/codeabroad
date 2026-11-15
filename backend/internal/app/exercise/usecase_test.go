@@ -1758,5 +1758,73 @@ func TestHelper_EvaluateAnswer_NormalizesJapaneseAndEnglishPunctuation(t *testin
 	}
 }
 
+func TestSubmitAndGetExamResult_PreservesCatalogMaxScoreOnPartialAnswers(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+	userRepo := user.NewMockRepository()
+
+	_ = userRepo.Create(context.Background(), &user.User{
+		UserAccount: user.UserAccount{ID: "user-1", Email: "ani@example.com"},
+		UserProfile: user.UserProfile{Name: "Ani", Username: "ani"},
+	})
+
+	lvlN5 := &language.ProficiencyLevel{
+		ID:                  "lvl-n5",
+		LanguageID:          "lang-ja",
+		Code:                "N5",
+		OfficialExamName:    "JLPT N5 Readiness",
+		PassingScorePercent: 60,
+		OrderIndex:          1,
+	}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-2", SkillPillar: "reading", CorrectAnswer: "B"},
+		{ID: "q-3", SkillPillar: "listening", CorrectAnswer: "C"},
+		{ID: "q-4", SkillPillar: "writing", CorrectAnswer: "D"},
+		{ID: "q-5", SkillPillar: "speaking", CorrectAnswer: "E"},
+	}
+
+	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), examRepo, langRepo, userRepo)
+	submitRes, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: "lvl-n5",
+		Answers: []exercise.SubmitExerciseAnswerRequest{
+			{ExerciseID: "q-1", UserAnswer: "A"},
+			{ExerciseID: "q-2", UserAnswer: "B"},
+			{ExerciseID: "q-3", UserAnswer: "C"},
+			{ExerciseID: "q-4", UserAnswer: "D"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected SubmitExam to succeed, got %v", err)
+	}
+	if !submitRes.Attempt.IsPassed || submitRes.Attempt.ScorePercent != 80 || submitRes.Attempt.MaxScore != 5 {
+		t.Fatalf("expected passed 80%% with MaxScore=5 on submit, got %+v", submitRes.Attempt)
+	}
+
+	// Simulate fresh DB reload where Attempt.MaxScore column doesn't exist and only AnalysisReport is stored.
+	examRepo.Attempts[0].MaxScore = 0
+	getRes, err := uc.GetExamResult(context.Background(), "user-1", "lvl-n5")
+	if err != nil {
+		t.Fatalf("expected GetExamResult to succeed, got %v", err)
+	}
+	if getRes.Attempt.MaxScore != 5 {
+		t.Fatalf("expected Attempt.MaxScore=5 restored from analysis_report, got %d", getRes.Attempt.MaxScore)
+	}
+	if getRes.Certificate == nil || getRes.Certificate.Score != 4 || getRes.Certificate.MaxScore != 5 {
+		t.Fatalf("expected certificate Score=4 MaxScore=5, got %+v", getRes.Certificate)
+	}
+}
+
 
 
