@@ -46,6 +46,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
   const { data: userData } = useUser()
   const user = userData.user
+  const userIdKey = user?.id ?? 'anonymous'
   const updateUser = useAuthStore((s) => s.updateUser)
 
   // ── 0. CURRICULUM VIEW MODE (Peta Jalur vs Silabus Modul) ──
@@ -80,18 +81,21 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
       setStoreViewMode(mode)
       updateUser({ preferred_roadmap_view: mode })
+      queryClient.setQueryData(PROFILE_QUERY_KEY, (old: typeof user) =>
+        old ? { ...old, preferred_roadmap_view: mode } : old
+      )
       userService.updateProfile({ preferred_roadmap_view: mode }).catch((err: unknown) => {
         console.warn('[useCurriculumPage] Failed to persist view mode to backend profile:', err)
       })
     },
-    [setSearchParams, setStoreViewMode, updateUser]
+    [setSearchParams, setStoreViewMode, updateUser, queryClient]
   )
 
   // ── 1. RESOLVE REQUESTED LANGUAGE & ENROLLMENTS ──
   const targetLanguageId = explicitLanguageId || routeLanguageId || ''
 
   const { data: enrollments = [] } = useQuery({
-    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
+    queryKey: [...LANGUAGE_ENROLLMENTS_QUERY_KEY, userIdKey],
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
     staleTime: 1000 * 60 * 5,
   })
@@ -103,7 +107,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: [...CURRICULUM_QUERY_KEY, targetLanguageId || 'active'],
+    queryKey: [...CURRICULUM_QUERY_KEY, userIdKey, targetLanguageId || 'active'],
     queryFn: ({ signal }) =>
       curriculumService.getCurriculum(targetLanguageId || undefined, { signal }),
     staleTime: 1000 * 60 * 2,
@@ -129,6 +133,8 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
   // ── 2b. SOUNDSCAPE & CULTURAL BGM SYNCHRONIZATION ──
   useEffect(() => {
+    if (!activeLanguageCode) return
+
     const isJapanTrack =
       activeLanguageCode.toLowerCase() === 'ja' ||
       activeLanguageCode.toLowerCase().includes('jp')
@@ -189,7 +195,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     error: grammarQueryError,
     refetch: refetchGrammarPoints,
   } = useQuery({
-    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, activeLevelId],
+    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLevelId],
     queryFn: ({ signal }) => curriculumService.getGrammarPoints(activeLevelId, { signal }),
     enabled: isGrammarOpen && Boolean(activeLevelId),
     staleTime: 1000 * 60 * 10,

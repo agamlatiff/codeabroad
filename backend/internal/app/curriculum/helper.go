@@ -19,7 +19,7 @@ func NewHelper() *Helper {
 
 // CalculateCurriculumUnlocks computes unlock statuses, overall progression metrics, and locates current active lesson
 func (h *Helper) CalculateCurriculumUnlocks(units []UnitNodeResponse) ([]UnitNodeResponse, int, int, int, *string) {
-	allPreviousUnitsCompleted := true
+	allPreviousCompleted := true
 	totalLessons := 0
 	completedLessons := 0
 	var currentLessonID *string
@@ -33,30 +33,24 @@ func (h *Helper) CalculateCurriculumUnlocks(units []UnitNodeResponse) ([]UnitNod
 			continue
 		}
 
-		units[i].IsUnlocked = allPreviousUnitsCompleted
-		unitActiveTraversed := false
+		units[i].IsUnlocked = allPreviousCompleted
 		unitTotal := len(units[i].Lessons)
 		unitCompleted := 0
 
 		for j := range units[i].Lessons {
 			totalLessons++
 			lesson := &units[i].Lessons[j]
+			lesson.IsUnlocked = allPreviousCompleted
 
 			if lesson.IsCompleted {
 				completedLessons++
 				unitCompleted++
-				lesson.IsUnlocked = true
 			} else {
-				if allPreviousUnitsCompleted && !unitActiveTraversed {
-					lesson.IsUnlocked = true
-					unitActiveTraversed = true
-					if currentLessonID == nil {
-						id := lesson.ID
-						currentLessonID = &id
-					}
-				} else {
-					lesson.IsUnlocked = false
+				if allPreviousCompleted && currentLessonID == nil {
+					id := lesson.ID
+					currentLessonID = &id
 				}
+				allPreviousCompleted = false
 			}
 		}
 
@@ -72,7 +66,7 @@ func (h *Helper) CalculateCurriculumUnlocks(units []UnitNodeResponse) ([]UnitNod
 			effectiveCompleted = units[i].CompletedLessons
 		}
 		if effectiveTotal > 0 && effectiveCompleted < effectiveTotal {
-			allPreviousUnitsCompleted = false
+			allPreviousCompleted = false
 		}
 	}
 
@@ -134,7 +128,18 @@ func (h *Helper) CalculateLevel(xp int) int {
 }
 
 // ComputeVerifiedLessonScore validates exercise attempt completeness and calculates server-verified lesson accuracy.
-const minLessonPassScore = 60
+const (
+	minLessonPassScore = 60
+	replayPracticeXP   = 5
+)
+
+// CalculateReplayXP awards practice XP for a completed lesson replay only when accuracy meets minLessonPassScore.
+func (h *Helper) CalculateReplayXP(score int) int {
+	if score < minLessonPassScore {
+		return 0
+	}
+	return replayPracticeXP
+}
 
 // ComputeVerifiedLessonScore derives a lesson's score strictly from verified exercise_attempts rows
 func (h *Helper) ComputeVerifiedLessonScore(_ int, summary *LessonAttemptSummary, isReplay bool) (int, error) {

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"codeabroad/backend/internal/app/user"
 )
 
 // MockRepository implements Repository for unit testing
@@ -21,6 +23,7 @@ type MockRepository struct {
 	LevelOrders          map[string]int
 	UserMaxLevelOrder    map[string]int
 	UserInactiveLevels   map[string]bool
+	MissingUsers         map[string]bool
 	AttemptSummaries     map[string]*LessonAttemptSummary
 	DailyReplayXP        map[string]int
 	UserXP               map[string]int
@@ -54,6 +57,7 @@ func NewMockRepository() *MockRepository {
 		LevelOrders:         make(map[string]int),
 		UserMaxLevelOrder:   make(map[string]int),
 		UserInactiveLevels:  make(map[string]bool),
+		MissingUsers:        make(map[string]bool),
 		AttemptSummaries:    make(map[string]*LessonAttemptSummary),
 		DailyReplayXP:       make(map[string]int),
 		UserXP:              make(map[string]int),
@@ -96,7 +100,7 @@ func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonI
 	if m.GetGrammarPointsErr != nil {
 		return nil, m.GetGrammarPointsErr
 	}
-	var res []GrammarPoint
+	res := make([]GrammarPoint, 0)
 	if gpIDs, ok := m.LessonGrammarPoints[lessonID]; ok {
 		allowed := make(map[string]bool, len(gpIDs))
 		for _, id := range gpIDs {
@@ -106,10 +110,6 @@ func (m *MockRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonI
 			if allowed[gp.ID] {
 				res = append(res, *gp)
 			}
-		}
-	} else {
-		for _, gp := range m.GrammarPoints {
-			res = append(res, *gp)
 		}
 	}
 	sort.Slice(res, func(i, j int) bool {
@@ -220,11 +220,11 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 	}
 	l, ok := m.Lessons[id]
 	if !ok {
-		return nil, nil
+		return nil, ErrLessonNotFound
 	}
 	u, hasUnit := m.Units[l.UnitID]
 	if hasUnit && !isCurriculumUnit(u) {
-		return nil, nil
+		return nil, ErrLessonNotFound
 	}
 	var levelID, unitType string
 	if u != nil {
@@ -421,24 +421,42 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	}
 
 	userID := payload.Progress.UserID
+	if m.MissingUsers[userID] {
+		return user.ErrUserNotFound
+	}
 	curLesson, hasLesson := m.Lessons[payload.Progress.LessonID]
-	if hasLesson {
-		unlocked, lockErr := m.isLessonUnlockedLocked(userID, payload.Progress.LessonID)
-		if lockErr != nil || !unlocked {
-			return ErrLessonLocked
-		}
-		if curLesson.ID != "" {
-			payload.Progress.LessonID = curLesson.ID
-		}
+	if !hasLesson {
+		return ErrLessonNotFound
+	}
+	if curUnit, hasUnit := m.Units[curLesson.UnitID]; hasUnit && !isCurriculumUnit(curUnit) {
+		return ErrLessonNotFound
+	}
+	unlocked, lockErr := m.isLessonUnlockedLocked(userID, payload.Progress.LessonID)
+	if lockErr != nil {
+		return lockErr
+	}
+	if !unlocked {
+		return ErrLessonLocked
+	}
+	if curLesson.ID != "" {
+		payload.Progress.LessonID = curLesson.ID
 	}
 	if payload.ActivityType == "" {
 		payload.ActivityType = "lesson_completed"
 	}
 	if _, exists := m.UserXP[userID]; !exists {
-		m.UserXP[userID] = payload.NewXP - payload.XPEarned
+		if initialXP := payload.NewXP - payload.XPEarned; initialXP > 0 {
+			m.UserXP[userID] = initialXP
+		} else {
+			m.UserXP[userID] = 0
+		}
 	}
 	if _, exists := m.UserGems[userID]; !exists {
-		m.UserGems[userID] = payload.NewGems
+		if payload.NewGems > 0 {
+			m.UserGems[userID] = payload.NewGems
+		} else {
+			m.UserGems[userID] = 0
+		}
 	}
 	payload.PreviousStreak = m.UserStreak[userID]
 
@@ -469,28 +487,30 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	payload.Metadata["is_practice"] = payload.WasCompleted
 
 	if payload.WasCompleted {
-		payload.XPEarned = 5
+		payload.XPEarned = helper.CalculateReplayXP(verifiedScore)
 		payload.Metadata["is_practice"] = true
 		payload.Metadata["is_replay"] = true
 
-		loc, locErr := time.LoadLocation("Asia/Jakarta")
-		if locErr != nil {
-			loc = time.FixedZone("WIB", 7*3600)
-		}
-		now := payload.LastActiveAt
-		if now.IsZero() {
-			now = time.Now().UTC()
-		}
-		dayKey := fmt.Sprintf("%s:%s", userID, now.In(loc).Format("2006-01-02"))
-		used := m.DailyReplayXP[dayKey]
-		if used+payload.XPEarned > dailyReplayXPCap {
-			remaining := dailyReplayXPCap - used
-			if remaining < 0 {
-				remaining = 0
+		if payload.XPEarned > 0 {
+			loc, locErr := time.LoadLocation("Asia/Jakarta")
+			if locErr != nil {
+				loc = time.FixedZone("WIB", 7*3600)
 			}
-			payload.XPEarned = remaining
+			now := payload.LastActiveAt
+			if now.IsZero() {
+				now = time.Now().UTC()
+			}
+			dayKey := fmt.Sprintf("%s:%s", userID, now.In(loc).Format("2006-01-02"))
+			used := m.DailyReplayXP[dayKey]
+			if used+payload.XPEarned > dailyReplayXPCap {
+				remaining := dailyReplayXPCap - used
+				if remaining < 0 {
+					remaining = 0
+				}
+				payload.XPEarned = remaining
+			}
+			m.DailyReplayXP[dayKey] += payload.XPEarned
 		}
-		m.DailyReplayXP[dayKey] += payload.XPEarned
 
 		if !existing.CompletedAt.IsZero() {
 			payload.Progress.CompletedAt = existing.CompletedAt
@@ -523,10 +543,8 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	if now.IsZero() {
 		now = time.Now().UTC()
 	}
-	if lastActive, hasTracked := m.UserLastActiveAt[userID]; hasTracked {
-		newStreak, _ := helper.EvaluateDailyStreak(m.UserStreak[userID], lastActive, now)
-		payload.NewStreak = newStreak
-	}
+	newStreak, _ := helper.EvaluateDailyStreak(m.UserStreak[userID], m.UserLastActiveAt[userID], now)
+	payload.NewStreak = newStreak
 	nowCopy := now
 	m.UserLastActiveAt[userID] = &nowCopy
 
@@ -546,6 +564,7 @@ type MockCurriculumCacheRepository struct {
 	GetCurriculumErr       error
 	SetCurriculumErr       error
 	InvalidateErr          error
+	GetVersionCallCount    int
 	GetCurriculumCallCount int
 	SetCurriculumCallCount int
 	InvalidateCallCount    int
@@ -565,6 +584,7 @@ func (m *MockCurriculumCacheRepository) GetCurriculumVersion(ctx context.Context
 	m.mu.Lock()
 	defer m.mu.Unlock()
 
+	m.GetVersionCallCount++
 	if m.GetCurriculumErr != nil {
 		return "", m.GetCurriculumErr
 	}
@@ -593,28 +613,6 @@ func (m *MockCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Con
 	return &res, ver, nil
 }
 
-func (m *MockCurriculumCacheRepository) GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
-	res, _, err := m.GetCurriculumWithVersion(ctx, userID, languageID)
-	return res, err
-}
-
-func (m *MockCurriculumCacheRepository) SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.SetCurriculumCallCount++
-	if m.SetCurriculumErr != nil {
-		return m.SetCurriculumErr
-	}
-	key := fmt.Sprintf("%s:%s", userID, languageID)
-	data, err := json.Marshal(curriculum)
-	if err != nil {
-		return err
-	}
-	m.Cache[key] = data
-	return nil
-}
-
 func (m *MockCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()
@@ -623,8 +621,8 @@ func (m *MockCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Conte
 	if m.SetCurriculumErr != nil {
 		return m.SetCurriculumErr
 	}
-	if expectedVersion == "" {
-		expectedVersion = "0"
+	if curriculum == nil || userID == "" || languageID == "" || expectedVersion == "" {
+		return nil
 	}
 	currentVersion := fmt.Sprintf("%d", m.Versions[userID])
 	if expectedVersion != currentVersion {

@@ -13,10 +13,9 @@ import (
 
 // Specific Curriculum Domain Errors
 var (
-	ErrGrammarPointNotFound = apperror.NewNotFoundError("GRAMMAR_POINT_NOT_FOUND", "grammar point not found")
-	ErrUnitNotFound         = apperror.NewNotFoundError("UNIT_NOT_FOUND", "curriculum unit not found")
-	ErrLessonNotFound       = apperror.NewNotFoundError("LESSON_NOT_FOUND", "lesson node not found")
-	ErrLessonLocked         = apperror.NewForbiddenError("LESSON_LOCKED", "previous lesson nodes must be completed first", nil)
+	ErrUnitNotFound   = apperror.NewNotFoundError("UNIT_NOT_FOUND", "curriculum unit not found")
+	ErrLessonNotFound = apperror.NewNotFoundError("LESSON_NOT_FOUND", "lesson node not found")
+	ErrLessonLocked   = apperror.NewForbiddenError("LESSON_LOCKED", "previous lesson nodes must be completed first", nil)
 )
 
 // ============================================================================
@@ -207,9 +206,7 @@ type LessonProgressRepository interface {
 // CurriculumCacheRepository specifies the caching contract for active curricula (Redis)
 type CurriculumCacheRepository interface {
 	GetCurriculumVersion(ctx context.Context, userID string) (string, error)
-	GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error)
 	GetCurriculumWithVersion(ctx context.Context, userID string, languageID string) (*CurriculumResponse, string, error)
-	SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error
 	SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error
 	InvalidateCurriculum(ctx context.Context, userID string) error
 }

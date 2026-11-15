@@ -3,20 +3,33 @@ package language
 import (
 	"context"
 	"fmt"
+	"log"
 
 	"codeabroad/backend/internal/shared/apperror"
 )
 
+// CurriculumCacheInvalidator clears per-user cached curriculum state when active language changes.
+type CurriculumCacheInvalidator interface {
+	InvalidateCurriculum(ctx context.Context, userID string) error
+}
+
 type usecase struct {
-	langRepo Repository
-	helper   *Helper
+	langRepo         Repository
+	helper           *Helper
+	cacheInvalidator CurriculumCacheInvalidator
 }
 
 // NewUsecase creates a new Language Usecase instance
 func NewUsecase(langRepo Repository) Usecase {
+	return NewUsecaseWithCache(langRepo, nil)
+}
+
+// NewUsecaseWithCache creates a Language Usecase wired with curriculum cache invalidation.
+func NewUsecaseWithCache(langRepo Repository, cacheInvalidator CurriculumCacheInvalidator) Usecase {
 	return &usecase{
-		langRepo: langRepo,
-		helper:   NewHelper(),
+		langRepo:         langRepo,
+		helper:           NewHelper(),
+		cacheInvalidator: cacheInvalidator,
 	}
 }
 
@@ -71,6 +84,12 @@ func (u *usecase) SwitchActiveLanguage(ctx context.Context, userID string, langu
 
 	if err := u.langRepo.SetActiveLanguage(ctx, userID, languageID); err != nil {
 		return nil, err
+	}
+
+	if u.cacheInvalidator != nil {
+		if err := u.cacheInvalidator.InvalidateCurriculum(ctx, userID); err != nil {
+			log.Printf("language: failed to invalidate curriculum cache for user %s: %v", userID, err)
+		}
 	}
 
 	return u.langRepo.GetActiveEnrollment(ctx, userID, languageID)

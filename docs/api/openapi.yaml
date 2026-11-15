@@ -460,7 +460,14 @@ paths:
     get:
       tags: [Curriculum]
       security: [{ BearerAuth: [] }]
-      summary: Get curriculum units and lessons for active enrollment
+      summary: Get curriculum units and lessons for active or specified language enrollment
+      parameters:
+        - name: language_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Curriculum retrieved
@@ -468,6 +475,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -482,6 +491,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Lesson details retrieved
@@ -489,8 +499,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          description: Previous lesson nodes must be completed first
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lesson node not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /curriculum/lessons/{id}/complete:
     post:
@@ -503,21 +527,55 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [score]
+              properties:
+                score:
+                  type: integer
+                  minimum: 0
+                  maximum: 100
       responses:
         "200":
-          description: Lesson completed
+          description: Lesson completed (includes progress, gamification, unlocked_next_lesson_id, awarded_badges)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          description: Lesson locked or incomplete exercise attempts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Lesson node not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /curriculum/grammar-points:
     get:
       tags: [Curriculum]
       security: [{ BearerAuth: [] }]
       summary: Get grammar points reference
+      parameters:
+        - name: level_id
+          in: query
+          required: false
+          schema:
+            type: string
+            format: uuid
       responses:
         "200":
           description: Grammar points retrieved
@@ -525,6 +583,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
