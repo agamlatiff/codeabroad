@@ -67,7 +67,7 @@ export const useReadinessExamPage = () => {
   const questionsQuery = useQuery({
     queryKey: [...EXAM_QUESTIONS_QUERY_KEY, userId, levelId],
     queryFn: ({ signal }) => exerciseService.getExamQuestions(levelId!, { signal }),
-    enabled: Boolean(levelId),
+    enabled: Boolean(levelId) && examResult === null && !isAlreadyPassed,
     retry: false,
   })
 
@@ -79,7 +79,7 @@ export const useReadinessExamPage = () => {
   const passedResultQuery = useQuery({
     queryKey: [...EXAM_RESULT_QUERY_KEY, userId, levelId],
     queryFn: ({ signal }) => exerciseService.getExamResult(levelId!, { signal }),
-    enabled: shouldLoadPassedResult,
+    enabled: shouldLoadPassedResult && examResult === null,
     retry: false,
   })
 
@@ -304,12 +304,6 @@ export const useReadinessExamPage = () => {
     [questions.length, stopMediaSession]
   )
 
-  const handleEnterShortcut = useCallback(() => {
-    if (!isLastQuestion) {
-      handleNextQuestion()
-    }
-  }, [handleNextQuestion, isLastQuestion])
-
   const handleSubmitExam = useCallback(async () => {
     if (!levelId || !allAnswered || isSubmittingExam) return
 
@@ -329,20 +323,26 @@ export const useReadinessExamPage = () => {
       if (res.attempt.is_passed) {
         triggerHaptic('success')
         audioEngine.playFanfare()
+        queryClient.setQueryData([...EXAM_RESULT_QUERY_KEY, userId, levelId], res)
       } else {
         triggerHaptic('tap')
         audioEngine.playPop()
       }
 
-      await Promise.all([
+      const invalidations: Promise<unknown>[] = [
         queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: EXAM_QUESTIONS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: EXAM_RESULT_QUERY_KEY }),
-      ])
+      ]
+      if (!res.attempt.is_passed) {
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: EXAM_QUESTIONS_QUERY_KEY }),
+          queryClient.invalidateQueries({ queryKey: EXAM_RESULT_QUERY_KEY })
+        )
+      }
+      await Promise.all(invalidations)
     } catch (err) {
       if (isExamAlreadyPassedError(err)) {
         setIsAlreadyPassed(true)
@@ -365,6 +365,31 @@ export const useReadinessExamPage = () => {
     questions,
     stopMediaSession,
     submitExamAsync,
+    userId,
+  ])
+
+  const handleEnterShortcut = useCallback(() => {
+    const hasCurrentAnswer = Boolean(
+      currentExercise && (answersById[currentExercise.id] ?? '').trim().length > 0
+    )
+    if (!hasCurrentAnswer) return
+
+    if (!isLastQuestion) {
+      handleNextQuestion()
+      return
+    }
+
+    if (allAnswered && !isSubmittingExam) {
+      void handleSubmitExam()
+    }
+  }, [
+    allAnswered,
+    answersById,
+    currentExercise,
+    handleNextQuestion,
+    handleSubmitExam,
+    isLastQuestion,
+    isSubmittingExam,
   ])
 
   const handleRetryExam = useCallback(() => {

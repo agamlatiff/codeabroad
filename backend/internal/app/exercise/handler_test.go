@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"codeabroad/backend/internal/app/exercise"
@@ -532,3 +533,40 @@ func TestHTTP_Handler_NilUsecasesReturn500(t *testing.T) {
 		}
 	}
 }
+
+func TestHTTP_SubmitAnswerAndSubmitExam_InvalidAnswerPayloadsReturn400(t *testing.T) {
+	r, _, _, _ := setupExerciseTestRouter()
+
+	oversized := strings.Repeat("a", 2001)
+	answerPayloads := []string{
+		`{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"   "}`,
+		`{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"` + oversized + `"}`,
+	}
+	for _, payload := range answerPayloads {
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/exercises/submit", bytes.NewBufferString(payload))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request for /exercises/submit invalid payload (len=%d), got %d (body: %s)", len(payload), w.Code, w.Body.String())
+		}
+	}
+
+	examPayloads := []string{
+		`{"level_id":"22222222-2222-2222-2222-222222222222","answers":[{"exercise_id":"not-a-uuid","user_answer":"Konnichiwa"}]}`,
+		`{"level_id":"22222222-2222-2222-2222-222222222222","answers":[{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"   "}]}`,
+		`{"level_id":"22222222-2222-2222-2222-222222222222","answers":[{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"` + oversized + `"}]}`,
+	}
+	for _, payload := range examPayloads {
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/exams/submit", bytes.NewBufferString(payload))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request for /exams/submit invalid payload (len=%d), got %d (body: %s)", len(payload), w.Code, w.Body.String())
+		}
+	}
+}
+

@@ -249,7 +249,9 @@ export const useSrsReviewPage = () => {
     audioEngine.playPop()
     setIsRefetchingBatch(true)
     try {
-      await dueQueueQuery.refetch()
+      if (dueQueueQuery.isError || dueQueueQuery.isStale || items.length === 0) {
+        await dueQueueQuery.refetch()
+      }
       setCurrentIndex(0)
       setReviewedCount(0)
       setIsSessionFinished(false)
@@ -257,7 +259,7 @@ export const useSrsReviewPage = () => {
     } finally {
       setIsRefetchingBatch(false)
     }
-  }, [dueQueueQuery, resetCardInputs])
+  }, [dueQueueQuery, items.length, resetCardInputs])
 
   const handleBackToCurriculum = useCallback(() => {
     stopMediaSession()
@@ -314,7 +316,7 @@ export const useSrsReviewPage = () => {
     audioPlaybackError,
     canCheckAnswer,
     isLoading: dueQueueQuery.isLoading || isRefetchingBatch,
-    isError: dueQueueQuery.isError,
+    isError: dueQueueQuery.isError && !isSessionFinished,
     queueErrorMessage,
     isChecking: isSubmittingAnswer,
     isSubmittingRating: isProcessingReview,

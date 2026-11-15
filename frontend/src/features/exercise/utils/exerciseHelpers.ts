@@ -63,10 +63,14 @@ const readChoiceOptions = (
   return []
 }
 
-const shuffleTokensDeterministically = (tokens: string[], seedKey: string): string[] => {
-  if (tokens.length <= 1) return [...tokens]
+const shuffleDeterministically = <T>(
+  items: T[],
+  seedKey: string,
+  getKey: (item: T) => string
+): T[] => {
+  if (items.length <= 1) return [...items]
 
-  const result = [...tokens]
+  const result = [...items]
   let seed = 2166136261
   for (let i = 0; i < seedKey.length; i++) {
     seed ^= seedKey.charCodeAt(i)
@@ -81,14 +85,23 @@ const shuffleTokensDeterministically = (tokens: string[], seedKey: string): stri
     result[j] = tmp
   }
 
-  const unchanged = result.every((token, idx) => token === tokens[idx])
-  const hasDistinctTokens = new Set(tokens).size > 1
-  if (unchanged && hasDistinctTokens) {
+  const unchanged = result.every((item, idx) => getKey(item) === getKey(items[idx]))
+  const hasDistinctItems = new Set(items.map(getKey)).size > 1
+  if (unchanged && hasDistinctItems) {
     return [...result.slice(1), result[0]]
   }
 
   return result
 }
+
+const shuffleTokensDeterministically = (tokens: string[], seedKey: string): string[] =>
+  shuffleDeterministically(tokens, seedKey, (token) => token)
+
+const shuffleChoiceOptionsDeterministically = (
+  options: ExerciseChoiceOption[],
+  seedKey: string
+): ExerciseChoiceOption[] =>
+  shuffleDeterministically(options, seedKey, (opt) => `${opt.id}\u0000${opt.text}`)
 
 /**
  * Safely normalizes dynamic backend JSONB `exercise.content` into strongly typed UI structures.
@@ -109,7 +122,10 @@ export const parseExerciseContent = (exercise: CurriculumExercise): ParsedExerci
     romaji: readString(raw, 'romaji'),
     phoneticBreakdown: readStringArray(raw, 'phonetic_breakdown'),
     furigana: readFurigana(raw),
-    choiceOptions: readChoiceOptions(raw, exercise.options),
+    choiceOptions: shuffleChoiceOptionsDeterministically(
+      readChoiceOptions(raw, exercise.options),
+      `${exercise.id}:options`
+    ),
     hint: exercise.hint ?? readString(raw, 'hint'),
   }
 }

@@ -1872,5 +1872,112 @@ func TestSanitizeExercises_ClonesContentAndStripsSolutionKeys(t *testing.T) {
 	}
 }
 
+func TestHydrateExerciseJSONFields_SyncsObjectOptionIDAndTextAcceptableAnswers(t *testing.T) {
+	h := exercise.NewHelper()
+	contentJSON := []byte(`{"options":[{"id":"opt_1","text":"Insinyur (Bukan dokter)"},{"id":"opt_2","text":"Dokter (Bukan insinyur)"}]}`)
 
+	var byID exercise.Exercise
+	exercise.HydrateExerciseJSONFields(
+		&byID,
+		contentJSON,
+		[]byte(`{"selected_id":"opt_1"}`),
+		[]byte(`[]`),
+		nil,
+	)
+
+	if byID.CorrectAnswer != "opt_1" {
+		t.Fatalf("expected CorrectAnswer=opt_1, got %q", byID.CorrectAnswer)
+	}
+	if !h.EvaluateAnswer(byID.CorrectAnswer, byID.AcceptableAnswers, "opt_1") {
+		t.Fatalf("expected option id 'opt_1' to pass EvaluateAnswer")
+	}
+	if !h.EvaluateAnswer(byID.CorrectAnswer, byID.AcceptableAnswers, "Insinyur (Bukan dokter)") {
+		t.Fatalf("expected option text 'Insinyur (Bukan dokter)' to pass EvaluateAnswer, got acceptable=%v", byID.AcceptableAnswers)
+	}
+	if h.EvaluateAnswer(byID.CorrectAnswer, byID.AcceptableAnswers, "Dokter (Bukan insinyur)") {
+		t.Fatalf("expected distractor option text not to pass EvaluateAnswer")
+	}
+
+	var byText exercise.Exercise
+	exercise.HydrateExerciseJSONFields(
+		&byText,
+		contentJSON,
+		[]byte(`{"selected":"Insinyur (Bukan dokter)"}`),
+		[]byte(`["OPT_1"]`),
+		nil,
+	)
+
+	if len(byText.AcceptableAnswers) != 1 {
+		t.Fatalf("expected deduplicated AcceptableAnswers of length 1, got %v", byText.AcceptableAnswers)
+	}
+	if !h.EvaluateAnswer(byText.CorrectAnswer, byText.AcceptableAnswers, "opt_1") {
+		t.Fatalf("expected reverse mapping option id 'opt_1' to pass EvaluateAnswer")
+	}
+	if !h.EvaluateAnswer(byText.CorrectAnswer, byText.AcceptableAnswers, "Insinyur (Bukan dokter)") {
+		t.Fatalf("expected option text to pass EvaluateAnswer")
+	}
+}
+
+func TestSubmitAnswer_RejectsWhitespaceAndOversizedAnswers(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	sRepo := exercise.NewMockSRSRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "はい",
+	}
+
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), exercise.NewMockLessonAccessChecker(true))
+
+	for _, invalid := range []string{"", "   \t\n  ", strings.Repeat("a", 2001)} {
+		_, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+			ExerciseID: "ex-1",
+			UserAnswer: invalid,
+		})
+		if !errors.Is(err, apperror.ErrBadRequest) {
+			t.Fatalf("expected apperror.ErrBadRequest for answer len=%d, got %v", len(invalid), err)
+		}
+	}
+	if len(eRepo.Attempts) != 0 || len(sRepo.Reviews) != 0 {
+		t.Fatalf("expected no attempts or srs reviews recorded on rejected answers")
+	}
+}
+
+func TestSubmitExam_RejectsWhitespaceAndOversizedAnswers(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+	userRepo := user.NewMockRepository()
+
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+	}
+
+	uc := exercise.NewUsecase(eRepo, exercise.NewMockSRSRepository(), examRepo, langRepo, userRepo)
+
+	for _, invalid := range []string{"   ", strings.Repeat("x", 2001)} {
+		_, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+			LevelID: "lvl-n5",
+			Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: invalid}},
+		})
+		if !errors.Is(err, apperror.ErrBadRequest) {
+			t.Fatalf("expected apperror.ErrBadRequest for exam answer len=%d, got %v", len(invalid), err)
+		}
+	}
+	if len(examRepo.Attempts) != 0 {
+		t.Fatalf("expected no exam attempt stored for rejected exam submission")
+	}
+}
 

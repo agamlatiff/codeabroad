@@ -90,7 +90,53 @@ func ParseAcceptableAnswersJSON(acceptableJSON []byte) []string {
 	return []string{}
 }
 
-func hydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte) {
+func appendUniqueFold(items []string, candidate string, excludeFold string) []string {
+	trimmed := strings.TrimSpace(candidate)
+	if trimmed == "" || strings.EqualFold(trimmed, excludeFold) {
+		return items
+	}
+	for _, existing := range items {
+		if strings.EqualFold(strings.TrimSpace(existing), trimmed) {
+			return items
+		}
+	}
+	return append(items, trimmed)
+}
+
+func syncObjectOptionAcceptableAnswers(ex *Exercise) {
+	if ex == nil || len(ex.Content) == 0 {
+		return
+	}
+	correct := strings.TrimSpace(ex.CorrectAnswer)
+	if correct == "" {
+		return
+	}
+	rawOpts, ok := ex.Content["options"].([]any)
+	if !ok {
+		return
+	}
+	for _, o := range rawOpts {
+		m, ok := o.(map[string]any)
+		if !ok {
+			continue
+		}
+		rawID, _ := m["id"].(string)
+		rawText, _ := m["text"].(string)
+		id := strings.TrimSpace(rawID)
+		text := strings.TrimSpace(rawText)
+		if id == "" || text == "" {
+			continue
+		}
+		if strings.EqualFold(correct, id) {
+			ex.AcceptableAnswers = appendUniqueFold(ex.AcceptableAnswers, text, correct)
+		} else if strings.EqualFold(correct, text) {
+			ex.AcceptableAnswers = appendUniqueFold(ex.AcceptableAnswers, id, correct)
+		}
+	}
+}
+
+// HydrateExerciseJSONFields populates normalized JSONB fields on an Exercise from raw DB columns.
+func HydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte) {
 	ex.XPReward = 10
 
 	if len(contentJSON) > 0 {
@@ -124,6 +170,7 @@ func hydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptabl
 
 	ex.CorrectAnswer = ParseCorrectAnswerJSON(correctJSON)
 	ex.AcceptableAnswers = ParseAcceptableAnswersJSON(acceptableJSON)
+	syncObjectOptionAcceptableAnswers(ex)
 
 	if len(diagnosticJSON) > 0 {
 		_ = json.Unmarshal(diagnosticJSON, &ex.DiagnosticRubric)
@@ -160,7 +207,7 @@ func (b *exerciseScanBuf) dests() []any {
 }
 
 func (b *exerciseScanBuf) materialize() *Exercise {
-	hydrateExerciseJSONFields(&b.ex, b.contentJSON, b.correctJSON, b.acceptableJSON, b.diagnosticJSON)
+	HydrateExerciseJSONFields(&b.ex, b.contentJSON, b.correctJSON, b.acceptableJSON, b.diagnosticJSON)
 	return &b.ex
 }
 

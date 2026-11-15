@@ -368,6 +368,7 @@ export const ExercisePromptRenderer = ({
                 size="md"
                 disabled={isLocked}
                 onClick={onConfirmSpokenSample}
+                data-allow-enter-submit={textInput.trim().length > 0 ? 'true' : undefined}
                 icon={<Check weight="bold" className="w-4 h-4" />}
               >
                 Saya Sudah Mengucapkan

@@ -156,7 +156,7 @@ type SRSQueueResponse struct {
 // SubmitReadinessExamRequest encapsulates all answers for a full mock exam
 type SubmitReadinessExamRequest struct {
 	LevelID string                        `json:"level_id" binding:"required,uuid"`
-	Answers []SubmitExerciseAnswerRequest `json:"answers" binding:"required,min=1,max=200"`
+	Answers []SubmitExerciseAnswerRequest `json:"answers" binding:"required,min=1,max=200,dive"`
 }
 
 // ExamCertificate provides official certification proof for passed readiness exams

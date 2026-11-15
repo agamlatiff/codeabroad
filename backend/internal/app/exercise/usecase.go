@@ -147,13 +147,23 @@ func (u *usecase) GetDailyVocabularies(ctx context.Context, userID string, limit
 	return u.exerciseRepo.GetDailyVocabularies(ctx, userID, normalizeLimit(limit, 10, 50))
 }
 
+func validateSubmittedAnswer(exerciseID string, userAnswer string) error {
+	if strings.TrimSpace(exerciseID) == "" || strings.TrimSpace(userAnswer) == "" || len(userAnswer) > 2000 {
+		return apperror.ErrBadRequest
+	}
+	return nil
+}
+
 // SubmitAnswer evaluates a single exercise response, logs telemetry, and injects into SRS on error
 func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitExerciseAnswerRequest) (*SubmitExerciseAnswerResponse, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if req == nil || req.ExerciseID == "" {
+	if req == nil {
 		return nil, apperror.ErrBadRequest
+	}
+	if err := validateSubmittedAnswer(req.ExerciseID, req.UserAnswer); err != nil {
+		return nil, err
 	}
 	if u.exerciseRepo == nil {
 		return nil, fmt.Errorf("exercise repository is not configured: %w", apperror.ErrInternal)
@@ -432,6 +442,9 @@ func (u *usecase) gradeExamSubmission(
 	seenExerciseIDs := make(map[string]bool, len(answers))
 
 	for _, ans := range answers {
+		if err := validateSubmittedAnswer(ans.ExerciseID, ans.UserAnswer); err != nil {
+			return nil, err
+		}
 		if seenExerciseIDs[ans.ExerciseID] {
 			continue
 		}
