@@ -613,28 +613,6 @@ func (m *MockCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Con
 	return &res, ver, nil
 }
 
-func (m *MockCurriculumCacheRepository) GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
-	res, _, err := m.GetCurriculumWithVersion(ctx, userID, languageID)
-	return res, err
-}
-
-func (m *MockCurriculumCacheRepository) SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error {
-	m.mu.Lock()
-	defer m.mu.Unlock()
-
-	m.SetCurriculumCallCount++
-	if m.SetCurriculumErr != nil {
-		return m.SetCurriculumErr
-	}
-	key := fmt.Sprintf("%s:%s", userID, languageID)
-	data, err := json.Marshal(curriculum)
-	if err != nil {
-		return err
-	}
-	m.Cache[key] = data
-	return nil
-}
-
 func (m *MockCurriculumCacheRepository) SetCurriculumIfVersion(ctx context.Context, userID string, languageID string, expectedVersion string, curriculum *CurriculumResponse, ttl time.Duration) error {
 	m.mu.Lock()
 	defer m.mu.Unlock()

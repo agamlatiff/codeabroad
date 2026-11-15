@@ -64,12 +64,6 @@ func (c *redisCurriculumCacheRepository) GetCurriculumVersion(ctx context.Contex
 	return ver, nil
 }
 
-// GetCurriculum retrieves a cached curriculum response from Redis under the user's current version epoch
-func (c *redisCurriculumCacheRepository) GetCurriculum(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
-	curriculum, _, err := c.GetCurriculumWithVersion(ctx, userID, languageID)
-	return curriculum, err
-}
-
 // GetCurriculumWithVersion retrieves a cached curriculum response along with the user's current invalidation epoch
 // in minimal Redis calls so callers never issue duplicate version lookups or silently fall back on errors.
 func (c *redisCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Context, userID string, languageID string) (*CurriculumResponse, string, error) {
@@ -96,18 +90,6 @@ func (c *redisCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Co
 		return nil, ver, nil
 	}
 	return &curriculum, ver, nil
-}
-
-// SetCurriculum stores a decorated curriculum in Redis using the current version epoch
-func (c *redisCurriculumCacheRepository) SetCurriculum(ctx context.Context, userID string, languageID string, curriculum *CurriculumResponse, ttl time.Duration) error {
-	if c.rdb == nil || c.rdb.Client == nil || curriculum == nil {
-		return nil
-	}
-	ver, err := c.GetCurriculumVersion(ctx, userID)
-	if err != nil {
-		return err
-	}
-	return c.SetCurriculumIfVersion(ctx, userID, languageID, ver, curriculum, ttl)
 }
 
 // SetCurriculumIfVersion atomically stores a curriculum only if the user's cache version epoch still matches expectedVersion,
