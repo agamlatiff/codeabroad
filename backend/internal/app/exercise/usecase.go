@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"codeabroad/backend/internal/app/gamification"
 	"codeabroad/backend/internal/app/language"
 	"codeabroad/backend/internal/shared/apperror"
 	"codeabroad/backend/internal/app/user"
@@ -24,7 +25,14 @@ type usecase struct {
 	userRepo         user.Repository
 	accessChecker    LessonAccessChecker
 	cacheInvalidator CurriculumCacheInvalidator
+	badgeAwarder     BadgeAwarder
 	helper           *Helper
+}
+
+// WithBadgeAwarder attaches an optional gamification badge awarder for readiness exam mastery badges.
+func (u *usecase) WithBadgeAwarder(awarder BadgeAwarder) *usecase {
+	u.badgeAwarder = awarder
+	return u
 }
 
 // NewUsecaseFull creates an exercise, SRS, and readiness exam usecase with lesson lock checks and curriculum cache invalidation
@@ -114,6 +122,9 @@ func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lesso
 	if lessonID == "" {
 		return nil, apperror.ErrBadRequest
 	}
+	if u.exerciseRepo == nil {
+		return nil, fmt.Errorf("exercise repository is not configured: %w", apperror.ErrInternal)
+	}
 	if err := u.verifyLessonUnlocked(ctx, userID, lessonID); err != nil {
 		return nil, err
 	}
@@ -130,6 +141,9 @@ func (u *usecase) GetDailyVocabularies(ctx context.Context, userID string, limit
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
+	if u.exerciseRepo == nil {
+		return nil, fmt.Errorf("exercise repository is not configured: %w", apperror.ErrInternal)
+	}
 	return u.exerciseRepo.GetDailyVocabularies(ctx, userID, normalizeLimit(limit, 10, 50))
 }
 
@@ -140,6 +154,9 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	}
 	if req == nil || req.ExerciseID == "" {
 		return nil, apperror.ErrBadRequest
+	}
+	if u.exerciseRepo == nil {
+		return nil, fmt.Errorf("exercise repository is not configured: %w", apperror.ErrInternal)
 	}
 
 	ex, err := u.loadAuthorizedExercise(ctx, userID, req.ExerciseID)
@@ -211,6 +228,9 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
+	if u.srsRepo == nil {
+		return nil, fmt.Errorf("srs repository is not configured: %w", apperror.ErrInternal)
+	}
 	limit = normalizeLimit(limit, 20, 100)
 
 	now := time.Now().UTC()
@@ -247,6 +267,9 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	if req == nil || req.ExerciseID == "" || req.Quality == nil {
 		return nil, apperror.ErrBadRequest
 	}
+	if u.exerciseRepo == nil || u.srsRepo == nil {
+		return nil, fmt.Errorf("exercise or srs repository is not configured: %w", apperror.ErrInternal)
+	}
 	quality := *req.Quality
 	if quality < 0 || quality > 5 {
 		return nil, ErrInvalidQualityRating
@@ -277,6 +300,9 @@ func (u *usecase) applySRSReview(
 	exerciseID string,
 	compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview,
 ) (*UserSRSReview, error) {
+	if u.srsRepo == nil {
+		return nil, fmt.Errorf("srs repository is not configured: %w", apperror.ErrInternal)
+	}
 	if txReviewer, ok := u.srsRepo.(TransactionalSRSReviewer); ok {
 		return txReviewer.ApplyReviewTx(ctx, userID, exerciseID, compute)
 	}
@@ -331,6 +357,9 @@ func (u *usecase) GetExamQuestions(ctx context.Context, userID string, levelID s
 	}
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
+	}
+	if u.exerciseRepo == nil || u.examRepo == nil || u.langRepo == nil {
+		return nil, fmt.Errorf("exam dependencies are not configured: %w", apperror.ErrInternal)
 	}
 	if _, _, err := u.verifyLevelExamAccess(ctx, userID, levelID); err != nil {
 		return nil, err
@@ -602,6 +631,9 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
+	if u.examRepo == nil || u.langRepo == nil {
+		return nil, fmt.Errorf("exam dependencies are not configured: %w", apperror.ErrInternal)
+	}
 	lvl, err := u.langRepo.GetLevelByID(ctx, levelID)
 	if err != nil {
 		return nil, err
@@ -655,6 +687,9 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	}
 	if req == nil || req.LevelID == "" || len(req.Answers) == 0 {
 		return nil, apperror.ErrBadRequest
+	}
+	if u.exerciseRepo == nil || u.examRepo == nil || u.langRepo == nil {
+		return nil, fmt.Errorf("exam dependencies are not configured: %w", apperror.ErrInternal)
 	}
 
 	lvl, enrollment, err := u.verifyLevelExamAccess(ctx, userID, req.LevelID)
@@ -712,13 +747,38 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 	}
 
 	var cert *ExamCertificate
+	var awardedBadges []gamification.BadgeDefinition
 	if graded.isPassed {
 		cert = u.buildExamCertificate(ctx, userID, attempt.ID, lvl, graded.totalScore, graded.maxScore, graded.scorePercent, now)
+		awardedBadges = u.awardExamBadges(ctx, userID, lvl, graded.scorePercent)
 	}
 
 	return &ReadinessExamResponse{
-		Attempt:     *attempt,
-		Certificate: cert,
+		Attempt:       *attempt,
+		Certificate:   cert,
+		AwardedBadges: awardedBadges,
 	}, nil
+}
+
+func (u *usecase) awardExamBadges(ctx context.Context, userID string, lvl *language.ProficiencyLevel, scorePercent int) []gamification.BadgeDefinition {
+	if u.badgeAwarder == nil || lvl == nil {
+		return nil
+	}
+	var candidates []string
+	if strings.EqualFold(lvl.Code, "N5") && scorePercent >= 80 {
+		candidates = append(candidates, "n5_mastery")
+	}
+	var awarded []gamification.BadgeDefinition
+	for _, badgeKey := range candidates {
+		ub, err := u.badgeAwarder.AwardBadge(ctx, userID, badgeKey, 0)
+		if err != nil {
+			log.Printf("exercise: failed to award exam badge %s to user %s: %v", badgeKey, userID, err)
+			continue
+		}
+		if ub != nil && ub.Badge != nil {
+			awarded = append(awarded, *ub.Badge)
+		}
+	}
+	return awarded
 }
 

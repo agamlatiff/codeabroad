@@ -258,6 +258,14 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 	limit = normalizeLimit(limit, 10, 50)
 
 	query := `
+		WITH active_enrollment AS (
+			SELECT language_id
+			FROM user_language_enrollments
+			WHERE NULLIF($1, '')::uuid IS NOT NULL
+			  AND user_id = NULLIF($1, '')::uuid
+			  AND is_active = true
+			LIMIT 1
+		)
 		SELECT
 			e.id::text,
 			COALESCE(
@@ -293,18 +301,8 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 		LEFT JOIN grammar_points gp ON e.grammar_point_id = gp.id
 		WHERE u.unit_type = 'curriculum'
 		  AND (
-			NULLIF($1, '')::uuid IS NULL
-			OR EXISTS (
-				SELECT 1 FROM user_language_enrollments ule
-				WHERE ule.user_id = NULLIF($1, '')::uuid
-				  AND ule.is_active = true
-				  AND ule.language_id = pl.language_id
-			)
-			OR NOT EXISTS (
-				SELECT 1 FROM user_language_enrollments ule
-				WHERE ule.user_id = NULLIF($1, '')::uuid
-				  AND ule.is_active = true
-			)
+			NOT EXISTS (SELECT 1 FROM active_enrollment)
+			OR pl.language_id IN (SELECT language_id FROM active_enrollment)
 		  )
 		  AND (
 			COALESCE(e.content->>'display_text', '') <> ''

@@ -217,6 +217,11 @@ type CurriculumCacheInvalidator interface {
 	InvalidateCurriculum(ctx context.Context, userID string) error
 }
 
+// BadgeAwarder grants achievement badges idempotently on readiness exam mastery
+type BadgeAwarder interface {
+	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*gamification.UserBadge, error)
+}
+
 // Usecase specifies business operations for answering exercises and logging telemetry
 type Usecase interface {
 	GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error)

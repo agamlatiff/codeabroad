@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"codeabroad/backend/internal/app/exercise"
+	"codeabroad/backend/internal/app/gamification"
 	"codeabroad/backend/internal/app/language"
 	"codeabroad/backend/internal/app/user"
 	"codeabroad/backend/internal/shared/apperror"
@@ -1582,4 +1583,114 @@ func TestProcessReview_UsesTransactionalSRSReviewerWhenSupported(t *testing.T) {
 		t.Fatalf("expected ApplyReviewTx called once and RepetitionCount=1, got calls=%d reps=%d", sRepo.txReviewCalls, rev.RepetitionCount)
 	}
 }
+
+type stubBadgeAwarder struct {
+	calls []string
+}
+
+func (s *stubBadgeAwarder) AwardBadge(_ context.Context, _ string, badgeKey string, _ int) (*gamification.UserBadge, error) {
+	s.calls = append(s.calls, badgeKey)
+	return &gamification.UserBadge{
+		BadgeKey: badgeKey,
+		Badge: &gamification.BadgeDefinition{
+			ID:       badgeKey,
+			Title:    "Penakluk JLPT N5",
+			XPReward: 150,
+		},
+	}, nil
+}
+
+func TestSubmitExam_AwardsN5MasteryBadgeOnHighScore(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lvlID := "lvl-n5"
+	eRepo.ReadinessExamExercises[lvlID] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-2", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-3", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-4", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-5", SkillPillar: "reading", CorrectAnswer: "A"},
+	}
+
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: lvlID, LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	langRepo.Levels[lvlID] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	badgeAwarder := &stubBadgeAwarder{}
+	uc := exercise.NewUsecase(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		langRepo,
+		user.NewMockRepository(),
+	).WithBadgeAwarder(badgeAwarder)
+
+	// 3/5 = 60%: passes exam, but below 80% threshold -> should NOT award n5_mastery
+	res60, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: lvlID,
+		Answers: []exercise.SubmitExerciseAnswerRequest{
+			{ExerciseID: "q-1", UserAnswer: "A"},
+			{ExerciseID: "q-2", UserAnswer: "A"},
+			{ExerciseID: "q-3", UserAnswer: "A"},
+			{ExerciseID: "q-4", UserAnswer: "B"},
+			{ExerciseID: "q-5", UserAnswer: "B"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected 60%% submission to succeed, got %v", err)
+	}
+	if !res60.Attempt.IsPassed || len(res60.AwardedBadges) != 0 || len(badgeAwarder.calls) != 0 {
+		t.Fatalf("expected pass without n5_mastery badge at 60%%, got passed=%v badges=%+v", res60.Attempt.IsPassed, res60.AwardedBadges)
+	}
+
+	// Fresh exam repo for 4/5 = 80%: passes exam and awards n5_mastery
+	uc80 := exercise.NewUsecase(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		langRepo,
+		user.NewMockRepository(),
+	).WithBadgeAwarder(badgeAwarder)
+	res80, err := uc80.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: lvlID,
+		Answers: []exercise.SubmitExerciseAnswerRequest{
+			{ExerciseID: "q-1", UserAnswer: "A"},
+			{ExerciseID: "q-2", UserAnswer: "A"},
+			{ExerciseID: "q-3", UserAnswer: "A"},
+			{ExerciseID: "q-4", UserAnswer: "A"},
+			{ExerciseID: "q-5", UserAnswer: "B"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected 80%% submission to succeed, got %v", err)
+	}
+	if len(res80.AwardedBadges) != 1 || res80.AwardedBadges[0].ID != "n5_mastery" {
+		t.Fatalf("expected n5_mastery badge at 80%%, got %+v", res80.AwardedBadges)
+	}
+}
+
+func TestExerciseUsecase_NilRepoGuardsReturnInternalError(t *testing.T) {
+	uc := exercise.NewUsecase(nil, nil, nil, nil, nil)
+
+	if _, err := uc.GetDailyVocabularies(context.Background(), "user-1", 10); !errors.Is(err, apperror.ErrInternal) {
+		t.Fatalf("expected ErrInternal on GetDailyVocabularies with nil repo, got %v", err)
+	}
+	if _, err := uc.GetDueReviews(context.Background(), "user-1", 10); !errors.Is(err, apperror.ErrInternal) {
+		t.Fatalf("expected ErrInternal on GetDueReviews with nil repo, got %v", err)
+	}
+	if _, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: "lvl-1",
+		Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: "A"}},
+	}); !errors.Is(err, apperror.ErrInternal) {
+		t.Fatalf("expected ErrInternal on SubmitExam with nil repo, got %v", err)
+	}
+}
+
 
