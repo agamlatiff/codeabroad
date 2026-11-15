@@ -7,10 +7,13 @@ import type {
   OnboardingPayload,
   OnboardingProfileResponse,
   OnboardingV3ResultResponse,
+  PlacementQuestionsResponse,
 } from "@/features/onboarding/types/onboarding"
 
 export const CAREER_PATHS_QUERY_KEY = ['career-paths'] as const
 export const ONBOARDING_LANGUAGES_QUERY_KEY = ['onboarding-languages'] as const
+export const PLACEMENT_QUESTIONS_QUERY_KEY = (languageId: string) =>
+  ['onboarding-placement-questions', languageId] as const
 
 const LANGUAGE_TO_COUNTRY_META: Record<
   string,
@@ -18,7 +21,11 @@ const LANGUAGE_TO_COUNTRY_META: Record<
 > = {
   ja: { code: 'JP', name: 'Jepang', flag_emoji: '🇯🇵', badge: 'Populer' },
   de: { code: 'DE', name: 'Jerman', flag_emoji: '🇩🇪', badge: 'Segera Hadir' },
-  en: { code: 'SG', name: 'Singapura', flag_emoji: '🇸🇬', badge: 'Segera Hadir' },
+  en: { code: 'SG', name: 'Inggris', flag_emoji: '🇬🇧', badge: 'Segera Hadir' },
+  'en-gb': { code: 'GB', name: 'Inggris (UK)', flag_emoji: '🇬🇧', badge: 'Segera Hadir' },
+  'en-us': { code: 'US', name: 'Inggris (US)', flag_emoji: '🇺🇸', badge: 'Segera Hadir' },
+  zh: { code: 'CN', name: 'Mandarin', flag_emoji: '🇨🇳', badge: 'Segera Hadir' },
+  fr: { code: 'FR', name: 'Prancis', flag_emoji: '🇫🇷', badge: 'Segera Hadir' },
 }
 
 const DEFAULT_CAREER_PATHS: CareerPath[] = [
@@ -71,8 +78,8 @@ export const onboardingService = {
   },
 
   // Fetch placement test questions for a target language
-  async getPlacementQuestions(languageId: string): Promise<{ language: OnboardingLanguage; questions: unknown[] }> {
-    const response = await api.get<ApiResponse<{ language: OnboardingLanguage; questions: unknown[] }>>(
+  async getPlacementQuestions(languageId: string): Promise<PlacementQuestionsResponse> {
+    const response = await api.get<ApiResponse<PlacementQuestionsResponse>>(
       `/onboarding/placement-questions/${languageId}`
     )
     return unwrapApiResponse(response, 'Gagal memuat soal placement test.')
@@ -138,6 +145,11 @@ export const onboardingService = {
       primary_stack: payload.primary_stack || 'golang',
       target_timeline: payload.target_timeline,
       language_level: payload.language_level,
+      daily_goal_minutes: data.profile.daily_goal_minutes,
+      initial_placement_type: payload.initial_placement_type,
+      placement_score_percent: data.placement_score_percent ?? null,
+      assigned_level_code: data.assigned_level?.code,
+      assigned_level_name: data.assigned_level?.name,
       country: {
         id: data.enrollment.language_id,
         code: countryMeta.code,

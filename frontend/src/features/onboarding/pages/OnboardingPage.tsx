@@ -1,253 +1,257 @@
-import { ArrowRight, ArrowLeft, Check } from '@phosphor-icons/react'
-import { Logo } from "@/shared/components/ui/Logo"
-import { Button3D } from "@/shared/components/ui/Button3D"
-import { triggerHaptic } from "@/shared/utils/haptics"
-import { Step1Destination } from "@/features/onboarding/components/Step1Destination"
-import { Step2CareerTracks } from "@/features/onboarding/components/Step2CareerTracks"
-import { Step3Readiness } from "@/features/onboarding/components/Step3Readiness"
-import { Step4BoardingPass } from "@/features/onboarding/components/Step4BoardingPass"
-import { useOnboardingWizard } from "@/features/onboarding/hooks/useOnboardingWizard"
+import { ArrowLeft, ArrowRight, Compass, Sparkle } from '@phosphor-icons/react'
+import { Button3D } from '@/shared/components/ui/Button3D'
+import { triggerHaptic } from '@/shared/utils/haptics'
+import { useOnboardingWizard } from '../hooks/useOnboardingWizard'
+import { Step1LanguagePicker } from '../components/Step1LanguagePicker'
+import { Step2PaceAndPlacement } from '../components/Step2PaceAndPlacement'
+import { Step3PlacementTest } from '../components/Step3PlacementTest'
+import { Step4BoardingPass } from '../components/Step4BoardingPass'
 
-export const OnboardingPage = () => {
-  // Categorized headless wizard state
-  const { user, navigation, form, masterData, status, actions } = useOnboardingWizard()
+const STEP_COPY: Record<
+  1 | 2 | 3 | 4,
+  { badge: string; title: string; subtitle: string }
+> = {
+  1: {
+    badge: 'Langkah 1 dari 3',
+    title: 'Bahasa apa yang ingin kamu kuasai?',
+    subtitle:
+      'Pilih bahasa target untuk menyusun kurikulum, latihan aksara, dan rute belajarmu.',
+  },
+  2: {
+    badge: 'Langkah 2 dari 3',
+    title: 'Atur ritme harian & titik awalmu',
+    subtitle:
+      'Sesuaikan target waktu belajar harian dan pilih mulai dari nol atau lewat tes penempatan.',
+  },
+  3: {
+    badge: 'Langkah 3 dari 3',
+    title: 'Tes Penempatan Singkat',
+    subtitle:
+      'Jawab soal diagnostik berikut. Skor ≥ 80% akan otomatis membuka level lanjutan!',
+  },
+  4: {
+    badge: 'Siap Berangkat',
+    title: 'Boarding Pass Belajarmu Sudah Terbit!',
+    subtitle:
+      'Kurikulum dan target harianmu telah aktif. Saatnya memulai sesi pertamamu.',
+  },
+}
+
+export function OnboardingPage() {
+  const {
+    user,
+    currentStep,
+    form,
+    isLanding,
+    completionResult,
+    languages,
+    selectedLanguage,
+    placementQuestions,
+    isLoadingLanguages,
+    isLoadingPlacement,
+    isSubmitting,
+    errorMessage,
+    canProceed,
+    updateForm,
+    setPlacementAnswer,
+    setIsLanding,
+    submitOnboarding,
+    handleNext,
+    handleBack,
+    handleFinish,
+  } = useOnboardingWizard()
+
+  if (isLanding) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-12">
+        <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-8 sm:p-12 text-center shadow-sm">
+          <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600">
+            <Compass className="h-8 w-8" weight="duotone" />
+          </div>
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 mb-4">
+            <Sparkle className="h-3.5 w-3.5" weight="fill" />
+            <span>CodeAbroad Language Mastery</span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
+            Halo{user?.name ? `, ${user.name}` : ''}! Siap mulai perjalanan bahasamu?
+          </h1>
+          <p className="mt-4 text-base text-slate-600 max-w-xl mx-auto leading-relaxed">
+            Dalam kurang dari 2 menit, kami akan menyiapkan kurikulum terstruktur, target harian, dan titik awal belajar yang pas untukmu.
+          </p>
+          <div className="mt-8 flex justify-center">
+            <Button3D
+              type="button"
+              variant="blue"
+              onClick={() => {
+                triggerHaptic('tap')
+                setIsLanding(false)
+              }}
+              className="px-8 py-3.5 text-base font-semibold"
+            >
+              Mulai Setup Belajar
+              <ArrowRight className="ml-2 inline h-5 w-5" weight="bold" />
+            </Button3D>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  const copy = STEP_COPY[currentStep]
+  const totalProgressSteps = form.initialPlacementType === 'placement_test' ? 4 : 3
+  const progressValue =
+    currentStep === 4
+      ? 100
+      : Math.round((currentStep / totalProgressSteps) * 100)
+
+  const showSharedFooter = currentStep === 1 || currentStep === 2
 
   return (
-    <div className="min-h-screen min-h-dvh bg-[#FAFAF9] text-slate-900 flex flex-col justify-between font-['Plus_Jakarta_Sans',sans-serif] antialiased relative">
-      {/* ── TOP HEADER (COMPACT & BALANCED) ── */}
-      <header className="w-full max-w-6xl mx-auto px-6 py-3 sm:py-4 flex items-center justify-between relative z-10 shrink-0">
-        <Logo variant="slate" size="md" linkTo={null} />
-
-        {/* User Profile Pill */}
-        {user && (
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full font-bold text-xs flex items-center justify-center border shadow-2xs bg-blue-100 text-blue-600 border-blue-200/90">
-              {user.name ? user.name.charAt(0).toUpperCase() : user.username ? user.username.charAt(0).toUpperCase() : 'U'}
-            </div>
-            <span className="text-xs sm:text-sm font-semibold hidden sm:inline text-slate-800">
-              {user.name || user.username}
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      {/* Top Progress Bar */}
+      <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
+        <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <div className="flex items-center gap-3">
+            {currentStep < 4 && (
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  handleBack()
+                }}
+                disabled={isSubmitting}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+                aria-label="Kembali"
+              >
+                <ArrowLeft className="h-4 w-4" weight="bold" />
+              </button>
+            )}
+            <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
+              {copy.badge}
             </span>
           </div>
-        )}
+
+          <div className="w-36 sm:w-56">
+            <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+              <div
+                className="h-full rounded-full bg-indigo-600 transition-all duration-300"
+                style={{ width: `${progressValue}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </header>
 
-      {/* ── MAIN STAGE ── */}
-      <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-2 sm:py-4 flex flex-col justify-center items-center relative z-10">
-        {/* Error Notification Banner */}
-        {status.error && (
-          <div className="w-full max-w-xl mb-3.5 p-3 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs sm:text-sm font-medium flex items-center justify-between shadow-2xs">
-            <span>{status.error}</span>
-            <button
-              onClick={status.clearError}
-              className="underline text-rose-800 ml-4 font-semibold cursor-pointer shrink-0"
-            >
-              Tutup
-            </button>
-          </div>
-        )}
-
-        {/* Hero Area: Mini Stepper Pill + Compact Title & Subtitle (Steps 1 - 3 Only) */}
-        {navigation.step <= 3 && (
-          <div className="text-center max-w-2xl mx-auto mb-4 sm:mb-6 flex flex-col items-center">
-            {/* Connected Mini Stepper Pill */}
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white border border-slate-200/90 shadow-2xs mb-2 transition-all">
-              <div className="flex items-center gap-1">
-                {[1, 2, 3].map((stepNum) => {
-                  const isPast = navigation.step > stepNum
-                  const isCurrent = navigation.step === stepNum
-                  return (
-                    <div key={stepNum} className="flex items-center">
-                      <div
-                        className={`w-4.5 h-4.5 rounded-full flex items-center justify-center text-[9px] font-bold transition-all duration-300 ${
-                          isPast
-                            ? 'bg-[#2563EB] text-white'
-                            : isCurrent
-                            ? 'bg-[#2563EB] text-white ring-2 ring-blue-200 shadow-2xs'
-                            : 'bg-slate-100 text-slate-400'
-                        }`}
-                      >
-                        {isPast ? <Check weight="bold" className="w-2.5 h-2.5" /> : stepNum}
-                      </div>
-                      {stepNum < 3 && (
-                        <div
-                          className={`w-3 sm:w-4 h-0.5 mx-1 rounded-full transition-all duration-300 ${
-                            navigation.step > stepNum ? 'bg-[#2563EB]' : 'bg-slate-200'
-                          }`}
-                        />
-                      )}
-                    </div>
-                  )
-                })}
-              </div>
-
-              <div className="w-px h-3 bg-slate-200" />
-
-              <span className="text-[11px] sm:text-xs font-semibold text-slate-600">
-                Tahap {navigation.step} dari 3: <strong className="text-[#2563EB] font-bold">{navigation.prompt}</strong>
-              </span>
-            </div>
-
-            <h1 className="text-xl sm:text-2.5xl lg:text-3xl font-extrabold text-slate-900 tracking-tight mb-1">
-              {navigation.title}
+      {/* Main Content */}
+      <main className="flex-1 px-4 py-8 sm:px-6 sm:py-12">
+        <div className="mx-auto flex max-w-5xl flex-col items-center">
+          <div className="mb-8 max-w-2xl text-center">
+            <h1 className="text-2xl font-extrabold tracking-tight text-slate-900 sm:text-3xl">
+              {copy.title}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 font-normal leading-relaxed max-w-lg">
-              {navigation.subtitle}
+            <p className="mt-2.5 text-sm text-slate-600 sm:text-base">
+              {copy.subtitle}
             </p>
           </div>
-        )}
 
-        {/* ── ANIMATED STEP CONTENT CONTAINER ── */}
-        <div key={`${navigation.step}-${navigation.trackSubStep}-${navigation.step3SubStep}`} className="animate-stepTransition w-full flex flex-col items-center">
-          {/* Step 1: Destination Selection */}
-          {navigation.step === 1 && (
-            <Step1Destination
-              countries={masterData.countries}
-              selectedCountryId={form.values.countryId}
-              onSelectCountry={(id) => form.update({ countryId: id })}
+          {errorMessage && (
+            <div className="mb-6 w-full max-w-2xl rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-700">
+              {errorMessage}
+            </div>
+          )}
+
+          {currentStep === 1 && (
+            isLoadingLanguages ? (
+              <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm font-medium text-slate-500">
+                Memuat daftar bahasa...
+              </div>
+            ) : (
+              <Step1LanguagePicker
+                languages={languages}
+                selectedLanguageId={form.languageId}
+                onSelectLanguage={(languageId) =>
+                  updateForm({ languageId })
+                }
+              />
+            )
+          )}
+
+          {currentStep === 2 && (
+            <Step2PaceAndPlacement
+              dailyGoalMinutes={form.dailyGoalMinutes}
+              onSelectDailyGoal={(dailyGoalMinutes) =>
+                updateForm({ dailyGoalMinutes })
+              }
+              initialPlacementType={form.initialPlacementType}
+              onSelectPlacementType={(initialPlacementType) =>
+                updateForm({ initialPlacementType })
+              }
             />
           )}
 
-          {/* Step 2: Mindset, Tracks & Stacks Selection */}
-          {navigation.step === 2 && (
-            <Step2CareerTracks
-              trackSubStep={navigation.trackSubStep}
-              setTrackSubStep={navigation.setTrackSubStep}
-              mindsetTab={navigation.mindsetTab}
-              onSwitchMindsetTab={actions.switchMindsetTab}
-              careerPaths={masterData.careerPaths}
-              selectedCareerPathId={form.values.careerPathId}
-              selectedCareerPath={masterData.selectedCareerPath}
-              onSelectCareerPath={actions.selectCareerPath}
-              selectedStackSlug={form.values.stackSlug}
-              onSelectStackSlug={(slug) => form.update({ stackSlug: slug })}
-              selectedFullstackFe={form.values.fullstackFe}
-              onSelectFullstackFe={(fe) => form.update({ fullstackFe: fe })}
-              selectedFullstackBe={form.values.fullstackBe}
-              onSelectFullstackBe={(be) => form.update({ fullstackBe: be })}
-              feOptions={masterData.feOptions}
-              beOptions={masterData.beOptions}
+          {currentStep === 3 && (
+            <Step3PlacementTest
+              questions={placementQuestions}
+              isLoading={isLoadingPlacement}
+              answers={form.placementAnswers}
+              onAnswerChange={setPlacementAnswer}
+              onSubmit={submitOnboarding}
+              isSubmitting={isSubmitting}
             />
           )}
 
-          {/* Step 3: Coding Experience & Grand Panoramic Journey Theater */}
-          {navigation.step === 3 && (
-            <Step3Readiness
-              step3SubStep={navigation.step3SubStep}
-              selectedLevel={form.values.level}
-              onSelectLevel={(lvl) => form.update({ level: lvl })}
-              selectedCountry={masterData.selectedCountry}
-              selectedTimeline={form.values.timeline}
-              onSelectTimeline={(timeline) => form.update({ timeline })}
-              selectedLanguageLevel={form.values.languageLevel}
-              onSelectLanguageLevel={(lvl) => form.update({ languageLevel: lvl })}
-              isLanding={form.isLanding}
-            />
-          )}
-
-          {/* Step 4: Official Boarding Pass Ticket */}
-          {navigation.step === 4 && (
+          {currentStep === 4 && (
             <Step4BoardingPass
-              completionResult={form.completionResult}
+              completionResult={completionResult}
               user={user}
-              selectedCountry={masterData.selectedCountry}
-              selectedCareerPath={masterData.selectedCareerPath}
-              selectedStackSlug={form.values.stackSlug}
-              selectedLevel={form.values.level}
-              selectedTimeline={form.values.timeline}
-              selectedLanguageLevel={form.values.languageLevel}
-              onContinue={navigation.next}
-              onBack={navigation.back}
+              selectedLanguage={selectedLanguage}
+              dailyGoalMinutes={form.dailyGoalMinutes}
+              initialPlacementType={form.initialPlacementType}
+              onContinue={handleFinish}
             />
           )}
         </div>
-
-        {/* ── CENTERED BOTTOM ACTION (STEPS 1 - 3 ONLY) ── */}
-        {navigation.step < 4 && (
-          <div className="flex flex-col items-center justify-center mt-5 sm:mt-6 gap-2">
-            <Button3D
-              variant="blue"
-              size="md"
-              onClick={() => {
-                triggerHaptic('tap')
-                navigation.next()
-              }}
-              disabled={status.loading || form.isLanding || !navigation.isValid}
-              className="px-8 sm:px-10 text-xs sm:text-sm font-bold flex items-center gap-2"
-            >
-              {status.loading ? (
-                form.isLanding ? 'Mendarat di Tokyo & Menyiapkan Tiket...' : 'Memproses...'
-              ) : navigation.step === 3 && navigation.step3SubStep === 'level' ? (
-                <>
-                  Lanjut ke Target &amp; Bahasa <ArrowRight className="w-3.5 h-3.5" />
-                </>
-              ) : navigation.step === 3 && navigation.step3SubStep === 'readiness' ? (
-                form.isLanding ? (
-                  <>
-                    Mendarat di Tokyo &amp; Menyiapkan Tiket...
-                  </>
-                ) : (
-                  <>
-                    Terbitkan Tiket Boarding <ArrowRight className="w-4 h-4" />
-                  </>
-                )
-              ) : navigation.step === 2 && navigation.trackSubStep === 'mindset' ? (
-                <>
-                  Lanjut Pilih Jalur Spesifik <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-                </>
-              ) : navigation.step === 2 && navigation.trackSubStep === 'track' ? (
-                <>
-                  Pilih Stack Teknologi <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-                </>
-              ) : navigation.step === 2 && navigation.trackSubStep === 'stack_fe' ? (
-                <>
-                  Lanjut ke Pilihan Backend <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-                </>
-              ) : navigation.step === 2 && (navigation.trackSubStep === 'stack' || navigation.trackSubStep === 'stack_be') ? (
-                <>
-                  Lanjutkan ke Kesiapan <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-                </>
-              ) : (
-                <>
-                  Lanjutkan ke Pilihan Jalur <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-                </>
-              )}
-            </Button3D>
-
-            {/* Contextual Back Navigation */}
-            {navigation.step > 1 && navigation.step < 4 && (
-              <button
-                onClick={() => {
-                  triggerHaptic('tap')
-                  navigation.back()
-                }}
-                className="text-xs font-semibold text-slate-400 hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-1 mt-1"
-              >
-                <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
-                {navigation.step === 3 && navigation.step3SubStep === 'readiness'
-                  ? 'Kembali ke pilihan pengalaman coding'
-                  : navigation.step === 3 && navigation.step3SubStep === 'level'
-                  ? 'Kembali ke pilihan teknologi'
-                  : navigation.step === 2 && navigation.trackSubStep === 'stack_be'
-                  ? 'Kembali ke pilihan Frontend'
-                  : navigation.step === 2 && (navigation.trackSubStep === 'stack' || navigation.trackSubStep === 'stack_fe')
-                  ? 'Ganti Jalur Spesialisasi'
-                  : navigation.step === 2 && navigation.trackSubStep === 'track'
-                  ? 'Kembali ke pilihan tipe track'
-                  : navigation.step === 2 && navigation.trackSubStep === 'mindset'
-                  ? 'Kembali ke pilihan negara'
-                  : 'Kembali'}
-              </button>
-            )}
-          </div>
-        )}
       </main>
 
-      {/* ── FOOTER WATERMARK ── */}
-      <footer className={`w-full text-center py-2.5 text-[11px] shrink-0 transition-colors duration-500 ${
-        navigation.step === 4 ? 'text-slate-600' : 'text-slate-400'
-      }`}>
-        CodeAbroad &copy; {new Date().getFullYear()} &mdash; Pelopor Karier Global Software Engineer Indonesia
-      </footer>
+      {/* Shared Footer for Steps 1 & 2 */}
+      {showSharedFooter && (
+        <footer className="sticky bottom-0 z-20 border-t border-slate-200/80 bg-white/95 backdrop-blur-md">
+          <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+            <Button3D
+              type="button"
+              variant="white"
+              onClick={() => {
+                triggerHaptic('tap')
+                handleBack()
+              }}
+              disabled={isSubmitting}
+              className="px-5 py-2.5 text-sm font-semibold"
+            >
+              Kembali
+            </Button3D>
+
+            <Button3D
+              type="button"
+              variant="blue"
+              onClick={() => {
+                triggerHaptic('tap')
+                handleNext()
+              }}
+              disabled={!canProceed || isSubmitting}
+              className="px-6 py-2.5 text-sm font-semibold"
+            >
+              {currentStep === 2 && form.initialPlacementType === 'zero_beginner'
+                ? isSubmitting
+                  ? 'Menyimpan...'
+                  : 'Terbitkan Boarding Pass'
+                : 'Lanjutkan'}
+              <ArrowRight className="ml-1.5 inline h-4 w-4" weight="bold" />
+            </Button3D>
+          </div>
+        </footer>
+      )}
     </div>
   )
 }
+
+export default OnboardingPage

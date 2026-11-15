@@ -1,389 +1,204 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { onboardingService } from "@/features/onboarding/services/onboardingService"
-import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
-import { useAuthStore } from "@/features/auth/store/authStore"
-import { useOnboardingStore } from "@/features/onboarding/store/onboardingStore"
-import type { CareerPath } from "@/features/onboarding/types/onboarding"
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import {
-  getOnboardingStepPrompt,
-  getOnboardingStepTitle,
-  getOnboardingStepSubtitle,
-} from "@/features/onboarding/utils/onboardingConfig"
+  ONBOARDING_LANGUAGES_QUERY_KEY,
+  PLACEMENT_QUESTIONS_QUERY_KEY,
+  onboardingService,
+} from '../services/onboardingService'
+import { useOnboardingStore } from '../store/onboardingStore'
+import type { OnboardingPayload, OnboardingProfileResponse } from '../types/onboarding'
 
-/**
- * Headless controller hook managing state machine, form mutations, and validations
- * for the multi-step Onboarding experience.
- */
-export const useOnboardingWizard = () => {
+function extractErrorCode(error: unknown): string | undefined {
+  if (typeof error !== 'object' || error === null) return undefined
+  const err = error as {
+    response?: { data?: { error?: { code?: string; message?: string }; message?: string } }
+  }
+  return err.response?.data?.error?.code
+}
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error !== 'object' || error === null) return fallback
+  const err = error as {
+    message?: string
+    response?: { data?: { error?: { message?: string }; message?: string } }
+  }
+  return (
+    err.response?.data?.error?.message ||
+    err.response?.data?.message ||
+    err.message ||
+    fallback
+  )
+}
+
+export function useOnboardingWizard() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { user, updateUser } = useAuthStore()
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  // 1. Grouped Form & Navigation State from Zustand
   const {
     currentStep,
-    trackSubStep,
-    step3SubStep,
-    mindsetTab,
     form,
     isLanding,
     completionResult,
     setStep,
-    setNavigation,
     updateForm,
+    setPlacementAnswer,
     setIsLanding,
     setCompletionResult,
     reset,
   } = useOnboardingStore()
 
-  const [formError, setFormError] = useState<string | null>(null)
-
-  // 2. Master Data Queries from TanStack Query
-  const {
-    data: countries = [],
-    isLoading: loadingCountries,
-    error: countriesError,
-  } = useQuery({
-    queryKey: ['countries'],
-    queryFn: onboardingService.getCountries,
+  const { data: languages = [], isLoading: isLoadingLanguages } = useQuery({
+    queryKey: ONBOARDING_LANGUAGES_QUERY_KEY,
+    queryFn: onboardingService.getLanguages,
+    staleTime: 5 * 60 * 1000,
   })
 
+  const selectedLanguage = useMemo(
+    () => languages.find((lang) => lang.id === form.languageId),
+    [languages, form.languageId]
+  )
+
+  const shouldLoadPlacementQuestions =
+    currentStep === 3 &&
+    form.initialPlacementType === 'placement_test' &&
+    Boolean(form.languageId)
+
   const {
-    data: careerPaths = [],
-    isLoading: loadingPaths,
-    error: pathsError,
+    data: placementData,
+    isLoading: isLoadingPlacement,
   } = useQuery({
-    queryKey: ['careerPaths'],
-    queryFn: onboardingService.getCareerPaths,
+    queryKey: PLACEMENT_QUESTIONS_QUERY_KEY(form.languageId),
+    queryFn: () => onboardingService.getPlacementQuestions(form.languageId),
+    enabled: shouldLoadPlacementQuestions,
+    staleTime: 5 * 60 * 1000,
   })
 
-  const loadingMasterData = loadingCountries || loadingPaths
+  const placementQuestions = placementData?.questions ?? []
 
-  // 3. Fallback Initial Preselection on Cold Mount (and heal stale sessionStorage IDs)
-  useEffect(() => {
-    if (countries.length > 0) {
-      const hasValidActiveCountry = countries.some((c) => c.id === form.countryId && c.is_active)
-      if (!hasValidActiveCountry) {
-        const activeCountry = countries.find((c) => c.is_active)
-        if (activeCountry) updateForm({ countryId: activeCountry.id })
-      }
-    }
-    if (careerPaths.length > 0 && !form.careerPathId) {
-      const defaultPath = careerPaths.find((p) => p.slug === 'backend') || careerPaths[0]
-      const firstActiveStack = defaultPath.stacks?.find((s) => s.is_active) || defaultPath.stacks?.[0]
-      updateForm({
-        careerPathId: defaultPath.id,
-        stackSlug: firstActiveStack ? firstActiveStack.slug : '',
-      })
-    }
-  }, [countries, careerPaths, form.countryId, form.careerPathId, updateForm])
-
-  // 4. Submission Mutation
   const completeMutation = useMutation({
-    mutationFn: onboardingService.completeOnboarding,
-    onSuccess: (result) => {
+    mutationFn: (payload: OnboardingPayload) =>
+      onboardingService.completeOnboarding(payload),
+    onSuccess: (result: OnboardingProfileResponse) => {
+      setErrorMessage(null)
       setCompletionResult(result)
       updateUser({
         is_onboarded: true,
-        xp: result.xp,
-        current_level: result.current_level,
-        streak: result.streak,
+        daily_goal_minutes: result.daily_goal_minutes ?? form.dailyGoalMinutes,
       })
-      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
-      setTimeout(() => {
-        setIsLanding(false)
-        setStep(4)
-      }, 350)
+      queryClient.invalidateQueries({ queryKey: ['auth'] })
+      queryClient.invalidateQueries({ queryKey: ['curriculum'] })
+      setStep(4)
     },
-    onError: (err: unknown) => {
-      setIsLanding(false)
-      const errorObj = err as {
-        response?: {
-          status?: number
-          data?: { code?: string; error?: string; message?: string }
-        }
-        message?: string
-      }
-      // Gracefully handle 409 Conflict if user is already onboarded
-      if (
-        errorObj?.response?.status === 409 ||
-        errorObj?.message?.includes('ALREADY_ONBOARDED') ||
-        errorObj?.response?.data?.code === 'ALREADY_ONBOARDED'
-      ) {
-        reset()
+    onError: (error: unknown) => {
+      const code = extractErrorCode(error)
+      if (code === 'ALREADY_ONBOARDED') {
         updateUser({ is_onboarded: true })
+        reset()
         navigate('/curriculum', { replace: true })
         return
       }
-      const backendMessage =
-        errorObj?.response?.data?.error ||
-        errorObj?.response?.data?.message ||
-        errorObj?.message ||
-        'Gagal menyelesaikan onboarding. Silakan coba lagi.'
-      setFormError(backendMessage)
+      setErrorMessage(
+        extractErrorMessage(error, 'Gagal menyelesaikan onboarding. Coba lagi.')
+      )
     },
   })
 
-  // Active entities
-  const selectedCountry = countries.find((c) => c.id === form.countryId)
-  const selectedCareerPath = careerPaths.find((c) => c.id === form.careerPathId) || careerPaths[0]
-
-  // Handle career path selection
-  const handleSelectCareerPath = (path: CareerPath) => {
-    if (path.slug === 'fullstack') {
-      updateForm({
-        careerPathId: path.id,
-        fullstackFe: 'react',
-        fullstackBe: 'golang',
-        stackSlug: 'react_golang',
-      })
-      setNavigation({ trackSubStep: 'stack_fe' })
-    } else {
-      const activeStack = path.stacks?.find((s) => s.is_active) || path.stacks?.[0]
-      updateForm({
-        careerPathId: path.id,
-        stackSlug: activeStack ? activeStack.slug : '',
-      })
-      setNavigation({ trackSubStep: 'stack' })
-    }
-  }
-
-  // Handle mindset tab switch
-  const handleSwitchMindsetTab = (tab: 'specialist' | 'generalist') => {
-    setNavigation({ mindsetTab: tab, trackSubStep: 'track' })
-    const candidatePaths =
-      tab === 'specialist'
-        ? careerPaths.filter((p) => ['frontend', 'backend', 'devops'].includes(p.slug))
-        : careerPaths.filter((p) => ['fullstack', 'product_engineer', 'solutions_architect'].includes(p.slug))
-
-    if (candidatePaths.length > 0) {
-      const firstActivePath =
-        candidatePaths.find((p) => p.slug !== 'product_engineer' && p.slug !== 'solutions_architect') ||
-        candidatePaths[0]
-
-      if (firstActivePath.slug === 'fullstack') {
-        updateForm({
-          careerPathId: firstActivePath.id,
-          fullstackFe: 'react',
-          fullstackBe: 'golang',
-          stackSlug: 'react_golang',
-        })
-      } else {
-        const activeStack = firstActivePath.stacks?.find((s) => s.is_active) || firstActivePath.stacks?.[0]
-        updateForm({
-          careerPathId: firstActivePath.id,
-          stackSlug: activeStack ? activeStack.slug : '',
-        })
-      }
-    }
-  }
-
-  // Submit onboarding selections to backend
-  const handleSubmitOnboarding = () => {
-    if (!form.countryId || !form.careerPathId || !form.stackSlug) {
-      setFormError('Mohon lengkapi preferensi pilihanmu terlebih dahulu.')
+  const submitOnboarding = () => {
+    setErrorMessage(null)
+    if (!form.languageId) {
+      setErrorMessage('Pilih bahasa tujuan terlebih dahulu.')
       return
     }
 
-    setIsLanding(true)
-    setFormError(null)
-
-    const dailyGoalMinutes: 5 | 15 | 30 | 45 =
-      form.timeline === '6_months' ? 30 : form.timeline === 'exploring' ? 5 : 15
+    const placementAnswers =
+      form.initialPlacementType === 'placement_test'
+        ? Object.entries(form.placementAnswers)
+            .filter(([, value]) => value.trim().length > 0)
+            .map(([exercise_id, user_answer]) => ({
+              exercise_id,
+              user_answer: user_answer.trim(),
+            }))
+        : undefined
 
     completeMutation.mutate({
-      language_id: form.countryId,
-      daily_goal_minutes: dailyGoalMinutes,
-      initial_placement_type: 'zero_beginner',
-      country_id: form.countryId,
-      career_path_id: form.careerPathId,
-      primary_stack: form.stackSlug,
-      level: form.level,
-      target_timeline: form.timeline,
-      language_level: form.languageLevel,
+      language_id: form.languageId,
+      daily_goal_minutes: form.dailyGoalMinutes,
+      initial_placement_type: form.initialPlacementType,
+      placement_answers: placementAnswers,
     })
   }
 
-  // Step validation
-  const isStepValid = useCallback(() => {
-    if (currentStep === 1) return !!form.countryId
-    if (currentStep === 2) {
-      if (trackSubStep === 'mindset') return !!mindsetTab
-      if (trackSubStep === 'track') return !!form.careerPathId
-      if (trackSubStep === 'stack_fe') return !!form.fullstackFe
-      if (trackSubStep === 'stack_be') return !!form.fullstackBe
-      return !!form.careerPathId && !!form.stackSlug
+  const canProceed = useMemo(() => {
+    if (currentStep === 1) {
+      return Boolean(form.languageId) && Boolean(selectedLanguage?.is_active)
     }
-    if (currentStep === 3) {
-      if (step3SubStep === 'level') return !!form.level
-      if (step3SubStep === 'readiness') return !!form.timeline && !!form.languageLevel
+    if (currentStep === 2) {
+      return Boolean(form.dailyGoalMinutes) && Boolean(form.initialPlacementType)
     }
     return true
-  }, [
-    currentStep,
-    trackSubStep,
-    step3SubStep,
-    mindsetTab,
-    form.countryId,
-    form.careerPathId,
-    form.stackSlug,
-    form.fullstackFe,
-    form.fullstackBe,
-    form.level,
-    form.timeline,
-    form.languageLevel,
-  ])
+  }, [currentStep, form, selectedLanguage])
 
-  // Handle Next button click
   const handleNext = () => {
-    if (!isStepValid() || completeMutation.isPending || loadingMasterData) return
-
+    setErrorMessage(null)
+    if (!canProceed) return
     if (currentStep === 1) {
       setStep(2)
-      setNavigation({ trackSubStep: 'mindset' })
-    } else if (currentStep === 2) {
-      if (trackSubStep === 'mindset') {
-        setNavigation({ trackSubStep: 'track' })
-      } else if (trackSubStep === 'track') {
-        if (selectedCareerPath?.slug === 'fullstack') {
-          updateForm({ stackSlug: `${form.fullstackFe}_${form.fullstackBe}` })
-          setNavigation({ trackSubStep: 'stack_fe' })
-        } else {
-          setNavigation({ trackSubStep: 'stack' })
-        }
-      } else if (trackSubStep === 'stack_fe') {
-        updateForm({ stackSlug: `${form.fullstackFe}_${form.fullstackBe}` })
-        setNavigation({ trackSubStep: 'stack_be' })
-      } else if (trackSubStep === 'stack_be') {
-        updateForm({ stackSlug: `${form.fullstackFe}_${form.fullstackBe}` })
-        setStep(3)
-        setNavigation({ step3SubStep: 'level' })
-      } else {
-        setStep(3)
-        setNavigation({ step3SubStep: 'level' })
-      }
-    } else if (currentStep === 3) {
-      if (step3SubStep === 'level') {
-        setNavigation({ step3SubStep: 'readiness' })
-      } else {
-        handleSubmitOnboarding()
-      }
-    } else if (currentStep === 4) {
-      reset()
-      updateUser({ is_onboarded: true })
-      navigate('/curriculum', { replace: true })
+      return
     }
-  }
-
-  // Handle Back button click
-  const handleBack = () => {
     if (currentStep === 2) {
-      if (trackSubStep === 'stack_be') {
-        setNavigation({ trackSubStep: 'stack_fe' })
-      } else if (trackSubStep === 'stack_fe') {
-        setNavigation({ trackSubStep: 'track' })
-      } else if (trackSubStep === 'stack') {
-        setNavigation({ trackSubStep: 'track' })
-      } else if (trackSubStep === 'track') {
-        setNavigation({ trackSubStep: 'mindset' })
+      if (form.initialPlacementType === 'placement_test') {
+        setStep(3)
       } else {
-        setStep(1)
+        submitOnboarding()
       }
-    } else if (currentStep === 3) {
-      if (step3SubStep === 'readiness') {
-        setNavigation({ step3SubStep: 'level' })
-      } else {
-        setStep(2)
-        setNavigation({
-          trackSubStep: selectedCareerPath?.slug === 'fullstack' ? 'stack_be' : 'stack',
-        })
-      }
-    } else if (currentStep === 4) {
-      setStep(3)
-      setNavigation({ step3SubStep: 'readiness' })
     }
   }
 
-  // Fullstack options derived dynamically from frontend and backend career paths
-  const feCareerPath = careerPaths.find((p) => p.slug === 'frontend')
-  const beCareerPath = careerPaths.find((p) => p.slug === 'backend')
-
-  const feOptions = feCareerPath?.stacks?.length
-    ? feCareerPath.stacks
-    : [
-        { slug: 'react', label: 'React', is_active: true, badge: 'Tokyo Standard' },
-        { slug: 'vue', label: 'Vue.js', is_active: false, badge: 'Coming Soon' },
-        { slug: 'svelte', label: 'Svelte', is_active: false, badge: 'Coming Soon' },
-      ]
-
-  const beOptions = beCareerPath?.stacks?.length
-    ? beCareerPath.stacks
-    : [
-        { slug: 'golang', label: 'Go (Gin Framework)', is_active: true, badge: 'High Demand Tokyo' },
-        { slug: 'node', label: 'Node.js (Express)', is_active: false, badge: 'Coming Soon' },
-        { slug: 'java', label: 'Java (Spring Boot)', is_active: false, badge: 'Coming Soon' },
-      ]
-
-  const headerContext = {
-    currentStep,
-    trackSubStep,
-    step3SubStep,
-    mindsetTab,
-    careerPathLabel: selectedCareerPath?.label,
-    countryName: selectedCountry?.name,
+  const handleBack = () => {
+    setErrorMessage(null)
+    if (currentStep === 1) {
+      setIsLanding(true)
+      return
+    }
+    if (currentStep === 2) {
+      setStep(1)
+      return
+    }
+    if (currentStep === 3) {
+      setStep(2)
+    }
   }
 
-  const displayError = formError || (countriesError as Error)?.message || (pathsError as Error)?.message
+  const handleFinish = () => {
+    reset()
+    navigate('/curriculum', { replace: true })
+  }
 
   return {
     user,
-
-    // 1. Wizard Navigation & Dynamic Copywriting
-    navigation: {
-      step: currentStep,
-      trackSubStep,
-      setTrackSubStep: (sub: typeof trackSubStep) => setNavigation({ trackSubStep: sub }),
-      step3SubStep,
-      mindsetTab,
-      prompt: getOnboardingStepPrompt(headerContext),
-      title: getOnboardingStepTitle(headerContext),
-      subtitle: getOnboardingStepSubtitle(headerContext),
-      isValid: isStepValid(),
-      next: handleNext,
-      back: handleBack,
-    },
-
-    // 2. User Form Preferences
-    form: {
-      values: form,
-      update: updateForm,
-      isLanding,
-      completionResult,
-    },
-
-    // 3. Master Data from Backend
-    masterData: {
-      countries,
-      careerPaths,
-      selectedCountry,
-      selectedCareerPath,
-      feOptions,
-      beOptions,
-    },
-
-    // 4. Request Status & Banner Error
-    status: {
-      loading: loadingMasterData || completeMutation.isPending,
-      error: displayError,
-      clearError: () => setFormError(null),
-    },
-
-    // 5. Step Interaction Actions
-    actions: {
-      selectCareerPath: handleSelectCareerPath,
-      switchMindsetTab: handleSwitchMindsetTab,
-    },
+    currentStep,
+    form,
+    isLanding,
+    completionResult,
+    languages,
+    selectedLanguage,
+    placementQuestions,
+    isLoadingLanguages,
+    isLoadingPlacement,
+    isSubmitting: completeMutation.isPending,
+    errorMessage,
+    canProceed,
+    setStep,
+    updateForm,
+    setPlacementAnswer,
+    setIsLanding,
+    submitOnboarding,
+    handleNext,
+    handleBack,
+    handleFinish,
   }
 }

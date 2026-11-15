@@ -52,6 +52,33 @@ export interface OnboardingLanguage {
   is_active: boolean
 }
 
+export interface PlacementQuestionOption {
+  id?: string
+  text?: string
+  label?: string
+}
+
+export interface PlacementQuestionItem {
+  id: string
+  skill_pillar: 'reading' | 'listening' | 'writing' | 'speaking'
+  exercise_type: 'sentence_builder' | 'fill_blank' | 'listening_choice' | 'speaking_repeat' | 'dialogue_roleplay'
+  prompt: string
+  content?: {
+    question?: string
+    sentence?: string
+    audio_url?: string
+    options?: Array<string | PlacementQuestionOption>
+    tokens?: string[]
+    furigana?: string
+    hints?: string
+  }
+}
+
+export interface PlacementQuestionsResponse {
+  language: OnboardingLanguage
+  questions: PlacementQuestionItem[]
+}
+
 export interface OnboardingPlacementAnswer {
   exercise_id: string
   user_answer: string
@@ -143,6 +170,13 @@ export interface OnboardingProfileResponse {
   primary_stack: string
   target_timeline?: TargetTimeline
   language_level?: LanguageLevel
+  daily_goal_minutes?: number
+  initial_placement_type?: 'zero_beginner' | 'placement_test' | 'manual_select'
+  placement_score_percent?: number | null
+  assigned_level_code?: string
+  assigned_level_name?: string
+  language_code?: string
+  language_name?: string
   country: CountrySummary
   career_path: CareerPathSummary
   created_at: string

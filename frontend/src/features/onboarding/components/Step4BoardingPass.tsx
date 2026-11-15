@@ -1,253 +1,194 @@
-import type { Country, CareerPath, OnboardingProfileResponse, TargetTimeline, LanguageLevel } from "@/features/onboarding/types/onboarding"
-import type { User } from "@/features/user/types/user"
-import { Airplane, Sparkle, CheckCircle, ArrowRight, ArrowLeft } from '@phosphor-icons/react'
-import { Button3D } from "@/shared/components/ui/Button3D"
-import { MetricTile } from './MetricTile'
-import { BadgePill } from './BadgePill'
-import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
+import { CheckCircle2, Plane, Sparkles } from 'lucide-react'
+import { Button3D } from '@/shared/components/ui/Button3D'
 import {
-  formatTechStack,
-  formatExperienceLevelText,
-  formatTimeline,
-  formatLanguageLevel,
-} from "@/shared/utils/formatters"
+  JapanFlagIllustration,
+  SingaporeFlagIllustration,
+  GermanyFlagIllustration,
+} from './illustrations/FlagIllustrations'
+import type {
+  OnboardingLanguage,
+  OnboardingProfileResponse,
+} from '../types/onboarding'
+import type {
+  DailyGoalMinutes,
+  InitialPlacementType,
+} from '../store/onboardingStore'
+import type { User } from '@/features/user/types/user'
 
 interface Step4BoardingPassProps {
   completionResult: OnboardingProfileResponse | null
   user: User | null
-  selectedCountry: Country | undefined
-  selectedCareerPath: CareerPath | undefined
-  selectedStackSlug: string
-  selectedLevel: 'beginner' | 'intermediate'
-  selectedTimeline: TargetTimeline
-  selectedLanguageLevel: LanguageLevel
+  selectedLanguage: OnboardingLanguage | undefined
+  dailyGoalMinutes: DailyGoalMinutes
+  initialPlacementType: InitialPlacementType
   onContinue?: () => void
-  onBack?: () => void
 }
 
-// Fallback helper to prevent unicode question marks encoding bug
-const getCountryFlag = (countryCode?: string, rawEmoji?: string): string => {
-  if (rawEmoji && !rawEmoji.includes('?') && !rawEmoji.includes('\uFFFD')) {
-    return rawEmoji
-  }
-  switch (countryCode?.toUpperCase()) {
-    case 'JP': return '🇯🇵'
-    case 'DE': return '🇩🇪'
-    case 'SG': return '🇸🇬'
-    case 'UK':
-    case 'GB': return '🇬🇧'
-    case 'US': return '🇺🇸'
-    case 'AU': return '🇦🇺'
-    case 'CA': return '🇨🇦'
-    default: return '🇯🇵'
-  }
+const LANGUAGE_AIRPORT_MAP: Record<string, { code: string; city: string }> = {
+  ja: { code: 'HND', city: 'Tokyo' },
+  de: { code: 'BER', city: 'Berlin' },
+  'en-gb': { code: 'LHR', city: 'London' },
+  'en-us': { code: 'SFO', city: 'San Francisco' },
+  zh: { code: 'PEK', city: 'Beijing' },
+  fr: { code: 'CDG', city: 'Paris' },
 }
 
-// Map country code to main international tech hub airport
-const getAirportInfo = (countryCode?: string) => {
-  switch (countryCode?.toUpperCase()) {
-    case 'JP': return { code: 'HND', city: 'Tokyo', country: 'Jepang' }
-    case 'DE': return { code: 'BER', city: 'Berlin', country: 'Jerman' }
-    case 'SG': return { code: 'SIN', city: 'Singapore', country: 'Singapura' }
-    case 'UK':
-    case 'GB': return { code: 'LHR', city: 'London', country: 'Inggris' }
-    case 'US': return { code: 'SFO', city: 'San Francisco', country: 'Amerika Serikat' }
-    case 'AU': return { code: 'SYD', city: 'Sydney', country: 'Australia' }
-    case 'CA': return { code: 'YVR', city: 'Vancouver', country: 'Kanada' }
-    default: return { code: 'HND', city: 'Tokyo', country: 'Jepang' }
-  }
+function getAirportInfo(languageCode?: string): { code: string; city: string } {
+  if (!languageCode) return { code: 'HND', city: 'Tokyo' }
+  const normalized = languageCode.toLowerCase()
+  return LANGUAGE_AIRPORT_MAP[normalized] ?? { code: 'INTL', city: 'Global' }
 }
 
-export const Step4BoardingPass = ({
+interface MetricTileProps {
+  label: string
+  value: string
+  sublabel?: string
+}
+
+function MetricTile({ label, value, sublabel }: MetricTileProps) {
+  return (
+    <div className="rounded-xl border border-slate-200/80 bg-slate-50/80 p-3.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+        {label}
+      </p>
+      <p className="mt-1 text-sm font-bold text-slate-900">{value}</p>
+      {sublabel && <p className="mt-0.5 text-xs text-slate-500">{sublabel}</p>}
+    </div>
+  )
+}
+
+export function Step4BoardingPass({
   completionResult,
   user,
-  selectedCountry,
-  selectedCareerPath,
-  selectedStackSlug,
-  selectedLevel,
-  selectedTimeline,
-  selectedLanguageLevel,
+  selectedLanguage,
+  dailyGoalMinutes,
+  initialPlacementType,
   onContinue,
-  onBack,
-}: Step4BoardingPassProps) => {
-  const airport = getAirportInfo(selectedCountry?.code)
-  const countryFlag = getCountryFlag(selectedCountry?.code, selectedCountry?.flag_emoji)
-  const passengerName = (completionResult?.name || user?.name || user?.username || 'DEVELOPER').toUpperCase()
+}: Step4BoardingPassProps) {
+  const languageCode =
+    completionResult?.language_code || selectedLanguage?.code || 'ja'
+  const languageName =
+    completionResult?.language_name || selectedLanguage?.name || 'Bahasa Tujuan'
+  const destination = getAirportInfo(languageCode)
+
+  const assignedLevel =
+    completionResult?.assigned_level_name ||
+    completionResult?.assigned_level_code ||
+    'Level Awal'
+  const resolvedDailyGoal =
+    completionResult?.daily_goal_minutes ?? dailyGoalMinutes
+  const resolvedPlacementType =
+    completionResult?.initial_placement_type ?? initialPlacementType
+
+  const placementValue =
+    resolvedPlacementType === 'placement_test' &&
+    completionResult?.placement_score_percent != null
+      ? `Skor ${Math.round(completionResult.placement_score_percent)}%`
+      : 'Mulai dari Nol'
+
+  const placementSublabel =
+    resolvedPlacementType === 'placement_test'
+      ? 'Placement Test'
+      : 'Zero Beginner'
+
+  const FlagIcon =
+    languageCode.toLowerCase() === 'de'
+      ? GermanyFlagIllustration
+      : languageCode.toLowerCase().startsWith('en')
+        ? SingaporeFlagIllustration
+        : JapanFlagIllustration
 
   return (
-    <div className="max-w-xl w-full mx-auto flex flex-col items-center relative py-2 sm:py-4">
-      {/* ── TOP HERO: KODI CELEBRATION STAGE (LIGHT THEME) ── */}
-      <div className="relative z-10 flex flex-col items-center text-center mb-5 sm:mb-6">
-        <div className="relative mb-2">
-          <KodiCharacter emotion="celebrate" size={110} interactive />
-        </div>
-
-        {/* Celebratory Speech Pill */}
-        <div className="mb-2">
-          <BadgePill variant="blue" size="sm" icon={<Sparkle weight="fill" className="w-3.5 h-3.5 text-blue-500" />}>
-            Yatta! Siap Lepas Landas
-          </BadgePill>
-        </div>
-
-        <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Selamat, {passengerName}-san! 🎌
-        </h2>
-        <p className="text-xs sm:text-sm text-slate-500 font-normal max-w-sm mt-1 leading-relaxed">
-          Tiket dan paspor karier globalmu telah resmi diterbitkan. Kursimu menuju panggung internasional telah siap!
-        </p>
-      </div>
-
-      {/* ── HERO ARTIFACT: PREMIUM LIGHT BOARDING PASS TICKET ── */}
-      <div className="w-full bg-white border border-slate-200/90 hover:border-blue-300 rounded-3xl shadow-md hover:shadow-lg overflow-hidden transition-all duration-300 relative z-10 text-left">
-        
-        {/* 1. TOP ROUTE & FLIGHT HEADER (ELECTRIC BLUE GRADIENT BANNER) */}
-        <div className="bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 p-5 sm:p-6 text-white">
-          {/* Micro Meta Bar */}
-          <div className="flex items-center justify-between pb-3.5 border-b border-white/15 text-xs">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-white shadow-xs backdrop-blur-xs">
-                <Airplane weight="bold" className="w-3.5 h-3.5" />
+    <div className="mx-auto w-full max-w-2xl space-y-6">
+      <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-xl shadow-slate-200/60">
+        {/* Boarding Pass Header */}
+        <div className="relative bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 px-6 py-6 text-white sm:px-8">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm">
+                <FlagIcon className="h-6 w-6 rounded-sm" />
               </div>
-              <span className="font-mono font-bold tracking-widest text-blue-100 text-[10px] uppercase">
-                CODEABROAD AIRWAYS • 搭乗券
-              </span>
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-indigo-300">
+                  CodeAbroad Boarding Pass
+                </p>
+                <h3 className="text-lg font-bold tracking-tight">
+                  {user?.name || user?.username || 'Language Explorer'}
+                </h3>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <span className="font-mono text-[10px] text-blue-200 font-bold">FLIGHT</span>
-              <span className="px-2 py-0.5 rounded bg-white/15 text-white border border-white/20 font-mono font-bold text-[11px]">
-                CA-2026
-              </span>
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/20 px-3 py-1 text-xs font-semibold text-emerald-300 ring-1 ring-emerald-400/30">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>+50 XP</span>
             </div>
           </div>
 
-          {/* Route Display: CGK ✈️ HND */}
-          <div className="pt-4 flex items-center justify-between">
-            {/* Origin */}
-            <div className="text-left">
-              <span className="text-[10px] font-mono text-blue-200 block font-bold tracking-wider">ORIGIN</span>
-              <span className="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white">CGK</span>
-              <span className="text-xs text-blue-100 block font-medium">Jakarta, ID</span>
+          {/* Route Visualization */}
+          <div className="mt-7 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-3xl font-black tracking-tight sm:text-4xl">CGK</p>
+              <p className="mt-0.5 text-xs text-slate-300">Jakarta</p>
             </div>
 
-            {/* Flight Path Graphic */}
-            <div className="flex-1 px-3 sm:px-4 flex flex-col items-center">
-              <span className="text-[9px] font-mono text-blue-200 font-bold uppercase tracking-wider mb-1">
-                NON-STOP • DEV CLASS
-              </span>
-              <div className="w-full max-w-[130px] flex items-center gap-1.5">
-                <div className="w-2 h-2 rounded-full bg-white shrink-0" />
-                <div className="flex-1 border-t-2 border-dashed border-white/40" />
-                <Airplane weight="bold" className="w-4 h-4 text-white shrink-0 transform rotate-90" />
-                <div className="flex-1 border-t-2 border-dashed border-white/40" />
-                <div className="w-2 h-2 rounded-full bg-cyan-300 shrink-0" />
+            <div className="flex flex-1 items-center gap-2 px-2">
+              <div className="h-px flex-1 border-t border-dashed border-slate-500/70" />
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-500/25 text-indigo-200 ring-1 ring-indigo-400/30">
+                <Plane className="h-4 w-4" />
               </div>
-              <span className="text-[10px] text-cyan-200 font-mono font-bold mt-1">
-                SPONSOR TRACK
-              </span>
+              <div className="h-px flex-1 border-t border-dashed border-slate-500/70" />
             </div>
 
-            {/* Destination */}
             <div className="text-right">
-              <span className="text-[10px] font-mono text-blue-200 block font-bold tracking-wider">DESTINATION</span>
-              <span className="text-2xl sm:text-3xl font-black font-mono tracking-wider text-white">
-                {airport.code}
-              </span>
-              <span className="text-xs text-blue-100 block font-medium flex items-center justify-end gap-1">
-                <span>{countryFlag}</span>
-                <span>{airport.city}</span>
-              </span>
+              <p className="text-3xl font-black tracking-tight sm:text-4xl">
+                {destination.code}
+              </p>
+              <p className="mt-0.5 text-xs text-slate-300">{destination.city}</p>
             </div>
           </div>
         </div>
 
-        {/* 2. PERFORATED NOTCH DIVIDER (SEAMLESS WITH PAGE BACKGROUND #FAFAF9) */}
-        <div className="relative flex items-center justify-between bg-white py-0.5">
-          <div className="w-5 h-7 bg-[#FAFAF9] rounded-r-full border border-l-0 border-slate-200 -ml-[1px] z-10 shrink-0" />
-          <div className="flex-1 border-t-2 border-dashed border-slate-200 mx-2" />
-          <div className="w-5 h-7 bg-[#FAFAF9] rounded-l-full border border-r-0 border-slate-200 -mr-[1px] z-10 shrink-0" />
+        {/* Perforation Divider */}
+        <div className="relative flex items-center justify-between bg-white px-4 py-1">
+          <div className="-ml-7 h-6 w-6 rounded-full border border-slate-200 bg-slate-50" />
+          <div className="mx-2 flex-1 border-t-2 border-dashed border-slate-200" />
+          <div className="-mr-7 h-6 w-6 rounded-full border border-slate-200 bg-slate-50" />
         </div>
 
-        {/* 3. 2x2 METRIC GRID */}
-        <div className="p-5 sm:p-6 bg-white">
-          <div className="grid grid-cols-2 gap-3 sm:gap-4">
+        {/* Boarding Pass Body */}
+        <div className="space-y-5 px-6 pb-7 pt-3 sm:px-8">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <MetricTile label="Bahasa Tujuan" value={languageName} />
+            <MetricTile label="Level Awal" value={assignedLevel} />
             <MetricTile
-              label="JALUR KARIER"
-              value={selectedCareerPath?.label || 'Backend Engineer'}
-              surface="light"
-              variant="default"
+              label="Komitmen Harian"
+              value={`${resolvedDailyGoal} Menit/Hari`}
             />
             <MetricTile
-              label="CORE STACK"
-              value={formatTechStack(selectedStackSlug, { withEmoji: true })}
-              surface="light"
+              label="Penempatan"
+              value={placementValue}
+              sublabel={placementSublabel}
+            />
+          </div>
+
+          <div className="flex items-center gap-2.5 rounded-2xl border border-emerald-200/80 bg-emerald-50/70 px-4 py-3 text-sm text-emerald-900">
+            <CheckCircle2 className="h-5 w-5 shrink-0 text-emerald-600" />
+            <span>
+              Rute belajar dan target harianmu sudah aktif. Siap mulai sesi pertamamu!
+            </span>
+          </div>
+
+          {onContinue && (
+            <Button3D
+              type="button"
+              onClick={onContinue}
               variant="blue"
-            />
-            <MetricTile
-              label="STARTING LEVEL"
-              value={formatExperienceLevelText(selectedLevel)}
-              surface="light"
-              variant="default"
-            />
-            <MetricTile
-              label="TARGET WAKTU"
-              value={formatTimeline(selectedTimeline)}
-              surface="light"
-              variant="blue"
-              subtitle={formatLanguageLevel(selectedLanguageLevel)}
-            />
-          </div>
+              className="w-full py-3.5 text-base font-semibold"
+            >
+              Mulai Belajar di Kurikulum
+            </Button3D>
+          )}
         </div>
-
-        {/* 4. TICKET STUB FOOTER */}
-        <div className="px-5 sm:px-6 py-4 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-4">
-          <div className="space-y-1">
-            <div className="font-mono text-[9px] tracking-[0.22em] text-slate-400 font-bold select-none">
-              ||||| | |||| ||| |||||| | |||||
-            </div>
-            <div className="flex items-center gap-1.5 text-[11px] font-bold text-blue-600">
-              <CheckCircle weight="fill" className="w-3.5 h-3.5 text-blue-600 shrink-0" />
-              <span>PASPOR RESMI TERVERIFIKASI</span>
-            </div>
-          </div>
-
-          <div className="shrink-0">
-            <BadgePill variant="xp" icon={<Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />}>
-              +50 XP
-            </BadgePill>
-          </div>
-        </div>
-
-      </div>
-
-      {/* ── DUOLINGO-STYLE TACTILE 3D BUTTON & SECONDARY BACK ── */}
-      <div className="w-full mt-6 relative z-10 flex flex-col items-center gap-2.5">
-        {onContinue && (
-          <Button3D
-            variant="blue"
-            size="lg"
-            fullWidth
-            onClick={onContinue}
-            icon={<ArrowRight weight="bold" className="w-5 h-5 ml-1" />}
-          >
-            Masuk ke Dashboard Sekarang
-          </Button3D>
-        )}
-
-        {onBack && (
-          <button
-            type="button"
-            onClick={onBack}
-            className="text-xs text-slate-400 hover:text-blue-600 transition-colors cursor-pointer flex items-center gap-1.5 font-bold py-1 select-none"
-          >
-            <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
-            <span>← Ubah Preferensi &amp; Pilihan Jalur</span>
-          </button>
-        )}
-
-        <span className="text-[11px] text-slate-400 font-medium mt-1">
-          Kodi siap mendampingimu menggapai offer kerja impian 🎌
-        </span>
       </div>
     </div>
   )
