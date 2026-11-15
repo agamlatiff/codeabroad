@@ -29,7 +29,7 @@ type OnboardingRequest struct {
 	DailyGoalMinutes     int               `json:"daily_goal_minutes" binding:"required,oneof=5 15 30 45"`
 	InitialPlacementType string            `json:"initial_placement_type" binding:"required,oneof=zero_beginner placement_test manual_select"`
 	ManualLevelID        *string           `json:"manual_level_id,omitempty"`
-	PlacementAnswers     []PlacementAnswer `json:"placement_answers,omitempty"`
+	PlacementAnswers     []PlacementAnswer `json:"placement_answers,omitempty" binding:"omitempty,max=50,dive"`
 }
 
 // PlacementTestQuestionResponse delivers diagnostic questions for Step 3 placement test

@@ -78,6 +78,9 @@ func (u *usecase) GetPlacementQuestions(ctx context.Context, languageID string) 
 	if err != nil {
 		return nil, err
 	}
+	if lang == nil {
+		return nil, language.ErrLanguageNotFound
+	}
 
 	questions, err := u.exerciseRepo.GetPlacementExercises(ctx, languageID, 15)
 	if err != nil {
@@ -125,6 +128,9 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 	lang, err := u.langRepo.GetLanguageByID(ctx, req.LanguageID)
 	if err != nil {
 		return nil, err
+	}
+	if lang == nil {
+		return nil, language.ErrLanguageNotFound
 	}
 	if !lang.IsActive {
 		return nil, language.ErrLanguageNotActive

@@ -61,11 +61,14 @@ export const useOnboardingWizard = () => {
 
   const loadingMasterData = loadingCountries || loadingPaths
 
-  // 3. Fallback Initial Preselection on Cold Mount
+  // 3. Fallback Initial Preselection on Cold Mount (and heal stale sessionStorage IDs)
   useEffect(() => {
-    if (countries.length > 0 && !form.countryId) {
-      const activeCountry = countries.find((c) => c.is_active)
-      if (activeCountry) updateForm({ countryId: activeCountry.id })
+    if (countries.length > 0) {
+      const hasValidActiveCountry = countries.some((c) => c.id === form.countryId && c.is_active)
+      if (!hasValidActiveCountry) {
+        const activeCountry = countries.find((c) => c.is_active)
+        if (activeCountry) updateForm({ countryId: activeCountry.id })
+      }
     }
     if (careerPaths.length > 0 && !form.careerPathId) {
       const defaultPath = careerPaths.find((p) => p.slug === 'backend') || careerPaths[0]
