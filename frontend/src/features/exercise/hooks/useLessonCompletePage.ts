@@ -20,7 +20,8 @@ export const useLessonCompletePage = () => {
   const user = useAuthStore((state) => state.user)
   const fanfarePlayedRef = useRef(false)
 
-  const state = (location.state ?? null) as LessonCompletionNavigationState | null
+  const rawState = (location.state ?? null) as LessonCompletionNavigationState | null
+  const state = rawState && (!id || rawState.lesson?.id === id) ? rawState : null
 
   const fallbackLessonQuery = useQuery({
     queryKey: [...LESSON_DETAIL_QUERY_KEY, user?.id ?? 'anonymous', id],
@@ -31,12 +32,12 @@ export const useLessonCompletePage = () => {
 
   useEffect(() => {
     if (state !== null) return
-    if (fallbackLessonQuery.isError) {
+    if (!id || fallbackLessonQuery.isError) {
       navigate('/curriculum', { replace: true })
       return
     }
     if (fallbackLessonQuery.data && !fallbackLessonQuery.data.is_completed) {
-      navigate(id ? `/learn/${id}` : '/curriculum', { replace: true })
+      navigate(`/learn/${id}`, { replace: true })
     }
   }, [fallbackLessonQuery.data, fallbackLessonQuery.isError, id, navigate, state])
 

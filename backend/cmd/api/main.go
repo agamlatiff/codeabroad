@@ -103,23 +103,23 @@ func main() {
 	exerciseSubmitLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,
 		"exercise:submit",
-		30,
+		exercise.DefaultExerciseSubmitLimit,
 		time.Minute,
-		"too many exercise submissions, please wait a moment",
+		exercise.DefaultExerciseSubmitMessage,
 	)
 	srsReviewLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,
 		"srs:review",
-		30,
+		exercise.DefaultSRSReviewLimit,
 		time.Minute,
-		"too many SRS review submissions, please wait a moment",
+		exercise.DefaultSRSReviewMessage,
 	)
 	examSubmitLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,
 		"exam:submit",
-		10,
+		exercise.DefaultExamSubmitLimit,
 		time.Minute,
-		"too many readiness exam submissions, please wait a moment",
+		exercise.DefaultExamSubmitMessage,
 	)
 	exerciseHandler := exercise.NewHandlerWithRateLimiters(
 		exerciseUsecase,

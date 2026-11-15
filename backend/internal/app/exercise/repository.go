@@ -317,7 +317,7 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 
 	query := `
 		WITH active_enrollment AS (
-			SELECT language_id
+			SELECT language_id, current_level_id
 			FROM user_language_enrollments
 			WHERE NULLIF($1, '')::uuid IS NOT NULL
 			  AND user_id = NULLIF($1, '')::uuid
@@ -367,7 +367,9 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 			OR COALESCE(e.content->>'audio_text', '') <> ''
 			OR COALESCE(e.content->>'romaji', '') <> ''
 		  )
-		ORDER BY pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
+		ORDER BY
+			CASE WHEN pl.id IN (SELECT current_level_id FROM active_enrollment WHERE current_level_id IS NOT NULL) THEN 0 ELSE 1 END ASC,
+			pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
 		LIMIT $2
 	`
 
@@ -597,9 +599,6 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 		  AND ule.is_active = true
 		WHERE r.user_id = NULLIF($1, '')::uuid
 		  AND r.next_review_at <= $2
-		  AND e.deleted_at IS NULL
-		  AND l.deleted_at IS NULL
-		  AND u.deleted_at IS NULL
 	`
 	var count int
 	err := r.db.Pool.QueryRow(ctx, query, userID, now).Scan(&count)
@@ -617,7 +616,6 @@ func (r *PostgresRepository) CountMasteredReviews(ctx context.Context, userID st
 		JOIN exercises e ON e.id = r.exercise_id
 		WHERE r.user_id = NULLIF($1, '')::uuid
 		  AND r.repetition_count >= 3
-		  AND e.deleted_at IS NULL
 	`
 	var count int
 	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(&count)

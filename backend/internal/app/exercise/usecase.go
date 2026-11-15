@@ -306,19 +306,45 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 		return nil, err
 	}
 
+	badgeXP := 0
 	if quality >= 3 && updatedReview != nil && updatedReview.RepetitionCount >= 3 && u.badgeAwarder != nil {
 		if counter, ok := u.srsRepo.(SRSMasteryCounter); ok {
 			if masteredCount, countErr := counter.CountMasteredReviews(ctx, userID); countErr != nil {
 				log.Printf("exercise: failed to count mastered srs reviews for user %s: %v", userID, countErr)
 			} else if masteredCount >= 25 {
-				if _, awardErr := u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", 0); awardErr != nil {
+				ub, awardErr := u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", 0)
+				if awardErr != nil {
 					log.Printf("exercise: failed to award srs_veteran badge to user %s: %v", userID, awardErr)
+				} else if ub != nil && ub.Badge != nil {
+					badgeXP += ub.Badge.XPReward
 				}
 			}
 		}
 	}
 
+	if updatedReview != nil {
+		u.logActivitySafely(ctx, userID, "srs_review_completed", badgeXP, map[string]any{
+			"exercise_id":      req.ExerciseID,
+			"quality":          quality,
+			"repetition_count": updatedReview.RepetitionCount,
+		})
+	}
+
 	return updatedReview, nil
+}
+
+func (u *usecase) logActivitySafely(ctx context.Context, userID, activityType string, xpEarned int, metadata map[string]any) {
+	if u.userRepo == nil {
+		return
+	}
+	if err := u.userRepo.LogActivity(ctx, &user.UserActivityLog{
+		UserID:       userID,
+		ActivityType: activityType,
+		XPEarned:     xpEarned,
+		Metadata:     metadata,
+	}); err != nil {
+		log.Printf("exercise: failed to log %s activity for user %s: %v", activityType, userID, err)
+	}
 }
 
 func (u *usecase) applySRSReview(
@@ -807,10 +833,21 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 
 	var cert *ExamCertificate
 	var awardedBadges []gamification.BadgeDefinition
+	badgeXP := 0
 	if graded.isPassed {
 		cert = u.buildExamCertificate(ctx, userID, attempt.ID, lvl, graded.totalScore, graded.maxScore, graded.scorePercent, now)
 		awardedBadges = u.awardExamBadges(ctx, userID, lvl, graded.scorePercent)
+		for _, b := range awardedBadges {
+			badgeXP += b.XPReward
+		}
 	}
+
+	u.logActivitySafely(ctx, userID, "readiness_exam_completed", badgeXP, map[string]any{
+		"level_id":      req.LevelID,
+		"attempt_id":    attempt.ID,
+		"score_percent": graded.scorePercent,
+		"is_passed":     graded.isPassed,
+	})
 
 	return &ReadinessExamResponse{
 		Attempt:       *attempt,

@@ -38,12 +38,18 @@ func NewHandler(
 }
 
 const (
-	defaultExerciseSubmitLimit   = 30
-	defaultExerciseSubmitMessage = "too many exercise submissions, please wait a moment"
-	defaultSRSReviewLimit        = 30
-	defaultSRSReviewMessage      = "too many SRS review submissions, please wait a moment"
-	defaultExamSubmitLimit       = 10
-	defaultExamSubmitMessage     = "too many readiness exam submissions, please wait a moment"
+	// DefaultExerciseSubmitLimit is the default per-minute limit for single exercise answer submissions.
+	DefaultExerciseSubmitLimit = 30
+	// DefaultExerciseSubmitMessage is the rate-limit error message returned for exercise submissions.
+	DefaultExerciseSubmitMessage = "too many exercise submissions, please wait a moment"
+	// DefaultSRSReviewLimit is the default per-minute limit for spaced repetition reviews.
+	DefaultSRSReviewLimit = 30
+	// DefaultSRSReviewMessage is the rate-limit error message returned for SRS reviews.
+	DefaultSRSReviewMessage = "too many SRS review submissions, please wait a moment"
+	// DefaultExamSubmitLimit is the default per-minute limit for readiness exam submissions.
+	DefaultExamSubmitLimit = 10
+	// DefaultExamSubmitMessage is the rate-limit error message returned for readiness exam submissions.
+	DefaultExamSubmitMessage = "too many readiness exam submissions, please wait a moment"
 )
 
 // NewHandlerWithRateLimiters creates a Handler with custom rate limiter middlewares for mutating routes
@@ -61,18 +67,18 @@ func NewHandlerWithRateLimiters(
 		examUsecase:     examUsecase,
 		submitRateLimiter: resolveRateLimiter(
 			submitRateLimiter,
-			defaultExerciseSubmitLimit,
-			defaultExerciseSubmitMessage,
+			DefaultExerciseSubmitLimit,
+			DefaultExerciseSubmitMessage,
 		),
 		reviewRateLimiter: resolveRateLimiter(
 			reviewRateLimiter,
-			defaultSRSReviewLimit,
-			defaultSRSReviewMessage,
+			DefaultSRSReviewLimit,
+			DefaultSRSReviewMessage,
 		),
 		examRateLimiter: resolveRateLimiter(
 			examRateLimiter,
-			defaultExamSubmitLimit,
-			defaultExamSubmitMessage,
+			DefaultExamSubmitLimit,
+			DefaultExamSubmitMessage,
 		),
 	}
 }
@@ -317,18 +323,18 @@ func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	submitRateLimiter := resolveRateLimiter(
 		h.submitRateLimiter,
-		defaultExerciseSubmitLimit,
-		defaultExerciseSubmitMessage,
+		DefaultExerciseSubmitLimit,
+		DefaultExerciseSubmitMessage,
 	)
 	reviewRateLimiter := resolveRateLimiter(
 		h.reviewRateLimiter,
-		defaultSRSReviewLimit,
-		defaultSRSReviewMessage,
+		DefaultSRSReviewLimit,
+		DefaultSRSReviewMessage,
 	)
 	examRateLimiter := resolveRateLimiter(
 		h.examRateLimiter,
-		defaultExamSubmitLimit,
-		defaultExamSubmitMessage,
+		DefaultExamSubmitLimit,
+		DefaultExamSubmitMessage,
 	)
 
 	exercises := rg.Group("/exercises")

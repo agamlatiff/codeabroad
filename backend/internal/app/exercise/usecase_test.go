@@ -1984,3 +1984,105 @@ func TestSubmitExam_RejectsWhitespaceAndOversizedAnswers(t *testing.T) {
 	}
 }
 
+func TestProcessReviewAndSubmitExam_LogsUserActivities(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	sRepo := &spySRSRepository{
+		MockSRSRepository: exercise.NewMockSRSRepository(),
+		enableTx:          true,
+		masteredCount:     25,
+	}
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		UserID:          "user-1",
+		ExerciseID:      "ex-1",
+		RepetitionCount: 2,
+		IntervalDays:    6,
+		EaseFactor:      2.5,
+	}
+
+	lvlID := "lvl-n5"
+	eRepo.ReadinessExamExercises[lvlID] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+	}
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: lvlID, LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	langRepo.Levels[lvlID] = lvlN5
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+
+	userRepo := user.NewMockRepository()
+	badgeAwarder := &stubBadgeAwarder{}
+	uc := exercise.NewUsecaseFull(
+		eRepo,
+		sRepo,
+		exercise.NewMockReadinessExamRepository(),
+		langRepo,
+		userRepo,
+		&stubLessonAccessChecker{unlocked: true},
+		nil,
+	).WithBadgeAwarder(badgeAwarder)
+
+	q := 4
+	if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-1",
+		Quality:    &q,
+	}); err != nil {
+		t.Fatalf("expected ProcessReview to succeed, got %v", err)
+	}
+
+	if _, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: lvlID,
+		Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: "A"}},
+	}); err != nil {
+		t.Fatalf("expected SubmitExam to succeed, got %v", err)
+	}
+
+	if len(userRepo.ActivityLogs) != 2 {
+		t.Fatalf("expected 2 user activity logs recorded, got %d (%+v)", len(userRepo.ActivityLogs), userRepo.ActivityLogs)
+	}
+	if userRepo.ActivityLogs[0].ActivityType != "srs_review_completed" || userRepo.ActivityLogs[0].XPEarned != 150 {
+		t.Fatalf("unexpected SRS activity log: %+v", userRepo.ActivityLogs[0])
+	}
+	if userRepo.ActivityLogs[1].ActivityType != "readiness_exam_completed" || userRepo.ActivityLogs[1].XPEarned != 150 {
+		t.Fatalf("unexpected readiness exam activity log: %+v", userRepo.ActivityLogs[1])
+	}
+
+	// Best-effort telemetry: LogActivity errors must not fail ProcessReview or SubmitExam
+	userRepo.LogActivityError = errors.New("activity insert failed")
+	if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-1",
+		Quality:    &q,
+	}); err != nil {
+		t.Fatalf("expected ProcessReview to tolerate LogActivityError, got %v", err)
+	}
+
+	uc2 := exercise.NewUsecaseFull(
+		eRepo,
+		sRepo,
+		exercise.NewMockReadinessExamRepository(),
+		langRepo,
+		userRepo,
+		&stubLessonAccessChecker{unlocked: true},
+		nil,
+	)
+	if _, err := uc2.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: lvlID,
+		Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: "A"}},
+	}); err != nil {
+		t.Fatalf("expected SubmitExam to tolerate LogActivityError, got %v", err)
+	}
+}
+
