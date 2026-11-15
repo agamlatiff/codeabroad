@@ -93,3 +93,47 @@ func TestCompleteOnboarding_PlacementTest_PassToN4(t *testing.T) {
 	}
 }
 
+func TestCompleteOnboarding_PlacementTest_DeduplicatesRepeatedAnswersAndNormalizesPunctuation(t *testing.T) {
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1"},
+		UserProfile: user.UserProfile{IsOnboarded: false},
+	}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lRepo.Levels["lvl-n4"] = &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+
+	cRepo := curriculum.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	eRepo.PlacementExercises["lang-ja"] = []exercise.Exercise{
+		{ID: "q1", CorrectAnswer: "Tokyo", AcceptableAnswers: []string{"Tōkyō"}},
+		{ID: "q2", CorrectAnswer: "ありがとうございます。"},
+	}
+	gRepo := gamification.NewMockRepository()
+
+	uc := onboarding.NewUsecase(uRepo, lRepo, cRepo, eRepo, gRepo)
+
+	// Repeat q1 twice to ensure duplicate submissions do not inflate score to 100%
+	res, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     30,
+		InitialPlacementType: "placement_test",
+		PlacementAnswers: []onboarding.PlacementAnswer{
+			{ExerciseID: "q1", UserAnswer: "  Tōkyō! "},
+			{ExerciseID: "q1", UserAnswer: "Tokyo"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if res.PlacementScore == nil || *res.PlacementScore != 50 {
+		t.Fatalf("expected deduplicated score 50%%, got %v", res.PlacementScore)
+	}
+	if res.AssignedLevel.Code != "N5" {
+		t.Errorf("expected assigned level N5 when score is 50%%, got %s", res.AssignedLevel.Code)
+	}
+}
+

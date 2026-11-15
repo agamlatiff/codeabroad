@@ -16,6 +16,7 @@ import {
   SRS_DUE_QUERY_KEY,
   exerciseService,
 } from '@/features/exercise/services/exerciseService'
+import { DAILY_VOCABULARIES_QUERY_KEY } from '@/features/exercise/services/vocabularyService'
 import {
   computeElapsedSeconds,
   resolveExerciseSpokenText,
@@ -270,6 +271,7 @@ export const useLearnWorkspace = () => {
         queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
       ])
 
       triggerHaptic('success')

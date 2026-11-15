@@ -12,6 +12,7 @@ import {
   EXAM_RESULT_QUERY_KEY,
   exerciseService,
 } from '@/features/exercise/services/exerciseService'
+import { DAILY_VOCABULARIES_QUERY_KEY } from '@/features/exercise/services/vocabularyService'
 import type {
   ParsedExerciseContent,
   ReadinessExamResponse,
@@ -333,7 +334,11 @@ export const useReadinessExamPage = () => {
         queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
       ]
-      if (!res.attempt.is_passed) {
+      if (res.attempt.is_passed) {
+        invalidations.push(
+          queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY })
+        )
+      } else {
         invalidations.push(
           queryClient.invalidateQueries({ queryKey: EXAM_QUESTIONS_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: EXAM_RESULT_QUERY_KEY })

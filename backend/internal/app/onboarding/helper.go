@@ -1,18 +1,20 @@
 package onboarding
 
 import (
-	"strings"
-
 	"codeabroad/backend/internal/app/exercise"
 	"codeabroad/backend/internal/app/language"
 )
 
 // Helper encapsulates business logic for grading placement questions and resolving initial levels
-type Helper struct{}
+type Helper struct {
+	exerciseHelper *exercise.Helper
+}
 
 // NewHelper creates a new onboarding Helper instance
 func NewHelper() *Helper {
-	return &Helper{}
+	return &Helper{
+		exerciseHelper: exercise.NewHelper(),
+	}
 }
 
 // ValidatePaceTarget ensures the selected daily goal is one of the supported tiers (5, 15, 30, 45 minutes)
@@ -31,28 +33,31 @@ func (h *Helper) GradePlacementAnswers(questions []exercise.Exercise, answers []
 		return 0
 	}
 
-	questionsMap := make(map[string]exercise.Exercise)
+	var evalHelper *exercise.Helper
+	if h != nil {
+		evalHelper = h.exerciseHelper
+	}
+	if evalHelper == nil {
+		evalHelper = exercise.NewHelper()
+	}
+
+	questionsMap := make(map[string]exercise.Exercise, len(questions))
 	for _, q := range questions {
 		questionsMap[q.ID] = q
 	}
 
+	seen := make(map[string]bool, len(answers))
 	correctCount := 0
 	for _, ans := range answers {
+		if seen[ans.ExerciseID] {
+			continue
+		}
 		q, exists := questionsMap[ans.ExerciseID]
 		if !exists {
 			continue
 		}
-		trimmedUser := strings.TrimSpace(ans.UserAnswer)
-		isCorrect := strings.EqualFold(strings.TrimSpace(q.CorrectAnswer), trimmedUser)
-		if !isCorrect {
-			for _, acc := range q.AcceptableAnswers {
-				if strings.EqualFold(strings.TrimSpace(acc), trimmedUser) {
-					isCorrect = true
-					break
-				}
-			}
-		}
-		if isCorrect {
+		seen[ans.ExerciseID] = true
+		if evalHelper.EvaluateAnswer(q.CorrectAnswer, q.AcceptableAnswers, ans.UserAnswer) {
 			correctCount++
 		}
 	}

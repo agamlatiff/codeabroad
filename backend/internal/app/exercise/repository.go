@@ -129,9 +129,12 @@ func syncObjectOptionAcceptableAnswers(ex *Exercise) {
 			continue
 		}
 		if strings.EqualFold(correct, id) {
-			ex.AcceptableAnswers = appendUniqueFold(ex.AcceptableAnswers, text, correct)
+			ex.AcceptableAnswers = appendUniqueFold(ex.AcceptableAnswers, id, text)
+			ex.CorrectAnswer = text
+			return
 		} else if strings.EqualFold(correct, text) {
 			ex.AcceptableAnswers = appendUniqueFold(ex.AcceptableAnswers, id, correct)
+			return
 		}
 	}
 }
@@ -592,7 +595,11 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 		JOIN user_language_enrollments ule ON ule.language_id = pl.language_id
 		  AND ule.user_id = r.user_id
 		  AND ule.is_active = true
-		WHERE r.user_id = $1 AND r.next_review_at <= $2
+		WHERE r.user_id = NULLIF($1, '')::uuid
+		  AND r.next_review_at <= $2
+		  AND e.deleted_at IS NULL
+		  AND l.deleted_at IS NULL
+		  AND u.deleted_at IS NULL
 	`
 	var count int
 	err := r.db.Pool.QueryRow(ctx, query, userID, now).Scan(&count)
@@ -604,12 +611,16 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 
 // CountMasteredReviews counts how many SRS cards a user has mastered (repetition_count >= 3)
 func (r *PostgresRepository) CountMasteredReviews(ctx context.Context, userID string) (int, error) {
+	query := `
+		SELECT COUNT(*)
+		FROM user_srs_reviews r
+		JOIN exercises e ON e.id = r.exercise_id
+		WHERE r.user_id = NULLIF($1, '')::uuid
+		  AND r.repetition_count >= 3
+		  AND e.deleted_at IS NULL
+	`
 	var count int
-	err := r.db.Pool.QueryRow(
-		ctx,
-		`SELECT COUNT(*) FROM user_srs_reviews WHERE user_id = $1 AND repetition_count >= 3`,
-		userID,
-	).Scan(&count)
+	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(&count)
 	if err != nil {
 		return 0, fmt.Errorf("failed to count mastered srs reviews: %w", err)
 	}

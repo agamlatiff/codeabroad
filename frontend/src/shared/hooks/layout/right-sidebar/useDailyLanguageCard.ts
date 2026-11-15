@@ -1,11 +1,14 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { vocabularyService } from "@/features/exercise/services/vocabularyService"
+import {
+  DAILY_VOCABULARIES_QUERY_KEY,
+  vocabularyService,
+} from "@/features/exercise/services/vocabularyService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
 
-export const DAILY_VOCABULARIES_QUERY_KEY = ['daily-vocabularies'] as const
+export { DAILY_VOCABULARIES_QUERY_KEY }
 const COPY_FEEDBACK_DURATION_MS = 2000
 
 export interface LanguageVocabItem {

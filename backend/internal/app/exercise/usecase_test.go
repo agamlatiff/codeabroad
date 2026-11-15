@@ -1885,8 +1885,11 @@ func TestHydrateExerciseJSONFields_SyncsObjectOptionIDAndTextAcceptableAnswers(t
 		nil,
 	)
 
-	if byID.CorrectAnswer != "opt_1" {
-		t.Fatalf("expected CorrectAnswer=opt_1, got %q", byID.CorrectAnswer)
+	if byID.CorrectAnswer != "Insinyur (Bukan dokter)" {
+		t.Fatalf("expected human-readable CorrectAnswer='Insinyur (Bukan dokter)', got %q", byID.CorrectAnswer)
+	}
+	if len(byID.AcceptableAnswers) != 1 || byID.AcceptableAnswers[0] != "opt_1" {
+		t.Fatalf("expected AcceptableAnswers to preserve option id 'opt_1', got %v", byID.AcceptableAnswers)
 	}
 	if !h.EvaluateAnswer(byID.CorrectAnswer, byID.AcceptableAnswers, "opt_1") {
 		t.Fatalf("expected option id 'opt_1' to pass EvaluateAnswer")
