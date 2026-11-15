@@ -262,6 +262,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
+          queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
         ])
         navigate('/curriculum', { replace: true })
       } catch (err: unknown) {

@@ -97,6 +97,9 @@ func (u *usecase) hydrateEnrollment(ctx context.Context, enr *language.UserLangu
 			fallback := sorted[0]
 			copyEnr.CurrentLevel = &fallback
 			copyEnr.CurrentLevelID = &fallback.ID
+			if copyEnr.ID != "" {
+				_ = u.langRepo.UpdateEnrollmentLevel(ctx, copyEnr.ID, fallback.ID)
+			}
 		}
 	}
 	return &copyEnr, nil
@@ -427,14 +430,24 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	awardedBadges, extraBadgeXP := u.evaluateLessonBadges(ctx, userID, payload)
 	finalXP := payload.NewXP + extraBadgeXP
 	finalLevel := u.helper.CalculateLevel(finalXP)
+	finalStreak := payload.NewStreak
+	finalGems := payload.NewGems
 	if len(awardedBadges) > 0 && u.userRepo != nil {
 		if refreshedUser, refErr := u.userRepo.GetByID(ctx, userID); refErr != nil {
 			log.Printf("curriculum: failed to refresh user stats after awarding badges for user %s: %v", userID, refErr)
-		} else if refreshedUser != nil && refreshedUser.XP > finalXP {
-			finalXP = refreshedUser.XP
-			finalLevel = u.helper.CalculateLevel(finalXP)
+		} else if refreshedUser != nil {
+			if refreshedUser.XP > finalXP {
+				finalXP = refreshedUser.XP
+				finalLevel = u.helper.CalculateLevel(finalXP)
+			}
 			if refreshedUser.CurrentLevel > finalLevel {
 				finalLevel = refreshedUser.CurrentLevel
+			}
+			if refreshedUser.Streak > finalStreak {
+				finalStreak = refreshedUser.Streak
+			}
+			if refreshedUser.Gems > finalGems {
+				finalGems = refreshedUser.Gems
 			}
 		}
 	}
@@ -459,8 +472,8 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		Gamification: user.UserGamificationStats{
 			XP:           finalXP,
 			CurrentLevel: finalLevel,
-			Streak:       payload.NewStreak,
-			Gems:         payload.NewGems,
+			Streak:       finalStreak,
+			Gems:         finalGems,
 			LastActiveAt: &lastActive,
 		},
 		UnlockedNextLessonID: nextLessonID,

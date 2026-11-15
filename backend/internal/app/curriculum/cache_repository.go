@@ -24,6 +24,16 @@ redis.call("PEXPIRE", KEYS[1], ARGV[1])
 return v
 `)
 
+var getCurriculumWithVersionScript = redis.NewScript(`
+local ver = redis.call("GET", KEYS[1])
+if not ver then
+	ver = "0"
+end
+local dataKey = "curriculum:{" .. ARGV[1] .. "}:v" .. ver .. ":" .. ARGV[2]
+local data = redis.call("GET", dataKey)
+return {ver, data}
+`)
+
 var setCurriculumIfVersionScript = redis.NewScript(`
 local currentVer = redis.call("GET", KEYS[1])
 if not currentVer then
@@ -65,26 +75,44 @@ func (c *redisCurriculumCacheRepository) GetCurriculumVersion(ctx context.Contex
 }
 
 // GetCurriculumWithVersion retrieves a cached curriculum response along with the user's current invalidation epoch
-// in minimal Redis calls so callers never issue duplicate version lookups or silently fall back on errors.
+// in a single atomic Redis roundtrip using a cluster-safe Lua script to eliminate duplicate version lookups.
 func (c *redisCurriculumCacheRepository) GetCurriculumWithVersion(ctx context.Context, userID string, languageID string) (*CurriculumResponse, string, error) {
-	if c.rdb == nil || c.rdb.Client == nil {
+	if c.rdb == nil || c.rdb.Client == nil || userID == "" || languageID == "" {
 		return nil, "0", nil
 	}
-	ver, err := c.GetCurriculumVersion(ctx, userID)
+
+	res, err := getCurriculumWithVersionScript.Run(
+		ctx,
+		c.rdb.Client,
+		[]string{curriculumVersionKey(userID)},
+		userID,
+		languageID,
+	).Slice()
 	if err != nil {
 		return nil, "", err
 	}
-	key := curriculumCacheKey(userID, ver, languageID)
-	data, err := c.rdb.Client.Get(ctx, key).Bytes()
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, ver, nil
-		}
-		return nil, ver, err
+	if len(res) < 2 {
+		return nil, "0", nil
+	}
+
+	ver, _ := res[0].(string)
+	if ver == "" {
+		ver = "0"
+	}
+
+	rawPayload := res[1]
+	if rawPayload == nil {
+		return nil, ver, nil
+	}
+
+	dataStr, ok := rawPayload.(string)
+	if !ok || dataStr == "" {
+		return nil, ver, nil
 	}
 
 	var curriculum CurriculumResponse
-	if err := json.Unmarshal(data, &curriculum); err != nil {
+	if err := json.Unmarshal([]byte(dataStr), &curriculum); err != nil {
+		key := curriculumCacheKey(userID, ver, languageID)
 		log.Printf("curriculum: corrupt curriculum cache entry %s: %v", key, err)
 		_ = c.rdb.Client.Del(ctx, key).Err()
 		return nil, ver, nil

@@ -55,7 +55,12 @@ export const GrammarPointsModal: FC<GrammarPointsModalProps> = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/55 backdrop-blur-xs animate-fade-in">
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-2xl bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden max-h-[88vh] flex flex-col animate-pop">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="grammar-modal-title"
+        className="relative z-10 w-full max-w-2xl bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden max-h-[88vh] flex flex-col animate-pop"
+      >
         {/* Header */}
         <div className="p-5 border-b border-slate-100 bg-slate-50/80 flex items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -63,7 +68,7 @@ export const GrammarPointsModal: FC<GrammarPointsModalProps> = ({
               <BookOpenText weight="fill" className="w-5 h-5" />
             </div>
             <div className="min-w-0">
-              <h3 className="font-brand font-black text-base text-slate-900 truncate">
+              <h3 id="grammar-modal-title" className="font-brand font-black text-base text-slate-900 truncate">
                 Panduan Grammar {levelCode ? `• ${levelCode}` : ''}
               </h3>
               <p className="text-xs text-slate-500 font-medium truncate">
