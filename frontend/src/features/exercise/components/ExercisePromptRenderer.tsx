@@ -100,7 +100,8 @@ export const ExercisePromptRenderer = ({
         target instanceof HTMLTextAreaElement ||
         target?.isContentEditable === true
       const isInteractiveTarget =
-        target instanceof HTMLButtonElement ||
+        (target instanceof HTMLButtonElement &&
+          target.dataset.allowEnterSubmit !== 'true') ||
         target instanceof HTMLAnchorElement ||
         target instanceof HTMLSelectElement
 
@@ -409,6 +410,8 @@ export const ExercisePromptRenderer = ({
                   key={`${opt.id}-${idx}`}
                   type="button"
                   disabled={isLocked}
+                  aria-pressed={isSelected}
+                  data-allow-enter-submit={isSelected ? 'true' : undefined}
                   onClick={() => onSelectOption(opt.id)}
                   className={`w-full min-h-[56px] px-5 py-3.5 rounded-2xl border-2 text-left flex items-center gap-3.5 transition-all ${
                     isSelected

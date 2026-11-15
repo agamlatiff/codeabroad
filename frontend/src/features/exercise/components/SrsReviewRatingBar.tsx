@@ -48,6 +48,18 @@ export const SrsReviewRatingBar = ({
       ) {
         return
       }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) {
+        return
+      }
+      const target = event.target as HTMLElement | null
+      if (
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        target?.isContentEditable === true
+      ) {
+        return
+      }
       const idx = Number.parseInt(event.key, 10) - 1
       if (idx >= 0 && idx < SRS_RATING_OPTIONS.length) {
         event.preventDefault()

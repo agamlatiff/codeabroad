@@ -1826,5 +1826,51 @@ func TestSubmitAndGetExamResult_PreservesCatalogMaxScoreOnPartialAnswers(t *test
 	}
 }
 
+func TestSanitizeExercises_ClonesContentAndStripsSolutionKeys(t *testing.T) {
+	explanation := "Because は marks the topic."
+	orig := []exercise.Exercise{
+		{
+			ID:                "ex-1",
+			Prompt:            "Test",
+			CorrectAnswer:     "は",
+			AcceptableAnswers: []string{"wa"},
+			DiagnosticRubric:  map[string]any{"を": "Object marker"},
+			Explanation:       &explanation,
+			Content: map[string]any{
+				"display_text":        "わたしは",
+				"correct_answer":      "は",
+				"acceptable_answers":  []string{"wa"},
+				"expected_transcript": "watashi wa",
+				"diagnostic_rubric":   map[string]any{"x": "y"},
+				"explanation":         "secret",
+			},
+		},
+	}
+
+	sanitized := exercise.SanitizeExercises(orig)
+	if len(sanitized) != 1 {
+		t.Fatalf("expected 1 exercise, got %d", len(sanitized))
+	}
+	if sanitized[0].CorrectAnswer != "" || sanitized[0].AcceptableAnswers != nil || sanitized[0].DiagnosticRubric != nil || sanitized[0].Explanation != nil {
+		t.Fatalf("expected top-level solution fields stripped, got %+v", sanitized[0])
+	}
+	for _, key := range []string{"correct_answer", "acceptable_answers", "expected_transcript", "diagnostic_rubric", "explanation"} {
+		if _, exists := sanitized[0].Content[key]; exists {
+			t.Fatalf("expected content key %q to be stripped", key)
+		}
+	}
+	if sanitized[0].Content["display_text"] != "わたしは" {
+		t.Fatalf("expected safe content key display_text preserved, got %v", sanitized[0].Content["display_text"])
+	}
+	// Mutating sanitized Content must not mutate original Content map.
+	sanitized[0].Content["display_text"] = "mutated"
+	if orig[0].Content["display_text"] != "わたしは" {
+		t.Fatalf("expected original Content map untouched by mutation to sanitized copy")
+	}
+	if _, exists := orig[0].Content["correct_answer"]; !exists {
+		t.Fatalf("expected original Content keys preserved")
+	}
+}
+
 
 

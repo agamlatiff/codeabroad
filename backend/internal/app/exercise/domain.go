@@ -19,6 +19,14 @@ var (
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "quality rating must be between 0 and 5", nil)
 )
 
+var strippedContentKeys = map[string]bool{
+	"correct_answer":      true,
+	"acceptable_answers":  true,
+	"expected_transcript": true,
+	"diagnostic_rubric":   true,
+	"explanation":         true,
+}
+
 // SanitizeExercises returns a copy of exercises with answer keys, rubrics, and explanations stripped
 // so clients cannot inspect solutions before submitting answers.
 func SanitizeExercises(exercises []Exercise) []Exercise {
@@ -28,6 +36,15 @@ func SanitizeExercises(exercises []Exercise) []Exercise {
 		ex.AcceptableAnswers = nil
 		ex.DiagnosticRubric = nil
 		ex.Explanation = nil
+		if ex.Content != nil {
+			cloned := make(map[string]any, len(ex.Content))
+			for k, v := range ex.Content {
+				if !strippedContentKeys[k] {
+					cloned[k] = v
+				}
+			}
+			ex.Content = cloned
+		}
 		sanitized[i] = ex
 	}
 	return sanitized

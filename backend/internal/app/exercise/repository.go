@@ -221,7 +221,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 		JOIN units u ON l.unit_id = u.id
 		JOIN proficiency_levels pl ON u.level_id = pl.id
 		WHERE pl.language_id = $1::uuid
-		ORDER BY pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
+		ORDER BY CASE WHEN u.unit_type = 'diagnostic_exam' THEN 0 ELSE 1 END ASC, pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
 		LIMIT $2
 	`
 	rows, err := r.db.Pool.Query(ctx, query, languageID, limit)
@@ -242,6 +242,7 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 		JOIN units u ON l.unit_id = u.id
 		WHERE u.level_id = $1::uuid
 		  AND u.unit_type = 'diagnostic_exam'
+		  AND u.order_index > 0
 		ORDER BY e.skill_pillar ASC, e.order_index ASC, e.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, levelID)
