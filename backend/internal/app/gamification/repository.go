@@ -4,12 +4,23 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
+
+var uuidRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+func validateUserUUID(userID string) error {
+	if !uuidRegex.MatchString(userID) {
+		return apperror.ErrUnauthorized
+	}
+	return nil
+}
 
 // PostgresRepository implements gamification.Repository using PostgreSQL
 type PostgresRepository struct {
@@ -77,6 +88,9 @@ func scanUserBadgeRows(rows pgx.Rows) ([]UserBadge, error) {
 
 // GetStatus retrieves the unified SSOT gamification state for a user
 func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*GamificationStatus, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	status := &GamificationStatus{
 		Inventory:      make(map[string]int),
 		InventoryItems: make([]UserInventoryItem, 0),
@@ -321,6 +335,9 @@ func (r *PostgresRepository) GetUserInventory(ctx context.Context, userID string
 
 // BuyShopItem handles an atomic transaction verifying availability, locking user gems, deducting gems, and incrementing user inventory
 func (r *PostgresRepository) BuyShopItem(ctx context.Context, userID string, itemID string, _ int) (*UserInventoryItem, int, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, 0, err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, 0, fmt.Errorf("failed to begin shop transaction: %w", err)
@@ -546,6 +563,9 @@ func (r *PostgresRepository) GetDailyChestClaims(ctx context.Context, userID str
 // ClaimDailyChest records a milestone chest reward and awards XP/gems atomically using CURRENT_DATE
 // and ON CONFLICT DO NOTHING so duplicate daily claims cleanly return ErrChestAlreadyClaimed.
 func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, _ int) error {
+	if err := validateUserUUID(claim.UserID); err != nil {
+		return err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin daily chest tx: %w", err)
@@ -591,6 +611,9 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 
 // CreateCoachingSubmission records a mentorship or CV review request
 func (r *PostgresRepository) CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error {
+	if err := validateUserUUID(sub.UserID); err != nil {
+		return err
+	}
 	query := `
 		INSERT INTO coaching_submissions (
 			user_id, type, target_role, github_url, resume_url, discord_handle, interview_language, focus_topic, preferred_time, notes, status, created_at, updated_at

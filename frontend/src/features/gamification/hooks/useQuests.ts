@@ -1,7 +1,17 @@
 import { useState, useEffect, useCallback } from 'react'
-import type { Quest } from "@/features/gamification/types/quest"
 
 export type QuestTab = 'all' | 'daily' | 'main' | 'side'
+
+export interface QuestSummaryItem {
+  id: string
+  title: string
+  type: 'main' | 'side' | 'daily' | 'boss'
+  chip_label: string
+  difficulty: string
+  estimated_minutes: number
+  xp_reward: number
+  user_status: 'locked' | 'available' | 'completed'
+}
 
 export const useQuests = () => {
   const [activeTab, setActiveTab] = useState<QuestTab>('all')
@@ -36,9 +46,9 @@ export const useQuests = () => {
   return {
     activeTab,
     setActiveTab,
-    quests: [] as Quest[],
-    allQuests: [] as Quest[],
-    dailyQuests: [] as Quest[],
+    quests: [] as QuestSummaryItem[],
+    allQuests: [] as QuestSummaryItem[],
+    dailyQuests: [] as QuestSummaryItem[],
     completedCount: 0,
     totalCount: 0,
     isLoading: false,
