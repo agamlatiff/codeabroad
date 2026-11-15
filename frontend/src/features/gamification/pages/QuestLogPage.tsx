@@ -239,7 +239,9 @@ export const QuestLogPage = () => {
     }
   })
 
-  // Fetch real SSOT gamification status from backend API
+  const [shopItems, setShopItems] = useState<ShopItem[]>(SHOP_ITEMS)
+
+  // Fetch real SSOT gamification status and shop catalog from backend API
   useEffect(() => {
     let isMounted = true
 
@@ -263,6 +265,37 @@ export const QuestLogPage = () => {
       })
       .catch(() => {
         // Gracefully continue with local state
+      })
+
+    gamificationService
+      .listShopItems()
+      .then((remoteItems) => {
+        if (!isMounted || remoteItems.length === 0) return
+        const fallbackById = new Map(SHOP_ITEMS.map((item) => [item.id, item]))
+        const merged: ShopItem[] = remoteItems.map((remote) => {
+          const fallback = fallbackById.get(remote.id)
+          return {
+            id: remote.id,
+            title: remote.title || fallback?.title || remote.id,
+            subtitle: remote.subtitle || fallback?.subtitle || '',
+            price: remote.price_gems,
+            badge: remote.badge || fallback?.badge || 'ITEM',
+            badgeColor: fallback?.badgeColor || 'bg-blue-100 text-blue-800 border-blue-200',
+            icon: fallback?.icon || Flask,
+            iconBg: fallback?.iconBg || 'bg-blue-50 border-blue-200',
+            iconColor: fallback?.iconColor || 'text-blue-600',
+            category:
+              remote.category === 'booster' || remote.category === 'boost'
+                ? 'booster'
+                : remote.category === 'career'
+                  ? 'career'
+                  : 'protection',
+          }
+        })
+        setShopItems(merged)
+      })
+      .catch(() => {
+        // Keep default SHOP_ITEMS fallback
       })
 
     return () => {
@@ -1498,7 +1531,7 @@ export const QuestLogPage = () => {
 
               {/* Unified Vending Shelf Rack */}
               <div className="bg-white border-2 border-slate-200/90 rounded-3xl divide-y-2 divide-slate-100 shadow-2xs overflow-hidden">
-                {SHOP_ITEMS.map((item) => {
+                {shopItems.map((item) => {
                   const ItemIcon = item.icon
                   const ownedCount = inventory[item.id] || 0
                   const isAffordable = userGems >= item.price

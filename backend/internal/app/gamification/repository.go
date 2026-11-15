@@ -179,6 +179,9 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 
 // GetGamificationStats retrieves lightweight stats for high-concurrency game checks
 func (r *PostgresRepository) GetGamificationStats(ctx context.Context, userID string) (*user.UserGamificationStats, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT xp, current_level, streak, gems, last_active_at
 		FROM user_gamification
@@ -207,6 +210,9 @@ func (r *PostgresRepository) UpdateStats(
 	gems int,
 	lastActiveAt *time.Time,
 ) error {
+	if err := validateUserUUID(userID); err != nil {
+		return err
+	}
 	query := `
 		UPDATE user_gamification
 		SET xp = $2, current_level = $3, streak = $4, gems = $5, last_active_at = $6, updated_at = NOW()
@@ -224,6 +230,9 @@ func (r *PostgresRepository) UpdateStats(
 
 // AddXPAndGems atomically increments currency & XP, computing level progression atomically in SQL
 func (r *PostgresRepository) AddXPAndGems(ctx context.Context, userID string, xp int, _ int, gems int) (*user.UserGamificationStats, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		UPDATE user_gamification
 		SET xp = GREATEST(0, xp + $2),
@@ -312,6 +321,9 @@ func (r *PostgresRepository) GetShopItemByID(ctx context.Context, itemID string)
 
 // GetUserInventory retrieves all inventory items owned by the user
 func (r *PostgresRepository) GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
 		       si.id, si.title, si.subtitle, si.category, si.price_gems, si.badge, si.is_active, si.created_at
@@ -439,6 +451,9 @@ func (r *PostgresRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, 
 
 // GetUserBadges retrieves all achievements awarded to the user
 func (r *PostgresRepository) GetUserBadges(ctx context.Context, userID string) ([]UserBadge, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
 		       bd.id, bd.title, bd.description, bd.category, bd.icon, bd.xp_reward, bd.created_at
@@ -459,6 +474,9 @@ func (r *PostgresRepository) GetUserBadges(ctx context.Context, userID string) (
 // AwardBadge grants an achievement badge to a user idempotently and deposits its bonus XP atomically
 // under a row lock so concurrent callers cannot double-credit XP or overwrite current_level with stale values.
 func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badgeKey string, _ int) (*UserBadge, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin award badge tx: %w", err)
@@ -534,6 +552,9 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 
 // GetDailyChestClaims retrieves milestone chest claims for the specified date
 func (r *PostgresRepository) GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]DailyChestClaim, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, user_id, claim_date::text, tier, gems_awarded, xp_awarded, created_at
 		FROM user_daily_chest_claims
