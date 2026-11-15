@@ -91,6 +91,7 @@ CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamifi
 | `username` | VARCHAR(50) | UNIQUE, NOT NULL | Unique platform username | Active |
 | `bio` | TEXT | NULL | Short bio | Active |
 | `is_onboarded` | BOOLEAN | NOT NULL, DEFAULT FALSE | Onboarding completion flag | Active |
+| `has_seen_roadmap_tour` | BOOLEAN | NOT NULL, DEFAULT FALSE | Whether user has completed the roadmap onboarding tour | Active |
 | `daily_goal_minutes` | INTEGER | NOT NULL, DEFAULT 15, CHECK (`daily_goal_minutes` IN (5, 15, 30, 45)) | Target komitmen belajar harian dari Onboarding | Active |
 | `preferred_roadmap_view` | VARCHAR(20) | NOT NULL, DEFAULT 'map', CHECK (`preferred_roadmap_view` IN ('map', 'syllabus')) | Persisted curriculum view preference across devices | Active |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Profile creation timestamp | Active |
@@ -173,7 +174,7 @@ CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamifi
 | :--- | :--- | :--- | :--- |
 | `id` | UUID | PRIMARY KEY, `gen_random_uuid()` | Activity entry ID |
 | `user_id` | UUID | NOT NULL, FK → `users.id` ON DELETE CASCADE | User ID |
-| `activity_type` | VARCHAR(50) | NOT NULL, CHECK IN (`daily_login`, `lesson_completed`, `srs_review_completed`, `readiness_exam_completed`, `daily_golden_chest_claim`) | Activity type |
+| `activity_type` | VARCHAR(50) | NOT NULL, CHECK IN (`daily_login`, `lesson_completed`, `srs_review_completed`, `readiness_exam_completed`, `daily_golden_chest_claim`, `quest_completed`, `daily_vocab_quest_claim`, `onboarding_completed`) | Activity type |
 | `xp_earned` | INTEGER | NOT NULL, DEFAULT 0 | XP awarded |
 | `metadata` | JSONB | NULL | Dynamic context (dates, details) |
 | `created_at` | TIMESTAMPTZ | DEFAULT CURRENT_TIMESTAMP | Log timestamp |
@@ -377,6 +378,7 @@ Table user_profiles {
   username varchar(50) [unique, not null]
   bio text
   is_onboarded boolean [not null, default: false]
+  has_seen_roadmap_tour boolean [not null, default: false]
   daily_goal_minutes integer [not null, default: 15, note: '5 | 15 | 30 | 45']
   preferred_roadmap_view varchar(20) [not null, default: 'map', note: 'map | syllabus']
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
@@ -460,7 +462,7 @@ Table user_daily_chest_claims {
 Table user_activity_logs {
   id uuid [pk, default: `gen_random_uuid()`]
   user_id uuid [not null]
-  activity_type varchar(50) [not null]
+  activity_type varchar(50) [not null, note: 'daily_login | lesson_completed | srs_review_completed | readiness_exam_completed | daily_golden_chest_claim | quest_completed | daily_vocab_quest_claim | onboarding_completed']
   xp_earned integer [not null, default: 0]
   metadata jsonb
   created_at timestamptz [default: `CURRENT_TIMESTAMP`]
