@@ -332,9 +332,17 @@ func (m *MockRepository) GetDailyChestClaims(ctx context.Context, userID string,
 	return res, nil
 }
 
-func (m *MockRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, newLevel int) error {
+func (m *MockRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, _ int) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.ClaimChestErr != nil {
 		return m.ClaimChestErr
+	}
+	for _, existing := range m.ChestClaims[claim.UserID] {
+		if existing.ClaimDate == claim.ClaimDate && existing.Tier == claim.Tier {
+			return ErrChestAlreadyClaimed
+		}
 	}
 	if claim.ID == "" {
 		claim.ID = fmt.Sprintf("ch_%d", len(m.ChestClaims[claim.UserID])+1)
@@ -350,7 +358,7 @@ func (m *MockRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestC
 	}
 	st.Gems += claim.GemsAwarded
 	st.XP += claim.XPAwarded
-	st.CurrentLevel = newLevel
+	st.CurrentLevel = (st.XP / 100) + 1
 	return nil
 }
 

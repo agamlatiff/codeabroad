@@ -11,11 +11,20 @@ import (
 // Handler handles HTTP requests for Akihabara arcade shop, chests, badges, and mentorship coaching
 type Handler struct {
 	gamificationUsecase Usecase
+	mutationLimiter     gin.HandlerFunc
 }
 
 // NewHandler creates a new Gamification Handler instance
 func NewHandler(gamificationUsecase Usecase) *Handler {
 	return &Handler{gamificationUsecase: gamificationUsecase}
+}
+
+// NewHandlerWithRateLimiter creates a Gamification Handler with rate limiting on mutation endpoints
+func NewHandlerWithRateLimiter(gamificationUsecase Usecase, mutationLimiter gin.HandlerFunc) *Handler {
+	return &Handler{
+		gamificationUsecase: gamificationUsecase,
+		mutationLimiter:     mutationLimiter,
+	}
 }
 
 // GetStatus handles GET /api/v1/gamification/status
@@ -56,7 +65,7 @@ func (h *Handler) BuyShopItem(c *gin.Context) {
 
 	var req ShopBuyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid shop purchase payload", nil))
 		return
 	}
 
@@ -102,7 +111,7 @@ func (h *Handler) ClaimDailyChest(c *gin.Context) {
 
 	var req ClaimChestRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid chest claim payload", nil))
 		return
 	}
 
@@ -128,7 +137,7 @@ func (h *Handler) SubmitCoaching(c *gin.Context) {
 
 	var req CoachingSubmissionRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid coaching submission payload", nil))
 		return
 	}
 
@@ -146,17 +155,22 @@ func (h *Handler) SubmitCoaching(c *gin.Context) {
 
 // RegisterRoutes registers gamification endpoints under the protected group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
-	gamification := rg.Group("/gamification")
+	group := rg.Group("/gamification")
 	if authMiddleware != nil {
-		gamification.Use(authMiddleware)
+		group.Use(authMiddleware)
 	}
-	{
-		gamification.GET("/status", h.GetStatus)
-		gamification.GET("/shop", h.ListShopItems)
-		gamification.POST("/shop/buy", h.BuyShopItem)
-		gamification.GET("/badges", h.ListBadges)
-		gamification.POST("/chests/claim", h.ClaimDailyChest)
-		gamification.POST("/coaching", h.SubmitCoaching)
+
+	group.GET("/status", h.GetStatus)
+	group.GET("/shop", h.ListShopItems)
+	group.GET("/badges", h.ListBadges)
+
+	if h.mutationLimiter != nil {
+		group.POST("/shop/buy", h.mutationLimiter, h.BuyShopItem)
+		group.POST("/chests/claim", h.mutationLimiter, h.ClaimDailyChest)
+		group.POST("/coaching", h.mutationLimiter, h.SubmitCoaching)
+	} else {
+		group.POST("/shop/buy", h.BuyShopItem)
+		group.POST("/chests/claim", h.ClaimDailyChest)
+		group.POST("/coaching", h.SubmitCoaching)
 	}
 }
-

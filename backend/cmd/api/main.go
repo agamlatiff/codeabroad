@@ -150,7 +150,14 @@ func main() {
 		srsReviewLimiter,
 		examSubmitLimiter,
 	)
-	gamificationHandler := gamification.NewHandler(gamificationUsecase)
+	gamificationMutationLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"gamification:mutate",
+		gamification.DefaultGamificationMutationLimit,
+		time.Minute,
+		gamification.DefaultGamificationMutationMessage,
+	)
+	gamificationHandler := gamification.NewHandlerWithRateLimiter(gamificationUsecase, gamificationMutationLimiter)
 	leaderboardHandler := leaderboard.NewHandler(leaderboardUsecase)
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
 	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)

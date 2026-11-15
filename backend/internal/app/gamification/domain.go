@@ -10,11 +10,17 @@ import (
 
 // Specific Gamification Domain Errors
 var (
-	ErrBadgeNotFound       = apperror.NewNotFoundError("BADGE_NOT_FOUND", "badge definition not found")
-	ErrShopItemNotFound    = apperror.NewNotFoundError("SHOP_ITEM_NOT_FOUND", "shop item not found")
-	ErrInsufficientGems    = apperror.NewBadRequestError("INSUFFICIENT_GEMS", "not enough gems to complete transaction", nil)
-	ErrChestAlreadyClaimed = apperror.NewConflictError("CHEST_ALREADY_CLAIMED", "chest tier already claimed today")
-	ErrItemUnavailable     = apperror.NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
+	ErrBadgeNotFound          = apperror.NewNotFoundError("BADGE_NOT_FOUND", "badge definition not found")
+	ErrShopItemNotFound       = apperror.NewNotFoundError("SHOP_ITEM_NOT_FOUND", "shop item not found")
+	ErrInsufficientGems       = apperror.NewBadRequestError("INSUFFICIENT_GEMS", "not enough gems to complete transaction", nil)
+	ErrChestAlreadyClaimed    = apperror.NewConflictError("CHEST_ALREADY_CLAIMED", "chest tier already claimed today")
+	ErrItemUnavailable        = apperror.NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
+	ErrInvalidCoachingPayload = apperror.NewBadRequestError("INVALID_COACHING_PAYLOAD", "coaching submission fields are invalid", nil)
+)
+
+const (
+	DefaultGamificationMutationLimit   = 30
+	DefaultGamificationMutationMessage = "terlalu banyak permintaan, silakan tunggu sebentar"
 )
 
 // UserGamification represents high-concurrency game loop progression (user_gamification table)
@@ -126,20 +132,20 @@ type ClaimChestRequest struct {
 
 // ShopBuyRequest defines the payload to purchase an Akihabara arcade item
 type ShopBuyRequest struct {
-	ItemID string `json:"item_id" binding:"required"`
+	ItemID string `json:"item_id" binding:"required,max=100"`
 }
 
 // CoachingSubmissionRequest defines the payload for mentorship or review requests
 type CoachingSubmissionRequest struct {
 	Type              string `json:"type" binding:"required,oneof=cv-review mock-interview"`
-	TargetRole        string `json:"target_role"`
-	GitHubURL         string `json:"github_url"`
-	ResumeURL         string `json:"resume_url"`
-	DiscordHandle     string `json:"discord_handle"`
-	InterviewLanguage string `json:"interview_language"`
-	FocusTopic        string `json:"focus_topic"`
-	PreferredTime     string `json:"preferred_time"`
-	Notes             string `json:"notes"`
+	TargetRole        string `json:"target_role" binding:"max=120"`
+	GitHubURL         string `json:"github_url" binding:"max=500"`
+	ResumeURL         string `json:"resume_url" binding:"max=500"`
+	DiscordHandle     string `json:"discord_handle" binding:"max=100"`
+	InterviewLanguage string `json:"interview_language" binding:"max=50"`
+	FocusTopic        string `json:"focus_topic" binding:"max=120"`
+	PreferredTime     string `json:"preferred_time" binding:"max=120"`
+	Notes             string `json:"notes" binding:"max=2000"`
 }
 
 // Repository specifies persistence operations for gamification elements

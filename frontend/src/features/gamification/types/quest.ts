@@ -65,33 +65,15 @@ export interface Quest {
   story_context?: string
   nihongo_notes?: NihongoNote
   acceptance_criteria?: AcceptanceCriterion[]
-  starter_code?: StarterCode
-  test_suite?: TestSuite
-  solution_code?: string
   user_status: 'locked' | 'available' | 'completed'
   user_tests_passed: number
   user_total_tests: number
-  user_code_submission?: string
   created_at: string
   updated_at: string
 }
 
-export interface RunTestsRequest {
-  code: string
-  filename?: string
-}
-
-export interface RunTestsResponse {
-  success: boolean
-  tests_passed: number
-  total_tests: number
-  output: string
-  duration_ms: number
-  criteria_results: AcceptanceCriterion[]
-}
-
 export interface SubmitQuestRequest {
-  code: string
+  answer: string
 }
 
 export interface SubmitQuestResponse {

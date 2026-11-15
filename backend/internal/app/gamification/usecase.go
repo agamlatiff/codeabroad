@@ -3,6 +3,7 @@ package gamification
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
@@ -39,19 +40,20 @@ func (u *usecase) BuyShopItem(ctx context.Context, userID string, itemID string)
 	if userID == "" {
 		return nil, nil, apperror.ErrUnauthorized
 	}
-	if itemID == "" {
+	trimmedItemID := strings.TrimSpace(itemID)
+	if trimmedItemID == "" {
 		return nil, nil, apperror.ErrBadRequest
 	}
 
-	item, err := u.gamificationRepo.GetShopItemByID(ctx, itemID)
+	item, err := u.gamificationRepo.GetShopItemByID(ctx, trimmedItemID)
 	if err != nil {
 		return nil, nil, err
 	}
-	if !item.IsAvailable {
+	if !item.IsAvailable || item.PriceGems < 0 {
 		return nil, nil, ErrItemUnavailable
 	}
 
-	inv, _, err := u.gamificationRepo.BuyShopItem(ctx, userID, itemID, item.PriceGems)
+	inv, _, err := u.gamificationRepo.BuyShopItem(ctx, userID, trimmedItemID, item.PriceGems)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -94,22 +96,15 @@ func (u *usecase) ClaimDailyChest(ctx context.Context, userID string, tier int) 
 		return nil, nil, err
 	}
 
-	stats, err := u.gamificationRepo.GetGamificationStats(ctx, userID)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	_, newLevel := u.helper.CalculateProgression(stats.XP, xp)
-	now := time.Now().UTC()
 	claim := &DailyChestClaim{
 		UserID:      userID,
-		ClaimDate:   now.Format("2006-01-02"),
+		ClaimDate:   time.Now().UTC().Format("2006-01-02"),
 		Tier:        tier,
 		GemsAwarded: gems,
 		XPAwarded:   xp,
 	}
 
-	if err := u.gamificationRepo.ClaimDailyChest(ctx, claim, newLevel); err != nil {
+	if err := u.gamificationRepo.ClaimDailyChest(ctx, claim, 0); err != nil {
 		return nil, nil, err
 	}
 
@@ -130,17 +125,46 @@ func (u *usecase) SubmitCoaching(ctx context.Context, userID string, req *Coachi
 		return nil, nil, apperror.ErrBadRequest
 	}
 
+	targetRole := strings.TrimSpace(req.TargetRole)
+	githubURL := strings.TrimSpace(req.GitHubURL)
+	resumeURL := strings.TrimSpace(req.ResumeURL)
+	discordHandle := strings.TrimSpace(req.DiscordHandle)
+	interviewLanguage := strings.TrimSpace(req.InterviewLanguage)
+	focusTopic := strings.TrimSpace(req.FocusTopic)
+	preferredTime := strings.TrimSpace(req.PreferredTime)
+	notes := strings.TrimSpace(req.Notes)
+
+	if githubURL != "" && !u.helper.ValidateHTTPURL(githubURL) {
+		return nil, nil, ErrInvalidCoachingPayload
+	}
+	if resumeURL != "" && !u.helper.ValidateHTTPURL(resumeURL) {
+		return nil, nil, ErrInvalidCoachingPayload
+	}
+
+	switch req.Type {
+	case "cv-review":
+		if targetRole == "" || resumeURL == "" {
+			return nil, nil, ErrInvalidCoachingPayload
+		}
+	case "mock-interview":
+		if discordHandle == "" || focusTopic == "" {
+			return nil, nil, ErrInvalidCoachingPayload
+		}
+	default:
+		return nil, nil, ErrInvalidCoachingPayload
+	}
+
 	sub := &CoachingSubmission{
 		UserID:            userID,
 		Type:              req.Type,
-		TargetRole:        req.TargetRole,
-		GitHubURL:         req.GitHubURL,
-		ResumeURL:         req.ResumeURL,
-		DiscordHandle:     req.DiscordHandle,
-		InterviewLanguage: req.InterviewLanguage,
-		FocusTopic:        req.FocusTopic,
-		PreferredTime:     req.PreferredTime,
-		Notes:             req.Notes,
+		TargetRole:        targetRole,
+		GitHubURL:         githubURL,
+		ResumeURL:         resumeURL,
+		DiscordHandle:     discordHandle,
+		InterviewLanguage: interviewLanguage,
+		FocusTopic:        focusTopic,
+		PreferredTime:     preferredTime,
+		Notes:             notes,
 		Status:            "pending",
 	}
 
@@ -155,4 +179,3 @@ func (u *usecase) SubmitCoaching(ctx context.Context, userID string, req *Coachi
 
 	return sub, status, nil
 }
-

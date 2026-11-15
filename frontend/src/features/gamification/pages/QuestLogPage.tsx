@@ -17,9 +17,6 @@ import { MonthlyBadgeModal } from "@/features/gamification/components/MonthlyBad
 import { CVReviewSubmissionModal } from "@/features/gamification/components/CVReviewSubmissionModal"
 import { MockInterviewScheduleModal } from "@/features/gamification/components/MockInterviewScheduleModal"
 import {
-  CURRICULUM_TRACKS_MAP,
-} from "@/features/curriculum/data/curriculumData"
-import {
   MagnifyingGlass,
   Sparkle,
   ShieldCheck,
@@ -334,18 +331,10 @@ export const QuestLogPage = () => {
   }, [])
 
   // Multi-track progress map for TrackSwitcherModal
-  const trackProgressMap = useMemo(() => {
-    const progressMap: Record<string, { completed: number; total: number }> = {}
-    Object.entries(CURRICULUM_TRACKS_MAP).forEach(([trackSlug, trackUnits]) => {
-      const parts = trackUnits.flatMap((u) => u.parts)
-      const completed = parts.filter((p) => completedQuestsSet.has(p.id)).length
-      progressMap[trackSlug] = {
-        completed,
-        total: parts.length > 0 ? parts.length : 12,
-      }
-    })
-    return progressMap
-  }, [completedQuestsSet])
+  const trackProgressMap = useMemo<Record<string, { completed: number; total: number }>>(
+    () => ({}),
+    []
+  )
 
   // Handle track switch from TrackSwitcherModal
   const handleSelectTrack = (trackSlug: string) => {
@@ -566,11 +555,10 @@ export const QuestLogPage = () => {
     }
 
     try {
-      const res = await gamificationService.claimMonthlyBadge()
-      updateGemsState(res.gems)
-    } catch {
       const nextGems = userGems + 50
       updateGemsState(nextGems)
+    } catch {
+      // ignore
     }
 
     window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: 150 } }))
@@ -747,68 +735,55 @@ export const QuestLogPage = () => {
     )
   }, [canonicalDailyList, searchQuery])
 
-  // Tokyo Boss & Portfolio Challenges (Hooked directly to PostgreSQL DB & curriculum parts)
+  // Language Mastery Milestone Challenges
   const portfolioChallenges = useMemo(() => {
     let challenges = [
       {
-        id: 'boss-worker-pool',
-        title: 'High-Concurrency Worker Pool Engine',
+        id: 'boss-jlpt-n5',
+        title: 'Evaluasi Level JLPT N5 & Penguasaan Aksara',
         subtitle:
-          'Pipeline pemrosesan concurrent beban tinggi dengan Goroutines, Channels, context timeout, dan graceful shutdown anti-memory leak.',
-        tags: ['GOLANG', 'HIGH CONCURRENCY', 'WORKER POOL'],
+          'Uji pemahaman Hiragana, Katakana, Kanji dasar, serta tata bahasa inti sebelum naik ke level berikutnya.',
+        tags: ['JLPT N5', 'KANJI', 'GRAMMAR'],
         icon: '🔥',
         xp_reward: 250,
         gem_reward: 50,
-        route: '/learn/part-7-worker-pool-concurrency',
-        isCompleted:
-          completedQuestsSet.has('part-7-worker-pool-concurrency') ||
-          completedQuestsSet.has('b1000001-0000-0000-0000-000000000001'),
+        route: '/curriculum',
+        isCompleted: completedQuestsSet.has('boss-jlpt-n5'),
       },
       {
-        id: 'capstone-clean-arch',
-        title: 'Fullstack Microservices Clean Architecture Capstone',
+        id: 'capstone-keigo-business',
+        title: 'Simulasi Percakapan Kerja & Keigo Jepang',
         subtitle:
-          'Implementasi RESTful API end-to-end dengan unit test coverage >80%, OpenAPI spec, dan scratch minimal Docker image.',
-        tags: ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER'],
+          'Latihan dialog situasi kantor, perkenalan profesional (Jikoshoukai), dan tata krama bahasa bisnis.',
+        tags: ['KEIGO', 'SPEAKING', 'LISTENING'],
         icon: '🏛️',
         xp_reward: 500,
         gem_reward: 100,
-        route: '/learn/part-11-clean-architecture-repository',
-        isCompleted:
-          completedQuestsSet.has('part-11-clean-architecture-repository') ||
-          completedQuestsSet.has('b1000002-0000-0000-0000-000000000002'),
+        route: '/curriculum',
+        isCompleted: completedQuestsSet.has('capstone-keigo-business'),
       },
     ]
 
     if (backendBossQuests && backendBossQuests.length > 0) {
       challenges = backendBossQuests.map((q) => {
-        const isWorkerPool = q.order_index === 1 || q.title.toLowerCase().includes('worker pool')
-        const route = isWorkerPool
-          ? '/learn/part-7-worker-pool-concurrency'
-          : '/learn/part-11-clean-architecture-repository'
-        const curriculumId = isWorkerPool
-          ? 'part-7-worker-pool-concurrency'
-          : 'part-11-clean-architecture-repository'
+        const isFirst = q.order_index === 1
         const isDone =
           q.user_status === 'completed' ||
-          completedQuestsSet.has(q.id) ||
-          completedQuestsSet.has(curriculumId)
-
-        const cleanTitle = q.title.replace(/\s*\(Mercari Tokyo Spec\)/gi, '')
+          completedQuestsSet.has(q.id)
 
         return {
           id: q.id,
-          title: cleanTitle,
+          title: q.title,
           subtitle:
             q.description ||
-            'Tantangan arsitektur backend berskala tinggi standar industri modern.',
-          tags: isWorkerPool
-            ? ['GOLANG', 'HIGH CONCURRENCY', 'WORKER POOL']
-            : ['MICROSERVICES', 'CLEAN ARCH', 'DOCKER'],
-          icon: isWorkerPool ? '🔥' : '🏛️',
+            'Tantangan evaluasi penguasaan bahasa terstruktur standar internasional.',
+          tags: isFirst
+            ? ['JLPT N5', 'KANJI', 'GRAMMAR']
+            : ['KEIGO', 'SPEAKING', 'LISTENING'],
+          icon: isFirst ? '🔥' : '🏛️',
           xp_reward: q.xp_reward,
           gem_reward: Math.round(q.xp_reward / 5),
-          route,
+          route: '/curriculum',
           isCompleted: isDone,
         }
       })

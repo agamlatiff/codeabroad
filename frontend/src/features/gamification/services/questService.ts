@@ -3,8 +3,6 @@ import type { ApiResponse } from "@/shared/types/api"
 import type {
   Quest,
   QuestFilter,
-  RunTestsRequest,
-  RunTestsResponse,
   SubmitQuestRequest,
   SubmitQuestResponse,
 } from "@/features/gamification/types/quest"
@@ -33,22 +31,13 @@ export const questService = {
     throw new Error(response.data.error || 'Failed to fetch daily quests')
   },
 
-  // Fetch full details of a specific quest including acceptance criteria and starter code
+  // Fetch full details of a specific quest
   async getQuestDetails(id: string): Promise<Quest> {
     const response = await api.get<ApiResponse<Quest>>(`/quests/${id}`)
     if (response.data.success && response.data.data) {
       return response.data.data
     }
     throw new Error(response.data.error || 'Failed to fetch quest details')
-  },
-
-  // Run tests in sandbox
-  async runTests(id: string, req: RunTestsRequest): Promise<RunTestsResponse> {
-    const response = await api.post<ApiResponse<RunTestsResponse>>(`/quests/${id}/run-tests`, req)
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    }
-    throw new Error(response.data.error || 'Failed to run tests')
   },
 
   // Submit quest solution and receive rewards

@@ -2,6 +2,8 @@ package gamification
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 
 	"codeabroad/backend/internal/shared/apperror"
 )
@@ -46,3 +48,16 @@ func (h *Helper) ResolveChestReward(tier int) (gems int, xp int, err error) {
 	}
 }
 
+// ValidateHTTPURL verifies that a non-empty URL uses http or https with a valid host.
+func (h *Helper) ValidateHTTPURL(raw string) bool {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return false
+	}
+	parsed, err := url.ParseRequestURI(trimmed)
+	if err != nil {
+		return false
+	}
+	scheme := strings.ToLower(parsed.Scheme)
+	return (scheme == "http" || scheme == "https") && parsed.Host != ""
+}

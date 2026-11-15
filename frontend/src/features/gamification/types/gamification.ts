@@ -1,24 +1,67 @@
 /**
  * GAMIFICATION DOMAIN CONTRACTS
- * Directly mirrors backend `backend/internal/domain/gamification.go`.
+ * Directly mirrors backend `backend/internal/app/gamification/domain.go`.
  */
 
+export interface ShopItem {
+  id: string
+  title: string
+  name?: string
+  subtitle: string
+  description?: string
+  category: string
+  price_gems: number
+  badge: string
+  icon?: string
+  is_active: boolean
+  is_available?: boolean
+}
+
+export interface BadgeDefinition {
+  id: string
+  title: string
+  description: string
+  icon: string
+  category: string
+  xp_reward: number
+}
+
+export interface UserBadge {
+  id: string
+  user_id: string
+  badge_key: string
+  badge?: BadgeDefinition
+  awarded_at: string
+}
+
 export interface GamificationStatus {
+  xp?: number
+  current_level?: number
+  streak?: number
   gems: number
   inventory: Record<string, number>
   claimed_chests: number[]
-  monthly_badge_claimed: boolean
-  monthly_badge_key: string
+  badges?: UserBadge[]
+  monthly_badge_claimed?: boolean
+  monthly_badge_key?: string
 }
 
 export interface ClaimChestRequest {
   tier: number
 }
 
-export interface ClaimChestResponse {
-  status: GamificationStatus
+export interface DailyChestClaim {
+  id: string
+  user_id: string
+  claim_date: string
+  tier: number
   gems_awarded: number
   xp_awarded: number
+}
+
+export interface ClaimChestResponse {
+  claim: DailyChestClaim
+  status: GamificationStatus
 }
 
 export interface ShopBuyRequest {
@@ -48,4 +91,3 @@ export interface CoachingSubmissionResponse {
   submission: CoachingSubmissionRecord
   status: GamificationStatus
 }
-
