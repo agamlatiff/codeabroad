@@ -99,9 +99,13 @@ export const ExercisePromptRenderer = ({
         target instanceof HTMLInputElement ||
         target instanceof HTMLTextAreaElement ||
         target?.isContentEditable === true
+      const isInteractiveTarget =
+        target instanceof HTMLButtonElement ||
+        target instanceof HTMLAnchorElement ||
+        target instanceof HTMLSelectElement
 
       if (event.key === 'Enter') {
-        if (onEnterKey) {
+        if (!isInteractiveTarget && onEnterKey) {
           event.preventDefault()
           onEnterKey()
         }
