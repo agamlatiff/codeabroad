@@ -19,7 +19,6 @@ type MockRepository struct {
 	GetReadinessExamErr      error
 	GetDailyVocabulariesErr  error
 	CreateAttemptErr         error
-	GetAttemptsByUserIDErr   error
 }
 
 // NewMockRepository creates an in-memory mock exercise Repository
@@ -99,22 +98,6 @@ func (m *MockRepository) CreateAttempt(ctx context.Context, attempt *UserExercis
 	}
 	m.Attempts = append(m.Attempts, *attempt)
 	return nil
-}
-
-func (m *MockRepository) GetAttemptsByUserID(ctx context.Context, userID string, limit int) ([]UserExerciseAttempt, error) {
-	if m.GetAttemptsByUserIDErr != nil {
-		return nil, m.GetAttemptsByUserIDErr
-	}
-	var res []UserExerciseAttempt
-	for _, a := range m.Attempts {
-		if a.UserID == userID {
-			res = append(res, a)
-			if limit > 0 && len(res) >= limit {
-				break
-			}
-		}
-	}
-	return res, nil
 }
 
 func (m *MockRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
@@ -202,7 +185,6 @@ func (m *MockSRSRepository) GetDueCount(ctx context.Context, userID string, now 
 type MockReadinessExamRepository struct {
 	Attempts                  []ReadinessExamAttempt
 	CreateExamAttemptErr      error
-	GetExamAttemptsErr        error
 	GetLatestPassedAttemptErr error
 }
 
@@ -225,19 +207,6 @@ func (m *MockReadinessExamRepository) CreateExamAttempt(ctx context.Context, att
 	}
 	m.Attempts = append(m.Attempts, *attempt)
 	return nil
-}
-
-func (m *MockReadinessExamRepository) GetExamAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]ReadinessExamAttempt, error) {
-	if m.GetExamAttemptsErr != nil {
-		return nil, m.GetExamAttemptsErr
-	}
-	var res []ReadinessExamAttempt
-	for _, a := range m.Attempts {
-		if a.UserID == userID && (levelID == "" || a.LevelID == levelID) {
-			res = append(res, a)
-		}
-	}
-	return res, nil
 }
 
 func (m *MockReadinessExamRepository) GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error) {

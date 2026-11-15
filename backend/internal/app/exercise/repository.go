@@ -370,42 +370,6 @@ func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExe
 	return nil
 }
 
-// GetAttemptsByUserID retrieves the most recent answer attempts for user analytics
-func (r *PostgresRepository) GetAttemptsByUserID(ctx context.Context, userID string, limit int) ([]UserExerciseAttempt, error) {
-	limit = normalizeLimit(limit, 20, 100)
-	query := `
-		SELECT id, user_id, exercise_id, is_correct, selected_answer, time_spent_seconds, created_at
-		FROM user_exercise_attempts
-		WHERE user_id = $1
-		ORDER BY created_at DESC, id ASC
-		LIMIT $2
-	`
-	rows, err := r.db.Pool.Query(ctx, query, userID, limit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query attempts by user: %w", err)
-	}
-	defer rows.Close()
-
-	attempts := make([]UserExerciseAttempt, 0, limit)
-	for rows.Next() {
-		var a UserExerciseAttempt
-		var selectedJSON []byte
-		if err := rows.Scan(
-			&a.ID, &a.UserID, &a.ExerciseID, &a.IsCorrect, &selectedJSON, &a.TimeSpentSeconds, &a.CreatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan attempt row: %w", err)
-		}
-		if len(selectedJSON) > 0 {
-			_ = json.Unmarshal(selectedJSON, &a.SelectedAnswer)
-		}
-		attempts = append(attempts, a)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in user attempts: %w", err)
-	}
-	return attempts, nil
-}
-
 // GetDueReviews retrieves spaced repetition cards due for review as of the specified time
 func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error) {
 	query := `
@@ -672,32 +636,6 @@ func scanExamAttemptRow(scanner interface{ Scan(dest ...any) error }) (*Readines
 	a.ScorePercent = a.OverallScore
 	a.Level = &pl
 	return &a, nil
-}
-
-// GetExamAttemptsByUserID retrieves previous mock exam results for a user
-func (r *PostgresRepository) GetExamAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]ReadinessExamAttempt, error) {
-	query := examAttemptSelectFrom + `
-		WHERE a.user_id = $1 AND ($2 = '' OR a.level_id = NULLIF($2, '')::uuid)
-		ORDER BY a.attempted_at DESC, a.id ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, userID, levelID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query readiness exam attempts: %w", err)
-	}
-	defer rows.Close()
-
-	attempts := make([]ReadinessExamAttempt, 0, 8)
-	for rows.Next() {
-		a, err := scanExamAttemptRow(rows)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan readiness exam attempt row: %w", err)
-		}
-		attempts = append(attempts, *a)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in readiness exam attempts: %w", err)
-	}
-	return attempts, nil
 }
 
 // GetLatestPassedAttempt retrieves the most recent passed exam for certificate rendering
