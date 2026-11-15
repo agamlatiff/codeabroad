@@ -493,3 +493,42 @@ func TestHTTP_GetExamResult_InactiveEnrollmentReturns200(t *testing.T) {
 		t.Fatalf("expected 200 OK for earned exam result on inactive language enrollment, got: %d, body: %s", w.Code, w.Body.String())
 	}
 }
+
+func TestHTTP_Handler_NilUsecasesReturn500(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	h := exercise.NewHandler(nil, nil, nil)
+	r := gin.New()
+	v1 := r.Group("/api/v1")
+	h.RegisterRoutes(v1, func(c *gin.Context) {
+		c.Set("userID", "usr-123")
+		c.Next()
+	})
+
+	cases := []struct {
+		method string
+		path   string
+		body   string
+	}{
+		{http.MethodGet, "/api/v1/exercises/lesson/33333333-3333-3333-3333-333333333333", ""},
+		{http.MethodPost, "/api/v1/exercises/submit", `{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"A"}`},
+		{http.MethodGet, "/api/v1/vocabularies/daily", ""},
+		{http.MethodGet, "/api/v1/srs/due", ""},
+		{http.MethodPost, "/api/v1/srs/review", `{"exercise_id":"44444444-4444-4444-4444-444444444444","quality":4}`},
+		{http.MethodGet, "/api/v1/exams/questions/22222222-2222-2222-2222-222222222222", ""},
+		{http.MethodGet, "/api/v1/exams/result/22222222-2222-2222-2222-222222222222", ""},
+		{http.MethodPost, "/api/v1/exams/submit", `{"level_id":"22222222-2222-2222-2222-222222222222","answers":[{"exercise_id":"44444444-4444-4444-4444-444444444444","user_answer":"A"}]}`},
+	}
+
+	for _, tc := range cases {
+		req, _ := http.NewRequest(tc.method, tc.path, bytes.NewBufferString(tc.body))
+		if tc.body != "" {
+			req.Header.Set("Content-Type", "application/json")
+		}
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+
+		if w.Code != http.StatusInternalServerError {
+			t.Fatalf("expected 500 Internal Server Error for %s %s with nil usecase, got %d (body: %s)", tc.method, tc.path, w.Code, w.Body.String())
+		}
+	}
+}

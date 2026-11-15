@@ -3,8 +3,18 @@ package exercise
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 )
+
+func sortExercisesByOrder(res []Exercise) {
+	sort.Slice(res, func(i, j int) bool {
+		if res[i].OrderIndex != res[j].OrderIndex {
+			return res[i].OrderIndex < res[j].OrderIndex
+		}
+		return res[i].ID < res[j].ID
+	})
+}
 
 // MockRepository implements Repository for unit testing
 type MockRepository struct {
@@ -42,6 +52,7 @@ func (m *MockRepository) GetExercisesByLessonID(ctx context.Context, lessonID st
 			res = append(res, *ex)
 		}
 	}
+	sortExercisesByOrder(res)
 	return res, nil
 }
 
@@ -69,9 +80,10 @@ func (m *MockRepository) GetPlacementExercises(ctx context.Context, languageID s
 	var res []Exercise
 	for _, ex := range m.Exercises {
 		res = append(res, *ex)
-		if limit > 0 && len(res) >= limit {
-			break
-		}
+	}
+	sortExercisesByOrder(res)
+	if limit > 0 && len(res) > limit {
+		res = res[:limit]
 	}
 	return res, nil
 }
@@ -117,6 +129,7 @@ type MockSRSRepository struct {
 	GetReviewErr     error
 	UpsertReviewErr  error
 	GetDueCountErr   error
+	CountMasteredErr error
 }
 
 // NewMockSRSRepository creates an in-memory mock SRSRepository
@@ -126,7 +139,10 @@ func NewMockSRSRepository() *MockSRSRepository {
 	}
 }
 
-var _ SRSRepository = (*MockSRSRepository)(nil)
+var (
+	_ SRSRepository     = (*MockSRSRepository)(nil)
+	_ SRSMasteryCounter = (*MockSRSRepository)(nil)
+)
 
 func (m *MockSRSRepository) GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error) {
 	if m.GetDueReviewsErr != nil {
@@ -136,10 +152,19 @@ func (m *MockSRSRepository) GetDueReviews(ctx context.Context, userID string, no
 	for _, r := range m.Reviews {
 		if r.UserID == userID && !r.NextReviewAt.After(now) {
 			res = append(res, *r)
-			if limit > 0 && len(res) >= limit {
-				break
-			}
 		}
+	}
+	sort.Slice(res, func(i, j int) bool {
+		if !res[i].NextReviewAt.Equal(res[j].NextReviewAt) {
+			return res[i].NextReviewAt.Before(res[j].NextReviewAt)
+		}
+		if res[i].RepetitionCount != res[j].RepetitionCount {
+			return res[i].RepetitionCount < res[j].RepetitionCount
+		}
+		return res[i].ID < res[j].ID
+	})
+	if limit > 0 && len(res) > limit {
+		res = res[:limit]
 	}
 	return res, nil
 }
@@ -175,6 +200,19 @@ func (m *MockSRSRepository) GetDueCount(ctx context.Context, userID string, now 
 	count := 0
 	for _, r := range m.Reviews {
 		if r.UserID == userID && !r.NextReviewAt.After(now) {
+			count++
+		}
+	}
+	return count, nil
+}
+
+func (m *MockSRSRepository) CountMasteredReviews(ctx context.Context, userID string) (int, error) {
+	if m.CountMasteredErr != nil {
+		return 0, m.CountMasteredErr
+	}
+	count := 0
+	for _, r := range m.Reviews {
+		if r.UserID == userID && r.RepetitionCount >= 3 {
 			count++
 		}
 	}

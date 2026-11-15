@@ -83,6 +83,10 @@ func (h *Handler) GetExercisesByLesson(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if h.exerciseUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
+		return
+	}
 
 	var uri struct {
 		LessonID string `uri:"lesson_id" binding:"required,uuid"`
@@ -105,6 +109,10 @@ func (h *Handler) GetExercisesByLesson(c *gin.Context) {
 func (h *Handler) SubmitAnswer(c *gin.Context) {
 	userID, ok := requireUserID(c)
 	if !ok {
+		return
+	}
+	if h.exerciseUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
 		return
 	}
 
@@ -139,6 +147,10 @@ func (h *Handler) GetDueReviews(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if h.srsUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
+		return
+	}
 
 	limit, ok := parseLimitQuery(c, 20)
 	if !ok {
@@ -158,6 +170,10 @@ func (h *Handler) GetDueReviews(c *gin.Context) {
 func (h *Handler) ProcessReview(c *gin.Context) {
 	userID, ok := requireUserID(c)
 	if !ok {
+		return
+	}
+	if h.srsUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
 		return
 	}
 
@@ -193,6 +209,10 @@ func (h *Handler) GetExamQuestions(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if h.examUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
+		return
+	}
 
 	levelID, ok := bindLevelIDURI(c)
 	if !ok {
@@ -212,6 +232,10 @@ func (h *Handler) GetExamQuestions(c *gin.Context) {
 func (h *Handler) GetExamResult(c *gin.Context) {
 	userID, ok := requireUserID(c)
 	if !ok {
+		return
+	}
+	if h.examUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
 		return
 	}
 
@@ -235,6 +259,10 @@ func (h *Handler) SubmitExam(c *gin.Context) {
 	if !ok {
 		return
 	}
+	if h.examUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
+		return
+	}
 
 	var req SubmitReadinessExamRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -255,6 +283,10 @@ func (h *Handler) SubmitExam(c *gin.Context) {
 func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 	userID, ok := requireUserID(c)
 	if !ok {
+		return
+	}
+	if h.exerciseUsecase == nil {
+		response.Error(c, apperror.ErrInternal)
 		return
 	}
 
