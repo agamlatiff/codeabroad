@@ -84,6 +84,7 @@ export interface SubmitSRSReviewRequest {
 export interface ReadinessExamAnswerItem {
   exercise_id: string
   user_answer: string
+  time_spent_seconds?: number
 }
 
 export interface ReadinessExamSubmissionRequest {

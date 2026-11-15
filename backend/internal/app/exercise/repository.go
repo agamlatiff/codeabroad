@@ -290,7 +290,7 @@ func scanExerciseRows(rows pgx.Rows, capHint int, errLabel string) ([]Exercise, 
 
 // GetExercisesByLessonID retrieves all exercises belonging to a specific lesson node
 func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonID string) ([]Exercise, error) {
-	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE lesson_id = $1 ORDER BY order_index ASC, id ASC`
+	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE lesson_id = NULLIF($1, '')::uuid ORDER BY order_index ASC, id ASC`
 	rows, err := r.db.Pool.Query(ctx, query, lessonID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query exercises by lesson id: %w", err)
@@ -302,7 +302,7 @@ func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonI
 
 // GetExerciseByID retrieves a single exercise by UUID
 func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*Exercise, error) {
-	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE id = $1`
+	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE id = NULLIF($1, '')::uuid`
 	ex, err := scanExerciseRow(r.db.Pool.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -537,7 +537,7 @@ func (r *PostgresRepository) GetReview(ctx context.Context, userID string, exerc
 	query := `
 		SELECT id, user_id, exercise_id, repetition_count, interval_days, ease_factor, next_review_at, last_reviewed_at
 		FROM user_srs_reviews
-		WHERE user_id = $1 AND exercise_id = $2
+		WHERE user_id = NULLIF($1, '')::uuid AND exercise_id = NULLIF($2, '')::uuid
 	`
 	var rev UserSRSReview
 	err := r.db.Pool.QueryRow(ctx, query, userID, exerciseID).Scan(
@@ -837,7 +837,7 @@ func scanExamAttemptRow(scanner interface{ Scan(dest ...any) error }) (*Readines
 // GetLatestPassedAttempt retrieves the most recent passed exam for certificate rendering
 func (r *PostgresRepository) GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error) {
 	query := examAttemptSelectFrom + `
-		WHERE a.user_id = $1 AND a.level_id = $2::uuid AND a.is_passed = true
+		WHERE a.user_id = NULLIF($1, '')::uuid AND a.level_id = NULLIF($2, '')::uuid AND a.is_passed = true
 		ORDER BY a.attempted_at DESC, a.id ASC
 		LIMIT 1
 	`

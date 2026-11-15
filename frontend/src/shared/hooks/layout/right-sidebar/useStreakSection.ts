@@ -3,8 +3,6 @@ import { useUser } from "@/features/user/hooks/useUser"
 import { useUserActivity } from "@/features/user/hooks/useUserActivity"
 import { triggerHaptic } from "@/shared/utils/haptics"
 
-export const ACTIVITY_LOGS_QUERY_KEY = ['activity-logs'] as const
-
 const DEFAULT_WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as const
 
 export interface WeeklyStreakDayItem {

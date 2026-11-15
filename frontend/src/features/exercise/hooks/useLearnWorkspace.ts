@@ -25,12 +25,12 @@ import type {
   LessonCompletionNavigationState,
   SubmitExerciseAnswerResponse,
 } from '@/features/exercise/types/exercise'
-import { PROFILE_QUERY_KEY } from '@/features/user/services/userService'
 import {
-  DAILY_QUESTS_QUERY_KEY,
+  PROFILE_QUERY_KEY,
+  ACTIVITY_LOGS_QUERY_KEY,
   DAILY_REWARDS_QUERY_KEY,
-} from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
-import { ACTIVITY_LOGS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useStreakSection'
+} from '@/features/user/services/userService'
+import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { extractApiErrorMessage } from '@/shared/services/api'
 import type { ApiResponse } from '@/shared/types/api'
 import { audioService } from '@/shared/services/audioService'

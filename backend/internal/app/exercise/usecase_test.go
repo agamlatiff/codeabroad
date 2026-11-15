@@ -2104,3 +2104,49 @@ func TestProcessReviewAndSubmitExam_LogsUserActivities(t *testing.T) {
 	}
 }
 
+func TestSubmitAnswer_SkipSRSSchedule_TagsAttemptAsSRSReview(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	sRepo := exercise.NewMockSRSRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "はい",
+	}
+
+	uc := exercise.NewUsecaseWithAccessChecker(
+		eRepo,
+		sRepo,
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: true},
+	)
+
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID:      "ex-1",
+		UserAnswer:      "いいえ",
+		SkipSRSSchedule: true,
+	}); err != nil {
+		t.Fatalf("expected SRS-skipped submit to succeed, got %v", err)
+	}
+	if _, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID:      "ex-1",
+		UserAnswer:      "はい",
+		SkipSRSSchedule: false,
+	}); err != nil {
+		t.Fatalf("expected lesson submit to succeed, got %v", err)
+	}
+
+	if len(eRepo.Attempts) != 2 {
+		t.Fatalf("expected 2 recorded attempts, got %d", len(eRepo.Attempts))
+	}
+	if flag, ok := eRepo.Attempts[0].SelectedAnswer["is_srs_review"].(bool); !ok || !flag {
+		t.Fatalf("expected SkipSRSSchedule attempt to be tagged is_srs_review=true, got %+v", eRepo.Attempts[0].SelectedAnswer)
+	}
+	if _, exists := eRepo.Attempts[1].SelectedAnswer["is_srs_review"]; exists {
+		t.Fatalf("expected normal lesson attempt not to carry is_srs_review flag, got %+v", eRepo.Attempts[1].SelectedAnswer)
+	}
+}
+

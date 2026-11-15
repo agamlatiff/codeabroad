@@ -7,7 +7,6 @@ import { useUserActivity } from "@/features/user/hooks/useUserActivity"
 import { useDailyRewards } from "@/features/user/hooks/useDailyRewards"
 import { triggerHaptic } from "@/shared/utils/haptics"
 
-export const DAILY_REWARDS_QUERY_KEY = ['daily-rewards'] as const
 export const DAILY_QUESTS_QUERY_KEY = ['daily-quests'] as const
 
 export const DAILY_TARGET_XP = 50

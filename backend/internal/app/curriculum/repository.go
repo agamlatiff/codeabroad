@@ -557,7 +557,9 @@ const lessonAttemptSummaryQuery = `
 		SELECT DISTINCT ON (uea.exercise_id) uea.exercise_id, uea.is_correct
 		FROM user_exercise_attempts uea
 		JOIN exercises e ON e.id = uea.exercise_id
-		WHERE uea.user_id = $1::uuid AND e.lesson_id = $2::uuid
+		WHERE uea.user_id = $1::uuid
+		  AND e.lesson_id = $2::uuid
+		  AND COALESCE((uea.selected_answer->>'is_srs_review')::boolean, false) = false
 		ORDER BY uea.exercise_id, uea.created_at DESC, uea.id DESC
 	),
 	latest_fresh AS (
@@ -567,6 +569,7 @@ const lessonAttemptSummaryQuery = `
 		CROSS JOIN last_completion lc
 		WHERE uea.user_id = $1::uuid
 		  AND e.lesson_id = $2::uuid
+		  AND COALESCE((uea.selected_answer->>'is_srs_review')::boolean, false) = false
 		  AND uea.created_at > lc.cutoff_at
 		ORDER BY uea.exercise_id, uea.created_at DESC, uea.id DESC
 	)

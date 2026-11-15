@@ -119,6 +119,7 @@ func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lesso
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
+	lessonID = strings.TrimSpace(lessonID)
 	if lessonID == "" {
 		return nil, apperror.ErrBadRequest
 	}
@@ -169,7 +170,8 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		return nil, fmt.Errorf("exercise repository is not configured: %w", apperror.ErrInternal)
 	}
 
-	ex, err := u.loadAuthorizedExercise(ctx, userID, req.ExerciseID)
+	exerciseID := strings.TrimSpace(req.ExerciseID)
+	ex, err := u.loadAuthorizedExercise(ctx, userID, exerciseID)
 	if err != nil {
 		return nil, err
 	}
@@ -187,11 +189,16 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		timeSpent = 86400
 	}
 
+	selectedAnswer := map[string]any{"user_answer": req.UserAnswer}
+	if req.SkipSRSSchedule {
+		selectedAnswer["is_srs_review"] = true
+	}
+
 	attempt := &UserExerciseAttempt{
 		UserID:           userID,
-		ExerciseID:       req.ExerciseID,
+		ExerciseID:       exerciseID,
 		IsCorrect:        isCorrect,
-		SelectedAnswer:   map[string]any{"user_answer": req.UserAnswer},
+		SelectedAnswer:   selectedAnswer,
 		TimeSpentSeconds: timeSpent,
 	}
 	if err := u.exerciseRepo.CreateAttempt(ctx, attempt); err != nil {
@@ -202,11 +209,11 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	var nextDue *time.Time
 
 	if !isCorrect && !req.SkipSRSSchedule {
-		updatedCard, srsErr := u.applySRSReview(ctx, userID, req.ExerciseID, func(_ int, _ int, prevEase float64) *UserSRSReview {
+		updatedCard, srsErr := u.applySRSReview(ctx, userID, exerciseID, func(_ int, _ int, prevEase float64) *UserSRSReview {
 			sm2 := u.helper.CalculateSM2(0, 0, 1, prevEase, now)
 			return &UserSRSReview{
 				UserID:          userID,
-				ExerciseID:      req.ExerciseID,
+				ExerciseID:      exerciseID,
 				RepetitionCount: sm2.Repetitions,
 				IntervalDays:    sm2.IntervalDays,
 				EaseFactor:      sm2.EaseFactor,
@@ -215,7 +222,7 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 			}
 		})
 		if srsErr != nil {
-			log.Printf("exercise: failed to update srs card for user %s exercise %s: %v", userID, req.ExerciseID, srsErr)
+			log.Printf("exercise: failed to update srs card for user %s exercise %s: %v", userID, exerciseID, srsErr)
 		} else if updatedCard != nil {
 			due := updatedCard.NextReviewAt
 			nextDue = &due
@@ -274,7 +281,11 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if req == nil || req.ExerciseID == "" || req.Quality == nil {
+	if req == nil || req.Quality == nil {
+		return nil, apperror.ErrBadRequest
+	}
+	exerciseID := strings.TrimSpace(req.ExerciseID)
+	if exerciseID == "" {
 		return nil, apperror.ErrBadRequest
 	}
 	if u.exerciseRepo == nil || u.srsRepo == nil {
@@ -285,16 +296,16 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 		return nil, ErrInvalidQualityRating
 	}
 
-	if _, err := u.loadAuthorizedExercise(ctx, userID, req.ExerciseID); err != nil {
+	if _, err := u.loadAuthorizedExercise(ctx, userID, exerciseID); err != nil {
 		return nil, err
 	}
 
 	now := time.Now().UTC()
-	updatedReview, err := u.applySRSReview(ctx, userID, req.ExerciseID, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
+	updatedReview, err := u.applySRSReview(ctx, userID, exerciseID, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
 		sm2 := u.helper.CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
 		return &UserSRSReview{
 			UserID:          userID,
-			ExerciseID:      req.ExerciseID,
+			ExerciseID:      exerciseID,
 			RepetitionCount: sm2.Repetitions,
 			IntervalDays:    sm2.IntervalDays,
 			EaseFactor:      sm2.EaseFactor,
@@ -324,7 +335,7 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 
 	if updatedReview != nil {
 		u.logActivitySafely(ctx, userID, "srs_review_completed", badgeXP, map[string]any{
-			"exercise_id":      req.ExerciseID,
+			"exercise_id":      exerciseID,
 			"quality":          quality,
 			"repetition_count": updatedReview.RepetitionCount,
 		})

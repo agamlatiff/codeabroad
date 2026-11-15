@@ -4,10 +4,12 @@ import { useAuthStore } from "@/features/auth/store/authStore"
 import { userService } from "@/features/user/services/userService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
-import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
-import { ACTIVITY_LOGS_QUERY_KEY } from './useStreakSection'
 import {
+  PROFILE_QUERY_KEY,
+  ACTIVITY_LOGS_QUERY_KEY,
   DAILY_REWARDS_QUERY_KEY,
+} from "@/features/user/services/userService"
+import {
   DAILY_QUESTS_QUERY_KEY,
   VOCAB_QUEST_REWARD_XP,
   GOLDEN_CHEST_REWARD_XP,
