@@ -79,12 +79,12 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
-			INSERT INTO user_profiles (user_id, name, username, is_onboarded, daily_goal_minutes)
-			SELECT id, $3, $4, $5, $6 FROM new_user
+			INSERT INTO user_profiles (user_id, name, username, is_onboarded, daily_goal_minutes, preferred_roadmap_view)
+			SELECT id, $3, $4, $5, $6, COALESCE(NULLIF($7, ''), 'map') FROM new_user
 		),
 		new_gamification AS (
 			INSERT INTO user_gamification (user_id, xp, current_level, streak, gems)
-			SELECT id, $7, $8, $9, $10 FROM new_user
+			SELECT id, $8, $9, $10, $11 FROM new_user
 		)
 		SELECT id, created_at, updated_at FROM new_user
 	`
@@ -97,6 +97,7 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 		u.Username,
 		u.IsOnboarded,
 		u.DailyGoalMinutes,
+		u.PreferredRoadmapView,
 		u.XP,
 		u.CurrentLevel,
 		u.Streak,

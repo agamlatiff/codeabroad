@@ -972,3 +972,82 @@ func TestAuthUsecase_Logout_RejectsEmptySessionID(t *testing.T) {
 	}
 }
 
+func TestLogin_SameDayNoDuplicateActivityLog_AndUpdatesLastActiveAt(t *testing.T) {
+	authUc, userRepo, _ := setupTestUsecase()
+	ctx := context.Background()
+
+	password := "Password123!"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+
+	u := &user.User{
+		UserAccount: user.UserAccount{
+			ID:           "usr_dedup_login",
+			Email:        "deduplogin@example.com",
+			PasswordHash: string(hashedPassword),
+		},
+		UserProfile: user.UserProfile{
+			Name:     "Dedup User",
+			Username: "dedup_user",
+		},
+	}
+	_ = userRepo.Create(ctx, u)
+
+	res1, err := authUc.Login(ctx, &auth.LoginRequest{
+		Email:    u.Email,
+		Password: password,
+	})
+	if err != nil {
+		t.Fatalf("first login failed: %v", err)
+	}
+	if res1.User.LastActiveAt == nil {
+		t.Fatal("expected LastActiveAt to be populated on login response")
+	}
+	if res1.User.Streak != 1 {
+		t.Fatalf("expected streak=1 after first login, got %d", res1.User.Streak)
+	}
+	if len(userRepo.ActivityLogs) != 1 {
+		t.Fatalf("expected 1 daily_login activity log after first login, got %d", len(userRepo.ActivityLogs))
+	}
+
+	res2, err := authUc.Login(ctx, &auth.LoginRequest{
+		Email:    u.Email,
+		Password: password,
+	})
+	if err != nil {
+		t.Fatalf("second same-day login failed: %v", err)
+	}
+	if res2.User.LastActiveAt == nil {
+		t.Fatal("expected LastActiveAt to remain populated on second login response")
+	}
+	if len(userRepo.ActivityLogs) != 1 {
+		t.Fatalf("expected no duplicate daily_login activity log on same day, got %d logs", len(userRepo.ActivityLogs))
+	}
+}
+
+func TestRefreshToken_SingleAtomicRotateWithoutGetSession(t *testing.T) {
+	authUc, _, sessionRepo := setupTestUsecase()
+	ctx := context.Background()
+
+	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
+		Name:     "Atomic Refresh User",
+		Username: "atomicrefresh",
+		Email:    "atomicrefresh@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("register failed: %v", err)
+	}
+
+	// Simulate GetSession error to prove RefreshToken relies solely on atomic RotateSession
+	sessionRepo.GetSessionErr = errors.New("unexpected GetSession round-trip")
+
+	refreshed, err := authUc.RefreshToken(ctx, regRes.RefreshToken)
+	if err != nil {
+		t.Fatalf("expected RefreshToken to succeed via single atomic RotateSession call, got: %v", err)
+	}
+	if refreshed.AccessToken == "" || refreshed.RefreshToken == "" {
+		t.Fatal("expected rotated token pair")
+	}
+}
+
+

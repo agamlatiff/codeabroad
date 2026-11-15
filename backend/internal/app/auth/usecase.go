@@ -2,7 +2,6 @@ package auth
 
 import (
 	"context"
-	"crypto/subtle"
 	"errors"
 	"fmt"
 	"log"
@@ -126,18 +125,26 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}
 
 	now := time.Now().UTC()
-	todayStr := now.In(u.helper.DefaultLocation()).Format("2006-01-02")
-	if err := u.userRepo.LogActivity(ctx, &user.UserActivityLog{
-		UserID:       usr.ID,
-		ActivityType: "daily_login",
-		XPEarned:     0,
-		Metadata:     map[string]interface{}{"source": "login", "date": todayStr},
-	}); err != nil {
-		log.Printf("[WARN] [auth.Login] failed to log daily login activity for user %s: %v", usr.ID, err)
+	loc := u.helper.DefaultLocation()
+	todayStr := now.In(loc).Format("2006-01-02")
+	alreadyLoggedToday := usr.LastActiveAt != nil && usr.LastActiveAt.In(loc).Format("2006-01-02") == todayStr
+
+	newStreak, streakChanged := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
+	usr.Streak = newStreak
+	usr.LastActiveAt = &now
+
+	if !alreadyLoggedToday {
+		if err := u.userRepo.LogActivity(ctx, &user.UserActivityLog{
+			UserID:       usr.ID,
+			ActivityType: "daily_login",
+			XPEarned:     0,
+			Metadata:     map[string]interface{}{"source": "login", "date": todayStr},
+		}); err != nil {
+			log.Printf("[WARN] [auth.Login] failed to log daily login activity for user %s: %v", usr.ID, err)
+		}
 	}
 
-	if newStreak, changed := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now); changed {
-		usr.Streak = newStreak
+	if streakChanged {
 		if err := u.userRepo.UpdateGamification(ctx, usr.ID, usr.XP, usr.CurrentLevel, newStreak, &now); err != nil {
 			log.Printf("[WARN] [auth.Login] failed to update streak gamification for user %s: %v", usr.ID, err)
 		}
@@ -150,27 +157,11 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}, nil
 }
 
-// RefreshToken validates an existing refresh token and atomically rotates the session token pair
+// RefreshToken validates an existing refresh token and atomically rotates the session token pair in a single Redis operation
 func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error) {
 	claims, err := u.helper.ParseRefreshToken(refreshToken)
 	if err != nil {
 		return nil, err
-	}
-
-	expectedHash := u.helper.HashToken(refreshToken)
-	storedHash, err := u.sessionRepo.GetSession(ctx, claims.UserID, claims.SessionID)
-	if err != nil {
-		if errors.Is(err, ErrTokenExpired) {
-			return nil, ErrTokenExpired
-		}
-		return nil, fmt.Errorf("failed to retrieve session: %w", err)
-	}
-	if subtle.ConstantTimeCompare([]byte(storedHash), []byte(expectedHash)) != 1 {
-		// Token reuse detected: revoke the active session for this device.
-		if delErr := u.sessionRepo.DeleteSession(ctx, claims.UserID, claims.SessionID); delErr != nil {
-			log.Printf("[WARN] [auth.RefreshToken] failed to revoke compromised session %s for user %s: %v", claims.SessionID, claims.UserID, delErr)
-		}
-		return nil, ErrTokenExpired
 	}
 
 	usr, err := u.userRepo.GetByID(ctx, claims.UserID)
@@ -184,6 +175,7 @@ func (u *usecase) RefreshToken(ctx context.Context, refreshToken string) (*AuthR
 		return nil, ErrTokenExpired
 	}
 
+	expectedHash := u.helper.HashToken(refreshToken)
 	sessionTTL := u.helper.ResolveSessionTTL(claims.RememberMe)
 	newAccessToken, newRefreshToken, err := u.helper.GenerateTokenPair(usr, claims.SessionID, sessionTTL, claims.RememberMe)
 	if err != nil {

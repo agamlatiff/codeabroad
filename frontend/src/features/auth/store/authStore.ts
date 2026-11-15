@@ -19,9 +19,10 @@ export interface AuthState extends AuthSessionData {
 }
 
 /**
- * Safe browser storage accessor protected against Private Mode / SecurityError exceptions.
+ * Safe browser storage accessor evaluated once at module initialization
+ * and protected against Private Mode / SecurityError exceptions.
  */
-const getBrowserStorage = (type: 'local' | 'session'): Storage | null => {
+const probeBrowserStorage = (type: 'local' | 'session'): Storage | null => {
   if (typeof window === 'undefined') return null
   try {
     const storage = type === 'local' ? window.localStorage : window.sessionStorage
@@ -33,6 +34,13 @@ const getBrowserStorage = (type: 'local' | 'session'): Storage | null => {
     return null
   }
 }
+
+const cachedLocalStorage = probeBrowserStorage('local')
+const cachedSessionStorage = probeBrowserStorage('session')
+
+const hasActiveTokenAndUser = (
+  data: Pick<AuthSessionData, 'accessToken' | 'refreshToken' | 'user'> | null | undefined
+): boolean => Boolean(data?.user && (data.refreshToken || data.accessToken))
 
 /**
  * Safely parses serialized session JSON.
@@ -59,18 +67,15 @@ const safeParseSession = (raw: string | null): AuthSessionData | null => {
  * Loads initial session from browser storage (localStorage or sessionStorage based on rememberMe).
  */
 const loadInitialSession = (): AuthSessionData => {
-  const local = getBrowserStorage('local')
-  const session = getBrowserStorage('session')
-
   // 1. Check persistent localStorage session (rememberMe: true)
-  const storedLocal = safeParseSession(local?.getItem(AUTH_STORAGE_KEY) ?? null)
-  if (storedLocal?.refreshToken && storedLocal?.user) {
+  const storedLocal = safeParseSession(cachedLocalStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
+  if (hasActiveTokenAndUser(storedLocal) && storedLocal) {
     return { ...storedLocal, rememberMe: true }
   }
 
   // 2. Check transient sessionStorage session (rememberMe: false)
-  const storedSession = safeParseSession(session?.getItem(AUTH_STORAGE_KEY) ?? null)
-  if (storedSession?.refreshToken && storedSession?.user) {
+  const storedSession = safeParseSession(cachedSessionStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
+  if (hasActiveTokenAndUser(storedSession) && storedSession) {
     return { ...storedSession, rememberMe: false }
   }
 
@@ -84,17 +89,15 @@ const loadInitialSession = (): AuthSessionData => {
 }
 
 const persistSession = (data: AuthSessionData | null, rememberMe: boolean) => {
-  const local = getBrowserStorage('local')
-  const session = getBrowserStorage('session')
-  const primary = rememberMe ? local : session
-  const secondary = rememberMe ? session : local
+  const primary = rememberMe ? cachedLocalStorage : cachedSessionStorage
+  const secondary = rememberMe ? cachedSessionStorage : cachedLocalStorage
 
-  if (data?.refreshToken && data?.user) {
+  if (hasActiveTokenAndUser(data) && data) {
     primary?.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
     secondary?.removeItem(AUTH_STORAGE_KEY)
   } else {
-    local?.removeItem(AUTH_STORAGE_KEY)
-    session?.removeItem(AUTH_STORAGE_KEY)
+    cachedLocalStorage?.removeItem(AUTH_STORAGE_KEY)
+    cachedSessionStorage?.removeItem(AUTH_STORAGE_KEY)
   }
 }
 
@@ -105,7 +108,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: initialSession.accessToken,
   refreshToken: initialSession.refreshToken,
   rememberMe: initialSession.rememberMe,
-  isAuthenticated: Boolean(initialSession.refreshToken && initialSession.user),
+  isAuthenticated: hasActiveTokenAndUser(initialSession),
 
   setAuth: (user, accessToken, refreshToken, rememberMe = false) => {
     const sessionData: AuthSessionData = {
@@ -117,7 +120,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     persistSession(sessionData, rememberMe)
     set({
       ...sessionData,
-      isAuthenticated: Boolean(refreshToken && user),
+      isAuthenticated: hasActiveTokenAndUser(sessionData),
     })
   },
 
@@ -133,7 +136,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     set({
       accessToken,
       refreshToken,
-      isAuthenticated: Boolean(refreshToken && state.user),
+      isAuthenticated: hasActiveTokenAndUser(sessionData),
     })
   },
 
@@ -168,28 +171,37 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }))
 
-// Cross-tab synchronization listener (auto logout / update on storage change)
+// Cross-tab synchronization listener (auto logout / update on localStorage change)
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
-    if (event.key === AUTH_STORAGE_KEY) {
-      const parsed = safeParseSession(event.newValue)
-      if (parsed?.refreshToken && parsed?.user) {
-        useAuthStore.setState({
-          user: parsed.user,
-          accessToken: parsed.accessToken,
-          refreshToken: parsed.refreshToken,
-          rememberMe: parsed.rememberMe,
-          isAuthenticated: true,
-        })
-      } else {
-        useAuthStore.setState({
-          user: null,
-          accessToken: null,
-          refreshToken: null,
-          rememberMe: false,
-          isAuthenticated: false,
-        })
-      }
+    if (event.key !== AUTH_STORAGE_KEY || event.storageArea !== cachedLocalStorage) {
+      return
     }
+
+    const parsed = safeParseSession(event.newValue)
+    if (hasActiveTokenAndUser(parsed) && parsed) {
+      useAuthStore.setState({
+        user: parsed.user,
+        accessToken: parsed.accessToken,
+        refreshToken: parsed.refreshToken,
+        rememberMe: parsed.rememberMe,
+        isAuthenticated: true,
+      })
+      return
+    }
+
+    // Preserve active tab session if it is backed by sessionStorage (rememberMe: false)
+    const tabSession = safeParseSession(cachedSessionStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
+    if (hasActiveTokenAndUser(tabSession)) {
+      return
+    }
+
+    useAuthStore.setState({
+      user: null,
+      accessToken: null,
+      refreshToken: null,
+      rememberMe: false,
+      isAuthenticated: false,
+    })
   })
 }

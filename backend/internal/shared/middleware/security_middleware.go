@@ -61,6 +61,8 @@ func BodySizeLimitMiddleware(maxBytes int64) gin.HandlerFunc {
 	}
 }
 
+const maxRateLimitVisitors = 10000
+
 type rateLimitVisitor struct {
 	count     int
 	expiresAt time.Time
@@ -87,7 +89,7 @@ func (l *ipRateLimiter) allow(ip string, now time.Time) (allowed bool, remaining
 	l.mu.Lock()
 	defer l.mu.Unlock()
 
-	if now.Sub(l.lastCleanup) >= l.window {
+	if now.Sub(l.lastCleanup) >= l.window || len(l.visitors) >= maxRateLimitVisitors {
 		for k, v := range l.visitors {
 			if now.After(v.expiresAt) {
 				delete(l.visitors, k)
@@ -98,6 +100,12 @@ func (l *ipRateLimiter) allow(ip string, now time.Time) (allowed bool, remaining
 
 	visitor, exists := l.visitors[ip]
 	if !exists || now.After(visitor.expiresAt) {
+		if !exists && len(l.visitors) >= maxRateLimitVisitors {
+			for k := range l.visitors {
+				delete(l.visitors, k)
+				break
+			}
+		}
 		l.visitors[ip] = &rateLimitVisitor{
 			count:     1,
 			expiresAt: now.Add(l.window),

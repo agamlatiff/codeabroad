@@ -3,7 +3,9 @@ import { useAuthStore } from "@/features/auth/store/authStore"
 
 // ProtectedRoute ensures the user is authenticated and has completed onboarding
 export const ProtectedRoute = () => {
-  const isAuthenticated = useAuthStore((state) => Boolean(state.isAuthenticated && state.refreshToken && state.user))
+  const isAuthenticated = useAuthStore((state) =>
+    Boolean(state.isAuthenticated && (state.refreshToken || state.accessToken) && state.user)
+  )
   const user = useAuthStore((state) => state.user)
 
   if (!isAuthenticated || !user) {
@@ -20,7 +22,9 @@ export const ProtectedRoute = () => {
 
 // OnboardingRoute allows only authenticated users who have NOT yet completed onboarding
 export const OnboardingRoute = () => {
-  const isAuthenticated = useAuthStore((state) => Boolean(state.isAuthenticated && state.refreshToken && state.user))
+  const isAuthenticated = useAuthStore((state) =>
+    Boolean(state.isAuthenticated && (state.refreshToken || state.accessToken) && state.user)
+  )
   const user = useAuthStore((state) => state.user)
 
   if (!isAuthenticated || !user) {
@@ -37,7 +41,9 @@ export const OnboardingRoute = () => {
 
 // GuestRoute allows ONLY unauthenticated guests (redirects logged-in users away from /login & /register)
 export const GuestRoute = () => {
-  const isAuthenticated = useAuthStore((state) => Boolean(state.isAuthenticated && state.refreshToken && state.user))
+  const isAuthenticated = useAuthStore((state) =>
+    Boolean(state.isAuthenticated && (state.refreshToken || state.accessToken) && state.user)
+  )
   const user = useAuthStore((state) => state.user)
 
   if (isAuthenticated && user) {

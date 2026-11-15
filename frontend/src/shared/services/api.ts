@@ -94,16 +94,17 @@ api.interceptors.response.use(
 
         // If 401 Unauthorized and request has not been retried yet
         if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-            // Prevent infinite refresh loop on auth endpoints
+            // Prevent infinite refresh loop or wasteful token rotation on auth endpoints
             if (
                 originalRequest.url?.includes('/auth/login') ||
                 originalRequest.url?.includes('/auth/register') ||
-                originalRequest.url?.includes('/auth/refresh')
+                originalRequest.url?.includes('/auth/refresh') ||
+                originalRequest.url?.includes('/auth/logout')
             ) {
                 return Promise.reject(error)
             }
 
-            const { refreshToken, setTokens, logout } = useAuthStore.getState()
+            const { refreshToken, setTokens, updateUser, logout } = useAuthStore.getState()
 
             if (!refreshToken) {
                 logout()
@@ -140,8 +141,11 @@ api.interceptors.response.use(
 
                 const data = response.data
                 if (data.success && data.data) {
-                    const { access_token, refresh_token } = data.data
+                    const { access_token, refresh_token, user } = data.data
                     setTokens(access_token, refresh_token)
+                    if (user) {
+                        updateUser(user)
+                    }
 
                     processQueue(null)
 

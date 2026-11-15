@@ -79,7 +79,13 @@ func main() {
 
 	// 6. Initialize Handlers & Middlewares
 	healthHandler := health.NewHandler(pg, rdb)
-	authLimiter := middleware.RateLimitMiddleware(10, time.Minute)
+	authLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"auth:public",
+		10,
+		time.Minute,
+		"terlalu banyak percobaan autentikasi, silakan coba lagi beberapa saat",
+	)
 	authHandler := auth.NewHandlerWithRateLimiter(authUsecase, authLimiter)
 	userHandler := user.NewHandler(userUsecase)
 	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
