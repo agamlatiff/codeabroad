@@ -3,6 +3,7 @@ import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type { SubmitExerciseAnswerResponse } from '@/features/exercise/types/exercise'
 import {
   formatUserAnswerForSubmission,
+  matchesChoiceOption,
   parseExerciseContent,
 } from '@/features/exercise/utils/exerciseHelpers'
 import { audioEngine } from '@/shared/utils/audio'
@@ -54,7 +55,9 @@ export const useExerciseQuestionInputs = ({
   const resolvedCorrectAnswer = useMemo(() => {
     const raw = submittedResult?.correct_answer ?? ''
     if (!raw || !parsedContent) return raw
-    const matchedOption = parsedContent.choiceOptions.find((opt) => opt.id === raw)
+    const matchedOption = parsedContent.choiceOptions.find((opt) =>
+      matchesChoiceOption(opt, raw)
+    )
     return matchedOption ? matchedOption.text : raw
   }, [parsedContent, submittedResult?.correct_answer])
 

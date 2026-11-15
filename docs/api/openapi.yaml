@@ -649,6 +649,7 @@ paths:
                   format: uuid
                 user_answer:
                   type: string
+                  minLength: 1
                   maxLength: 2000
                 time_spent_seconds:
                   type: integer
@@ -806,6 +807,8 @@ paths:
           $ref: "#/components/responses/ForbiddenError"
         "404":
           $ref: "#/components/responses/NotFoundError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
 
   /exams/result/{level_id}:
     get:
@@ -830,6 +833,8 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "403":
+          $ref: "#/components/responses/ForbiddenError"
         "404":
           $ref: "#/components/responses/NotFoundError"
 
@@ -862,6 +867,7 @@ paths:
                         format: uuid
                       user_answer:
                         type: string
+                        minLength: 1
                         maxLength: 2000
                       time_spent_seconds:
                         type: integer

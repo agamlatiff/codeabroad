@@ -4,7 +4,10 @@ import type {
   ParsedExerciseContent,
   SubmitExerciseAnswerResponse,
 } from '@/features/exercise/types/exercise'
-import { SKILL_PILLAR_LABELS } from '@/features/exercise/utils/exerciseHelpers'
+import {
+  SKILL_PILLAR_LABELS,
+  matchesChoiceOption,
+} from '@/features/exercise/utils/exerciseHelpers'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import {
   ArrowCounterClockwise,
@@ -38,6 +41,46 @@ interface ExercisePromptRendererProps {
   onToggleRecording: () => void
   onToggleHint: () => void
   onEnterKey?: () => void
+}
+
+const getChoiceOptionClasses = (
+  isSelected: boolean,
+  submittedResult: SubmitExerciseAnswerResponse | null,
+  isCorrectOption: boolean
+): { button: string; badge: string } => {
+  if (submittedResult) {
+    if ((isSelected && submittedResult.is_correct) || isCorrectOption) {
+      return {
+        button:
+          'bg-emerald-50 border-emerald-500 shadow-[0_3px_0_0_#10B981] text-emerald-950',
+        badge: 'border-emerald-500 bg-emerald-600 text-white',
+      }
+    }
+    if (isSelected && !submittedResult.is_correct) {
+      return {
+        button: 'bg-rose-50 border-rose-500 shadow-[0_3px_0_0_#F43F5E] text-rose-950',
+        badge: 'border-rose-500 bg-rose-600 text-white',
+      }
+    }
+    return {
+      button:
+        'bg-white border-slate-200 shadow-[0_3px_0_0_#E2E8F0] text-slate-500 opacity-75',
+      badge: 'border-slate-200 bg-slate-50 text-slate-400',
+    }
+  }
+
+  if (isSelected) {
+    return {
+      button: 'bg-blue-50 border-blue-500 shadow-[0_3px_0_0_#3B82F6] text-blue-950',
+      badge: 'border-blue-500 bg-blue-600 text-white',
+    }
+  }
+
+  return {
+    button:
+      'bg-white border-slate-200 shadow-[0_3px_0_0_#E2E8F0] hover:bg-slate-50 text-slate-800',
+    badge: 'border-slate-200 bg-slate-50 text-slate-500',
+  }
 }
 
 /**
@@ -406,6 +449,15 @@ export const ExercisePromptRenderer = ({
           <div className="grid grid-cols-1 gap-3">
             {parsedContent.choiceOptions.map((opt, idx) => {
               const isSelected = selectedOptionValue === opt.id
+              const isCorrectOption = Boolean(
+                submittedResult &&
+                  matchesChoiceOption(opt, submittedResult.correct_answer)
+              )
+              const optionStyle = getChoiceOptionClasses(
+                isSelected,
+                submittedResult,
+                isCorrectOption
+              )
               return (
                 <button
                   key={`${opt.id}-${idx}`}
@@ -414,18 +466,14 @@ export const ExercisePromptRenderer = ({
                   aria-pressed={isSelected}
                   data-allow-enter-submit={isSelected ? 'true' : undefined}
                   onClick={() => onSelectOption(opt.id)}
-                  className={`w-full min-h-[56px] px-5 py-3.5 rounded-2xl border-2 text-left flex items-center gap-3.5 transition-all ${
-                    isSelected
-                      ? 'bg-blue-50 border-blue-500 shadow-[0_3px_0_0_#3B82F6] text-blue-950'
-                      : 'bg-white border-slate-200 shadow-[0_3px_0_0_#E2E8F0] hover:bg-slate-50 text-slate-800'
-                  } ${isLocked ? 'cursor-default' : 'cursor-pointer active:translate-y-0.5 active:shadow-none'}`}
+                  className={`w-full min-h-[56px] px-5 py-3.5 rounded-2xl border-2 text-left flex items-center gap-3.5 transition-all ${optionStyle.button} ${
+                    isLocked
+                      ? 'cursor-default'
+                      : 'cursor-pointer active:translate-y-0.5 active:shadow-none'
+                  }`}
                 >
                   <span
-                    className={`w-8 h-8 shrink-0 rounded-lg border-2 flex items-center justify-center text-xs font-black ${
-                      isSelected
-                        ? 'border-blue-500 bg-blue-600 text-white'
-                        : 'border-slate-200 bg-slate-50 text-slate-500'
-                    }`}
+                    className={`w-8 h-8 shrink-0 rounded-lg border-2 flex items-center justify-center text-xs font-black ${optionStyle.badge}`}
                   >
                     {idx + 1}
                   </span>

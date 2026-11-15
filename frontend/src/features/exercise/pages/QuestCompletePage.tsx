@@ -1,3 +1,4 @@
+import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { useLessonCompletePage } from '@/features/exercise/hooks/useLessonCompletePage'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
@@ -16,6 +17,7 @@ import {
  */
 export const QuestCompletePage = () => {
   const {
+    isLoading,
     lessonTitle,
     xpEarned,
     totalXp,
@@ -28,6 +30,15 @@ export const QuestCompletePage = () => {
     handleReplayLesson,
     handleBackToCurriculum,
   } = useLessonCompletePage()
+
+  if (isLoading) {
+    return (
+      <ExerciseSessionStatusView
+        mode="loading"
+        message="Memuat ringkasan penyelesaian pelajaran..."
+      />
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex flex-col items-center justify-center p-4 sm:p-6">

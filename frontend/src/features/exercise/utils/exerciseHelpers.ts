@@ -189,6 +189,21 @@ export const resolveExerciseSpokenText = (
   parsedContent?.audioText ?? parsedContent?.displayText ?? fallbackPrompt
 
 /**
+ * Checks whether a choice option matches a raw ID or display text after trim/lowercase normalization.
+ */
+export const matchesChoiceOption = (
+  option: ExerciseChoiceOption,
+  rawValue: string
+): boolean => {
+  const normalized = rawValue.trim().toLowerCase()
+  if (!normalized) return false
+  return (
+    option.id.trim().toLowerCase() === normalized ||
+    option.text.trim().toLowerCase() === normalized
+  )
+}
+
+/**
  * Maps language ISO codes returned by backend curriculum APIs to BCP-47 speech synthesis locales.
  */
 export const resolveSpeechLocale = (languageCode?: string): string => {

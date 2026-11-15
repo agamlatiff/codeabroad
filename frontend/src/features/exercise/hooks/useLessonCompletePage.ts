@@ -96,6 +96,7 @@ export const useLessonCompletePage = () => {
   }, [navigate])
 
   return {
+    isLoading: !isConfirmedCompleted,
     lessonTitle,
     xpEarned,
     totalXp,
