@@ -1,9 +1,6 @@
-import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { onboardingService, CAREER_PATHS_QUERY_KEY } from "@/features/onboarding/services/onboardingService"
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useUser } from "@/features/user/hooks/useUser"
 import { triggerHaptic } from "@/shared/utils/haptics"
-import { mapCareerPathsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
 import type { User } from "@/features/user/types/user"
 import type { AvatarStyle } from "@/features/user/utils/avatar"
 
@@ -26,8 +23,7 @@ export interface UseSettingsModalOptions {
 
 /**
  * 1:1 Headless controller hook for SettingsModal in AppLeftSidebar.
- * Manages profile update mutation via SSOT useUser hook, dynamic career track options
- * from PostgreSQL, and avatar style selection.
+ * Manages profile update mutation via SSOT useUser hook and avatar style selection.
  */
 export const useSettingsModal = ({
   isOpen,
@@ -41,7 +37,6 @@ export const useSettingsModal = ({
 
   const [name, setName] = useState(user?.name || '')
   const [bio, setBio] = useState(user?.bio || '')
-  const [primaryStack, setPrimaryStack] = useState(user?.primary_stack || 'golang')
   const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -54,7 +49,6 @@ export const useSettingsModal = ({
     setPrevIsOpen(true)
     setName(user?.name || '')
     setBio(user?.bio || '')
-    setPrimaryStack(user?.primary_stack || 'golang')
     setSelectedAvatarStyle(avatarStyle)
     setSaveSuccess(false)
     setErrorMessage(null)
@@ -70,18 +64,6 @@ export const useSettingsModal = ({
     }
   }, [])
 
-  const { data: careerPaths = [] } = useQuery({
-    queryKey: CAREER_PATHS_QUERY_KEY,
-    queryFn: () => onboardingService.getCareerPaths(),
-    enabled: isOpen,
-    staleTime: 1000 * 60 * 10,
-  })
-
-  const stackOptions = useMemo(
-    () => mapCareerPathsToTrackOptions(careerPaths),
-    [careerPaths]
-  )
-
   const handleAvatarSelect = useCallback(
     (style: AvatarStyle) => {
       triggerHaptic('tap')
@@ -90,11 +72,6 @@ export const useSettingsModal = ({
     },
     [onAvatarStyleChange]
   )
-
-  const handleStackSelect = useCallback((slug: string) => {
-    triggerHaptic('tap')
-    setPrimaryStack(slug)
-  }, [])
 
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
@@ -114,7 +91,6 @@ export const useSettingsModal = ({
         await userActions.updateProfile({
           name: trimmedName,
           bio: bio.trim(),
-          primary_stack: primaryStack,
         })
         setSaveSuccess(true)
         setErrorMessage(null)
@@ -133,7 +109,7 @@ export const useSettingsModal = ({
         setIsSubmitting(false)
       }
     },
-    [name, bio, primaryStack, userActions, onProfileUpdated, onClose]
+    [name, bio, userActions, onProfileUpdated, onClose]
   )
 
   return {
@@ -141,15 +117,12 @@ export const useSettingsModal = ({
     setName,
     bio,
     setBio,
-    primaryStack,
     selectedAvatarStyle,
-    stackOptions,
     avatarStyles: AVATAR_STYLE_OPTIONS,
     isSubmitting: isSubmitting || userStatus.isUpdating,
     saveSuccess,
     errorMessage,
     handleAvatarSelect,
-    handleStackSelect,
     handleSubmit,
   }
 }

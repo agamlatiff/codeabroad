@@ -101,12 +101,10 @@ export const useQuestsSection = ({
   const isChestUnlocked = todayEarnedXp >= DAILY_TARGET_XP
   const remainingXp = Math.max(0, DAILY_TARGET_XP - todayEarnedXp)
 
-  const targetDestination = user?.country?.name || 'Tokyo'
-
   const activeQuests: SidebarDailyQuestItem[] = useMemo(() => {
     const languageMission: SidebarDailyQuestItem = {
       id: 'language-daily-vocab',
-      title: `Review 1 Kosakata Kerja ${targetDestination}`,
+      title: 'Review 1 Kosakata Harian',
       chipLabel: 'KOSAKATA KERJA',
       route: '#daily-language-card',
       xpReward: VOCAB_QUEST_REWARD_XP,
@@ -138,7 +136,7 @@ export const useQuestsSection = ({
     })
 
     return [...mappedApiQuests, languageMission]
-  }, [dailyQuests, isVocabQuestClaimed, isLanguageReviewed, targetDestination])
+  }, [dailyQuests, isVocabQuestClaimed, isLanguageReviewed])
 
   const handleOpenChestModal = useCallback(() => {
     triggerHaptic('tap')

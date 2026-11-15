@@ -7,9 +7,6 @@ import {
   Star,
   Check,
   CircleNotch,
-  Code,
-  Cpu,
-  DeviceMobile,
   SpeakerHigh,
   SpeakerLow,
   SpeakerSimpleSlash,
@@ -25,13 +22,6 @@ import {
 
 export type SettingsModalProps = UseSettingsModalOptions
 
-const resolveStackIcon = (slug: string) => {
-  const lower = slug.toLowerCase()
-  if (lower.includes('frontend') || lower.includes('react')) return DeviceMobile
-  if (lower.includes('devops') || lower.includes('cloud')) return Cpu
-  return Code
-}
-
 /**
  * SettingsModal (SSOT)
  * Pure declarative account settings modal for AppLeftSidebar.
@@ -45,15 +35,12 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     setName,
     bio,
     setBio,
-    primaryStack,
     selectedAvatarStyle,
-    stackOptions,
     avatarStyles,
     isSubmitting,
     saveSuccess,
     errorMessage,
     handleAvatarSelect,
-    handleStackSelect,
     handleSubmit,
   } = useSettingsModal(props)
 
@@ -222,53 +209,6 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               })}
             </div>
           </div>
-
-          {/* Pilihan Target Spesialisasi */}
-          {stackOptions.length > 0 && (
-            <div className="space-y-2">
-              <label className="text-xs font-brand font-black text-slate-700 block">
-                Peminatan Karier Utama
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {stackOptions.map((stk) => {
-                  const Icon = resolveStackIcon(stk.slug)
-                  const isSelected = primaryStack === stk.slug
-
-                  return (
-                    <button
-                      key={stk.slug}
-                      type="button"
-                      onClick={() => handleStackSelect(stk.slug)}
-                      className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-1.5 ${
-                        isSelected
-                          ? 'border-blue-500 bg-blue-50/70 shadow-xs'
-                          : 'border-slate-200 hover:border-slate-300 bg-white'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between w-full">
-                        <div className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700">
-                          <Icon weight="bold" className="w-3.5 h-3.5" />
-                        </div>
-                        {isSelected && (
-                          <div className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center">
-                            <Check weight="bold" className="w-2.5 h-2.5" />
-                          </div>
-                        )}
-                      </div>
-                      <div>
-                        <span className="font-brand font-black text-xs text-slate-900 block">
-                          {stk.shortTitle || stk.title}
-                        </span>
-                        <span className="text-[9px] text-slate-500 block font-medium mt-0.5 line-clamp-2">
-                          {stk.subtitle}
-                        </span>
-                      </div>
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
-          )}
 
           {/* ── AUDIO & SOUNDSCAPE PREFERENCES ── */}
           <div className="space-y-2.5 pt-3 border-t border-slate-200/80">

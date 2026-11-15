@@ -51,8 +51,7 @@ export interface Quest {
   description?: string
   type: 'main' | 'side' | 'daily' | 'boss'
   format?: 'code' | 'quiz' | 'fill_blank'
-  career_path_id?: string
-  country_id?: string
+  language_id?: string
   difficulty: 'Mudah' | 'Menengah' | 'Sulit' | string
   xp_reward: number
   gems_reward?: number
@@ -110,7 +109,7 @@ export interface SubmitQuestResponse {
 }
 
 export interface QuestFilter {
-  career_path_id?: string
+  language_id?: string
   chapter_id?: string
   type?: string
   status?: string

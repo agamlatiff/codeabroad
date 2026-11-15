@@ -6,7 +6,6 @@ import type {
   CareerTrackOption,
   UserLanguageEnrollment,
 } from "@/features/curriculum/types/curriculum"
-import type { CareerPath } from "@/features/onboarding/types/onboarding"
 import { resolveUnitTheme, resolveTrackIconType } from "@/features/curriculum/tokens/curriculumTokens"
 
 /**
@@ -193,64 +192,5 @@ export const UNIVERSAL_FOUNDATION_TRACKS: CareerTrackOption[] = [
   },
 ]
 
-/**
- * Legacy helper retained for non-curriculum callers (useSettingsModal) until user/onboarding migration.
- */
-export const mapCareerPathsToTrackOptions = (
-  careerPaths: CareerPath[],
-  activeUser?: {
-    primary_stack?: string | null
-    career_path_id?: string | null
-    career_path?: { id: string; slug: string; label: string } | null
-  } | null
-): CareerTrackOption[] => {
-  const options: CareerTrackOption[] = [...UNIVERSAL_FOUNDATION_TRACKS]
 
-  const allCareerTracks: CareerTrackOption[] = []
-  for (const path of careerPaths) {
-    const activeStacks = (path.stacks || []).filter((s) => s.is_active)
-    for (const stack of activeStacks) {
-      allCareerTracks.push({
-        id: `${path.id}-${stack.slug}`,
-        slug: stack.slug,
-        title: `${path.label} (${stack.label})`,
-        shortTitle: stack.label,
-        subtitle: path.description || stack.label,
-        category: 'coding',
-        iconType: resolveTrackIconType(stack.slug),
-        badgeLabel: stack.badge || 'Tersedia',
-        badgeVariant: stack.badge === 'Recommended' ? 'active' : 'available',
-        isActive: stack.is_active,
-        group: 'career',
-      })
-    }
-  }
-
-  if (activeUser?.primary_stack || activeUser?.career_path_id || activeUser?.career_path?.slug) {
-    const matchedTrack =
-      allCareerTracks.find(
-        (t) =>
-          t.slug === activeUser.primary_stack ||
-          (activeUser.career_path && t.id.startsWith(activeUser.career_path.id)) ||
-          (activeUser.career_path_id && t.id.startsWith(activeUser.career_path_id))
-      ) ||
-      allCareerTracks.find((t) => t.slug === activeUser.career_path?.slug)
-
-    if (matchedTrack) {
-      options.push({
-        ...matchedTrack,
-        badgeLabel: 'Karier Aktif',
-        badgeVariant: 'active',
-        group: 'career',
-      })
-      return options
-    }
-  }
-
-  if (allCareerTracks.length > 0) {
-    options.push(...allCareerTracks)
-  }
-
-  return options
-}
 

@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { userService } from "@/features/user/services/userService"
 import { questService } from "@/features/gamification/services/questService"
 import { gamificationService } from "@/features/gamification/services/gamificationService"
 import type { Quest } from "@/features/gamification/types/quest"
@@ -117,10 +116,8 @@ export const QuestLogPage = () => {
     isLoading: hookLoading,
   } = useQuests()
 
-  // Track selection state (SSOT with user profile)
-  const [activeTrack, setActiveTrack] = useState(() => {
-    return user?.primary_stack || user?.career_path?.slug || 'golang'
-  })
+  // Track selection state
+  const [activeTrack, setActiveTrack] = useState('ja')
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
 
@@ -351,16 +348,10 @@ export const QuestLogPage = () => {
   }, [completedQuestsSet])
 
   // Handle track switch from TrackSwitcherModal
-  const handleSelectTrack = async (trackSlug: string) => {
+  const handleSelectTrack = (trackSlug: string) => {
     triggerHaptic('success')
     setActiveTrack(trackSlug)
     setIsCourseSwitcherOpen(false)
-    updateUser({ primary_stack: trackSlug })
-    try {
-      await userService.updateProfile({ primary_stack: trackSlug })
-    } catch {
-      // Gracefully continue with local state
-    }
   }
 
   // Update gems and persist

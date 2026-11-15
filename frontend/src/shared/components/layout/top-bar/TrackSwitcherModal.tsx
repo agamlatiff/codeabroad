@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import { useQuery } from '@tanstack/react-query'
 import {
   Check,
   CaretRight,
@@ -24,9 +23,6 @@ import { Button3D } from "@/shared/components/ui/Button3D"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
 import { useCurriculumSwitcherModal } from "@/features/curriculum/hooks/useCurriculumSwitcherModal"
-import { onboardingService, CAREER_PATHS_QUERY_KEY } from "@/features/onboarding/services/onboardingService"
-import { useUser } from "@/features/user/hooks/useUser"
-import { mapCareerPathsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
 
 export interface TrackSwitcherModalProps {
   isOpen: boolean
@@ -454,29 +450,17 @@ export const TrackSwitcherModal = ({
   trackProgressMap,
   viewMode = 'map',
   onChangeViewMode,
-  mode = 'career',
+  mode = 'language',
 }: TrackSwitcherModalProps) => {
   const { trackOptions: languageOptions } = useCurriculumSwitcherModal({
-    enabled: isOpen && mode === 'language',
+    enabled: isOpen,
     onSelectTrack,
     onClose,
   })
 
-  const { data: careerPaths = [] } = useQuery({
-    queryKey: CAREER_PATHS_QUERY_KEY,
-    queryFn: onboardingService.getCareerPaths,
-    enabled: isOpen && mode === 'career',
-    staleTime: 1000 * 60 * 10,
-  })
-
-  const { data: userData } = useUser()
-  const careerOptions = mapCareerPathsToTrackOptions(careerPaths, userData.user)
-
   if (!isOpen || typeof document === 'undefined') {
     return null
   }
-
-  const activeOptions = mode === 'language' ? languageOptions : careerOptions
 
   return (
     <TrackSwitcherDialog
@@ -488,7 +472,7 @@ export const TrackSwitcherModal = ({
       viewMode={viewMode}
       onChangeViewMode={onChangeViewMode}
       mode={mode}
-      trackOptions={activeOptions}
+      trackOptions={languageOptions}
     />
   )
 }

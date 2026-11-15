@@ -79,21 +79,10 @@ const DESTINATION_LANGUAGE_MAP: Record<string, DestinationLanguageMeta> = {
 export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions = {}) => {
   const { user } = useAuthStore()
 
-  // Resolve target country & language metadata dynamically
+  // Resolve target language metadata dynamically
   const languageMeta: DestinationLanguageMeta = useMemo(() => {
-    const rawCode = user?.country?.code?.toUpperCase() || 'JP'
-    if (DESTINATION_LANGUAGE_MAP[rawCode]) {
-      return DESTINATION_LANGUAGE_MAP[rawCode]
-    }
-    return {
-      countryCode: rawCode,
-      countryName: user?.country?.name || 'Tujuan Global',
-      targetCity: user?.country?.name || 'Global',
-      languageTitle: `Bahasa Kerja ${user?.country?.name || 'Global'}`,
-      ttsLangCode: 'en-US',
-      flagEmoji: user?.country?.flag_emoji || '🌐',
-    }
-  }, [user?.country])
+    return DESTINATION_LANGUAGE_MAP['JP']
+  }, [])
 
   const { data: rawVocabs = [], isLoading } = useQuery({
     queryKey: [

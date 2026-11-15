@@ -1,167 +1,60 @@
-import { api, unwrapApiResponse } from "@/shared/services/api"
+import { api } from "@/shared/services/api"
 import type { ApiResponse } from "@/shared/types/api"
 import type {
-  Country,
-  CareerPath,
   OnboardingLanguage,
   OnboardingPayload,
   OnboardingProfileResponse,
   OnboardingV3ResultResponse,
   PlacementQuestionsResponse,
-} from "@/features/onboarding/types/onboarding"
+} from "../types/onboarding"
 
-export const CAREER_PATHS_QUERY_KEY = ['career-paths'] as const
 export const ONBOARDING_LANGUAGES_QUERY_KEY = ['onboarding-languages'] as const
 export const PLACEMENT_QUESTIONS_QUERY_KEY = (languageId: string) =>
   ['onboarding-placement-questions', languageId] as const
 
-const LANGUAGE_TO_COUNTRY_META: Record<
-  string,
-  { code: string; name: string; flag_emoji: string; badge?: string }
-> = {
-  ja: { code: 'JP', name: 'Jepang', flag_emoji: '🇯🇵', badge: 'Populer' },
-  de: { code: 'DE', name: 'Jerman', flag_emoji: '🇩🇪', badge: 'Segera Hadir' },
-  en: { code: 'SG', name: 'Inggris', flag_emoji: '🇬🇧', badge: 'Segera Hadir' },
-  'en-gb': { code: 'GB', name: 'Inggris (UK)', flag_emoji: '🇬🇧', badge: 'Segera Hadir' },
-  'en-us': { code: 'US', name: 'Inggris (US)', flag_emoji: '🇺🇸', badge: 'Segera Hadir' },
-  zh: { code: 'CN', name: 'Mandarin', flag_emoji: '🇨🇳', badge: 'Segera Hadir' },
-  fr: { code: 'FR', name: 'Prancis', flag_emoji: '🇫🇷', badge: 'Segera Hadir' },
-}
-
-const DEFAULT_CAREER_PATHS: CareerPath[] = [
-  {
-    id: 'backend',
-    slug: 'backend',
-    label: 'Backend Engineer',
-    description: 'API skalabel, microservices, dan arsitektur sistem terdistribusi.',
-    stacks: [
-      { slug: 'golang', label: 'Go (Gin Framework)', is_active: true, badge: 'Tokyo Standard' },
-      { slug: 'node', label: 'Node.js (Express)', is_active: false, badge: 'Coming Soon' },
-      { slug: 'java', label: 'Java (Spring Boot)', is_active: false, badge: 'Coming Soon' },
-    ],
-  },
-  {
-    id: 'frontend',
-    slug: 'frontend',
-    label: 'Frontend Engineer',
-    description: 'Antarmuka web modern, aksesibilitas, dan performa UI tinggi.',
-    stacks: [
-      { slug: 'react', label: 'React & TypeScript', is_active: true, badge: 'Tokyo Standard' },
-      { slug: 'vue', label: 'Vue.js', is_active: false, badge: 'Coming Soon' },
-    ],
-  },
-  {
-    id: 'fullstack',
-    slug: 'fullstack',
-    label: 'Fullstack Engineer',
-    description: 'Pengembangan end-to-end dari antarmuka hingga infrastruktur backend.',
-    stacks: [
-      { slug: 'react_golang', label: 'React + Go', is_active: true, badge: 'Populer' },
-    ],
-  },
-  {
-    id: 'devops',
-    slug: 'devops',
-    label: 'DevOps & Cloud',
-    description: 'CI/CD, Kubernetes, dan keandalan sistem cloud produksi.',
-    stacks: [
-      { slug: 'kubernetes', label: 'Docker & Kubernetes', is_active: false, badge: 'Coming Soon' },
-    ],
-  },
-]
-
 export const onboardingService = {
-  // Fetch available active languages from v3.0 /onboarding/languages
   async getLanguages(): Promise<OnboardingLanguage[]> {
-    const response = await api.get<ApiResponse<OnboardingLanguage[]>>('/onboarding/languages')
-    return unwrapApiResponse(response, 'Gagal memuat daftar bahasa onboarding.')
+    const response = await api.get<ApiResponse<OnboardingLanguage[]>>('/languages')
+    if (response.data.success && response.data.data) {
+      return response.data.data
+    }
+    throw new Error(response.data.error || 'Gagal memuat daftar bahasa')
   },
 
-  // Fetch placement test questions for a target language
   async getPlacementQuestions(languageId: string): Promise<PlacementQuestionsResponse> {
     const response = await api.get<ApiResponse<PlacementQuestionsResponse>>(
       `/onboarding/placement-questions/${languageId}`
     )
-    return unwrapApiResponse(response, 'Gagal memuat soal placement test.')
-  },
-
-  // Map v3.0 languages to destination country cards for Step 1 UI
-  async getCountries(): Promise<Country[]> {
-    const languages = await onboardingService.getLanguages()
-    return languages.map((lang) => {
-      const meta = LANGUAGE_TO_COUNTRY_META[lang.code?.toLowerCase()] ?? {
-        code: lang.code?.toUpperCase() || 'JP',
-        name: lang.name,
-        flag_emoji: '🌐',
-      }
-      return {
-        id: lang.id,
-        code: meta.code,
-        name: meta.name,
-        flag_emoji: meta.flag_emoji,
-        is_active: lang.is_active,
-        badge: meta.badge,
-      }
-    })
-  },
-
-  // Return career track catalog for Step 2 UI & legacy track switchers without hitting removed v2 endpoints
-  async getCareerPaths(): Promise<CareerPath[]> {
-    return DEFAULT_CAREER_PATHS
-  },
-
-  // Submit completed onboarding preferences to v3.0 POST /onboarding
-  async completeOnboarding(
-    payload: OnboardingPayload
-  ): Promise<OnboardingProfileResponse> {
-    const v3Body = {
-      language_id: payload.language_id || payload.country_id || '',
-      daily_goal_minutes: payload.daily_goal_minutes,
-      initial_placement_type: payload.initial_placement_type,
-      ...(payload.manual_level_id ? { manual_level_id: payload.manual_level_id } : {}),
-      ...(payload.placement_answers ? { placement_answers: payload.placement_answers } : {}),
+    if (response.data.success && response.data.data) {
+      return response.data.data
     }
+    throw new Error(response.data.error || 'Gagal memuat soal tes penempatan')
+  },
 
+  async completeOnboarding(payload: OnboardingPayload): Promise<OnboardingProfileResponse> {
     const response = await api.post<ApiResponse<OnboardingV3ResultResponse>>(
       '/onboarding',
-      v3Body
+      payload
     )
-    const data = unwrapApiResponse(response, 'Gagal menyelesaikan onboarding.')
 
-    const countryMeta = LANGUAGE_TO_COUNTRY_META.ja
-    const matchedCareerPath = DEFAULT_CAREER_PATHS.find(
-      (p) => p.id === payload.career_path_id || p.slug === payload.career_path_id
-    )
-    return {
-      id: data.user.id,
-      name: data.profile.name,
-      username: data.profile.username,
-      email: data.user.email,
-      level: payload.level || data.assigned_level?.code || 'beginner',
-      xp: data.gamification_stats.xp,
-      current_level: data.gamification_stats.current_level,
-      streak: data.gamification_stats.streak,
-      is_onboarded: data.profile.is_onboarded,
-      primary_stack: payload.primary_stack || 'golang',
-      target_timeline: payload.target_timeline,
-      language_level: payload.language_level,
-      daily_goal_minutes: data.profile.daily_goal_minutes,
-      initial_placement_type: payload.initial_placement_type,
-      placement_score_percent: data.placement_score_percent ?? null,
-      assigned_level_code: data.assigned_level?.code,
-      assigned_level_name: data.assigned_level?.name,
-      country: {
-        id: data.enrollment.language_id,
-        code: countryMeta.code,
-        name: countryMeta.name,
-        flag_emoji: countryMeta.flag_emoji,
-      },
-      career_path: {
-        id: matchedCareerPath?.id || payload.career_path_id || 'backend',
-        slug: matchedCareerPath?.slug || payload.career_path_id || 'backend',
-        label: matchedCareerPath?.label || 'Backend Engineer',
-      },
-      created_at: data.user.created_at,
+    if (response.data.success && response.data.data) {
+      const resData = response.data.data
+      return {
+        id: resData.user_id || '',
+        user_id: resData.user_id || '',
+        is_onboarded: resData.is_onboarded,
+        xp: resData.xp ?? 50,
+        streak: resData.streak ?? 0,
+        daily_goal_minutes: resData.daily_goal_minutes,
+        initial_placement_type: resData.initial_placement_type,
+        placement_score_percent: resData.placement_score_percent,
+        assigned_level_code: resData.assigned_level_code,
+        assigned_level_name: resData.assigned_level_name,
+        language_code: resData.language_code,
+        language_name: resData.language_name,
+        preferred_roadmap_view: resData.preferred_roadmap_view ?? 'map',
+      }
     }
+    throw new Error(response.data.error || 'Gagal menyelesaikan onboarding')
   },
 }

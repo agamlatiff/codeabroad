@@ -1,5 +1,3 @@
-import type { CountrySummary, CareerPathSummary } from "@/features/onboarding/types/onboarding"
-
 /**
  * 3-PILLAR NORMALIZED USER DOMAIN TYPES
  * Directly mirrors backend `backend/internal/app/user/domain.go`.
@@ -13,27 +11,18 @@ export interface UserAccount {
   updated_at?: string
 }
 
-// Pillar 2: Profile & Career Goals (user_profiles table)
+// Pillar 2: Profile & Learning Preferences (user_profiles table)
 export interface UserProfile {
   name: string
   username: string
   bio?: string | null
-  career_path_id?: string | null
-  country_id?: string | null
-  tech_stack_id?: string | null
-  primary_stack?: string | null
   is_onboarded: boolean
   daily_goal_minutes?: number
   has_seen_roadmap_tour?: boolean
   preferred_roadmap_view?: 'map' | 'syllabus' | null
-  country?: CountrySummary | null
-  career_path?: CareerPathSummary | null
 
-  // Frontend UI / Onboarding compatibility helpers
+  // Frontend UI helper
   avatar_url?: string | null
-  level?: string | null
-  target_timeline?: string | null
-  language_level?: string | null
 }
 
 // Pillar 3: High-Concurrency Game Loop Stats (user_gamification table)
@@ -53,10 +42,6 @@ export interface UpdateProfilePayload {
   name?: string
   bio?: string
   daily_goal_minutes?: number
-  country_id?: string
-  career_path_id?: string
-  tech_stack_id?: string
-  primary_stack?: string
   has_seen_roadmap_tour?: boolean
   preferred_roadmap_view?: 'map' | 'syllabus'
 }

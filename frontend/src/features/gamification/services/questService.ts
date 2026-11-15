@@ -10,11 +10,11 @@ import type {
 } from "@/features/gamification/types/quest"
 
 export const questService = {
-  // List quests with optional filtering by type, career_path_id, or chapter_id
+  // List quests with optional filtering by type, language_id, or chapter_id
   async listQuests(filter?: QuestFilter): Promise<Quest[]> {
     const params = new URLSearchParams()
     if (filter?.type) params.append('type', filter.type)
-    if (filter?.career_path_id) params.append('career_path_id', filter.career_path_id)
+    if (filter?.language_id) params.append('language_id', filter.language_id)
     if (filter?.chapter_id) params.append('chapter_id', filter.chapter_id)
 
     const response = await api.get<ApiResponse<Quest[]>>('/quests', { params })
