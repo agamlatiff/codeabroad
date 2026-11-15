@@ -46,7 +46,7 @@ export const MonthlyBadgeModal = ({
         <div className="flex justify-center">
           <span className="text-[11px] font-brand font-black px-4 py-1 rounded-full border border-amber-300 bg-amber-100 text-amber-950 uppercase tracking-wider shadow-2xs flex items-center gap-1.5">
             <Trophy weight="fill" className="w-3.5 h-3.5 text-amber-700" />
-            <span>Tantangan Bulanan • Tokyo Tech Guild</span>
+            <span>Tantangan Bulanan • Language Mastery</span>
           </span>
         </div>
 

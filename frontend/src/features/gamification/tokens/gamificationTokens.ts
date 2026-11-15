@@ -51,7 +51,7 @@ export const GAMIFICATION_RULES_TOKENS = {
 
 export const MASCOT_TOKENS = {
   name: 'Kodi',
-  species: 'Tech Companion Panda / Red Panda',
+  species: 'Language Companion Panda / Red Panda',
   title: 'Kodi (Chiikawa Neko) — CodeAbroad Companion',
   emotions: {
     welcome: { label: 'Greeting / Hello', aura: 'rgba(59, 130, 246, 0.25)' },

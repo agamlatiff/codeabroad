@@ -1470,7 +1470,7 @@ export const QuestLogPage = () => {
                   <div>
                     <div className="flex items-center gap-2">
                       <h3 className="font-extrabold text-base sm:text-lg tracking-tight">
-                        Akihabara Tech Kiosk &amp; Vending
+                        Akihabara Arcade &amp; Reward Shop
                       </h3>
                       <span className="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase">
                         AUTO DISPENSE

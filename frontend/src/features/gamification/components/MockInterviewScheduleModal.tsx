@@ -94,7 +94,7 @@ export const MockInterviewScheduleModal = ({
                 {[
                   { id: 'bilingual' as const, label: 'Campuran (JP & EN)' },
                   { id: 'nihongo' as const, label: 'Full Nihongo (JLPT)' },
-                  { id: 'english' as const, label: 'Full English Tech' },
+                  { id: 'english' as const, label: 'Full English' },
                 ].map((item) => (
                   <button
                     key={item.id}

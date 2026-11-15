@@ -1,67 +1,20 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
-import { questService } from "@/features/gamification/services/questService"
+import { useState, useEffect, useCallback } from 'react'
 import type { Quest } from "@/features/gamification/types/quest"
 
 export type QuestTab = 'all' | 'daily' | 'main' | 'side'
 
 export const useQuests = () => {
   const [activeTab, setActiveTab] = useState<QuestTab>('all')
-  const [allQuests, setAllQuests] = useState<Quest[]>([])
-  const [dailyQuests, setDailyQuests] = useState<Quest[]>([])
-  const [isLoading, setIsLoading] = useState<boolean>(true)
-  const [error, setError] = useState<string | null>(null)
   const [timeLeft, setTimeLeft] = useState<string>('00:00:00')
 
   const fetchQuests = useCallback(async () => {
-    setIsLoading(true)
-    setError(null)
-    try {
-      const [questsData, dailyData] = await Promise.all([
-        questService.listQuests(),
-        questService.getDailyQuests(),
-      ])
-      setAllQuests(questsData)
-      setDailyQuests(dailyData)
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Gagal memuat daftar misi'
-      setError(msg)
-    } finally {
-      setIsLoading(false)
-    }
+    // Daily & milestone quests are derived from user activity and gamification status
   }, [])
 
-  useEffect(() => {
-    let ignore = false
-    void (async () => {
-      try {
-        const [questsData, dailyData] = await Promise.all([
-          questService.listQuests(),
-          questService.getDailyQuests(),
-        ])
-        if (ignore) return
-        setAllQuests(questsData)
-        setDailyQuests(dailyData)
-      } catch (err: unknown) {
-        if (ignore) return
-        const msg = err instanceof Error ? err.message : 'Gagal memuat daftar misi'
-        setError(msg)
-      } finally {
-        if (!ignore) {
-          setIsLoading(false)
-        }
-      }
-    })()
-
-    return () => {
-      ignore = true
-    }
-  }, [])
-
-  // Countdown timer to midnight JST / WIB
+  // Countdown timer to midnight WIB (UTC+7)
   useEffect(() => {
     const updateCountdown = () => {
       const now = new Date()
-      // Midnight in JST (UTC+9)
       const wibNow = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60 * 1000)
       const wibMidnight = new Date(wibNow)
       wibMidnight.setHours(24, 0, 0, 0)
@@ -80,34 +33,17 @@ export const useQuests = () => {
     return () => clearInterval(timer)
   }, [])
 
-  // Filtered quests based on current tab
-  const filteredQuests = useMemo(() => {
-    if (activeTab === 'daily') {
-      return dailyQuests
-    }
-    if (activeTab === 'main') {
-      return allQuests.filter((q) => q.type === 'main')
-    }
-    if (activeTab === 'side') {
-      return allQuests.filter((q) => q.type === 'side')
-    }
-    return allQuests
-  }, [activeTab, allQuests, dailyQuests])
-
-  const completedCount = useMemo(() => {
-    return allQuests.filter((q) => q.user_status === 'completed').length
-  }, [allQuests])
-
   return {
     activeTab,
     setActiveTab,
-    quests: filteredQuests,
-    dailyQuests,
+    quests: [] as Quest[],
+    allQuests: [] as Quest[],
+    dailyQuests: [] as Quest[],
+    completedCount: 0,
+    totalCount: 0,
+    isLoading: false,
+    error: null as string | null,
     timeLeft,
-    completedCount,
-    totalCount: allQuests.length,
-    isLoading,
-    error,
-    refetch: fetchQuests,
+    refresh: fetchQuests,
   }
 }
