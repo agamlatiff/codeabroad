@@ -255,7 +255,16 @@ func (r *PostgresRepository) AddGems(ctx context.Context, userID string, gems in
 	return newTotal, nil
 }
 
-// LogActivity inserts a user activity event and updates last_active_at in a single atomic Writeable CTE (1 DB round-trip)
+const streakCaseExprWIB = `
+	CASE
+		WHEN last_active_at IS NULL THEN 1
+		WHEN (last_active_at AT TIME ZONE 'Asia/Jakarta')::date = ((NOW() AT TIME ZONE 'Asia/Jakarta')::date - INTERVAL '1 day')::date THEN streak + 1
+		WHEN (last_active_at AT TIME ZONE 'Asia/Jakarta')::date = (NOW() AT TIME ZONE 'Asia/Jakarta')::date THEN GREATEST(streak, 1)
+		ELSE 1
+	END
+`
+
+// LogActivity inserts a user activity event and atomically updates streak & last_active_at (WIB) in 1 round-trip
 func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityLog) error {
 	var metaJSON []byte
 	if log.Metadata != nil {
@@ -272,7 +281,8 @@ func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityL
 			VALUES (NULLIF($1, '')::uuid, $2, $3, $4, NOW())
 		)
 		UPDATE user_gamification
-		SET last_active_at = NOW(),
+		SET streak = ` + streakCaseExprWIB + `,
+		    last_active_at = NOW(),
 		    updated_at = NOW()
 		WHERE user_id = NULLIF($1, '')::uuid
 	`
@@ -349,7 +359,8 @@ func (r *PostgresRepository) EnsureDailyLogin(
 			VALUES (NULLIF($1, '')::uuid, 'daily_login', 0, $2, NOW())
 		)
 		UPDATE user_gamification
-		SET last_active_at = NOW(),
+		SET streak = ` + streakCaseExprWIB + `,
+		    last_active_at = NOW(),
 		    updated_at = NOW()
 		WHERE user_id = NULLIF($1, '')::uuid
 	`
@@ -468,6 +479,7 @@ func (r *PostgresRepository) ClaimDailyReward(
 			UPDATE user_gamification
 			SET xp = xp + $2,
 			    current_level = $3,
+			    streak = ` + streakCaseExprWIB + `,
 			    last_active_at = NOW(),
 			    updated_at = NOW()
 			WHERE user_id = NULLIF($1, '')::uuid

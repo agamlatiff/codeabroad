@@ -169,14 +169,21 @@ func (m *MockRepository) EnsureDailyLogin(ctx context.Context, userID string, da
 	if err != nil || exists {
 		return false, err
 	}
+	now := time.Now().UTC()
 	if err := m.LogActivity(ctx, &UserActivityLog{
 		UserID:       userID,
 		ActivityType: "daily_login",
 		XPEarned:     0,
 		Metadata:     map[string]any{"date": dateStr},
-		CreatedAt:    time.Now().UTC(),
+		CreatedAt:    now,
 	}); err != nil {
 		return false, err
+	}
+	if u, ok := m.Users[userID]; ok {
+		if newStreak, changed := NewHelper().EvaluateDailyStreak(u.Streak, u.LastActiveAt, now); changed {
+			u.Streak = newStreak
+		}
+		u.LastActiveAt = &now
 	}
 	return true, nil
 }

@@ -2,6 +2,7 @@ package user
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -242,6 +243,7 @@ func (h *Helper) BuildWeeklyActivitySummary(
 	for dt := range allActiveDatesSet {
 		activeDatesList = append(activeDatesList, dt)
 	}
+	sort.Strings(activeDatesList)
 
 	return &UserActivitySummaryResponse{
 		CurrentStreak:   streak,

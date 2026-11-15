@@ -55,29 +55,20 @@ func (u *usecase) GetActivityLogs(ctx context.Context, userID string) (*UserActi
 		return nil, apperror.ErrUnauthorized
 	}
 
+	now := time.Now().UTC()
+	todayStr := now.In(u.helper.DefaultLocation()).Format("2006-01-02")
+	startOfToday, startOfTomorrow, calendarStart := u.helper.ResolveCalendarWindow(now)
+
+	if _, err := u.userRepo.EnsureDailyLogin(ctx, userID, todayStr, startOfToday, startOfTomorrow); err != nil {
+		log.Printf("[WARN] [user.GetActivityLogs] failed to ensure daily login for user %s: %v", userID, err)
+	}
+
 	usr, err := u.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch user for activity logs: %w", err)
 	}
 	if usr == nil {
 		return nil, ErrUserNotFound
-	}
-
-	now := time.Now().UTC()
-	todayStr := now.In(u.helper.DefaultLocation()).Format("2006-01-02")
-	startOfToday, startOfTomorrow, calendarStart := u.helper.ResolveCalendarWindow(now)
-
-	loggedToday, err := u.userRepo.EnsureDailyLogin(ctx, userID, todayStr, startOfToday, startOfTomorrow)
-	if err != nil {
-		log.Printf("[WARN] [user.GetActivityLogs] failed to ensure daily login for user %s: %v", userID, err)
-	} else if loggedToday {
-		if newStreak, changed := u.helper.EvaluateDailyStreak(usr.Streak, usr.LastActiveAt, now); changed {
-			usr.Streak = newStreak
-			usr.LastActiveAt = &now
-			if err := u.userRepo.UpdateGamification(ctx, userID, usr.XP, usr.CurrentLevel, newStreak, &now); err != nil {
-				log.Printf("[WARN] [user.GetActivityLogs] failed to update streak gamification for user %s: %v", userID, err)
-			}
-		}
 	}
 
 	dailyStats, err := u.userRepo.GetDailyActivityStatsSince(ctx, userID, calendarStart)
