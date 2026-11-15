@@ -226,8 +226,8 @@ func TestSubmitExam_4PillarScoring_Success(t *testing.T) {
 	res, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
 		LevelID: "lvl-1",
 		Answers: []exercise.SubmitExerciseAnswerRequest{
-			{ExerciseID: "q-1", UserAnswer: "A"},
-			{ExerciseID: "q-2", UserAnswer: "B"},
+			{ExerciseID: " q-1 ", UserAnswer: "A", TimeSpentSeconds: 12},
+			{ExerciseID: "q-2", UserAnswer: "B", TimeSpentSeconds: 999999},
 			{ExerciseID: "q-3", UserAnswer: "C"},
 			{ExerciseID: "q-4", UserAnswer: "D"},
 		},
@@ -243,6 +243,16 @@ func TestSubmitExam_4PillarScoring_Success(t *testing.T) {
 	}
 	if res.Certificate == nil {
 		t.Errorf("expected certificate to be issued")
+	}
+	if answersMap, ok := res.Attempt.AnalysisReport["answers"].(map[string]any); ok {
+		if q1, ok := answersMap["q-1"].(map[string]any); !ok || q1["time_spent_seconds"] != 12 {
+			t.Errorf("expected trimmed q-1 time_spent_seconds=12, got %+v", answersMap["q-1"])
+		}
+		if q2, ok := answersMap["q-2"].(map[string]any); !ok || q2["time_spent_seconds"] != 86400 {
+			t.Errorf("expected clamped q-2 time_spent_seconds=86400, got %+v", answersMap["q-2"])
+		}
+	} else {
+		t.Errorf("expected answers map in AnalysisReport")
 	}
 }
 

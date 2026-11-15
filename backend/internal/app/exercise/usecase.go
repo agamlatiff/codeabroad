@@ -148,6 +148,16 @@ func (u *usecase) GetDailyVocabularies(ctx context.Context, userID string, limit
 	return u.exerciseRepo.GetDailyVocabularies(ctx, userID, normalizeLimit(limit, 10, 50))
 }
 
+func clampTimeSpentSeconds(seconds int) int {
+	if seconds < 0 {
+		return 0
+	}
+	if seconds > 86400 {
+		return 86400
+	}
+	return seconds
+}
+
 func validateSubmittedAnswer(exerciseID string, userAnswer string) error {
 	if strings.TrimSpace(exerciseID) == "" || strings.TrimSpace(userAnswer) == "" || len(userAnswer) > 2000 {
 		return apperror.ErrBadRequest
@@ -182,12 +192,7 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		diagnosticFeedback = u.helper.ExtractDiagnosticFeedback(ex.DiagnosticRubric, req.UserAnswer)
 	}
 
-	timeSpent := req.TimeSpentSeconds
-	if timeSpent < 0 {
-		timeSpent = 0
-	} else if timeSpent > 86400 {
-		timeSpent = 86400
-	}
+	timeSpent := clampTimeSpentSeconds(req.TimeSpentSeconds)
 
 	selectedAnswer := map[string]any{"user_answer": req.UserAnswer}
 	if req.SkipSRSSchedule {
@@ -487,17 +492,18 @@ func (u *usecase) gradeExamSubmission(
 		if err := validateSubmittedAnswer(ans.ExerciseID, ans.UserAnswer); err != nil {
 			return nil, err
 		}
-		if seenExerciseIDs[ans.ExerciseID] {
+		exID := strings.TrimSpace(ans.ExerciseID)
+		if seenExerciseIDs[exID] {
 			continue
 		}
-		seenExerciseIDs[ans.ExerciseID] = true
+		seenExerciseIDs[exID] = true
 
-		q, exists := questionsMap[ans.ExerciseID]
+		q, exists := questionsMap[exID]
 		if !exists {
 			return nil, apperror.NewBadRequestError(
 				"INVALID_EXAM_EXERCISE",
 				"one or more submitted exercise_id values do not belong to this readiness exam",
-				map[string]any{"exercise_id": ans.ExerciseID},
+				map[string]any{"exercise_id": exID},
 			)
 		}
 		pillar := q.SkillPillar
@@ -510,9 +516,11 @@ func (u *usecase) gradeExamSubmission(
 			totalScore++
 			pillarCorrect[pillar]++
 		}
-		answersPayload[ans.ExerciseID] = map[string]any{
-			"user_answer": ans.UserAnswer,
-			"is_correct":  isCorrect,
+		timeSpent := clampTimeSpentSeconds(ans.TimeSpentSeconds)
+		answersPayload[exID] = map[string]any{
+			"user_answer":        ans.UserAnswer,
+			"is_correct":         isCorrect,
+			"time_spent_seconds": timeSpent,
 		}
 	}
 
