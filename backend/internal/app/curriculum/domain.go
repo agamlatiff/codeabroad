@@ -160,6 +160,9 @@ type LessonCompletionPayload struct {
 	NewGems        int                 `json:"new_gems"`
 	PreviousStreak int                 `json:"-"`
 	WasCompleted   bool                `json:"-"`
+	UnitID         string              `json:"-"`
+	LevelID        string              `json:"-"`
+	UnitType       string              `json:"-"`
 	LastActiveAt   time.Time           `json:"last_active_at"`
 	ActivityType   string              `json:"activity_type"`
 	Metadata       map[string]any      `json:"metadata,omitempty"`

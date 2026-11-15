@@ -1,3 +1,8 @@
+/**
+ * @deprecated Legacy static curriculum mock data.
+ * The `curriculum` feature now consumes live backend APIs exclusively.
+ * Retained temporarily for `features/gamification/pages/QuestLogPage.tsx` (`CURRICULUM_TRACKS_MAP`).
+ */
 import type { SequentialCurriculumUnit } from "@/features/curriculum/types/curriculum"
 
 // â”€â”€ 1. GOLANG BACKEND ENGINEERING CURRICULUM â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€

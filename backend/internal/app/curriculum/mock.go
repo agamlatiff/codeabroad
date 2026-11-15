@@ -441,6 +441,11 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	if curLesson.ID != "" {
 		payload.Progress.LessonID = curLesson.ID
 	}
+	payload.UnitID = curLesson.UnitID
+	if curUnit, hasUnit := m.Units[curLesson.UnitID]; hasUnit {
+		payload.LevelID = curUnit.LevelID
+		payload.UnitType = curUnit.UnitType
+	}
 	if payload.ActivityType == "" {
 		payload.ActivityType = "lesson_completed"
 	}

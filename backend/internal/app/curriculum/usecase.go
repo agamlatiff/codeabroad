@@ -388,33 +388,10 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, apperror.ErrBadRequest
 	}
 
-	lesson, err := u.curriculumRepo.GetLessonByID(ctx, req.LessonID, userID)
-	if err != nil {
-		return nil, err
-	}
-	if lesson == nil {
-		return nil, ErrLessonNotFound
-	}
-	canonicalLessonID := lesson.ID
-	if canonicalLessonID == "" {
-		canonicalLessonID = req.LessonID
-	}
-
-	xpEarned := lesson.XPReward
-	if xpEarned <= 0 {
-		xpEarned = 15
-	}
-	activityType := "lesson_completed"
-
-	// Anti-exploit: Replaying an already mastered lesson awards practice XP only when passing accuracy is met
-	if lesson.IsCompleted {
-		xpEarned = u.helper.CalculateReplayXP(req.Score)
-	}
-
 	now := time.Now().UTC()
 	progress := &UserLessonProgress{
 		UserID:      userID,
-		LessonID:    canonicalLessonID,
+		LessonID:    req.LessonID,
 		IsCompleted: true,
 		Score:       req.Score,
 		IsSkipped:   false,
@@ -424,12 +401,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 	// Atomic Unit-of-Work: verify user, lesson eligibility, attempts, derived score, progress, gamification stats, and activity log under TX lock
 	payload := &LessonCompletionPayload{
 		Progress:     progress,
-		XPEarned:     xpEarned,
-		NewXP:        xpEarned,
-		NewLevel:     u.helper.CalculateLevel(xpEarned),
 		LastActiveAt: now,
-		ActivityType: activityType,
-		Metadata:     map[string]any{"lesson_id": canonicalLessonID, "score": req.Score, "is_practice": lesson.IsCompleted},
+		ActivityType: "lesson_completed",
+		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score},
 	}
 
 	if err := u.curriculumRepo.RecordLessonCompletionTx(ctx, payload); err != nil {
@@ -440,8 +414,24 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, fmt.Errorf("failed to record lesson completion tx: %w", err)
 	}
 
-	// Automatically advance current_level_id if every lesson in the user's current level is now complete
-	advancedNextLessonID := u.maybeAdvanceEnrollmentLevel(ctx, userID, lesson.UnitID, lesson.LevelID, lesson.UnitType)
+	canonicalLessonID := progress.LessonID
+	if canonicalLessonID == "" {
+		canonicalLessonID = req.LessonID
+	}
+
+	var nextLessonID *string
+	if nextID, nextErr := u.curriculumRepo.GetNextLessonID(ctx, canonicalLessonID); nextErr != nil {
+		log.Printf("curriculum: failed to resolve next lesson id after %s: %v", canonicalLessonID, nextErr)
+	} else if nextID != nil {
+		nextLessonID = nextID
+	}
+
+	// Automatically advance current_level_id only when no subsequent curriculum lesson remains in the current level
+	if nextLessonID == nil {
+		if advancedNextLessonID := u.maybeAdvanceEnrollmentLevel(ctx, userID, payload.UnitID, payload.LevelID, payload.UnitType); advancedNextLessonID != nil {
+			nextLessonID = advancedNextLessonID
+		}
+	}
 
 	// Invalidate user's cached curriculum atomically via epoch increment after any level advancement
 	if u.cacheRepo != nil {
@@ -473,16 +463,6 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 				finalGems = refreshedUser.Gems
 			}
 		}
-	}
-
-	var nextLessonID *string
-	if nextID, nextErr := u.curriculumRepo.GetNextLessonID(ctx, canonicalLessonID); nextErr != nil {
-		log.Printf("curriculum: failed to resolve next lesson id after %s: %v", canonicalLessonID, nextErr)
-	} else if nextID != nil {
-		nextLessonID = nextID
-	}
-	if nextLessonID == nil && advancedNextLessonID != nil {
-		nextLessonID = advancedNextLessonID
 	}
 
 	lastActive := payload.LastActiveAt

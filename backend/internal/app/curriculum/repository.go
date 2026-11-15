@@ -368,17 +368,19 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	payload.LastActiveAt = dbNow
 
 	// 1c. Verify curriculum eligibility, active enrollment progression, and sequential prerequisite inside TX before mutating state
-	var canonicalLessonID string
+	var canonicalLessonID, lessonUnitID, lessonLevelID string
 	var lessonXPReward int
 	var isEligible bool
 	eligibilityQuery := targetCurriculumLessonCTESQL + `
 		SELECT
 			tl.id::text,
+			tl.unit_id::text,
+			tl.level_id::text,
 			tl.xp_reward,
 			` + curriculumUnlockPredicateSQL + `
 		FROM target_lesson tl
 	`
-	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&canonicalLessonID, &lessonXPReward, &isEligible); err != nil {
+	if err = tx.QueryRow(ctx, eligibilityQuery, payload.Progress.LessonID, payload.Progress.UserID).Scan(&canonicalLessonID, &lessonUnitID, &lessonLevelID, &lessonXPReward, &isEligible); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return ErrLessonNotFound
 		}
@@ -388,6 +390,9 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		return ErrLessonLocked
 	}
 	payload.Progress.LessonID = canonicalLessonID
+	payload.UnitID = lessonUnitID
+	payload.LevelID = lessonLevelID
+	payload.UnitType = "curriculum"
 	if payload.ActivityType == "" {
 		payload.ActivityType = "lesson_completed"
 	}
