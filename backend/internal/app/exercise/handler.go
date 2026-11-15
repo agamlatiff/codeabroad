@@ -126,8 +126,8 @@ func (h *Handler) SubmitAnswer(c *gin.Context) {
 func parseLimitQuery(c *gin.Context, defaultVal int) (int, bool) {
 	limitStr := c.DefaultQuery("limit", strconv.Itoa(defaultVal))
 	limit, err := strconv.Atoi(limitStr)
-	if err != nil {
-		response.BadRequest(c, "invalid limit query parameter, must be an integer")
+	if err != nil || limit <= 0 {
+		response.BadRequest(c, "invalid limit query parameter, must be a positive integer")
 		return 0, false
 	}
 	return limit, true

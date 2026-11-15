@@ -186,12 +186,18 @@ func TestHTTP_ProcessReview_MissingQualityReturns400(t *testing.T) {
 func TestHTTP_GetDueReviews_InvalidLimitReturns400(t *testing.T) {
 	r, _, _, _ := setupExerciseTestRouter()
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/srs/due?limit=abc", nil)
-	w := httptest.NewRecorder()
-	r.ServeHTTP(w, req)
+	for _, url := range []string{
+		"/api/v1/srs/due?limit=abc",
+		"/api/v1/srs/due?limit=0",
+		"/api/v1/srs/due?limit=-5",
+	} {
+		req, _ := http.NewRequest(http.MethodGet, url, nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
 
-	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request on invalid limit, got: %d, body: %s", w.Code, w.Body.String())
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request on %s, got: %d, body: %s", url, w.Code, w.Body.String())
+		}
 	}
 }
 

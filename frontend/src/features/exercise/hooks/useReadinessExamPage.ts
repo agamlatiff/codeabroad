@@ -251,6 +251,15 @@ export const useReadinessExamPage = () => {
     [currentExercise, resolvedExamResult]
   )
 
+  const handleConfirmSpokenSample = useCallback(() => {
+    if (!currentExercise || !currentParsedContent?.displayText) return
+    const exerciseId = currentExercise.id
+    const sample = currentParsedContent.displayText
+    runUnlockedTap(() => {
+      setTextById((prev) => ({ ...prev, [exerciseId]: sample }))
+    })
+  }, [currentExercise, currentParsedContent, runUnlockedTap])
+
   const handlePlayAudio = useCallback(() => {
     if (!currentParsedContent) return
     playExerciseAudio(
@@ -427,6 +436,7 @@ export const useReadinessExamPage = () => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
+    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleToggleHint,

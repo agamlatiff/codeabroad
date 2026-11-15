@@ -42,6 +42,7 @@ export const ReadinessExamPage = () => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
+    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleToggleHint,
@@ -159,7 +160,9 @@ export const ReadinessExamPage = () => {
                   key={q.id}
                   type="button"
                   onClick={() => handleJumpToQuestion(idx)}
-                  className={`min-w-[36px] h-9 px-2.5 rounded-xl text-xs font-extrabold border-2 transition-all cursor-pointer ${
+                  aria-label={`Soal ${idx + 1}${isAnswered ? ' (terjawab)' : ' (belum terjawab)'}`}
+                  aria-current={isCurrent ? 'step' : undefined}
+                  className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-extrabold border-2 transition-all cursor-pointer ${
                     isCurrent
                       ? 'bg-blue-600 border-blue-700 text-white shadow-xs'
                       : isAnswered
@@ -192,6 +195,7 @@ export const ReadinessExamPage = () => {
               onClearTokens={handleClearTokens}
               onSelectOption={handleSelectOption}
               onSetTextInput={handleSetTextInput}
+              onConfirmSpokenSample={handleConfirmSpokenSample}
               onPlayAudio={handlePlayAudio}
               onToggleRecording={handleToggleRecording}
               onToggleHint={handleToggleHint}
