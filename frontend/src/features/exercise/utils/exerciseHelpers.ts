@@ -189,6 +189,27 @@ export const resolveExerciseSpokenText = (
   parsedContent?.audioText ?? parsedContent?.displayText ?? fallbackPrompt
 
 /**
+ * Computes bounded per-question elapsed time in seconds [1, 86400] for exercise telemetry.
+ */
+export const computeElapsedSeconds = (startedAtMs: number, nowMs = Date.now()): number =>
+  startedAtMs > 0
+    ? Math.min(86400, Math.max(1, Math.round((nowMs - startedAtMs) / 1000)))
+    : 1
+
+/**
+ * Resolves ordered token strings from selected token indices safely.
+ */
+export const resolveSelectedTokens = (
+  tokens: readonly string[] | undefined,
+  indices: readonly number[] | undefined
+): string[] => {
+  if (!tokens || !indices) return []
+  return indices
+    .map((idx) => tokens[idx])
+    .filter((token): token is string => typeof token === 'string')
+}
+
+/**
  * Checks whether a choice option matches a raw ID or display text after trim/lowercase normalization.
  */
 export const matchesChoiceOption = (

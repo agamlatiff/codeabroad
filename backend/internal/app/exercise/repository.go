@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"strings"
 	"time"
 
@@ -135,34 +136,45 @@ func syncObjectOptionAcceptableAnswers(ex *Exercise) {
 	}
 }
 
+func unmarshalJSONMap(raw []byte, contextLabel string) map[string]any {
+	var out map[string]any
+	if len(raw) > 0 {
+		if err := json.Unmarshal(raw, &out); err != nil {
+			log.Printf("exercise: failed to unmarshal %s JSONB: %v", contextLabel, err)
+		}
+	}
+	if out == nil {
+		out = make(map[string]any)
+	}
+	return out
+}
+
 // HydrateExerciseJSONFields populates normalized JSONB fields on an Exercise from raw DB columns.
 func HydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte) {
 	ex.XPReward = 10
 
-	if len(contentJSON) > 0 {
-		_ = json.Unmarshal(contentJSON, &ex.Content)
-		if rawOpts, ok := ex.Content["options"].([]any); ok {
-			for _, o := range rawOpts {
-				if s, ok := o.(string); ok {
-					ex.Options = append(ex.Options, s)
-				} else if m, ok := o.(map[string]any); ok {
-					if text, ok := m["text"].(string); ok && text != "" {
-						ex.Options = append(ex.Options, text)
-					}
+	ex.Content = unmarshalJSONMap(contentJSON, fmt.Sprintf("exercise content (%s)", ex.ID))
+	if rawOpts, ok := ex.Content["options"].([]any); ok {
+		for _, o := range rawOpts {
+			if s, ok := o.(string); ok {
+				ex.Options = append(ex.Options, s)
+			} else if m, ok := o.(map[string]any); ok {
+				if text, ok := m["text"].(string); ok && text != "" {
+					ex.Options = append(ex.Options, text)
 				}
 			}
 		}
-		if rawHint, ok := ex.Content["hint"].(string); ok && rawHint != "" {
-			ex.Hint = &rawHint
-		}
-		if rawMedia, ok := ex.Content["audio_url"].(string); ok && rawMedia != "" {
-			ex.MediaURL = &rawMedia
-		} else if rawMedia, ok := ex.Content["media_url"].(string); ok && rawMedia != "" {
-			ex.MediaURL = &rawMedia
-		}
-		if xpVal, ok := ex.Content["xp_reward"].(float64); ok && xpVal > 0 {
-			ex.XPReward = int(xpVal)
-		}
+	}
+	if rawHint, ok := ex.Content["hint"].(string); ok && rawHint != "" {
+		ex.Hint = &rawHint
+	}
+	if rawMedia, ok := ex.Content["audio_url"].(string); ok && rawMedia != "" {
+		ex.MediaURL = &rawMedia
+	} else if rawMedia, ok := ex.Content["media_url"].(string); ok && rawMedia != "" {
+		ex.MediaURL = &rawMedia
+	}
+	if xpVal, ok := ex.Content["xp_reward"].(float64); ok && xpVal > 0 {
+		ex.XPReward = int(xpVal)
 	}
 	if ex.Options == nil {
 		ex.Options = []string{}
@@ -172,12 +184,7 @@ func HydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptabl
 	ex.AcceptableAnswers = ParseAcceptableAnswersJSON(acceptableJSON)
 	syncObjectOptionAcceptableAnswers(ex)
 
-	if len(diagnosticJSON) > 0 {
-		_ = json.Unmarshal(diagnosticJSON, &ex.DiagnosticRubric)
-	}
-	if ex.DiagnosticRubric == nil {
-		ex.DiagnosticRubric = make(map[string]any)
-	}
+	ex.DiagnosticRubric = unmarshalJSONMap(diagnosticJSON, fmt.Sprintf("exercise diagnostic_rubric (%s)", ex.ID))
 }
 
 const (
@@ -750,9 +757,7 @@ func scanExamAttemptRow(scanner interface{ Scan(dest ...any) error }) (*Readines
 	); err != nil {
 		return nil, err
 	}
-	if len(reportJSON) > 0 {
-		_ = json.Unmarshal(reportJSON, &a.AnalysisReport)
-	}
+	a.AnalysisReport = unmarshalJSONMap(reportJSON, fmt.Sprintf("exam analysis_report (%s)", a.ID))
 	if maxScore, ok := extractReportInt(a.AnalysisReport, "max_score"); ok && maxScore > 0 {
 		a.MaxScore = maxScore
 	}

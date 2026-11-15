@@ -5,6 +5,7 @@ import {
   formatUserAnswerForSubmission,
   matchesChoiceOption,
   parseExerciseContent,
+  resolveSelectedTokens,
 } from '@/features/exercise/utils/exerciseHelpers'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -31,12 +32,10 @@ export const useExerciseQuestionInputs = ({
     [currentExercise]
   )
 
-  const selectedTokens = useMemo(() => {
-    if (!parsedContent) return []
-    return selectedTokenIndices
-      .map((tokenIdx) => parsedContent.tokens[tokenIdx])
-      .filter((token): token is string => typeof token === 'string')
-  }, [parsedContent, selectedTokenIndices])
+  const selectedTokens = useMemo(
+    () => resolveSelectedTokens(parsedContent?.tokens, selectedTokenIndices),
+    [parsedContent?.tokens, selectedTokenIndices]
+  )
 
   const currentUserAnswer = useMemo(() => {
     if (!currentExercise) return ''

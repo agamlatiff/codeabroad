@@ -13,7 +13,10 @@ import type {
   SubmitExerciseAnswerRequest,
   SubmitExerciseAnswerResponse,
 } from '@/features/exercise/types/exercise'
-import { resolveExerciseSpokenText } from '@/features/exercise/utils/exerciseHelpers'
+import {
+  computeElapsedSeconds,
+  resolveExerciseSpokenText,
+} from '@/features/exercise/utils/exerciseHelpers'
 import { PROFILE_QUERY_KEY } from '@/features/user/services/userService'
 import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { ACTIVITY_LOGS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useStreakSection'
@@ -138,13 +141,7 @@ export const useSrsReviewPage = () => {
 
     stopMediaSession()
     setActionError(null)
-    const elapsedSeconds =
-      questionStartedAtRef.current > 0
-        ? Math.min(
-            86400,
-            Math.max(1, Math.round((Date.now() - questionStartedAtRef.current) / 1000))
-          )
-        : 1
+    const elapsedSeconds = computeElapsedSeconds(questionStartedAtRef.current)
 
     try {
       const res = await submitAnswerAsync({

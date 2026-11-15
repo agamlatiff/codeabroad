@@ -16,7 +16,10 @@ import {
   SRS_DUE_QUERY_KEY,
   exerciseService,
 } from '@/features/exercise/services/exerciseService'
-import { resolveExerciseSpokenText } from '@/features/exercise/utils/exerciseHelpers'
+import {
+  computeElapsedSeconds,
+  resolveExerciseSpokenText,
+} from '@/features/exercise/utils/exerciseHelpers'
 import type {
   LessonCompletionNavigationState,
   SubmitExerciseAnswerResponse,
@@ -192,13 +195,7 @@ export const useLearnWorkspace = () => {
 
     stopMediaSession()
     setSubmitError(null)
-    const elapsedSeconds =
-      questionStartedAtRef.current > 0
-        ? Math.min(
-            86400,
-            Math.max(1, Math.round((Date.now() - questionStartedAtRef.current) / 1000))
-          )
-        : 1
+    const elapsedSeconds = computeElapsedSeconds(questionStartedAtRef.current)
 
     try {
       const res = await submitAnswerAsync({

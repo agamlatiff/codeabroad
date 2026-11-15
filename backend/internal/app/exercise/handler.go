@@ -37,6 +37,15 @@ func NewHandler(
 	return NewHandlerWithRateLimiters(exerciseUsecase, srsUsecase, examUsecase, nil, nil, nil)
 }
 
+const (
+	defaultExerciseSubmitLimit   = 30
+	defaultExerciseSubmitMessage = "too many exercise submissions, please wait a moment"
+	defaultSRSReviewLimit        = 30
+	defaultSRSReviewMessage      = "too many SRS review submissions, please wait a moment"
+	defaultExamSubmitLimit       = 10
+	defaultExamSubmitMessage     = "too many readiness exam submissions, please wait a moment"
+)
+
 // NewHandlerWithRateLimiters creates a Handler with custom rate limiter middlewares for mutating routes
 func NewHandlerWithRateLimiters(
 	exerciseUsecase Usecase,
@@ -52,18 +61,18 @@ func NewHandlerWithRateLimiters(
 		examUsecase:     examUsecase,
 		submitRateLimiter: resolveRateLimiter(
 			submitRateLimiter,
-			30,
-			"too many exercise submissions, please wait a moment",
+			defaultExerciseSubmitLimit,
+			defaultExerciseSubmitMessage,
 		),
 		reviewRateLimiter: resolveRateLimiter(
 			reviewRateLimiter,
-			30,
-			"too many SRS review submissions, please wait a moment",
+			defaultSRSReviewLimit,
+			defaultSRSReviewMessage,
 		),
 		examRateLimiter: resolveRateLimiter(
 			examRateLimiter,
-			10,
-			"too many readiness exam submissions, please wait a moment",
+			defaultExamSubmitLimit,
+			defaultExamSubmitMessage,
 		),
 	}
 }
@@ -308,18 +317,18 @@ func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	submitRateLimiter := resolveRateLimiter(
 		h.submitRateLimiter,
-		30,
-		"too many exercise submissions, please wait a moment",
+		defaultExerciseSubmitLimit,
+		defaultExerciseSubmitMessage,
 	)
 	reviewRateLimiter := resolveRateLimiter(
 		h.reviewRateLimiter,
-		30,
-		"too many SRS review submissions, please wait a moment",
+		defaultSRSReviewLimit,
+		defaultSRSReviewMessage,
 	)
 	examRateLimiter := resolveRateLimiter(
 		h.examRateLimiter,
-		10,
-		"too many readiness exam submissions, please wait a moment",
+		defaultExamSubmitLimit,
+		defaultExamSubmitMessage,
 	)
 
 	exercises := rg.Group("/exercises")

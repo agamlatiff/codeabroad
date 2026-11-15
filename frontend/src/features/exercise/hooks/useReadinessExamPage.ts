@@ -20,6 +20,7 @@ import {
   formatUserAnswerForSubmission,
   parseExerciseContent,
   resolveExerciseSpokenText,
+  resolveSelectedTokens,
 } from '@/features/exercise/utils/exerciseHelpers'
 import { PROFILE_QUERY_KEY } from '@/features/user/services/userService'
 import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
@@ -107,12 +108,10 @@ export const useReadinessExamPage = () => {
     [currentExercise, tokenIndicesById]
   )
 
-  const currentSelectedTokens = useMemo(() => {
-    if (!currentParsedContent) return []
-    return currentSelectedTokenIndices
-      .map((idx) => currentParsedContent.tokens[idx])
-      .filter((token): token is string => typeof token === 'string')
-  }, [currentParsedContent, currentSelectedTokenIndices])
+  const currentSelectedTokens = useMemo(
+    () => resolveSelectedTokens(currentParsedContent?.tokens, currentSelectedTokenIndices),
+    [currentParsedContent?.tokens, currentSelectedTokenIndices]
+  )
 
   const currentSelectedOptionValue = currentExercise
     ? optionById[currentExercise.id] ?? ''
@@ -124,9 +123,7 @@ export const useReadinessExamPage = () => {
     const formatted: Record<string, string> = {}
     for (const q of questions) {
       const parsed = parsedContentById[q.id]
-      const selectedTokens = (tokenIndicesById[q.id] ?? [])
-        .map((idx) => parsed?.tokens[idx])
-        .filter((token): token is string => typeof token === 'string')
+      const selectedTokens = resolveSelectedTokens(parsed?.tokens, tokenIndicesById[q.id])
 
       formatted[q.id] = formatUserAnswerForSubmission(q, {
         selectedTokens,
