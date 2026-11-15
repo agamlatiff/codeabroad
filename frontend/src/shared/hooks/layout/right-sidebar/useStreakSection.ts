@@ -53,7 +53,7 @@ export const useStreakSection = () => {
         isToday: log.is_today,
         isCompleted: log.is_active,
         xpEarned: log.xp_earned,
-        questsCount: log.quests_count,
+        questsCount: log.lessons_count ?? 0,
       }))
     }
 

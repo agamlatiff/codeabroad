@@ -279,6 +279,22 @@ paths:
           application/json:
             schema:
               type: object
+              properties:
+                name:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                bio:
+                  type: string
+                  maxLength: 500
+                daily_goal_minutes:
+                  type: integer
+                  enum: [5, 15, 30, 45]
+                has_seen_roadmap_tour:
+                  type: boolean
+                preferred_roadmap_view:
+                  type: string
+                  enum: [map, syllabus]
       responses:
         "200":
           description: Profile updated
@@ -290,6 +306,8 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
 
   /users/me/activity-logs:
     get:
@@ -325,7 +343,18 @@ paths:
     post:
       tags: [Users]
       security: [{ BearerAuth: [] }]
-      summary: Claim daily reward
+      summary: Claim daily reward (vocab_quest or golden_chest)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [reward_type]
+              properties:
+                reward_type:
+                  type: string
+                  enum: [vocab_quest, golden_chest]
       responses:
         "200":
           description: Daily reward claimed
@@ -333,8 +362,14 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
 
   # ==========================================
   # ONBOARDING

@@ -12,6 +12,13 @@ export const PROFILE_QUERY_KEY = ['profile'] as const
 export const ACTIVITY_LOGS_QUERY_KEY = ['activity-logs'] as const
 export const DAILY_REWARDS_QUERY_KEY = ['daily-rewards'] as const
 
+export const getProfileQueryKey = (userId?: string | null) =>
+  ['profile', userId ?? 'anonymous'] as const
+export const getActivityLogsQueryKey = (userId?: string | null) =>
+  ['activity-logs', userId ?? 'anonymous'] as const
+export const getDailyRewardsQueryKey = (userId?: string | null) =>
+  ['daily-rewards', userId ?? 'anonymous'] as const
+
 /**
  * Service managing user profile, preferences, and daily consistency activity tracking.
  * Directly corresponds to backend User Service (`/api/v1/users/me/*`).

@@ -89,7 +89,21 @@ func main() {
 	)
 	authHandler := auth.NewHandlerWithRateLimiter(authUsecase, authLimiter)
 	authHandler.SetHelper(auth.NewHelper(cfg))
-	userHandler := user.NewHandler(userUsecase)
+	userProfileLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"user:profile_update",
+		user.DefaultProfileUpdateLimit,
+		time.Minute,
+		user.DefaultProfileUpdateMessage,
+	)
+	userDailyRewardLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"user:daily_reward_claim",
+		user.DefaultDailyRewardClaimLimit,
+		time.Minute,
+		user.DefaultDailyRewardClaimMessage,
+	)
+	userHandler := user.NewHandlerWithRateLimiters(userUsecase, userProfileLimiter, userDailyRewardLimiter)
 	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
 	langHandler := language.NewHandler(langUsecase)
 	curriculumLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(

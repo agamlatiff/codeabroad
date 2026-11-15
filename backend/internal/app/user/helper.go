@@ -2,9 +2,18 @@ package user
 
 import (
 	"fmt"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"codeabroad/backend/internal/shared/apperror"
+)
+
+const (
+	// MaxProfileNameLength matches user_profiles.name VARCHAR(100)
+	MaxProfileNameLength = 100
+	// MaxProfileBioLength caps user profile bio length to prevent oversized payloads
+	MaxProfileBioLength = 500
 )
 
 // defaultAppLocation defines the primary application timezone (WIB / Asia/Jakarta: UTC+7) for user activity calendar calculations.
@@ -16,6 +25,64 @@ type Helper struct{}
 // NewHelper creates a new User Helper instance
 func NewHelper() *Helper {
 	return &Helper{}
+}
+
+// ValidateAndNormalizeUpdateProfile validates and trims UpdateProfileRequest fields
+func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) error {
+	if req == nil ||
+		(req.Name == nil && req.Bio == nil && req.DailyGoalMinutes == nil &&
+			req.HasSeenRoadmapTour == nil && req.PreferredRoadmapView == nil) {
+		return apperror.NewBadRequestError(
+			"EMPTY_UPDATE_PROFILE",
+			"minimal satu field profil harus diisi",
+			nil,
+		)
+	}
+
+	if req.Name != nil {
+		trimmed := strings.TrimSpace(*req.Name)
+		if trimmed == "" {
+			return apperror.NewBadRequestError(
+				"INVALID_NAME",
+				"nama tidak boleh kosong",
+				nil,
+			)
+		}
+		if utf8.RuneCountInString(trimmed) > MaxProfileNameLength {
+			return apperror.NewBadRequestError(
+				"INVALID_NAME",
+				fmt.Sprintf("nama maksimal %d karakter", MaxProfileNameLength),
+				nil,
+			)
+		}
+		*req.Name = trimmed
+	}
+
+	if req.Bio != nil {
+		trimmed := strings.TrimSpace(*req.Bio)
+		if utf8.RuneCountInString(trimmed) > MaxProfileBioLength {
+			return apperror.NewBadRequestError(
+				"INVALID_BIO",
+				fmt.Sprintf("bio maksimal %d karakter", MaxProfileBioLength),
+				nil,
+			)
+		}
+		*req.Bio = trimmed
+	}
+
+	if req.DailyGoalMinutes != nil {
+		switch *req.DailyGoalMinutes {
+		case 5, 15, 30, 45:
+		default:
+			return apperror.NewBadRequestError(
+				"INVALID_DAILY_GOAL",
+				"daily_goal_minutes harus bernilai 5, 15, 30, atau 45",
+				nil,
+			)
+		}
+	}
+
+	return h.ValidateRoadmapView(req.PreferredRoadmapView)
 }
 
 // ValidateRoadmapView ensures preferred_roadmap_view is either "map" or "syllabus"
@@ -37,7 +104,7 @@ func (h *Helper) ValidateRoadmapView(view *string) error {
 // ResolveDailyRewardXP validates the daily reward type and returns the XP amount to award
 func (h *Helper) ResolveDailyRewardXP(rewardType string) (int, error) {
 	switch rewardType {
-	case "lesson_milestone":
+	case "vocab_quest":
 		return 30, nil
 	case "golden_chest":
 		return 50, nil

@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { userService, PROFILE_QUERY_KEY } from "@/features/user/services/userService"
+import { userService, PROFILE_QUERY_KEY, getProfileQueryKey } from "@/features/user/services/userService"
 import type { User, UpdateProfilePayload } from "@/features/user/types/user"
 
 /**
@@ -20,7 +20,7 @@ export const useUser = () => {
     isError,
     refetch,
   } = useQuery({
-    queryKey: PROFILE_QUERY_KEY,
+    queryKey: getProfileQueryKey(storeUser?.id),
     queryFn: ({ signal }) => userService.getProfile({ signal }),
     enabled: isAuthenticated,
     staleTime: 1000 * 60 * 5, // 5 minutes fresh cache

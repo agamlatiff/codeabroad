@@ -180,7 +180,7 @@ func (m *MockRepository) GetDailyActivityStatsSince(ctx context.Context, userID 
 	return stats, nil
 }
 
-func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, newLevel int) (*DailyRewardClaimResponse, error) {
+func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error) {
 	if m.ClaimRewardError != nil {
 		return nil, m.ClaimRewardError
 	}
@@ -188,21 +188,29 @@ func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, re
 	if !ok {
 		return nil, apperror.ErrNotFound
 	}
-	u.XP += xpAwarded
-	u.CurrentLevel = newLevel
 
 	st, ok := m.DailyRewardsStatus[userID]
 	if !ok {
 		st = &DailyRewardsStatusResponse{
-			Date: time.Now().Format("2006-01-02"),
+			Date: time.Now().In(defaultAppLocation).Format("2006-01-02"),
 		}
 		m.DailyRewardsStatus[userID] = st
 	}
-	if rewardType == "milestone" || rewardType == "lesson_milestone" {
-		st.LessonMilestoneClaimed = true
+
+	if rewardType == "vocab_quest" {
+		if st.VocabQuestClaimed {
+			return nil, ErrDailyRewardAlreadyClaimed
+		}
+		st.VocabQuestClaimed = true
 	} else if rewardType == "golden_chest" {
+		if st.GoldenChestClaimed {
+			return nil, ErrDailyRewardAlreadyClaimed
+		}
 		st.GoldenChestClaimed = true
 	}
+
+	u.XP += xpAwarded
+	u.CurrentLevel = CalculateLevel(u.XP)
 
 	return &DailyRewardClaimResponse{
 		RewardType:   rewardType,
@@ -210,7 +218,7 @@ func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, re
 		CurrentXP:    u.XP,
 		CurrentLevel: u.CurrentLevel,
 		Streak:       u.Streak,
-		ClaimedAt:    time.Now().Format(time.RFC3339),
+		ClaimedAt:    time.Now().UTC().Format(time.RFC3339),
 	}, nil
 }
 
@@ -218,9 +226,9 @@ func (m *MockRepository) GetDailyRewardsStatus(ctx context.Context, userID strin
 	st, ok := m.DailyRewardsStatus[userID]
 	if !ok {
 		return &DailyRewardsStatusResponse{
-			Date:                   time.Now().Format("2006-01-02"),
-			LessonMilestoneClaimed: false,
-			GoldenChestClaimed:     false,
+			Date:               time.Now().In(defaultAppLocation).Format("2006-01-02"),
+			VocabQuestClaimed:  false,
+			GoldenChestClaimed: false,
 		}, nil
 	}
 	return st, nil

@@ -114,7 +114,7 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 	token := generateTestToken("usr-1", "reward@codeabroad.dev")
 
 	claimBody, _ := json.Marshal(map[string]string{
-		"reward_type": "lesson_milestone",
+		"reward_type": "vocab_quest",
 	})
 	wClaim := httptest.NewRecorder()
 	reqClaim, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
@@ -124,6 +124,101 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 
 	if wClaim.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK for reward claim, got: %d, body: %s", wClaim.Code, wClaim.Body.String())
+	}
+
+	var claimRes struct {
+		Success bool                          `json:"success"`
+		Data    user.DailyRewardClaimResponse `json:"data"`
+	}
+	if err := json.Unmarshal(wClaim.Body.Bytes(), &claimRes); err != nil {
+		t.Fatalf("failed to decode claim response: %v", err)
+	}
+	if claimRes.Data.XPAwarded != 30 {
+		t.Errorf("expected 30 XP awarded, got %d", claimRes.Data.XPAwarded)
+	}
+
+	// Second claim on same day should return 409 Conflict
+	wDup := httptest.NewRecorder()
+	reqDup, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
+	reqDup.Header.Set("Content-Type", "application/json")
+	reqDup.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(wDup, reqDup)
+	if wDup.Code != http.StatusConflict {
+		t.Fatalf("expected 409 Conflict on duplicate daily reward claim, got: %d", wDup.Code)
+	}
+}
+
+func TestHTTP_ClaimDailyReward_InvalidRewardType(t *testing.T) {
+	repo := user.NewMockRepository()
+	repo.Users["usr-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "usr-1", Email: "reward@codeabroad.dev"},
+	}
+	router := setupUserTestRouter(repo)
+	token := generateTestToken("usr-1", "reward@codeabroad.dev")
+
+	claimBody, _ := json.Marshal(map[string]string{
+		"reward_type": "lesson_milestone",
+	})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for invalid reward_type, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_UpdateProfile_BlankNameReturnsBadRequest(t *testing.T) {
+	repo := user.NewMockRepository()
+	repo.Users["usr-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "usr-1", Email: "user@codeabroad.dev"},
+		UserProfile: user.UserProfile{Name: "Original Name", Username: "orig"},
+	}
+	router := setupUserTestRouter(repo)
+	token := generateTestToken("usr-1", "user@codeabroad.dev")
+
+	body, _ := json.Marshal(map[string]any{"name": "   "})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPatch, "/api/v1/users/me", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for blank name, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_DailyRewardRateLimiterTriggered(t *testing.T) {
+	repo := user.NewMockRepository()
+	repo.Users["usr-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "usr-1", Email: "rl@codeabroad.dev"},
+	}
+
+	gin.SetMode(gin.TestMode)
+	r := gin.New()
+	v1 := r.Group("/api/v1")
+	h := user.NewHandlerWithRateLimiters(
+		user.NewUsecase(repo),
+		nil,
+		func(c *gin.Context) {
+			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"success": false, "message": "rate limited"})
+		},
+	)
+	h.RegisterRoutes(v1, middleware.AuthMiddleware(testJWTSecret))
+
+	token := generateTestToken("usr-1", "rl@codeabroad.dev")
+	body, _ := json.Marshal(map[string]string{"reward_type": "vocab_quest"})
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+token)
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusTooManyRequests {
+		t.Fatalf("expected 429 Too Many Requests when limiter blocks, got: %d", w.Code)
 	}
 }
 

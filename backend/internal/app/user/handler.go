@@ -8,14 +8,40 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	// DefaultProfileUpdateLimit caps profile updates per user per minute
+	DefaultProfileUpdateLimit = 20
+	// DefaultProfileUpdateMessage is returned when profile update rate limit is exceeded
+	DefaultProfileUpdateMessage = "terlalu banyak percobaan pembaruan profil, silakan tunggu sebentar"
+	// DefaultDailyRewardClaimLimit caps daily reward claim attempts per user per minute
+	DefaultDailyRewardClaimLimit = 20
+	// DefaultDailyRewardClaimMessage is returned when daily reward claim rate limit is exceeded
+	DefaultDailyRewardClaimMessage = "terlalu banyak percobaan klaim hadiah harian, silakan tunggu sebentar"
+)
+
 // Handler handles HTTP requests for user profile, preferences, and daily consistency
 type Handler struct {
-	userUsecase Usecase
+	userUsecase          Usecase
+	profileUpdateLimiter gin.HandlerFunc
+	dailyRewardLimiter   gin.HandlerFunc
 }
 
 // NewHandler creates a new User Handler instance
 func NewHandler(userUsecase Usecase) *Handler {
 	return &Handler{userUsecase: userUsecase}
+}
+
+// NewHandlerWithRateLimiters creates a User Handler with optional rate limiters on mutating routes
+func NewHandlerWithRateLimiters(
+	userUsecase Usecase,
+	profileUpdateLimiter gin.HandlerFunc,
+	dailyRewardLimiter gin.HandlerFunc,
+) *Handler {
+	return &Handler{
+		userUsecase:          userUsecase,
+		profileUpdateLimiter: profileUpdateLimiter,
+		dailyRewardLimiter:   dailyRewardLimiter,
+	}
 }
 
 // GetProfile handles GET /api/v1/users/me
@@ -121,10 +147,18 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	users.Use(authMiddleware)
 	{
 		users.GET("/me", h.GetProfile)
-		users.PATCH("/me", h.UpdateProfile)
+		if h.profileUpdateLimiter != nil {
+			users.PATCH("/me", h.profileUpdateLimiter, h.UpdateProfile)
+		} else {
+			users.PATCH("/me", h.UpdateProfile)
+		}
 		users.GET("/me/activity-logs", h.GetActivityLogs)
 		users.GET("/me/daily-rewards", h.GetDailyRewardsStatus)
-		users.POST("/me/daily-rewards/claim", h.ClaimDailyReward)
+		if h.dailyRewardLimiter != nil {
+			users.POST("/me/daily-rewards/claim", h.dailyRewardLimiter, h.ClaimDailyReward)
+		} else {
+			users.POST("/me/daily-rewards/claim", h.ClaimDailyReward)
+		}
 	}
 }
 

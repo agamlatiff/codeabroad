@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { userService, DAILY_REWARDS_QUERY_KEY, ACTIVITY_LOGS_QUERY_KEY } from "@/features/user/services/userService"
+import {
+  userService,
+  PROFILE_QUERY_KEY,
+  DAILY_REWARDS_QUERY_KEY,
+  ACTIVITY_LOGS_QUERY_KEY,
+  getDailyRewardsQueryKey,
+} from "@/features/user/services/userService"
 import type { DailyRewardsStatusResponse, DailyRewardClaimResponse } from "@/features/user/types/user"
 
 /**
@@ -18,7 +24,7 @@ export const useDailyRewards = () => {
     isError,
     refetch,
   } = useQuery<DailyRewardsStatusResponse>({
-    queryKey: DAILY_REWARDS_QUERY_KEY,
+    queryKey: getDailyRewardsQueryKey(user?.id),
     queryFn: ({ signal }) => userService.getDailyRewardsStatus({ signal }),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
@@ -38,7 +44,8 @@ export const useDailyRewards = () => {
         current_level: res.current_level,
         streak: res.streak,
       })
-      // Invalidate relevant query keys so streaks and reward cards re-render
+      // Invalidate relevant query keys so profile, streaks, and reward cards re-render
+      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY })
     },

@@ -1,0 +1,2 @@
+ALTER TABLE user_profiles
+    ADD COLUMN IF NOT EXISTS has_seen_roadmap_tour BOOLEAN NOT NULL DEFAULT FALSE;

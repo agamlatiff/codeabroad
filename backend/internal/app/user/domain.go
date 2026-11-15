@@ -106,7 +106,7 @@ type UserActivitySummaryResponse struct {
 
 // DailyRewardClaimRequest defines the payload for claiming a daily habit reward
 type DailyRewardClaimRequest struct {
-	RewardType string `json:"reward_type" binding:"required,oneof=lesson_milestone golden_chest"`
+	RewardType string `json:"reward_type" binding:"required,oneof=vocab_quest golden_chest"`
 }
 
 // DailyRewardClaimResponse defines the payload returned after claiming a daily reward
@@ -121,9 +121,9 @@ type DailyRewardClaimResponse struct {
 
 // DailyRewardsStatusResponse reports which daily rewards have been claimed today
 type DailyRewardsStatusResponse struct {
-	Date                   string `json:"date"`
-	LessonMilestoneClaimed bool   `json:"lesson_milestone_claimed"`
-	GoldenChestClaimed     bool   `json:"golden_chest_claimed"`
+	Date               string `json:"date"`
+	VocabQuestClaimed  bool   `json:"vocab_quest_claimed"`
+	GoldenChestClaimed bool   `json:"golden_chest_claimed"`
 }
 
 // ============================================================================
@@ -151,7 +151,7 @@ type ActivityRepository interface {
 	LogActivity(ctx context.Context, log *UserActivityLog) error
 	HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error)
 	GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]DailyActivityStat, error)
-	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, newLevel int) (*DailyRewardClaimResponse, error)
+	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error)
 	GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error)
 }
 

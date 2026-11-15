@@ -8,6 +8,7 @@ import {
   PROFILE_QUERY_KEY,
   ACTIVITY_LOGS_QUERY_KEY,
   DAILY_REWARDS_QUERY_KEY,
+  getDailyRewardsQueryKey,
 } from "@/features/user/services/userService"
 import {
   DAILY_QUESTS_QUERY_KEY,
@@ -40,8 +41,8 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   const { user, updateUser } = useAuthStore()
 
   const { data: dailyRewardsStatus = null } = useQuery({
-    queryKey: DAILY_REWARDS_QUERY_KEY,
-    queryFn: () => userService.getDailyRewardsStatus(),
+    queryKey: getDailyRewardsQueryKey(user?.id),
+    queryFn: ({ signal }) => userService.getDailyRewardsStatus({ signal }),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2,
   })

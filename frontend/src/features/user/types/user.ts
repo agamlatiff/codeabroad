@@ -2,7 +2,7 @@ import type { CountrySummary, CareerPathSummary } from "@/features/onboarding/ty
 
 /**
  * 3-PILLAR NORMALIZED USER DOMAIN TYPES
- * Directly mirrors backend `backend/internal/domain/user.go`.
+ * Directly mirrors backend `backend/internal/app/user/domain.go`.
  */
 
 // Pillar 1: Auth Core (users table)
@@ -64,7 +64,7 @@ export interface UpdateProfilePayload {
 // --- DTO: 7-Day Activity & Consistency Tracking ---
 export interface DailyActivityStat {
   xp_earned: number
-  quests_count: number
+  lessons_count: number
 }
 
 export interface UserActivityLogItem {
@@ -74,7 +74,7 @@ export interface UserActivityLogItem {
   is_active: boolean
   is_today: boolean
   xp_earned: number
-  quests_count: number
+  lessons_count: number
 }
 
 export interface UserActivitySummaryResponse {

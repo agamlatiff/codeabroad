@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { userService, ACTIVITY_LOGS_QUERY_KEY } from "@/features/user/services/userService"
+import { userService, getActivityLogsQueryKey } from "@/features/user/services/userService"
 import type { UserActivitySummaryResponse } from "@/features/user/types/user"
 
 /**
@@ -16,7 +16,7 @@ export const useUserActivity = () => {
     isError,
     refetch,
   } = useQuery<UserActivitySummaryResponse>({
-    queryKey: ACTIVITY_LOGS_QUERY_KEY,
+    queryKey: getActivityLogsQueryKey(user?.id),
     queryFn: ({ signal }) => userService.getActivityLogs({ signal }),
     enabled: Boolean(user),
     staleTime: 1000 * 60 * 2, // 2 minutes fresh cache

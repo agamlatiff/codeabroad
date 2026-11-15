@@ -38,12 +38,12 @@ func (u *usecase) GetProfile(ctx context.Context, userID string) (*User, error) 
 	return usr, nil
 }
 
-// UpdateProfile updates user profile preferences, country, career path, and tech stack
+// UpdateProfile updates user profile preferences and learning goals
 func (u *usecase) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
-	if err := u.helper.ValidateRoadmapView(req.PreferredRoadmapView); err != nil {
+	if err := u.helper.ValidateAndNormalizeUpdateProfile(req); err != nil {
 		return nil, err
 	}
 	return u.userRepo.UpdateProfile(ctx, userID, req)
@@ -68,7 +68,9 @@ func (u *usecase) GetActivityLogs(ctx context.Context, userID string) (*UserActi
 	startOfToday, startOfTomorrow, calendarStart := u.helper.ResolveCalendarWindow(now)
 
 	alreadyActiveToday, err := u.userRepo.HasActivityInRange(ctx, userID, startOfToday, startOfTomorrow)
-	if err == nil && !alreadyActiveToday {
+	if err != nil {
+		log.Printf("[WARN] [user.GetActivityLogs] failed to check daily activity for user %s: %v", userID, err)
+	} else if !alreadyActiveToday {
 		if err := u.userRepo.LogActivity(ctx, &UserActivityLog{
 			UserID:       userID,
 			ActivityType: "daily_login",
@@ -113,8 +115,7 @@ func (u *usecase) ClaimDailyReward(ctx context.Context, userID string, rewardTyp
 		return nil, ErrUserNotFound
 	}
 
-	newLevel := u.helper.CalculateLevel(usr.XP + xpAwarded)
-	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded, newLevel)
+	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded)
 }
 
 // GetDailyRewardsStatus checks reward claim status for the authenticated user
