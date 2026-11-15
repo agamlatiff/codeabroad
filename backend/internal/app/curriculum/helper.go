@@ -9,6 +9,14 @@ import (
 
 const xpPerLevel = 100
 
+var wibLocation = func() *time.Location {
+	loc, err := time.LoadLocation("Asia/Jakarta")
+	if err != nil {
+		return time.FixedZone("WIB", 7*3600)
+	}
+	return loc
+}()
+
 // Helper encapsulates business logic for curriculum unlocks and lesson completion evaluation
 type Helper struct{}
 
@@ -91,10 +99,7 @@ func (h *Helper) CanAccessLesson(isUnitUnlocked bool, prevLessonCompleted bool, 
 
 // EvaluateDailyStreak calculates the updated daily streak based on the last active timestamp adjusted to application timezone (WIB)
 func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time, now time.Time) (newStreak int, changed bool) {
-	loc, err := time.LoadLocation("Asia/Jakarta")
-	if err != nil {
-		loc = time.FixedZone("WIB", 7*3600)
-	}
+	loc := wibLocation
 
 	nowInWIB := now.In(loc)
 	today := time.Date(nowInWIB.Year(), nowInWIB.Month(), nowInWIB.Day(), 0, 0, 0, 0, loc)

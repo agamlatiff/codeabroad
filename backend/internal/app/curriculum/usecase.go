@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"sync"
 	"time"
 
 	"codeabroad/backend/internal/app/exercise"
@@ -270,15 +271,37 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 	}
 	lesson.IsUnlocked = true
 
-	exercises, err := u.exerciseRepo.GetExercisesByLessonID(ctx, canonicalLessonID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query exercises for lesson: %w", err)
+	var (
+		exercises []exercise.Exercise
+		exErr     error
+		gps       []GrammarPoint
+		gpErr     error
+		wg        sync.WaitGroup
+	)
+
+	if u.exerciseRepo != nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			exercises, exErr = u.exerciseRepo.GetExercisesByLessonID(ctx, canonicalLessonID)
+		}()
+	}
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		gps, gpErr = u.curriculumRepo.GetGrammarPointsByLessonID(ctx, canonicalLessonID)
+	}()
+
+	wg.Wait()
+
+	if exErr != nil {
+		return nil, fmt.Errorf("failed to query exercises for lesson: %w", exErr)
 	}
 	lesson.Exercises = exercise.SanitizeExercises(exercises)
 
-	gps, err := u.curriculumRepo.GetGrammarPointsByLessonID(ctx, canonicalLessonID)
-	if err != nil {
-		log.Printf("curriculum: failed to query grammar points for lesson %s: %v", canonicalLessonID, err)
+	if gpErr != nil {
+		log.Printf("curriculum: failed to query grammar points for lesson %s: %v", canonicalLessonID, gpErr)
 		lesson.GrammarPoints = []GrammarPoint{}
 	} else if len(gps) > 0 {
 		lesson.GrammarPoints = gps
