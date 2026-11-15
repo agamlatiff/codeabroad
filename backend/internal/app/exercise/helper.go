@@ -18,9 +18,23 @@ func normalizeLimit(limit int, defaultLimit int, maxLimit int) int {
 	return limit
 }
 
+var comparablePunctuationReplacer = strings.NewReplacer(
+	"。", " ",
+	"、", " ",
+	"？", " ",
+	"！", " ",
+	"「", " ",
+	"」", " ",
+	".", " ",
+	",", " ",
+	"?", " ",
+	"!", " ",
+	"\"", " ",
+)
+
 func normalizeComparableAnswer(raw string) (withSpaces string, collapsed string) {
 	cleaned := strings.ToLower(strings.TrimSpace(raw))
-	cleaned = strings.TrimRight(cleaned, "。？！.?!")
+	cleaned = comparablePunctuationReplacer.Replace(cleaned)
 	fields := strings.Fields(cleaned)
 	withSpaces = strings.Join(fields, " ")
 	collapsed = strings.Join(fields, "")

@@ -280,7 +280,7 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	}
 
 	now := time.Now().UTC()
-	return u.applySRSReview(ctx, userID, req.ExerciseID, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
+	updatedReview, err := u.applySRSReview(ctx, userID, req.ExerciseID, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
 		sm2 := u.helper.CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
 		return &UserSRSReview{
 			UserID:          userID,
@@ -292,6 +292,23 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 			LastReviewedAt:  &now,
 		}
 	})
+	if err != nil {
+		return nil, err
+	}
+
+	if quality >= 3 && updatedReview != nil && updatedReview.RepetitionCount >= 3 && u.badgeAwarder != nil {
+		if counter, ok := u.srsRepo.(SRSMasteryCounter); ok {
+			if masteredCount, countErr := counter.CountMasteredReviews(ctx, userID); countErr != nil {
+				log.Printf("exercise: failed to count mastered srs reviews for user %s: %v", userID, countErr)
+			} else if masteredCount >= 25 {
+				if _, awardErr := u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", 0); awardErr != nil {
+					log.Printf("exercise: failed to award srs_veteran badge to user %s: %v", userID, awardErr)
+				}
+			}
+		}
+	}
+
+	return updatedReview, nil
 }
 
 func (u *usecase) applySRSReview(

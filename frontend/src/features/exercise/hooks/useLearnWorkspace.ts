@@ -348,10 +348,14 @@ export const useLearnWorkspace = () => {
   }, [navigate])
 
   const handleEnterShortcut = useCallback(() => {
-    if (submittedResult === null && canCheckAnswer) {
-      void handleCheckAnswer()
+    if (submittedResult === null) {
+      if (canCheckAnswer) {
+        void handleCheckAnswer()
+      }
+      return
     }
-  }, [canCheckAnswer, handleCheckAnswer, submittedResult])
+    handleContinue()
+  }, [canCheckAnswer, handleCheckAnswer, handleContinue, submittedResult])
 
   const progressPercent = useMemo(() => {
     if (exercises.length === 0) return 0

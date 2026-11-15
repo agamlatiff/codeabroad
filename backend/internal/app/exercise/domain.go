@@ -222,6 +222,11 @@ type BadgeAwarder interface {
 	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*gamification.UserBadge, error)
 }
 
+// SRSMasteryCounter counts mastered SRS cards (repetition_count >= 3) for badge evaluation
+type SRSMasteryCounter interface {
+	CountMasteredReviews(ctx context.Context, userID string) (int, error)
+}
+
 // Usecase specifies business operations for answering exercises and logging telemetry
 type Usecase interface {
 	GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error)

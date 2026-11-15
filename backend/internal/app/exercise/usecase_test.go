@@ -1444,6 +1444,11 @@ type spySRSRepository struct {
 	dueCountCalls int
 	txReviewCalls int
 	enableTx      bool
+	masteredCount int
+}
+
+func (s *spySRSRepository) CountMasteredReviews(_ context.Context, _ string) (int, error) {
+	return s.masteredCount, nil
 }
 
 func (s *spySRSRepository) GetDueCount(ctx context.Context, userID string, now time.Time) (int, error) {
@@ -1692,5 +1697,66 @@ func TestExerciseUsecase_NilRepoGuardsReturnInternalError(t *testing.T) {
 		t.Fatalf("expected ErrInternal on SubmitExam with nil repo, got %v", err)
 	}
 }
+
+func TestProcessReview_AwardsSRSVeteranBadgeWhenMastered25(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		Prompt:        "Test",
+		CorrectAnswer: "A",
+	}
+
+	sRepo := &spySRSRepository{
+		MockSRSRepository: exercise.NewMockSRSRepository(),
+		enableTx:          true,
+		masteredCount:     25,
+	}
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		UserID:          "user-1",
+		ExerciseID:      "ex-1",
+		RepetitionCount: 2,
+		IntervalDays:    6,
+		EaseFactor:      2.5,
+	}
+
+	badgeAwarder := &stubBadgeAwarder{}
+	uc := exercise.NewUsecaseFull(
+		eRepo,
+		sRepo,
+		exercise.NewMockReadinessExamRepository(),
+		language.NewMockRepository(),
+		user.NewMockRepository(),
+		&stubLessonAccessChecker{unlocked: true},
+		nil,
+	).WithBadgeAwarder(badgeAwarder)
+
+	q := 4
+	rev, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-1",
+		Quality:    &q,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if rev.RepetitionCount != 3 {
+		t.Fatalf("expected RepetitionCount=3, got %d", rev.RepetitionCount)
+	}
+	if len(badgeAwarder.calls) != 1 || badgeAwarder.calls[0] != "srs_veteran" {
+		t.Fatalf("expected srs_veteran badge awarded, got %+v", badgeAwarder.calls)
+	}
+}
+
+func TestHelper_EvaluateAnswer_NormalizesJapaneseAndEnglishPunctuation(t *testing.T) {
+	h := exercise.NewHelper()
+	if !h.EvaluateAnswer("こんにちは、元気ですか？", nil, "「こんにちは」 元気ですか") {
+		t.Fatalf("expected Japanese punctuation variations to match")
+	}
+	if !h.EvaluateAnswer("Yes, I am ready!", nil, "yes i am ready") {
+		t.Fatalf("expected English comma and exclamation variations to match")
+	}
+}
+
 
 

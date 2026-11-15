@@ -547,6 +547,20 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 	return count, nil
 }
 
+// CountMasteredReviews counts how many SRS cards a user has mastered (repetition_count >= 3)
+func (r *PostgresRepository) CountMasteredReviews(ctx context.Context, userID string) (int, error) {
+	var count int
+	err := r.db.Pool.QueryRow(
+		ctx,
+		`SELECT COUNT(*) FROM user_srs_reviews WHERE user_id = $1 AND repetition_count >= 3`,
+		userID,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("failed to count mastered srs reviews: %w", err)
+	}
+	return count, nil
+}
+
 func prepareExamAttemptFields(attempt *ReadinessExamAttempt) (map[string]any, []byte, int) {
 	report := attempt.AnalysisReport
 	if report == nil {
