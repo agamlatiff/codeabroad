@@ -96,7 +96,15 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 
 // Login authenticates credentials, records attendance streak, and returns new auth tokens bound to a new device session
 func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error) {
+	if req == nil {
+		return nil, apperror.NewBadRequestError("INVALID_REQUEST", "login request cannot be nil", nil)
+	}
+
 	u.helper.NormalizeLoginInput(req)
+
+	if req.Email == "" || len(req.Email) > 255 || strings.TrimSpace(req.Password) == "" || len([]byte(req.Password)) > 72 {
+		return nil, ErrInvalidCredentials
+	}
 
 	usr, err := u.userRepo.GetByEmail(ctx, req.Email)
 	if err != nil {

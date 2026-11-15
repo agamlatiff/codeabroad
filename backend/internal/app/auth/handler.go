@@ -15,6 +15,7 @@ import (
 type Handler struct {
 	authUsecase Usecase
 	rateLimiter gin.HandlerFunc
+	helper      *Helper
 }
 
 // NewHandler creates a new Auth Handler instance without built-in middleware wiring
@@ -28,6 +29,11 @@ func NewHandlerWithRateLimiter(authUsecase Usecase, rateLimiter gin.HandlerFunc)
 		authUsecase: authUsecase,
 		rateLimiter: rateLimiter,
 	}
+}
+
+// SetHelper assigns the auth helper for token parsing in handlers
+func (h *Handler) SetHelper(helper *Helper) {
+	h.helper = helper
 }
 
 func sanitizedBindErrorMessage(err error) string {
@@ -90,10 +96,26 @@ func (h *Handler) RefreshToken(c *gin.Context) {
 	response.Success(c, http.StatusOK, "token refreshed successfully", res)
 }
 
+type LogoutRequest struct {
+	RefreshToken string `json:"refresh_token"`
+}
+
 // Logout handles POST /api/v1/auth/logout (terminates active device session)
 func (h *Handler) Logout(c *gin.Context) {
 	userID := c.GetString("userID")
 	sessionID := c.GetString("sessionID")
+
+	// If missing from Bearer claim (e.g. access token was expired), parse from optional refresh_token body
+	if (userID == "" || sessionID == "") && h.helper != nil {
+		var req LogoutRequest
+		if err := c.ShouldBindJSON(&req); err == nil && req.RefreshToken != "" {
+			if claims, err := h.helper.ParseRefreshToken(req.RefreshToken); err == nil {
+				userID = claims.UserID
+				sessionID = claims.SessionID
+			}
+		}
+	}
+
 	if userID == "" || sessionID == "" {
 		response.Error(c, apperror.ErrUnauthorized)
 		return
@@ -124,7 +146,7 @@ func (h *Handler) LogoutAll(c *gin.Context) {
 }
 
 // RegisterRoutes registers public and protected /auth routes with rate limiting on login, register, and refresh
-func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuthMiddleware ...gin.HandlerFunc) {
 	authPublic := rg.Group("/auth")
 	{
 		if h.rateLimiter != nil {
@@ -136,6 +158,15 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 			authPublic.POST("/login", h.Login)
 			authPublic.POST("/refresh", h.RefreshToken)
 		}
+
+		// Allow Logout with optional bearer auth so clients with expired access token can logout using refresh_token in body
+		var optAuth gin.HandlerFunc
+		if len(optionalAuthMiddleware) > 0 && optionalAuthMiddleware[0] != nil {
+			optAuth = optionalAuthMiddleware[0]
+		}
+		if optAuth != nil {
+			authPublic.POST("/logout", optAuth, h.Logout)
+		}
 	}
 
 	authProtected := rg.Group("/auth")
@@ -143,7 +174,9 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		authProtected.Use(authMiddleware)
 	}
 	{
-		authProtected.POST("/logout", h.Logout)
+		if len(optionalAuthMiddleware) == 0 || optionalAuthMiddleware[0] == nil {
+			authProtected.POST("/logout", h.Logout)
+		}
 		authProtected.POST("/logout-all", h.LogoutAll)
 	}
 }

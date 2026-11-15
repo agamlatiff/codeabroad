@@ -26,7 +26,6 @@ export const useRegister = () => {
   const {
     register,
     handleSubmit: rhfHandleSubmit,
-    watch,
     control,
     setValue,
     setError,
@@ -82,7 +81,6 @@ export const useRegister = () => {
     // React Hook Form primitives
     register,
     handleSubmit: rhfHandleSubmit,
-    watch,
     control,
     setValue,
     setError,

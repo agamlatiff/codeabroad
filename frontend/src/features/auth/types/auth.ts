@@ -17,7 +17,11 @@ export const loginSchema = z.object({
   password: z
     .string()
     .min(1, 'Kata sandi wajib diisi')
-    .max(PASSWORD_MAX_LENGTH, `Kata sandi maksimal ${PASSWORD_MAX_LENGTH} karakter`),
+    .refine((val) => val.trim().length > 0, 'Kata sandi tidak boleh hanya berupa spasi')
+    .refine(
+      (val) => new TextEncoder().encode(val).length <= PASSWORD_MAX_LENGTH,
+      `Kata sandi maksimal ${PASSWORD_MAX_LENGTH} byte`
+    ),
   remember_me: z.boolean().optional(),
 })
 
@@ -48,7 +52,11 @@ export const registerSchema = z.object({
     .string()
     .min(1, 'Kata sandi wajib diisi')
     .min(PASSWORD_MIN_LENGTH, `Kata sandi minimal ${PASSWORD_MIN_LENGTH} karakter`)
-    .max(PASSWORD_MAX_LENGTH, `Kata sandi maksimal ${PASSWORD_MAX_LENGTH} karakter`),
+    .refine((val) => val.trim().length > 0, 'Kata sandi tidak boleh hanya berupa spasi')
+    .refine(
+      (val) => new TextEncoder().encode(val).length <= PASSWORD_MAX_LENGTH,
+      `Kata sandi maksimal ${PASSWORD_MAX_LENGTH} byte`
+    ),
 })
 
 export type RegisterPayload = z.infer<typeof registerSchema>

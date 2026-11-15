@@ -83,7 +83,7 @@ export const resolveLoginErrorMessage = (err: unknown): string => {
 }
 
 export type RegisterErrorResult =
-  | { type: 'field'; field: 'email' | 'username' | 'password'; message: string }
+  | { type: 'field'; field: 'name' | 'email' | 'username' | 'password'; message: string }
   | { type: 'general'; message: string }
 
 /**
@@ -104,6 +104,26 @@ export const REGISTER_ERROR_MAP: Record<string, RegisterErrorResult> = {
     type: 'field',
     field: 'username',
     message: 'Username hanya boleh huruf, angka, garis bawah (_), dan strip (-).',
+  },
+  INVALID_NAME: {
+    type: 'field',
+    field: 'name',
+    message: 'Nama lengkap minimal 2 karakter dan maksimal 100 karakter.',
+  },
+  INVALID_EMAIL: {
+    type: 'field',
+    field: 'email',
+    message: 'Format email tidak valid atau kosong.',
+  },
+  INVALID_PASSWORD: {
+    type: 'field',
+    field: 'password',
+    message: 'Kata sandi minimal 8 karakter dan tidak boleh hanya berupa spasi.',
+  },
+  PASSWORD_TOO_LONG: {
+    type: 'field',
+    field: 'password',
+    message: 'Kata sandi maksimal 72 byte.',
   },
 }
 

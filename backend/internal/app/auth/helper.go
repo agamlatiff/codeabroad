@@ -51,9 +51,12 @@ func (h *Helper) ValidateUsername(username string) error {
 	return nil
 }
 
-// ValidatePassword ensures the password is not whitespace-only and does not exceed bcrypt's 72-byte UTF-8 limit
+// ValidatePassword ensures the password is not whitespace-only, meets min length 8, and does not exceed bcrypt's 72-byte UTF-8 limit
 func (h *Helper) ValidatePassword(rawPassword string) error {
 	if strings.TrimSpace(rawPassword) == "" {
+		return ErrInvalidPassword
+	}
+	if utf8.RuneCountInString(rawPassword) < 8 {
 		return ErrInvalidPassword
 	}
 	if len([]byte(rawPassword)) > 72 {
@@ -67,10 +70,11 @@ func (h *Helper) ValidateRegisterInput(req *RegisterRequest) error {
 	if req == nil {
 		return ErrInvalidName
 	}
-	if utf8.RuneCountInString(req.Name) < 2 {
+	nameRunes := utf8.RuneCountInString(req.Name)
+	if nameRunes < 2 || nameRunes > 100 {
 		return ErrInvalidName
 	}
-	if req.Email == "" {
+	if req.Email == "" || len(req.Email) > 255 || !strings.Contains(req.Email, "@") {
 		return ErrInvalidEmail
 	}
 	if req.Username == "" {

@@ -42,6 +42,16 @@ end
 return 1
 `)
 
+var deleteAllSessionsScript = redis.NewScript(`
+local sessionIDs = redis.call("SMEMBERS", KEYS[1])
+for i, sessID in ipairs(sessionIDs) do
+    local sKey = string.format("session:{%s}:%s", ARGV[1], sessID)
+    redis.call("DEL", sKey)
+end
+redis.call("DEL", KEYS[1])
+return 1
+`)
+
 type redisSessionRepository struct {
 	rdb *infraRedis.RedisClient
 }
@@ -52,11 +62,11 @@ func NewSessionRepository(rdb *infraRedis.RedisClient) SessionRepository {
 }
 
 func sessionKey(userID string, sessionID string) string {
-	return fmt.Sprintf("session:%s:%s", userID, sessionID)
+	return fmt.Sprintf("session:{%s}:%s", userID, sessionID)
 }
 
 func userSessionsKey(userID string) string {
-	return fmt.Sprintf("user_sessions:%s", userID)
+	return fmt.Sprintf("user_sessions:{%s}", userID)
 }
 
 func ttlMillis(ttl time.Duration) int64 {
@@ -133,18 +143,10 @@ func (s *redisSessionRepository) DeleteSession(ctx context.Context, userID strin
 
 func (s *redisSessionRepository) DeleteAllSessions(ctx context.Context, userID string) error {
 	setKey := userSessionsKey(userID)
-	sessionIDs, err := s.rdb.Client.SMembers(ctx, setKey).Result()
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return fmt.Errorf("failed to list user sessions: %w", err)
-	}
-	if len(sessionIDs) == 0 {
-		return nil
-	}
-
-	keys := make([]string, 0, len(sessionIDs)+1)
-	for _, sessionID := range sessionIDs {
-		keys = append(keys, sessionKey(userID, sessionID))
-	}
-	keys = append(keys, setKey)
-	return s.rdb.Client.Del(ctx, keys...).Err()
+	return deleteAllSessionsScript.Run(
+		ctx,
+		s.rdb.Client,
+		[]string{setKey},
+		userID,
+	).Err()
 }

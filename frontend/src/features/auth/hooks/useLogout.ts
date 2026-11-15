@@ -19,7 +19,8 @@ export const useLogout = () => {
       if (allDevices) {
         await authService.logoutAll()
       } else {
-        await authService.logout()
+        const currentRefreshToken = useAuthStore.getState().refreshToken
+        await authService.logout(currentRefreshToken)
       }
     } finally {
       // 1. Clear client auth session

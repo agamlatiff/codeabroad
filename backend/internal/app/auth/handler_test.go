@@ -32,11 +32,13 @@ func setupAuthTestRouter() (*gin.Engine, *user.MockRepository, *auth.MockSession
 	authUc := auth.NewUsecase(userRepo, sessionRepo, cfg)
 
 	authHandler := auth.NewHandlerWithRateLimiter(authUc, nil) // no rate limiter in tests
+	authHandler.SetHelper(auth.NewHelper(cfg))
 	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
+	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
 
 	r := gin.New()
 	v1 := r.Group("/api/v1")
-	authHandler.RegisterRoutes(v1, authMiddleware)
+	authHandler.RegisterRoutes(v1, authMiddleware, optionalAuth)
 
 	return r, userRepo, sessionRepo
 }
@@ -288,5 +290,43 @@ func TestHTTP_Logout_EmptySessionID_Unauthorized(t *testing.T) {
 		t.Fatalf("expected existing session to remain active, got: %v", err)
 	}
 }
+
+func TestHTTP_Logout_ViaRefreshTokenBody_SuccessWithoutAccessToken(t *testing.T) {
+	router, _, sessionRepo := setupAuthTestRouter()
+	ctx := context.Background()
+
+	cfg := &config.Config{
+		JWTSecret:                "test-secret-at-least-32-chars-long-key-12345",
+		JWTRefreshExpirationDays: 30,
+	}
+	helper := auth.NewHelper(cfg)
+	u := &user.User{
+		UserAccount: user.UserAccount{ID: "usr_rt_logout", Email: "rt_logout@example.com"},
+		UserProfile: user.UserProfile{Username: "rt_logout"},
+	}
+	sessionID := "sess_rt_logout"
+	_, refreshTok, err := helper.GenerateTokenPair(u, sessionID, 24*time.Hour, false)
+	if err != nil {
+		t.Fatalf("GenerateTokenPair failed: %v", err)
+	}
+	_ = sessionRepo.SetSession(ctx, u.ID, sessionID, helper.HashToken(refreshTok), 24*time.Hour)
+
+	// User client logs out without Bearer token, passing refresh_token in request body
+	logoutBody, _ := json.Marshal(auth.LogoutRequest{RefreshToken: refreshTok})
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/logout", bytes.NewBuffer(logoutBody))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for logout with refresh_token, got: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	// Verify session was terminated in Redis
+	if _, err := sessionRepo.GetSession(ctx, u.ID, sessionID); err != auth.ErrTokenExpired {
+		t.Fatalf("expected session to be revoked after logout, got: %v", err)
+	}
+}
+
 
 

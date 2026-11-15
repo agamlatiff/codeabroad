@@ -87,6 +87,7 @@ func main() {
 		"terlalu banyak percobaan autentikasi, silakan coba lagi beberapa saat",
 	)
 	authHandler := auth.NewHandlerWithRateLimiter(authUsecase, authLimiter)
+	authHandler.SetHelper(auth.NewHelper(cfg))
 	userHandler := user.NewHandler(userUsecase)
 	onboardingHandler := onboarding.NewHandler(onboardingUsecase)
 	langHandler := language.NewHandler(langUsecase)

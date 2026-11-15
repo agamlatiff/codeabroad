@@ -48,7 +48,7 @@ func SetupRouter(cfg *Config) *gin.Engine {
 			cfg.HealthHandler.RegisterRoutes(v1)
 		}
 		if cfg.AuthHandler != nil {
-			cfg.AuthHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+			cfg.AuthHandler.RegisterRoutes(v1, cfg.AuthMiddleware, cfg.OptionalAuthMiddleware)
 		}
 		if cfg.UserHandler != nil {
 			cfg.UserHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
