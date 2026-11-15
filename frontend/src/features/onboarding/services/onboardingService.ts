@@ -122,6 +122,9 @@ export const onboardingService = {
     const data = unwrapApiResponse(response, 'Gagal menyelesaikan onboarding.')
 
     const countryMeta = LANGUAGE_TO_COUNTRY_META.ja
+    const matchedCareerPath = DEFAULT_CAREER_PATHS.find(
+      (p) => p.id === payload.career_path_id || p.slug === payload.career_path_id
+    )
     return {
       id: data.user.id,
       name: data.profile.name,
@@ -142,9 +145,9 @@ export const onboardingService = {
         flag_emoji: countryMeta.flag_emoji,
       },
       career_path: {
-        id: payload.career_path_id || 'backend',
-        slug: payload.career_path_id || 'backend',
-        label: 'Backend Engineer',
+        id: matchedCareerPath?.id || payload.career_path_id || 'backend',
+        slug: matchedCareerPath?.slug || payload.career_path_id || 'backend',
+        label: matchedCareerPath?.label || 'Backend Engineer',
       },
       created_at: data.user.created_at,
     }
