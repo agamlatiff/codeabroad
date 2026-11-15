@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { FileText, GithubLogo, LinkedinLogo, CheckCircle, PaperPlaneTilt } from '@phosphor-icons/react'
+import { FileText, Link as LinkIcon, LinkedinLogo, CheckCircle, PaperPlaneTilt } from '@phosphor-icons/react'
 import { Modal3D } from './Modal3D'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { triggerHaptic } from "@/shared/utils/haptics"
@@ -26,7 +26,7 @@ export const CVReviewSubmissionModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!githubUrl.trim() || !resumeUrl.trim()) {
+    if (!resumeUrl.trim()) {
       triggerHaptic('error')
       return
     }
@@ -58,14 +58,14 @@ export const CVReviewSubmissionModal = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-brand font-black text-base text-slate-900">
-                Klaim Kupon Review CV &amp; Portofolio Tokyo
+                Klaim Kupon Review CV &amp; Portofolio Global
               </h3>
               <span className="text-[10px] font-mono bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-200 uppercase">
                 1 KUPON
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">
-              Audit resume teknis dan GitHub repository oleh diaspora software engineer di Tokyo.
+              Audit CV, surat lamaran (Rirekisho/Lebenslauf), dan kesiapan karier global oleh mentor berpengalaman.
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@ export const CVReviewSubmissionModal = ({
               Berkas Berhasil Dikirim! 🇯🇵
             </h4>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Mentor diaspora Tokyo akan mengulas GitHub dan resume Anda dalam 1-2 hari kerja. Notifikasi hasil audit akan dikirim ke akun Anda.
+              Mentor akan mengulas CV dan berkas lamaran Anda dalam 1-2 hari kerja. Notifikasi hasil audit akan dikirim ke akun Anda.
             </p>
           </div>
         ) : (
@@ -101,18 +101,17 @@ export const CVReviewSubmissionModal = ({
               </select>
             </div>
 
-            {/* GitHub URL */}
+            {/* Portfolio URL (Optional) */}
             <div className="space-y-1">
               <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
-                <GithubLogo weight="bold" className="w-4 h-4 text-slate-800" />
-                <span>Link Profil / Repository GitHub *</span>
+                <LinkIcon weight="bold" className="w-4 h-4 text-slate-700" />
+                <span>Link Portofolio Tambahan (Opsional)</span>
               </label>
               <input
                 type="url"
-                required
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
-                placeholder="https://github.com/username/project"
+                placeholder="https://portofolio-anda.com atau GitHub/Behance"
                 className="w-full bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-all shadow-2xs"
               />
             </div>
@@ -142,7 +141,7 @@ export const CVReviewSubmissionModal = ({
                 rows={2}
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Contoh: Tolong fokus audit concurrency pattern dan formatting CV standar Tokyo Tech Guild..."
+                placeholder="Contoh: Tolong fokus audit tata bahasa Jepang (Keigo) di Rirekisho dan ringkasan pengalaman kerja..."
                 className="w-full bg-white border-2 border-slate-200 rounded-xl p-2.5 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-all shadow-2xs resize-none"
               />
             </div>

@@ -2,9 +2,7 @@ import { useState, useMemo, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { questService } from "@/features/gamification/services/questService"
 import { gamificationService } from "@/features/gamification/services/gamificationService"
-import type { Quest } from "@/features/gamification/types/quest"
 import { useQuests } from "@/features/gamification/hooks/useQuests"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { triggerHaptic } from "@/shared/utils/haptics"
@@ -67,7 +65,7 @@ const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'xp-booster',
     title: 'XP Booster Potion 🧪',
-    subtitle: 'Pengganda 2x XP untuk setiap latihan koding & kuis selama 30 menit ke depan.',
+    subtitle: 'Pengganda 2x XP untuk setiap latihan bahasa & kuis selama 30 menit ke depan.',
     price: 35,
     badge: 'BOOSTER ⚡',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -78,10 +76,10 @@ const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'cv-review',
-    title: 'Kupon Review CV Tokyo 📋',
-    subtitle: 'Audit portofolio GitHub dan resume teknis langsung oleh software engineer diaspora Tokyo.',
+    title: 'Kupon Review CV Global 📋',
+    subtitle: 'Audit CV (Rirekisho/Lebenslauf) dan portofolio persiapan kerja internasional oleh mentor.',
     price: 100,
-    badge: 'SPONSOR VISA 🇯🇵',
+    badge: 'KARIER GLOBAL 🇯🇵',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     icon: FileText,
     iconBg: 'bg-emerald-50 border-emerald-200',
@@ -91,7 +89,7 @@ const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'mock-interview',
     title: 'Akses VIP Mock Interview 🎙️',
-    subtitle: 'Simulasi 1-on-1 live technical interview standar Tokyo berbahasa Jepang/Inggris via Discord.',
+    subtitle: 'Simulasi 1-on-1 wawancara kerja berbahasa Jepang/Inggris bersama mentor via Discord.',
     price: 150,
     badge: 'EKSKLUSIF ⭐',
     badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
@@ -241,14 +239,10 @@ export const QuestLogPage = () => {
     }
   })
 
-  // Real backend Boss Quests (Sayembara Boss from DB)
-  const [backendBossQuests, setBackendBossQuests] = useState<Quest[]>([])
-
-  // Fetch real SSOT gamification status and Boss quests from backend API
+  // Fetch real SSOT gamification status from backend API
   useEffect(() => {
     let isMounted = true
 
-    // 1. Fetch gamification status (gems, inventory, chest claims, badges)
     gamificationService
       .getStatus()
       .then((status) => {
@@ -271,46 +265,10 @@ export const QuestLogPage = () => {
         // Gracefully continue with local state
       })
 
-    // 2. Fetch real Boss Quests from PostgreSQL
-    questService
-      .listQuests({ type: 'boss' })
-      .then((quests) => {
-        if (!isMounted || !quests || quests.length === 0) return
-        setBackendBossQuests(quests)
-      })
-      .catch(() => {
-        // Fallback to curriculum challenges
-      })
-
     return () => {
       isMounted = false
     }
   }, [updateUser])
-
-  // Fetch real user completed quests from backend API
-  useEffect(() => {
-    let isMounted = true
-    questService
-      .listQuests()
-      .then((quests) => {
-        if (!isMounted || !quests || quests.length === 0) return
-        setCompletedQuestsSet((prev) => {
-          const next = new Set(prev)
-          quests.forEach((q) => {
-            if (q.user_status === 'completed') {
-              next.add(q.id)
-            }
-          })
-          return next
-        })
-      })
-      .catch(() => {
-        // Gracefully continue with local storage
-      })
-    return () => {
-      isMounted = false
-    }
-  }, [])
 
   // Sync completed quests on custom event
   useEffect(() => {
@@ -737,7 +695,7 @@ export const QuestLogPage = () => {
 
   // Language Mastery Milestone Challenges
   const portfolioChallenges = useMemo(() => {
-    let challenges = [
+    const challenges = [
       {
         id: 'boss-jlpt-n5',
         title: 'Evaluasi Level JLPT N5 & Penguasaan Aksara',
@@ -764,31 +722,6 @@ export const QuestLogPage = () => {
       },
     ]
 
-    if (backendBossQuests && backendBossQuests.length > 0) {
-      challenges = backendBossQuests.map((q) => {
-        const isFirst = q.order_index === 1
-        const isDone =
-          q.user_status === 'completed' ||
-          completedQuestsSet.has(q.id)
-
-        return {
-          id: q.id,
-          title: q.title,
-          subtitle:
-            q.description ||
-            'Tantangan evaluasi penguasaan bahasa terstruktur standar internasional.',
-          tags: isFirst
-            ? ['JLPT N5', 'KANJI', 'GRAMMAR']
-            : ['KEIGO', 'SPEAKING', 'LISTENING'],
-          icon: isFirst ? '🔥' : '🏛️',
-          xp_reward: q.xp_reward,
-          gem_reward: Math.round(q.xp_reward / 5),
-          route: '/curriculum',
-          isCompleted: isDone,
-        }
-      })
-    }
-
     if (!searchQuery.trim()) return challenges
     const q = searchQuery.toLowerCase()
     return challenges.filter(
@@ -797,7 +730,7 @@ export const QuestLogPage = () => {
         c.subtitle.toLowerCase().includes(q) ||
         c.tags.some((t) => t.toLowerCase().includes(q))
     )
-  }, [backendBossQuests, completedQuestsSet, searchQuery])
+  }, [completedQuestsSet, searchQuery])
 
   // Monthly Quest Progress Calculation (Authentic Duolingo Monthly Badge Challenge)
   const totalCompletedCount = completedQuestsSet.size
@@ -1397,13 +1330,13 @@ export const QuestLogPage = () => {
                 <div>
                   <h3 className="font-brand font-black text-base sm:text-lg text-slate-900 flex items-center gap-2">
                     <span>⚔️</span>
-                    <span>Sayembara Tokyo Tech Guild</span>
+                    <span>Tantangan Penguasaan Bahasa</span>
                     <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md border border-purple-200">
-                      S-RANK SPECS
+                      MILESTONE TEST
                     </span>
                   </h3>
                   <p className="text-xs text-slate-500 font-medium">
-                    Tantangan portofolio arsitektur riil kurasi engineer diaspora Tokyo (Mercari &amp; Rakuten Spec).
+                    Uji kemampuan membaca, menyimak, dan percakapan bisnis standar sertifikasi global.
                   </p>
                 </div>
 

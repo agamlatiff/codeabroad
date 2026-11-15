@@ -1,8 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
-import { useUser } from "@/features/user/hooks/useUser"
-import { questService } from "@/features/gamification/services/questService"
 import { useUserActivity } from "@/features/user/hooks/useUserActivity"
 import { useDailyRewards } from "@/features/user/hooks/useDailyRewards"
 import { triggerHaptic } from "@/shared/utils/haptics"
@@ -40,8 +37,6 @@ export const useQuestsSection = ({
   onClaimChestReward,
 }: UseQuestsSectionOptions) => {
   const navigate = useNavigate()
-  const { data: userData } = useUser()
-  const user = userData.user
 
   const [timeLeft, setTimeLeft] = useState('00:00:00')
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
@@ -73,12 +68,13 @@ export const useQuestsSection = ({
   const { data: rewardsData } = useDailyRewards()
   const dailyRewardsStatus = rewardsData.dailyRewardsStatus
 
-  const { data: dailyQuests = [] } = useQuery({
-    queryKey: DAILY_QUESTS_QUERY_KEY,
-    queryFn: () => questService.getDailyQuests(),
-    enabled: Boolean(user),
-    staleTime: 1000 * 60 * 2,
-  })
+  const dailyQuests: Array<{
+    id: string
+    title: string
+    chip_label?: string
+    xp_reward?: number
+    user_status?: string
+  }> = useMemo(() => [], [])
 
   const isVocabQuestClaimed = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
   const isChestClaimedToday = Boolean(dailyRewardsStatus?.golden_chest_claimed)
