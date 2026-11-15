@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import type { SubmitExerciseAnswerResponse } from '@/features/exercise/types/exercise'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { CheckCircle, XCircle } from '@phosphor-icons/react'
@@ -35,6 +36,28 @@ export const SrsReviewRatingBar = ({
   onRateQuality,
 }: SrsReviewRatingBarProps) => {
   const isCorrect = submittedResult.is_correct
+
+  useEffect(() => {
+    const handleKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (
+        isSubmittingRating ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      ) {
+        return
+      }
+      const idx = Number.parseInt(event.key, 10) - 1
+      if (idx >= 0 && idx < SRS_RATING_OPTIONS.length) {
+        event.preventDefault()
+        onRateQuality(SRS_RATING_OPTIONS[idx].quality)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isSubmittingRating, onRateQuality])
 
   return (
     <footer

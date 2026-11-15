@@ -14,6 +14,7 @@ import type {
   SubmitExerciseAnswerResponse,
 } from '@/features/exercise/types/exercise'
 import { resolveExerciseSpokenText } from '@/features/exercise/utils/exerciseHelpers'
+import { PROFILE_QUERY_KEY } from '@/features/user/services/userService'
 import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { ACTIVITY_LOGS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useStreakSection'
 import { extractApiErrorMessage } from '@/shared/services/api'
@@ -197,6 +198,7 @@ export const useSrsReviewPage = () => {
             queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
             queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
             queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
+            queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
           ])
           return
         }
@@ -255,6 +257,7 @@ export const useSrsReviewPage = () => {
         queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
         queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
       ])
     }
     navigate('/curriculum')

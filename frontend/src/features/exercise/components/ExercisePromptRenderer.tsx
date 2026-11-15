@@ -1,4 +1,4 @@
-import type { KeyboardEvent } from 'react'
+import { useEffect, type KeyboardEvent } from 'react'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type {
   ParsedExerciseContent,
@@ -85,6 +85,50 @@ export const ExercisePromptRenderer = ({
       onEnterKey()
     }
   }
+
+  useEffect(() => {
+    const handleWindowKeyDown = (event: globalThis.KeyboardEvent) => {
+      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
+        return
+      }
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) {
+        return
+      }
+      const target = event.target as HTMLElement | null
+      const isTextInput =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target?.isContentEditable === true
+
+      if (event.key === 'Enter') {
+        if (onEnterKey) {
+          event.preventDefault()
+          onEnterKey()
+        }
+        return
+      }
+
+      if (
+        !isLocked &&
+        !isTextInput &&
+        exerciseType !== 'sentence_builder' &&
+        exerciseType !== 'speaking_repeat' &&
+        parsedContent.choiceOptions.length > 0
+      ) {
+        const num = Number.parseInt(event.key, 10)
+        if (num >= 1 && num <= parsedContent.choiceOptions.length) {
+          const opt = parsedContent.choiceOptions[num - 1]
+          if (opt) {
+            event.preventDefault()
+            onSelectOption(opt.id)
+          }
+        }
+      }
+    }
+
+    window.addEventListener('keydown', handleWindowKeyDown)
+    return () => window.removeEventListener('keydown', handleWindowKeyDown)
+  }, [exerciseType, isLocked, onEnterKey, onSelectOption, parsedContent.choiceOptions])
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">

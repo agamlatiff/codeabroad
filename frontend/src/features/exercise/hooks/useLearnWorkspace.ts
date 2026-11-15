@@ -348,6 +348,7 @@ export const useLearnWorkspace = () => {
   }, [navigate])
 
   const handleEnterShortcut = useCallback(() => {
+    if (isSubmittingAnswer || isCompletingLesson || isScoreTooLowError) return
     if (submittedResult === null) {
       if (canCheckAnswer) {
         void handleCheckAnswer()
@@ -355,7 +356,15 @@ export const useLearnWorkspace = () => {
       return
     }
     handleContinue()
-  }, [canCheckAnswer, handleCheckAnswer, handleContinue, submittedResult])
+  }, [
+    canCheckAnswer,
+    handleCheckAnswer,
+    handleContinue,
+    isCompletingLesson,
+    isScoreTooLowError,
+    isSubmittingAnswer,
+    submittedResult,
+  ])
 
   const progressPercent = useMemo(() => {
     if (exercises.length === 0) return 0

@@ -607,7 +607,11 @@ func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *Rea
 	return nil
 }
 
-var _ TransactionalExamRecorder = (*PostgresRepository)(nil)
+var (
+	_ TransactionalExamRecorder = (*PostgresRepository)(nil)
+	_ TransactionalSRSReviewer  = (*PostgresRepository)(nil)
+	_ SRSMasteryCounter         = (*PostgresRepository)(nil)
+)
 
 // RecordExamSubmissionTx atomically guards against duplicate passed exams, inserts the attempt,
 // and advances the active enrollment proficiency level inside a single database transaction.
