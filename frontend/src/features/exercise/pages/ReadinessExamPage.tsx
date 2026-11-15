@@ -42,7 +42,6 @@ export const ReadinessExamPage = () => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleToggleHint,
@@ -193,7 +192,6 @@ export const ReadinessExamPage = () => {
               onClearTokens={handleClearTokens}
               onSelectOption={handleSelectOption}
               onSetTextInput={handleSetTextInput}
-              onConfirmSpokenSample={handleConfirmSpokenSample}
               onPlayAudio={handlePlayAudio}
               onToggleRecording={handleToggleRecording}
               onToggleHint={handleToggleHint}

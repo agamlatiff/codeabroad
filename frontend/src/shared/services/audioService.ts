@@ -383,11 +383,11 @@ class AudioService {
     onEnd?: () => void,
     onError?: () => void
   ): void {
-    if (
-      typeof window === 'undefined' ||
-      !('speechSynthesis' in window) ||
-      this.mode === 'muted'
-    ) {
+    if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+      onError?.()
+      return
+    }
+    if (this.mode === 'muted') {
       onEnd?.()
       return
     }

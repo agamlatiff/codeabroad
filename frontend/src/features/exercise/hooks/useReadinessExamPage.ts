@@ -172,7 +172,10 @@ export const useReadinessExamPage = () => {
     stopMediaSession()
   }, [levelId, stopMediaSession])
 
-  const submitExamMutation = useMutation({
+  const {
+    mutateAsync: submitExamAsync,
+    isPending: isSubmittingExam,
+  } = useMutation({
     mutationFn: (payload: {
       level_id: string
       answers: { exercise_id: string; user_answer: string }[]
@@ -248,15 +251,6 @@ export const useReadinessExamPage = () => {
     [currentExercise, resolvedExamResult]
   )
 
-  const handleConfirmSpokenSample = useCallback(() => {
-    if (!currentExercise || !currentParsedContent?.displayText) return
-    const exerciseId = currentExercise.id
-    const sample = currentParsedContent.displayText
-    runUnlockedTap(() => {
-      setTextById((prev) => ({ ...prev, [exerciseId]: sample }))
-    })
-  }, [currentExercise, currentParsedContent, runUnlockedTap])
-
   const handlePlayAudio = useCallback(() => {
     if (!currentParsedContent) return
     playExerciseAudio(
@@ -308,13 +302,13 @@ export const useReadinessExamPage = () => {
   }, [handleNextQuestion, isLastQuestion])
 
   const handleSubmitExam = useCallback(async () => {
-    if (!levelId || !allAnswered || submitExamMutation.isPending) return
+    if (!levelId || !allAnswered || isSubmittingExam) return
 
     setSubmitError(null)
     stopMediaSession()
 
     try {
-      const res = await submitExamMutation.mutateAsync({
+      const res = await submitExamAsync({
         level_id: levelId,
         answers: questions.map((q) => ({
           exercise_id: q.id,
@@ -356,11 +350,12 @@ export const useReadinessExamPage = () => {
   }, [
     allAnswered,
     answersById,
+    isSubmittingExam,
     levelId,
     queryClient,
     questions,
     stopMediaSession,
-    submitExamMutation,
+    submitExamAsync,
   ])
 
   const handleRetryExam = useCallback(() => {
@@ -425,14 +420,13 @@ export const useReadinessExamPage = () => {
       (shouldLoadPassedResult && passedResultQuery.isLoading),
     isError: questionsQuery.isError && !shouldLoadPassedResult,
     loadErrorMessage,
-    isSubmitting: submitExamMutation.isPending,
+    isSubmitting: isSubmittingExam,
     refetchQuestions: questionsQuery.refetch,
     handleAddToken,
     handleRemoveToken,
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleToggleHint,

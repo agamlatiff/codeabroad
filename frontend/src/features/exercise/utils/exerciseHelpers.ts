@@ -176,16 +176,29 @@ export const resolveExerciseSpokenText = (
  * Maps language ISO codes returned by backend curriculum APIs to BCP-47 speech synthesis locales.
  */
 export const resolveSpeechLocale = (languageCode?: string): string => {
-  switch (languageCode) {
+  const normalized = languageCode?.trim().toLowerCase()
+  switch (normalized) {
     case 'en':
+    case 'en-us':
       return 'en-US'
+    case 'en-gb':
+    case 'en-uk':
+      return 'en-GB'
+    case 'fr':
+    case 'fr-fr':
+      return 'fr-FR'
     case 'ko':
+    case 'ko-kr':
       return 'ko-KR'
     case 'de':
+    case 'de-de':
       return 'de-DE'
     case 'zh':
+    case 'zh-cn':
+    case 'cmn':
       return 'zh-CN'
     case 'ja':
+    case 'ja-jp':
     default:
       return 'ja-JP'
   }

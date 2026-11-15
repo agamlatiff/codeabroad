@@ -2,10 +2,13 @@ package exercise
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"time"
 
 	"codeabroad/backend/internal/app/language"
@@ -70,8 +73,11 @@ func NewUsecase(
 }
 
 func (u *usecase) verifyLessonUnlocked(ctx context.Context, userID string, lessonID string) error {
-	if u.accessChecker == nil || lessonID == "" {
-		return nil
+	if lessonID == "" {
+		return apperror.ErrForbidden
+	}
+	if u.accessChecker == nil {
+		return fmt.Errorf("lesson access checker is not configured: %w", apperror.ErrInternal)
 	}
 	unlocked, err := u.accessChecker.IsLessonUnlocked(ctx, userID, lessonID)
 	if err != nil {
@@ -91,10 +97,11 @@ func (u *usecase) loadAuthorizedExercise(ctx context.Context, userID string, exe
 	if ex == nil {
 		return nil, ErrExerciseNotFound
 	}
-	if ex.LessonID != nil {
-		if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
-			return nil, err
-		}
+	if ex.LessonID == nil || *ex.LessonID == "" {
+		return nil, apperror.ErrForbidden
+	}
+	if err := u.verifyLessonUnlocked(ctx, userID, *ex.LessonID); err != nil {
+		return nil, err
 	}
 	return ex, nil
 }
@@ -160,7 +167,7 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	now := time.Now().UTC()
 	var nextDue *time.Time
 
-	if !isCorrect {
+	if !isCorrect && !req.SkipSRSSchedule {
 		prevEase := 2.5
 		if existing, revErr := u.srsRepo.GetReview(ctx, userID, req.ExerciseID); revErr == nil && existing != nil {
 			prevEase = existing.EaseFactor
@@ -399,7 +406,7 @@ func (u *usecase) gradeExamSubmission(
 	calcPillarScore := func(pillar string) int {
 		total := pillarCatalogTotal[pillar]
 		if total == 0 {
-			return scorePercent
+			return 0
 		}
 		return (pillarCorrect[pillar] * 100) / total
 	}
@@ -448,10 +455,20 @@ func (u *usecase) resolveNextLevelTarget(
 		return "", "", "", fmt.Errorf("failed to resolve next proficiency level: %w", lvErr)
 	}
 	sort.Slice(levels, func(i, j int) bool {
-		return levels[i].OrderIndex < levels[j].OrderIndex
+		if levels[i].OrderIndex != levels[j].OrderIndex {
+			return levels[i].OrderIndex < levels[j].OrderIndex
+		}
+		return levels[i].ID < levels[j].ID
 	})
 	for _, nextLvl := range levels {
 		if nextLvl.OrderIndex > lvl.OrderIndex {
+			nextExamExercises, exErr := u.exerciseRepo.GetReadinessExamExercises(ctx, nextLvl.ID)
+			if exErr != nil {
+				return "", "", "", fmt.Errorf("failed to verify readiness exam exercises for next level: %w", exErr)
+			}
+			if len(nextExamExercises) == 0 {
+				return "", "", "", nil
+			}
 			return enrollment.ID, lvl.ID, nextLvl.ID, nil
 		}
 	}
@@ -523,16 +540,21 @@ func extractAttemptScoreCounts(attempt *ReadinessExamAttempt) (score int, maxSco
 func (u *usecase) buildExamCertificate(
 	ctx context.Context,
 	userID string,
+	attemptID string,
 	lvl *language.ProficiencyLevel,
 	score int,
 	maxScore int,
 	scorePercent int,
 	issuedAt time.Time,
 ) *ExamCertificate {
-	usr, _ := u.userRepo.GetByID(ctx, userID)
 	name := "Learner"
-	if usr != nil && usr.Name != "" {
-		name = usr.Name
+	if u.userRepo != nil {
+		usr, err := u.userRepo.GetByID(ctx, userID)
+		if err != nil {
+			log.Printf("exercise: failed to fetch candidate user %s for exam certificate: %v", userID, err)
+		} else if usr != nil && usr.Name != "" {
+			name = usr.Name
+		}
 	}
 
 	effectiveIssuedAt := issuedAt
@@ -540,8 +562,11 @@ func (u *usecase) buildExamCertificate(
 		effectiveIssuedAt = time.Now().UTC()
 	}
 
+	sum := sha256.Sum256([]byte(fmt.Sprintf("%s:%s:%s", userID, lvl.ID, attemptID)))
+	suffix := strings.ToUpper(hex.EncodeToString(sum[:6]))
+
 	return &ExamCertificate{
-		CertificateID: fmt.Sprintf("CERT-%s-%s", lvl.Code, effectiveIssuedAt.Format("20060102")),
+		CertificateID: fmt.Sprintf("CERT-%s-%s-%s", lvl.Code, effectiveIssuedAt.Format("20060102"), suffix),
 		ExamName:      lvl.OfficialExamName,
 		LevelCode:     lvl.Code,
 		CandidateName: name,
@@ -560,9 +585,30 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	lvl, _, err := u.verifyLevelExamAccess(ctx, userID, levelID)
+	lvl, err := u.langRepo.GetLevelByID(ctx, levelID)
 	if err != nil {
 		return nil, err
+	}
+	if lvl == nil {
+		return nil, language.ErrProficiencyLevelNotFound
+	}
+
+	enrollments, err := u.langRepo.GetEnrollmentsByUserID(ctx, userID)
+	if err != nil {
+		if errors.Is(err, language.ErrEnrollmentNotFound) {
+			return nil, apperror.ErrForbidden
+		}
+		return nil, err
+	}
+	hasEnrollment := false
+	for _, enr := range enrollments {
+		if enr.LanguageID == lvl.LanguageID {
+			hasEnrollment = true
+			break
+		}
+	}
+	if !hasEnrollment {
+		return nil, apperror.ErrForbidden
 	}
 
 	passedAttempt, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)
@@ -577,7 +623,7 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 	if passedAttempt.MaxScore <= 0 && maxScore > 0 {
 		passedAttempt.MaxScore = maxScore
 	}
-	cert := u.buildExamCertificate(ctx, userID, lvl, score, maxScore, passedAttempt.ScorePercent, passedAttempt.AttemptedAt)
+	cert := u.buildExamCertificate(ctx, userID, passedAttempt.ID, lvl, score, maxScore, passedAttempt.ScorePercent, passedAttempt.AttemptedAt)
 
 	return &ReadinessExamResponse{
 		Attempt:     *passedAttempt,
@@ -650,7 +696,7 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 
 	var cert *ExamCertificate
 	if graded.isPassed {
-		cert = u.buildExamCertificate(ctx, userID, lvl, graded.totalScore, graded.maxScore, graded.scorePercent, now)
+		cert = u.buildExamCertificate(ctx, userID, attempt.ID, lvl, graded.totalScore, graded.maxScore, graded.scorePercent, now)
 	}
 
 	return &ReadinessExamResponse{

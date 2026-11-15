@@ -72,7 +72,6 @@ export const useLearnWorkspace = () => {
     selectedTokens,
     selectedOptionValue,
     textInput,
-    setTextInput,
     showHint,
     currentUserAnswer,
     canCheckAnswer,
@@ -112,7 +111,7 @@ export const useLearnWorkspace = () => {
   } = useExerciseMedia({
     speechLocale,
     isLocked: submittedResult !== null,
-    onTranscript: setTextInput,
+    onTranscript: handleSetTextInput,
   })
 
   useEffect(() => {
@@ -134,7 +133,10 @@ export const useLearnWorkspace = () => {
   const isLastExercise =
     exercises.length > 0 && currentIndex >= exercises.length - 1
 
-  const submitAnswerMutation = useMutation({
+  const {
+    mutateAsync: submitAnswerAsync,
+    isPending: isSubmittingAnswer,
+  } = useMutation({
     mutationFn: (payload: {
       exercise_id: string
       user_answer: string
@@ -142,7 +144,10 @@ export const useLearnWorkspace = () => {
     }) => exerciseService.submitAnswer(payload),
   })
 
-  const completeLessonMutation = useMutation({
+  const {
+    mutateAsync: completeLessonAsync,
+    isPending: isCompletingLesson,
+  } = useMutation({
     mutationFn: (payload: { lessonId: string; score: number }) =>
       curriculumService.completeLesson(payload.lessonId, {
         lesson_id: payload.lessonId,
@@ -181,10 +186,11 @@ export const useLearnWorkspace = () => {
   }, [currentExercise?.prompt, parsedContent, playExerciseAudio])
 
   const handleCheckAnswer = useCallback(async () => {
-    if (!currentExercise || !canCheckAnswer || submitAnswerMutation.isPending) {
+    if (!currentExercise || !canCheckAnswer || isSubmittingAnswer) {
       return
     }
 
+    stopMediaSession()
     setSubmitError(null)
     const elapsedSeconds =
       questionStartedAtRef.current > 0
@@ -192,7 +198,7 @@ export const useLearnWorkspace = () => {
         : 1
 
     try {
-      const res = await submitAnswerMutation.mutateAsync({
+      const res = await submitAnswerAsync({
         exercise_id: currentExercise.id,
         user_answer: currentUserAnswer,
         time_spent_seconds: elapsedSeconds,
@@ -220,20 +226,22 @@ export const useLearnWorkspace = () => {
     canCheckAnswer,
     currentExercise,
     currentUserAnswer,
-    submitAnswerMutation,
+    isSubmittingAnswer,
+    stopMediaSession,
+    submitAnswerAsync,
   ])
 
   const handleCompleteLesson = useCallback(async () => {
-    if (!lesson || completeLessonMutation.isPending) return
+    if (!lesson || isCompletingLesson) return
 
     setSubmitError(null)
     setIsScoreTooLowError(false)
     const total = Math.max(1, exercises.length)
-    const accuracyPercent = Math.round((correctExerciseIds.length / total) * 100)
+    const accuracyPercent = Math.floor((correctExerciseIds.length / total) * 100)
 
     try {
       const previousUser = useAuthStore.getState().user
-      const completionResult = await completeLessonMutation.mutateAsync({
+      const completionResult = await completeLessonAsync({
         lessonId: lesson.id,
         score: accuracyPercent,
       })
@@ -301,9 +309,10 @@ export const useLearnWorkspace = () => {
       audioEngine.playError()
     }
   }, [
-    completeLessonMutation,
+    completeLessonAsync,
     correctExerciseIds.length,
     exercises.length,
+    isCompletingLesson,
     lesson,
     navigate,
     queryClient,
@@ -384,8 +393,8 @@ export const useLearnWorkspace = () => {
     isLoading: lessonQuery.isLoading,
     isError: lessonQuery.isError,
     lessonErrorMessage,
-    isChecking: submitAnswerMutation.isPending,
-    isCompleting: completeLessonMutation.isPending,
+    isChecking: isSubmittingAnswer,
+    isCompleting: isCompletingLesson,
     refetchLesson: lessonQuery.refetch,
     handleAddToken,
     handleRemoveToken,

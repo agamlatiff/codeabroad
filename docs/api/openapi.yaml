@@ -602,6 +602,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Exercises retrieved
@@ -609,6 +610,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -623,6 +626,18 @@ paths:
           application/json:
             schema:
               type: object
+              required: [exercise_id, user_answer]
+              properties:
+                exercise_id:
+                  type: string
+                  format: uuid
+                user_answer:
+                  type: string
+                time_spent_seconds:
+                  type: integer
+                  minimum: 0
+                skip_srs_schedule:
+                  type: boolean
       responses:
         "200":
           description: Answer evaluated
@@ -634,6 +649,12 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ==========================================
   # VOCABULARIES
@@ -643,6 +664,14 @@ paths:
       tags: [Vocabularies]
       security: [{ BearerAuth: [] }]
       summary: Get daily vocabulary set
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
       responses:
         "200":
           description: Daily vocabularies retrieved
@@ -661,6 +690,14 @@ paths:
       tags: [SRS]
       security: [{ BearerAuth: [] }]
       summary: Get due SRS review cards
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
       responses:
         "200":
           description: Due SRS cards retrieved
@@ -682,6 +719,15 @@ paths:
           application/json:
             schema:
               type: object
+              required: [exercise_id, quality]
+              properties:
+                exercise_id:
+                  type: string
+                  format: uuid
+                quality:
+                  type: integer
+                  minimum: 0
+                  maximum: 5
       responses:
         "200":
           description: SRS review processed
@@ -693,6 +739,12 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ==========================================
   # EXAMS
@@ -708,6 +760,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Exam questions retrieved
@@ -715,6 +768,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -729,6 +784,7 @@ paths:
           required: true
           schema:
             type: string
+            format: uuid
       responses:
         "200":
           description: Exam result retrieved
@@ -736,6 +792,8 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
@@ -750,6 +808,26 @@ paths:
           application/json:
             schema:
               type: object
+              required: [level_id, answers]
+              properties:
+                level_id:
+                  type: string
+                  format: uuid
+                answers:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: object
+                    required: [exercise_id, user_answer]
+                    properties:
+                      exercise_id:
+                        type: string
+                        format: uuid
+                      user_answer:
+                        type: string
+                      time_spent_seconds:
+                        type: integer
+                        minimum: 0
       responses:
         "200":
           description: Exam submitted and graded
@@ -761,6 +839,14 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          description: Rate limit exceeded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   # ==========================================
   # GAMIFICATION

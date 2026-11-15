@@ -110,6 +110,7 @@ type SubmitExerciseAnswerRequest struct {
 	ExerciseID       string `json:"exercise_id" binding:"required,uuid"`
 	UserAnswer       string `json:"user_answer" binding:"required"`
 	TimeSpentSeconds int    `json:"time_spent_seconds" binding:"min=0"`
+	SkipSRSSchedule  bool   `json:"skip_srs_schedule"`
 }
 
 // SubmitExerciseAnswerResponse returns validation, correction, and reward feedback
@@ -180,7 +181,6 @@ type Repository interface {
 	GetReadinessExamExercises(ctx context.Context, levelID string) ([]Exercise, error)
 	GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error)
 	CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error
-	GetAttemptsByUserID(ctx context.Context, userID string, limit int) ([]UserExerciseAttempt, error)
 }
 
 // SRSRepository specifies persistence operations for spaced repetition scheduling
@@ -194,7 +194,6 @@ type SRSRepository interface {
 // ReadinessExamRepository specifies persistence operations for diagnostic mock exams
 type ReadinessExamRepository interface {
 	CreateExamAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error
-	GetExamAttemptsByUserID(ctx context.Context, userID string, levelID string) ([]ReadinessExamAttempt, error)
 	GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error)
 }
 
