@@ -64,7 +64,7 @@ func AuthMiddleware(jwtSecret string) gin.HandlerFunc {
 		if err != nil {
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"success": false,
-				"error":   err.Error(),
+				"error":   "invalid or expired authorization token",
 				"code":    "UNAUTHORIZED",
 			})
 			return

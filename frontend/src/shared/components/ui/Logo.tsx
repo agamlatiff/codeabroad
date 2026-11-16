@@ -105,7 +105,7 @@ export const Logo: FC<LogoProps> = ({
             fill={activeColor.fill}
           />
 
-          {/* Developer Tech Headphone Accent */}
+          {/* Companion Headphone Accent */}
           <path
             d="M34 26C42 20 58 20 66 26"
             stroke="white"

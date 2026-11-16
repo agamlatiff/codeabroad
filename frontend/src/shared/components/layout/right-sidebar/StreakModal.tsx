@@ -259,7 +259,7 @@ export const StreakModal: FC<StreakModalProps> = ({
             <Sparkle weight="fill" className="w-5 h-5 text-amber-600" />
           </div>
           <p className="text-[11px] text-amber-950 font-medium leading-relaxed">
-            <strong className="font-bold">Tips Konsistensi Kodi:</strong> Selesaikan 1 koding part atau sapaan kosakata setiap hari untuk menjaga api tetap berkobar menuju karier Tokyo!
+            <strong className="font-bold">Tips Konsistensi Kodi:</strong> Selesaikan 1 pelajaran kurikulum atau latihan kosakata setiap hari untuk menjaga api tetap berkobar menuju target bahasamu!
           </p>
         </div>
 

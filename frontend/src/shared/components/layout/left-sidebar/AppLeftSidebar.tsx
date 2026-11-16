@@ -150,7 +150,7 @@ export const AppLeftSidebar = () => {
 
             {/* Tooltip */}
             <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
-              <span>Profil & Pengaturan: {user?.name || 'Software Engineer'}</span>
+              <span>Profil &amp; Pengaturan: {user?.name || 'Pembelajar Global'}</span>
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
             </div>
           </div>

@@ -72,10 +72,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
 
   const handleAction = () => {
     onClose()
-    const targetRoute =
-      node.route && node.route !== '/courses'
-        ? node.route
-        : `/learn/${node.id}`
+    const targetRoute = node.route || `/learn/${node.id}`
 
     if (onStartLesson) {
       onStartLesson(targetRoute)

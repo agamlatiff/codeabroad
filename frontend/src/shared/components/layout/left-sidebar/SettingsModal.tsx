@@ -157,10 +157,10 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </div>
           </div>
 
-          {/* Bio Developer */}
+          {/* Bio Profil */}
           <div className="space-y-1">
             <label className="text-xs font-brand font-black text-slate-700 block">
-              Bio Developer Singkat
+              Bio Profil Singkat
             </label>
             <textarea
               rows={2}
@@ -288,7 +288,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
                   }`}
                 >
                   <span className="text-[11px] font-brand font-black block">☕ Universal Lo-Fi</span>
-                  <span className="text-[9px] text-slate-500 block">Akord 7th hangat untuk fokus koding</span>
+                  <span className="text-[9px] text-slate-500 block">Akord 7th hangat untuk fokus belajar bahasa</span>
                 </button>
 
                 <button

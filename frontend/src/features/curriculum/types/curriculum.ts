@@ -187,7 +187,7 @@ export interface SequentialPartItem {
   title: string
   subtitle: string
   chipLabel: string
-  category: 'code' | 'language' | 'boss'
+  category: 'language' | 'boss'
   difficulty: 'Pemula' | 'Menengah' | 'Sulit'
   estimatedMinutes: number
   xpReward: number
@@ -218,15 +218,12 @@ export interface SequentialCurriculumUnit {
 }
 
 export type TrackIconType =
-  | 'fundamental'
-  | 'golang'
-  | 'frontend'
-  | 'devops'
   | 'nihongo'
   | 'english'
   | 'korean'
   | 'german'
   | 'mandarin'
+  | 'default'
 
 export interface CareerTrackOption {
   id: string
@@ -234,7 +231,7 @@ export interface CareerTrackOption {
   title: string
   shortTitle: string
   subtitle: string
-  category: 'coding' | 'language'
+  category: 'language'
   iconType: TrackIconType
   badgeLabel: string
   badgeVariant: 'active' | 'available' | 'featured'
@@ -243,7 +240,7 @@ export interface CareerTrackOption {
   group?: 'foundation' | 'career'
 }
 
-export type MapNodeCategory = 'code' | 'language'
+export type MapNodeCategory = 'language' | 'boss'
 
 export interface CurriculumPartNode {
   id: string

@@ -91,7 +91,7 @@ func (h *Handler) CompleteOnboarding(c *gin.Context) {
 
 	var req OnboardingRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid onboarding submission payload")
 		return
 	}
 

@@ -133,7 +133,7 @@ func (h *Handler) SubmitAnswer(c *gin.Context) {
 
 	var req SubmitExerciseAnswerRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid exercise submission payload")
 		return
 	}
 
@@ -194,7 +194,7 @@ func (h *Handler) ProcessReview(c *gin.Context) {
 
 	var req SubmitSRSReviewRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid SRS review payload")
 		return
 	}
 
@@ -281,7 +281,7 @@ func (h *Handler) SubmitExam(c *gin.Context) {
 
 	var req SubmitReadinessExamRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid readiness exam submission payload")
 		return
 	}
 

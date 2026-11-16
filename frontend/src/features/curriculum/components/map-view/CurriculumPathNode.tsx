@@ -40,10 +40,7 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
 
   const handleActiveButtonClick = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
-    const targetRoute =
-      node.route && node.route !== '/courses'
-        ? node.route
-        : `/learn/${node.id}`
+    const targetRoute = node.route || `/learn/${node.id}`
 
     if (onStartLesson) {
       onStartLesson(targetRoute)

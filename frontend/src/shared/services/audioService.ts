@@ -20,7 +20,7 @@ export type { SoundEffectType, SoundscapeTrack, AudioPlaybackMode }
 
 /**
  * Procedural BGM Soundscape Synthesizer.
- * Generates continuous mathematical ambient soundscapes for deep focus coding.
+ * Generates continuous mathematical ambient soundscapes for deep study focus.
  */
 class SoundscapePlayer {
   private ctx: AudioContext

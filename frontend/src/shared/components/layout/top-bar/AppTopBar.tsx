@@ -9,13 +9,7 @@ import {
   SpeakerSimpleSlash,
   Translate,
 } from '@phosphor-icons/react'
-import {
-  GolangLogo,
-  ReactLogo,
-  DockerLogo,
-  FundamentalLogo,
-  TechNihongoLogo,
-} from "@/shared/components/ui/BrandLogos"
+import { TechNihongoLogo } from "@/shared/components/ui/BrandLogos"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { useAudioStore } from "@/shared/store/audioStore"
@@ -68,15 +62,9 @@ export const AppTopBar = ({
             title="Bahasa dan jalur belajar saat ini. Klik untuk beralih."
           >
             <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              {currentTrackConfig.iconType === 'fundamental' && <FundamentalLogo className="w-3.5 h-3.5" />}
-              {currentTrackConfig.iconType === 'golang' && <GolangLogo className="w-4 h-3" />}
-              {currentTrackConfig.iconType === 'frontend' && <ReactLogo className="w-3.5 h-3.5" />}
-              {currentTrackConfig.iconType === 'devops' && <DockerLogo className="w-3.5 h-3.5" />}
-              {currentTrackConfig.iconType === 'nihongo' && <TechNihongoLogo className="w-3.5 h-3.5" />}
-              {(currentTrackConfig.iconType === 'english' ||
-                currentTrackConfig.iconType === 'korean' ||
-                currentTrackConfig.iconType === 'german' ||
-                currentTrackConfig.iconType === 'mandarin') && (
+              {currentTrackConfig.iconType === 'nihongo' ? (
+                <TechNihongoLogo className="w-3.5 h-3.5" />
+              ) : (
                 <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
               )}
             </div>

@@ -12,13 +12,7 @@ import {
   LockSimple,
 } from '@phosphor-icons/react'
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
-import {
-  GolangLogo,
-  ReactLogo,
-  DockerLogo,
-  FundamentalLogo,
-  TechNihongoLogo,
-} from "@/shared/components/ui/BrandLogos"
+import { TechNihongoLogo } from "@/shared/components/ui/BrandLogos"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
@@ -36,24 +30,10 @@ export interface TrackSwitcherModalProps {
 }
 
 const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
-  switch (type) {
-    case 'fundamental':
-      return <FundamentalLogo className="w-6 h-6" />
-    case 'golang':
-      return <GolangLogo className="w-7 h-5" />
-    case 'frontend':
-      return <ReactLogo className="w-6 h-6" />
-    case 'devops':
-      return <DockerLogo className="w-6 h-6" />
-    case 'nihongo':
-      return <TechNihongoLogo className="w-6 h-6" />
-    case 'english':
-    case 'korean':
-    case 'german':
-    case 'mandarin':
-    default:
-      return <Translate weight="bold" className="w-6 h-6 text-blue-600" />
+  if (type === 'nihongo') {
+    return <TechNihongoLogo className="w-6 h-6" />
   }
+  return <Translate weight="bold" className="w-6 h-6 text-blue-600" />
 }
 
 interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen'> {

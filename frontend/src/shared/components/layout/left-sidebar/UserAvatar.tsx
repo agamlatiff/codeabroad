@@ -58,7 +58,7 @@ export const UserAvatar: FC<UserAvatarProps> = ({
       className={`relative inline-flex items-center justify-center shrink-0 rounded-full select-none shadow-sm transition-transform duration-200 hover:scale-105 ${containerSize} ${className}`}
       title={user?.name || user?.username || 'User Profile'}
     >
-      {/* 1. Primary Avatar Image (Illustrated Developer / Custom Photo) */}
+      {/* 1. Primary Avatar Image (Illustrated Character / Custom Photo) */}
       {!imageError ? (
         <img
           src={avatarUrl}

@@ -71,7 +71,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 
 	var req UpdateProfileRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid profile update payload")
 		return
 	}
 
@@ -111,7 +111,7 @@ func (h *Handler) ClaimDailyReward(c *gin.Context) {
 
 	var req DailyRewardClaimRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequest(c, "invalid daily reward claim payload")
 		return
 	}
 

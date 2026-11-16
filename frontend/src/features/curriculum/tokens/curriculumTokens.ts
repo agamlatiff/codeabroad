@@ -157,10 +157,6 @@ export const PART_CATEGORY_TOKENS: Record<
     lockedCardAccent: string
   }
 > = {
-  code: {
-    chip: 'bg-slate-100 text-slate-700 border border-slate-200',
-    lockedCardAccent: '',
-  },
   language: {
     chip: 'bg-blue-100 text-blue-700 border border-blue-200',
     lockedCardAccent: 'bg-slate-50/80 border-slate-200/70',
@@ -226,19 +222,7 @@ export const resolveTrackIconType = (slugOrCode: string): TrackIconType => {
   if (normalized === 'zh' || normalized.includes('mandarin') || normalized.includes('chinese')) {
     return 'mandarin'
   }
-  if (normalized.includes('go')) return 'golang'
-  if (
-    normalized.includes('react') ||
-    normalized.includes('front') ||
-    normalized.includes('vue') ||
-    normalized.includes('web')
-  ) {
-    return 'frontend'
-  }
-  if (normalized.includes('devops') || normalized.includes('aws') || normalized.includes('cloud')) {
-    return 'devops'
-  }
-  return 'fundamental'
+  return 'default'
 }
 
 /**
@@ -297,7 +281,7 @@ export interface MapCategoryStyleTokens {
   popoverBorder: string
   popoverLabelColor: string
   badgeClass: string
-  activeButtonVariant: 'rose' | 'blue'
+  activeButtonVariant: 'rose' | 'blue' | 'amber'
   activeButtonText: string
   discCompleted: string
   discActive: string
@@ -319,22 +303,22 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
     modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
   },
-  code: {
-    popoverBorder: 'border-blue-400',
-    popoverLabelColor: 'text-blue-600',
-    badgeClass: 'bg-slate-100 text-slate-700 border border-slate-200',
-    activeButtonVariant: 'blue',
-    activeButtonText: 'MULAI SESI BELAJAR',
+  boss: {
+    popoverBorder: 'border-amber-400',
+    popoverLabelColor: 'text-amber-700',
+    badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
+    activeButtonVariant: 'amber',
+    activeButtonText: 'MULAI EVALUASI',
     discCompleted: 'bg-emerald-500 shadow-[0_5px_0_0_#047857]',
-    discActive: 'bg-blue-600 shadow-[0_6px_0_0_#1D4ED8] ring-8 ring-blue-100',
-    modalIconBgActive: 'bg-blue-100 border-blue-300 text-blue-700',
+    discActive: 'bg-amber-500 shadow-[0_6px_0_0_#B45309] ring-8 ring-amber-100',
+    modalIconBgActive: 'bg-amber-500 border-amber-600 text-white shadow-[0_3px_0_0_#B45309]',
     modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
     modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
   },
 }
 
 export const resolveMapNodeCategory = (category?: string): MapNodeCategory =>
-  category === 'code' ? 'code' : 'language'
+  category === 'boss' ? 'boss' : 'language'
 
 export const resolveMapCategoryTokens = (category?: string): MapCategoryStyleTokens =>
   MAP_CATEGORY_TOKENS[resolveMapNodeCategory(category)]

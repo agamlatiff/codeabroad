@@ -1,6 +1,6 @@
 /**
  * Utility functions for user avatar generation and deterministic styling.
- * CodeAbroad gamified developer avatar system inspired by Duolingo & GitHub.
+ * CodeAbroad gamified learner avatar system inspired by Duolingo.
  */
 
 export type AvatarStyle = 'adventurer' | 'bottts' | 'lorelei'
@@ -49,7 +49,7 @@ export const getDeterministicGradient = (seed: string): string => {
 /**
  * Generates a deterministic avatar URL.
  * If user.avatar_url is already present, it returns it directly.
- * Otherwise, generates an illustrated developer/tech character via DiceBear SVG.
+ * Otherwise, generates an illustrated companion character via DiceBear SVG.
  */
 export const getAvatarUrl = (
   user?: AvatarUser | null,
@@ -59,7 +59,7 @@ export const getAvatarUrl = (
     return user.avatar_url
   }
 
-  const seed = (user?.username || user?.name || 'coder').trim().toLowerCase()
+  const seed = (user?.username || user?.name || 'learner').trim().toLowerCase()
   const encodedSeed = encodeURIComponent(seed)
 
   // Curated soft background colors matching CodeAbroad pastel palette
@@ -67,14 +67,14 @@ export const getAvatarUrl = (
 
   switch (style) {
     case 'bottts':
-      // Retro tech coding robot with LED display and antenna
+      // Retro study robot with LED display and antenna
       return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodedSeed}&backgroundColor=e0e7ff,dbeafe,fef3c7,f3e8ff`
     case 'lorelei':
-      // Modern anime-style developer illustration
+      // Modern anime-style learner illustration
       return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodedSeed}&backgroundColor=${bgColors}`
     case 'adventurer':
     default:
-      // Expressive young developer characters (glasses, hoodies, smiles)
+      // Expressive young traveler/learner characters (glasses, hoodies, smiles)
       return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodedSeed}&backgroundColor=${bgColors}`
   }
 }

@@ -55,7 +55,7 @@ export const DEFAULT_BGM_VOLUME = 0.12
 
 /**
  * Universal Lo-Fi chill chords (Fmaj7 -> Em7 -> Dm7 -> Cmaj7)
- * Synthesized through warm 400Hz low-pass filters for focus coding.
+ * Synthesized through warm 400Hz low-pass filters for study focus.
  */
 export const UNIVERSAL_SOUNDSCAPE_CHORDS: number[][] = [
   [174.61, 261.63, 329.63, 440.0], // Fmaj7 (F3, C4, E4, A4)
