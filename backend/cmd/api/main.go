@@ -112,7 +112,14 @@ func main() {
 		onboarding.DefaultOnboardingCompleteMessage,
 	)
 	onboardingHandler := onboarding.NewHandlerWithRateLimiter(onboardingUsecase, onboardingLimiter)
-	langHandler := language.NewHandler(langUsecase)
+	langSwitchLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"language:switch",
+		language.DefaultLanguageSwitchLimit,
+		time.Minute,
+		language.DefaultLanguageSwitchMessage,
+	)
+	langHandler := language.NewHandlerWithRateLimiter(langUsecase, langSwitchLimiter)
 	curriculumLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,
 		"curriculum:complete",

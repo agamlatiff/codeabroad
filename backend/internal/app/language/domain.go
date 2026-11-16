@@ -17,6 +17,11 @@ var (
 	ErrEnrollmentLevelChanged   = apperror.NewConflictError("LEVEL_ALREADY_CHANGED", "enrollment proficiency level was updated concurrently")
 )
 
+const (
+	DefaultLanguageSwitchLimit   = 30
+	DefaultLanguageSwitchMessage = "terlalu banyak permintaan penggantian bahasa, silakan tunggu sebentar"
+)
+
 // Language represents a world destination language track (languages table)
 type Language struct {
 	ID               string    `json:"id"`
