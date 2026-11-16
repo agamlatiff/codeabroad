@@ -13,6 +13,7 @@ import {
   Medal,
 } from '@phosphor-icons/react'
 import type { TokyoDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
+import { TOKYO_DIVISIONS } from "@/features/leaderboard/constants/divisions"
 import { leaderboardService } from "@/features/leaderboard/services/leaderboardService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { soundEngine } from "@/shared/utils/audio"
@@ -24,73 +25,27 @@ export const LeaderboardPage = () => {
   const [selectedDivision, setSelectedDivision] = useState<TokyoDivision>('shinjuku')
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
-
-  // 4 Official Tokyo League Divisions with uniform Medal icons and solid metallic material colors
-  const DIVISIONS: {
-    id: TokyoDivision
-    name: string
-    tier: string
-    xpRange: string
-    levelLabel: string
-    iconColor: string
-    badgeColor: string
-    description: string
-  }[] = [
-    {
-      id: 'shinjuku',
-      name: 'Liga Perunggu',
-      tier: 'Bronze League',
-      xpRange: '0 – 299 XP',
-      levelLabel: 'Pemula',
-      iconColor: 'text-[#B45309]',
-      badgeColor: 'border-amber-500 bg-amber-50 text-amber-900',
-      description: 'Zona kompetisi bagi engineer baru yang memulai jalur kurikulum Tokyo.',
-    },
-    {
-      id: 'shibuya',
-      name: 'Liga Perak',
-      tier: 'Silver League',
-      xpRange: '300 – 799 XP',
-      levelLabel: 'Menengah',
-      iconColor: 'text-[#94A3B8]',
-      badgeColor: 'border-slate-400 bg-slate-50 text-slate-800',
-      description: 'Kompetisi aktif bagi engineer yang menguasai sintaks dasar & REST API.',
-    },
-    {
-      id: 'akihabara',
-      name: 'Liga Emas',
-      tier: 'Gold League',
-      xpRange: '800 – 1.499 XP',
-      levelLabel: 'Lanjutan',
-      iconColor: 'text-[#F59E0B]',
-      badgeColor: 'border-amber-400 bg-amber-50/60 text-amber-900',
-      description: 'Engineer tingkat lanjut dengan penguasaan concurrency & cloud Docker.',
-    },
-    {
-      id: 'roppongi',
-      name: 'Liga Berlian',
-      tier: 'Diamond Master',
-      xpRange: '1.500+ XP',
-      levelLabel: 'Master',
-      iconColor: 'text-[#06B6D4]',
-      badgeColor: 'border-cyan-500 bg-cyan-50/70 text-cyan-950',
-      description: 'Puncak liga global Tokyo: siap interview teknis dan sponsor visa kerja Jepang.',
-    },
-  ]
+  const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let isMounted = true
     const fetchStandings = async () => {
       try {
         setLoading(true)
+        setError(null)
         const data = await leaderboardService.getWeeklyLeaderboard(selectedDivision)
         if (isMounted) {
           setLeaderboard(data)
         }
-      } catch (err) {
-        console.error('Failed to load leaderboard:', err)
+      } catch {
+        if (isMounted) {
+          setError('Gagal memuat papan peringkat. Periksa koneksi Anda lalu coba lagi.')
+        }
       } finally {
-        if (isMounted) setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
@@ -98,7 +53,7 @@ export const LeaderboardPage = () => {
     return () => {
       isMounted = false
     }
-  }, [selectedDivision])
+  }, [selectedDivision, reloadKey])
 
   const handleSelectDivision = (div: TokyoDivision) => {
     triggerHaptic('tap')
@@ -106,7 +61,7 @@ export const LeaderboardPage = () => {
     setSelectedDivision(div)
   }
 
-  const currentDivConfig = DIVISIONS.find((d) => d.id === selectedDivision) || DIVISIONS[0]
+  const currentDivConfig = TOKYO_DIVISIONS.find((d) => d.id === selectedDivision) || TOKYO_DIVISIONS[0]
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -131,7 +86,7 @@ export const LeaderboardPage = () => {
                 Papan Peringkat Liga Tokyo (Weekly Leagues)
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl">
-                Bersaing setiap minggu bersama kandidat engineer global lainnya. Capai Top 3 di akhir pekan untuk promosi ke divisi yang lebih bergengsi!
+                Bersaing setiap minggu bersama pembelajar bahasa global lainnya. Capai Top 3 di akhir pekan untuk promosi ke divisi yang lebih bergengsi!
               </p>
             </div>
 
@@ -153,7 +108,7 @@ export const LeaderboardPage = () => {
 
           {/* ── 4 TOKYO LEAGUE DIVISION SELECTOR TABS ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {DIVISIONS.map((div) => {
+            {TOKYO_DIVISIONS.map((div) => {
               const isSelected = selectedDivision === div.id
               return (
                 <button
@@ -255,6 +210,18 @@ export const LeaderboardPage = () => {
                   Memuat klasemen {currentDivConfig.name}...
                 </p>
               </div>
+            ) : error ? (
+              <div className="py-12 px-6 text-center space-y-3 bg-rose-50/70 rounded-3xl border-2 border-rose-200">
+                <p className="text-xs sm:text-sm font-brand font-bold text-rose-700">{error}</p>
+                <Button3D
+                  variant="blue"
+                  size="sm"
+                  onClick={() => setReloadKey((k) => k + 1)}
+                  className="text-xs px-5 py-2 mx-auto"
+                >
+                  Coba Lagi
+                </Button3D>
+              </div>
             ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
               <div className="py-16 px-6 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
                 <div className="flex items-center justify-center mx-auto">
@@ -265,7 +232,7 @@ export const LeaderboardPage = () => {
                     Belum Ada Peserta di {currentDivConfig.name}
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                    Jadilah yang pertama masuk ke klasemen {currentDivConfig.name} ({currentDivConfig.xpRange}) minggu ini! Kumpulkan XP dari kurikulum dan kuis IT Jepang untuk langsung mengamankan posisi Zona Promosi!
+                    Jadilah yang pertama masuk ke klasemen {currentDivConfig.name} ({currentDivConfig.xpRange}) minggu ini! Kumpulkan XP dari kurikulum dan latihan bahasa untuk langsung mengamankan posisi Zona Promosi!
                   </p>
                 </div>
                 <Button3D
@@ -273,7 +240,7 @@ export const LeaderboardPage = () => {
                   size="md"
                   onClick={() => {
                     triggerHaptic('tap')
-                    navigate('/courses')
+                    navigate('/curriculum')
                   }}
                   className="text-xs sm:text-sm px-6 py-3 mx-auto"
                 >
@@ -382,7 +349,7 @@ export const LeaderboardPage = () => {
                 <span>Tips Liga Mingguan dari Kodi!</span>
               </h4>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Peringkat diperbarui secara otomatis setiap kali Anda menyelesaikan quest koding dan kuis kosakata IT Jepang. Konsistensi harian 15 menit sudah cukup untuk mengamankan posisi promosi ke Divisi Roppongi Master!
+                Peringkat diperbarui secara otomatis setiap kali Anda menyelesaikan pelajaran kurikulum, latihan SRS, dan kuis kosakata. Konsistensi harian 15 menit sudah cukup untuk mengamankan posisi promosi ke Divisi Roppongi Master!
               </p>
             </div>
           </div>

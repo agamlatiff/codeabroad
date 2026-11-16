@@ -8,10 +8,10 @@ import (
 type TokyoDivision string
 
 const (
-	DivisionShinjuku  TokyoDivision = "shinjuku"  // Bronze tier (0 - 300 XP)
-	DivisionShibuya   TokyoDivision = "shibuya"   // Silver tier (301 - 800 XP)
-	DivisionAkihabara TokyoDivision = "akihabara" // Gold tier (801 - 1500 XP)
-	DivisionRoppongi  TokyoDivision = "roppongi"  // Diamond Master tier (1500+ XP)
+	DivisionShinjuku  TokyoDivision = "shinjuku"  // Bronze tier (0 - 299 XP)
+	DivisionShibuya   TokyoDivision = "shibuya"   // Silver tier (300 - 799 XP)
+	DivisionAkihabara TokyoDivision = "akihabara" // Gold tier (800 - 1.499 XP)
+	DivisionRoppongi  TokyoDivision = "roppongi"  // Diamond Master tier (1.500+ XP)
 )
 
 // LeaderboardEntry represents a ranked competitor in the weekly league

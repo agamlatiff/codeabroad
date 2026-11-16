@@ -29,6 +29,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 	_, seasonWeek := now.ISOWeek()
 	daysRemaining := u.helper.CalculateDaysUntilSundayReset(now)
 	cfg := u.helper.GetDivisionConfig(requestedDivision)
+	resolvedDivision := cfg.Division
 
 	entries, err := u.leaderboardRepo.GetDivisionStandings(ctx, cfg.MinXP, cfg.MaxXP, 50)
 	if err != nil {
@@ -40,7 +41,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 	for i := range entries {
 		rank := i + 1
 		entries[i].Rank = rank
-		entries[i].Division = requestedDivision
+		entries[i].Division = resolvedDivision
 		entries[i].Zone = u.helper.CalculateZone(rank)
 		entries[i].IsCurrentUser = (userID != "" && entries[i].UserID == userID)
 
@@ -55,18 +56,18 @@ func (u *usecase) GetWeeklyLeaderboard(
 		standing, err := u.leaderboardRepo.GetUserStanding(ctx, userID)
 		if err == nil && standing != nil {
 			userDiv := u.helper.DetermineDivision(standing.WeeklyXP)
-			if userDiv == requestedDivision {
+			if userDiv == resolvedDivision {
 				standing.Rank = len(entries) + 1
-				standing.Division = requestedDivision
+				standing.Division = resolvedDivision
 				standing.IsCurrentUser = true
-				standing.Zone = "safe"
+				standing.Zone = u.helper.CalculateZone(standing.Rank)
 				userRankItem = standing
 			}
 		}
 	}
 
 	return &WeeklyLeaderboardResponse{
-		Division:         requestedDivision,
+		Division:         resolvedDivision,
 		DivisionName:     cfg.Name,
 		DivisionTier:     cfg.Tier,
 		SeasonWeek:       seasonWeek,

@@ -34,3 +34,34 @@ func TestGetWeeklyLeaderboard_Success(t *testing.T) {
 	}
 }
 
+func TestGetWeeklyLeaderboard_NormalizesInvalidDivisionAndOutOfTopZone(t *testing.T) {
+	repo := leaderboard.NewMockRepository()
+	for i := 0; i < 12; i++ {
+		repo.Standings = append(repo.Standings, leaderboard.LeaderboardEntry{
+			UserID:   "other",
+			Name:     "Competitor",
+			WeeklyXP: 100,
+		})
+	}
+	repo.UserStandings["user-99"] = &leaderboard.LeaderboardEntry{
+		UserID:   "user-99",
+		Name:     "Hana",
+		WeeklyXP: 50,
+	}
+
+	uc := leaderboard.NewUsecase(repo)
+	res, err := uc.GetWeeklyLeaderboard(context.Background(), "user-99", leaderboard.TokyoDivision(""))
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if res.Division != leaderboard.DivisionShinjuku {
+		t.Errorf("expected normalized division %q, got %q", leaderboard.DivisionShinjuku, res.Division)
+	}
+	if res.UserRank == nil {
+		t.Fatal("expected user rank to be populated")
+	}
+	if res.UserRank.Zone != "demotion" {
+		t.Errorf("expected rank 13 zone to be 'demotion', got %q", res.UserRank.Zone)
+	}
+}
+

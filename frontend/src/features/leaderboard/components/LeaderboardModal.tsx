@@ -13,6 +13,7 @@ import {
   Medal,
 } from '@phosphor-icons/react'
 import type { TokyoDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
+import { TOKYO_DIVISIONS } from "@/features/leaderboard/constants/divisions"
 import { leaderboardService } from "@/features/leaderboard/services/leaderboardService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { soundEngine } from "@/shared/utils/audio"
@@ -32,56 +33,33 @@ export const LeaderboardModal = ({
 }: LeaderboardModalProps) => {
   const navigate = useNavigate()
   const [selectedDivision, setSelectedDivision] = useState<TokyoDivision>(initialDivision)
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
+  const [prevInitialDivision, setPrevInitialDivision] = useState(initialDivision)
   const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
   const [loading, setLoading] = useState<boolean>(false)
+  const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
-  // 4 Official Tokyo League Divisions with uniform Medal icons and solid metallic material colors
-  const DIVISIONS: {
-    id: TokyoDivision
-    name: string
-    tier: string
-    xpRange: string
-    levelLabel: string
-    iconColor: string
-    badgeBg: string
-  }[] = [
-    {
-      id: 'shinjuku',
-      name: 'Liga Perunggu',
-      tier: 'Bronze League',
-      xpRange: '0 – 299 XP',
-      levelLabel: 'Pemula',
-      iconColor: 'text-[#B45309]',
-      badgeBg: 'bg-amber-50 text-amber-900 border-amber-200',
-    },
-    {
-      id: 'shibuya',
-      name: 'Liga Perak',
-      tier: 'Silver League',
-      xpRange: '300 – 799 XP',
-      levelLabel: 'Menengah',
-      iconColor: 'text-[#94A3B8]',
-      badgeBg: 'bg-slate-100 text-slate-800 border-slate-300',
-    },
-    {
-      id: 'akihabara',
-      name: 'Liga Emas',
-      tier: 'Gold League',
-      xpRange: '800 – 1.499 XP',
-      levelLabel: 'Lanjutan',
-      iconColor: 'text-[#F59E0B]',
-      badgeBg: 'bg-amber-100 text-amber-950 border-amber-300',
-    },
-    {
-      id: 'roppongi',
-      name: 'Liga Berlian',
-      tier: 'Diamond Master',
-      xpRange: '1.500+ XP',
-      levelLabel: 'Master',
-      iconColor: 'text-[#06B6D4]',
-      badgeBg: 'bg-cyan-50 text-cyan-900 border-cyan-200',
-    },
-  ]
+  if (isOpen !== prevIsOpen || initialDivision !== prevInitialDivision) {
+    setPrevIsOpen(isOpen)
+    setPrevInitialDivision(initialDivision)
+    if (isOpen) {
+      setSelectedDivision(initialDivision)
+    }
+  }
+
+  useEffect(() => {
+    if (!isOpen) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isOpen, onClose])
 
   useEffect(() => {
     if (!isOpen) return
@@ -90,14 +68,19 @@ export const LeaderboardModal = ({
     const fetchStandings = async () => {
       try {
         setLoading(true)
+        setError(null)
         const data = await leaderboardService.getWeeklyLeaderboard(selectedDivision)
         if (isMounted) {
           setLeaderboard(data)
         }
-      } catch (err) {
-        console.error('Failed to load leaderboard:', err)
+      } catch {
+        if (isMounted) {
+          setError('Gagal memuat papan peringkat. Periksa koneksi Anda lalu coba lagi.')
+        }
       } finally {
-        if (isMounted) setLoading(false)
+        if (isMounted) {
+          setLoading(false)
+        }
       }
     }
 
@@ -105,7 +88,7 @@ export const LeaderboardModal = ({
     return () => {
       isMounted = false
     }
-  }, [isOpen, selectedDivision])
+  }, [isOpen, selectedDivision, reloadKey])
 
   if (!isOpen) return null
 
@@ -115,7 +98,7 @@ export const LeaderboardModal = ({
     setSelectedDivision(div)
   }
 
-  const currentDivConfig = DIVISIONS.find((d) => d.id === selectedDivision) || DIVISIONS[0]
+  const currentDivConfig = TOKYO_DIVISIONS.find((d) => d.id === selectedDivision) || TOKYO_DIVISIONS[0]
 
   return (
     <div
@@ -145,7 +128,7 @@ export const LeaderboardModal = ({
               Papan Peringkat Mingguan
             </h2>
             <p className="text-xs text-slate-500 font-medium">
-              Kumpulkan XP dari modul koding & kuis bahasa untuk promosi ke divisi berikutnya!
+              Kumpulkan XP dari pelajaran bahasa &amp; latihan SRS untuk promosi ke divisi berikutnya!
             </p>
           </div>
 
@@ -161,7 +144,7 @@ export const LeaderboardModal = ({
 
         {/* ── 2. 4 TOKYO LEAGUE SELECTOR TABS ── */}
         <div className="px-4 sm:px-5 pt-4 pb-2 bg-white border-b border-slate-100 flex items-center gap-2 overflow-x-auto scrollbar-none">
-          {DIVISIONS.map((div) => {
+          {TOKYO_DIVISIONS.map((div) => {
             const isSelected = selectedDivision === div.id
             return (
               <button
@@ -252,6 +235,18 @@ export const LeaderboardModal = ({
                 Memuat klasemen {currentDivConfig.name}...
               </p>
             </div>
+          ) : error ? (
+            <div className="py-10 px-4 text-center space-y-3 bg-rose-50/70 rounded-3xl border-2 border-rose-200">
+              <p className="text-xs font-brand font-bold text-rose-700">{error}</p>
+              <Button3D
+                variant="blue"
+                size="sm"
+                onClick={() => setReloadKey((k) => k + 1)}
+                className="text-xs px-4 py-2 mx-auto"
+              >
+                Coba Lagi
+              </Button3D>
+            </div>
           ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
             <div className="py-10 px-4 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
               <div className="flex items-center justify-center mx-auto">
@@ -271,7 +266,7 @@ export const LeaderboardModal = ({
                 onClick={() => {
                   triggerHaptic('tap')
                   onClose()
-                  navigate('/courses')
+                  navigate('/curriculum')
                 }}
                 className="text-xs px-5 py-2.5 mx-auto"
               >
@@ -380,7 +375,7 @@ export const LeaderboardModal = ({
               <span>Semangat Belajar, Tokyo Aspirant!</span>
             </h4>
             <p className="text-[11px] text-slate-500 font-medium">
-              Selesaikan modul koding harian dan kuis bahasa Jepang untuk naik ke puncak Divisi Roppongi Master!
+              Selesaikan pelajaran bahasa harian dan latihan SRS untuk naik ke puncak Divisi Roppongi Master!
             </p>
           </div>
         </div>
