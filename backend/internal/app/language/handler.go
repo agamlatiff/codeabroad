@@ -10,12 +10,21 @@ import (
 
 // Handler handles HTTP requests for destination languages and enrollments
 type Handler struct {
-	langUsecase Usecase
+	langUsecase     Usecase
+	mutationLimiter gin.HandlerFunc
 }
 
 // NewHandler creates a new Language Handler instance
 func NewHandler(langUsecase Usecase) *Handler {
 	return &Handler{langUsecase: langUsecase}
+}
+
+// NewHandlerWithRateLimiter creates a Language Handler with rate limiting on mutation endpoints
+func NewHandlerWithRateLimiter(langUsecase Usecase, mutationLimiter gin.HandlerFunc) *Handler {
+	return &Handler{
+		langUsecase:     langUsecase,
+		mutationLimiter: mutationLimiter,
+	}
 }
 
 // ListLanguages handles GET /api/v1/languages
@@ -37,7 +46,7 @@ type getLanguageDetailsURI struct {
 func (h *Handler) GetLanguageDetails(c *gin.Context) {
 	var uri getLanguageDetailsURI
 	if err := c.ShouldBindUri(&uri); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Error(c, apperror.NewBadRequestError("INVALID_LANGUAGE_ID", "invalid language id format", nil))
 		return
 	}
 
@@ -84,7 +93,7 @@ func (h *Handler) SwitchActiveLanguage(c *gin.Context) {
 
 	var req switchLanguageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid language switch payload", nil))
 		return
 	}
 
@@ -99,19 +108,23 @@ func (h *Handler) SwitchActiveLanguage(c *gin.Context) {
 
 // RegisterRoutes registers language public and protected HTTP endpoints
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
-	langPublic := rg.Group("/languages")
-	{
-		langPublic.GET("", h.ListLanguages)
-		langPublic.GET("/:id", h.GetLanguageDetails)
-	}
-
 	langProtected := rg.Group("/languages")
 	if authMiddleware != nil {
 		langProtected.Use(authMiddleware)
 	}
 	{
 		langProtected.GET("/enrollments", h.GetUserEnrollments)
-		langProtected.POST("/switch", h.SwitchActiveLanguage)
+		if h.mutationLimiter != nil {
+			langProtected.POST("/switch", h.mutationLimiter, h.SwitchActiveLanguage)
+		} else {
+			langProtected.POST("/switch", h.SwitchActiveLanguage)
+		}
+	}
+
+	langPublic := rg.Group("/languages")
+	{
+		langPublic.GET("", h.ListLanguages)
+		langPublic.GET("/:id", h.GetLanguageDetails)
 	}
 }
 

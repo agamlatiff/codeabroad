@@ -93,3 +93,22 @@ func TestHTTP_SwitchActiveLanguage(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetUserEnrollments(t *testing.T) {
+	r, langRepo := setupLanguageTestRouter()
+	langID := "11111111-1111-1111-1111-111111111111"
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:         "enr-1",
+		UserID:     "usr-123",
+		LanguageID: langID,
+		IsActive:   true,
+	}
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/languages/enrollments", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for /languages/enrollments, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+

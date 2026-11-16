@@ -4,10 +4,84 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"regexp"
+	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
+
+var uuidRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+func validateUserUUID(userID string) error {
+	if !uuidRegex.MatchString(userID) {
+		return apperror.ErrUnauthorized
+	}
+	return nil
+}
+
+func validateEntityUUID(id string) error {
+	if !uuidRegex.MatchString(id) {
+		return apperror.ErrBadRequest
+	}
+	return nil
+}
+
+func scanLanguageRow(scanner interface{ Scan(dest ...any) error }) (Language, error) {
+	var l Language
+	err := scanner.Scan(&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt)
+	return l, err
+}
+
+func scanEnrollmentRow(scanner interface{ Scan(dest ...any) error }) (UserLanguageEnrollment, error) {
+	var e UserLanguageEnrollment
+	var l Language
+	var plID, plLangID, plCode, plName, plTier, plExam *string
+	var plPassing, plOrder *int
+	var plCreatedAt *time.Time
+
+	err := scanner.Scan(
+		&e.ID, &e.UserID, &e.LanguageID, &e.CurrentLevelID, &e.InitialPlacementType,
+		&e.PlacementScorePercent, &e.IsActive, &e.EnrolledAt,
+		&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt,
+		&plID, &plLangID, &plCode, &plName, &plTier, &plExam, &plPassing, &plOrder, &plCreatedAt,
+	)
+	if err != nil {
+		return e, err
+	}
+
+	e.Language = &l
+	if plID != nil {
+		pl := ProficiencyLevel{ID: *plID}
+		if plLangID != nil {
+			pl.LanguageID = *plLangID
+		}
+		if plCode != nil {
+			pl.Code = *plCode
+		}
+		if plName != nil {
+			pl.Name = *plName
+		}
+		if plTier != nil {
+			pl.Tier = *plTier
+		}
+		if plExam != nil {
+			pl.OfficialExamName = *plExam
+		}
+		if plPassing != nil {
+			pl.PassingScorePercent = *plPassing
+		}
+		if plOrder != nil {
+			pl.OrderIndex = *plOrder
+		}
+		if plCreatedAt != nil {
+			pl.CreatedAt = *plCreatedAt
+		}
+		e.CurrentLevel = &pl
+	}
+	return e, nil
+}
 
 // PostgresRepository implements language.Repository using PostgreSQL
 type PostgresRepository struct {
@@ -45,8 +119,8 @@ func (r *PostgresRepository) GetAllLanguages(ctx context.Context, onlyActive boo
 
 	languages := make([]Language, 0)
 	for rows.Next() {
-		var l Language
-		if err := rows.Scan(&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt); err != nil {
+		l, err := scanLanguageRow(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan language: %w", err)
 		}
 		languages = append(languages, l)
@@ -59,15 +133,15 @@ func (r *PostgresRepository) GetAllLanguages(ctx context.Context, onlyActive boo
 
 // GetLanguageByID retrieves a single language track by its UUID
 func (r *PostgresRepository) GetLanguageByID(ctx context.Context, id string) (*Language, error) {
+	if err := validateEntityUUID(id); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, code, name, supported_scripts, is_active, created_at
 		FROM languages
 		WHERE id = $1
 	`
-	var l Language
-	err := r.db.Pool.QueryRow(ctx, query, id).Scan(
-		&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt,
-	)
+	l, err := scanLanguageRow(r.db.Pool.QueryRow(ctx, query, id))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrLanguageNotFound
@@ -84,10 +158,7 @@ func (r *PostgresRepository) GetLanguageByCode(ctx context.Context, code string)
 		FROM languages
 		WHERE code = $1
 	`
-	var l Language
-	err := r.db.Pool.QueryRow(ctx, query, code).Scan(
-		&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt,
-	)
+	l, err := scanLanguageRow(r.db.Pool.QueryRow(ctx, query, code))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrLanguageNotFound
@@ -99,6 +170,9 @@ func (r *PostgresRepository) GetLanguageByCode(ctx context.Context, code string)
 
 // GetLevelsByLanguageID retrieves all proficiency certification tiers ordered by pedagogical progression
 func (r *PostgresRepository) GetLevelsByLanguageID(ctx context.Context, languageID string) ([]ProficiencyLevel, error) {
+	if err := validateEntityUUID(languageID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, language_id, code, name, tier, official_exam_name, passing_score_percent, order_index, created_at
 		FROM proficiency_levels
@@ -130,6 +204,9 @@ func (r *PostgresRepository) GetLevelsByLanguageID(ctx context.Context, language
 
 // GetLevelByID retrieves a single proficiency level by UUID
 func (r *PostgresRepository) GetLevelByID(ctx context.Context, id string) (*ProficiencyLevel, error) {
+	if err := validateEntityUUID(id); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, language_id, code, name, tier, official_exam_name, passing_score_percent, order_index, created_at
 		FROM proficiency_levels
@@ -151,6 +228,9 @@ func (r *PostgresRepository) GetLevelByID(ctx context.Context, id string) (*Prof
 
 // GetEnrollmentsByUserID retrieves all language enrollments for a user with joined language & level details
 func (r *PostgresRepository) GetEnrollmentsByUserID(ctx context.Context, userID string) ([]UserLanguageEnrollment, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT 
 			e.id, e.user_id, e.language_id, e.current_level_id, e.initial_placement_type, 
@@ -171,23 +251,9 @@ func (r *PostgresRepository) GetEnrollmentsByUserID(ctx context.Context, userID 
 
 	enrollments := make([]UserLanguageEnrollment, 0)
 	for rows.Next() {
-		var e UserLanguageEnrollment
-		var l Language
-		var pl ProficiencyLevel
-		var plID *string
-
-		if err := rows.Scan(
-			&e.ID, &e.UserID, &e.LanguageID, &e.CurrentLevelID, &e.InitialPlacementType,
-			&e.PlacementScorePercent, &e.IsActive, &e.EnrolledAt,
-			&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt,
-			&plID, &pl.LanguageID, &pl.Code, &pl.Name, &pl.Tier, &pl.OfficialExamName, &pl.PassingScorePercent, &pl.OrderIndex, &pl.CreatedAt,
-		); err != nil {
+		e, err := scanEnrollmentRow(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan enrollment row: %w", err)
-		}
-		e.Language = &l
-		if plID != nil {
-			pl.ID = *plID
-			e.CurrentLevel = &pl
 		}
 		enrollments = append(enrollments, e)
 	}
@@ -199,6 +265,15 @@ func (r *PostgresRepository) GetEnrollmentsByUserID(ctx context.Context, userID 
 
 // GetActiveEnrollment retrieves the currently active destination language track for a user
 func (r *PostgresRepository) GetActiveEnrollment(ctx context.Context, userID string, languageID string) (*UserLanguageEnrollment, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if languageID != "" {
+		if err := validateEntityUUID(languageID); err != nil {
+			return nil, err
+		}
+	}
+
 	var query string
 	var row pgx.Row
 
@@ -232,33 +307,24 @@ func (r *PostgresRepository) GetActiveEnrollment(ctx context.Context, userID str
 		row = r.db.Pool.QueryRow(ctx, query, userID)
 	}
 
-	var e UserLanguageEnrollment
-	var l Language
-	var pl ProficiencyLevel
-	var plID *string
-
-	err := row.Scan(
-		&e.ID, &e.UserID, &e.LanguageID, &e.CurrentLevelID, &e.InitialPlacementType,
-		&e.PlacementScorePercent, &e.IsActive, &e.EnrolledAt,
-		&l.ID, &l.Code, &l.Name, &l.SupportedScripts, &l.IsActive, &l.CreatedAt,
-		&plID, &pl.LanguageID, &pl.Code, &pl.Name, &pl.Tier, &pl.OfficialExamName, &pl.PassingScorePercent, &pl.OrderIndex, &pl.CreatedAt,
-	)
+	e, err := scanEnrollmentRow(row)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrEnrollmentNotFound
 		}
 		return nil, fmt.Errorf("failed to query active enrollment: %w", err)
 	}
-	e.Language = &l
-	if plID != nil {
-		pl.ID = *plID
-		e.CurrentLevel = &pl
-	}
 	return &e, nil
 }
 
 // CreateEnrollment registers a user into a language track and sets it active
 func (r *PostgresRepository) CreateEnrollment(ctx context.Context, enrollment *UserLanguageEnrollment) error {
+	if err := validateUserUUID(enrollment.UserID); err != nil {
+		return err
+	}
+	if err := validateEntityUUID(enrollment.LanguageID); err != nil {
+		return err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin enrollment tx: %w", err)
@@ -292,6 +358,12 @@ func (r *PostgresRepository) CreateEnrollment(ctx context.Context, enrollment *U
 
 // UpdateEnrollmentLevel updates the learner's current proficiency level in an enrolled track
 func (r *PostgresRepository) UpdateEnrollmentLevel(ctx context.Context, enrollmentID string, levelID string) error {
+	if err := validateEntityUUID(enrollmentID); err != nil {
+		return err
+	}
+	if err := validateEntityUUID(levelID); err != nil {
+		return err
+	}
 	query := `
 		UPDATE user_language_enrollments
 		SET current_level_id = $2
@@ -309,6 +381,15 @@ func (r *PostgresRepository) UpdateEnrollmentLevel(ctx context.Context, enrollme
 
 // UpdateEnrollmentLevelIfCurrent updates the learner's proficiency level only if it still matches expectedLevelID
 func (r *PostgresRepository) UpdateEnrollmentLevelIfCurrent(ctx context.Context, enrollmentID string, expectedLevelID string, levelID string) error {
+	if err := validateEntityUUID(enrollmentID); err != nil {
+		return err
+	}
+	if err := validateEntityUUID(expectedLevelID); err != nil {
+		return err
+	}
+	if err := validateEntityUUID(levelID); err != nil {
+		return err
+	}
 	query := `
 		UPDATE user_language_enrollments
 		SET current_level_id = $2
@@ -326,6 +407,12 @@ func (r *PostgresRepository) UpdateEnrollmentLevelIfCurrent(ctx context.Context,
 
 // SetActiveLanguage switches the user's active learning track atomically
 func (r *PostgresRepository) SetActiveLanguage(ctx context.Context, userID string, languageID string) error {
+	if err := validateUserUUID(userID); err != nil {
+		return err
+	}
+	if err := validateEntityUUID(languageID); err != nil {
+		return err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to begin switch language tx: %w", err)

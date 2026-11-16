@@ -170,6 +170,16 @@ func (m *MockRepository) SetActiveLanguage(ctx context.Context, userID string, l
 	if m.SetActiveLanguageErr != nil {
 		return m.SetActiveLanguageErr
 	}
+	found := false
+	for _, e := range m.Enrollments {
+		if e.UserID == userID && e.LanguageID == languageID {
+			found = true
+			break
+		}
+	}
+	if !found {
+		return ErrEnrollmentNotFound
+	}
 	for _, e := range m.Enrollments {
 		if e.UserID == userID {
 			e.IsActive = (e.LanguageID == languageID)

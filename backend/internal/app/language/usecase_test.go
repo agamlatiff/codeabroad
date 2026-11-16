@@ -56,3 +56,13 @@ func TestSwitchActiveLanguage_NotActive(t *testing.T) {
 	}
 }
 
+func TestSwitchActiveLanguage_NotEnrolled(t *testing.T) {
+	repo := setupMockLanguageRepo()
+	uc := language.NewUsecase(repo)
+
+	_, err := uc.SwitchActiveLanguage(context.Background(), "user-1", "lang-de")
+	if err != language.ErrEnrollmentNotFound {
+		t.Errorf("expected ErrEnrollmentNotFound, got %v", err)
+	}
+}
+
