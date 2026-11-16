@@ -1,4 +1,4 @@
-import { api } from "@/shared/services/api"
+import { api, unwrapApiResponse } from "@/shared/services/api"
 import type { ApiResponse } from "@/shared/types/api"
 import type { TokyoDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
 
@@ -10,9 +10,6 @@ export const leaderboardService = {
 
     const url = `/leaderboard/weekly${params.toString() ? `?${params.toString()}` : ''}`
     const response = await api.get<ApiResponse<WeeklyLeaderboardResponse>>(url)
-    if (response.data.success && response.data.data) {
-      return response.data.data
-    }
-    throw new Error(response.data.error || 'Failed to fetch weekly leaderboard')
+    return unwrapApiResponse(response, 'Failed to fetch weekly leaderboard')
   },
 }

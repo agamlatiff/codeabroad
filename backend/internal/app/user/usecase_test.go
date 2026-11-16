@@ -108,7 +108,7 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 	}
 
 	spacedName := "  Budi Santoso  "
-	spacedBio := "  Backend Engineer  "
+	spacedBio := "  JLPT N4 Learner  "
 	view := "syllabus"
 	updated, err := uc.UpdateProfile(context.Background(), "user-123", &user.UpdateProfileRequest{
 		Name:                 &spacedName,
@@ -121,8 +121,8 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 	if updated.Name != "Budi Santoso" {
 		t.Errorf("expected trimmed name 'Budi Santoso', got %q", updated.Name)
 	}
-	if updated.Bio == nil || *updated.Bio != "Backend Engineer" {
-		t.Errorf("expected trimmed bio 'Backend Engineer', got %v", updated.Bio)
+	if updated.Bio == nil || *updated.Bio != "JLPT N4 Learner" {
+		t.Errorf("expected trimmed bio 'JLPT N4 Learner', got %v", updated.Bio)
 	}
 	if updated.PreferredRoadmapView != "syllabus" {
 		t.Errorf("expected preferred_roadmap_view 'syllabus', got %q", updated.PreferredRoadmapView)

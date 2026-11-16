@@ -47,7 +47,7 @@ export const UserAvatar: FC<UserAvatarProps> = ({
   }, [user?.name, user?.username])
 
   const gradientClass = useMemo(() => {
-    const seed = user?.username || user?.name || 'coder'
+    const seed = user?.username || user?.name || 'learner'
     return getDeterministicGradient(seed)
   }, [user?.username, user?.name])
 

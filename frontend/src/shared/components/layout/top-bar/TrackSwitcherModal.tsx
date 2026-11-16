@@ -26,7 +26,7 @@ export interface TrackSwitcherModalProps {
   trackProgressMap?: Record<string, { completed: number; total: number }>
   viewMode?: 'map' | 'syllabus'
   onChangeViewMode?: (mode: 'map' | 'syllabus') => void
-  mode?: 'language' | 'career'
+  mode?: 'language'
 }
 
 const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
@@ -36,7 +36,7 @@ const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
   return <Translate weight="bold" className="w-6 h-6 text-blue-600" />
 }
 
-interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen'> {
+interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen' | 'mode'> {
   trackOptions: CareerTrackOption[]
 }
 
@@ -47,7 +47,6 @@ const TrackSwitcherDialog = ({
   trackProgressMap,
   viewMode = 'map',
   onChangeViewMode,
-  mode = 'career',
   trackOptions,
 }: TrackSwitcherDialogProps) => {
   const [selectedTrack, setSelectedTrack] = useState<string>(currentTrack)
@@ -66,7 +65,7 @@ const TrackSwitcherDialog = ({
   const handleTrackCardClick = (track: CareerTrackOption) => {
     if (track.isEnrolled === false) return
     triggerHaptic('tap')
-    setSelectedTrack(mode === 'language' ? track.id : track.slug)
+    setSelectedTrack(track.id)
   }
 
   const handleViewModeCardClick = (nextMode: 'map' | 'syllabus') => {
@@ -79,9 +78,8 @@ const TrackSwitcherDialog = ({
     const selectedOption = trackOptions.find(
       (t) => t.slug === selectedTrack || t.id === selectedTrack
     )
-    const targetIdentifier =
-      mode === 'language' && selectedOption ? selectedOption.id : selectedTrack
-    const shouldActivatePreview = mode === 'language' && selectedOption && !selectedOption.isActive
+    const targetIdentifier = selectedOption ? selectedOption.id : selectedTrack
+    const shouldActivatePreview = Boolean(selectedOption && !selectedOption.isActive)
     if (targetIdentifier && (targetIdentifier !== currentTrack || shouldActivatePreview)) {
       onSelectTrack(targetIdentifier)
     }
@@ -93,8 +91,6 @@ const TrackSwitcherDialog = ({
 
   const enrolledLanguages = trackOptions.filter((t) => t.isEnrolled !== false)
   const catalogLanguages = trackOptions.filter((t) => t.isEnrolled === false)
-  const foundationOptions = trackOptions.filter((t) => t.group === 'foundation')
-  const specializationOptions = trackOptions.filter((t) => t.group === 'career')
 
   const renderTrackCard = (track: CareerTrackOption) => {
     const isUnenrolled = track.isEnrolled === false
@@ -205,14 +201,10 @@ const TrackSwitcherDialog = ({
             </div>
             <div>
               <h3 className="font-brand font-black text-base text-slate-900">
-                {mode === 'language'
-                  ? 'Pilih Bahasa & Gaya Belajar'
-                  : 'Pilih Kurikulum & Gaya Belajar'}
+                Pilih Bahasa &amp; Gaya Belajar
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                {mode === 'language'
-                  ? 'Beralih antar bahasa target yang terdaftar dan atur tampilan kurikulum Anda.'
-                  : 'Tentukan spesialisasi karier dan pilih gaya belajar Anda.'}
+                Beralih antar bahasa target yang terdaftar dan atur tampilan kurikulum Anda.
               </p>
             </div>
           </div>
@@ -318,73 +310,40 @@ const TrackSwitcherDialog = ({
             </div>
           </div>
 
-          {/* ── 2. AVAILABLE LANGUAGES OR TRACKS ── */}
-          {mode === 'language' ? (
-            <>
-              <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                <div className="flex items-center justify-between px-1">
-                  <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                    <Translate weight="bold" className="w-3.5 h-3.5" />
-                    <span>BAHASA TERDAFTAR ANDA</span>
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    Progres per bahasa tersimpan terpisah
-                  </span>
-                </div>
-                <div className="space-y-2.5">
-                  {enrolledLanguages.length === 0 ? (
-                    <p className="text-xs text-slate-500 text-center py-6">
-                      Memuat daftar bahasa terdaftar...
-                    </p>
-                  ) : (
-                    enrolledLanguages.map(renderTrackCard)
-                  )}
-                </div>
+          {/* ── 2. AVAILABLE LANGUAGES ── */}
+          <div className="space-y-2.5 pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between px-1">
+              <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
+                <Translate weight="bold" className="w-3.5 h-3.5" />
+                <span>BAHASA TERDAFTAR ANDA</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-medium">
+                Progres per bahasa tersimpan terpisah
+              </span>
+            </div>
+            <div className="space-y-2.5">
+              {enrolledLanguages.length === 0 ? (
+                <p className="text-xs text-slate-500 text-center py-6">
+                  Memuat daftar bahasa terdaftar...
+                </p>
+              ) : (
+                enrolledLanguages.map(renderTrackCard)
+              )}
+            </div>
+          </div>
+
+          {catalogLanguages.length > 0 && (
+            <div className="space-y-2.5 pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-[10px] font-brand font-black text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
+                  KATALOG BAHASA LAINNYA
+                </span>
+                <span className="text-[10px] text-slate-400 font-medium">
+                  Pendaftaran bahasa tambahan segera hadir
+                </span>
               </div>
-
-              {catalogLanguages.length > 0 && (
-                <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-brand font-black text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                      KATALOG BAHASA LAINNYA
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Pendaftaran bahasa tambahan segera hadir
-                    </span>
-                  </div>
-                  <div className="space-y-2.5">{catalogLanguages.map(renderTrackCard)}</div>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              {foundationOptions.length > 0 && (
-                <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-brand font-black text-indigo-900 bg-indigo-50 border border-indigo-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                      <span>🧠</span>
-                      <span>FONDASI UTAMA</span>
-                    </span>
-                  </div>
-                  <div className="space-y-2.5">{foundationOptions.map(renderTrackCard)}</div>
-                </div>
-              )}
-
-              {specializationOptions.length > 0 && (
-                <div className="space-y-2.5 pt-2 border-t border-slate-100">
-                  <div className="flex items-center justify-between px-1">
-                    <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                      <span>🎯</span>
-                      <span>SPESIALISASI</span>
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-medium">
-                      Dapat diubah kapan saja
-                    </span>
-                  </div>
-                  <div className="space-y-2.5">{specializationOptions.map(renderTrackCard)}</div>
-                </div>
-              )}
-            </>
+              <div className="space-y-2.5">{catalogLanguages.map(renderTrackCard)}</div>
+            </div>
           )}
         </div>
 
@@ -396,9 +355,7 @@ const TrackSwitcherDialog = ({
             </div>
             <p className="line-clamp-2">
               <span className="font-bold text-slate-900">Tips Kodi:</span>{' '}
-              {mode === 'language'
-                ? 'Latihan konsisten 10 menit per hari menjaga streak dan penguasaan bahasa Anda!'
-                : 'Pilih jalur belajar sesuai target pekerjaan global Anda!'}
+              Latihan konsisten 10 menit per hari menjaga streak dan penguasaan bahasa Anda!
             </p>
           </div>
           <Button3D
@@ -419,8 +376,7 @@ const TrackSwitcherDialog = ({
 
 /**
  * TrackSwitcherModal
- * Curriculum & Language Selection Modal.
- * Supports both backend-driven target languages (`mode="language"`) and legacy career paths (`mode="career"`).
+ * Curriculum & Language Selection Modal for backend-driven target languages.
  */
 export const TrackSwitcherModal = ({
   isOpen,
@@ -430,7 +386,6 @@ export const TrackSwitcherModal = ({
   trackProgressMap,
   viewMode = 'map',
   onChangeViewMode,
-  mode = 'language',
 }: TrackSwitcherModalProps) => {
   const { trackOptions: languageOptions } = useCurriculumSwitcherModal({
     enabled: isOpen,
@@ -444,14 +399,13 @@ export const TrackSwitcherModal = ({
 
   return (
     <TrackSwitcherDialog
-      key={`${mode}-${currentTrack}-${viewMode}`}
+      key={`language-${currentTrack}-${viewMode}`}
       onClose={onClose}
       currentTrack={currentTrack}
       onSelectTrack={onSelectTrack}
       trackProgressMap={trackProgressMap}
       viewMode={viewMode}
       onChangeViewMode={onChangeViewMode}
-      mode={mode}
       trackOptions={languageOptions}
     />
   )

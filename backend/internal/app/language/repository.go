@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
@@ -12,20 +11,12 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
-var uuidRegex = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
-
 func validateUserUUID(userID string) error {
-	if !uuidRegex.MatchString(userID) {
-		return apperror.ErrUnauthorized
-	}
-	return nil
+	return apperror.ValidateUserUUID(userID)
 }
 
 func validateEntityUUID(id string) error {
-	if !uuidRegex.MatchString(id) {
-		return apperror.ErrBadRequest
-	}
-	return nil
+	return apperror.ValidateEntityUUID(id)
 }
 
 func scanLanguageRow(scanner interface{ Scan(dest ...any) error }) (Language, error) {

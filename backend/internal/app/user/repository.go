@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -145,7 +146,13 @@ func (r *PostgresRepository) GetByUsername(ctx context.Context, username string)
 
 // GetByID retrieves a user by their unique UUID across all 3 pillars
 func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*User, error) {
-	query := `SELECT ` + userSelectColumns + userFromClause + ` WHERE u.id = NULLIF($1, '')::uuid`
+	if id == "" {
+		return nil, nil
+	}
+	if err := apperror.ValidateUserUUID(id); err != nil {
+		return nil, err
+	}
+	query := `SELECT ` + userSelectColumns + userFromClause + ` WHERE u.id = $1::uuid`
 	var u User
 	err := scanUser(r.db.Pool.QueryRow(ctx, query, id), &u)
 	if err != nil {
@@ -159,6 +166,9 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*User, err
 
 // UpdateProfile updates user profile preferences with parameterized values
 func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		UPDATE user_profiles
 		SET name = COALESCE($2, name),
@@ -190,6 +200,9 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 
 // SetOnboarded marks the user as having finished the 3-step onboarding flow and records their pace goal
 func (r *PostgresRepository) SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return err
+	}
 	query := `
 		UPDATE user_profiles
 		SET is_onboarded = true,
@@ -216,6 +229,9 @@ func (r *PostgresRepository) UpdateGamification(
 	streak int,
 	lastActiveAt *time.Time,
 ) error {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return err
+	}
 	query := `
 		UPDATE user_gamification
 		SET xp = $2,
@@ -237,6 +253,9 @@ func (r *PostgresRepository) UpdateGamification(
 
 // AddGems increments or decrements a user's gems balance atomically and returns the new total (Pillar 3)
 func (r *PostgresRepository) AddGems(ctx context.Context, userID string, gems int) (int, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return 0, err
+	}
 	query := `
 		UPDATE user_gamification
 		SET gems = GREATEST(0, gems + $2),
@@ -266,6 +285,12 @@ const streakCaseExprWIB = `
 
 // LogActivity inserts a user activity event and atomically updates streak & last_active_at (WIB) in 1 round-trip
 func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityLog) error {
+	if log == nil {
+		return apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(log.UserID); err != nil {
+		return err
+	}
 	var metaJSON []byte
 	if log.Metadata != nil {
 		var err error
@@ -299,6 +324,9 @@ func (r *PostgresRepository) HasActivityInRange(
 	startTime time.Time,
 	endTime time.Time,
 ) (bool, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return false, err
+	}
 	query := `
 		SELECT EXISTS (
 			SELECT 1 FROM user_activity_logs
@@ -322,6 +350,9 @@ func (r *PostgresRepository) EnsureDailyLogin(
 	startTime time.Time,
 	endTime time.Time,
 ) (bool, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return false, err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return false, fmt.Errorf("failed to begin daily login transaction: %w", err)
@@ -380,6 +411,9 @@ func (r *PostgresRepository) GetDailyActivityStatsSince(
 	userID string,
 	since time.Time,
 ) (map[string]DailyActivityStat, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT act_date, SUM(xp_earned) AS total_xp, SUM(lessons_count) AS total_lessons
 		FROM (
@@ -422,6 +456,9 @@ func (r *PostgresRepository) ClaimDailyReward(
 	rewardType string,
 	xpAwarded int,
 ) (*DailyRewardClaimResponse, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	activityType := "daily_" + rewardType + "_claim"
 	now := time.Now().In(defaultAppLocation)
 	today := now.Format("2006-01-02")
@@ -512,6 +549,9 @@ func (r *PostgresRepository) ClaimDailyReward(
 
 // GetDailyRewardsStatus reports whether vocab quests or golden chests have already been claimed today (WIB)
 func (r *PostgresRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	now := time.Now().In(defaultAppLocation)
 	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, defaultAppLocation)
 

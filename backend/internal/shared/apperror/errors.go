@@ -1,6 +1,32 @@
 package apperror
 
-import "errors"
+import (
+	"errors"
+	"regexp"
+)
+
+var uuidPattern = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
+
+// IsValidUUID reports whether id matches canonical UUID format.
+func IsValidUUID(id string) bool {
+	return uuidPattern.MatchString(id)
+}
+
+// ValidateUserUUID returns ErrUnauthorized when userID is not a valid UUID.
+func ValidateUserUUID(userID string) error {
+	if !IsValidUUID(userID) {
+		return ErrUnauthorized
+	}
+	return nil
+}
+
+// ValidateEntityUUID returns ErrBadRequest when id is not a valid UUID.
+func ValidateEntityUUID(id string) error {
+	if !IsValidUUID(id) {
+		return ErrBadRequest
+	}
+	return nil
+}
 
 var (
 	// Root Sentinel Errors

@@ -65,7 +65,7 @@ export const curriculumService = {
   },
 
   /**
-   * Fetches syntax and grammar points for an unlocked proficiency level.
+   * Fetches vocabulary and grammar points for an unlocked proficiency level.
    */
   async getGrammarPoints(
     levelId: string,

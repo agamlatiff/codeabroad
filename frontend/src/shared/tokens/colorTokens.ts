@@ -24,7 +24,7 @@ export const COLOR_TOKENS = {
 
   // B. Dark Code Editor Surfaces (Exclusively for LearnWorkspacePage IDE)
   editorSurface: {
-    ground: '#080D18',        // Deep midnight canvas for Monaco / code syntax
+    ground: '#080D18',        // Deep midnight canvas for high-contrast cards
     canvas: '#101827',        // Code editor dark panel
     card: '#101827',
     elevated: '#172236',

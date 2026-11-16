@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useUserActivity } from "@/features/user/hooks/useUserActivity"
 import { useDailyRewards } from "@/features/user/hooks/useDailyRewards"
 import { triggerHaptic } from "@/shared/utils/haptics"
+import { getWibMidnightCountdown } from "@/shared/utils/date"
 
 export const DAILY_QUESTS_QUERY_KEY = ['daily-quests'] as const
 
@@ -44,17 +45,7 @@ export const useQuestsSection = ({
   // Countdown timer to midnight WIB / Waktu Indonesia Barat (UTC+7)
   useEffect(() => {
     const updateCountdown = () => {
-      const now = new Date()
-      const wibNow = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60 * 1000)
-      const wibMidnight = new Date(wibNow)
-      wibMidnight.setHours(24, 0, 0, 0)
-      const diffMs = wibMidnight.getTime() - wibNow.getTime()
-
-      const hours = Math.floor(diffMs / (1000 * 60 * 60))
-      const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))
-      const seconds = Math.floor((diffMs % (1000 * 60)) / 1000)
-      const pad = (n: number) => n.toString().padStart(2, '0')
-      setTimeLeft(`${pad(hours)}:${pad(minutes)}:${pad(seconds)}`)
+      setTimeLeft(getWibMidnightCountdown())
     }
 
     updateCountdown()

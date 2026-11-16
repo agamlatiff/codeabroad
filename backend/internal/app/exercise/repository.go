@@ -11,6 +11,7 @@ import (
 
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/app/language"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -290,6 +291,9 @@ func scanExerciseRows(rows pgx.Rows, capHint int, errLabel string) ([]Exercise, 
 
 // GetExercisesByLessonID retrieves all exercises belonging to a specific lesson node
 func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonID string) ([]Exercise, error) {
+	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
+		return nil, err
+	}
 	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE lesson_id = NULLIF($1, '')::uuid ORDER BY order_index ASC, id ASC`
 	rows, err := r.db.Pool.Query(ctx, query, lessonID)
 	if err != nil {
@@ -302,6 +306,9 @@ func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonI
 
 // GetExerciseByID retrieves a single exercise by UUID
 func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*Exercise, error) {
+	if err := apperror.ValidateEntityUUID(id); err != nil {
+		return nil, err
+	}
 	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE id = NULLIF($1, '')::uuid`
 	ex, err := scanExerciseRow(r.db.Pool.QueryRow(ctx, query, id))
 	if err != nil {
@@ -315,6 +322,9 @@ func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*E
 
 // GetPlacementExercises retrieves diagnostic placement test exercises for a destination language
 func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, languageID string, limit int) ([]Exercise, error) {
+	if err := apperror.ValidateEntityUUID(languageID); err != nil {
+		return nil, err
+	}
 	query := `
 		WITH placement_unit_exists AS (
 			SELECT EXISTS (
@@ -351,6 +361,9 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 
 // GetReadinessExamExercises retrieves all sectional questions for an official mock exam
 func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, levelID string) ([]Exercise, error) {
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT ` + prefixedExerciseSelectColumns + `
 		FROM exercises e
@@ -372,6 +385,11 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 
 // GetDailyVocabularies extracts contextual workplace vocabulary cards from active curriculum exercises
 func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
+	if userID != "" {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return nil, err
+		}
+	}
 	limit = normalizeLimit(limit, 10, 50)
 
 	query := `
@@ -462,6 +480,15 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 
 // CreateAttempt logs telemetry data for an answered exercise
 func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error {
+	if attempt == nil {
+		return apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(attempt.UserID); err != nil {
+		return err
+	}
+	if err := apperror.ValidateEntityUUID(attempt.ExerciseID); err != nil {
+		return err
+	}
 	selectedPayload := attempt.SelectedAnswer
 	if selectedPayload == nil {
 		selectedPayload = map[string]any{}
@@ -489,6 +516,9 @@ func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExe
 
 // GetDueReviews retrieves spaced repetition cards due for review as of the specified time
 func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT 
 			r.id, r.user_id, r.exercise_id, r.repetition_count, r.interval_days, r.ease_factor, r.next_review_at, r.last_reviewed_at,
@@ -534,6 +564,12 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 
 // GetReview retrieves a single SRS card for a user and exercise
 func (r *PostgresRepository) GetReview(ctx context.Context, userID string, exerciseID string) (*UserSRSReview, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateEntityUUID(exerciseID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, user_id, exercise_id, repetition_count, interval_days, ease_factor, next_review_at, last_reviewed_at
 		FROM user_srs_reviews
@@ -582,6 +618,15 @@ const upsertSRSReviewQuery = `
 
 // UpsertReview records or updates an SM-2 scheduling record atomically
 func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSReview) error {
+	if review == nil {
+		return apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(review.UserID); err != nil {
+		return err
+	}
+	if err := apperror.ValidateEntityUUID(review.ExerciseID); err != nil {
+		return err
+	}
 	nextReview := normalizeReviewForUpsert(review)
 	err := r.db.Pool.QueryRow(
 		ctx, upsertSRSReviewQuery,
@@ -595,6 +640,12 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 
 // ApplyReviewTx atomically locks, reads, computes, and upserts an SM-2 SRS card within a single transaction.
 func (r *PostgresRepository) ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateEntityUUID(exerciseID); err != nil {
+		return nil, err
+	}
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin srs review tx: %w", err)
@@ -646,6 +697,9 @@ func (r *PostgresRepository) ApplyReviewTx(ctx context.Context, userID, exercise
 
 // GetDueCount counts all pending spaced repetition cards due on or before now
 func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now time.Time) (int, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return 0, err
+	}
 	query := `
 		SELECT COUNT(*)
 		FROM user_srs_reviews r
@@ -669,6 +723,9 @@ func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now
 
 // CountMasteredReviews counts how many SRS cards a user has mastered (repetition_count >= 3)
 func (r *PostgresRepository) CountMasteredReviews(ctx context.Context, userID string) (int, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return 0, err
+	}
 	query := `
 		SELECT COUNT(*)
 		FROM user_srs_reviews r
@@ -713,6 +770,15 @@ const insertExamAttemptQuery = `
 
 // CreateExamAttempt records a completed diagnostic mock exam submission
 func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *ReadinessExamAttempt) error {
+	if attempt == nil {
+		return apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(attempt.UserID); err != nil {
+		return err
+	}
+	if err := apperror.ValidateEntityUUID(attempt.LevelID); err != nil {
+		return err
+	}
 	report, reportJSON, overall := prepareExamAttemptFields(attempt)
 
 	err := r.db.Pool.QueryRow(
@@ -745,6 +811,15 @@ func (r *PostgresRepository) RecordExamSubmissionTx(
 	expectedLevelID string,
 	nextLevelID string,
 ) (bool, error) {
+	if attempt == nil {
+		return false, apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(attempt.UserID); err != nil {
+		return false, err
+	}
+	if err := apperror.ValidateEntityUUID(attempt.LevelID); err != nil {
+		return false, err
+	}
 	report, reportJSON, overall := prepareExamAttemptFields(attempt)
 
 	tx, err := r.db.Pool.Begin(ctx)
@@ -836,6 +911,12 @@ func scanExamAttemptRow(scanner interface{ Scan(dest ...any) error }) (*Readines
 
 // GetLatestPassedAttempt retrieves the most recent passed exam for certificate rendering
 func (r *PostgresRepository) GetLatestPassedAttempt(ctx context.Context, userID string, levelID string) (*ReadinessExamAttempt, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return nil, err
+	}
 	query := examAttemptSelectFrom + `
 		WHERE a.user_id = NULLIF($1, '')::uuid AND a.level_id = NULLIF($2, '')::uuid AND a.is_passed = true
 		ORDER BY a.attempted_at DESC, a.id ASC

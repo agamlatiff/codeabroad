@@ -9,6 +9,7 @@ import (
 
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -24,6 +25,9 @@ func NewRepository(db *postgres.PostgresDB) Repository {
 
 // GetGrammarPointsByLevelID retrieves all normalized grammar points for a proficiency level
 func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error) {
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, level_id, code, category, title, formula, explanation, order_index, created_at
 		FROM grammar_points
@@ -55,6 +59,9 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 
 // GetGrammarPointsByLessonID retrieves distinct grammar points referenced by exercises within a lesson node
 func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
+	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT DISTINCT gp.id, gp.level_id, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.order_index, gp.created_at
 		FROM grammar_points gp
@@ -87,6 +94,9 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 
 // GetUnitsByLevelID retrieves all curriculum chapters for a proficiency level
 func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID string, _ string) ([]UnitNodeResponse, error) {
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT 
 			u.id, u.level_id, u.title, u.description, u.unit_type, u.order_index, u.created_at
@@ -119,6 +129,9 @@ func (r *PostgresRepository) GetUnitsByLevelID(ctx context.Context, levelID stri
 
 // GetUnitByID retrieves a single unit by UUID
 func (r *PostgresRepository) GetUnitByID(ctx context.Context, id string) (*Unit, error) {
+	if err := apperror.ValidateEntityUUID(id); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT id, level_id, title, description, unit_type, order_index, created_at
 		FROM units
@@ -139,6 +152,12 @@ func (r *PostgresRepository) GetUnitByID(ctx context.Context, id string) (*Unit,
 
 // GetLessonsByLevelID retrieves all lesson nodes across all units in a level with user progression status
 func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID string, userID string) ([]LessonNodeResponse, error) {
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT 
 			l.id, l.unit_id, l.title, l.xp_reward, l.order_index,
@@ -177,6 +196,12 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 
 // GetLessonByID retrieves a single lesson with user progress and child exercises
 func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
+	if err := apperror.ValidateEntityUUID(id); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	lessonQuery := `
 		SELECT 
 			l.id, l.unit_id, u.level_id, u.unit_type, l.title, l.xp_reward, l.order_index, l.created_at,
@@ -206,6 +231,9 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 
 // GetNextLessonID finds the next sequential lesson ID in the current unit or next unit
 func (r *PostgresRepository) GetNextLessonID(ctx context.Context, currentLessonID string) (*string, error) {
+	if err := apperror.ValidateEntityUUID(currentLessonID); err != nil {
+		return nil, err
+	}
 	query := `
 		WITH current_target AS (
 			SELECT l.id, u.id AS unit_id, u.level_id, u.order_index AS unit_order, l.order_index AS lesson_order
@@ -289,6 +317,12 @@ const curriculumUnlockPredicateSQL = `
 // IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
 // and enforces that the lesson belongs to a proficiency level <= the user's enrolled level in that language.
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return false, err
+	}
+	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
+		return false, err
+	}
 	query := targetCurriculumLessonCTESQL + `
 		SELECT COALESCE((SELECT ` + curriculumUnlockPredicateSQL + ` FROM target_lesson tl), false) AS is_unlocked
 	`
@@ -302,6 +336,12 @@ func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string
 
 // SkipPrecedingLessons marks all prior curriculum lessons up to a target proficiency level as completed and skipped
 func (r *PostgresRepository) SkipPrecedingLessons(ctx context.Context, userID string, upToLevelOrder int, languageID string) error {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return err
+	}
+	if err := apperror.ValidateEntityUUID(languageID); err != nil {
+		return err
+	}
 	query := `
 		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
 		SELECT $1::uuid, l.id, true, 100, true, NOW()
@@ -332,6 +372,12 @@ const dailyReplayXPCap = 50
 func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, payload *LessonCompletionPayload) error {
 	if payload == nil || payload.Progress == nil {
 		return errors.New("nil lesson completion payload")
+	}
+	if err := apperror.ValidateUserUUID(payload.Progress.UserID); err != nil {
+		return err
+	}
+	if err := apperror.ValidateEntityUUID(payload.Progress.LessonID); err != nil {
+		return err
 	}
 
 	tx, err := r.db.Pool.Begin(ctx)

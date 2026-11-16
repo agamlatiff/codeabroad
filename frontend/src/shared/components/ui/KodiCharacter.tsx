@@ -1,4 +1,4 @@
-import { useState, type FC, type MouseEvent } from 'react'
+import { useState, useRef, useEffect, type FC, type MouseEvent } from 'react'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { playSound } from "@/shared/utils/sound"
 import { MASCOT_TOKENS, SPEECH_BUBBLE_TOKENS } from "@/features/gamification/tokens/gamificationTokens"
@@ -41,6 +41,13 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
   className = '',
 }) => {
   const [isJumping, setIsJumping] = useState(false)
+  const jumpTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current)
+    }
+  }, [])
 
   const sizePixel = typeof size === 'number' ? size : MASCOT_TOKENS.sizePixels[size]
 
@@ -50,7 +57,8 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
     playSound('node_tap')
 
     setIsJumping(true)
-    setTimeout(() => setIsJumping(false), 600)
+    if (jumpTimerRef.current) clearTimeout(jumpTimerRef.current)
+    jumpTimerRef.current = setTimeout(() => setIsJumping(false), 600)
 
     if (onClick) {
       onClick()
@@ -357,21 +365,21 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
                 strokeWidth="3.5"
                 strokeLinejoin="round"
               />
-              {/* Matrix Glasses with Blinking Code */}
+              {/* Focus Glasses with Kanji & Kana */}
               <g className="k-blink-natural">
                 <rect x="52" y="74" width="76" height="20" rx="5" fill="#0F172A" stroke="#0284C7" strokeWidth="2" />
-                <text x="58" y="87" fontSize="8" fontFamily="monospace" fill="#22C55E" fontWeight="bold">101010101</text>
-                <text x="58" y="93" fontSize="5" fontFamily="monospace" fill="#38BDF8">deploy:ok</text>
+                <text x="58" y="87" fontSize="8" fontFamily="monospace" fill="#22C55E" fontWeight="bold">あいうえお</text>
+                <text x="58" y="93" fontSize="5" fontFamily="monospace" fill="#38BDF8">JLPT • A1</text>
               </g>
               <path d="M84,103 Q90,107 96,103" stroke="#0F172A" strokeWidth="2.2" fill="none" strokeLinecap="round" />
               {/* Steaming Coffee Cup */}
               <rect x="36" y="128" width="12" height="14" rx="2" fill="#F59E0B" stroke="#0F172A" strokeWidth="1.8" />
               <path d="M42,125 Q44,121 42,118" stroke="#94A3B8" strokeWidth="1.5" fill="none" />
-              {/* Laptop Glowing Cyan */}
+              {/* Study Tablet Glowing Cyan */}
               <polygon points="56,128 124,128 132,142 48,142" fill="#1E293B" stroke="#0F172A" strokeWidth="2" />
               <rect x="62" y="108" width="56" height="24" rx="3" fill="#0F172A" stroke="#0F172A" strokeWidth="2" />
               <rect x="65" y="110" width="50" height="18" rx="2" fill="#0284C7" />
-              <text x="73" y="123" fontSize="9" fontFamily="monospace" fill="#FFFFFF" fontWeight="black">&lt;/dev&gt;</text>
+              <text x="72" y="123" fontSize="9" fontFamily="monospace" fill="#FFFFFF" fontWeight="black">文・A1</text>
               {/* AFTERIMAGE TYPING PAWS */}
               <ellipse cx="66" cy="126" rx="6" ry="5" fill="#BAE6FD" opacity="0.6" />
               <ellipse cx="114" cy="126" rx="6" ry="5" fill="#BAE6FD" opacity="0.6" />
@@ -403,7 +411,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               {/* Thought Cloud */}
               <g transform="translate(60, 8)">
                 <rect x="0" y="0" width="60" height="22" rx="11" fill="#FEF2F2" stroke="#EF4444" strokeWidth="2" />
-                <text x="7" y="15" fontSize="9" fontFamily="monospace" fontWeight="black" fill="#DC2626">syntax error?</text>
+                <text x="10" y="15" fontSize="8.5" fontFamily="monospace" fontWeight="black" fill="#DC2626">漢字? Hmm</text>
                 <circle cx="30" cy="27" r="2.5" fill="#EF4444" />
               </g>
               {/* Tilted Body with Hands on Head */}
