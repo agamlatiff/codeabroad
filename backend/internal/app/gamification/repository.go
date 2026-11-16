@@ -630,11 +630,34 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 	return tx.Commit(ctx)
 }
 
-// CreateCoachingSubmission records a mentorship or CV review request
+// CreateCoachingSubmission atomically consumes the required coaching coupon from user_inventories
+// and records a mentorship or CV review request.
 func (r *PostgresRepository) CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error {
 	if err := validateUserUUID(sub.UserID); err != nil {
 		return err
 	}
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin coaching submission tx: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	var remainingQty int
+	err = tx.QueryRow(
+		ctx,
+		`UPDATE user_inventories
+		 SET quantity = quantity - 1, updated_at = NOW()
+		 WHERE user_id = $1 AND item_id = $2 AND quantity > 0
+		 RETURNING quantity`,
+		sub.UserID, sub.Type,
+	).Scan(&remainingQty)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return ErrInsufficientCoupons
+		}
+		return fmt.Errorf("failed to consume coaching coupon: %w", err)
+	}
+
 	query := `
 		INSERT INTO coaching_submissions (
 			user_id, type, target_role, github_url, resume_url, discord_handle, interview_language, focus_topic, preferred_time, notes, status, created_at, updated_at
@@ -645,7 +668,7 @@ func (r *PostgresRepository) CreateCoachingSubmission(ctx context.Context, sub *
 		sub.Status = "pending"
 	}
 
-	err := r.db.Pool.QueryRow(
+	err = tx.QueryRow(
 		ctx, query,
 		sub.UserID, sub.Type, sub.TargetRole, sub.GitHubURL, sub.ResumeURL,
 		sub.DiscordHandle, sub.InterviewLanguage, sub.FocusTopic, sub.PreferredTime, sub.Notes, sub.Status,
@@ -653,5 +676,5 @@ func (r *PostgresRepository) CreateCoachingSubmission(ctx context.Context, sub *
 	if err != nil {
 		return fmt.Errorf("failed to create coaching submission: %w", err)
 	}
-	return nil
+	return tx.Commit(ctx)
 }

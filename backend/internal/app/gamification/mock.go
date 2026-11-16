@@ -363,9 +363,26 @@ func (m *MockRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestC
 }
 
 func (m *MockRepository) CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.CreateCoachingErr != nil {
 		return m.CreateCoachingErr
 	}
+	consumed := false
+	invList := m.Inventory[sub.UserID]
+	for i := range invList {
+		if invList[i].ItemID == sub.Type && invList[i].Quantity > 0 {
+			invList[i].Quantity--
+			consumed = true
+			break
+		}
+	}
+	if !consumed {
+		return ErrInsufficientCoupons
+	}
+	m.Inventory[sub.UserID] = invList
+
 	if sub.ID == "" {
 		sub.ID = fmt.Sprintf("coach_%d", len(m.CoachingSubmissions)+1)
 	}

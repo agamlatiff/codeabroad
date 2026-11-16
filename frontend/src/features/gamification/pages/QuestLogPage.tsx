@@ -27,8 +27,7 @@ import {
   Medal,
   CheckCircle,
   Check,
-
-  Code,
+  BookOpen,
   Translate,
   ArrowRight,
 } from '@phosphor-icons/react'
@@ -419,26 +418,12 @@ export const QuestLogPage = () => {
       setInventory(res.status.inventory)
       localStorage.setItem('codeabroad_user_inventory', JSON.stringify(res.status.inventory))
       window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+      showToast('📋 Kupon CV Review berhasil digunakan. Mentor Tokyo sedang memeriksa berkas Anda!')
     } catch {
-      const owned = inventory['cv-review'] || 0
-      const newInventory = {
-        ...inventory,
-        ['cv-review']: Math.max(0, owned - 1),
-      }
-      setInventory(newInventory)
-      try {
-        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
-        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
-
-        const submissions = JSON.parse(localStorage.getItem('codeabroad_cv_submissions') || '[]')
-        submissions.push({ ...data, submittedAt: new Date().toISOString(), status: 'in_review' })
-        localStorage.setItem('codeabroad_cv_submissions', JSON.stringify(submissions))
-      } catch {
-        // ignore
-      }
+      triggerHaptic('error')
+      audioEngine.playError()
+      showToast('❌ Gagal mengirim pengajuan CV Review. Pastikan Anda memiliki kupon aktif dan koneksi stabil.')
     }
-
-    showToast('📋 Kupon CV Review berhasil digunakan. Mentor Tokyo sedang memeriksa berkas Anda!')
   }
 
   // Handle Mock Interview Schedule
@@ -454,26 +439,12 @@ export const QuestLogPage = () => {
       setInventory(res.status.inventory)
       localStorage.setItem('codeabroad_user_inventory', JSON.stringify(res.status.inventory))
       window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
+      showToast('🎙️ Pengajuan Mock Interview VIP berhasil dikirim! Silakan periksa Discord Anda.')
     } catch {
-      const owned = inventory['mock-interview'] || 0
-      const newInventory = {
-        ...inventory,
-        ['mock-interview']: Math.max(0, owned - 1),
-      }
-      setInventory(newInventory)
-      try {
-        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(newInventory))
-        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
-
-        const schedules = JSON.parse(localStorage.getItem('codeabroad_mock_schedules') || '[]')
-        schedules.push({ ...data, scheduledAt: new Date().toISOString(), status: 'confirmed_discord' })
-        localStorage.setItem('codeabroad_mock_schedules', JSON.stringify(schedules))
-      } catch {
-        // ignore
-      }
+      triggerHaptic('error')
+      audioEngine.playError()
+      showToast('❌ Gagal menjadwalkan Mock Interview. Pastikan Anda memiliki kupon aktif dan koneksi stabil.')
     }
-
-    showToast('🎙️ Pengajuan Mock Interview VIP berhasil dikirim! Silakan periksa Discord Anda.')
   }
 
   // Open chest modal or show guidance toast
@@ -612,7 +583,7 @@ export const QuestLogPage = () => {
           completedQuestsSet.has(q.id) ||
           !!claimedDailyMap[q.id]
 
-        const defaultIcons = [Code, Translate, Lightning]
+        const defaultIcons = [BookOpen, Translate, Lightning]
         const QuestIcon = defaultIcons[idx % defaultIcons.length]
 
         return {
@@ -632,87 +603,57 @@ export const QuestLogPage = () => {
       })
     }
 
+    const isLessonDone =
+      completedQuestsSet.has('daily-lesson-sprint') || !!claimedDailyMap['daily-lesson-sprint']
+    const isVocabDone =
+      completedQuestsSet.has('daily-nihongo-vocab') || !!claimedDailyMap['daily-nihongo-vocab']
+    const isXpDone =
+      completedQuestsSet.has('daily-xp-sprint') || !!claimedDailyMap['daily-xp-sprint']
+
     return [
       {
-        id: 'daily-gin-handler',
-        title: 'Tuntaskan 1 Latihan Koding di Silabus',
-        chip_label: 'KODING GIN API',
+        id: 'daily-lesson-sprint',
+        title: 'Tuntaskan 1 Pelajaran Bahasa di Kurikulum',
+        chip_label: 'PELAJARAN HARIAN',
         difficulty: 'Pemula',
         xp_reward: 50,
         gem_reward: 10,
         estimated_minutes: 15,
-        isCompleted:
-          completedQuestsSet.has('daily-gin-handler') ||
-          completedQuestsSet.has('part-4-routing-dan-jwt-middleware') ||
-          !!claimedDailyMap['daily-gin-handler'],
-        route: '/learn/part-4-routing-dan-jwt-middleware',
-        icon: Code,
-        progressText:
-          completedQuestsSet.has('daily-gin-handler') ||
-          completedQuestsSet.has('part-4-routing-dan-jwt-middleware') ||
-          !!claimedDailyMap['daily-gin-handler']
-            ? '1/1 Selesai'
-            : '0/1 Selesai',
-        progressPercent:
-          completedQuestsSet.has('daily-gin-handler') ||
-          completedQuestsSet.has('part-4-routing-dan-jwt-middleware') ||
-          !!claimedDailyMap['daily-gin-handler']
-            ? 100
-            : 0,
+        isCompleted: isLessonDone,
+        route: '/curriculum',
+        icon: BookOpen,
+        progressText: isLessonDone ? '1/1 Selesai' : '0/1 Selesai',
+        progressPercent: isLessonDone ? 100 : 0,
       },
       {
-        id: 'daily-nihongo-standup',
-        title: 'Review 5 Kosakata Kantor Tokyo Hari Ini',
-        chip_label: 'JLPT N3 NIHONGO',
+        id: 'daily-nihongo-vocab',
+        title: 'Review 5 Kosakata & Kanji Tokyo Hari Ini',
+        chip_label: 'JLPT NIHONGO',
         difficulty: 'Mudah',
         xp_reward: 30,
         gem_reward: 5,
         estimated_minutes: 5,
-        isCompleted:
-          completedQuestsSet.has('daily-nihongo-standup') ||
-          completedQuestsSet.has('part-3-aisatsu-onboarding-tokyo') ||
-          !!claimedDailyMap['daily-nihongo-standup'],
-        route: '/learn/part-3-aisatsu-onboarding-tokyo',
+        isCompleted: isVocabDone,
+        route: '/curriculum',
         icon: Translate,
-        progressText:
-          completedQuestsSet.has('daily-nihongo-standup') ||
-          completedQuestsSet.has('part-3-aisatsu-onboarding-tokyo') ||
-          !!claimedDailyMap['daily-nihongo-standup']
-            ? '5/5 Selesai'
-            : '0/5 Selesai',
-        progressPercent:
-          completedQuestsSet.has('daily-nihongo-standup') ||
-          completedQuestsSet.has('part-3-aisatsu-onboarding-tokyo') ||
-          !!claimedDailyMap['daily-nihongo-standup']
-            ? 100
-            : 0,
+        progressText: isVocabDone ? '5/5 Selesai' : '0/5 Selesai',
+        progressPercent: isVocabDone ? 100 : 0,
       },
       {
-        id: 'daily-pointer-quiz',
-        title: 'Kumpulkan 50 XP dari Latihan Koding',
+        id: 'daily-xp-sprint',
+        title: 'Kumpulkan 50 XP dari Latihan Bahasa',
         chip_label: 'TARGET XP HARIAN',
         difficulty: 'Mudah',
         xp_reward: 40,
         gem_reward: 10,
         estimated_minutes: 5,
-        isCompleted:
-          completedQuestsSet.has('daily-pointer-quiz') ||
-          completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
-          !!claimedDailyMap['daily-pointer-quiz'],
-        route: '/courses',
+        isCompleted: isXpDone,
+        route: '/curriculum',
         icon: Lightning,
-        progressText:
-          completedQuestsSet.has('daily-pointer-quiz') ||
-          completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
-          !!claimedDailyMap['daily-pointer-quiz']
-            ? '50/50 XP'
-            : `${Math.min(50, user?.xp || 0)}/50 XP`,
-        progressPercent:
-          completedQuestsSet.has('daily-pointer-quiz') ||
-          completedQuestsSet.has('part-2-pointer-dan-struktur-data') ||
-          !!claimedDailyMap['daily-pointer-quiz']
-            ? 100
-            : Math.min(100, Math.round(((user?.xp || 0) / 50) * 100)),
+        progressText: isXpDone ? '50/50 XP' : `${Math.min(50, user?.xp || 0)}/50 XP`,
+        progressPercent: isXpDone
+          ? 100
+          : Math.min(100, Math.round(((user?.xp || 0) / 50) * 100)),
       },
     ]
   }, [dailyQuests, completedQuestsSet, claimedDailyMap, user?.xp])
@@ -800,7 +741,7 @@ export const QuestLogPage = () => {
         badge: 'Sedang Berjalan 🚀',
         badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
         speech: `Keren banget! Tinggal ${totalDailyTarget - dailyDoneCount} misi lagi untuk membuka Peti Emas Akihabara 🎁`,
-        alt: 'Kodi Koding',
+        alt: 'Kodi Belajar',
       }
     }
     return {
@@ -894,7 +835,7 @@ export const QuestLogPage = () => {
                     Lencana Emas Roppongi ({currentMonthYearName})
                   </h1>
                   <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                    Selesaikan 25 misi dan tantangan koding bulan ini untuk membuka lencana emas permanen di profil portofolio Anda.
+                    Selesaikan 25 misi dan tantangan bahasa bulan ini untuk membuka lencana emas permanen di profil Anda.
                   </p>
                 </div>
 
@@ -1474,7 +1415,7 @@ export const QuestLogPage = () => {
                   Sayembara Capstone Belum Terbuka
                 </h3>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                  Tantangan portofolio S-Rank Tokyo memerlukan penguasaan modul fundamental &amp; intermediate. Selesaikan misi koding kurikulum terlebih dahulu!
+                  Tantangan evaluasi S-Rank Tokyo memerlukan penguasaan modul fundamental &amp; intermediate. Selesaikan misi kurikulum bahasa terlebih dahulu!
                 </p>
               </div>
               <Button3D
@@ -1482,7 +1423,7 @@ export const QuestLogPage = () => {
                 size="md"
                 onClick={() => {
                   triggerHaptic('tap')
-                  navigate('/courses')
+                  navigate('/curriculum')
                 }}
                 className="text-xs sm:text-sm px-6 py-3 mx-auto"
               >

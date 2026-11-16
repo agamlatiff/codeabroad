@@ -16,6 +16,7 @@ var (
 	ErrChestAlreadyClaimed    = apperror.NewConflictError("CHEST_ALREADY_CLAIMED", "chest tier already claimed today")
 	ErrItemUnavailable        = apperror.NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
 	ErrInvalidCoachingPayload = apperror.NewBadRequestError("INVALID_COACHING_PAYLOAD", "coaching submission fields are invalid", nil)
+	ErrInsufficientCoupons    = apperror.NewBadRequestError("INSUFFICIENT_COUPONS", "you do not own an active coupon for this coaching service", nil)
 )
 
 const (

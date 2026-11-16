@@ -106,7 +106,10 @@ func TestHTTP_ClaimDailyChest_ConflictOnDuplicate(t *testing.T) {
 }
 
 func TestHTTP_SubmitCoaching(t *testing.T) {
-	r, _ := setupGamificationTestRouter()
+	r, repo := setupGamificationTestRouter()
+	repo.Inventory["usr-123"] = []gamification.UserInventoryItem{
+		{UserID: "usr-123", ItemID: "mock-interview", Quantity: 1},
+	}
 
 	body, _ := json.Marshal(gamification.CoachingSubmissionRequest{
 		Type:              "mock-interview",

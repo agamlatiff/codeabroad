@@ -111,8 +111,21 @@ func TestSubmitCoaching_Validation(t *testing.T) {
 		t.Errorf("expected ErrInvalidCoachingPayload for missing mock-interview fields, got %v", err)
 	}
 
-	// Valid cv-review submission
-	sub, _, err := uc.SubmitCoaching(context.Background(), "user-1", &gamification.CoachingSubmissionRequest{
+	// Reject when user has no cv-review coupon
+	_, _, err = uc.SubmitCoaching(context.Background(), "user-1", &gamification.CoachingSubmissionRequest{
+		Type:       "cv-review",
+		TargetRole: "Persiapan Kerja Jepang",
+		ResumeURL:  "https://drive.google.com/file/d/abc",
+	})
+	if !errors.Is(err, gamification.ErrInsufficientCoupons) {
+		t.Errorf("expected ErrInsufficientCoupons when user has no coupon, got %v", err)
+	}
+
+	// Seed 1 cv-review coupon and verify valid submission consumes it
+	repo.Inventory["user-1"] = []gamification.UserInventoryItem{
+		{UserID: "user-1", ItemID: "cv-review", Quantity: 1},
+	}
+	sub, status, err := uc.SubmitCoaching(context.Background(), "user-1", &gamification.CoachingSubmissionRequest{
 		Type:       "cv-review",
 		TargetRole: "  Persiapan Kerja Jepang  ",
 		ResumeURL:  "https://drive.google.com/file/d/abc",
@@ -122,5 +135,8 @@ func TestSubmitCoaching_Validation(t *testing.T) {
 	}
 	if sub.TargetRole != "Persiapan Kerja Jepang" {
 		t.Errorf("expected trimmed target_role, got %q", sub.TargetRole)
+	}
+	if status.Inventory["cv-review"] != 0 {
+		t.Errorf("expected cv-review coupon to be consumed (0 remaining), got %d", status.Inventory["cv-review"])
 	}
 }
