@@ -3,6 +3,7 @@ package health
 import (
 	"context"
 	"net/http"
+	"sync"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
@@ -36,19 +37,30 @@ func (h *Handler) CheckHealth(c *gin.Context) {
 
 	pgStatus := "connected"
 	redisStatus := "connected"
-	isHealthy := true
+	pgOK := true
+	redisOK := true
 
-	// Verify PostgreSQL connectivity
-	if h.pg == nil || h.pg.Ping(ctx) != nil {
-		pgStatus = "disconnected"
-		isHealthy = false
-	}
+	var wg sync.WaitGroup
+	wg.Add(2)
 
-	// Verify Redis connectivity
-	if h.rdb == nil || h.rdb.Ping(ctx) != nil {
-		redisStatus = "disconnected"
-		isHealthy = false
-	}
+	go func() {
+		defer wg.Done()
+		if h.pg == nil || h.pg.Ping(ctx) != nil {
+			pgStatus = "disconnected"
+			pgOK = false
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		if h.rdb == nil || h.rdb.Ping(ctx) != nil {
+			redisStatus = "disconnected"
+			redisOK = false
+		}
+	}()
+
+	wg.Wait()
+	isHealthy := pgOK && redisOK
 
 	statusCode := http.StatusOK
 	message := "system is fully operational"
