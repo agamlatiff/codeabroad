@@ -126,3 +126,28 @@ func TestHTTP_SubmitCoaching(t *testing.T) {
 		t.Fatalf("expected 201 Created, got: %d, body: %s", w.Code, w.Body.String())
 	}
 }
+
+func TestHTTP_ListBadges_And_SubmitCoachingWithoutCoupon(t *testing.T) {
+	r, _ := setupGamificationTestRouter()
+
+	badgesReq, _ := http.NewRequest(http.MethodGet, "/api/v1/gamification/badges", nil)
+	badgesW := httptest.NewRecorder()
+	r.ServeHTTP(badgesW, badgesReq)
+	if badgesW.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for GET /badges, got %d: %s", badgesW.Code, badgesW.Body.String())
+	}
+
+	body, _ := json.Marshal(gamification.CoachingSubmissionRequest{
+		Type:       "cv-review",
+		TargetRole: "Persiapan Kerja Jepang",
+		ResumeURL:  "https://drive.google.com/file/d/abc",
+	})
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/coaching", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request when user lacks cv-review coupon, got %d: %s", w.Code, w.Body.String())
+	}
+}

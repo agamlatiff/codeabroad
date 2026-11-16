@@ -51,6 +51,9 @@ func NewMockRepository() *MockRepository {
 var _ Repository = (*MockRepository)(nil)
 
 func (m *MockRepository) GetStatus(ctx context.Context, userID string) (*GamificationStatus, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetStatusErr != nil {
 		return nil, m.GetStatusErr
 	}
@@ -63,13 +66,13 @@ func (m *MockRepository) GetStatus(ctx context.Context, userID string) (*Gamific
 		gems = st.Gems
 	}
 
-	invItems := m.Inventory[userID]
+	invItems := append([]UserInventoryItem(nil), m.Inventory[userID]...)
 	invMap := make(map[string]int)
 	for _, it := range invItems {
 		invMap[it.ItemID] += it.Quantity
 	}
 
-	today := time.Now().UTC().Format("2006-01-02")
+	today := time.Now().In(wibLocation).Format("2006-01-02")
 	var claimedChests []int
 	for _, c := range m.ChestClaims[userID] {
 		if c.ClaimDate == today {
@@ -85,11 +88,14 @@ func (m *MockRepository) GetStatus(ctx context.Context, userID string) (*Gamific
 		Inventory:      invMap,
 		InventoryItems: invItems,
 		ClaimedChests:  claimedChests,
-		Badges:         m.UserBadges[userID],
+		Badges:         append([]UserBadge(nil), m.UserBadges[userID]...),
 	}, nil
 }
 
 func (m *MockRepository) GetGamificationStats(ctx context.Context, userID string) (*user.UserGamificationStats, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetStatsErr != nil {
 		return nil, m.GetStatsErr
 	}
@@ -102,10 +108,14 @@ func (m *MockRepository) GetGamificationStats(ctx context.Context, userID string
 			Gems:         0,
 		}, nil
 	}
-	return st, nil
+	cp := *st
+	return &cp, nil
 }
 
 func (m *MockRepository) UpdateStats(ctx context.Context, userID string, xp int, level int, streak int, gems int, lastActiveAt *time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.UpdateStatsErr != nil {
 		return m.UpdateStatsErr
 	}
@@ -122,7 +132,10 @@ func (m *MockRepository) UpdateStats(ctx context.Context, userID string, xp int,
 	return nil
 }
 
-func (m *MockRepository) AddXPAndGems(ctx context.Context, userID string, xp int, level int, gems int) (*user.UserGamificationStats, error) {
+func (m *MockRepository) AddXPAndGems(ctx context.Context, userID string, xp int, _ int, gems int) (*user.UserGamificationStats, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.AddXPAndGemsErr != nil {
 		return nil, m.AddXPAndGemsErr
 	}
@@ -132,14 +145,24 @@ func (m *MockRepository) AddXPAndGems(ctx context.Context, userID string, xp int
 		m.Stats[userID] = st
 	}
 	st.XP += xp
-	st.CurrentLevel = level
+	if st.XP < 0 {
+		st.XP = 0
+	}
+	st.CurrentLevel = (st.XP / 100) + 1
 	st.Gems += gems
+	if st.Gems < 0 {
+		st.Gems = 0
+	}
 	now := time.Now()
 	st.LastActiveAt = &now
-	return st, nil
+	cp := *st
+	return &cp, nil
 }
 
 func (m *MockRepository) GetShopItems(ctx context.Context, onlyAvailable bool) ([]ShopItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetShopItemsErr != nil {
 		return nil, m.GetShopItemsErr
 	}
@@ -172,6 +195,9 @@ func (m *MockRepository) GetShopItems(ctx context.Context, onlyAvailable bool) (
 }
 
 func (m *MockRepository) GetShopItemByID(ctx context.Context, itemID string) (*ShopItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetShopItemByIDErr != nil {
 		return nil, m.GetShopItemByIDErr
 	}
@@ -202,13 +228,19 @@ func (m *MockRepository) GetShopItemByID(ctx context.Context, itemID string) (*S
 }
 
 func (m *MockRepository) GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetUserInventoryErr != nil {
 		return nil, m.GetUserInventoryErr
 	}
-	return m.Inventory[userID], nil
+	return append([]UserInventoryItem(nil), m.Inventory[userID]...), nil
 }
 
 func (m *MockRepository) BuyShopItem(ctx context.Context, userID string, itemID string, priceGems int) (*UserInventoryItem, int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.BuyShopItemErr != nil {
 		return nil, 0, m.BuyShopItemErr
 	}
@@ -240,6 +272,9 @@ func (m *MockRepository) BuyShopItem(ctx context.Context, userID string, itemID 
 }
 
 func (m *MockRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetBadgesErr != nil {
 		return nil, m.GetBadgesErr
 	}
@@ -258,6 +293,9 @@ func (m *MockRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, erro
 }
 
 func (m *MockRepository) GetUserBadges(ctx context.Context, userID string) ([]UserBadge, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetUserBadgesErr != nil {
 		return nil, m.GetUserBadgesErr
 	}
@@ -290,7 +328,12 @@ func (m *MockRepository) AwardBadge(ctx context.Context, userID string, badgeKey
 	for _, existing := range m.UserBadges[userID] {
 		if existing.BadgeKey == badgeKey {
 			cp := existing
-			cp.Badge = nil
+			if cp.Badge == nil {
+				if def, ok := m.Badges[badgeKey]; ok && def != nil {
+					bd := *def
+					cp.Badge = &bd
+				}
+			}
 			return &cp, nil
 		}
 	}
@@ -320,6 +363,9 @@ func (m *MockRepository) AwardBadge(ctx context.Context, userID string, badgeKey
 }
 
 func (m *MockRepository) GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]DailyChestClaim, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
 	if m.GetChestClaimsErr != nil {
 		return nil, m.GetChestClaimsErr
 	}

@@ -1,9 +1,16 @@
 import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQueryClient } from '@tanstack/react-query'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { useAuthStore } from "@/features/auth/store/authStore"
+import { useUserActivity } from "@/features/user/hooks/useUserActivity"
+import {
+  languageService,
+  LANGUAGE_ENROLLMENTS_QUERY_KEY,
+} from "@/features/curriculum/services/languageService"
 import { gamificationService } from "@/features/gamification/services/gamificationService"
 import { useQuests } from "@/features/gamification/hooks/useQuests"
+import { getWibDateKey } from "@/shared/utils/date"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
@@ -14,94 +21,42 @@ import { ChestRewardModal } from "@/features/gamification/components/ChestReward
 import { MonthlyBadgeModal } from "@/features/gamification/components/MonthlyBadgeModal"
 import { CVReviewSubmissionModal } from "@/features/gamification/components/CVReviewSubmissionModal"
 import { MockInterviewScheduleModal } from "@/features/gamification/components/MockInterviewScheduleModal"
+import { DailyQuestsSection } from "@/features/gamification/components/DailyQuestsSection"
+import { MilestoneChallengesSection } from "@/features/gamification/components/MilestoneChallengesSection"
+import { AkihabaraShopSection } from "@/features/gamification/components/AkihabaraShopSection"
+import {
+  SHOP_ITEMS,
+  MILESTONE_CHALLENGES,
+  type QuestPageTab,
+  type ShopItem,
+  type DailyChestItem,
+  type DailyQuestViewItem,
+  type MilestoneChallengeViewItem,
+} from "@/features/gamification/constants/gamificationCatalog"
 import {
   MagnifyingGlass,
   Sparkle,
-  ShieldCheck,
   Flask,
-  FileText,
-  Microphone,
   Lightning,
   Clock,
   X,
   Medal,
   CheckCircle,
-  Check,
   BookOpen,
   Translate,
   ArrowRight,
 } from '@phosphor-icons/react'
 import { KodiCharacter, type KodiEmotion } from "@/shared/components/ui/KodiCharacter"
 
-export type QuestPageTab = 'daily' | 'boss' | 'shop'
-
-interface ShopItem {
-  id: string
-  title: string
-  subtitle: string
-  price: number
-  badge: string
-  badgeColor: string
-  icon: typeof ShieldCheck
-  iconBg: string
-  iconColor: string
-  category: 'protection' | 'booster' | 'career'
-}
-
-const SHOP_ITEMS: ShopItem[] = [
-  {
-    id: 'streak-freeze',
-    title: 'Streak Freeze ❄️',
-    subtitle: 'Perlindungan 1 hari penuh dari pemutusan streak saat Anda berhalangan hadir.',
-    price: 20,
-    badge: 'POPULER 🔥',
-    badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
-    icon: ShieldCheck,
-    iconBg: 'bg-blue-50 border-blue-200',
-    iconColor: 'text-blue-600',
-    category: 'protection',
-  },
-  {
-    id: 'xp-booster',
-    title: 'XP Booster Potion 🧪',
-    subtitle: 'Pengganda 2x XP untuk setiap latihan bahasa & kuis selama 30 menit ke depan.',
-    price: 35,
-    badge: 'BOOSTER ⚡',
-    badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
-    icon: Flask,
-    iconBg: 'bg-amber-50 border-amber-200',
-    iconColor: 'text-amber-600',
-    category: 'booster',
-  },
-  {
-    id: 'cv-review',
-    title: 'Kupon Review CV Global 📋',
-    subtitle: 'Audit CV (Rirekisho/Lebenslauf) dan portofolio persiapan kerja internasional oleh mentor.',
-    price: 100,
-    badge: 'KARIER GLOBAL 🇯🇵',
-    badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-    icon: FileText,
-    iconBg: 'bg-emerald-50 border-emerald-200',
-    iconColor: 'text-emerald-600',
-    category: 'career',
-  },
-  {
-    id: 'mock-interview',
-    title: 'Akses VIP Mock Interview 🎙️',
-    subtitle: 'Simulasi 1-on-1 wawancara kerja berbahasa Jepang/Inggris bersama mentor via Discord.',
-    price: 150,
-    badge: 'EKSKLUSIF ⭐',
-    badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
-    icon: Microphone,
-    iconBg: 'bg-purple-50 border-purple-200',
-    iconColor: 'text-purple-600',
-    category: 'career',
-  },
-]
+export type { QuestPageTab }
 
 export const QuestLogPage = () => {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { user, updateUser } = useAuthStore()
+  const {
+    data: { activitySummary },
+  } = useUserActivity()
   const {
     dailyQuests,
     timeLeft,
@@ -110,8 +65,8 @@ export const QuestLogPage = () => {
     isLoading: hookLoading,
   } = useQuests()
 
-  // Track selection state
-  const [activeTrack, setActiveTrack] = useState('ja')
+  // Track selection state (empty string defaults to user's active enrolled language)
+  const [activeTrack, setActiveTrack] = useState('')
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
 
@@ -119,11 +74,11 @@ export const QuestLogPage = () => {
   const [activeTab, setActiveTab] = useState<QuestPageTab>('daily')
   const [searchQuery, setSearchQuery] = useState('')
 
-  // 3-Tier Milestone Chests state for today
-  const todayDateKey = useMemo(() => new Date().toISOString().split('T')[0], [])
+  // 3-Tier Milestone Chests state for today (WIB UTC+7)
+  const todayDateKey = useMemo(() => getWibDateKey(), [])
   const [claimedDailyChests, setClaimedDailyChests] = useState<Record<number, boolean>>(() => {
     try {
-      const todayKey = new Date().toISOString().split('T')[0]
+      const todayKey = getWibDateKey()
       const stored = localStorage.getItem(`codeabroad_claimed_daily_chests_${todayKey}`)
       return stored ? JSON.parse(stored) : {}
     } catch {
@@ -132,36 +87,36 @@ export const QuestLogPage = () => {
   })
 
   // Selected chest for reward unboxing modal
-  const [selectedChestForModal, setSelectedChestForModal] = useState<{
-    tier: 1 | 2 | 3
-    label: string
-    reward: string
-    gemReward: number
-    xpReward: number
-    icon: string
-    unlocked: boolean
-  } | null>(null)
+  const [selectedChestForModal, setSelectedChestForModal] = useState<DailyChestItem | null>(null)
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
 
-  // Monthly challenge dynamic date & claim state
+  // Monthly challenge dynamic WIB date & claim state
+  const [wibYear, wibMonth, wibDay] = useMemo(
+    () => todayDateKey.split('-').map(Number),
+    [todayDateKey]
+  )
   const currentMonthYearName = useMemo(() => {
-    return new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })
-  }, [])
-  const monthlyBadgeKey = useMemo(() => {
-    const now = new Date()
-    return `codeabroad_monthly_badge_${now.getFullYear()}_${now.getMonth() + 1}`
-  }, [])
+    return new Date(Date.UTC(wibYear, wibMonth - 1, 15)).toLocaleDateString('id-ID', {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'Asia/Jakarta',
+    })
+  }, [wibYear, wibMonth])
+  const monthlyBadgeKey = useMemo(
+    () => `codeabroad_monthly_badge_${wibYear}_${wibMonth}`,
+    [wibYear, wibMonth]
+  )
   const [isMonthlyBadgeClaimed, setIsMonthlyBadgeClaimed] = useState<boolean>(() => {
     try {
-      const now = new Date()
-      return localStorage.getItem(`codeabroad_monthly_badge_${now.getFullYear()}_${now.getMonth() + 1}`) === 'true'
+      const [y, m] = getWibDateKey().split('-').map(Number)
+      return localStorage.getItem(`codeabroad_monthly_badge_${y}_${m}`) === 'true'
     } catch {
       return false
     }
   })
   const [isMonthlyBadgeModalOpen, setIsMonthlyBadgeModalOpen] = useState(false)
 
-  // Active XP Booster state
+  // Active XP Booster state (with pure interval clock for render checks)
   const [xpBoosterExpiresAt, setXpBoosterExpiresAt] = useState<number>(() => {
     try {
       const stored = localStorage.getItem('codeabroad_xp_booster_expires_at')
@@ -170,6 +125,17 @@ export const QuestLogPage = () => {
       return 0
     }
   })
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    if (xpBoosterExpiresAt <= nowMs) return
+    const timer = setInterval(() => {
+      setNowMs(Date.now())
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [xpBoosterExpiresAt, nowMs])
+
+  const isBoosterActive = xpBoosterExpiresAt > nowMs
 
   // Akihabara coupon modal states
   const [isCVModalOpen, setIsCVModalOpen] = useState(false)
@@ -238,10 +204,10 @@ export const QuestLogPage = () => {
     }, 2500)
   }
 
-  // Claimed daily quests set (reset daily by todayDateKey)
+  // Claimed daily quests set (reset daily by todayDateKey in WIB)
   const [claimedDailyMap, setClaimedDailyMap] = useState<Record<string, boolean>>(() => {
     try {
-      const todayKey = new Date().toISOString().split('T')[0]
+      const todayKey = getWibDateKey()
       const stored = localStorage.getItem(`codeabroad_claimed_daily_quests_${todayKey}`)
       return stored ? JSON.parse(stored) : {}
     } catch {
@@ -347,11 +313,20 @@ export const QuestLogPage = () => {
     []
   )
 
-  // Handle track switch from TrackSwitcherModal
-  const handleSelectTrack = (trackSlug: string) => {
-    triggerHaptic('success')
-    setActiveTrack(trackSlug)
-    setIsCourseSwitcherOpen(false)
+  // Handle track switch from TrackSwitcherModal (persists to backend & refreshes enrollments)
+  const handleSelectTrack = async (languageId: string) => {
+    if (!languageId) return
+    try {
+      await languageService.switchActiveLanguage(languageId)
+      await queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY })
+      triggerHaptic('success')
+      setActiveTrack(languageId)
+      setIsCourseSwitcherOpen(false)
+    } catch {
+      triggerHaptic('error')
+      audioEngine.playError()
+      showToast('❌ Gagal mengganti bahasa belajar aktif. Silakan coba lagi.')
+    }
   }
 
   // Update gems and persist
@@ -370,8 +345,8 @@ export const QuestLogPage = () => {
     triggerHaptic('success')
     audioEngine.playRewardClaim()
 
-    const isBoosterActive = xpBoosterExpiresAt > Date.now()
-    const finalXp = isBoosterActive ? xpReward * 2 : xpReward
+    const boosterActive = xpBoosterExpiresAt > Date.now()
+    const finalXp = boosterActive ? xpReward * 2 : xpReward
 
     const nextMap = { ...claimedDailyMap, [questId]: true }
     setClaimedDailyMap(nextMap)
@@ -385,12 +360,12 @@ export const QuestLogPage = () => {
     updateGemsState(nextGems)
 
     // Trigger floating reward burst
-    triggerFloatingReward(`+${finalXp} XP ${isBoosterActive ? '(2x XP 🔥) ' : ''}• +${gemReward} 💎`)
+    triggerFloatingReward(`+${finalXp} XP ${boosterActive ? '(2x XP 🔥) ' : ''}• +${gemReward} 💎`)
 
     // Dispatch XP reward event
     window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: finalXp } }))
     showToast(
-      `🎉 Berhasil klaim +${finalXp} XP ${isBoosterActive ? '(2x XP Booster Aktif!) ' : ''}& 💎 ${gemReward} Gems!`
+      `🎉 Berhasil klaim +${finalXp} XP ${boosterActive ? '(2x XP Booster Aktif!) ' : ''}& 💎 ${gemReward} Gems!`
     )
   }
 
@@ -413,7 +388,9 @@ export const QuestLogPage = () => {
       // ignore
     }
 
-    const expiresAt = Date.now() + 30 * 60 * 1000
+    const now = Date.now()
+    const expiresAt = now + 30 * 60 * 1000
+    setNowMs(now)
     setXpBoosterExpiresAt(expiresAt)
     try {
       localStorage.setItem('codeabroad_xp_booster_expires_at', String(expiresAt))
@@ -468,15 +445,7 @@ export const QuestLogPage = () => {
   }
 
   // Open chest modal or show guidance toast
-  const handleOpenChest = (chest: {
-    tier: 1 | 2 | 3
-    label: string
-    reward: string
-    gemReward: number
-    xpReward: number
-    icon: string
-    unlocked: boolean
-  }) => {
+  const handleOpenChest = (chest: DailyChestItem) => {
     if (!chest.unlocked) {
       triggerHaptic('error')
       audioEngine.playError()
@@ -591,8 +560,13 @@ export const QuestLogPage = () => {
     }
   }
 
+  const todayEarnedXp = useMemo(() => {
+    const todayLog = activitySummary?.weekly_logs?.find((log) => log.is_today)
+    return todayLog?.xp_earned ?? 0
+  }, [activitySummary])
+
   // 3 Daily Quests (The Core Habit Loop, cleanly checked against SSOT)
-  const canonicalDailyList = useMemo(() => {
+  const canonicalDailyList = useMemo<DailyQuestViewItem[]>(() => {
     if (dailyQuests && dailyQuests.length > 0) {
       return dailyQuests.map((q, idx) => {
         const isDone =
@@ -625,7 +599,9 @@ export const QuestLogPage = () => {
     const isVocabDone =
       completedQuestsSet.has('daily-nihongo-vocab') || !!claimedDailyMap['daily-nihongo-vocab']
     const isXpDone =
-      completedQuestsSet.has('daily-xp-sprint') || !!claimedDailyMap['daily-xp-sprint']
+      completedQuestsSet.has('daily-xp-sprint') ||
+      !!claimedDailyMap['daily-xp-sprint'] ||
+      todayEarnedXp >= 50
 
     return [
       {
@@ -667,13 +643,13 @@ export const QuestLogPage = () => {
         isCompleted: isXpDone,
         route: '/curriculum',
         icon: Lightning,
-        progressText: isXpDone ? '50/50 XP' : `${Math.min(50, user?.xp || 0)}/50 XP`,
+        progressText: isXpDone ? '50/50 XP' : `${Math.min(50, todayEarnedXp)}/50 XP`,
         progressPercent: isXpDone
           ? 100
-          : Math.min(100, Math.round(((user?.xp || 0) / 50) * 100)),
+          : Math.min(100, Math.round((todayEarnedXp / 50) * 100)),
       },
     ]
-  }, [dailyQuests, completedQuestsSet, claimedDailyMap, user?.xp])
+  }, [dailyQuests, completedQuestsSet, claimedDailyMap, todayEarnedXp])
 
   // Filter daily quests based on search query
   const filteredDaily = useMemo(() => {
@@ -685,33 +661,11 @@ export const QuestLogPage = () => {
   }, [canonicalDailyList, searchQuery])
 
   // Language Mastery Milestone Challenges
-  const portfolioChallenges = useMemo(() => {
-    const challenges = [
-      {
-        id: 'boss-jlpt-n5',
-        title: 'Evaluasi Level JLPT N5 & Penguasaan Aksara',
-        subtitle:
-          'Uji pemahaman Hiragana, Katakana, Kanji dasar, serta tata bahasa inti sebelum naik ke level berikutnya.',
-        tags: ['JLPT N5', 'KANJI', 'GRAMMAR'],
-        icon: '🔥',
-        xp_reward: 250,
-        gem_reward: 50,
-        route: '/curriculum',
-        isCompleted: completedQuestsSet.has('boss-jlpt-n5'),
-      },
-      {
-        id: 'capstone-keigo-business',
-        title: 'Simulasi Percakapan Kerja & Keigo Jepang',
-        subtitle:
-          'Latihan dialog situasi kantor, perkenalan profesional (Jikoshoukai), dan tata krama bahasa bisnis.',
-        tags: ['KEIGO', 'SPEAKING', 'LISTENING'],
-        icon: '🏛️',
-        xp_reward: 500,
-        gem_reward: 100,
-        route: '/curriculum',
-        isCompleted: completedQuestsSet.has('capstone-keigo-business'),
-      },
-    ]
+  const portfolioChallenges = useMemo<MilestoneChallengeViewItem[]>(() => {
+    const challenges: MilestoneChallengeViewItem[] = MILESTONE_CHALLENGES.map((challenge) => ({
+      ...challenge,
+      isCompleted: completedQuestsSet.has(challenge.id),
+    }))
 
     if (!searchQuery.trim()) return challenges
     const q = searchQuery.toLowerCase()
@@ -723,32 +677,32 @@ export const QuestLogPage = () => {
     )
   }, [completedQuestsSet, searchQuery])
 
-  // Monthly Quest Progress Calculation (Authentic Duolingo Monthly Badge Challenge)
+  // Monthly Quest Progress Calculation (Monthly Badge Challenge)
   const totalCompletedCount = completedQuestsSet.size
   const monthlyTargetCount = 25
   const monthlyCompletedCount = Math.min(monthlyTargetCount, totalCompletedCount)
   const monthlyProgressPercent = Math.min(100, Math.round((monthlyCompletedCount / monthlyTargetCount) * 100))
 
-  // Days left in current month calculation
+  // Days left in current WIB month calculation
   const daysLeftInMonth = useMemo(() => {
-    const now = new Date()
-    const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    return Math.max(1, lastDay.getDate() - now.getDate())
-  }, [])
+    const lastDay = new Date(wibYear, wibMonth, 0).getDate()
+    return Math.max(1, lastDay - wibDay)
+  }, [wibYear, wibMonth, wibDay])
 
   // Daily quest completion count
   const dailyDoneCount = canonicalDailyList.filter((d) => d.isCompleted).length
   const totalDailyTarget = canonicalDailyList.length
 
+  const userFirstName = user?.name ? user.name.split(' ')[0] : 'Sobat'
+
   // Dynamic living companion Kodi state & speech bubble
   const kodiCompanion = useMemo(() => {
-    const userName = user?.name ? user.name.split(' ')[0] : 'Sobat'
     if (dailyDoneCount === 0) {
       return {
         emotion: 'welcome' as KodiEmotion,
         badge: 'Semangat Pagi! ⚡',
         badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
-        speech: `Halo ${userName}! Selesaikan 3 misi hari ini untuk menyalakan api streak 🔥`,
+        speech: `Halo ${userFirstName}! Selesaikan 3 misi hari ini untuk menyalakan api streak 🔥`,
         alt: 'Kodi Menyapa',
       }
     }
@@ -765,16 +719,16 @@ export const QuestLogPage = () => {
       emotion: 'celebrate' as KodiEmotion,
       badge: 'Semua Misi Tuntas! 🎉',
       badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
-      speech: `Luar biasa, ${userName}! Semua misi harian tuntas dan streak Anda aman. Sampai jumpa besok di Tokyo Guild! 🌸`,
+      speech: `Luar biasa, ${userFirstName}! Semua misi harian tuntas dan streak Anda aman. Sampai jumpa besok di Tokyo Guild! 🌸`,
       alt: 'Kodi Merayakan',
     }
-  }, [dailyDoneCount, totalDailyTarget, user?.name])
+  }, [dailyDoneCount, totalDailyTarget, userFirstName])
 
   // Counts for top bar (Pure SSOT, 0 fake fallbacks)
   const totalCount =
     hookTotalCount > 0
       ? hookTotalCount
-      : canonicalDailyList.length + portfolioChallenges.length
+      : canonicalDailyList.length + MILESTONE_CHALLENGES.length
   const completedCount =
     typeof hookCompletedCount === 'number' && hookCompletedCount > 0
       ? hookCompletedCount
@@ -1036,587 +990,58 @@ export const QuestLogPage = () => {
           )}
 
           {/* ══════ SECTION 1: 3-TIER MILESTONE CHESTS & DAILY QUESTS ══════ */}
-          {activeTab === 'daily' && filteredDaily.length > 0 && (
-            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 space-y-5 shadow-2xs">
-              {/* Header with Title & Countdown */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-2xl bg-amber-50 border-2 border-amber-200 text-[#D97706] flex items-center justify-center shrink-0 shadow-2xs">
-                    <Lightning weight="fill" className="w-6 h-6 text-amber-500" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-base sm:text-lg text-[#0F172A]">
-                        Misi Harian ({dailyDoneCount}/{totalDailyTarget} Selesai)
-                      </h3>
-                      {hookLoading && (
-                        <div className="w-3.5 h-3.5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500">
-                      Selesaikan 3 misi harian untuk membuka Peti Emas Akihabara &amp; menjaga rentetan streak.
-                    </p>
-                  </div>
-                </div>
-
-                <span className="bg-[#FFFBEB] text-[#B45309] text-xs font-black px-3.5 py-1.5 rounded-2xl border-2 border-amber-200 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto">
-                  <Clock weight="bold" className="w-3.5 h-3.5" />
-                  <span>Reset dalam: {timeLeft}</span>
-                </span>
-              </div>
-
-              {/* 3-Tier Milestone Chests Progress Track */}
-              <div className="bg-amber-50/40 border border-amber-200/90 rounded-2xl p-4 space-y-3">
-                <div className="flex items-center justify-between text-xs font-brand font-black">
-                  <span className="text-amber-900 flex items-center gap-1.5">
-                    <Sparkle weight="fill" className="w-4 h-4 text-amber-600" />
-                    <span>Peti Hadiah Harian: {dailyDoneCount} dari {totalDailyTarget} Misi Tercapai</span>
-                  </span>
-                  <span className="text-amber-700 font-bold">
-                    {dailyDoneCount >= totalDailyTarget
-                      ? '🎉 Peti Emas Terbuka!'
-                      : `${totalDailyTarget - dailyDoneCount} misi lagi untuk Peti Emas`}
-                  </span>
-                </div>
-
-                {/* Progressive 3-Chest Milestones Display (Tactile 3D Buttons) */}
-                <div className="grid grid-cols-3 gap-2 pt-1">
-                  {[
-                    {
-                      tier: 1 as const,
-                      label: 'Peti Perunggu',
-                      reward: '+5 💎 & XP',
-                      gemReward: 5,
-                      xpReward: 20,
-                      icon: '🥉',
-                      unlocked: dailyDoneCount >= 1,
-                    },
-                    {
-                      tier: 2 as const,
-                      label: 'Peti Perak',
-                      reward: '+15 💎 & XP',
-                      gemReward: 15,
-                      xpReward: 50,
-                      icon: '🥈',
-                      unlocked: dailyDoneCount >= 2,
-                    },
-                    {
-                      tier: 3 as const,
-                      label: 'Peti Emas',
-                      reward: '+30 💎 & XP',
-                      gemReward: 30,
-                      xpReward: 100,
-                      icon: '👑',
-                      unlocked: dailyDoneCount >= 3,
-                    },
-                  ].map((chest) => {
-                    const isClaimed = !!claimedDailyChests[chest.tier]
-                    return (
-                      <button
-                        key={chest.tier}
-                        type="button"
-                        onClick={() => handleOpenChest(chest)}
-                        className={`p-2.5 rounded-xl border-2 flex items-center gap-2.5 text-left transition-all cursor-pointer ${
-                          isClaimed
-                            ? 'bg-emerald-50 border-emerald-300 text-emerald-900 border-b-[3px] border-b-emerald-400 opacity-90'
-                            : chest.unlocked
-                            ? 'bg-amber-100/90 border-amber-400 text-amber-950 border-b-[4px] border-b-amber-500 shadow-xs scale-[1.02] ring-2 ring-amber-300 animate-pulse'
-                            : 'bg-white border-slate-200/80 text-slate-400 hover:border-slate-300 active:translate-y-0.5'
-                        }`}
-                      >
-                        <span className="text-xl shrink-0">{chest.icon}</span>
-                        <div className="min-w-0 flex-1">
-                          <span className="text-[10px] font-black uppercase tracking-wider block truncate">
-                            {chest.label}
-                          </span>
-                          <span
-                            className={`text-xs font-black block truncate ${
-                              isClaimed
-                                ? 'text-emerald-700'
-                                : chest.unlocked
-                                ? 'text-amber-800'
-                                : 'text-slate-500'
-                            }`}
-                          >
-                            {isClaimed ? (
-                              <span className="inline-flex items-center gap-0.5">
-                                <Check weight="bold" className="w-2.5 h-2.5 text-emerald-600" />
-                                <span>DIKLAIM</span>
-                              </span>
-                            ) : chest.unlocked ? (
-                              'KLAIM ✨'
-                            ) : (
-                              chest.reward
-                            )}
-                          </span>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-
-              {/* 3 Daily Quests Chunky Cards Feed */}
-              <div className="space-y-3.5 pt-1">
-                {filteredDaily.map((questItem, idx) => {
-                  const isClaimed = !!claimedDailyMap[questItem.id]
-                  const isDone = questItem.isCompleted || isClaimed
-                  const QuestIcon = questItem.icon
-
-                  return (
-                    <div
-                      key={questItem.id}
-                      className={`border-2 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 shadow-2xs ${
-                        isClaimed
-                          ? 'bg-slate-50/70 border-slate-200/80 border-b-[3px] border-b-slate-200 opacity-80'
-                          : isDone
-                          ? 'bg-amber-50/50 border-2 border-amber-300 border-b-[4px] border-b-amber-400 shadow-xs'
-                          : 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
-                      }`}
-                    >
-                      {/* Left: Icon & Info */}
-                      <div className="flex items-center gap-4 min-w-0">
-                        <div
-                          className={`w-13 h-13 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-2xs ${
-                            isClaimed
-                              ? 'bg-slate-100 border-slate-300 text-slate-400'
-                              : isDone
-                              ? 'bg-amber-100 border-amber-300 text-amber-800'
-                              : 'bg-blue-50 border-blue-200 text-[#2563EB]'
-                          }`}
-                        >
-                          {isClaimed ? (
-                            <CheckCircle weight="fill" className="w-7 h-7 text-emerald-600" />
-                          ) : (
-                            <QuestIcon weight="bold" className="w-6 h-6" />
-                          )}
-                        </div>
-
-                        <div className="space-y-1.5 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <span
-                              className={`font-black text-[10px] px-2.5 py-0.5 rounded-lg border uppercase tracking-wider ${
-                                isDone
-                                  ? 'bg-amber-100 border-amber-200 text-amber-900'
-                                  : 'bg-blue-50 border-blue-200 text-[#1D4ED8]'
-                              }`}
-                            >
-                              {questItem.chip_label}
-                            </span>
-                            <span className="text-[11px] font-semibold text-slate-400">
-                              • Target #{idx + 1}
-                            </span>
-                            {isClaimed && (
-                              <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200 inline-flex items-center gap-1">
-                                <Check weight="bold" className="w-3 h-3 text-emerald-600" />
-                                <span>HADIAH DITERIMA</span>
-                              </span>
-                            )}
-                          </div>
-
-                          <h4 className="font-black text-sm sm:text-base text-[#0F172A] truncate">
-                            {questItem.title}
-                          </h4>
-
-                          {/* Progress Line */}
-                          <div className="flex items-center gap-3 flex-wrap">
-                            <div className="w-28 sm:w-40 h-2 bg-slate-100 rounded-full border border-slate-200 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full transition-all duration-300 ${
-                                  isDone ? 'bg-emerald-500' : 'bg-blue-500'
-                                }`}
-                                style={{ width: `${questItem.progressPercent}%` }}
-                              />
-                            </div>
-                            <span className="text-[11px] font-bold text-slate-500 font-mono">
-                              {questItem.progressText}
-                            </span>
-                            <span className="text-slate-300">•</span>
-                            <span className="text-xs font-bold text-amber-600">
-                              ⚡ +{questItem.xp_reward} XP
-                            </span>
-                            <span className="text-xs font-bold text-blue-600">
-                              💎 +{questItem.gem_reward}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Right: Tactile Action Button */}
-                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                        {isClaimed ? (
-                          <Button3D
-                            variant="ghost"
-                            size="sm"
-                            disabled
-                            className="text-xs px-4 py-2 border-2 border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
-                          >
-                            <span className="inline-flex items-center gap-1">
-                              <Check weight="bold" className="w-3.5 h-3.5 text-slate-400" />
-                              <span>SELESAI</span>
-                            </span>
-                          </Button3D>
-                        ) : isDone ? (
-                          <Button3D
-                            variant="amber"
-                            size="sm"
-                            onClick={() =>
-                              handleClaimDailyQuest(questItem.id, questItem.xp_reward, questItem.gem_reward)
-                            }
-                            className="text-xs px-4 py-2 ring-4 ring-amber-300 animate-pulse"
-                          >
-                            KLAIM HADIAH ⚡
-                          </Button3D>
-                        ) : (
-                          <Button3D
-                            variant="blue"
-                            size="sm"
-                            onClick={() => navigate(questItem.route)}
-                            className="text-xs px-4 py-2"
-                          >
-                            MULAI ▶
-                          </Button3D>
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+          {activeTab === 'daily' && (
+            <DailyQuestsSection
+              quests={filteredDaily}
+              dailyDoneCount={dailyDoneCount}
+              totalDailyTarget={totalDailyTarget}
+              timeLeft={timeLeft}
+              isLoading={hookLoading}
+              hasSearchNoResults={hasNoResults}
+              claimedDailyMap={claimedDailyMap}
+              claimedDailyChests={claimedDailyChests}
+              onOpenChest={handleOpenChest}
+              onClaimDailyQuest={handleClaimDailyQuest}
+              onStartQuest={(route) => navigate(route)}
+              onContinueCurriculum={() => {
+                triggerHaptic('tap')
+                navigate('/curriculum')
+              }}
+            />
           )}
 
-          {/* ── EMPTY STATE FOR DAILY QUESTS ── */}
-          {activeTab === 'daily' && filteredDaily.length === 0 && !hasNoResults && (
-            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-2xs">
-              <div className="flex items-center justify-center mx-auto">
-                <KodiCharacter emotion="thinking" size={100} />
-              </div>
-              <div className="space-y-1.5 max-w-md mx-auto">
-                <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
-                  Semua Misi Harian Selesai!
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                  Kerja luar biasa! Kamu telah menuntaskan target harianmu. Misi baru akan diperbarui secara otomatis besok pukul 00:00 JST.
-                </p>
-              </div>
-              <Button3D
-                variant="blue"
-                size="md"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  navigate('/curriculum')
-                }}
-                className="text-xs sm:text-sm px-6 py-3 mx-auto"
-              >
-                Lanjutkan Belajar di Kurikulum ▶
-              </Button3D>
-            </div>
-          )}
-
-          {/* ══════ SECTION 2: TOKYO GUILD TERMINAL (TACTILE MISSION SLATS) ══════ */}
-          {activeTab === 'boss' && portfolioChallenges.length > 0 && (
-            <div className="space-y-4">
-              {/* Console Header Bar */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
-                <div>
-                  <h3 className="font-brand font-black text-base sm:text-lg text-slate-900 flex items-center gap-2">
-                    <span>⚔️</span>
-                    <span>Tantangan Penguasaan Bahasa</span>
-                    <span className="text-[10px] font-mono bg-purple-100 text-purple-800 px-2 py-0.5 rounded-md border border-purple-200">
-                      MILESTONE TEST
-                    </span>
-                  </h3>
-                  <p className="text-xs text-slate-500 font-medium">
-                    Uji kemampuan membaca, menyimak, dan percakapan bisnis standar sertifikasi global.
-                  </p>
-                </div>
-
-                {/* Total Bounty Badge */}
-                <div className="flex items-center gap-2 text-xs font-brand font-black bg-amber-50 border border-amber-200 px-3 py-1.5 rounded-xl text-amber-900 shrink-0 self-start sm:self-auto shadow-2xs">
-                  <span>Bounty:</span>
-                  <span className="text-amber-600">⚡ +750 XP</span>
-                  <span>•</span>
-                  <span className="text-blue-600">💎 +150 Gems</span>
-                </div>
-              </div>
-
-              {/* Tactile Mission Slat Cartridges */}
-              <div className="bg-white border-2 border-slate-200/90 rounded-3xl divide-y-2 divide-slate-100 shadow-2xs overflow-hidden">
-                {portfolioChallenges.map((challenge, idx) => (
-                  <div
-                    key={challenge.id}
-                    className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-slate-50/80 transition-colors group"
-                  >
-                    {/* Left: Indicator & Track Info */}
-                    <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-                      <div className="w-12 h-12 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-blue-400 transition-all text-2xl shadow-2xs">
-                        {challenge.icon}
-                      </div>
-
-                      <div className="space-y-1.5 min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-[10px] font-black font-mono px-2.5 py-0.5 rounded-md border border-amber-300 bg-amber-50 text-amber-800 uppercase tracking-wider flex items-center gap-1 shadow-2xs">
-                            🏆 S-Rank Capstone
-                          </span>
-                          {challenge.isCompleted && (
-                            <span className="text-[10px] font-black text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-1">
-                              <Check weight="bold" className="w-3 h-3 text-emerald-600" />
-                              <span>LULUS KUALIFIKASI</span>
-                            </span>
-                          )}
-                        </div>
-
-                        <h4 className="font-black text-sm sm:text-base text-slate-900 group-hover:text-blue-600 transition-colors">
-                          {challenge.title}
-                        </h4>
-
-                        <p className="text-xs text-slate-500 font-medium leading-relaxed max-w-2xl">
-                          {challenge.subtitle}
-                        </p>
-
-                        {/* Tech Tags Minimal Row */}
-                        <div className="flex items-center gap-1.5 pt-0.5 flex-wrap">
-                          {challenge.tags.map((t) => (
-                            <span key={t} className="text-[10px] font-mono font-bold text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80">
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Right: Bounty & Tactile Action */}
-                    <div className="flex items-center justify-between md:justify-end gap-4 shrink-0 pt-3 md:pt-0 border-t md:border-t-0 border-slate-100">
-                      <div className="text-left md:text-right">
-                        <div className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
-                          Bounty
-                        </div>
-                        <div className="flex md:flex-col items-center md:items-end gap-1.5 md:gap-0 font-brand font-black text-xs">
-                          <span className="text-amber-600">⚡ +{challenge.xp_reward} XP</span>
-                          <span className="text-blue-600">💎 +{challenge.gem_reward} Gems</span>
-                        </div>
-                      </div>
-
-                      <div>
-                        <Button3D
-                          variant={challenge.isCompleted ? 'ghost' : idx === 0 ? 'amber' : 'blue'}
-                          size="sm"
-                          onClick={() => navigate(challenge.route)}
-                          className={`text-xs px-4 py-2 ${challenge.isCompleted ? 'border border-emerald-300 bg-emerald-50 text-emerald-700' : ''}`}
-                        >
-                          {challenge.isCompleted ? (
-                            <span className="inline-flex items-center gap-1">
-                              <Check weight="bold" className="w-3.5 h-3.5 text-emerald-600" />
-                              <span>LIHAT HASIL</span>
-                            </span>
-                          ) : (
-                            'MULAI SAYEMBARA ➔'
-                          )}
-                        </Button3D>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ── EMPTY STATE FOR SAYEMBARA BOSS QUESTS ── */}
-          {activeTab === 'boss' && portfolioChallenges.length === 0 && !hasNoResults && (
-            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 text-center space-y-4 shadow-2xs">
-              <div className="flex items-center justify-center mx-auto">
-                <KodiCharacter emotion="thinking" size={100} />
-              </div>
-              <div className="space-y-1.5 max-w-md mx-auto">
-                <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
-                  Sayembara Capstone Belum Terbuka
-                </h3>
-                <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                  Tantangan evaluasi S-Rank Tokyo memerlukan penguasaan modul fundamental &amp; intermediate. Selesaikan misi kurikulum bahasa terlebih dahulu!
-                </p>
-              </div>
-              <Button3D
-                variant="blue"
-                size="md"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  navigate('/curriculum')
-                }}
-                className="text-xs sm:text-sm px-6 py-3 mx-auto"
-              >
-                Tingkatkan Level di Kurikulum ▶
-              </Button3D>
-            </div>
+          {/* ══════ SECTION 2: MILESTONE CHALLENGES (LANGUAGE MASTERY SLATS) ══════ */}
+          {activeTab === 'boss' && (
+            <MilestoneChallengesSection
+              challenges={portfolioChallenges}
+              hasSearchNoResults={hasNoResults}
+              onStartChallenge={(route) => navigate(route)}
+              onContinueCurriculum={() => {
+                triggerHaptic('tap')
+                navigate('/curriculum')
+              }}
+            />
           )}
 
           {/* ══════ SECTION 3: AKIHABARA VENDING RACK (UNIFIED KIOSK SHELF) ══════ */}
           {activeTab === 'shop' && (
-            <div className="space-y-4">
-              {/* Vending Console Top HUD */}
-              <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white rounded-3xl p-5 sm:p-6 shadow-md border-b-[5px] border-b-blue-900 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div className="flex items-center gap-3.5">
-                  <div className="w-12 h-12 rounded-2xl bg-white/10 border-2 border-white/20 flex items-center justify-center text-2xl shrink-0 backdrop-blur-xs">
-                    🕹️
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-extrabold text-base sm:text-lg tracking-tight">
-                        Akihabara Arcade &amp; Reward Shop
-                      </h3>
-                      <span className="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase">
-                        AUTO DISPENSE
-                      </span>
-                    </div>
-                    <p className="text-xs text-blue-100 max-w-md">
-                      Tukarkan gems sayembara dengan proteksi streak, potion pengganda XP, dan kupon karir Tokyo.
-                    </p>
-                  </div>
-                </div>
-
-                {/* Live Gems Coin Vault */}
-                <div className="bg-white/15 border-2 border-white/20 rounded-2xl px-4 py-2.5 flex items-center gap-3 shrink-0 self-start sm:self-auto backdrop-blur-xs">
-                  <span className="text-2xl animate-bounce">💎</span>
-                  <div>
-                    <span className="text-[10px] font-black text-blue-200 block uppercase tracking-wider">
-                      Saldo Gems Anda
-                    </span>
-                    <span className="text-base font-black text-amber-300">
-                      {userGems} Gems
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Unified Vending Shelf Rack */}
-              <div className="bg-white border-2 border-slate-200/90 rounded-3xl divide-y-2 divide-slate-100 shadow-2xs overflow-hidden">
-                {shopItems.map((item) => {
-                  const ItemIcon = item.icon
-                  const ownedCount = inventory[item.id] || 0
-                  const isAffordable = userGems >= item.price
-                  const missingGems = item.price - userGems
-
-                  return (
-                    <div
-                      key={item.id}
-                      className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/80 transition-colors group"
-                    >
-                      {/* Left Item Token & Info */}
-                      <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                        <div
-                          className={`w-12 h-12 rounded-2xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-2xs shrink-0 group-hover:scale-105 transition-transform`}
-                        >
-                          <ItemIcon weight="bold" className="w-6 h-6" />
-                        </div>
-
-                        <div className="space-y-0.5 min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <h4 className="font-black text-sm sm:text-base text-slate-900">
-                              {item.title}
-                            </h4>
-                            <span className={`text-[10px] font-black px-2 py-0.5 rounded border ${item.badgeColor} uppercase tracking-wider`}>
-                              {item.badge}
-                            </span>
-                          </div>
-
-                          <p className="text-xs text-slate-500 font-medium leading-relaxed">
-                            {item.subtitle}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Right: Stock Counter & Purchase/Action Buttons */}
-                      <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-wrap">
-                        <div className="text-left sm:text-right">
-                          <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-                            Stok Tas
-                          </span>
-                          <span className="font-mono font-black text-xs text-slate-700">
-                            {ownedCount > 0 ? `${ownedCount}x Dimiliki` : 'Belum Ada'}
-                          </span>
-                        </div>
-
-                        {/* Action if owned */}
-                        {ownedCount > 0 && item.id === 'xp-booster' && (
-                          <div>
-                            {xpBoosterExpiresAt > Date.now() ? (
-                              <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1 animate-pulse">
-                                <span>⚡ 2x XP Aktif</span>
-                              </span>
-                            ) : (
-                              <Button3D
-                                variant="amber"
-                                size="sm"
-                                onClick={handleUseXPBooster}
-                                className="text-xs px-3.5 py-2 ring-2 ring-amber-300"
-                              >
-                                GUNAKAN 🧪
-                              </Button3D>
-                            )}
-                          </div>
-                        )}
-
-                        {ownedCount > 0 && item.id === 'cv-review' && (
-                          <Button3D
-                            variant="emerald"
-                            size="sm"
-                            onClick={() => {
-                              triggerHaptic('tap')
-                              setIsCVModalOpen(true)
-                            }}
-                            className="text-xs px-3.5 py-2 border-b-emerald-800"
-                          >
-                            KIRIM BERKAS 📋
-                          </Button3D>
-                        )}
-
-                        {ownedCount > 0 && item.id === 'mock-interview' && (
-                          <Button3D
-                            variant="amber"
-                            size="sm"
-                            onClick={() => {
-                              triggerHaptic('tap')
-                              setIsMockModalOpen(true)
-                            }}
-                            className="text-xs px-3.5 py-2 text-purple-950 bg-gradient-to-r from-purple-300 to-indigo-300 border-b-purple-600"
-                          >
-                            JADWALKAN 🎙️
-                          </Button3D>
-                        )}
-
-                        {ownedCount > 0 && item.id === 'streak-freeze' && (
-                          <span className="text-[10px] font-mono font-bold bg-blue-50 text-blue-800 border border-blue-200 px-2.5 py-1.5 rounded-xl flex items-center gap-1 shadow-2xs">
-                            <span>❄️ Proteksi Siap</span>
-                          </span>
-                        )}
-
-                        <div>
-                          <Button3D
-                            variant={isAffordable ? 'blue' : 'ghost'}
-                            size="sm"
-                            onClick={() => handlePurchaseShopItem(item)}
-                            disabled={!isAffordable || isPurchasingItemId === item.id}
-                            className={`text-xs px-4 py-2 min-w-[120px] ${
-                              !isAffordable ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : ''
-                            }`}
-                          >
-                            {isPurchasingItemId === item.id ? (
-                              <span>MEMPROSES...</span>
-                            ) : isAffordable ? (
-                              <span className="flex items-center gap-1.5">
-                                <span>TUKAR</span>
-                                <span className="font-mono font-black">💎 {item.price}</span>
-                              </span>
-                            ) : (
-                              <span>Kurang {missingGems} 💎</span>
-                            )}
-                          </Button3D>
-                        </div>
-                      </div>
-                    </div>
-                  )
-                })}
-              </div>
-            </div>
+            <AkihabaraShopSection
+              shopItems={shopItems}
+              userGems={userGems}
+              inventory={inventory}
+              isBoosterActive={isBoosterActive}
+              isPurchasingItemId={isPurchasingItemId}
+              onUseXPBooster={handleUseXPBooster}
+              onOpenCVModal={() => {
+                triggerHaptic('tap')
+                setIsCVModalOpen(true)
+              }}
+              onOpenMockModal={() => {
+                triggerHaptic('tap')
+                setIsMockModalOpen(true)
+              }}
+              onPurchaseItem={handlePurchaseShopItem}
+            />
           )}
 
           {/* Quick link banner back to curriculum */}
@@ -1634,7 +1059,7 @@ export const QuestLogPage = () => {
         </main>
       </div>
 
-      {/* ── 3. DUOLINGO-STYLE COURSE SWITCHER MODAL ── */}
+      {/* ── 3. LANGUAGE TRACK SWITCHER MODAL ── */}
       <TrackSwitcherModal
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}

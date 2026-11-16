@@ -21,13 +21,28 @@ export const CVReviewSubmissionModal = ({
   const [targetRole, setTargetRole] = useState('Persiapan Kerja Jepang (JLPT N4–N2)')
   const [notes, setNotes] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen)
+    if (!isOpen) {
+      setIsSuccess(false)
     }
-  }, [])
+  }
+
+  useEffect(() => {
+    if (!isOpen && closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = null
+      }
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 

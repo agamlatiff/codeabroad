@@ -7,6 +7,7 @@ import (
 
 	"codeabroad/backend/internal/app/gamification"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 )
 
 func setupMockGamificationRepo() *gamification.MockRepository {
@@ -138,5 +139,63 @@ func TestSubmitCoaching_Validation(t *testing.T) {
 	}
 	if status.Inventory["cv-review"] != 0 {
 		t.Errorf("expected cv-review coupon to be consumed (0 remaining), got %d", status.Inventory["cv-review"])
+	}
+}
+
+func TestGetStatus_And_ListCatalogAndBadges(t *testing.T) {
+	repo := setupMockGamificationRepo()
+	repo.Badges["first_step"] = &gamification.BadgeDefinition{
+		ID:       "first_step",
+		Title:    "Langkah Pertama",
+		XPReward: 50,
+	}
+	uc := gamification.NewUsecase(repo)
+
+	if _, err := uc.GetStatus(context.Background(), ""); !errors.Is(err, apperror.ErrUnauthorized) {
+		t.Errorf("expected ErrUnauthorized for empty userID, got %v", err)
+	}
+	status, err := uc.GetStatus(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("expected GetStatus to succeed, got %v", err)
+	}
+	if status.Gems != 50 {
+		t.Errorf("expected 50 gems, got %d", status.Gems)
+	}
+
+	items, err := uc.ListShopItems(context.Background())
+	if err != nil {
+		t.Fatalf("expected ListShopItems to succeed, got %v", err)
+	}
+	if len(items) != 2 {
+		t.Errorf("expected 2 active shop items (rare_theme excluded), got %d", len(items))
+	}
+
+	awarded, err := repo.AwardBadge(context.Background(), "user-1", "first_step", 2)
+	if err != nil || awarded.Badge == nil {
+		t.Fatalf("expected first AwardBadge to return populated Badge, err=%v", err)
+	}
+	repeatAwarded, err := repo.AwardBadge(context.Background(), "user-1", "first_step", 2)
+	if err != nil || repeatAwarded.Badge == nil {
+		t.Fatalf("expected idempotent AwardBadge to preserve populated Badge, err=%v", err)
+	}
+
+	catalog, userBadges, err := uc.ListBadges(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("expected ListBadges to succeed, got %v", err)
+	}
+	if len(catalog) != 1 || len(userBadges) != 1 {
+		t.Errorf("expected 1 catalog badge and 1 user badge, got catalog=%d user=%d", len(catalog), len(userBadges))
+	}
+}
+
+func TestBuyShopItem_InvalidInputAndNotFound(t *testing.T) {
+	repo := setupMockGamificationRepo()
+	uc := gamification.NewUsecase(repo)
+
+	if _, _, err := uc.BuyShopItem(context.Background(), "user-1", "   "); !errors.Is(err, apperror.ErrBadRequest) {
+		t.Errorf("expected ErrBadRequest for whitespace item_id, got %v", err)
+	}
+	if _, _, err := uc.BuyShopItem(context.Background(), "user-1", "unknown-item"); !errors.Is(err, gamification.ErrShopItemNotFound) {
+		t.Errorf("expected ErrShopItemNotFound for unknown item_id, got %v", err)
 	}
 }

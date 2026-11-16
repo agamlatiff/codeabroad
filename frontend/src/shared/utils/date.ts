@@ -19,6 +19,19 @@ export const formatTimezoneClock = (date: Date, timeZone: string): string => {
 }
 
 /**
+ * Returns the YYYY-MM-DD calendar date key in WIB (Asia/Jakarta, UTC+7),
+ * matching the backend daily quest/chest boundary calculation.
+ */
+export const getWibDateKey = (date: Date = new Date()): string => {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Jakarta',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date)
+}
+
+/**
  * Computes HH:MM:SS remaining until next midnight WIB (UTC+7).
  */
 export const getWibMidnightCountdown = (): string => {

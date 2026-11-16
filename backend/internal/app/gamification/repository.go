@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
@@ -104,68 +105,98 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 		return nil, fmt.Errorf("failed to query user gamification stats: %w", err)
 	}
 
-	invRows, err := r.db.Pool.Query(
-		ctx,
-		`SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
-		        si.id, si.title, si.subtitle, si.category, si.price_gems, si.badge, si.is_active, si.created_at
-		 FROM user_inventories ui
-		 JOIN shop_items si ON ui.item_id = si.id
-		 WHERE ui.user_id = $1
-		 ORDER BY si.price_gems ASC, si.id ASC`,
-		userID,
+	var (
+		wg               sync.WaitGroup
+		invErr, chErr, bdErr error
+		invItems         []UserInventoryItem
+		invMap           map[string]int
+		claimedChests    []int
+		badges           []UserBadge
 	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query user inventory: %w", err)
-	}
-	defer invRows.Close()
+	wg.Add(3)
 
-	invItems, invMap, err := scanUserInventoryRows(invRows)
-	if err != nil {
-		return nil, err
+	go func() {
+		defer wg.Done()
+		invRows, qErr := r.db.Pool.Query(
+			ctx,
+			`SELECT ui.id, ui.user_id, ui.item_id, ui.quantity, ui.created_at, ui.updated_at,
+			        si.id, si.title, si.subtitle, si.category, si.price_gems, si.badge, si.is_active, si.created_at
+			 FROM user_inventories ui
+			 JOIN shop_items si ON ui.item_id = si.id
+			 WHERE ui.user_id = $1
+			 ORDER BY si.price_gems ASC, si.id ASC`,
+			userID,
+		)
+		if qErr != nil {
+			invErr = fmt.Errorf("failed to query user inventory: %w", qErr)
+			return
+		}
+		defer invRows.Close()
+		invItems, invMap, invErr = scanUserInventoryRows(invRows)
+	}()
+
+	go func() {
+		defer wg.Done()
+		chestRows, qErr := r.db.Pool.Query(
+			ctx,
+			`SELECT tier FROM user_daily_chest_claims WHERE user_id = $1 AND claim_date = (NOW() AT TIME ZONE 'Asia/Jakarta')::date ORDER BY tier ASC, id ASC`,
+			userID,
+		)
+		if qErr != nil {
+			chErr = fmt.Errorf("failed to query daily chest claims: %w", qErr)
+			return
+		}
+		defer chestRows.Close()
+
+		claimedChests = make([]int, 0)
+		for chestRows.Next() {
+			var tier int
+			if scanErr := chestRows.Scan(&tier); scanErr != nil {
+				chErr = fmt.Errorf("failed to scan daily chest claim: %w", scanErr)
+				return
+			}
+			claimedChests = append(claimedChests, tier)
+		}
+		if iterErr := chestRows.Err(); iterErr != nil {
+			chErr = fmt.Errorf("rows iteration error in daily chest claims: %w", iterErr)
+		}
+	}()
+
+	go func() {
+		defer wg.Done()
+		badgeRows, qErr := r.db.Pool.Query(
+			ctx,
+			`SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
+			        bd.id, bd.title, bd.description, bd.category, bd.icon, bd.xp_reward, bd.created_at
+			 FROM user_badges ub
+			 JOIN badge_definitions bd ON ub.badge_key = bd.id
+			 WHERE ub.user_id = $1
+			 ORDER BY ub.awarded_at DESC, ub.id ASC`,
+			userID,
+		)
+		if qErr != nil {
+			bdErr = fmt.Errorf("failed to query user badges: %w", qErr)
+			return
+		}
+		defer badgeRows.Close()
+		badges, bdErr = scanUserBadgeRows(badgeRows)
+	}()
+
+	wg.Wait()
+
+	if invErr != nil {
+		return nil, invErr
 	}
+	if chErr != nil {
+		return nil, chErr
+	}
+	if bdErr != nil {
+		return nil, bdErr
+	}
+
 	status.InventoryItems = invItems
 	status.Inventory = invMap
-
-	chestRows, err := r.db.Pool.Query(
-		ctx,
-		`SELECT tier FROM user_daily_chest_claims WHERE user_id = $1 AND claim_date = CURRENT_DATE ORDER BY tier ASC, id ASC`,
-		userID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query daily chest claims: %w", err)
-	}
-	defer chestRows.Close()
-
-	for chestRows.Next() {
-		var tier int
-		if err := chestRows.Scan(&tier); err != nil {
-			return nil, fmt.Errorf("failed to scan daily chest claim: %w", err)
-		}
-		status.ClaimedChests = append(status.ClaimedChests, tier)
-	}
-	if err := chestRows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in daily chest claims: %w", err)
-	}
-
-	badgeRows, err := r.db.Pool.Query(
-		ctx,
-		`SELECT ub.id, ub.user_id, ub.badge_key, ub.awarded_at,
-		        bd.id, bd.title, bd.description, bd.category, bd.icon, bd.xp_reward, bd.created_at
-		 FROM user_badges ub
-		 JOIN badge_definitions bd ON ub.badge_key = bd.id
-		 WHERE ub.user_id = $1
-		 ORDER BY ub.awarded_at DESC, ub.id ASC`,
-		userID,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query user badges: %w", err)
-	}
-	defer badgeRows.Close()
-
-	badges, err := scanUserBadgeRows(badgeRows)
-	if err != nil {
-		return nil, err
-	}
+	status.ClaimedChests = claimedChests
 	status.Badges = badges
 
 	return status, nil
@@ -576,7 +607,7 @@ func (r *PostgresRepository) GetDailyChestClaims(ctx context.Context, userID str
 	return claims, nil
 }
 
-// ClaimDailyChest records a milestone chest reward and awards XP/gems atomically using CURRENT_DATE
+// ClaimDailyChest records a milestone chest reward and awards XP/gems atomically using Asia/Jakarta date
 // and ON CONFLICT DO NOTHING so duplicate daily claims cleanly return ErrChestAlreadyClaimed.
 func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, _ int) error {
 	if err := validateUserUUID(claim.UserID); err != nil {
@@ -590,7 +621,7 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 
 	insertQuery := `
 		INSERT INTO user_daily_chest_claims (user_id, claim_date, tier, gems_awarded, xp_awarded, created_at)
-		VALUES ($1, CURRENT_DATE, $2, $3, $4, NOW())
+		VALUES ($1, (NOW() AT TIME ZONE 'Asia/Jakarta')::date, $2, $3, $4, NOW())
 		ON CONFLICT (user_id, claim_date, tier) DO NOTHING
 		RETURNING id, claim_date::text, created_at
 	`

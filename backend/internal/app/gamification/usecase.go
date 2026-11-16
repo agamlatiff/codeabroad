@@ -85,6 +85,8 @@ func (u *usecase) ListBadges(ctx context.Context, userID string) ([]BadgeDefinit
 	return allBadges, userBadges, nil
 }
 
+var wibLocation = time.FixedZone("WIB", 7*60*60)
+
 // ClaimDailyChest awards gems and XP for unlocking a milestone chest
 func (u *usecase) ClaimDailyChest(ctx context.Context, userID string, tier int) (*DailyChestClaim, *GamificationStatus, error) {
 	if userID == "" {
@@ -98,7 +100,7 @@ func (u *usecase) ClaimDailyChest(ctx context.Context, userID string, tier int) 
 
 	claim := &DailyChestClaim{
 		UserID:      userID,
-		ClaimDate:   time.Now().UTC().Format("2006-01-02"),
+		ClaimDate:   time.Now().In(wibLocation).Format("2006-01-02"),
 		Tier:        tier,
 		GemsAwarded: gems,
 		XPAwarded:   xp,

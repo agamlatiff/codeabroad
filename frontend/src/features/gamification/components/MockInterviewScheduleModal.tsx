@@ -21,13 +21,28 @@ export const MockInterviewScheduleModal = ({
   const [focusTopic, setFocusTopic] = useState('Japanese Business Culture & Jikoshoukai')
   const [preferredTime, setPreferredTime] = useState('Weekend Malam (JST/WIB)')
   const [isSuccess, setIsSuccess] = useState(false)
+  const [prevIsOpen, setPrevIsOpen] = useState(isOpen)
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    return () => {
-      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+  if (isOpen !== prevIsOpen) {
+    setPrevIsOpen(isOpen)
+    if (!isOpen) {
+      setIsSuccess(false)
     }
-  }, [])
+  }
+
+  useEffect(() => {
+    if (!isOpen && closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current)
+      closeTimerRef.current = null
+    }
+    return () => {
+      if (closeTimerRef.current) {
+        clearTimeout(closeTimerRef.current)
+        closeTimerRef.current = null
+      }
+    }
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -74,7 +89,7 @@ export const MockInterviewScheduleModal = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">
-              Simulasi 1-on-1 interview teknis &amp; behavioral standar perusahaan Tokyo via Discord Voice.
+              Simulasi 1-on-1 interview kerja &amp; percakapan bisnis standar perusahaan Tokyo via Discord Voice.
             </p>
           </div>
         </div>
