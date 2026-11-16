@@ -472,37 +472,43 @@ export const QuestLogPage = () => {
   // Confirm claim chest reward from unboxing modal
   const handleConfirmClaimChest = async () => {
     if (!selectedChestForModal) return
-    triggerHaptic('success')
-    audioEngine.playChestClaim()
     const tier = selectedChestForModal.tier
-    const nextChests = { ...claimedDailyChests, [tier]: true }
-    setClaimedDailyChests(nextChests)
-    try {
-      localStorage.setItem(`codeabroad_claimed_daily_chests_${todayDateKey}`, JSON.stringify(nextChests))
-    } catch {
-      // ignore
-    }
+    const chestLabel = selectedChestForModal.label
+    const gemReward = selectedChestForModal.gemReward
+    const xpReward = selectedChestForModal.xpReward
 
     try {
       const res = await gamificationService.claimDailyChest(tier)
+      triggerHaptic('success')
+      audioEngine.playChestClaim()
+
+      const nextChests = { ...claimedDailyChests, [tier]: true }
+      setClaimedDailyChests(nextChests)
+      try {
+        localStorage.setItem(`codeabroad_claimed_daily_chests_${todayDateKey}`, JSON.stringify(nextChests))
+      } catch {
+        // ignore
+      }
+
       updateGemsState(res.status.gems)
-    } catch {
-      const nextGems = userGems + selectedChestForModal.gemReward
-      updateGemsState(nextGems)
-    }
 
-    if (selectedChestForModal.xpReward > 0) {
-      window.dispatchEvent(
-        new CustomEvent('codeabroad_xp_gained', { detail: { amount: selectedChestForModal.xpReward } })
+      if (xpReward > 0) {
+        window.dispatchEvent(
+          new CustomEvent('codeabroad_xp_gained', { detail: { amount: xpReward } })
+        )
+      }
+
+      setFloatingReward(
+        `+${xpReward > 0 ? `${xpReward} XP • ` : ''}+${gemReward} 💎`
       )
+      setTimeout(() => setFloatingReward(null), 2500)
+      showToast(`🎉 ${chestLabel} berhasil dibuka! +${gemReward} Gems ditambahkan.`)
+      setIsChestModalOpen(false)
+    } catch {
+      triggerHaptic('error')
+      audioEngine.playError()
+      showToast('❌ Gagal membuka peti hadiah. Pastikan peti belum diklaim dan koneksi stabil.')
     }
-
-    setFloatingReward(
-      `+${selectedChestForModal.xpReward > 0 ? `${selectedChestForModal.xpReward} XP • ` : ''}+${selectedChestForModal.gemReward} 💎`
-    )
-    setTimeout(() => setFloatingReward(null), 2500)
-    showToast(`🎉 ${selectedChestForModal.label} berhasil dibuka! +${selectedChestForModal.gemReward} Gems ditambahkan.`)
-    setIsChestModalOpen(false)
   }
 
   // Claim Monthly Roppongi Gold Badge
@@ -540,11 +546,10 @@ export const QuestLogPage = () => {
       return
     }
 
-    triggerHaptic('success')
-    audioEngine.playCoinJingle()
-
     try {
       const updatedStatus = await gamificationService.buyShopItem(item.id)
+      triggerHaptic('success')
+      audioEngine.playCoinJingle()
       updateGemsState(updatedStatus.gems)
       setInventory(updatedStatus.inventory)
       try {
@@ -555,22 +560,9 @@ export const QuestLogPage = () => {
       }
       showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${updatedStatus.gems} Gems.`)
     } catch {
-      const newGems = userGems - item.price
-      updateGemsState(newGems)
-
-      const nextInventory = {
-        ...inventory,
-        [item.id]: (inventory[item.id] || 0) + 1,
-      }
-      setInventory(nextInventory)
-      try {
-        localStorage.setItem('codeabroad_user_inventory', JSON.stringify(nextInventory))
-        window.dispatchEvent(new CustomEvent('codeabroad_inventory_updated'))
-      } catch {
-        // ignore
-      }
-
-      showToast(`🛒 Berhasil menukar ${item.title}! Sisa Saldo: 💎 ${newGems} Gems.`)
+      triggerHaptic('error')
+      audioEngine.playError()
+      showToast(`❌ Gagal menukar ${item.title}. Silakan coba lagi beberapa saat.`)
     }
   }
 
@@ -1287,7 +1279,7 @@ export const QuestLogPage = () => {
                 size="md"
                 onClick={() => {
                   triggerHaptic('tap')
-                  navigate('/courses')
+                  navigate('/curriculum')
                 }}
                 className="text-xs sm:text-sm px-6 py-3 mx-auto"
               >
