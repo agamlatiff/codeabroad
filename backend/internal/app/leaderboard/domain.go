@@ -22,6 +22,7 @@ type LeaderboardEntry struct {
 	Name          string        `json:"name"`
 	AvatarURL     *string       `json:"avatar_url"`
 	WeeklyXP      int           `json:"weekly_xp"`
+	TotalXP       int           `json:"-"`
 	Streak        int           `json:"streak"`
 	CurrentLevel  int           `json:"current_level"`
 	Division      TokyoDivision `json:"division"`

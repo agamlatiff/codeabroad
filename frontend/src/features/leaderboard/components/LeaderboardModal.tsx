@@ -2,9 +2,6 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import {
   Trophy,
-  Crown,
-  Flame,
-  Star,
   CaretDown,
   Clock,
   Sparkle,
@@ -14,6 +11,7 @@ import {
 } from '@phosphor-icons/react'
 import type { TokyoDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
 import { TOKYO_DIVISIONS } from "@/features/leaderboard/constants/divisions"
+import { LeaderboardEntryRow } from "@/features/leaderboard/components/LeaderboardEntryRow"
 import { leaderboardService } from "@/features/leaderboard/services/leaderboardService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { soundEngine } from "@/shared/utils/audio"
@@ -274,93 +272,19 @@ export const LeaderboardModal = ({
               </Button3D>
             </div>
           ) : (
-            leaderboard.entries.map((entry) => {
-              const isTop3 = entry.rank <= 3
-              const isDemotion = entry.rank > 10
-              const isUser = entry.is_current_user
-
-              return (
-                <div
-                  key={entry.user_id + entry.rank}
-                  className={`flex items-center justify-between p-3 sm:p-3.5 rounded-2xl border-2 transition-all ${
-                    isUser
-                      ? 'bg-blue-50/90 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
-                      : isTop3
-                      ? 'bg-white border-emerald-200/90 shadow-2xs hover:border-emerald-300'
-                      : isDemotion
-                      ? 'bg-white border-rose-200/80 shadow-2xs'
-                      : 'bg-white border-slate-200/80 shadow-2xs'
-                  }`}
-                >
-                  {/* Left: Rank & User Profile */}
-                  <div className="flex items-center gap-3 min-w-0">
-                    {/* Rank Badge */}
-                    <div
-                      className={`w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center font-brand font-black text-xs shrink-0 ${
-                        entry.rank === 1
-                          ? 'bg-amber-400 text-amber-950 shadow-xs'
-                          : entry.rank === 2
-                          ? 'bg-slate-300 text-slate-900 shadow-xs'
-                          : entry.rank === 3
-                          ? 'bg-amber-700 text-amber-100 shadow-xs'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
-                    >
-                      {entry.rank === 1 ? (
-                        <Crown weight="fill" className="w-4 h-4 text-amber-950" />
-                      ) : (
-                        `#${entry.rank}`
-                      )}
-                    </div>
-
-                    {/* Avatar & Name */}
-                    <div className="min-w-0 space-y-0.5">
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`font-brand font-black text-xs sm:text-sm truncate ${
-                            isUser ? 'text-blue-900' : 'text-slate-900'
-                          }`}
-                        >
-                          {entry.name}
-                        </span>
-                        {isUser && (
-                          <span className="bg-blue-600 text-white text-[9px] font-brand font-black px-1.5 py-0.2 rounded-md shrink-0">
-                            ANDA
-                          </span>
-                        )}
-                        {isTop3 && (
-                          <span className="bg-emerald-100 text-emerald-800 text-[9px] font-brand font-bold px-1.5 py-0.2 rounded-md hidden sm:inline-block shrink-0">
-                            Zona Promosi
-                          </span>
-                        )}
-                      </div>
-                      <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono font-bold">
-                        <span>Lv. {entry.current_level}</span>
-                        <span>•</span>
-                        <span className="flex items-center gap-0.5 text-amber-600">
-                          <Flame weight="fill" className="w-3 h-3 text-amber-500" />
-                          <span>{entry.streak}d streak</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Right: XP Score & Reward Badge */}
-                  <div className="text-right shrink-0 flex flex-col items-end gap-1">
-                    <div className="flex items-center gap-1 justify-end font-brand font-black text-sm text-slate-900">
-                      <Star weight="fill" className="w-3.5 h-3.5 text-amber-400" />
-                      <span>{entry.weekly_xp}</span>
-                      <span className="text-[10px] font-mono text-slate-400">XP</span>
-                    </div>
-                    {isTop3 && (
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded-md bg-amber-100 text-amber-900 border border-amber-200 flex items-center gap-1">
-                        💎 +{entry.rank === 1 ? '100' : entry.rank === 2 ? '50' : '25'}
-                      </span>
-                    )}
-                  </div>
+            <>
+              {leaderboard.entries.map((entry) => (
+                <LeaderboardEntryRow key={entry.user_id + entry.rank} entry={entry} compact />
+              ))}
+              {leaderboard.user_rank && !leaderboard.entries.some((e) => e.is_current_user) && (
+                <div className="pt-2 border-t border-dashed border-slate-200 space-y-1.5">
+                  <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400 px-1">
+                    Posisi Anda Saat Ini
+                  </span>
+                  <LeaderboardEntryRow entry={leaderboard.user_rank} compact />
                 </div>
-              )
-            })
+              )}
+            </>
           )}
         </div>
 

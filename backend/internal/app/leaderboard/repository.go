@@ -33,13 +33,12 @@ func NewRepository(db *postgres.PostgresDB) Repository {
 
 func scanLeaderboardEntry(scanner interface{ Scan(dest ...any) error }) (LeaderboardEntry, error) {
 	var e LeaderboardEntry
-	var totalXP int
 	err := scanner.Scan(
 		&e.UserID,
 		&e.Name,
 		&e.Username,
 		&e.AvatarURL,
-		&totalXP,
+		&e.TotalXP,
 		&e.CurrentLevel,
 		&e.Streak,
 		&e.WeeklyXP,

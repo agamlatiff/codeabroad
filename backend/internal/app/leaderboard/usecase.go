@@ -55,7 +55,11 @@ func (u *usecase) GetWeeklyLeaderboard(
 	if userID != "" && userRankItem == nil {
 		standing, err := u.leaderboardRepo.GetUserStanding(ctx, userID)
 		if err == nil && standing != nil {
-			userDiv := u.helper.DetermineDivision(standing.WeeklyXP)
+			divisionXP := standing.TotalXP
+			if divisionXP == 0 && standing.WeeklyXP > 0 {
+				divisionXP = standing.WeeklyXP
+			}
+			userDiv := u.helper.DetermineDivision(divisionXP)
 			if userDiv == resolvedDivision {
 				standing.Rank = len(entries) + 1
 				standing.Division = resolvedDivision
