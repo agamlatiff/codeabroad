@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { useAuthStore } from "@/features/auth/store/authStore"
@@ -210,18 +210,39 @@ export const QuestLogPage = () => {
 
   // Toast confirmation notification for shop purchase / quest claim
   const [toastMessage, setToastMessage] = useState<string | null>(null)
+  const [isClaimingChest, setIsClaimingChest] = useState(false)
+  const [isPurchasingItemId, setIsPurchasingItemId] = useState<string | null>(null)
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const floatingRewardTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+      if (floatingRewardTimerRef.current) clearTimeout(floatingRewardTimerRef.current)
+    }
+  }, [])
 
   const showToast = (message: string) => {
     setToastMessage(message)
-    setTimeout(() => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
+    toastTimerRef.current = setTimeout(() => {
       setToastMessage(null)
     }, 4000)
   }
 
-  // Claimed daily quests set
+  const triggerFloatingReward = (text: string) => {
+    setFloatingReward(text)
+    if (floatingRewardTimerRef.current) clearTimeout(floatingRewardTimerRef.current)
+    floatingRewardTimerRef.current = setTimeout(() => {
+      setFloatingReward(null)
+    }, 2500)
+  }
+
+  // Claimed daily quests set (reset daily by todayDateKey)
   const [claimedDailyMap, setClaimedDailyMap] = useState<Record<string, boolean>>(() => {
     try {
-      const stored = localStorage.getItem('codeabroad_claimed_daily_quests')
+      const todayKey = new Date().toISOString().split('T')[0]
+      const stored = localStorage.getItem(`codeabroad_claimed_daily_quests_${todayKey}`)
       return stored ? JSON.parse(stored) : {}
     } catch {
       return {}
@@ -355,7 +376,7 @@ export const QuestLogPage = () => {
     const nextMap = { ...claimedDailyMap, [questId]: true }
     setClaimedDailyMap(nextMap)
     try {
-      localStorage.setItem('codeabroad_claimed_daily_quests', JSON.stringify(nextMap))
+      localStorage.setItem(`codeabroad_claimed_daily_quests_${todayDateKey}`, JSON.stringify(nextMap))
     } catch {
       // ignore
     }
@@ -364,8 +385,7 @@ export const QuestLogPage = () => {
     updateGemsState(nextGems)
 
     // Trigger floating reward burst
-    setFloatingReward(`+${finalXp} XP ${isBoosterActive ? '(2x XP 🔥) ' : ''}• +${gemReward} 💎`)
-    setTimeout(() => setFloatingReward(null), 2500)
+    triggerFloatingReward(`+${finalXp} XP ${isBoosterActive ? '(2x XP 🔥) ' : ''}• +${gemReward} 💎`)
 
     // Dispatch XP reward event
     window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: finalXp } }))
@@ -471,12 +491,13 @@ export const QuestLogPage = () => {
 
   // Confirm claim chest reward from unboxing modal
   const handleConfirmClaimChest = async () => {
-    if (!selectedChestForModal) return
+    if (!selectedChestForModal || isClaimingChest) return
     const tier = selectedChestForModal.tier
     const chestLabel = selectedChestForModal.label
     const gemReward = selectedChestForModal.gemReward
     const xpReward = selectedChestForModal.xpReward
 
+    setIsClaimingChest(true)
     try {
       const res = await gamificationService.claimDailyChest(tier)
       triggerHaptic('success')
@@ -498,16 +519,17 @@ export const QuestLogPage = () => {
         )
       }
 
-      setFloatingReward(
+      triggerFloatingReward(
         `+${xpReward > 0 ? `${xpReward} XP • ` : ''}+${gemReward} 💎`
       )
-      setTimeout(() => setFloatingReward(null), 2500)
       showToast(`🎉 ${chestLabel} berhasil dibuka! +${gemReward} Gems ditambahkan.`)
       setIsChestModalOpen(false)
     } catch {
       triggerHaptic('error')
       audioEngine.playError()
       showToast('❌ Gagal membuka peti hadiah. Pastikan peti belum diklaim dan koneksi stabil.')
+    } finally {
+      setIsClaimingChest(false)
     }
   }
 
@@ -531,14 +553,14 @@ export const QuestLogPage = () => {
 
     window.dispatchEvent(new CustomEvent('codeabroad_xp_gained', { detail: { amount: 150 } }))
 
-    setFloatingReward('+150 XP • +50 💎')
-    setTimeout(() => setFloatingReward(null), 2500)
+    triggerFloatingReward('+150 XP • +50 💎')
     showToast(`🎉 Lencana Emas Roppongi (${currentMonthYearName}) berhasil disematkan ke portofolio Anda!`)
     setIsMonthlyBadgeModalOpen(false)
   }
 
   // Handle Akihabara Arcade item purchase
   const handlePurchaseShopItem = async (item: ShopItem) => {
+    if (isPurchasingItemId) return
     if (userGems < item.price) {
       triggerHaptic('error')
       audioEngine.playError()
@@ -546,6 +568,7 @@ export const QuestLogPage = () => {
       return
     }
 
+    setIsPurchasingItemId(item.id)
     try {
       const updatedStatus = await gamificationService.buyShopItem(item.id)
       triggerHaptic('success')
@@ -563,6 +586,8 @@ export const QuestLogPage = () => {
       triggerHaptic('error')
       audioEngine.playError()
       showToast(`❌ Gagal menukar ${item.title}. Silakan coba lagi beberapa saat.`)
+    } finally {
+      setIsPurchasingItemId(null)
     }
   }
 
@@ -1060,27 +1085,27 @@ export const QuestLogPage = () => {
                     {
                       tier: 1 as const,
                       label: 'Peti Perunggu',
-                      reward: '+5 💎',
+                      reward: '+5 💎 & XP',
                       gemReward: 5,
-                      xpReward: 0,
+                      xpReward: 20,
                       icon: '🥉',
                       unlocked: dailyDoneCount >= 1,
                     },
                     {
                       tier: 2 as const,
                       label: 'Peti Perak',
-                      reward: '+10 💎',
-                      gemReward: 10,
-                      xpReward: 0,
+                      reward: '+15 💎 & XP',
+                      gemReward: 15,
+                      xpReward: 50,
                       icon: '🥈',
                       unlocked: dailyDoneCount >= 2,
                     },
                     {
                       tier: 3 as const,
                       label: 'Peti Emas',
-                      reward: '+20 💎 & XP',
-                      gemReward: 20,
-                      xpReward: 50,
+                      reward: '+30 💎 & XP',
+                      gemReward: 30,
+                      xpReward: 100,
                       icon: '👑',
                       unlocked: dailyDoneCount >= 3,
                     },
@@ -1569,12 +1594,14 @@ export const QuestLogPage = () => {
                             variant={isAffordable ? 'blue' : 'ghost'}
                             size="sm"
                             onClick={() => handlePurchaseShopItem(item)}
-                            disabled={!isAffordable}
+                            disabled={!isAffordable || isPurchasingItemId === item.id}
                             className={`text-xs px-4 py-2 min-w-[120px] ${
                               !isAffordable ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : ''
                             }`}
                           >
-                            {isAffordable ? (
+                            {isPurchasingItemId === item.id ? (
+                              <span>MEMPROSES...</span>
+                            ) : isAffordable ? (
                               <span className="flex items-center gap-1.5">
                                 <span>TUKAR</span>
                                 <span className="font-mono font-black">💎 {item.price}</span>

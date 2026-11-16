@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { FileText, Link as LinkIcon, LinkedinLogo, CheckCircle, PaperPlaneTilt } from '@phosphor-icons/react'
 import { Modal3D } from './Modal3D'
 import { Button3D } from "@/shared/components/ui/Button3D"
@@ -21,6 +21,13 @@ export const CVReviewSubmissionModal = ({
   const [targetRole, setTargetRole] = useState('Persiapan Kerja Jepang (JLPT N4–N2)')
   const [notes, setNotes] = useState('')
   const [isSuccess, setIsSuccess] = useState(false)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   if (!isOpen) return null
 
@@ -35,8 +42,12 @@ export const CVReviewSubmissionModal = ({
     audioEngine.playSuccess()
     setIsSuccess(true)
 
-    setTimeout(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = setTimeout(() => {
       onSubmitted({ githubUrl, resumeUrl, targetRole, notes })
+      setGithubUrl('')
+      setResumeUrl('')
+      setNotes('')
       setIsSuccess(false)
       onClose()
     }, 1800)

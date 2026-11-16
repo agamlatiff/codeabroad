@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { Microphone, CheckCircle, CalendarBlank, DiscordLogo, Translate } from '@phosphor-icons/react'
 import { Modal3D } from './Modal3D'
 import { Button3D } from "@/shared/components/ui/Button3D"
@@ -21,6 +21,13 @@ export const MockInterviewScheduleModal = ({
   const [focusTopic, setFocusTopic] = useState('Japanese Business Culture & Jikoshoukai')
   const [preferredTime, setPreferredTime] = useState('Weekend Malam (JST/WIB)')
   const [isSuccess, setIsSuccess] = useState(false)
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    }
+  }, [])
 
   if (!isOpen) return null
 
@@ -35,8 +42,10 @@ export const MockInterviewScheduleModal = ({
     audioEngine.playSuccess()
     setIsSuccess(true)
 
-    setTimeout(() => {
+    if (closeTimerRef.current) clearTimeout(closeTimerRef.current)
+    closeTimerRef.current = setTimeout(() => {
       onScheduled({ language, discordHandle, focusTopic, preferredTime })
+      setDiscordHandle('')
       setIsSuccess(false)
       onClose()
     }, 1800)

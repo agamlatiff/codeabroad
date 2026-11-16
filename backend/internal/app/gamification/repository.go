@@ -521,6 +521,7 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 			if commitErr := tx.Commit(ctx); commitErr != nil {
 				return nil, fmt.Errorf("failed to commit idempotent badge check: %w", commitErr)
 			}
+			ub.Badge = &bd
 			return &ub, nil
 		}
 		return nil, fmt.Errorf("failed to record user badge: %w", err)
