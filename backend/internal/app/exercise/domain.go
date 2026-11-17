@@ -14,6 +14,7 @@ var (
 	ErrExerciseNotFound     = apperror.NewNotFoundError("EXERCISE_NOT_FOUND", "exercise not found")
 	ErrExerciseLessonLocked = apperror.NewForbiddenError("LESSON_LOCKED", "previous lesson nodes must be completed first", nil)
 	ErrReviewNotFound       = apperror.NewNotFoundError("SRS_REVIEW_NOT_FOUND", "srs review item not found")
+	ErrReviewNotDue         = apperror.NewConflictError("SRS_REVIEW_NOT_DUE", "srs review item is not due yet")
 	ErrExamAlreadyPassed    = apperror.NewConflictError("EXAM_ALREADY_PASSED", "readiness exam already passed for this level")
 	ErrExamResultNotFound   = apperror.NewNotFoundError("EXAM_RESULT_NOT_FOUND", "no passed readiness exam result found for this level")
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "quality rating must be between 0 and 5", nil)
@@ -180,14 +181,18 @@ type ReadinessExamResponse struct {
 
 // VocabularyItem represents a daily contextual vocabulary/expression card derived from active curriculum exercises
 type VocabularyItem struct {
-	ID              string `json:"id"`
-	Term            string `json:"term"`
-	Reading         string `json:"reading"`
-	Meaning         string `json:"meaning"`
-	Category        string `json:"category"`
-	ExampleJA       string `json:"example_ja"`
-	ExampleID       string `json:"example_id"`
-	DifficultyLevel string `json:"difficulty_level"`
+	ID                 string `json:"id"`
+	Term               string `json:"term"`
+	TargetText         string `json:"target_text,omitempty"`
+	Reading            string `json:"reading"`
+	Meaning            string `json:"meaning"`
+	Translation        string `json:"translation,omitempty"`
+	Category           string `json:"category"`
+	ExampleJA          string `json:"example_ja"`
+	ExampleTarget      string `json:"example_target,omitempty"`
+	ExampleID          string `json:"example_id"`
+	ExampleTranslation string `json:"example_translation,omitempty"`
+	DifficultyLevel    string `json:"difficulty_level"`
 }
 
 // Repository specifies persistence operations for exercises and telemetry
@@ -211,6 +216,21 @@ type SRSRepository interface {
 // TransactionalSRSReviewer atomically locks, reads, computes, and persists an SM-2 SRS card update
 type TransactionalSRSReviewer interface {
 	ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error)
+}
+
+// TransactionalDueSRSReviewer atomically verifies card existence & due status before applying SM-2 updates.
+type TransactionalDueSRSReviewer interface {
+	ApplyDueReviewTx(ctx context.Context, userID, exerciseID string, now time.Time, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error)
+}
+
+// TotalDueSRSReader fetches due SRS reviews alongside total due count in a single query.
+type TotalDueSRSReader interface {
+	GetDueReviewsWithTotal(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, int, error)
+}
+
+// LevelCompletionChecker verifies whether all curriculum lessons in a proficiency level are completed.
+type LevelCompletionChecker interface {
+	IsLevelCurriculumCompleted(ctx context.Context, userID string, levelID string) (bool, error)
 }
 
 // ReadinessExamRepository specifies persistence operations for diagnostic mock exams

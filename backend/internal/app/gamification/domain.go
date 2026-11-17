@@ -14,6 +14,7 @@ var (
 	ErrShopItemNotFound       = apperror.NewNotFoundError("SHOP_ITEM_NOT_FOUND", "shop item not found")
 	ErrInsufficientGems       = apperror.NewBadRequestError("INSUFFICIENT_GEMS", "not enough gems to complete transaction", nil)
 	ErrChestAlreadyClaimed    = apperror.NewConflictError("CHEST_ALREADY_CLAIMED", "chest tier already claimed today")
+	ErrChestNotUnlocked       = apperror.NewBadRequestError("CHEST_NOT_UNLOCKED", "selesaikan target misi harian terlebih dahulu untuk membuka peti ini", nil)
 	ErrItemUnavailable        = apperror.NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
 	ErrInvalidCoachingPayload = apperror.NewBadRequestError("INVALID_COACHING_PAYLOAD", "coaching submission fields are invalid", nil)
 	ErrInsufficientCoupons    = apperror.NewBadRequestError("INSUFFICIENT_COUPONS", "you do not own an active coupon for this coaching service", nil)
@@ -51,11 +52,12 @@ type BadgeDefinition struct {
 
 // UserBadge represents an unlocked achievement awarded to a user (user_badges table)
 type UserBadge struct {
-	ID        string           `json:"id"`
-	UserID    string           `json:"user_id"`
-	BadgeKey  string           `json:"badge_key"`
-	Badge     *BadgeDefinition `json:"badge,omitempty"`
-	AwardedAt time.Time        `json:"awarded_at"`
+	ID           string           `json:"id"`
+	UserID       string           `json:"user_id"`
+	BadgeKey     string           `json:"badge_key"`
+	Badge        *BadgeDefinition `json:"badge,omitempty"`
+	AwardedAt    time.Time        `json:"awarded_at"`
+	NewlyAwarded bool             `json:"newly_awarded,omitempty"`
 }
 
 // ShopItem represents a purchasable consumable or cosmetic perk (shop_items table)

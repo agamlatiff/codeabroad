@@ -132,8 +132,7 @@ func (h *Handler) SubmitAnswer(c *gin.Context) {
 	}
 
 	var req SubmitExerciseAnswerRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid exercise submission payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -193,8 +192,7 @@ func (h *Handler) ProcessReview(c *gin.Context) {
 	}
 
 	var req SubmitSRSReviewRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid SRS review payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -280,8 +278,7 @@ func (h *Handler) SubmitExam(c *gin.Context) {
 	}
 
 	var req SubmitReadinessExamRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid readiness exam submission payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -321,6 +318,9 @@ func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 
 // RegisterRoutes registers exercise, SRS, and readiness exam endpoints
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+	if authMiddleware == nil {
+		panic("exercise.Handler.RegisterRoutes requires non-nil authMiddleware")
+	}
 	submitRateLimiter := resolveRateLimiter(
 		h.submitRateLimiter,
 		DefaultExerciseSubmitLimit,
@@ -338,35 +338,27 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	)
 
 	exercises := rg.Group("/exercises")
-	if authMiddleware != nil {
-		exercises.Use(authMiddleware)
-	}
+	exercises.Use(authMiddleware)
 	{
 		exercises.GET("/lesson/:lesson_id", h.GetExercisesByLesson)
 		exercises.POST("/submit", submitRateLimiter, h.SubmitAnswer)
 	}
 
 	vocabularies := rg.Group("/vocabularies")
-	if authMiddleware != nil {
-		vocabularies.Use(authMiddleware)
-	}
+	vocabularies.Use(authMiddleware)
 	{
 		vocabularies.GET("/daily", h.GetDailyVocabularies)
 	}
 
 	srs := rg.Group("/srs")
-	if authMiddleware != nil {
-		srs.Use(authMiddleware)
-	}
+	srs.Use(authMiddleware)
 	{
 		srs.GET("/due", h.GetDueReviews)
 		srs.POST("/review", reviewRateLimiter, h.ProcessReview)
 	}
 
 	exams := rg.Group("/exams")
-	if authMiddleware != nil {
-		exams.Use(authMiddleware)
-	}
+	exams.Use(authMiddleware)
 	{
 		exams.GET("/questions/:level_id", h.GetExamQuestions)
 		exams.GET("/result/:level_id", h.GetExamResult)

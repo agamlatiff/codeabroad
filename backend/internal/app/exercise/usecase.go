@@ -9,6 +9,7 @@ import (
 	"log"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 
 	"codeabroad/backend/internal/app/gamification"
@@ -256,22 +257,33 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 	limit = normalizeLimit(limit, 20, 100)
 
 	now := time.Now().UTC()
-	reviews, err := u.srsRepo.GetDueReviews(ctx, userID, now, limit)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query due reviews: %w", err)
+	var (
+		reviews  []UserSRSReview
+		dueCount int
+		err      error
+	)
+	if reader, ok := u.srsRepo.(TotalDueSRSReader); ok {
+		reviews, dueCount, err = reader.GetDueReviewsWithTotal(ctx, userID, now, limit)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query due reviews: %w", err)
+		}
+	} else {
+		reviews, err = u.srsRepo.GetDueReviews(ctx, userID, now, limit)
+		if err != nil {
+			return nil, fmt.Errorf("failed to query due reviews: %w", err)
+		}
+		dueCount = len(reviews)
+		if len(reviews) >= limit {
+			if count, err := u.srsRepo.GetDueCount(ctx, userID, now); err == nil {
+				dueCount = count
+			}
+		}
 	}
 
 	for i := range reviews {
 		if reviews[i].Exercise != nil {
 			sanitized := SanitizeExercises([]Exercise{*reviews[i].Exercise})
 			reviews[i].Exercise = &sanitized[0]
-		}
-	}
-
-	dueCount := len(reviews)
-	if len(reviews) >= limit {
-		if count, err := u.srsRepo.GetDueCount(ctx, userID, now); err == nil {
-			dueCount = count
 		}
 	}
 
@@ -306,7 +318,7 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	}
 
 	now := time.Now().UTC()
-	updatedReview, err := u.applySRSReview(ctx, userID, exerciseID, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
+	updatedReview, err := u.applyDueSRSReview(ctx, userID, exerciseID, now, func(prevReps, prevInterval int, prevEase float64) *UserSRSReview {
 		sm2 := u.helper.CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
 		return &UserSRSReview{
 			UserID:          userID,
@@ -331,7 +343,7 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 				ub, awardErr := u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", 0)
 				if awardErr != nil {
 					log.Printf("exercise: failed to award srs_veteran badge to user %s: %v", userID, awardErr)
-				} else if ub != nil && ub.Badge != nil {
+				} else if ub != nil && ub.Badge != nil && ub.NewlyAwarded {
 					badgeXP += ub.Badge.XPReward
 				}
 			}
@@ -361,6 +373,46 @@ func (u *usecase) logActivitySafely(ctx context.Context, userID, activityType st
 	}); err != nil {
 		log.Printf("exercise: failed to log %s activity for user %s: %v", activityType, userID, err)
 	}
+}
+
+func (u *usecase) applyDueSRSReview(
+	ctx context.Context,
+	userID string,
+	exerciseID string,
+	now time.Time,
+	compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview,
+) (*UserSRSReview, error) {
+	if u.srsRepo == nil {
+		return nil, fmt.Errorf("srs repository is not configured: %w", apperror.ErrInternal)
+	}
+	if txDueReviewer, ok := u.srsRepo.(TransactionalDueSRSReviewer); ok {
+		return txDueReviewer.ApplyDueReviewTx(ctx, userID, exerciseID, now, compute)
+	}
+
+	currentReview, err := u.srsRepo.GetReview(ctx, userID, exerciseID)
+	if err != nil {
+		if errors.Is(err, ErrReviewNotFound) {
+			return nil, ErrReviewNotFound
+		}
+		return nil, fmt.Errorf("failed to query existing srs review: %w", err)
+	}
+	if currentReview == nil {
+		return nil, ErrReviewNotFound
+	}
+	if !currentReview.NextReviewAt.IsZero() && currentReview.NextReviewAt.After(now) {
+		return nil, ErrReviewNotDue
+	}
+
+	updatedReview := compute(currentReview.RepetitionCount, currentReview.IntervalDays, currentReview.EaseFactor)
+	if txReviewer, ok := u.srsRepo.(TransactionalSRSReviewer); ok {
+		return txReviewer.ApplyReviewTx(ctx, userID, exerciseID, func(_, _ int, _ float64) *UserSRSReview {
+			return updatedReview
+		})
+	}
+	if err := u.srsRepo.UpsertReview(ctx, updatedReview); err != nil {
+		return nil, fmt.Errorf("failed to update srs review: %w", err)
+	}
+	return updatedReview, nil
 }
 
 func (u *usecase) applySRSReview(
@@ -419,6 +471,19 @@ func (u *usecase) verifyLevelExamAccess(ctx context.Context, userID string, leve
 	}
 	if enrollment == nil || enrollment.CurrentLevel == nil || lvl.OrderIndex > enrollment.CurrentLevel.OrderIndex {
 		return nil, nil, apperror.ErrForbidden
+	}
+	if lvlChecker, ok := u.accessChecker.(LevelCompletionChecker); ok {
+		completed, chkErr := lvlChecker.IsLevelCurriculumCompleted(ctx, userID, levelID)
+		if chkErr != nil {
+			return nil, nil, fmt.Errorf("failed to verify level curriculum completion: %w", chkErr)
+		}
+		if !completed {
+			return nil, nil, apperror.NewForbiddenError(
+				"LEVEL_CURRICULUM_INCOMPLETE",
+				"complete all curriculum lessons in this level before taking the readiness exam",
+				nil,
+			)
+		}
 	}
 	return lvl, enrollment, nil
 }
@@ -547,6 +612,15 @@ func (u *usecase) gradeExamSubmission(
 		passingScore = 60
 	}
 
+	pillars := make(map[string]int, 4)
+	assessedPillars := make([]string, 0, 4)
+	for _, pillar := range []string{"reading", "listening", "writing", "speaking"} {
+		if pillarCatalogTotal[pillar] > 0 {
+			assessedPillars = append(assessedPillars, pillar)
+			pillars[pillar] = calcPillarScore(pillar)
+		}
+	}
+
 	return &examGradingResult{
 		totalScore:     totalScore,
 		maxScore:       maxScore,
@@ -557,15 +631,11 @@ func (u *usecase) gradeExamSubmission(
 		speakingScore:  speakingScore,
 		isPassed:       scorePercent >= passingScore,
 		analysisReport: map[string]any{
-			"total_score": totalScore,
-			"max_score":   maxScore,
-			"answers":     answersPayload,
-			"pillars": map[string]int{
-				"reading":   readingScore,
-				"listening": listeningScore,
-				"writing":   writingScore,
-				"speaking":  speakingScore,
-			},
+			"total_score":      totalScore,
+			"max_score":        maxScore,
+			"answers":          answersPayload,
+			"pillars":          pillars,
+			"assessed_pillars": assessedPillars,
 		},
 	}, nil
 }
@@ -744,20 +814,41 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 	if u.examRepo == nil || u.langRepo == nil {
 		return nil, fmt.Errorf("exam dependencies are not configured: %w", apperror.ErrInternal)
 	}
-	lvl, err := u.langRepo.GetLevelByID(ctx, levelID)
-	if err != nil {
-		return nil, err
+	var (
+		lvl           *language.ProficiencyLevel
+		enrollments   []language.UserLanguageEnrollment
+		passedAttempt *ReadinessExamAttempt
+		lvlErr        error
+		enrErr        error
+		attemptErr    error
+		wg            sync.WaitGroup
+	)
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		lvl, lvlErr = u.langRepo.GetLevelByID(ctx, levelID)
+	}()
+	go func() {
+		defer wg.Done()
+		enrollments, enrErr = u.langRepo.GetEnrollmentsByUserID(ctx, userID)
+	}()
+	go func() {
+		defer wg.Done()
+		passedAttempt, attemptErr = u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)
+	}()
+	wg.Wait()
+
+	if lvlErr != nil {
+		return nil, lvlErr
 	}
 	if lvl == nil {
 		return nil, language.ErrProficiencyLevelNotFound
 	}
-
-	enrollments, err := u.langRepo.GetEnrollmentsByUserID(ctx, userID)
-	if err != nil {
-		if errors.Is(err, language.ErrEnrollmentNotFound) {
+	if enrErr != nil {
+		if errors.Is(enrErr, language.ErrEnrollmentNotFound) {
 			return nil, apperror.ErrForbidden
 		}
-		return nil, err
+		return nil, enrErr
 	}
 	hasEnrollment := false
 	for _, enr := range enrollments {
@@ -770,9 +861,8 @@ func (u *usecase) GetExamResult(ctx context.Context, userID string, levelID stri
 		return nil, apperror.ErrForbidden
 	}
 
-	passedAttempt, err := u.examRepo.GetLatestPassedAttempt(ctx, userID, levelID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query passed exam attempt: %w", err)
+	if attemptErr != nil {
+		return nil, fmt.Errorf("failed to query passed exam attempt: %w", attemptErr)
 	}
 	if passedAttempt == nil {
 		return nil, ErrExamResultNotFound
@@ -890,17 +980,22 @@ func (u *usecase) awardExamBadges(ctx context.Context, userID string, lvl *langu
 		return nil
 	}
 	var candidates []string
-	if strings.EqualFold(lvl.Code, "N5") && scorePercent >= 80 {
-		candidates = append(candidates, "n5_mastery")
+	if scorePercent >= 80 {
+		normalizedCode := strings.ToLower(strings.TrimSpace(lvl.Code))
+		if normalizedCode != "" {
+			candidates = append(candidates, normalizedCode+"_mastery")
+		}
 	}
 	var awarded []gamification.BadgeDefinition
 	for _, badgeKey := range candidates {
 		ub, err := u.badgeAwarder.AwardBadge(ctx, userID, badgeKey, 0)
 		if err != nil {
-			log.Printf("exercise: failed to award exam badge %s to user %s: %v", badgeKey, userID, err)
+			if !errors.Is(err, gamification.ErrBadgeNotFound) {
+				log.Printf("exercise: failed to award exam badge %s to user %s: %v", badgeKey, userID, err)
+			}
 			continue
 		}
-		if ub != nil && ub.Badge != nil {
+		if ub != nil && ub.Badge != nil && ub.NewlyAwarded {
 			awarded = append(awarded, *ub.Badge)
 		}
 	}

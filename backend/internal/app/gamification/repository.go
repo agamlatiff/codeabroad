@@ -10,6 +10,7 @@ import (
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/app/user"
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -547,11 +548,13 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 				return nil, fmt.Errorf("failed to commit idempotent badge check: %w", commitErr)
 			}
 			ub.Badge = &bd
+			ub.NewlyAwarded = false
 			return &ub, nil
 		}
 		return nil, fmt.Errorf("failed to record user badge: %w", err)
 	}
 	ub.Badge = &bd
+	ub.NewlyAwarded = true
 
 	if hasGamificationRow && bd.XPReward > 0 {
 		newXP := lockedXP + bd.XPReward
@@ -567,6 +570,14 @@ func (r *PostgresRepository) AwardBadge(ctx context.Context, userID string, badg
 		if err != nil {
 			return nil, fmt.Errorf("failed to award badge bonus xp: %w", err)
 		}
+	}
+
+	if _, logErr := tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at) VALUES ($1::uuid, 'badge_unlocked', $2, jsonb_build_object('badge_key', $3::text), NOW())`,
+		userID, bd.XPReward, bd.ID,
+	); logErr != nil {
+		return nil, fmt.Errorf("failed to log badge unlock activity: %w", logErr)
 	}
 
 	if err := tx.Commit(ctx); err != nil {
@@ -617,7 +628,44 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 	if err != nil {
 		return fmt.Errorf("failed to begin daily chest tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer progression.RollbackTx(ctx, tx, "gamification.ClaimDailyChest")
+
+	// Serialize concurrent chest claims for this user and verify daily quest completion tier in WIB.
+	var qualifiedQuests int
+	prereqQuery := `
+		WITH wib_bounds AS (
+			SELECT ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta') AS start_ts
+		),
+		locked_user AS (
+			SELECT xp FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE
+		)
+		SELECT (
+			CASE WHEN EXISTS (
+				SELECT 1 FROM user_lesson_progress ulp, wib_bounds wb
+				WHERE ulp.user_id = $1::uuid AND ulp.is_completed = true AND ulp.is_skipped = false AND ulp.completed_at >= wb.start_ts
+			) THEN 1 ELSE 0 END
+			+
+			CASE WHEN EXISTS (
+				SELECT 1 FROM user_activity_logs ual, wib_bounds wb
+				WHERE ual.user_id = $1::uuid AND ual.activity_type IN ('srs_review_completed', 'daily_vocab_quest_claim') AND ual.created_at >= wb.start_ts
+			) THEN 1 ELSE 0 END
+			+
+			CASE WHEN COALESCE((
+				SELECT SUM(ual.xp_earned) FROM user_activity_logs ual, wib_bounds wb
+				WHERE ual.user_id = $1::uuid AND ual.created_at >= wb.start_ts AND ual.activity_type <> 'daily_golden_chest_claim'
+			), 0) >= 50 THEN 1 ELSE 0 END
+		)
+		FROM locked_user
+	`
+	if err := tx.QueryRow(ctx, prereqQuery, claim.UserID).Scan(&qualifiedQuests); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.ErrUserNotFound
+		}
+		return fmt.Errorf("failed to verify daily chest prerequisites: %w", err)
+	}
+	if qualifiedQuests < claim.Tier {
+		return ErrChestNotUnlocked
+	}
 
 	insertQuery := `
 		INSERT INTO user_daily_chest_claims (user_id, claim_date, tier, gems_awarded, xp_awarded, created_at)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"codeabroad/backend/internal/app/curriculum"
@@ -22,6 +23,7 @@ type usecase struct {
 	exerciseRepo     exercise.Repository
 	gamificationRepo gamification.Repository
 	cacheRepo        curriculum.CurriculumCacheRepository
+	store            Store
 	helper           *Helper
 }
 
@@ -33,14 +35,7 @@ func NewUsecase(
 	exerciseRepo exercise.Repository,
 	gamificationRepo gamification.Repository,
 ) Usecase {
-	return &usecase{
-		userRepo:         userRepo,
-		langRepo:         langRepo,
-		curriculumRepo:   curriculumRepo,
-		exerciseRepo:     exerciseRepo,
-		gamificationRepo: gamificationRepo,
-		helper:           NewHelper(),
-	}
+	return NewUsecaseWithStore(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, nil, nil)
 }
 
 // NewUsecaseWithCache creates an Onboarding Usecase instance with curriculum cache invalidation support
@@ -52,6 +47,19 @@ func NewUsecaseWithCache(
 	gamificationRepo gamification.Repository,
 	cacheRepo curriculum.CurriculumCacheRepository,
 ) Usecase {
+	return NewUsecaseWithStore(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, cacheRepo, nil)
+}
+
+// NewUsecaseWithStore creates an Onboarding Usecase backed by an optional atomic Store and curriculum cache invalidation.
+func NewUsecaseWithStore(
+	userRepo user.Repository,
+	langRepo language.Repository,
+	curriculumRepo curriculum.Repository,
+	exerciseRepo exercise.Repository,
+	gamificationRepo gamification.Repository,
+	cacheRepo curriculum.CurriculumCacheRepository,
+	store Store,
+) Usecase {
 	return &usecase{
 		userRepo:         userRepo,
 		langRepo:         langRepo,
@@ -59,6 +67,7 @@ func NewUsecaseWithCache(
 		exerciseRepo:     exerciseRepo,
 		gamificationRepo: gamificationRepo,
 		cacheRepo:        cacheRepo,
+		store:            store,
 		helper:           NewHelper(),
 	}
 }
@@ -74,17 +83,35 @@ func (u *usecase) GetPlacementQuestions(ctx context.Context, languageID string) 
 		return nil, apperror.ErrBadRequest
 	}
 
-	lang, err := u.langRepo.GetLanguageByID(ctx, languageID)
-	if err != nil {
-		return nil, err
+	var (
+		wg        sync.WaitGroup
+		lang      *language.Language
+		langErr   error
+		questions []exercise.Exercise
+		qErr      error
+	)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		lang, langErr = u.langRepo.GetLanguageByID(ctx, languageID)
+	}()
+
+	go func() {
+		defer wg.Done()
+		questions, qErr = u.exerciseRepo.GetPlacementExercises(ctx, languageID, 15)
+	}()
+
+	wg.Wait()
+
+	if langErr != nil {
+		return nil, langErr
 	}
 	if lang == nil {
 		return nil, language.ErrLanguageNotFound
 	}
-
-	questions, err := u.exerciseRepo.GetPlacementExercises(ctx, languageID, 15)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query placement questions: %w", err)
+	if qErr != nil {
+		return nil, fmt.Errorf("failed to query placement questions: %w", qErr)
 	}
 	questions = exercise.SanitizeExercises(questions)
 
@@ -108,26 +135,48 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		return nil, apperror.ErrBadRequest
 	}
 
-	usr, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch user: %w", err)
-	}
-	if usr == nil {
-		return nil, user.ErrUserNotFound
-	}
-	if usr.IsOnboarded {
-		return nil, ErrAlreadyOnboarded
-	}
-
-	// 1. Validate Pace Target
 	if err := u.helper.ValidatePaceTarget(req.DailyGoalMinutes); err != nil {
 		return nil, err
 	}
 
-	// 2. Validate Language
-	lang, err := u.langRepo.GetLanguageByID(ctx, req.LanguageID)
-	if err != nil {
-		return nil, err
+	var (
+		wg        sync.WaitGroup
+		lang      *language.Language
+		langErr   error
+		levels    []language.ProficiencyLevel
+		lvlErr    error
+		questions []exercise.Exercise
+		qErr      error
+		usr       *user.User
+		usrErr    error
+	)
+
+	wg.Add(3)
+	go func() {
+		defer wg.Done()
+		lang, langErr = u.langRepo.GetLanguageByID(ctx, req.LanguageID)
+	}()
+	go func() {
+		defer wg.Done()
+		levels, lvlErr = u.langRepo.GetLevelsByLanguageID(ctx, req.LanguageID)
+	}()
+	go func() {
+		defer wg.Done()
+		if req.InitialPlacementType == "placement_test" && len(req.PlacementAnswers) > 0 {
+			questions, qErr = u.exerciseRepo.GetPlacementExercises(ctx, req.LanguageID, 15)
+		}
+	}()
+	if u.store == nil {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			usr, usrErr = u.userRepo.GetByID(ctx, userID)
+		}()
+	}
+	wg.Wait()
+
+	if langErr != nil {
+		return nil, langErr
 	}
 	if lang == nil {
 		return nil, language.ErrLanguageNotFound
@@ -135,25 +184,21 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 	if !lang.IsActive {
 		return nil, language.ErrLanguageNotActive
 	}
-
-	// 3. Fetch Proficiency Levels for this track
-	levels, err := u.langRepo.GetLevelsByLanguageID(ctx, req.LanguageID)
-	if err != nil || len(levels) == 0 {
+	if lvlErr != nil || len(levels) == 0 {
 		return nil, language.ErrProficiencyLevelNotFound
 	}
 
-	// 4. Evaluate Placement & Level Assignment
 	var placementScore *int
-	if req.InitialPlacementType == "manual_select" {
+	switch req.InitialPlacementType {
+	case "manual_select":
 		if req.ManualLevelID == nil || strings.TrimSpace(*req.ManualLevelID) == "" {
 			return nil, ErrManualLevelRequired
 		}
 		trimmedLevelID := strings.TrimSpace(*req.ManualLevelID)
 		req.ManualLevelID = &trimmedLevelID
-	} else if req.InitialPlacementType == "placement_test" {
+	case "placement_test":
 		score := 0
 		if len(req.PlacementAnswers) > 0 {
-			questions, qErr := u.exerciseRepo.GetPlacementExercises(ctx, req.LanguageID, 15)
 			if qErr != nil {
 				return nil, fmt.Errorf("failed to fetch placement exercises for grading: %w", qErr)
 			}
@@ -170,15 +215,43 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		}
 		return 0
 	}())
-
 	if assignedLevel == nil {
 		if req.InitialPlacementType == "manual_select" {
 			return nil, language.ErrProficiencyLevelNotFound
 		}
-		assignedLevel = &levels[0]
+		assignedLevel = u.helper.ResolveTargetLevel(levels, "zero_beginner", nil, 0)
 	}
 
-	// 5. Record Language Enrollment first so concurrent duplicate requests fail before mutating lesson progress
+	if u.store != nil {
+		res, err := u.store.CompleteOnboardingTx(ctx, &CompleteOnboardingTxParams{
+			UserID:                userID,
+			Language:              lang,
+			AssignedLevel:         assignedLevel,
+			DailyGoalMinutes:      req.DailyGoalMinutes,
+			InitialPlacementType:  req.InitialPlacementType,
+			PlacementScorePercent: placementScore,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if u.cacheRepo != nil {
+			if invErr := u.cacheRepo.InvalidateCurriculum(ctx, userID); invErr != nil {
+				log.Printf("onboarding: failed to invalidate curriculum cache for user %s: %v", userID, invErr)
+			}
+		}
+		return res, nil
+	}
+
+	if usrErr != nil {
+		return nil, fmt.Errorf("failed to fetch user: %w", usrErr)
+	}
+	if usr == nil {
+		return nil, user.ErrUserNotFound
+	}
+	if usr.IsOnboarded {
+		return nil, ErrAlreadyOnboarded
+	}
+
 	enrollment := &language.UserLanguageEnrollment{
 		UserID:                userID,
 		LanguageID:            req.LanguageID,
@@ -186,13 +259,14 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		InitialPlacementType:  req.InitialPlacementType,
 		PlacementScorePercent: placementScore,
 		IsActive:              true,
+		Language:              lang,
+		CurrentLevel:          assignedLevel,
 		EnrolledAt:            time.Now().UTC(),
 	}
 	if err := u.langRepo.CreateEnrollment(ctx, enrollment); err != nil {
 		return nil, fmt.Errorf("failed to enroll in language track: %w", err)
 	}
 
-	// 6. If placed into Level > 1, skip prior curriculum lessons in batch and invalidate curriculum cache
 	if assignedLevel.OrderIndex > 1 {
 		if err := u.curriculumRepo.SkipPrecedingLessons(ctx, userID, assignedLevel.OrderIndex, req.LanguageID); err != nil {
 			return nil, fmt.Errorf("failed to skip preceding curriculum lessons: %w", err)
@@ -204,12 +278,10 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		}
 	}
 
-	// 7. Update User Profile Onboarded Status
 	if err := u.userRepo.SetOnboarded(ctx, userID, req.DailyGoalMinutes); err != nil {
 		return nil, fmt.Errorf("failed to update user onboarded status: %w", err)
 	}
 
-	// 8. Award Welcome XP Bonus (+50 XP) and Badge without resetting existing streak
 	const welcomeBonusXP = 50
 	now := time.Now().UTC()
 	newXP := usr.XP + welcomeBonusXP
@@ -236,7 +308,7 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 	badge, err := u.gamificationRepo.AwardBadge(ctx, userID, "akihabara_novice", newLevel)
 	if err != nil {
 		log.Printf("[WARN] [onboarding.CompleteOnboarding] failed to award onboarding badge for user %s: %v", userID, err)
-	} else if badge != nil && badge.Badge != nil {
+	} else if badge != nil && badge.Badge != nil && badge.NewlyAwarded {
 		awardedBadges = append(awardedBadges, *badge.Badge)
 		if badge.Badge.XPReward > 0 {
 			newXP += badge.Badge.XPReward
@@ -255,6 +327,7 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 			Name:                 usr.Name,
 			Username:             usr.Username,
 			Bio:                  usr.Bio,
+			AvatarURL:            usr.AvatarURL,
 			DailyGoalMinutes:     req.DailyGoalMinutes,
 			IsOnboarded:          true,
 			HasSeenRoadmapTour:   usr.HasSeenRoadmapTour,

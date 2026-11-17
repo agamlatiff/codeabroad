@@ -8,25 +8,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func isValidUUID(s string) bool {
-	if len(s) != 36 {
-		return false
-	}
-	for i := 0; i < 36; i++ {
-		if i == 8 || i == 13 || i == 18 || i == 23 {
-			if s[i] != '-' {
-				return false
-			}
-			continue
-		}
-		c := s[i]
-		if !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')) {
-			return false
-		}
-	}
-	return true
-}
-
 const (
 	// DefaultOnboardingCompleteLimit caps onboarding completion attempts per user per minute
 	DefaultOnboardingCompleteLimit = 10
@@ -67,7 +48,7 @@ func (h *Handler) GetLanguages(c *gin.Context) {
 // GetPlacementQuestions handles GET /api/v1/onboarding/placement-questions/:language_id
 func (h *Handler) GetPlacementQuestions(c *gin.Context) {
 	languageID := c.Param("language_id")
-	if !isValidUUID(languageID) {
+	if !apperror.IsValidUUID(languageID) {
 		response.BadRequest(c, "language_id harus berupa UUID yang valid")
 		return
 	}
@@ -90,8 +71,7 @@ func (h *Handler) CompleteOnboarding(c *gin.Context) {
 	}
 
 	var req OnboardingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid onboarding submission payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -112,10 +92,12 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		onboardingPublic.GET("/placement-questions/:language_id", h.GetPlacementQuestions)
 	}
 
-	onboardingProtected := rg.Group("/onboarding")
-	if authMiddleware != nil {
-		onboardingProtected.Use(authMiddleware)
+	if authMiddleware == nil {
+		panic("onboarding handler requires non-nil authMiddleware")
 	}
+
+	onboardingProtected := rg.Group("/onboarding")
+	onboardingProtected.Use(authMiddleware)
 	{
 		if h.completeLimiter != nil {
 			onboardingProtected.POST("", h.completeLimiter, h.CompleteOnboarding)

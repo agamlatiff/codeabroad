@@ -79,8 +79,30 @@ func (h *Handler) GetUserEnrollments(c *gin.Context) {
 	response.Success(c, http.StatusOK, "user enrollments retrieved successfully", enrollments)
 }
 
-type switchLanguageRequest struct {
+type languageMutationRequest struct {
 	LanguageID string `json:"language_id" binding:"required,uuid"`
+}
+
+// EnrollLanguage handles POST /api/v1/languages/enroll
+func (h *Handler) EnrollLanguage(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	var req languageMutationRequest
+	if !response.BindJSON(c, &req) {
+		return
+	}
+
+	enrollment, err := h.langUsecase.EnrollLanguage(c.Request.Context(), userID, req.LanguageID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusCreated, "enrolled in language track successfully", enrollment)
 }
 
 // SwitchActiveLanguage handles POST /api/v1/languages/switch
@@ -91,9 +113,8 @@ func (h *Handler) SwitchActiveLanguage(c *gin.Context) {
 		return
 	}
 
-	var req switchLanguageRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid language switch payload", nil))
+	var req languageMutationRequest
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -108,15 +129,18 @@ func (h *Handler) SwitchActiveLanguage(c *gin.Context) {
 
 // RegisterRoutes registers language public and protected HTTP endpoints
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
-	langProtected := rg.Group("/languages")
-	if authMiddleware != nil {
-		langProtected.Use(authMiddleware)
+	if authMiddleware == nil {
+		panic("language.Handler.RegisterRoutes requires non-nil authMiddleware")
 	}
+	langProtected := rg.Group("/languages")
+	langProtected.Use(authMiddleware)
 	{
 		langProtected.GET("/enrollments", h.GetUserEnrollments)
 		if h.mutationLimiter != nil {
+			langProtected.POST("/enroll", h.mutationLimiter, h.EnrollLanguage)
 			langProtected.POST("/switch", h.mutationLimiter, h.SwitchActiveLanguage)
 		} else {
+			langProtected.POST("/enroll", h.EnrollLanguage)
 			langProtected.POST("/switch", h.SwitchActiveLanguage)
 		}
 	}

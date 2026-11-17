@@ -153,6 +153,7 @@ type LessonAttemptSummary struct {
 // LessonCompletionPayload encapsulates data required to record lesson completion atomically in a single transaction
 type LessonCompletionPayload struct {
 	Progress       *UserLessonProgress `json:"progress"`
+	SessionScore   int                 `json:"-"`
 	XPEarned       int                 `json:"xp_earned"`
 	NewXP          int                 `json:"new_xp"`
 	NewLevel       int                 `json:"new_level"`
@@ -171,6 +172,8 @@ type LessonCompletionPayload struct {
 // CompleteLessonResponse returns updated progression, gamification rewards, and the next unlocked node
 type CompleteLessonResponse struct {
 	Progress             UserLessonProgress             `json:"progress"`
+	SessionScore         *int                           `json:"session_score,omitempty"`
+	XPEarned             int                            `json:"xp_earned"`
 	Gamification         user.UserGamificationStats     `json:"gamification"`
 	UnlockedNextLessonID *string                        `json:"unlocked_next_lesson_id,omitempty"`
 	AwardedBadges        []gamification.BadgeDefinition `json:"awarded_badges,omitempty"`

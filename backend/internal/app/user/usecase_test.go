@@ -46,10 +46,17 @@ func TestClaimDailyReward_Success(t *testing.T) {
 			XP:           50,
 			CurrentLevel: 1,
 			Streak:       3,
+			Gems:         10,
 		},
 	}
 
 	uc := user.NewUsecase(repo)
+
+	// Golden chest must fail before daily XP threshold (50 XP) is reached
+	if _, err := uc.ClaimDailyReward(context.Background(), "user-123", "golden_chest"); !errors.Is(err, user.ErrDailyRewardNotUnlocked) {
+		t.Fatalf("expected ErrDailyRewardNotUnlocked before earning daily XP, got %v", err)
+	}
+
 	res, err := uc.ClaimDailyReward(context.Background(), "user-123", "vocab_quest")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
@@ -61,13 +68,23 @@ func TestClaimDailyReward_Success(t *testing.T) {
 		t.Errorf("expected 80 XP, got %d", res.CurrentXP)
 	}
 
-	// Golden chest should award 50 XP and bump level from 1 (80 XP) to 2 (130 XP)
+	// Simulate completing a 20 XP lesson today so daily XP reaches 30 + 20 = 50 XP
+	_ = repo.LogActivity(context.Background(), &user.UserActivityLog{
+		UserID:       "user-123",
+		ActivityType: "lesson_completed",
+		XPEarned:     20,
+	})
+
+	// Golden chest should award 50 XP + 20 Gems and bump level from 1 (80 XP) to 2 (130 XP)
 	chestRes, err := uc.ClaimDailyReward(context.Background(), "user-123", "golden_chest")
 	if err != nil {
 		t.Fatalf("expected no error for golden_chest, got %v", err)
 	}
-	if chestRes.XPAwarded != 50 {
-		t.Errorf("expected 50 XP, got %d", chestRes.XPAwarded)
+	if chestRes.XPAwarded != 50 || chestRes.GemsAwarded != 20 {
+		t.Errorf("expected 50 XP and 20 Gems, got %d XP and %d Gems", chestRes.XPAwarded, chestRes.GemsAwarded)
+	}
+	if chestRes.CurrentGems != 30 {
+		t.Errorf("expected 30 Gems total, got %d", chestRes.CurrentGems)
 	}
 	if chestRes.CurrentLevel != 2 {
 		t.Errorf("expected level 2 at 130 XP, got %d", chestRes.CurrentLevel)

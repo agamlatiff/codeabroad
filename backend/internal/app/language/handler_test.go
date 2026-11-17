@@ -112,3 +112,19 @@ func TestHTTP_GetUserEnrollments(t *testing.T) {
 	}
 }
 
+func TestHTTP_EnrollLanguage(t *testing.T) {
+	r, _ := setupLanguageTestRouter()
+	body, _ := json.Marshal(map[string]string{
+		"language_id": "11111111-1111-1111-1111-111111111111",
+	})
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/languages/enroll", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusCreated {
+		t.Fatalf("expected 201 Created for /languages/enroll, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+

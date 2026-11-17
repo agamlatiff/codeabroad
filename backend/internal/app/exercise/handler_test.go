@@ -8,6 +8,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"codeabroad/backend/internal/app/exercise"
 	"codeabroad/backend/internal/app/language"
@@ -55,6 +56,12 @@ func setupExerciseTestRouter() (*gin.Engine, *exercise.MockRepository, *exercise
 	}
 	exerciseRepo.ReadinessExamExercises[lvlID] = []exercise.Exercise{
 		*exerciseRepo.Exercises[exID],
+	}
+	srsRepo.Reviews["usr-123:"+exID] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "usr-123",
+		ExerciseID:   exID,
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
 	}
 
 	uc := exercise.NewUsecaseWithAccessChecker(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
@@ -302,7 +309,7 @@ func TestHTTP_RateLimiter_ExercisesSubmitReturns429(t *testing.T) {
 }
 
 func TestHTTP_RateLimiter_SRSReviewReturns429(t *testing.T) {
-	r, _, _, _ := setupExerciseTestRouter()
+	r, _, srsRepo, _ := setupExerciseTestRouter()
 
 	q := 4
 	body, _ := json.Marshal(exercise.SubmitSRSReviewRequest{
@@ -311,6 +318,7 @@ func TestHTTP_RateLimiter_SRSReviewReturns429(t *testing.T) {
 	})
 
 	for i := 0; i < 30; i++ {
+		srsRepo.Reviews["usr-123:44444444-4444-4444-4444-444444444444"].NextReviewAt = time.Now().UTC().Add(-time.Hour)
 		req, _ := http.NewRequest(http.MethodPost, "/api/v1/srs/review", bytes.NewBuffer(body))
 		req.Header.Set("Content-Type", "application/json")
 		w := httptest.NewRecorder()

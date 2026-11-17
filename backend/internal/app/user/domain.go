@@ -11,6 +11,7 @@ import (
 var (
 	ErrUserNotFound              = apperror.NewNotFoundError("USER_NOT_FOUND", "user not found")
 	ErrDailyRewardAlreadyClaimed = apperror.NewConflictError("DAILY_REWARD_CLAIMED", "hadiah hari ini sudah diklaim sebelumnya")
+	ErrDailyRewardNotUnlocked    = apperror.NewBadRequestError("DAILY_REWARD_NOT_UNLOCKED", "target XP harian belum tercapai untuk membuka peti hadiah", nil)
 	ErrEmailAlreadyExists        = apperror.NewConflictError("EMAIL_ALREADY_EXISTS", "email sudah terdaftar")
 	ErrUsernameTaken             = apperror.NewConflictError("USERNAME_TAKEN", "username sudah digunakan")
 )
@@ -33,6 +34,7 @@ type UserProfile struct {
 	Name                 string  `json:"name"`
 	Username             string  `json:"username"`
 	Bio                  *string `json:"bio"`
+	AvatarURL            *string `json:"avatar_url,omitempty"`
 	DailyGoalMinutes     int     `json:"daily_goal_minutes"`
 	IsOnboarded          bool    `json:"is_onboarded"`
 	HasSeenRoadmapTour   bool    `json:"has_seen_roadmap_tour"`
@@ -73,6 +75,7 @@ type UserActivityLog struct {
 type UpdateProfileRequest struct {
 	Name                 *string `json:"name"`
 	Bio                  *string `json:"bio"`
+	AvatarURL            *string `json:"avatar_url"`
 	DailyGoalMinutes     *int    `json:"daily_goal_minutes" binding:"omitempty,oneof=5 15 30 45"`
 	HasSeenRoadmapTour   *bool   `json:"has_seen_roadmap_tour"`
 	PreferredRoadmapView *string `json:"preferred_roadmap_view" binding:"omitempty,oneof=map syllabus"`
@@ -113,8 +116,10 @@ type DailyRewardClaimRequest struct {
 type DailyRewardClaimResponse struct {
 	RewardType   string `json:"reward_type"`
 	XPAwarded    int    `json:"xp_awarded"`
+	GemsAwarded  int    `json:"gems_awarded"`
 	CurrentXP    int    `json:"current_xp"`
 	CurrentLevel int    `json:"current_level"`
+	CurrentGems  int    `json:"current_gems"`
 	Streak       int    `json:"streak"`
 	ClaimedAt    string `json:"claimed_at"`
 }
@@ -152,7 +157,7 @@ type ActivityRepository interface {
 	HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error)
 	EnsureDailyLogin(ctx context.Context, userID string, dateStr string, startTime time.Time, endTime time.Time) (bool, error)
 	GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]DailyActivityStat, error)
-	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error)
+	ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, gemsAwarded int) (*DailyRewardClaimResponse, error)
 	GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error)
 }
 

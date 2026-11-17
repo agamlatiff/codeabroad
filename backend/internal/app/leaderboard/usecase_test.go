@@ -3,6 +3,7 @@ package leaderboard_test
 import (
 	"context"
 	"testing"
+	"time"
 
 	"codeabroad/backend/internal/app/leaderboard"
 )
@@ -62,6 +63,48 @@ func TestGetWeeklyLeaderboard_NormalizesInvalidDivisionAndOutOfTopZone(t *testin
 	}
 	if res.UserRank.Zone != "demotion" {
 		t.Errorf("expected rank 13 zone to be 'demotion', got %q", res.UserRank.Zone)
+	}
+}
+
+func TestGetWeeklyLeaderboard_UniversalDivisionsAliasesPrivacyAndSundayReset(t *testing.T) {
+	repo := leaderboard.NewMockRepository()
+	repo.Standings = []leaderboard.LeaderboardEntry{
+		{UserID: "user-1", Username: "mina", TotalXP: 450, WeeklyXP: 120},
+	}
+	repo.UserStandings["user-1"] = &leaderboard.LeaderboardEntry{
+		UserID:   "user-1",
+		Username: "mina",
+		TotalXP:  450,
+		WeeklyXP: 120,
+	}
+
+	uc := leaderboard.NewUsecase(repo)
+
+	// Empty division auto-selects silver for user with 450 TotalXP
+	autoRes, err := uc.GetWeeklyLeaderboard(context.Background(), "user-1", "")
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if autoRes.Division != leaderboard.DivisionSilver || autoRes.DivisionName != "Liga Perak" {
+		t.Fatalf("expected auto-selected silver division, got %q (%s)", autoRes.Division, autoRes.DivisionName)
+	}
+
+	// Legacy station alias maps cleanly and public callers do not receive raw UserIDs
+	aliasRes, err := uc.GetWeeklyLeaderboard(context.Background(), "", leaderboard.LeagueDivision("shibuya"))
+	if err != nil {
+		t.Fatalf("expected no error for legacy alias, got %v", err)
+	}
+	if aliasRes.Division != leaderboard.DivisionSilver {
+		t.Fatalf("expected shibuya alias to normalize to silver, got %q", aliasRes.Division)
+	}
+	if len(aliasRes.Entries) != 1 || aliasRes.Entries[0].UserID != "" {
+		t.Fatalf("expected unauthenticated response to redact UserID, got %+v", aliasRes.Entries)
+	}
+
+	helper := leaderboard.NewHelper()
+	sunday := time.Date(2026, 11, 15, 10, 0, 0, 0, time.UTC)
+	if days := helper.CalculateDaysUntilSundayReset(sunday); days != 0 {
+		t.Errorf("expected 0 full days remaining on Sunday, got %d", days)
 	}
 }
 

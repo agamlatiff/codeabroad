@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sync"
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
@@ -63,17 +64,35 @@ func (u *usecase) GetActivityLogs(ctx context.Context, userID string) (*UserActi
 		log.Printf("[WARN] [user.GetActivityLogs] failed to ensure daily login for user %s: %v", userID, err)
 	}
 
-	usr, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch user for activity logs: %w", err)
+	var (
+		wg         sync.WaitGroup
+		usr        *User
+		usrErr     error
+		dailyStats map[string]DailyActivityStat
+		statsErr   error
+	)
+	wg.Add(2)
+
+	go func() {
+		defer wg.Done()
+		usr, usrErr = u.userRepo.GetByID(ctx, userID)
+	}()
+
+	go func() {
+		defer wg.Done()
+		dailyStats, statsErr = u.userRepo.GetDailyActivityStatsSince(ctx, userID, calendarStart)
+	}()
+
+	wg.Wait()
+
+	if usrErr != nil {
+		return nil, fmt.Errorf("failed to fetch user for activity logs: %w", usrErr)
 	}
 	if usr == nil {
 		return nil, ErrUserNotFound
 	}
-
-	dailyStats, err := u.userRepo.GetDailyActivityStatsSince(ctx, userID, calendarStart)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get daily activity stats: %w", err)
+	if statsErr != nil {
+		return nil, fmt.Errorf("failed to get daily activity stats: %w", statsErr)
 	}
 
 	return u.helper.BuildWeeklyActivitySummary(usr.Streak, usr.LastActiveAt, dailyStats, now), nil
@@ -85,20 +104,12 @@ func (u *usecase) ClaimDailyReward(ctx context.Context, userID string, rewardTyp
 		return nil, apperror.ErrUnauthorized
 	}
 
-	xpAwarded, err := u.helper.ResolveDailyRewardXP(rewardType)
+	xpAwarded, gemsAwarded, err := u.helper.ResolveDailyReward(rewardType)
 	if err != nil {
 		return nil, err
 	}
 
-	usr, err := u.userRepo.GetByID(ctx, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to fetch user: %w", err)
-	}
-	if usr == nil {
-		return nil, ErrUserNotFound
-	}
-
-	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded)
+	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded, gemsAwarded)
 }
 
 // GetDailyRewardsStatus checks reward claim status for the authenticated user

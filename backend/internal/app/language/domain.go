@@ -63,7 +63,6 @@ type UserLanguageEnrollment struct {
 type Repository interface {
 	GetAllLanguages(ctx context.Context, onlyActive bool) ([]Language, error)
 	GetLanguageByID(ctx context.Context, id string) (*Language, error)
-	GetLanguageByCode(ctx context.Context, code string) (*Language, error)
 	GetLevelsByLanguageID(ctx context.Context, languageID string) ([]ProficiencyLevel, error)
 	GetLevelByID(ctx context.Context, id string) (*ProficiencyLevel, error)
 	GetEnrollmentsByUserID(ctx context.Context, userID string) ([]UserLanguageEnrollment, error)
@@ -79,6 +78,7 @@ type Usecase interface {
 	ListLanguages(ctx context.Context) ([]Language, error)
 	GetLanguageDetails(ctx context.Context, languageID string) (*Language, []ProficiencyLevel, error)
 	GetUserEnrollments(ctx context.Context, userID string) ([]UserLanguageEnrollment, error)
+	EnrollLanguage(ctx context.Context, userID string, languageID string) (*UserLanguageEnrollment, error)
 	SwitchActiveLanguage(ctx context.Context, userID string, languageID string) (*UserLanguageEnrollment, error)
 }
 

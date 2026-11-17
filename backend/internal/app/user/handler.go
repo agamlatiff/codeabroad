@@ -70,8 +70,7 @@ func (h *Handler) UpdateProfile(c *gin.Context) {
 	}
 
 	var req UpdateProfileRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid profile update payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -110,8 +109,7 @@ func (h *Handler) ClaimDailyReward(c *gin.Context) {
 	}
 
 	var req DailyRewardClaimRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid daily reward claim payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -143,6 +141,9 @@ func (h *Handler) GetDailyRewardsStatus(c *gin.Context) {
 
 // RegisterRoutes registers protected /users routes
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+	if authMiddleware == nil {
+		panic("user handler requires non-nil authMiddleware")
+	}
 	users := rg.Group("/users")
 	users.Use(authMiddleware)
 	{

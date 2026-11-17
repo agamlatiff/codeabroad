@@ -194,7 +194,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	return lessons, nil
 }
 
-// GetLessonByID retrieves a single lesson with user progress and child exercises
+// GetLessonByID retrieves a single lesson with user progress and sequential unlock status
 func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
 	if err := apperror.ValidateEntityUUID(id); err != nil {
 		return nil, err
@@ -202,22 +202,23 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
-	lessonQuery := `
+	lessonQuery := targetCurriculumLessonCTESQL + `
 		SELECT 
 			l.id, l.unit_id, u.level_id, u.unit_type, l.title, l.xp_reward, l.order_index, l.created_at,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
-			ulp.completed_at
-		FROM lessons l
-		JOIN units u ON l.unit_id = u.id
+			ulp.completed_at,
+			` + curriculumUnlockPredicateSQL + ` AS is_unlocked
+		FROM target_lesson tl
+		JOIN lessons l ON l.id = tl.id
+		JOIN units u ON u.id = tl.unit_id
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
-		WHERE l.id = $1::uuid AND u.unit_type = 'curriculum'
 	`
 	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
 		&l.ID, &l.UnitID, &l.LevelID, &l.UnitType, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
-		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
+		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt, &l.IsUnlocked,
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -332,6 +333,33 @@ func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string
 		return false, fmt.Errorf("failed to verify lesson unlock invariant: %w", err)
 	}
 	return isUnlocked, nil
+}
+
+// IsLevelCurriculumCompleted reports whether every curriculum lesson in levelID has been completed by userID.
+func (r *PostgresRepository) IsLevelCurriculumCompleted(ctx context.Context, userID string, levelID string) (bool, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return false, err
+	}
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return false, err
+	}
+	query := `
+		SELECT NOT EXISTS (
+			SELECT 1
+			FROM lessons l
+			JOIN units u ON l.unit_id = u.id
+			LEFT JOIN user_lesson_progress ulp
+			  ON l.id = ulp.lesson_id AND ulp.user_id = $1::uuid
+			WHERE u.level_id = $2::uuid
+			  AND u.unit_type = 'curriculum'
+			  AND COALESCE(ulp.is_completed, false) = false
+		)
+	`
+	var completed bool
+	if err := r.db.Pool.QueryRow(ctx, query, userID, levelID).Scan(&completed); err != nil {
+		return false, fmt.Errorf("failed to check level curriculum completion: %w", err)
+	}
+	return completed, nil
 }
 
 // SkipPrecedingLessons marks all prior curriculum lessons up to a target proficiency level as completed and skipped
@@ -469,6 +497,7 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		return err
 	}
 	payload.Progress.Score = verifiedScore
+	payload.SessionScore = verifiedScore
 	if payload.Metadata == nil {
 		payload.Metadata = make(map[string]any)
 	}
@@ -476,6 +505,7 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 	payload.Metadata["score"] = verifiedScore
 	payload.Metadata["is_practice"] = payload.WasCompleted
 
+	failedReplay := payload.WasCompleted && verifiedScore < minLessonPassScore
 	if payload.WasCompleted {
 		payload.XPEarned = helper.CalculateReplayXP(verifiedScore)
 		payload.Metadata["is_practice"] = true
@@ -537,7 +567,19 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		return fmt.Errorf("failed to upsert user lesson progress in tx: %w", err)
 	}
 
-	// 4. Recompute streak & level via shared domain helper from locked DB state
+	// 4. Failed replays (<60%) do not extend streak, overwrite last_active_at, or write quest-eligible activity logs
+	if failedReplay {
+		payload.NewXP = lockedXP
+		payload.NewLevel = helper.CalculateLevel(lockedXP)
+		payload.NewStreak = lockedStreak
+		payload.NewGems = lockedGems
+		if lockedLastActiveAt != nil {
+			payload.LastActiveAt = lockedLastActiveAt.UTC()
+		}
+		return tx.Commit(ctx)
+	}
+
+	// Recompute streak & level via shared domain helper from locked DB state
 	newStreak, _ := helper.EvaluateDailyStreak(lockedStreak, lockedLastActiveAt, payload.LastActiveAt)
 	newLevel := helper.CalculateLevel(lockedXP + payload.XPEarned)
 

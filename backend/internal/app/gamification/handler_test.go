@@ -22,6 +22,7 @@ func setupGamificationTestRouter() (*gin.Engine, *gamification.MockRepository) {
 		Streak:       3,
 		Gems:         300,
 	}
+	gamificationRepo.DailyQuestsDone["usr-123"] = 3
 	itemID := "item-freeze"
 	gamificationRepo.ShopItems[itemID] = &gamification.ShopItem{
 		ID:          itemID,

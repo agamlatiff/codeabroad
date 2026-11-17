@@ -5,7 +5,10 @@ import (
 	"sort"
 	"strings"
 	"time"
+	"unicode"
 	"unicode/utf8"
+
+	"codeabroad/backend/internal/shared/progression"
 )
 
 func normalizeLimit(limit int, defaultLimit int, maxLimit int) int {
@@ -19,12 +22,23 @@ func normalizeLimit(limit int, defaultLimit int, maxLimit int) int {
 }
 
 var comparablePunctuationReplacer = strings.NewReplacer(
+	"ß", "ss",
+	"ẞ", "ss",
+	"\u3000", " ",
 	"。", " ",
 	"、", " ",
 	"？", " ",
 	"！", " ",
 	"「", " ",
 	"」", " ",
+	"・", " ",
+	"«", " ",
+	"»", " ",
+	"„", " ",
+	"“", " ",
+	"”", " ",
+	"’", "'",
+	"‘", "'",
 	".", " ",
 	",", " ",
 	"?", " ",
@@ -32,12 +46,23 @@ var comparablePunctuationReplacer = strings.NewReplacer(
 	"\"", " ",
 )
 
+func containsCJK(s string) bool {
+	for _, r := range s {
+		if unicode.In(r, unicode.Han, unicode.Hiragana, unicode.Katakana) {
+			return true
+		}
+	}
+	return false
+}
+
 func normalizeComparableAnswer(raw string) (withSpaces string, collapsed string) {
 	cleaned := strings.ToLower(strings.TrimSpace(raw))
 	cleaned = comparablePunctuationReplacer.Replace(cleaned)
 	fields := strings.Fields(cleaned)
 	withSpaces = strings.Join(fields, " ")
-	collapsed = strings.Join(fields, "")
+	if containsCJK(cleaned) {
+		collapsed = strings.Join(fields, "")
+	}
 	return withSpaces, collapsed
 }
 
@@ -79,10 +104,22 @@ func (h *Helper) CalculateSM2(
 	prevEaseFactor float64,
 	now time.Time,
 ) SM2Result {
+	if quality < 0 {
+		quality = 0
+	} else if quality > 5 {
+		quality = 5
+	}
 	if prevEaseFactor <= 0 {
 		prevEaseFactor = 2.5
 	} else if prevEaseFactor < 1.3 {
 		prevEaseFactor = 1.3
+	}
+
+	// SM-2 updates Ease Factor (EF') first so intervals >= 2 use the newly revised ease factor.
+	qDiff := 5.0 - float64(quality)
+	easeFactor := prevEaseFactor + (0.1 - qDiff*(0.08+qDiff*0.02))
+	if easeFactor < 1.3 {
+		easeFactor = 1.3
 	}
 
 	var repetitions int
@@ -94,7 +131,7 @@ func (h *Helper) CalculateSM2(
 		} else if prevRepetitions == 1 {
 			intervalDays = 6
 		} else {
-			intervalDays = int(math.Round(float64(prevIntervalDays) * prevEaseFactor))
+			intervalDays = int(math.Round(float64(prevIntervalDays) * easeFactor))
 			if intervalDays <= prevIntervalDays {
 				intervalDays = prevIntervalDays + 1
 			}
@@ -105,13 +142,9 @@ func (h *Helper) CalculateSM2(
 		intervalDays = 1
 	}
 
-	qDiff := 5.0 - float64(quality)
-	easeFactor := prevEaseFactor + (0.1 - qDiff*(0.08+qDiff*0.02))
-	if easeFactor < 1.3 {
-		easeFactor = 1.3
-	}
-
-	dueDate := now.AddDate(0, 0, intervalDays)
+	loc := progression.WIBLocation
+	wibTarget := now.In(loc).AddDate(0, 0, intervalDays)
+	dueDate := time.Date(wibTarget.Year(), wibTarget.Month(), wibTarget.Day(), 0, 0, 0, 0, loc).UTC()
 
 	return SM2Result{
 		Repetitions:  repetitions,
@@ -168,7 +201,8 @@ func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer str
 		}
 	}
 
-	userFields := strings.Fields(lowerUser)
+	cleanedUser := comparablePunctuationReplacer.Replace(lowerUser)
+	userFields := strings.Fields(cleanedUser)
 	for _, k := range keys {
 		lowerKey := strings.ToLower(strings.TrimSpace(k))
 		if lowerKey == "" {
@@ -176,12 +210,13 @@ func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer str
 		}
 		matched := false
 		for _, token := range userFields {
-			if token == lowerKey {
+			trimmedToken := strings.TrimFunc(token, unicode.IsPunct)
+			if token == lowerKey || (trimmedToken != "" && trimmedToken == lowerKey) {
 				matched = true
 				break
 			}
 		}
-		if !matched && utf8.RuneCountInString(lowerKey) >= 2 && strings.Contains(lowerUser, lowerKey) {
+		if !matched && containsCJK(lowerKey) && utf8.RuneCountInString(lowerKey) >= 2 && strings.Contains(lowerUser, lowerKey) {
 			matched = true
 		}
 		if matched {

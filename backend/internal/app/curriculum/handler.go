@@ -107,6 +107,15 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 	var req CompleteLessonRequest
 	if c.Request.Body != nil && c.Request.Body != http.NoBody {
 		if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
+			var maxBytesErr *http.MaxBytesError
+			if errors.As(err, &maxBytesErr) {
+				c.JSON(http.StatusRequestEntityTooLarge, response.ErrorResponse{
+					Success: false,
+					Error:   "ukuran payload request melebihi batas maksimal yang diizinkan",
+					Code:    "PAYLOAD_TOO_LARGE",
+				})
+				return
+			}
 			response.BadRequest(c, completeLessonBindErrorMessage(err))
 			return
 		}
@@ -172,10 +181,11 @@ func (h *Handler) GetGrammarPoints(c *gin.Context) {
 
 // RegisterRoutes registers curriculum routes under the protected group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
-	curriculum := rg.Group("/curriculum")
-	if authMiddleware != nil {
-		curriculum.Use(authMiddleware)
+	if authMiddleware == nil {
+		panic("curriculum.Handler.RegisterRoutes requires non-nil authMiddleware")
 	}
+	curriculum := rg.Group("/curriculum")
+	curriculum.Use(authMiddleware)
 	completeRateLimiter := h.completeRateLimiter
 	if completeRateLimiter == nil {
 		completeRateLimiter = middleware.UserOrIPRateLimitMiddleware(

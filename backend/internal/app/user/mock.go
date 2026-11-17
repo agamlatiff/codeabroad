@@ -3,13 +3,16 @@ package user
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 )
 
 // MockRepository implements Repository for unit testing
 type MockRepository struct {
+	mu                    sync.Mutex
 	Users                 map[string]*User
 	ActivityLogs          []UserActivityLog
 	DailyRewardsStatus    map[string]*DailyRewardsStatusResponse
@@ -36,6 +39,8 @@ func NewMockRepository() *MockRepository {
 var _ Repository = (*MockRepository)(nil)
 
 func (m *MockRepository) Create(ctx context.Context, u *User) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.CreateError != nil {
 		return m.CreateError
 	}
@@ -47,30 +52,38 @@ func (m *MockRepository) Create(ctx context.Context, u *User) error {
 }
 
 func (m *MockRepository) GetByEmail(ctx context.Context, email string) (*User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.GetByEmailError != nil {
 		return nil, m.GetByEmailError
 	}
 	for _, u := range m.Users {
 		if u.Email == email {
-			return u, nil
+			cp := *u
+			return &cp, nil
 		}
 	}
 	return nil, nil
 }
 
 func (m *MockRepository) GetByUsername(ctx context.Context, username string) (*User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.GetByUsernameError != nil {
 		return nil, m.GetByUsernameError
 	}
 	for _, u := range m.Users {
 		if u.Username == username {
-			return u, nil
+			cp := *u
+			return &cp, nil
 		}
 	}
 	return nil, nil
 }
 
 func (m *MockRepository) GetByID(ctx context.Context, id string) (*User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.GetByIDError != nil {
 		return nil, m.GetByIDError
 	}
@@ -78,10 +91,13 @@ func (m *MockRepository) GetByID(ctx context.Context, id string) (*User, error) 
 	if !ok {
 		return nil, nil
 	}
-	return u, nil
+	cp := *u
+	return &cp, nil
 }
 
 func (m *MockRepository) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.UpdateProfileError != nil {
 		return nil, m.UpdateProfileError
 	}
@@ -95,6 +111,14 @@ func (m *MockRepository) UpdateProfile(ctx context.Context, userID string, req *
 	if req.Bio != nil {
 		u.Bio = req.Bio
 	}
+	if req.AvatarURL != nil {
+		if *req.AvatarURL == "" {
+			u.AvatarURL = nil
+		} else {
+			v := *req.AvatarURL
+			u.AvatarURL = &v
+		}
+	}
 	if req.DailyGoalMinutes != nil {
 		u.DailyGoalMinutes = *req.DailyGoalMinutes
 	}
@@ -104,10 +128,13 @@ func (m *MockRepository) UpdateProfile(ctx context.Context, userID string, req *
 	if req.PreferredRoadmapView != nil {
 		u.PreferredRoadmapView = *req.PreferredRoadmapView
 	}
-	return u, nil
+	cp := *u
+	return &cp, nil
 }
 
 func (m *MockRepository) SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.SetOnboardedError != nil {
 		return m.SetOnboardedError
 	}
@@ -121,6 +148,8 @@ func (m *MockRepository) SetOnboarded(ctx context.Context, userID string, dailyG
 }
 
 func (m *MockRepository) UpdateGamification(ctx context.Context, userID string, xp int, currentLevel int, streak int, lastActiveAt *time.Time) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.UpdateGamificationErr != nil {
 		return m.UpdateGamificationErr
 	}
@@ -136,6 +165,8 @@ func (m *MockRepository) UpdateGamification(ctx context.Context, userID string, 
 }
 
 func (m *MockRepository) AddGems(ctx context.Context, userID string, gems int) (int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.AddGemsError != nil {
 		return 0, m.AddGemsError
 	}
@@ -144,43 +175,68 @@ func (m *MockRepository) AddGems(ctx context.Context, userID string, gems int) (
 		return 0, apperror.ErrNotFound
 	}
 	u.Gems += gems
+	if u.Gems < 0 {
+		u.Gems = 0
+	}
 	return u.Gems, nil
 }
 
 func (m *MockRepository) LogActivity(ctx context.Context, log *UserActivityLog) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.LogActivityError != nil {
 		return m.LogActivityError
 	}
-	m.ActivityLogs = append(m.ActivityLogs, *log)
+	now := log.CreatedAt
+	if now.IsZero() {
+		now = time.Now().UTC()
+	}
+	cp := *log
+	cp.CreatedAt = now
+	m.ActivityLogs = append(m.ActivityLogs, cp)
+	if u, ok := m.Users[log.UserID]; ok {
+		if newStreak, changed := progression.EvaluateDailyStreak(u.LastActiveAt, u.Streak, now); changed {
+			u.Streak = newStreak
+		}
+		u.LastActiveAt = &now
+	}
 	return nil
 }
 
 func (m *MockRepository) HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return m.hasActivityInRangeLocked(userID, startTime, endTime), nil
+}
+
+func (m *MockRepository) hasActivityInRangeLocked(userID string, startTime time.Time, endTime time.Time) bool {
 	for _, l := range m.ActivityLogs {
-		if l.UserID == userID && !l.CreatedAt.Before(startTime) && !l.CreatedAt.After(endTime) {
-			return true, nil
+		if l.UserID == userID && !l.CreatedAt.Before(startTime) && l.CreatedAt.Before(endTime) {
+			return true
 		}
 	}
-	return false, nil
+	return false
 }
 
 func (m *MockRepository) EnsureDailyLogin(ctx context.Context, userID string, dateStr string, startTime time.Time, endTime time.Time) (bool, error) {
-	exists, err := m.HasActivityInRange(ctx, userID, startTime, endTime)
-	if err != nil || exists {
-		return false, err
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.hasActivityInRangeLocked(userID, startTime, endTime) {
+		return false, nil
+	}
+	if m.LogActivityError != nil {
+		return false, m.LogActivityError
 	}
 	now := time.Now().UTC()
-	if err := m.LogActivity(ctx, &UserActivityLog{
+	m.ActivityLogs = append(m.ActivityLogs, UserActivityLog{
 		UserID:       userID,
 		ActivityType: "daily_login",
 		XPEarned:     0,
 		Metadata:     map[string]any{"date": dateStr},
 		CreatedAt:    now,
-	}); err != nil {
-		return false, err
-	}
+	})
 	if u, ok := m.Users[userID]; ok {
-		if newStreak, changed := NewHelper().EvaluateDailyStreak(u.Streak, u.LastActiveAt, now); changed {
+		if newStreak, changed := progression.EvaluateDailyStreak(u.LastActiveAt, u.Streak, now); changed {
 			u.Streak = newStreak
 		}
 		u.LastActiveAt = &now
@@ -189,13 +245,15 @@ func (m *MockRepository) EnsureDailyLogin(ctx context.Context, userID string, da
 }
 
 func (m *MockRepository) GetDailyActivityStatsSince(ctx context.Context, userID string, since time.Time) (map[string]DailyActivityStat, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	stats := make(map[string]DailyActivityStat)
 	for _, l := range m.ActivityLogs {
 		if l.UserID == userID && !l.CreatedAt.Before(since) {
-			dayKey := l.CreatedAt.Format("2006-01-02")
+			dayKey := progression.TodayWIBDateKey(l.CreatedAt)
 			stat := stats[dayKey]
 			stat.XPEarned += l.XPEarned
-			if l.ActivityType == "lesson_complete" {
+			if l.ActivityType == "lesson_completed" {
 				stat.LessonsCount++
 			}
 			stats[dayKey] = stat
@@ -204,20 +262,24 @@ func (m *MockRepository) GetDailyActivityStatsSince(ctx context.Context, userID 
 	return stats, nil
 }
 
-func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int) (*DailyRewardClaimResponse, error) {
+func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, rewardType string, xpAwarded int, gemsAwarded int) (*DailyRewardClaimResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.ClaimRewardError != nil {
 		return nil, m.ClaimRewardError
 	}
 	u, ok := m.Users[userID]
 	if !ok {
-		return nil, apperror.ErrNotFound
+		return nil, ErrUserNotFound
 	}
 
+	now := time.Now().UTC()
+	today := progression.TodayWIBDateKey(now)
+	startOfToday, _ := progression.WIBDayBounds(now)
+
 	st, ok := m.DailyRewardsStatus[userID]
-	if !ok {
-		st = &DailyRewardsStatusResponse{
-			Date: time.Now().In(defaultAppLocation).Format("2006-01-02"),
-		}
+	if !ok || st.Date != today {
+		st = &DailyRewardsStatusResponse{Date: today}
 		m.DailyRewardsStatus[userID] = st
 	}
 
@@ -230,31 +292,62 @@ func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, re
 		if st.GoldenChestClaimed {
 			return nil, ErrDailyRewardAlreadyClaimed
 		}
+		todayXP := 0
+		for _, l := range m.ActivityLogs {
+			if l.UserID == userID && !l.CreatedAt.Before(startOfToday) && l.ActivityType != "daily_golden_chest_claim" {
+				todayXP += l.XPEarned
+			}
+		}
+		if todayXP < GoldenChestDailyXPThreshold {
+			return nil, ErrDailyRewardNotUnlocked
+		}
 		st.GoldenChestClaimed = true
 	}
 
 	u.XP += xpAwarded
 	u.CurrentLevel = CalculateLevel(u.XP)
+	u.Gems += gemsAwarded
+	if u.Gems < 0 {
+		u.Gems = 0
+	}
+	if newStreak, changed := progression.EvaluateDailyStreak(u.LastActiveAt, u.Streak, now); changed {
+		u.Streak = newStreak
+	}
+	u.LastActiveAt = &now
+
+	m.ActivityLogs = append(m.ActivityLogs, UserActivityLog{
+		UserID:       userID,
+		ActivityType: "daily_" + rewardType + "_claim",
+		XPEarned:     xpAwarded,
+		Metadata:     map[string]any{"reward_type": rewardType, "date": today, "xp_awarded": xpAwarded, "gems_awarded": gemsAwarded},
+		CreatedAt:    now,
+	})
 
 	return &DailyRewardClaimResponse{
 		RewardType:   rewardType,
 		XPAwarded:    xpAwarded,
+		GemsAwarded:  gemsAwarded,
 		CurrentXP:    u.XP,
 		CurrentLevel: u.CurrentLevel,
+		CurrentGems:  u.Gems,
 		Streak:       u.Streak,
-		ClaimedAt:    time.Now().UTC().Format(time.RFC3339),
+		ClaimedAt:    now.Format(time.RFC3339),
 	}, nil
 }
 
 func (m *MockRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	today := progression.TodayWIBDateKey(time.Now())
 	st, ok := m.DailyRewardsStatus[userID]
-	if !ok {
+	if !ok || st.Date != today {
 		return &DailyRewardsStatusResponse{
-			Date:               time.Now().In(defaultAppLocation).Format("2006-01-02"),
+			Date:               today,
 			VocabQuestClaimed:  false,
 			GoldenChestClaimed: false,
 		}, nil
 	}
-	return st, nil
+	cp := *st
+	return &cp, nil
 }
 

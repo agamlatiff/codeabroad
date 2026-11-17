@@ -2119,3 +2119,39 @@ func TestMockRepository_Parity_GrammarPointsAndLessonErrors(t *testing.T) {
 		}
 	})
 }
+
+func TestCompleteLesson_PopulatesSessionScoreAndSkipPrecedingFiltersByLanguage(t *testing.T) {
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["u-ja"] = &curriculum.UnitNodeResponse{ID: "u-ja", LevelID: "lvl-ja-1", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Units["u-de"] = &curriculum.UnitNodeResponse{ID: "u-de", LevelID: "lvl-de-1", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.LevelOrders["lvl-ja-1"] = 1
+	cRepo.LevelOrders["lvl-de-1"] = 1
+	cRepo.LevelLanguages["lvl-ja-1"] = "lang-ja"
+	cRepo.LevelLanguages["lvl-de-1"] = "lang-de"
+	cRepo.Lessons["l-ja"] = &curriculum.LessonNodeResponse{ID: "l-ja", UnitID: "u-ja", Title: "JA 1", XPReward: 20, OrderIndex: 1}
+	cRepo.Lessons["l-de"] = &curriculum.LessonNodeResponse{ID: "l-de", UnitID: "u-de", Title: "DE 1", XPReward: 20, OrderIndex: 1}
+
+	if err := cRepo.SkipPrecedingLessons(context.Background(), "user-1", 2, "lang-ja"); err != nil {
+		t.Fatalf("expected SkipPrecedingLessons to succeed, got %v", err)
+	}
+	if cRepo.LessonProgress["user-1:l-ja"] == nil || !cRepo.LessonProgress["user-1:l-ja"].IsSkipped {
+		t.Fatalf("expected l-ja to be skipped for lang-ja")
+	}
+	if cRepo.LessonProgress["user-1:l-de"] != nil {
+		t.Fatalf("expected l-de not to be skipped when skipping lang-ja")
+	}
+
+	cRepo.AttemptSummaries["user-1:l-de"] = &curriculum.LessonAttemptSummary{
+		TotalExercises:     4,
+		AttemptedExercises: 4,
+		CorrectExercises:   3,
+	}
+	uc := curriculum.NewUsecase(cRepo, language.NewMockRepository(), exercise.NewMockRepository(), user.NewMockRepository(), nil)
+	res, err := uc.CompleteLesson(context.Background(), "user-1", &curriculum.CompleteLessonRequest{LessonID: "l-de"})
+	if err != nil {
+		t.Fatalf("expected CompleteLesson to succeed, got %v", err)
+	}
+	if res.SessionScore == nil || *res.SessionScore != 75 || res.XPEarned != 20 {
+		t.Fatalf("expected SessionScore=75 and XPEarned=20, got score=%v xp=%d", res.SessionScore, res.XPEarned)
+	}
+}

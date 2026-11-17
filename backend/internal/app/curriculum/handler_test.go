@@ -370,7 +370,7 @@ func TestHTTP_CompleteLesson_Unauthorized_Returns401(t *testing.T) {
 	h := curriculum.NewHandler(uc)
 	r := gin.New()
 	v1 := r.Group("/api/v1")
-	h.RegisterRoutes(v1, nil)
+	h.RegisterRoutes(v1, func(c *gin.Context) { c.Next() })
 
 	lessonID := "33333333-3333-3333-3333-333333333333"
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", nil)

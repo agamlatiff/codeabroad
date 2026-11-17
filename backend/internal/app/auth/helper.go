@@ -12,6 +12,7 @@ import (
 
 	"codeabroad/backend/config"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/progression"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -19,9 +20,6 @@ import (
 // dummyPasswordHash is a pre-computed valid bcrypt hash used to equalize execution timing (~70ms)
 // when a queried user does not exist, mitigating timing-based user enumeration attacks.
 var dummyPasswordHash, _ = bcrypt.GenerateFromPassword([]byte("codeabroad-dummy-bcrypt-salt-for-timing-attack-protection"), bcrypt.DefaultCost)
-
-// defaultAppLocation defines the primary application timezone (WIB / Asia/Jakarta: UTC+7) for streak date calculations.
-var defaultAppLocation = time.FixedZone("WIB", 7*3600)
 
 // usernameRegex validates standard alphanumeric, underscore, and hyphen handles (3-30 chars)
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,30}$`)
@@ -142,36 +140,20 @@ func (h *Helper) ResolveSessionTTL(rememberMe bool) time.Duration {
 
 // DefaultRefreshTTL returns the configured default refresh token TTL
 func (h *Helper) DefaultRefreshTTL() time.Duration {
+	if h == nil || h.cfg == nil || h.cfg.JWTRefreshExpirationDays < 1 {
+		return 30 * 24 * time.Hour
+	}
 	return time.Duration(h.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
 }
 
 // DefaultLocation returns the primary application timezone (WIB / UTC+7)
 func (h *Helper) DefaultLocation() *time.Location {
-	return defaultAppLocation
+	return progression.WIBLocation
 }
 
 // EvaluateLoginStreak calculates the updated daily streak upon login adjusted to the primary application timezone (WIB)
 func (h *Helper) EvaluateLoginStreak(currentStreak int, lastActiveAt *time.Time, now time.Time) (newStreak int, changed bool) {
-	loc := defaultAppLocation
-	nowLocal := now.In(loc)
-	todayStr := nowLocal.Format("2006-01-02")
-	yesterdayStr := nowLocal.AddDate(0, 0, -1).Format("2006-01-02")
-
-	newStreak = currentStreak
-	if lastActiveAt == nil {
-		newStreak = 1
-	} else {
-		lastDate := lastActiveAt.In(loc).Format("2006-01-02")
-		if lastDate == yesterdayStr {
-			newStreak = currentStreak + 1
-		} else if lastDate != todayStr {
-			newStreak = 1
-		} else if currentStreak == 0 {
-			newStreak = 1
-		}
-	}
-
-	return newStreak, newStreak != currentStreak
+	return progression.EvaluateDailyStreak(lastActiveAt, currentStreak, now)
 }
 
 // BuildNewUser constructs a clean initial 3-Pillar User entity for registration

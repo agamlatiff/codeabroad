@@ -18,6 +18,7 @@ type MockRepository struct {
 	Badges              map[string]*BadgeDefinition
 	UserBadges          map[string][]UserBadge
 	ChestClaims         map[string][]DailyChestClaim
+	DailyQuestsDone     map[string]int
 	CoachingSubmissions []CoachingSubmission
 
 	GetStatusErr        error
@@ -42,9 +43,10 @@ func NewMockRepository() *MockRepository {
 		Stats:       make(map[string]*user.UserGamificationStats),
 		ShopItems:   make(map[string]*ShopItem),
 		Inventory:   make(map[string][]UserInventoryItem),
-		Badges:      make(map[string]*BadgeDefinition),
-		UserBadges:  make(map[string][]UserBadge),
-		ChestClaims: make(map[string][]DailyChestClaim),
+		Badges:          make(map[string]*BadgeDefinition),
+		UserBadges:      make(map[string][]UserBadge),
+		ChestClaims:     make(map[string][]DailyChestClaim),
+		DailyQuestsDone: make(map[string]int),
 	}
 }
 
@@ -334,15 +336,17 @@ func (m *MockRepository) AwardBadge(ctx context.Context, userID string, badgeKey
 					cp.Badge = &bd
 				}
 			}
+			cp.NewlyAwarded = false
 			return &cp, nil
 		}
 	}
 
 	ub := UserBadge{
-		ID:        fmt.Sprintf("ub_%d", len(m.UserBadges[userID])+1),
-		UserID:    userID,
-		BadgeKey:  badgeKey,
-		AwardedAt: time.Now(),
+		ID:           fmt.Sprintf("ub_%d", len(m.UserBadges[userID])+1),
+		UserID:       userID,
+		BadgeKey:     badgeKey,
+		AwardedAt:    time.Now(),
+		NewlyAwarded: true,
 	}
 	if def, ok := m.Badges[badgeKey]; ok && def != nil {
 		bd := *def
@@ -384,6 +388,9 @@ func (m *MockRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestC
 
 	if m.ClaimChestErr != nil {
 		return m.ClaimChestErr
+	}
+	if m.DailyQuestsDone[claim.UserID] < claim.Tier {
+		return ErrChestNotUnlocked
 	}
 	for _, existing := range m.ChestClaims[claim.UserID] {
 		if existing.ClaimDate == claim.ClaimDate && existing.Tier == claim.Tier {

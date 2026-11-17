@@ -18,6 +18,7 @@ func setupMockGamificationRepo() *gamification.MockRepository {
 		Streak:       5,
 		Gems:         50,
 	}
+	repo.DailyQuestsDone["user-1"] = 3
 	repo.Inventory["user-1"] = []gamification.UserInventoryItem{
 		{ID: "inv-1", UserID: "user-1", ItemID: "streak_freeze", Quantity: 1},
 	}

@@ -20,7 +20,7 @@ var (
 // PlacementAnswer defines a single question answer in diagnostic onboarding
 type PlacementAnswer struct {
 	ExerciseID string `json:"exercise_id" binding:"required,uuid"`
-	UserAnswer string `json:"user_answer" binding:"required"`
+	UserAnswer string `json:"user_answer" binding:"required,max=2000"`
 }
 
 // OnboardingRequest defines the 3-step payload for initializing a learner's destination
@@ -28,7 +28,7 @@ type OnboardingRequest struct {
 	LanguageID           string            `json:"language_id" binding:"required,uuid"`
 	DailyGoalMinutes     int               `json:"daily_goal_minutes" binding:"required,oneof=5 15 30 45"`
 	InitialPlacementType string            `json:"initial_placement_type" binding:"required,oneof=zero_beginner placement_test manual_select"`
-	ManualLevelID        *string           `json:"manual_level_id,omitempty"`
+	ManualLevelID        *string           `json:"manual_level_id,omitempty" binding:"omitempty,uuid"`
 	PlacementAnswers     []PlacementAnswer `json:"placement_answers,omitempty" binding:"omitempty,max=50,dive"`
 }
 
@@ -47,6 +47,11 @@ type OnboardingResultResponse struct {
 	PlacementScore    *int                            `json:"placement_score_percent,omitempty"`
 	GamificationStats user.UserGamificationStats      `json:"gamification_stats"`
 	AwardedBadges     []gamification.BadgeDefinition  `json:"awarded_badges,omitempty"`
+}
+
+// Store defines atomic transactional persistence for completing onboarding.
+type Store interface {
+	CompleteOnboardingTx(ctx context.Context, params *CompleteOnboardingTxParams) (*OnboardingResultResponse, error)
 }
 
 // Usecase specifies business operations for initializing learner tracks

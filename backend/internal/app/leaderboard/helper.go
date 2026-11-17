@@ -2,10 +2,11 @@ package leaderboard
 
 import (
 	"math"
+	"strings"
 	"time"
 )
 
-// Helper encapsulates business rules for Tokyo League division thresholds, reset timer, and zones
+// Helper encapsulates business rules for global league division thresholds, reset timer, and zones
 type Helper struct{}
 
 // NewHelper creates a new leaderboard Helper instance
@@ -15,35 +16,50 @@ func NewHelper() *Helper {
 
 // DivisionConfig encapsulates division metadata and indexed XP ranges
 type DivisionConfig struct {
-	Division TokyoDivision
+	Division LeagueDivision
 	MinXP    int
 	MaxXP    int
 	Name     string
 	Tier     string
 }
 
-// GetDivisionConfig maps a Tokyo division to its indexed XP query range and localized tier label
-func (h *Helper) GetDivisionConfig(division TokyoDivision) DivisionConfig {
-	switch division {
-	case DivisionShibuya:
+// ParseDivision resolves canonical divisions and legacy station aliases into a LeagueDivision.
+func ParseDivision(raw string) LeagueDivision {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "silver", "shibuya":
+		return DivisionSilver
+	case "gold", "akihabara":
+		return DivisionGold
+	case "diamond", "roppongi":
+		return DivisionDiamond
+	default:
+		return DivisionBronze
+	}
+}
+
+// GetDivisionConfig maps a league division to its indexed XP query range and localized tier label
+func (h *Helper) GetDivisionConfig(division LeagueDivision) DivisionConfig {
+	resolved := ParseDivision(string(division))
+	switch resolved {
+	case DivisionSilver:
 		return DivisionConfig{
-			Division: DivisionShibuya,
+			Division: DivisionSilver,
 			MinXP:    300,
 			MaxXP:    800,
 			Name:     "Liga Perak",
 			Tier:     "Silver League (300 – 799 XP)",
 		}
-	case DivisionAkihabara:
+	case DivisionGold:
 		return DivisionConfig{
-			Division: DivisionAkihabara,
+			Division: DivisionGold,
 			MinXP:    800,
 			MaxXP:    1500,
 			Name:     "Liga Emas",
 			Tier:     "Gold League (800 – 1.499 XP)",
 		}
-	case DivisionRoppongi:
+	case DivisionDiamond:
 		return DivisionConfig{
-			Division: DivisionRoppongi,
+			Division: DivisionDiamond,
 			MinXP:    1500,
 			MaxXP:    math.MaxInt32,
 			Name:     "Liga Berlian",
@@ -51,7 +67,7 @@ func (h *Helper) GetDivisionConfig(division TokyoDivision) DivisionConfig {
 		}
 	default:
 		return DivisionConfig{
-			Division: DivisionShinjuku,
+			Division: DivisionBronze,
 			MinXP:    0,
 			MaxXP:    300,
 			Name:     "Liga Perunggu",
@@ -61,17 +77,17 @@ func (h *Helper) GetDivisionConfig(division TokyoDivision) DivisionConfig {
 }
 
 // DetermineDivision evaluates which division a user belongs to based on their lifetime XP
-func (h *Helper) DetermineDivision(xp int) TokyoDivision {
+func (h *Helper) DetermineDivision(xp int) LeagueDivision {
 	if xp >= 1500 {
-		return DivisionRoppongi
+		return DivisionDiamond
 	}
 	if xp >= 800 {
-		return DivisionAkihabara
+		return DivisionGold
 	}
 	if xp >= 300 {
-		return DivisionShibuya
+		return DivisionSilver
 	}
-	return DivisionShinjuku
+	return DivisionBronze
 }
 
 // CalculateZone determines promotion, safe, or demotion zone for a ranked participant
@@ -85,10 +101,10 @@ func (h *Helper) CalculateZone(rank int) string {
 	return "safe"
 }
 
-// CalculateDaysUntilSundayReset returns days remaining until the weekly league reset (Sunday midnight UTC)
+// CalculateDaysUntilSundayReset returns remaining full days until Sunday ends (0 when today is Sunday).
 func (h *Helper) CalculateDaysUntilSundayReset(now time.Time) int {
 	daysUntilSunday := int(time.Sunday - now.Weekday())
-	if daysUntilSunday <= 0 {
+	if daysUntilSunday < 0 {
 		daysUntilSunday += 7
 	}
 	return daysUntilSunday

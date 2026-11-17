@@ -4,17 +4,18 @@ import (
 	"context"
 	"fmt"
 	"sort"
+	"sync"
 	"time"
 )
 
 // MockRepository implements Repository for unit testing
 type MockRepository struct {
+	mu                   sync.RWMutex
 	Languages            map[string]*Language
 	Levels               map[string]*ProficiencyLevel
 	Enrollments          map[string]*UserLanguageEnrollment
 	GetAllLanguagesErr   error
 	GetLanguageByIDErr   error
-	GetLanguageByCodeErr error
 	GetLevelsErr         error
 	GetLevelByIDErr      error
 	GetEnrollmentsErr    error
@@ -36,6 +37,8 @@ func NewMockRepository() *MockRepository {
 var _ Repository = (*MockRepository)(nil)
 
 func (m *MockRepository) GetAllLanguages(ctx context.Context, onlyActive bool) ([]Language, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if m.GetAllLanguagesErr != nil {
 		return nil, m.GetAllLanguagesErr
 	}
@@ -49,6 +52,8 @@ func (m *MockRepository) GetAllLanguages(ctx context.Context, onlyActive bool) (
 }
 
 func (m *MockRepository) GetLanguageByID(ctx context.Context, id string) (*Language, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if m.GetLanguageByIDErr != nil {
 		return nil, m.GetLanguageByIDErr
 	}
@@ -56,22 +61,13 @@ func (m *MockRepository) GetLanguageByID(ctx context.Context, id string) (*Langu
 	if !ok {
 		return nil, ErrLanguageNotFound
 	}
-	return l, nil
-}
-
-func (m *MockRepository) GetLanguageByCode(ctx context.Context, code string) (*Language, error) {
-	if m.GetLanguageByCodeErr != nil {
-		return nil, m.GetLanguageByCodeErr
-	}
-	for _, l := range m.Languages {
-		if l.Code == code {
-			return l, nil
-		}
-	}
-	return nil, ErrLanguageNotFound
+	cp := *l
+	return &cp, nil
 }
 
 func (m *MockRepository) GetLevelsByLanguageID(ctx context.Context, languageID string) ([]ProficiencyLevel, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if m.GetLevelsErr != nil {
 		return nil, m.GetLevelsErr
 	}
@@ -88,6 +84,8 @@ func (m *MockRepository) GetLevelsByLanguageID(ctx context.Context, languageID s
 }
 
 func (m *MockRepository) GetLevelByID(ctx context.Context, id string) (*ProficiencyLevel, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if m.GetLevelByIDErr != nil {
 		return nil, m.GetLevelByIDErr
 	}
@@ -95,30 +93,57 @@ func (m *MockRepository) GetLevelByID(ctx context.Context, id string) (*Proficie
 	if !ok {
 		return nil, ErrProficiencyLevelNotFound
 	}
-	return lvl, nil
+	cp := *lvl
+	return &cp, nil
 }
 
 func (m *MockRepository) GetEnrollmentsByUserID(ctx context.Context, userID string) ([]UserLanguageEnrollment, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if m.GetEnrollmentsErr != nil {
 		return nil, m.GetEnrollmentsErr
 	}
 	var res []UserLanguageEnrollment
 	for _, e := range m.Enrollments {
 		if e.UserID == userID {
-			res = append(res, *e)
+			cp := *e
+			if l, ok := m.Languages[e.LanguageID]; ok {
+				lcp := *l
+				cp.Language = &lcp
+			}
+			if e.CurrentLevelID != nil {
+				if lvl, ok := m.Levels[*e.CurrentLevelID]; ok {
+					lvlcp := *lvl
+					cp.CurrentLevel = &lvlcp
+				}
+			}
+			res = append(res, cp)
 		}
 	}
 	return res, nil
 }
 
 func (m *MockRepository) GetActiveEnrollment(ctx context.Context, userID string, languageID string) (*UserLanguageEnrollment, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
 	if m.GetActiveEnrollErr != nil {
 		return nil, m.GetActiveEnrollErr
 	}
 	for _, e := range m.Enrollments {
 		if e.UserID == userID && e.IsActive {
 			if languageID == "" || e.LanguageID == languageID {
-				return e, nil
+				cp := *e
+				if l, ok := m.Languages[e.LanguageID]; ok {
+					lcp := *l
+					cp.Language = &lcp
+				}
+				if e.CurrentLevelID != nil {
+					if lvl, ok := m.Levels[*e.CurrentLevelID]; ok {
+						lvlcp := *lvl
+						cp.CurrentLevel = &lvlcp
+					}
+				}
+				return &cp, nil
 			}
 		}
 	}
@@ -126,8 +151,22 @@ func (m *MockRepository) GetActiveEnrollment(ctx context.Context, userID string,
 }
 
 func (m *MockRepository) CreateEnrollment(ctx context.Context, enrollment *UserLanguageEnrollment) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.CreateEnrollErr != nil {
 		return m.CreateEnrollErr
+	}
+	for _, existing := range m.Enrollments {
+		if existing.UserID == enrollment.UserID && existing.LanguageID == enrollment.LanguageID {
+			return ErrAlreadyEnrolled
+		}
+	}
+	if enrollment.IsActive {
+		for _, existing := range m.Enrollments {
+			if existing.UserID == enrollment.UserID {
+				existing.IsActive = false
+			}
+		}
 	}
 	if enrollment.ID == "" {
 		enrollment.ID = fmt.Sprintf("enr_%d", len(m.Enrollments)+1)
@@ -135,11 +174,14 @@ func (m *MockRepository) CreateEnrollment(ctx context.Context, enrollment *UserL
 	if enrollment.EnrolledAt.IsZero() {
 		enrollment.EnrolledAt = time.Now()
 	}
-	m.Enrollments[enrollment.ID] = enrollment
+	cp := *enrollment
+	m.Enrollments[enrollment.ID] = &cp
 	return nil
 }
 
 func (m *MockRepository) UpdateEnrollmentLevel(ctx context.Context, enrollmentID string, levelID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.UpdateEnrollLevelErr != nil {
 		return m.UpdateEnrollLevelErr
 	}
@@ -147,11 +189,14 @@ func (m *MockRepository) UpdateEnrollmentLevel(ctx context.Context, enrollmentID
 	if !ok {
 		return ErrEnrollmentNotFound
 	}
-	e.CurrentLevelID = &levelID
+	lvlID := levelID
+	e.CurrentLevelID = &lvlID
 	return nil
 }
 
 func (m *MockRepository) UpdateEnrollmentLevelIfCurrent(ctx context.Context, enrollmentID string, expectedLevelID string, levelID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.UpdateEnrollLevelErr != nil {
 		return m.UpdateEnrollLevelErr
 	}
@@ -162,11 +207,14 @@ func (m *MockRepository) UpdateEnrollmentLevelIfCurrent(ctx context.Context, enr
 	if e.CurrentLevelID == nil || *e.CurrentLevelID != expectedLevelID {
 		return ErrEnrollmentLevelChanged
 	}
-	e.CurrentLevelID = &levelID
+	lvlID := levelID
+	e.CurrentLevelID = &lvlID
 	return nil
 }
 
 func (m *MockRepository) SetActiveLanguage(ctx context.Context, userID string, languageID string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
 	if m.SetActiveLanguageErr != nil {
 		return m.SetActiveLanguageErr
 	}

@@ -21,6 +21,7 @@ type MockRepository struct {
 	Lessons              map[string]*LessonNodeResponse
 	LessonProgress       map[string]*UserLessonProgress
 	LevelOrders          map[string]int
+	LevelLanguages       map[string]string
 	UserMaxLevelOrder    map[string]int
 	UserInactiveLevels   map[string]bool
 	MissingUsers         map[string]bool
@@ -55,6 +56,7 @@ func NewMockRepository() *MockRepository {
 		Lessons:             make(map[string]*LessonNodeResponse),
 		LessonProgress:      make(map[string]*UserLessonProgress),
 		LevelOrders:         make(map[string]int),
+		LevelLanguages:      make(map[string]string),
 		UserMaxLevelOrder:   make(map[string]int),
 		UserInactiveLevels:  make(map[string]bool),
 		MissingUsers:        make(map[string]bool),
@@ -319,6 +321,23 @@ func (m *MockRepository) IsLessonUnlocked(ctx context.Context, userID string, le
 	return m.isLessonUnlockedLocked(userID, lessonID)
 }
 
+func (m *MockRepository) IsLevelCurriculumCompleted(ctx context.Context, userID string, levelID string) (bool, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	for _, l := range m.Lessons {
+		u := m.Units[l.UnitID]
+		if !isCurriculumUnit(u) || u.LevelID != levelID {
+			continue
+		}
+		p := m.LessonProgress[fmt.Sprintf("%s:%s", userID, l.ID)]
+		if p == nil || !p.IsCompleted {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
 func (m *MockRepository) isLessonUnlockedLocked(userID string, lessonID string) (bool, error) {
 
 	curLesson, ok := m.Lessons[lessonID]
@@ -390,6 +409,11 @@ func (m *MockRepository) SkipPrecedingLessons(ctx context.Context, userID string
 		if u, ok := m.Units[l.UnitID]; ok {
 			if !isCurriculumUnit(u) {
 				continue
+			}
+			if languageID != "" {
+				if langID, hasLang := m.LevelLanguages[u.LevelID]; hasLang && langID != languageID {
+					continue
+				}
 			}
 			if lvlOrder, hasOrder := m.LevelOrders[u.LevelID]; hasOrder && lvlOrder >= upToLevelOrder {
 				continue
@@ -484,12 +508,15 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 		return err
 	}
 	payload.Progress.Score = verifiedScore
+	payload.SessionScore = verifiedScore
 	if payload.Metadata == nil {
 		payload.Metadata = make(map[string]any)
 	}
 	payload.Metadata["lesson_id"] = payload.Progress.LessonID
 	payload.Metadata["score"] = verifiedScore
 	payload.Metadata["is_practice"] = payload.WasCompleted
+
+	failedReplay := payload.WasCompleted && verifiedScore < minLessonPassScore
 
 	if payload.WasCompleted {
 		payload.XPEarned = helper.CalculateReplayXP(verifiedScore)
@@ -542,6 +569,17 @@ func (m *MockRepository) RecordLessonCompletionTx(ctx context.Context, payload *
 	if s, ok := m.AttemptSummaries[key]; ok && s != nil {
 		s.FreshAttemptedExercises = 0
 		s.FreshCorrectExercises = 0
+	}
+
+	if failedReplay {
+		payload.NewXP = m.UserXP[userID]
+		payload.NewLevel = helper.CalculateLevel(payload.NewXP)
+		payload.NewStreak = m.UserStreak[userID]
+		payload.NewGems = m.UserGems[userID]
+		if existingLast := m.UserLastActiveAt[userID]; existingLast != nil {
+			payload.LastActiveAt = existingLast.UTC()
+		}
+		return nil
 	}
 
 	now := payload.LastActiveAt

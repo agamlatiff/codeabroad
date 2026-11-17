@@ -2,23 +2,31 @@ package user
 
 import (
 	"fmt"
+	"net/url"
 	"sort"
 	"strings"
 	"time"
 	"unicode/utf8"
 
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 )
 
 const (
+	// MinProfileNameLength aligns UpdateProfile name minimum with registration rules.
+	MinProfileNameLength = 2
 	// MaxProfileNameLength matches user_profiles.name VARCHAR(100)
 	MaxProfileNameLength = 100
 	// MaxProfileBioLength caps user profile bio length to prevent oversized payloads
 	MaxProfileBioLength = 500
+	// MaxAvatarURLLength caps user avatar URL length
+	MaxAvatarURLLength = 500
+	// GoldenChestDailyXPThreshold defines minimum non-chest XP earned today (WIB) to unlock golden_chest
+	GoldenChestDailyXPThreshold = 50
 )
 
 // defaultAppLocation defines the primary application timezone (WIB / Asia/Jakarta: UTC+7) for user activity calendar calculations.
-var defaultAppLocation = time.FixedZone("WIB", 7*3600)
+var defaultAppLocation = progression.WIBLocation
 
 // Helper encapsulates user profile validation, level progression, streak evaluation, and 7-day calendar assembly (DDD)
 type Helper struct{}
@@ -31,7 +39,7 @@ func NewHelper() *Helper {
 // ValidateAndNormalizeUpdateProfile validates and trims UpdateProfileRequest fields
 func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) error {
 	if req == nil ||
-		(req.Name == nil && req.Bio == nil && req.DailyGoalMinutes == nil &&
+		(req.Name == nil && req.Bio == nil && req.AvatarURL == nil && req.DailyGoalMinutes == nil &&
 			req.HasSeenRoadmapTour == nil && req.PreferredRoadmapView == nil) {
 		return apperror.NewBadRequestError(
 			"EMPTY_UPDATE_PROFILE",
@@ -42,14 +50,15 @@ func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) er
 
 	if req.Name != nil {
 		trimmed := strings.TrimSpace(*req.Name)
-		if trimmed == "" {
+		nameLen := utf8.RuneCountInString(trimmed)
+		if nameLen < MinProfileNameLength {
 			return apperror.NewBadRequestError(
 				"INVALID_NAME",
-				"nama tidak boleh kosong",
+				fmt.Sprintf("nama minimal %d karakter", MinProfileNameLength),
 				nil,
 			)
 		}
-		if utf8.RuneCountInString(trimmed) > MaxProfileNameLength {
+		if nameLen > MaxProfileNameLength {
 			return apperror.NewBadRequestError(
 				"INVALID_NAME",
 				fmt.Sprintf("nama maksimal %d karakter", MaxProfileNameLength),
@@ -69,6 +78,28 @@ func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) er
 			)
 		}
 		*req.Bio = trimmed
+	}
+
+	if req.AvatarURL != nil {
+		trimmed := strings.TrimSpace(*req.AvatarURL)
+		if utf8.RuneCountInString(trimmed) > MaxAvatarURLLength {
+			return apperror.NewBadRequestError(
+				"INVALID_AVATAR_URL",
+				fmt.Sprintf("avatar_url maksimal %d karakter", MaxAvatarURLLength),
+				nil,
+			)
+		}
+		if trimmed != "" && !strings.HasPrefix(trimmed, "/") {
+			parsed, parseErr := url.ParseRequestURI(trimmed)
+			if parseErr != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+				return apperror.NewBadRequestError(
+					"INVALID_AVATAR_URL",
+					"avatar_url harus berupa URL http/https atau path relatif yang valid",
+					nil,
+				)
+			}
+		}
+		*req.AvatarURL = trimmed
 	}
 
 	if req.DailyGoalMinutes != nil {
@@ -102,29 +133,32 @@ func (h *Helper) ValidateRoadmapView(view *string) error {
 	return nil
 }
 
-// ResolveDailyRewardXP validates the daily reward type and returns the XP amount to award
-func (h *Helper) ResolveDailyRewardXP(rewardType string) (int, error) {
+// ResolveDailyReward validates the daily reward type and returns (xpAwarded, gemsAwarded).
+func (h *Helper) ResolveDailyReward(rewardType string) (int, int, error) {
 	switch rewardType {
 	case "vocab_quest":
-		return 30, nil
+		return 30, 0, nil
 	case "golden_chest":
-		return 50, nil
+		return 50, 20, nil
 	default:
-		return 0, fmt.Errorf("%w: tipe hadiah tidak valid", apperror.ErrBadRequest)
+		return 0, 0, apperror.NewBadRequestError("INVALID_REWARD_TYPE", "tipe hadiah harian tidak valid", nil)
 	}
+}
+
+// ResolveDailyRewardXP validates the daily reward type and returns the XP amount to award
+func (h *Helper) ResolveDailyRewardXP(rewardType string) (int, error) {
+	xp, _, err := h.ResolveDailyReward(rewardType)
+	return xp, err
 }
 
 // CalculateLevel computes the user level from total XP according to CodeAbroad progression rules (100 XP per level)
 func CalculateLevel(xp int) int {
-	if xp < 0 {
-		return 1
-	}
-	return (xp / 100) + 1
+	return progression.CalculateLevel(xp)
 }
 
 // CalculateLevel computes the user level from total XP on Helper receiver
 func (h *Helper) CalculateLevel(xp int) int {
-	return CalculateLevel(xp)
+	return progression.CalculateLevel(xp)
 }
 
 // DefaultLocation returns the primary application timezone (WIB / UTC+7)
@@ -134,26 +168,7 @@ func (h *Helper) DefaultLocation() *time.Location {
 
 // EvaluateDailyStreak calculates the updated daily streak based on the last active timestamp adjusted to application timezone (WIB)
 func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time, now time.Time) (newStreak int, changed bool) {
-	loc := defaultAppLocation
-	nowLocal := now.In(loc)
-	todayStr := nowLocal.Format("2006-01-02")
-	yesterdayStr := nowLocal.AddDate(0, 0, -1).Format("2006-01-02")
-
-	newStreak = currentStreak
-	if lastActiveAt == nil {
-		newStreak = 1
-	} else {
-		lastDate := lastActiveAt.In(loc).Format("2006-01-02")
-		if lastDate == yesterdayStr {
-			newStreak = currentStreak + 1
-		} else if lastDate != todayStr {
-			newStreak = 1
-		} else if currentStreak == 0 {
-			newStreak = 1
-		}
-	}
-
-	return newStreak, newStreak != currentStreak
+	return progression.EvaluateDailyStreak(lastActiveAt, currentStreak, now)
 }
 
 // ResolveCalendarWindow calculates application timezone (WIB) day boundaries and the 90-day lookback start date
@@ -198,6 +213,9 @@ func (h *Helper) BuildWeeklyActivitySummary(
 		allActiveDatesSet[dt] = true
 	}
 
+	yesterdayStr := nowLocal.AddDate(0, 0, -1).Format("2006-01-02")
+	streakAnchoredToPresent := lastActiveAt != nil && (lastActiveAt.In(loc).Format("2006-01-02") == todayStr || lastActiveAt.In(loc).Format("2006-01-02") == yesterdayStr)
+
 	for i := 0; i < 7; i++ {
 		dayDate := monday.AddDate(0, 0, i)
 		dateStr := dayDate.Format("2006-01-02")
@@ -206,14 +224,11 @@ func (h *Helper) BuildWeeklyActivitySummary(
 		stat, hasLog := dailyStats[dateStr]
 		isActive := hasLog
 
-		if !isActive && streak > 0 {
+		if !isActive && streak > 0 && streakAnchoredToPresent {
 			daysDiffFromToday := mondayOffset - i
 			if daysDiffFromToday >= 0 && daysDiffFromToday < streak {
 				isActive = true
 			}
-		}
-		if isToday {
-			isActive = true
 		}
 		if isActive {
 			totalActiveDays++
@@ -230,12 +245,16 @@ func (h *Helper) BuildWeeklyActivitySummary(
 		}
 	}
 
-	if streak > 0 {
+	if streak > 0 && streakAnchoredToPresent {
+		anchor := startOfToday
+		if lastActiveAt.In(loc).Format("2006-01-02") == yesterdayStr {
+			anchor = startOfToday.AddDate(0, 0, -1)
+		}
 		for s := 0; s < streak; s++ {
-			streakDate := startOfToday.AddDate(0, 0, -s).Format("2006-01-02")
+			streakDate := anchor.AddDate(0, 0, -s).Format("2006-01-02")
 			allActiveDatesSet[streakDate] = true
 		}
-	} else {
+	} else if _, hasTodayLog := dailyStats[todayStr]; hasTodayLog {
 		allActiveDatesSet[todayStr] = true
 	}
 

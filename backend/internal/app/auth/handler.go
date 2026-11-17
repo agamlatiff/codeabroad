@@ -5,6 +5,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"strings"
 
 	"codeabroad/backend/internal/shared/apperror"
 	"codeabroad/backend/internal/shared/response"
@@ -45,11 +46,27 @@ func sanitizedBindErrorMessage(err error) string {
 	return "invalid request payload: please check required fields and input format"
 }
 
+func bindAuthJSON(c *gin.Context, dst any) bool {
+	if err := c.ShouldBindJSON(dst); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			c.JSON(http.StatusRequestEntityTooLarge, response.ErrorResponse{
+				Success: false,
+				Error:   "ukuran payload request melebihi batas maksimal yang diizinkan",
+				Code:    "PAYLOAD_TOO_LARGE",
+			})
+			return false
+		}
+		response.BadRequest(c, sanitizedBindErrorMessage(err))
+		return false
+	}
+	return true
+}
+
 // Register handles POST /api/v1/auth/register
 func (h *Handler) Register(c *gin.Context) {
 	var req RegisterRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, sanitizedBindErrorMessage(err))
+	if !bindAuthJSON(c, &req) {
 		return
 	}
 
@@ -65,8 +82,7 @@ func (h *Handler) Register(c *gin.Context) {
 // Login handles POST /api/v1/auth/login
 func (h *Handler) Login(c *gin.Context) {
 	var req LoginRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, sanitizedBindErrorMessage(err))
+	if !bindAuthJSON(c, &req) {
 		return
 	}
 
@@ -82,8 +98,7 @@ func (h *Handler) Login(c *gin.Context) {
 // RefreshToken handles POST /api/v1/auth/refresh
 func (h *Handler) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, sanitizedBindErrorMessage(err))
+	if !bindAuthJSON(c, &req) {
 		return
 	}
 
@@ -108,8 +123,8 @@ func (h *Handler) Logout(c *gin.Context) {
 	// If missing from Bearer claim (e.g. access token was expired), parse from optional refresh_token body
 	if (userID == "" || sessionID == "") && h.helper != nil {
 		var req LogoutRequest
-		if err := c.ShouldBindJSON(&req); err == nil && req.RefreshToken != "" {
-			if claims, err := h.helper.ParseRefreshToken(req.RefreshToken); err == nil {
+		if err := c.ShouldBindJSON(&req); err == nil && strings.TrimSpace(req.RefreshToken) != "" {
+			if claims, err := h.helper.ParseRefreshToken(strings.TrimSpace(req.RefreshToken)); err == nil {
 				userID = claims.UserID
 				sessionID = claims.SessionID
 			}
@@ -145,8 +160,12 @@ func (h *Handler) LogoutAll(c *gin.Context) {
 	response.Success(c, http.StatusOK, "all user device sessions terminated successfully", nil)
 }
 
-// RegisterRoutes registers public and protected /auth routes with rate limiting on login, register, and refresh
+// RegisterRoutes registers public and protected /auth routes with rate limiting on login, register, refresh, and logout
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuthMiddleware ...gin.HandlerFunc) {
+	if authMiddleware == nil {
+		panic("auth handler requires non-nil authMiddleware")
+	}
+
 	authPublic := rg.Group("/auth")
 	{
 		if h.rateLimiter != nil {
@@ -165,17 +184,23 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 			optAuth = optionalAuthMiddleware[0]
 		}
 		if optAuth != nil {
-			authPublic.POST("/logout", optAuth, h.Logout)
+			if h.rateLimiter != nil {
+				authPublic.POST("/logout", h.rateLimiter, optAuth, h.Logout)
+			} else {
+				authPublic.POST("/logout", optAuth, h.Logout)
+			}
 		}
 	}
 
 	authProtected := rg.Group("/auth")
-	if authMiddleware != nil {
-		authProtected.Use(authMiddleware)
-	}
+	authProtected.Use(authMiddleware)
 	{
 		if len(optionalAuthMiddleware) == 0 || optionalAuthMiddleware[0] == nil {
-			authProtected.POST("/logout", h.Logout)
+			if h.rateLimiter != nil {
+				authProtected.POST("/logout", h.rateLimiter, h.Logout)
+			} else {
+				authProtected.POST("/logout", h.Logout)
+			}
 		}
 		authProtected.POST("/logout-all", h.LogoutAll)
 	}

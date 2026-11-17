@@ -343,7 +343,7 @@ paths:
     post:
       tags: [Users]
       security: [{ BearerAuth: [] }]
-      summary: Claim daily reward (vocab_quest or golden_chest)
+      summary: Claim daily reward (vocab_quest or golden_chest; golden_chest awards +50 XP and +20 Gems after 50+ daily XP)
       requestBody:
         required: true
         content:
@@ -512,6 +512,36 @@ paths:
                 $ref: "#/components/schemas/SuccessResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+
+  /languages/enroll:
+    post:
+      tags: [Languages]
+      security: [{ BearerAuth: [] }]
+      summary: Enroll authenticated user into an active destination language track
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [language_id]
+              properties:
+                language_id:
+                  type: string
+                  format: uuid
+      responses:
+        "201":
+          description: Enrolled in language track
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
 
   /languages/switch:
     post:
@@ -1084,6 +1114,14 @@ paths:
     get:
       tags: [Leaderboard]
       summary: Get weekly leaderboard rankings
+      parameters:
+        - name: division
+          in: query
+          required: false
+          description: Canonical league division (`bronze`, `silver`, `gold`, `diamond`). Legacy station aliases (`shinjuku`, `shibuya`, `akihabara`, `roppongi`) are also accepted during transition. When omitted for authenticated users, auto-selects the user's division.
+          schema:
+            type: string
+            enum: [bronze, silver, gold, diamond, shinjuku, shibuya, akihabara, roppongi]
       responses:
         "200":
           description: Weekly leaderboard retrieved
@@ -1091,3 +1129,5 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"

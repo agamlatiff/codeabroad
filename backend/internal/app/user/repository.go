@@ -5,12 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 // PostgresRepository implements user.Repository across the 3 normalized pillars
@@ -30,6 +31,7 @@ const userSelectColumns = `
 	u.email, 
 	u.password_hash, 
 	up.bio, 
+	up.avatar_url,
 	up.daily_goal_minutes,
 	up.is_onboarded,
 	up.has_seen_roadmap_tour,
@@ -57,6 +59,7 @@ func scanUser(row pgx.Row, u *User) error {
 		&u.Email,
 		&u.PasswordHash,
 		&u.Bio,
+		&u.AvatarURL,
 		&u.DailyGoalMinutes,
 		&u.IsOnboarded,
 		&u.HasSeenRoadmapTour,
@@ -80,12 +83,12 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
-			INSERT INTO user_profiles (user_id, name, username, is_onboarded, daily_goal_minutes, preferred_roadmap_view)
-			SELECT id, $3, $4, $5, $6, COALESCE(NULLIF($7, ''), 'map') FROM new_user
+			INSERT INTO user_profiles (user_id, name, username, avatar_url, is_onboarded, daily_goal_minutes, preferred_roadmap_view)
+			SELECT id, $3, $4, $5, $6, $7, COALESCE(NULLIF($8, ''), 'map') FROM new_user
 		),
 		new_gamification AS (
 			INSERT INTO user_gamification (user_id, xp, current_level, streak, gems)
-			SELECT id, $8, $9, $10, $11 FROM new_user
+			SELECT id, $9, $10, $11, $12 FROM new_user
 		)
 		SELECT id, created_at, updated_at FROM new_user
 	`
@@ -96,6 +99,7 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 		u.PasswordHash,
 		u.Name,
 		u.Username,
+		u.AvatarURL,
 		u.IsOnboarded,
 		u.DailyGoalMinutes,
 		u.PreferredRoadmapView,
@@ -105,11 +109,14 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 		u.Gems,
 	).Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
-		if strings.Contains(err.Error(), "users_email_key") {
-			return ErrEmailAlreadyExists
-		}
-		if strings.Contains(err.Error(), "user_profiles_username_key") {
-			return ErrUsernameTaken
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "users_email_key":
+				return ErrEmailAlreadyExists
+			case "user_profiles_username_key":
+				return ErrUsernameTaken
+			}
 		}
 		return fmt.Errorf("failed to create 3-pillar user account: %w", err)
 	}
@@ -146,9 +153,6 @@ func (r *PostgresRepository) GetByUsername(ctx context.Context, username string)
 
 // GetByID retrieves a user by their unique UUID across all 3 pillars
 func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*User, error) {
-	if id == "" {
-		return nil, nil
-	}
 	if err := apperror.ValidateUserUUID(id); err != nil {
 		return nil, err
 	}
@@ -164,38 +168,73 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*User, err
 	return &u, nil
 }
 
-// UpdateProfile updates user profile preferences with parameterized values
+// UpdateProfile updates user profile preferences and returns the updated aggregate in a single CTE round-trip.
 func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
 	query := `
-		UPDATE user_profiles
-		SET name = COALESCE($2, name),
-		    bio = COALESCE($3, bio),
-		    daily_goal_minutes = COALESCE($4, daily_goal_minutes),
-		    has_seen_roadmap_tour = COALESCE($5, has_seen_roadmap_tour),
-		    preferred_roadmap_view = COALESCE($6, preferred_roadmap_view),
-		    updated_at = NOW()
-		WHERE user_id = NULLIF($1, '')::uuid
+		WITH updated_profile AS (
+			UPDATE user_profiles
+			SET name = COALESCE($2, name),
+			    bio = COALESCE($3, bio),
+			    avatar_url = CASE
+			        WHEN $4::text IS NULL THEN avatar_url
+			        WHEN $4::text = '' THEN NULL
+			        ELSE $4::text
+			    END,
+			    daily_goal_minutes = COALESCE($5, daily_goal_minutes),
+			    has_seen_roadmap_tour = COALESCE($6, has_seen_roadmap_tour),
+			    preferred_roadmap_view = COALESCE($7, preferred_roadmap_view),
+			    updated_at = NOW()
+			WHERE user_id = $1::uuid
+			RETURNING user_id, name, username, bio, avatar_url, daily_goal_minutes, is_onboarded, has_seen_roadmap_tour, preferred_roadmap_view
+		)
+		SELECT
+			u.id,
+			up.name,
+			up.username,
+			u.email,
+			u.password_hash,
+			up.bio,
+			up.avatar_url,
+			up.daily_goal_minutes,
+			up.is_onboarded,
+			up.has_seen_roadmap_tour,
+			up.preferred_roadmap_view,
+			ug.xp,
+			ug.current_level,
+			ug.streak,
+			ug.gems,
+			ug.last_active_at,
+			u.created_at,
+			u.updated_at
+		FROM updated_profile up
+		JOIN users u ON u.id = up.user_id
+		JOIN user_gamification ug ON ug.user_id = up.user_id
 	`
-	tag, err := r.db.Pool.Exec(
-		ctx,
-		query,
-		userID,
-		req.Name,
-		req.Bio,
-		req.DailyGoalMinutes,
-		req.HasSeenRoadmapTour,
-		req.PreferredRoadmapView,
+	var u User
+	err := scanUser(
+		r.db.Pool.QueryRow(
+			ctx,
+			query,
+			userID,
+			req.Name,
+			req.Bio,
+			req.AvatarURL,
+			req.DailyGoalMinutes,
+			req.HasSeenRoadmapTour,
+			req.PreferredRoadmapView,
+		),
+		&u,
 	)
 	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrUserNotFound
+		}
 		return nil, fmt.Errorf("failed to update user profile: %w", err)
 	}
-	if tag.RowsAffected() == 0 {
-		return nil, ErrUserNotFound
-	}
-	return r.GetByID(ctx, userID)
+	return &u, nil
 }
 
 // SetOnboarded marks the user as having finished the 3-step onboarding flow and records their pace goal
@@ -357,9 +396,9 @@ func (r *PostgresRepository) EnsureDailyLogin(
 	if err != nil {
 		return false, fmt.Errorf("failed to begin daily login transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer progression.RollbackTx(ctx, tx, "user.EnsureDailyLogin")
 
-	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtext('daily_login:' || $1 || ':' || $2))`, userID, dateStr); err != nil {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('daily_login:' || $1 || ':' || $2, 0))`, userID, dateStr); err != nil {
 		return false, fmt.Errorf("failed to acquire daily login lock: %w", err)
 	}
 
@@ -367,7 +406,7 @@ func (r *PostgresRepository) EnsureDailyLogin(
 	checkQuery := `
 		SELECT EXISTS (
 			SELECT 1 FROM user_activity_logs
-			WHERE user_id = NULLIF($1, '')::uuid
+			WHERE user_id = $1::uuid
 			  AND created_at >= $2
 			  AND created_at < $3
 		)
@@ -387,13 +426,13 @@ func (r *PostgresRepository) EnsureDailyLogin(
 	insertQuery := `
 		WITH inserted_log AS (
 			INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-			VALUES (NULLIF($1, '')::uuid, 'daily_login', 0, $2, NOW())
+			VALUES ($1::uuid, 'daily_login', 0, $2, NOW())
 		)
 		UPDATE user_gamification
 		SET streak = ` + streakCaseExprWIB + `,
 		    last_active_at = NOW(),
 		    updated_at = NOW()
-		WHERE user_id = NULLIF($1, '')::uuid
+		WHERE user_id = $1::uuid
 	`
 	if _, err := tx.Exec(ctx, insertQuery, userID, metaJSON); err != nil {
 		return false, fmt.Errorf("failed to insert daily login activity: %w", err)
@@ -421,13 +460,13 @@ func (r *PostgresRepository) GetDailyActivityStatsSince(
 			       xp_earned,
 			       0 AS lessons_count
 			FROM user_activity_logs
-			WHERE user_id = NULLIF($1, '')::uuid AND created_at >= $2
+			WHERE user_id = $1::uuid AND created_at >= $2
 			UNION ALL
 			SELECT TO_CHAR(completed_at AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS act_date,
 			       0 AS xp_earned,
 			       1 AS lessons_count
 			FROM user_lesson_progress
-			WHERE user_id = NULLIF($1, '')::uuid AND is_completed = true AND completed_at >= $2
+			WHERE user_id = $1::uuid AND is_completed = true AND is_skipped = false AND completed_at >= $2
 		) combined
 		GROUP BY act_date
 	`
@@ -449,63 +488,80 @@ func (r *PostgresRepository) GetDailyActivityStatsSince(
 	return dailyStats, rows.Err()
 }
 
-// ClaimDailyReward atomically locks user_gamification, verifies claim status today (WIB), awards XP/levels, and logs activity
+// ClaimDailyReward atomically locks user_gamification, verifies DB WIB eligibility & claim uniqueness, awards XP/gems/levels, and logs activity
 func (r *PostgresRepository) ClaimDailyReward(
 	ctx context.Context,
 	userID string,
 	rewardType string,
 	xpAwarded int,
+	gemsAwarded int,
 ) (*DailyRewardClaimResponse, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
 	activityType := "daily_" + rewardType + "_claim"
-	now := time.Now().In(defaultAppLocation)
-	today := now.Format("2006-01-02")
-	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, defaultAppLocation)
 
 	tx, err := r.db.Pool.Begin(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin daily reward transaction: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer progression.RollbackTx(ctx, tx, "user.ClaimDailyReward")
 
 	var currentXP, streak int
+	var wibDate string
 	lockQuery := `
-		SELECT xp, streak
+		SELECT xp, streak, TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD')
 		FROM user_gamification
-		WHERE user_id = NULLIF($1, '')::uuid
+		WHERE user_id = $1::uuid
 		FOR UPDATE
 	`
-	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &streak); err != nil {
+	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &streak, &wibDate); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to lock user gamification for daily reward: %w", err)
 	}
 
+	var alreadyClaimed bool
 	checkQuery := `
 		SELECT EXISTS (
 			SELECT 1 FROM user_activity_logs
-			WHERE user_id = NULLIF($1, '')::uuid
+			WHERE user_id = $1::uuid
 			  AND activity_type = $2
-			  AND created_at >= $3
+			  AND created_at >= ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta')
 		)
 	`
-	var alreadyClaimed bool
-	if err := tx.QueryRow(ctx, checkQuery, userID, activityType, startOfToday).Scan(&alreadyClaimed); err != nil {
+	if err := tx.QueryRow(ctx, checkQuery, userID, activityType).Scan(&alreadyClaimed); err != nil {
 		return nil, fmt.Errorf("failed to verify daily reward claim status: %w", err)
 	}
 	if alreadyClaimed {
 		return nil, ErrDailyRewardAlreadyClaimed
 	}
 
+	if rewardType == "golden_chest" {
+		var todayEarnedXP int
+		xpQuery := `
+			SELECT COALESCE(SUM(xp_earned), 0)
+			FROM user_activity_logs
+			WHERE user_id = $1::uuid
+			  AND activity_type <> 'daily_golden_chest_claim'
+			  AND created_at >= ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta')
+		`
+		if err := tx.QueryRow(ctx, xpQuery, userID).Scan(&todayEarnedXP); err != nil {
+			return nil, fmt.Errorf("failed to verify daily xp prerequisite: %w", err)
+		}
+		if todayEarnedXP < GoldenChestDailyXPThreshold {
+			return nil, ErrDailyRewardNotUnlocked
+		}
+	}
+
 	newLevel := CalculateLevel(currentXP + xpAwarded)
 
 	metaJSON, err := json.Marshal(map[string]interface{}{
-		"reward_type": rewardType,
-		"date":        today,
-		"xp_awarded":  xpAwarded,
+		"reward_type":  rewardType,
+		"date":         wibDate,
+		"xp_awarded":   xpAwarded,
+		"gems_awarded": gemsAwarded,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal daily reward metadata: %w", err)
@@ -516,19 +572,27 @@ func (r *PostgresRepository) ClaimDailyReward(
 			UPDATE user_gamification
 			SET xp = xp + $2,
 			    current_level = $3,
+			    gems = GREATEST(0, gems + $4),
 			    streak = ` + streakCaseExprWIB + `,
 			    last_active_at = NOW(),
 			    updated_at = NOW()
-			WHERE user_id = NULLIF($1, '')::uuid
-			RETURNING xp, current_level, streak
+			WHERE user_id = $1::uuid
+			RETURNING xp, current_level, gems, streak
+		),
+		inserted_log AS (
+			INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+			SELECT $1::uuid, $5, $2, $6, NOW()
+			FROM updated_stats
+			RETURNING created_at
 		)
-		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-		SELECT NULLIF($1, '')::uuid, $4, $2, $5, NOW()
-		FROM updated_stats
-		RETURNING (SELECT xp FROM updated_stats), (SELECT current_level FROM updated_stats), (SELECT streak FROM updated_stats)
+		SELECT us.xp, us.current_level, us.gems, us.streak, il.created_at
+		FROM updated_stats us
+		CROSS JOIN inserted_log il
 	`
-	var updatedXP, updatedLevel, currentStreak int
-	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, newLevel, activityType, metaJSON).Scan(&updatedXP, &updatedLevel, &currentStreak)
+	var updatedXP, updatedLevel, updatedGems, currentStreak int
+	var claimedAt time.Time
+	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, newLevel, gemsAwarded, activityType, metaJSON).
+		Scan(&updatedXP, &updatedLevel, &updatedGems, &currentStreak, &claimedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute atomic daily reward claim: %w", err)
 	}
@@ -540,10 +604,12 @@ func (r *PostgresRepository) ClaimDailyReward(
 	return &DailyRewardClaimResponse{
 		RewardType:   rewardType,
 		XPAwarded:    xpAwarded,
+		GemsAwarded:  gemsAwarded,
 		CurrentXP:    updatedXP,
 		CurrentLevel: updatedLevel,
+		CurrentGems:  updatedGems,
 		Streak:       currentStreak,
-		ClaimedAt:    now.UTC().Format(time.RFC3339),
+		ClaimedAt:    claimedAt.UTC().Format(time.RFC3339),
 	}, nil
 }
 
@@ -552,28 +618,20 @@ func (r *PostgresRepository) GetDailyRewardsStatus(ctx context.Context, userID s
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
-	now := time.Now().In(defaultAppLocation)
-	startOfToday := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, defaultAppLocation)
 
 	query := `
-		SELECT 
-			EXISTS (
-				SELECT 1 FROM user_activity_logs
-				WHERE user_id = NULLIF($1, '')::uuid 
-				  AND activity_type = 'daily_vocab_quest_claim'
-				  AND created_at >= $2
-			) AS vocab_quest_claimed,
-			EXISTS (
-				SELECT 1 FROM user_activity_logs
-				WHERE user_id = NULLIF($1, '')::uuid 
-				  AND activity_type = 'daily_golden_chest_claim'
-				  AND created_at >= $2
-			) AS golden_chest_claimed
+		SELECT
+			TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS wib_date,
+			COALESCE(BOOL_OR(activity_type = 'daily_vocab_quest_claim'), false) AS vocab_quest_claimed,
+			COALESCE(BOOL_OR(activity_type = 'daily_golden_chest_claim'), false) AS golden_chest_claimed
+		FROM user_activity_logs
+		WHERE user_id = $1::uuid
+		  AND activity_type IN ('daily_vocab_quest_claim', 'daily_golden_chest_claim')
+		  AND created_at >= ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta')
 	`
 	var status DailyRewardsStatusResponse
-	status.Date = now.Format("2006-01-02")
-
-	err := r.db.Pool.QueryRow(ctx, query, userID, startOfToday).Scan(
+	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(
+		&status.Date,
 		&status.VocabQuestClaimed,
 		&status.GoldenChestClaimed,
 	)

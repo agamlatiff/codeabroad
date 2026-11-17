@@ -66,3 +66,28 @@ func TestSwitchActiveLanguage_NotEnrolled(t *testing.T) {
 	}
 }
 
+func TestEnrollLanguage_SuccessAndConflict(t *testing.T) {
+	repo := setupMockLanguageRepo()
+	repo.Levels["lvl-a1"] = &language.ProficiencyLevel{ID: "lvl-a1", LanguageID: "lang-de", Code: "A1", Name: "Goethe A1", OrderIndex: 1}
+	uc := language.NewUsecase(repo)
+
+	enr, err := uc.EnrollLanguage(context.Background(), "user-1", "lang-de")
+	if err != nil {
+		t.Fatalf("expected enroll success, got %v", err)
+	}
+	if enr == nil || !enr.IsActive || enr.LanguageID != "lang-de" {
+		t.Fatalf("unexpected active enrollment returned: %+v", enr)
+	}
+	if enr.CurrentLevelID == nil || *enr.CurrentLevelID != "lvl-a1" {
+		t.Fatalf("expected initial level lvl-a1, got %v", enr.CurrentLevelID)
+	}
+
+	if _, dupErr := uc.EnrollLanguage(context.Background(), "user-1", "lang-de"); dupErr != language.ErrAlreadyEnrolled {
+		t.Errorf("expected ErrAlreadyEnrolled on duplicate enroll, got %v", dupErr)
+	}
+
+	if _, inactErr := uc.EnrollLanguage(context.Background(), "user-1", "lang-fr"); inactErr != language.ErrLanguageNotActive {
+		t.Errorf("expected ErrLanguageNotActive for inactive track, got %v", inactErr)
+	}
+}
+

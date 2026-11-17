@@ -196,6 +196,44 @@ func unmarshalJSONMap(raw []byte, contextLabel string) map[string]any {
 	return out
 }
 
+// HydrateSanitizedExerciseJSONFields populates only student-safe exercise fields (skipping answer/rubric JSONB unmarshaling).
+func HydrateSanitizedExerciseJSONFields(ex *Exercise, contentJSON []byte) {
+	ex.XPReward = 10
+	rawContent := unmarshalJSONMap(contentJSON, fmt.Sprintf("exercise content (%s)", ex.ID))
+	if rawOpts, ok := rawContent["options"].([]any); ok {
+		for _, o := range rawOpts {
+			if s, ok := o.(string); ok {
+				ex.Options = append(ex.Options, s)
+			} else if m, ok := o.(map[string]any); ok {
+				if text, ok := m["text"].(string); ok && text != "" {
+					ex.Options = append(ex.Options, text)
+				}
+			}
+		}
+	}
+	if rawHint, ok := rawContent["hint"].(string); ok && rawHint != "" {
+		ex.Hint = &rawHint
+	}
+	if rawMedia, ok := rawContent["audio_url"].(string); ok && rawMedia != "" {
+		ex.MediaURL = &rawMedia
+	} else if rawMedia, ok := rawContent["media_url"].(string); ok && rawMedia != "" {
+		ex.MediaURL = &rawMedia
+	}
+	if xpVal, ok := rawContent["xp_reward"].(float64); ok && xpVal > 0 {
+		ex.XPReward = int(xpVal)
+	}
+	if ex.Options == nil {
+		ex.Options = []string{}
+	}
+	sanitizedContent := make(map[string]any, len(rawContent))
+	for k, v := range rawContent {
+		if !strippedContentKeys[k] {
+			sanitizedContent[k] = v
+		}
+	}
+	ex.Content = sanitizedContent
+}
+
 // HydrateExerciseJSONFields populates normalized JSONB fields on an Exercise from raw DB columns.
 func HydrateExerciseJSONFields(ex *Exercise, contentJSON, correctJSON, acceptableJSON, diagnosticJSON []byte) {
 	ex.XPReward = 10
@@ -244,7 +282,45 @@ const (
 		e.id, e.lesson_id, e.grammar_point_id, e.skill_pillar, e.exercise_type, e.prompt,
 		e.content, e.correct_answer, e.acceptable_answers, e.diagnostic_rubric, e.explanation, e.order_index, e.created_at
 	`
+	sanitizedExerciseSelectColumns = `
+		id, lesson_id, grammar_point_id, skill_pillar, exercise_type, prompt, content, order_index, created_at
+	`
+	prefixedSanitizedExerciseSelectColumns = `
+		e.id, e.lesson_id, e.grammar_point_id, e.skill_pillar, e.exercise_type, e.prompt, e.content, e.order_index, e.created_at
+	`
 )
+
+type sanitizedExerciseScanBuf struct {
+	ex          Exercise
+	contentJSON []byte
+}
+
+func (b *sanitizedExerciseScanBuf) dests() []any {
+	return []any{
+		&b.ex.ID, &b.ex.LessonID, &b.ex.GrammarPointID, &b.ex.SkillPillar, &b.ex.ExerciseType, &b.ex.Prompt,
+		&b.contentJSON, &b.ex.OrderIndex, &b.ex.CreatedAt,
+	}
+}
+
+func (b *sanitizedExerciseScanBuf) materialize() *Exercise {
+	HydrateSanitizedExerciseJSONFields(&b.ex, b.contentJSON)
+	return &b.ex
+}
+
+func scanSanitizedExerciseRows(rows pgx.Rows, capHint int, errLabel string) ([]Exercise, error) {
+	exercises := make([]Exercise, 0, capHint)
+	for rows.Next() {
+		var buf sanitizedExerciseScanBuf
+		if err := rows.Scan(buf.dests()...); err != nil {
+			return nil, fmt.Errorf("failed to scan %s row: %w", errLabel, err)
+		}
+		exercises = append(exercises, *buf.materialize())
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in %s: %w", errLabel, err)
+	}
+	return exercises, nil
+}
 
 type exerciseScanBuf struct {
 	ex             Exercise
@@ -289,19 +365,19 @@ func scanExerciseRows(rows pgx.Rows, capHint int, errLabel string) ([]Exercise, 
 	return exercises, nil
 }
 
-// GetExercisesByLessonID retrieves all exercises belonging to a specific lesson node
+// GetExercisesByLessonID retrieves all exercises belonging to a specific lesson node (sanitized projection)
 func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonID string) ([]Exercise, error) {
 	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
 		return nil, err
 	}
-	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE lesson_id = NULLIF($1, '')::uuid ORDER BY order_index ASC, id ASC`
+	query := `SELECT ` + sanitizedExerciseSelectColumns + ` FROM exercises WHERE lesson_id = NULLIF($1, '')::uuid ORDER BY order_index ASC, id ASC`
 	rows, err := r.db.Pool.Query(ctx, query, lessonID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query exercises by lesson id: %w", err)
 	}
 	defer rows.Close()
 
-	return scanExerciseRows(rows, 10, "exercise")
+	return scanSanitizedExerciseRows(rows, 10, "exercise")
 }
 
 // GetExerciseByID retrieves a single exercise by UUID
@@ -336,7 +412,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 				  AND u.order_index = 0
 			) AS has_placement
 		)
-		SELECT ` + prefixedExerciseSelectColumns + `
+		SELECT ` + prefixedSanitizedExerciseSelectColumns + `
 		FROM exercises e
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
@@ -356,7 +432,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 	}
 	defer rows.Close()
 
-	return scanExerciseRows(rows, limit, "placement exercise")
+	return scanSanitizedExerciseRows(rows, limit, "placement exercise")
 }
 
 // GetReadinessExamExercises retrieves all sectional questions for an official mock exam
@@ -383,22 +459,20 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 	return scanExerciseRows(rows, 20, "readiness exam exercise")
 }
 
-// GetDailyVocabularies extracts contextual workplace vocabulary cards from active curriculum exercises
+// GetDailyVocabularies extracts daily rotated contextual vocabulary cards scoped to the user's active enrollment and unlocked proficiency levels.
 func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
-	if userID != "" {
-		if err := apperror.ValidateUserUUID(userID); err != nil {
-			return nil, err
-		}
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
 	}
 	limit = normalizeLimit(limit, 10, 50)
 
 	query := `
 		WITH active_enrollment AS (
-			SELECT language_id, current_level_id
-			FROM user_language_enrollments
-			WHERE NULLIF($1, '')::uuid IS NOT NULL
-			  AND user_id = NULLIF($1, '')::uuid
-			  AND is_active = true
+			SELECT ule.language_id, ule.current_level_id, active_pl.order_index AS max_level_order
+			FROM user_language_enrollments ule
+			LEFT JOIN proficiency_levels active_pl ON ule.current_level_id = active_pl.id
+			WHERE ule.user_id = $1::uuid
+			  AND ule.is_active = true
 			LIMIT 1
 		)
 		SELECT
@@ -409,7 +483,11 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 				NULLIF(gp.formula, ''),
 				e.prompt
 			) AS term,
-			COALESCE(NULLIF(e.content->>'romaji', ''), '') AS romaji,
+			COALESCE(
+				NULLIF(e.content->>'reading', ''),
+				NULLIF(e.content->>'romaji', ''),
+				''
+			) AS romaji,
 			COALESCE(
 				NULLIF(e.content->>'target_translation', ''),
 				NULLIF(e.content->>'translation', ''),
@@ -422,31 +500,33 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 				NULLIF(e.content->>'display_text', ''),
 				NULLIF(e.content->>'sentence_template', ''),
 				e.prompt
-			) AS example_ja,
+			) AS example_target,
 			COALESCE(
 				NULLIF(e.content->>'translation', ''),
 				NULLIF(e.content->>'target_translation', ''),
-				e.explanation
-			) AS example_id,
+				e.explanation,
+				''
+			) AS example_translation,
 			pl.code AS difficulty_level
-		FROM exercises e
-		JOIN lessons l ON e.lesson_id = l.id
-		JOIN units u ON l.unit_id = u.id
-		JOIN proficiency_levels pl ON u.level_id = pl.id
+		FROM active_enrollment ae
+		JOIN proficiency_levels pl ON pl.language_id = ae.language_id
+		JOIN units u ON u.level_id = pl.id
+		JOIN lessons l ON l.unit_id = u.id
+		JOIN exercises e ON e.lesson_id = l.id
 		LEFT JOIN grammar_points gp ON e.grammar_point_id = gp.id
 		WHERE u.unit_type = 'curriculum'
-		  AND (
-			NOT EXISTS (SELECT 1 FROM active_enrollment)
-			OR pl.language_id IN (SELECT language_id FROM active_enrollment)
-		  )
+		  AND (ae.max_level_order IS NULL OR pl.order_index <= ae.max_level_order)
 		  AND (
 			COALESCE(e.content->>'display_text', '') <> ''
 			OR COALESCE(e.content->>'audio_text', '') <> ''
+			OR COALESCE(e.content->>'reading', '') <> ''
 			OR COALESCE(e.content->>'romaji', '') <> ''
 		  )
 		ORDER BY
-			CASE WHEN pl.id IN (SELECT current_level_id FROM active_enrollment WHERE current_level_id IS NOT NULL) THEN 0 ELSE 1 END ASC,
-			pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC
+			CASE WHEN ae.current_level_id = pl.id THEN 0 ELSE 1 END ASC,
+			md5(e.id::text || ((NOW() AT TIME ZONE 'Asia/Jakarta')::date)::text) ASC,
+			pl.order_index ASC,
+			e.id ASC
 		LIMIT $2
 	`
 
@@ -465,11 +545,15 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan daily vocabulary row: %w", err)
 		}
-		if romaji != "" {
+		if romaji != "" && romaji != item.Term {
 			item.Reading = fmt.Sprintf("%s • %s", item.Term, romaji)
 		} else {
 			item.Reading = item.Term
 		}
+		item.TargetText = item.Term
+		item.Translation = item.Meaning
+		item.ExampleTarget = item.ExampleJA
+		item.ExampleTranslation = item.ExampleID
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {
@@ -516,13 +600,20 @@ func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExe
 
 // GetDueReviews retrieves spaced repetition cards due for review as of the specified time
 func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error) {
+	reviews, _, err := r.GetDueReviewsWithTotal(ctx, userID, now, limit)
+	return reviews, err
+}
+
+// GetDueReviewsWithTotal retrieves due SRS cards alongside total due count via COUNT(*) OVER() in one query.
+func (r *PostgresRepository) GetDueReviewsWithTotal(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, int, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	query := `
 		SELECT 
 			r.id, r.user_id, r.exercise_id, r.repetition_count, r.interval_days, r.ease_factor, r.next_review_at, r.last_reviewed_at,
-			` + prefixedExerciseSelectColumns + `
+			` + prefixedSanitizedExerciseSelectColumns + `,
+			COUNT(*) OVER() AS total_due
 		FROM user_srs_reviews r
 		JOIN exercises e ON r.exercise_id = e.id
 		JOIN lessons l ON e.lesson_id = l.id
@@ -537,29 +628,33 @@ func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, n
 	`
 	rows, err := r.db.Pool.Query(ctx, query, userID, now, limit)
 	if err != nil {
-		return nil, fmt.Errorf("failed to query due srs reviews: %w", err)
+		return nil, 0, fmt.Errorf("failed to query due srs reviews: %w", err)
 	}
 	defer rows.Close()
 
 	reviews := make([]UserSRSReview, 0, limit)
+	totalDue := 0
 	for rows.Next() {
 		var rev UserSRSReview
-		var exBuf exerciseScanBuf
+		var exBuf sanitizedExerciseScanBuf
+		var rowTotal int
 		scanArgs := append([]any{
 			&rev.ID, &rev.UserID, &rev.ExerciseID, &rev.RepetitionCount,
 			&rev.IntervalDays, &rev.EaseFactor, &rev.NextReviewAt, &rev.LastReviewedAt,
 		}, exBuf.dests()...)
+		scanArgs = append(scanArgs, &rowTotal)
 
 		if err := rows.Scan(scanArgs...); err != nil {
-			return nil, fmt.Errorf("failed to scan srs review row: %w", err)
+			return nil, 0, fmt.Errorf("failed to scan srs review row: %w", err)
 		}
 		rev.Exercise = exBuf.materialize()
+		totalDue = rowTotal
 		reviews = append(reviews, rev)
 	}
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in due srs reviews: %w", err)
+		return nil, 0, fmt.Errorf("rows iteration error in due srs reviews: %w", err)
 	}
-	return reviews, nil
+	return reviews, totalDue, nil
 }
 
 // GetReview retrieves a single SRS card for a user and exercise
@@ -640,6 +735,21 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 
 // ApplyReviewTx atomically locks, reads, computes, and upserts an SM-2 SRS card within a single transaction.
 func (r *PostgresRepository) ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error) {
+	return r.applyReviewTx(ctx, userID, exerciseID, false, time.Time{}, compute)
+}
+
+// ApplyDueReviewTx atomically verifies the SRS card exists and is due before computing and persisting SM-2 updates.
+func (r *PostgresRepository) ApplyDueReviewTx(ctx context.Context, userID, exerciseID string, now time.Time, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error) {
+	return r.applyReviewTx(ctx, userID, exerciseID, true, now, compute)
+}
+
+func (r *PostgresRepository) applyReviewTx(
+	ctx context.Context,
+	userID, exerciseID string,
+	requireDue bool,
+	now time.Time,
+	compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview,
+) (*UserSRSReview, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
@@ -663,17 +773,23 @@ func (r *PostgresRepository) ApplyReviewTx(ctx context.Context, userID, exercise
 
 	var rev UserSRSReview
 	selectQuery := `
-		SELECT repetition_count, interval_days, ease_factor
+		SELECT repetition_count, interval_days, ease_factor, next_review_at
 		FROM user_srs_reviews
 		WHERE user_id = $1 AND exercise_id = $2
 		FOR UPDATE
 	`
-	err = tx.QueryRow(ctx, selectQuery, userID, exerciseID).Scan(&rev.RepetitionCount, &rev.IntervalDays, &rev.EaseFactor)
+	err = tx.QueryRow(ctx, selectQuery, userID, exerciseID).Scan(&rev.RepetitionCount, &rev.IntervalDays, &rev.EaseFactor, &rev.NextReviewAt)
 	if err != nil {
 		if !errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("failed to lock existing srs review: %w", err)
 		}
+		if requireDue {
+			return nil, ErrReviewNotFound
+		}
 	} else {
+		if requireDue && !rev.NextReviewAt.IsZero() && rev.NextReviewAt.After(now) {
+			return nil, ErrReviewNotDue
+		}
 		prevReps = rev.RepetitionCount
 		prevInterval = rev.IntervalDays
 		prevEase = rev.EaseFactor
@@ -797,9 +913,11 @@ func (r *PostgresRepository) CreateExamAttempt(ctx context.Context, attempt *Rea
 }
 
 var (
-	_ TransactionalExamRecorder = (*PostgresRepository)(nil)
-	_ TransactionalSRSReviewer  = (*PostgresRepository)(nil)
-	_ SRSMasteryCounter         = (*PostgresRepository)(nil)
+	_ TransactionalExamRecorder   = (*PostgresRepository)(nil)
+	_ TransactionalSRSReviewer    = (*PostgresRepository)(nil)
+	_ TransactionalDueSRSReviewer = (*PostgresRepository)(nil)
+	_ TotalDueSRSReader           = (*PostgresRepository)(nil)
+	_ SRSMasteryCounter           = (*PostgresRepository)(nil)
 )
 
 // RecordExamSubmissionTx atomically guards against duplicate passed exams, inserts the attempt,

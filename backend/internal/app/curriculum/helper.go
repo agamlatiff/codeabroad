@@ -187,8 +187,10 @@ func (h *Helper) ComputeVerifiedLessonScore(_ int, summary *LessonAttemptSummary
 			"LESSON_SCORE_TOO_LOW",
 			fmt.Sprintf("You need at least %d%% accuracy to complete this lesson", minLessonPassScore),
 			map[string]any{
-				"score":          score,
-				"required_score": minLessonPassScore,
+				"score":             score,
+				"required_score":    minLessonPassScore,
+				"correct_exercises": correct,
+				"total_exercises":   summary.TotalExercises,
 			},
 		)
 	}

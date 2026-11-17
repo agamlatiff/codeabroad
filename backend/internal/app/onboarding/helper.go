@@ -1,6 +1,8 @@
 package onboarding
 
 import (
+	"sort"
+
 	"codeabroad/backend/internal/app/exercise"
 	"codeabroad/backend/internal/app/language"
 )
@@ -76,12 +78,21 @@ func (h *Helper) ResolveTargetLevel(
 		return nil
 	}
 
+	sortedLevels := make([]language.ProficiencyLevel, len(levels))
+	copy(sortedLevels, levels)
+	sort.Slice(sortedLevels, func(i, j int) bool {
+		if sortedLevels[i].OrderIndex != sortedLevels[j].OrderIndex {
+			return sortedLevels[i].OrderIndex < sortedLevels[j].OrderIndex
+		}
+		return sortedLevels[i].ID < sortedLevels[j].ID
+	})
+
 	switch placementType {
 	case "manual_select":
 		if manualLevelID == nil || *manualLevelID == "" {
 			return nil
 		}
-		for _, lvl := range levels {
+		for _, lvl := range sortedLevels {
 			if lvl.ID == *manualLevelID {
 				return &lvl
 			}
@@ -89,13 +100,13 @@ func (h *Helper) ResolveTargetLevel(
 		return nil
 
 	case "placement_test":
-		if scorePercent >= 80 && len(levels) > 1 {
-			return &levels[1]
+		if scorePercent >= 80 && len(sortedLevels) > 1 {
+			return &sortedLevels[1]
 		}
-		return &levels[0]
+		return &sortedLevels[0]
 
 	default: // "zero_beginner"
-		return &levels[0]
+		return &sortedLevels[0]
 	}
 }
 

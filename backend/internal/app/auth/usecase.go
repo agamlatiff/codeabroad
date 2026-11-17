@@ -6,11 +6,13 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"sync"
 	"time"
 
 	"codeabroad/backend/config"
 	"codeabroad/backend/internal/app/user"
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 )
 
 type usecase struct {
@@ -44,17 +46,32 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 		return nil, err
 	}
 
-	existingEmail, err := u.userRepo.GetByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check existing email: %w", err)
+	var (
+		wg               sync.WaitGroup
+		existingEmail    *user.User
+		existingUsername *user.User
+		emailErr         error
+		usernameErr      error
+	)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		existingEmail, emailErr = u.userRepo.GetByEmail(ctx, req.Email)
+	}()
+	go func() {
+		defer wg.Done()
+		existingUsername, usernameErr = u.userRepo.GetByUsername(ctx, req.Username)
+	}()
+	wg.Wait()
+
+	if emailErr != nil {
+		return nil, fmt.Errorf("failed to check existing email: %w", emailErr)
 	}
 	if existingEmail != nil {
 		return nil, user.ErrEmailAlreadyExists
 	}
-
-	existingUsername, err := u.userRepo.GetByUsername(ctx, req.Username)
-	if err != nil {
-		return nil, fmt.Errorf("failed to check existing username: %w", err)
+	if usernameErr != nil {
+		return nil, fmt.Errorf("failed to check existing username: %w", usernameErr)
 	}
 	if existingUsername != nil {
 		return nil, user.ErrUsernameTaken
@@ -133,29 +150,22 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 	}
 
 	now := time.Now().UTC()
-	loc := u.helper.DefaultLocation()
-	todayStr := now.In(loc).Format("2006-01-02")
-	alreadyLoggedToday := usr.LastActiveAt != nil && usr.LastActiveAt.In(loc).Format("2006-01-02") == todayStr
+	todayStr := progression.TodayWIBDateKey(now)
+	startOfToday, startOfTomorrow := progression.WIBDayBounds(now)
 
-	newStreak, streakChanged := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
-	usr.Streak = newStreak
-	usr.LastActiveAt = &now
-
-	if !alreadyLoggedToday {
-		if err := u.userRepo.LogActivity(ctx, &user.UserActivityLog{
-			UserID:       usr.ID,
-			ActivityType: "daily_login",
-			XPEarned:     0,
-			Metadata:     map[string]interface{}{"source": "login", "date": todayStr},
-		}); err != nil {
-			log.Printf("[WARN] [auth.Login] failed to log daily login activity for user %s: %v", usr.ID, err)
-		}
+	loggedNewDay, loginActErr := u.userRepo.EnsureDailyLogin(ctx, usr.ID, todayStr, startOfToday, startOfTomorrow)
+	if loginActErr != nil {
+		log.Printf("[WARN] [auth.Login] failed to record daily login activity for user %s: %v", usr.ID, loginActErr)
 	}
 
-	if streakChanged {
-		if err := u.userRepo.UpdateGamification(ctx, usr.ID, usr.XP, usr.CurrentLevel, newStreak, &now); err != nil {
-			log.Printf("[WARN] [auth.Login] failed to update streak gamification for user %s: %v", usr.ID, err)
-		}
+	// EnsureDailyLogin already atomically updates streak and last_active_at in Postgres without touching XP/level;
+	// update local response copy safely without calling UpdateGamification with stale XP.
+	newStreak, _ := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
+	if loggedNewDay || usr.LastActiveAt == nil {
+		usr.Streak = newStreak
+		usr.LastActiveAt = &now
+	} else {
+		usr.LastActiveAt = &now
 	}
 
 	return &AuthResponse{

@@ -12,9 +12,15 @@ import (
 	"codeabroad/backend/internal/app/exercise"
 	"codeabroad/backend/internal/app/gamification"
 	"codeabroad/backend/internal/app/language"
-	"codeabroad/backend/internal/shared/apperror"
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
+	"golang.org/x/sync/singleflight"
 )
+
+type activeLanguageCache interface {
+	GetActiveLanguage(ctx context.Context, userID string) (string, error)
+	SetActiveLanguage(ctx context.Context, userID string, languageID string, ttl time.Duration) error
+}
 
 type usecase struct {
 	curriculumRepo   Repository
@@ -24,6 +30,7 @@ type usecase struct {
 	gamificationRepo gamification.Repository
 	cacheRepo        CurriculumCacheRepository
 	helper           *Helper
+	sfGroup          singleflight.Group
 }
 
 // NewUsecaseWithCache creates a new Curriculum Usecase instance with curriculum Redis caching support
@@ -75,8 +82,11 @@ func (u *usecase) hydrateEnrollment(ctx context.Context, enr *language.UserLangu
 	}
 	copyEnr := *enr
 	if copyEnr.Language == nil && copyEnr.LanguageID != "" {
-		if lang, lErr := u.langRepo.GetLanguageByID(ctx, copyEnr.LanguageID); lErr == nil && lang != nil {
+		lang, lErr := u.langRepo.GetLanguageByID(ctx, copyEnr.LanguageID)
+		if lErr == nil && lang != nil {
 			copyEnr.Language = lang
+		} else if lErr != nil && !errors.Is(lErr, language.ErrLanguageNotFound) {
+			return nil, lErr
 		}
 	}
 	if copyEnr.CurrentLevel == nil && copyEnr.CurrentLevelID != nil && *copyEnr.CurrentLevelID != "" {
@@ -99,7 +109,9 @@ func (u *usecase) hydrateEnrollment(ctx context.Context, enr *language.UserLangu
 			copyEnr.CurrentLevel = &fallback
 			copyEnr.CurrentLevelID = &fallback.ID
 			if copyEnr.ID != "" {
-				_ = u.langRepo.UpdateEnrollmentLevel(ctx, copyEnr.ID, fallback.ID)
+				if updErr := u.langRepo.UpdateEnrollmentLevel(ctx, copyEnr.ID, fallback.ID); updErr != nil {
+					log.Printf("curriculum: failed to persist fallback level %s for enrollment %s: %v", fallback.ID, copyEnr.ID, updErr)
+				}
 			}
 		}
 	}
@@ -138,8 +150,22 @@ func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurr
 		languageID = req.LanguageID
 	}
 
-	// Capture cache version epoch BEFORE resolving enrollment/units/lessons from Postgres
-	// so concurrent level-up invalidations cannot let stale data populate the new epoch.
+	sfKey := fmt.Sprintf("%s:%s", userID, languageID)
+	val, err, _ := u.sfGroup.Do(sfKey, func() (any, error) {
+		return u.getCurriculumInternal(ctx, userID, languageID)
+	})
+	if err != nil {
+		return nil, err
+	}
+	if val == nil {
+		return nil, language.ErrEnrollmentNotFound
+	}
+	return val.(*CurriculumResponse), nil
+}
+
+func (u *usecase) getCurriculumInternal(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
+	// Capture cache version epoch BEFORE reading Postgres or checking Redis active_lang cache
+	// so concurrent level-up/completion invalidations cannot let stale data populate the new epoch.
 	cacheVer := ""
 	canCache := false
 	if u.cacheRepo != nil {
@@ -149,6 +175,25 @@ func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurr
 		} else if ver != "" {
 			cacheVer = ver
 			canCache = true
+		}
+	}
+
+	// Fast Redis-first hit path when active language ID is known in Redis
+	var activeCache activeLanguageCache
+	if canCache {
+		if ac, ok := u.cacheRepo.(activeLanguageCache); ok {
+			activeCache = ac
+			if cachedActiveLangID, acErr := activeCache.GetActiveLanguage(ctx, userID); acErr == nil && cachedActiveLangID != "" {
+				if languageID == "" || languageID == cachedActiveLangID {
+					cached, _, cacheErr := u.cacheRepo.GetCurriculumWithVersion(ctx, userID, cachedActiveLangID)
+					if cacheErr != nil {
+						log.Printf("curriculum: failed to read curriculum cache for user %s: %v", userID, cacheErr)
+						canCache = false
+					} else if cached != nil {
+						return cached, nil
+					}
+				}
+			}
 		}
 	}
 
@@ -170,20 +215,38 @@ func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurr
 			log.Printf("curriculum: failed to read curriculum cache for user %s: %v", userID, cacheErr)
 			canCache = false
 		} else if cached != nil {
+			if activeCache != nil {
+				_ = activeCache.SetActiveLanguage(ctx, userID, enrollment.Language.ID, curriculumCacheBaseTTL)
+			}
 			return cached, nil
 		}
 	} else {
 		canCache = false
 	}
 
-	units, err := u.curriculumRepo.GetUnitsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query units for level: %w", err)
-	}
+	var (
+		units     []UnitNodeResponse
+		lessons   []LessonNodeResponse
+		unitsErr  error
+		lessonErr error
+		wg        sync.WaitGroup
+	)
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		units, unitsErr = u.curriculumRepo.GetUnitsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
+	}()
+	go func() {
+		defer wg.Done()
+		lessons, lessonErr = u.curriculumRepo.GetLessonsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
+	}()
+	wg.Wait()
 
-	lessons, err := u.curriculumRepo.GetLessonsByLevelID(ctx, enrollment.CurrentLevel.ID, userID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to batch query lessons for level: %w", err)
+	if unitsErr != nil {
+		return nil, fmt.Errorf("failed to query units for level: %w", unitsErr)
+	}
+	if lessonErr != nil {
+		return nil, fmt.Errorf("failed to batch query lessons for level: %w", lessonErr)
 	}
 
 	lessonsByUnit := make(map[string][]LessonNodeResponse, len(units))
@@ -230,10 +293,12 @@ func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurr
 		Units:            unlockedUnits,
 	}
 
-	// 2. Cache curriculum response only if version lookup succeeded and epoch has not advanced during DB read
+	// Cache curriculum response only if version lookup succeeded and epoch has not advanced during DB read
 	if u.cacheRepo != nil && canCache {
 		if setErr := u.cacheRepo.SetCurriculumIfVersion(ctx, userID, enrollment.Language.ID, cacheVer, res, 15*time.Minute); setErr != nil {
 			log.Printf("curriculum: failed to cache curriculum for user %s: %v", userID, setErr)
+		} else if activeCache != nil {
+			_ = activeCache.SetActiveLanguage(ctx, userID, enrollment.Language.ID, 15*time.Minute)
 		}
 	}
 
@@ -262,14 +327,16 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 		canonicalLessonID = lessonID
 	}
 
-	unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, canonicalLessonID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to verify lesson unlock status: %w", err)
+	if !lesson.IsUnlocked {
+		unlocked, err := u.curriculumRepo.IsLessonUnlocked(ctx, userID, canonicalLessonID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to verify lesson unlock status: %w", err)
+		}
+		if !unlocked {
+			return nil, ErrLessonLocked
+		}
+		lesson.IsUnlocked = true
 	}
-	if !unlocked {
-		return nil, ErrLessonLocked
-	}
-	lesson.IsUnlocked = true
 
 	var (
 		exercises []exercise.Exercise
@@ -298,12 +365,12 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 	if exErr != nil {
 		return nil, fmt.Errorf("failed to query exercises for lesson: %w", exErr)
 	}
+	if gpErr != nil {
+		return nil, fmt.Errorf("failed to query grammar points for lesson: %w", gpErr)
+	}
 	lesson.Exercises = exercise.SanitizeExercises(exercises)
 
-	if gpErr != nil {
-		log.Printf("curriculum: failed to query grammar points for lesson %s: %v", canonicalLessonID, gpErr)
-		lesson.GrammarPoints = []GrammarPoint{}
-	} else if len(gps) > 0 {
+	if len(gps) > 0 {
 		lesson.GrammarPoints = gps
 	} else {
 		lesson.GrammarPoints = []GrammarPoint{}
@@ -371,7 +438,7 @@ func (u *usecase) evaluateLessonBadges(ctx context.Context, userID string, paylo
 			continue
 		}
 		owned[key] = true
-		if ub != nil && ub.Badge != nil {
+		if ub != nil && ub.Badge != nil && ub.NewlyAwarded {
 			awarded = append(awarded, *ub.Badge)
 			extraXP += ub.Badge.XPReward
 		}
@@ -470,8 +537,11 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		lastActive = now
 	}
 
+	sessionScore := payload.SessionScore
 	return &CompleteLessonResponse{
-		Progress: *progress,
+		Progress:     *progress,
+		SessionScore: &sessionScore,
+		XPEarned:     payload.XPEarned,
 		Gamification: user.UserGamificationStats{
 			XP:           finalXP,
 			CurrentLevel: finalLevel,

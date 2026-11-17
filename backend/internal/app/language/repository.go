@@ -8,7 +8,9 @@ import (
 
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 func validateUserUUID(userID string) error {
@@ -138,23 +140,6 @@ func (r *PostgresRepository) GetLanguageByID(ctx context.Context, id string) (*L
 			return nil, ErrLanguageNotFound
 		}
 		return nil, fmt.Errorf("failed to query language by id: %w", err)
-	}
-	return &l, nil
-}
-
-// GetLanguageByCode retrieves a single language track by its ISO code
-func (r *PostgresRepository) GetLanguageByCode(ctx context.Context, code string) (*Language, error) {
-	query := `
-		SELECT id, code, name, supported_scripts, is_active, created_at
-		FROM languages
-		WHERE code = $1
-	`
-	l, err := scanLanguageRow(r.db.Pool.QueryRow(ctx, query, code))
-	if err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return nil, ErrLanguageNotFound
-		}
-		return nil, fmt.Errorf("failed to query language by code: %w", err)
 	}
 	return &l, nil
 }
@@ -320,10 +305,14 @@ func (r *PostgresRepository) CreateEnrollment(ctx context.Context, enrollment *U
 	if err != nil {
 		return fmt.Errorf("failed to begin enrollment tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer progression.RollbackTx(ctx, tx, "language.CreateEnrollment")
+
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('lang_enroll:' || $1, 0))`, enrollment.UserID); err != nil {
+		return fmt.Errorf("failed to lock user enrollments: %w", err)
+	}
 
 	if enrollment.IsActive {
-		deactivateQuery := `UPDATE user_language_enrollments SET is_active = false WHERE user_id = $1`
+		deactivateQuery := `UPDATE user_language_enrollments SET is_active = false WHERE user_id = $1::uuid`
 		if _, err := tx.Exec(ctx, deactivateQuery, enrollment.UserID); err != nil {
 			return fmt.Errorf("failed to deactivate previous enrollments: %w", err)
 		}
@@ -332,7 +321,7 @@ func (r *PostgresRepository) CreateEnrollment(ctx context.Context, enrollment *U
 	insertQuery := `
 		INSERT INTO user_language_enrollments (
 			user_id, language_id, current_level_id, initial_placement_type, placement_score_percent, is_active, enrolled_at
-		) VALUES ($1, $2, $3, $4, $5, $6, NOW())
+		) VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6, NOW())
 		RETURNING id, enrolled_at
 	`
 	err = tx.QueryRow(
@@ -341,6 +330,10 @@ func (r *PostgresRepository) CreateEnrollment(ctx context.Context, enrollment *U
 		enrollment.InitialPlacementType, enrollment.PlacementScorePercent, enrollment.IsActive,
 	).Scan(&enrollment.ID, &enrollment.EnrolledAt)
 	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			return ErrAlreadyEnrolled
+		}
 		return fmt.Errorf("failed to insert language enrollment: %w", err)
 	}
 
@@ -408,16 +401,20 @@ func (r *PostgresRepository) SetActiveLanguage(ctx context.Context, userID strin
 	if err != nil {
 		return fmt.Errorf("failed to begin switch language tx: %w", err)
 	}
-	defer tx.Rollback(ctx)
+	defer progression.RollbackTx(ctx, tx, "language.SetActiveLanguage")
 
-	if _, err := tx.Exec(ctx, `UPDATE user_language_enrollments SET is_active = false WHERE user_id = $1`, userID); err != nil {
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('lang_enroll:' || $1, 0))`, userID); err != nil {
+		return fmt.Errorf("failed to lock user enrollments: %w", err)
+	}
+
+	if _, err := tx.Exec(ctx, `UPDATE user_language_enrollments SET is_active = false WHERE user_id = $1::uuid`, userID); err != nil {
 		return fmt.Errorf("failed to deactivate tracks: %w", err)
 	}
 
 	tag, err := tx.Exec(ctx, `
 		UPDATE user_language_enrollments 
 		SET is_active = true 
-		WHERE user_id = $1 AND language_id = $2::uuid
+		WHERE user_id = $1::uuid AND language_id = $2::uuid
 	`, userID, languageID)
 	if err != nil {
 		return fmt.Errorf("failed to activate target language track: %w", err)

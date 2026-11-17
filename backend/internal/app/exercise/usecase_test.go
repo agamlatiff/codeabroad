@@ -31,6 +31,13 @@ func TestSubmitAnswer_Correct(t *testing.T) {
 		XPReward:      10,
 	}
 
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
+	}
+
 	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	res, err := uc.SubmitAnswer(context.Background(), "user-1", &exercise.SubmitExerciseAnswerRequest{
@@ -62,6 +69,13 @@ func TestSubmitAnswer_Wrong_InjectsSRS(t *testing.T) {
 		Prompt:        "What is 'Konnichiwa'?",
 		CorrectAnswer: "Hello",
 		XPReward:      10,
+	}
+
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
 	}
 
 	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
@@ -100,6 +114,13 @@ func TestProcessReview_SM2(t *testing.T) {
 		CorrectAnswer: "Answer",
 	}
 
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
+	}
+
 	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
 
 	q := 4
@@ -133,6 +154,13 @@ func TestSubmitAnswer_AcceptableAnswer_Matches(t *testing.T) {
 		CorrectAnswer:     "東京",
 		AcceptableAnswers: []string{"とうきょう", "tokyo"},
 		XPReward:          10,
+	}
+
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
 	}
 
 	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
@@ -170,6 +198,13 @@ func TestSubmitAnswer_DiagnosticFeedback_Surfaces(t *testing.T) {
 			"で": "Partikel で digunakan untuk tempat terjadinya aktivitas, bukan arah.",
 		},
 		XPReward: 10,
+	}
+
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
 	}
 
 	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true))
@@ -1466,6 +1501,19 @@ func (s *spySRSRepository) GetDueCount(ctx context.Context, userID string, now t
 	return s.MockSRSRepository.GetDueCount(ctx, userID, now)
 }
 
+func (s *spySRSRepository) ApplyDueReviewTx(
+	ctx context.Context,
+	userID, exerciseID string,
+	now time.Time,
+	compute func(prevReps, prevInterval int, prevEase float64) *exercise.UserSRSReview,
+) (*exercise.UserSRSReview, error) {
+	s.txReviewCalls++
+	if !s.enableTx {
+		return nil, errors.New("unexpected tx call")
+	}
+	return s.MockSRSRepository.ApplyDueReviewTx(ctx, userID, exerciseID, now, compute)
+}
+
 func (s *spySRSRepository) ApplyReviewTx(
 	ctx context.Context,
 	userID, exerciseID string,
@@ -1576,6 +1624,12 @@ func TestProcessReview_UsesTransactionalSRSReviewerWhenSupported(t *testing.T) {
 		MockSRSRepository: exercise.NewMockSRSRepository(),
 		enableTx:          true,
 	}
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
+	}
 	uc := exercise.NewUsecaseFull(
 		eRepo,
 		sRepo,
@@ -1606,7 +1660,8 @@ type stubBadgeAwarder struct {
 func (s *stubBadgeAwarder) AwardBadge(_ context.Context, _ string, badgeKey string, _ int) (*gamification.UserBadge, error) {
 	s.calls = append(s.calls, badgeKey)
 	return &gamification.UserBadge{
-		BadgeKey: badgeKey,
+		BadgeKey:     badgeKey,
+		NewlyAwarded: true,
 		Badge: &gamification.BadgeDefinition{
 			ID:       badgeKey,
 			Title:    "Penakluk JLPT N5",
@@ -2089,6 +2144,7 @@ func TestProcessReviewAndSubmitExam_LogsUserActivities(t *testing.T) {
 	}
 
 	// Best-effort telemetry: LogActivity errors must not fail ProcessReview or SubmitExam
+	sRepo.Reviews["user-1:ex-1"].NextReviewAt = time.Now().UTC().Add(-time.Hour)
 	userRepo.LogActivityError = errors.New("activity insert failed")
 	if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
 		ExerciseID: "ex-1",
@@ -2158,5 +2214,60 @@ func TestSubmitAnswer_SkipSRSSchedule_TagsAttemptAsSRSReview(t *testing.T) {
 	if _, exists := eRepo.Attempts[1].SelectedAnswer["is_srs_review"]; exists {
 		t.Fatalf("expected normal lesson attempt not to carry is_srs_review flag, got %+v", eRepo.Attempts[1].SelectedAnswer)
 	}
+}
+
+func TestExercise_HardenedInvariants(t *testing.T) {
+	t.Run("ProcessReview enforces existing due card", func(t *testing.T) {
+		eRepo := exercise.NewMockRepository()
+		sRepo := exercise.NewMockSRSRepository()
+		lessonID := "lesson-1"
+		eRepo.Exercises["ex-1"] = &exercise.Exercise{ID: "ex-1", LessonID: &lessonID, CorrectAnswer: "Yes"}
+		uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), exercise.NewMockLessonAccessChecker(true))
+
+		q := 4
+		if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{ExerciseID: "ex-1", Quality: &q}); !errors.Is(err, exercise.ErrReviewNotFound) {
+			t.Fatalf("expected ErrReviewNotFound when card missing, got %v", err)
+		}
+
+		sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+			UserID:       "user-1",
+			ExerciseID:   "ex-1",
+			NextReviewAt: time.Now().UTC().Add(24 * time.Hour),
+		}
+		if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{ExerciseID: "ex-1", Quality: &q}); !errors.Is(err, exercise.ErrReviewNotDue) {
+			t.Fatalf("expected ErrReviewNotDue when review is in future, got %v", err)
+		}
+	})
+
+	t.Run("EvaluateAnswer collapses CJK spaces only and normalizes German sharp S", func(t *testing.T) {
+		h := exercise.NewHelper()
+		if h.EvaluateAnswer("I am", nil, "Iam") {
+			t.Fatalf("expected Latin space mismatch 'I am' vs 'Iam' to return false")
+		}
+		if !h.EvaluateAnswer("わたし は です", nil, "わたしはです") {
+			t.Fatalf("expected CJK space-collapsed match to return true")
+		}
+		if !h.EvaluateAnswer("Straße", nil, "strasse") {
+			t.Fatalf("expected German ß -> ss normalization to match")
+		}
+		rubric := map[string]any{"am": "Verb to be hint"}
+		if fb := h.ExtractDiagnosticFeedback(rubric, "example"); fb != nil {
+			t.Fatalf("expected word-boundary diagnostic lookup not to match 'am' inside 'example', got %q", *fb)
+		}
+	})
+
+	t.Run("SM2 uses newly computed EF and snaps due date to WIB midnight", func(t *testing.T) {
+		h := exercise.NewHelper()
+		now := time.Date(2026, 11, 16, 10, 0, 0, 0, time.UTC)
+		res := h.CalculateSM2(5, 2, 6, 2.5, now)
+		if res.IntervalDays != 16 {
+			t.Fatalf("expected 6 * 2.6 = 16 using new EF', got %d", res.IntervalDays)
+		}
+		wib := time.FixedZone("WIB", 7*3600)
+		inWIB := res.DueDate.In(wib)
+		if inWIB.Hour() != 0 || inWIB.Minute() != 0 || inWIB.Second() != 0 {
+			t.Fatalf("expected due date snapped to midnight WIB, got %v", inWIB)
+		}
+	})
 }
 

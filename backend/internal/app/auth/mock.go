@@ -97,9 +97,12 @@ func (m *MockSessionRepository) RotateSession(
 		return ErrTokenExpired
 	}
 	if subtle.ConstantTimeCompare([]byte(entry.token), []byte(expectedTokenHash)) != 1 {
-		// Revoke session upon mismatch to enforce refresh token reuse detection.
+	// Revoke session upon mismatch to enforce refresh token reuse detection.
 		delete(m.Sessions, key)
 		delete(m.TTLs, key)
+		if !m.hasAnyUserSessionLocked(userID) {
+			delete(m.TTLs, userID)
+		}
 		return ErrTokenExpired
 	}
 	m.Sessions[key] = sessionEntry{
@@ -109,6 +112,16 @@ func (m *MockSessionRepository) RotateSession(
 	m.TTLs[key] = ttl
 	m.TTLs[userID] = ttl
 	return nil
+}
+
+func (m *MockSessionRepository) hasAnyUserSessionLocked(userID string) bool {
+	prefix := userID + ":"
+	for k := range m.Sessions {
+		if strings.HasPrefix(k, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 func (m *MockSessionRepository) DeleteSession(ctx context.Context, userID string, sessionID string) error {
@@ -121,6 +134,9 @@ func (m *MockSessionRepository) DeleteSession(ctx context.Context, userID string
 	key := userID + ":" + sessionID
 	delete(m.Sessions, key)
 	delete(m.TTLs, key)
+	if !m.hasAnyUserSessionLocked(userID) {
+		delete(m.TTLs, userID)
+	}
 	return nil
 }
 
@@ -138,5 +154,6 @@ func (m *MockSessionRepository) DeleteAllSessions(ctx context.Context, userID st
 			delete(m.TTLs, k)
 		}
 	}
+	delete(m.TTLs, userID)
 	return nil
 }

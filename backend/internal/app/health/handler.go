@@ -17,17 +17,12 @@ type Handler struct {
 	rdb *redis.RedisClient
 }
 
-// New creates a new Health Handler instance
-func New(pg *postgres.PostgresDB, rdb *redis.RedisClient) *Handler {
+// NewHandler creates a new Health Handler instance
+func NewHandler(pg *postgres.PostgresDB, rdb *redis.RedisClient) *Handler {
 	return &Handler{
 		pg:  pg,
 		rdb: rdb,
 	}
-}
-
-// NewHandler creates a new Health Handler instance (standard naming convention)
-func NewHandler(pg *postgres.PostgresDB, rdb *redis.RedisClient) *Handler {
-	return New(pg, rdb)
 }
 
 // CheckHealth performs ping checks on Postgres and Redis and returns system readiness status
@@ -62,24 +57,28 @@ func (h *Handler) CheckHealth(c *gin.Context) {
 	wg.Wait()
 	isHealthy := pgOK && redisOK
 
-	statusCode := http.StatusOK
-	message := "system is fully operational"
-	statusText := "healthy"
-
 	if !isHealthy {
-		statusCode = http.StatusServiceUnavailable
-		message = "system components degraded"
-		statusText = "degraded"
+		c.JSON(http.StatusServiceUnavailable, gin.H{
+			"success": false,
+			"error":   "system components degraded",
+			"code":    "SERVICE_UNAVAILABLE",
+			"data": gin.H{
+				"status":   "degraded",
+				"postgres": pgStatus,
+				"redis":    redisStatus,
+			},
+		})
+		return
 	}
 
-	c.JSON(statusCode, gin.H{
-		"success": isHealthy,
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
 		"data": gin.H{
-			"status":   statusText,
+			"status":   "healthy",
 			"postgres": pgStatus,
 			"redis":    redisStatus,
 		},
-		"message": message,
+		"message": "system is fully operational",
 	})
 }
 
