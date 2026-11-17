@@ -5,6 +5,7 @@
 -- Database: PostgreSQL 16 (pgcrypto)
 -- ============================================================================
 
+DROP TABLE IF EXISTS coaching_submissions CASCADE;
 DROP TABLE IF EXISTS readiness_exam_attempts CASCADE;
 DROP TABLE IF EXISTS user_srs_reviews CASCADE;
 DROP TABLE IF EXISTS user_exercise_attempts CASCADE;

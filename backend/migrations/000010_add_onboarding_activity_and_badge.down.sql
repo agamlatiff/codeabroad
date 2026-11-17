@@ -1,4 +1,4 @@
-DELETE FROM badge_definitions WHERE id = 'akihabara_novice';
+DELETE FROM user_activity_logs WHERE activity_type = 'onboarding_completed';
 
 ALTER TABLE user_activity_logs
     DROP CONSTRAINT IF EXISTS user_activity_logs_activity_type_check;
