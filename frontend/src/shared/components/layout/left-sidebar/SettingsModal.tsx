@@ -1,5 +1,5 @@
-import { createPortal } from 'react-dom'
 import type { FC } from 'react'
+import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import {
   X,
   User as UserIcon,
@@ -46,10 +46,18 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
   const { audioMode, setAudioMode, soundscapeTrack, setSoundscapeTrack } = useAudioStore()
 
-  if (!isOpen || typeof document === 'undefined') return null
+  if (!isOpen) return null
 
-  return createPortal(
-    <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+  return (
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={() => {
+        triggerHaptic('tap')
+        onClose()
+      }}
+      ariaLabel="Pengaturan Akun"
+      backdropClassName="bg-slate-900/50 backdrop-blur-xs"
+    >
       <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-7 max-w-lg w-full space-y-5 shadow-2xl animate-pop relative max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
@@ -80,7 +88,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
               <h3 className="font-brand font-black text-lg text-slate-900 truncate">
-                {user?.name || user?.username || 'Pengembang Tokyo'}
+                {user?.name || user?.username || 'Pembelajar Global'}
               </h3>
               <span className="bg-blue-50 border border-blue-200 text-blue-600 font-brand font-black text-[10px] px-2 py-0.5 rounded-full shrink-0">
                 Lv. {user?.current_level || 1}
@@ -149,6 +157,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               />
               <input
                 type="text"
+                maxLength={100}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nama kamu..."
@@ -164,9 +173,10 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </label>
             <textarea
               rows={2}
+              maxLength={500}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Contoh: Sedang mengejar target JLPT N4 untuk bekerja dan tinggal di Tokyo."
+              placeholder="Contoh: Sedang menyiapkan sertifikasi bahasa untuk studi dan karir internasional."
               className="w-full bg-white text-xs font-medium p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs resize-none"
             />
           </div>
@@ -343,8 +353,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           </div>
         </form>
       </div>
-    </div>,
-    document.body
+    </AccessibleModal>
   )
 }
 

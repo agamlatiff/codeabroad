@@ -11,12 +11,16 @@ import type { Icon } from '@phosphor-icons/react'
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { useLogout } from "@/features/auth/hooks/useLogout"
 import {
-  SRS_DUE_QUERY_KEY,
-  exerciseService,
-} from '@/features/exercise/services/exerciseService'
-import { triggerHaptic } from "@/shared/utils/haptics"
-import type { AvatarStyle } from "@/features/user/utils/avatar"
-import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
+  getProfileQueryKey,
+  getSrsDueQueryKey,
+} from '@/shared/constants/queryKeys'
+import { exerciseService } from '@/features/exercise/services/exerciseService'
+import { triggerHaptic } from '@/shared/utils/haptics'
+import {
+  getSavedAvatarStyle,
+  saveAvatarStyle,
+  type AvatarStyle,
+} from '@/shared/utils/avatar'
 
 export interface LeftSidebarNavItem {
   label: string
@@ -27,22 +31,17 @@ export interface LeftSidebarNavItem {
   isActive: boolean
 }
 
-/**
- * 1:1 Headless controller hook for AppLeftSidebar.
- * Manages navigation rail items, active route matching, avatar style state,
- * account settings modal visibility, and session sign-out.
- */
 export const useAppLeftSidebar = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
-  const { user } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
   const logout = useLogout()
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>('adventurer')
+  const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>(() => getSavedAvatarStyle())
 
   const srsDueQuery = useQuery({
-    queryKey: [...SRS_DUE_QUERY_KEY, user?.id ?? 'anonymous', 20],
+    queryKey: getSrsDueQueryKey(user?.id, 20),
     queryFn: ({ signal }) => exerciseService.getDueReviews(20, { signal }),
     enabled: Boolean(user),
     staleTime: 60_000,
@@ -78,7 +77,7 @@ export const useAppLeftSidebar = () => {
       },
       {
         label: 'Peringkat',
-        tooltip: 'Peringkat • Liga Tokyo',
+        tooltip: 'Peringkat • Liga Global',
         href: '/leaderboard',
         icon: Trophy,
       },
@@ -94,6 +93,7 @@ export const useAppLeftSidebar = () => {
   }, [location.pathname, srsDueCount])
 
   const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
+    saveAvatarStyle(style)
     setAvatarStyleState(style)
   }, [])
 
@@ -107,8 +107,8 @@ export const useAppLeftSidebar = () => {
   }, [])
 
   const handleProfileUpdated = useCallback(() => {
-    void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
-  }, [queryClient])
+    void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(user?.id) })
+  }, [queryClient, user?.id])
 
   const handleLogout = useCallback(() => {
     triggerHaptic('tap')

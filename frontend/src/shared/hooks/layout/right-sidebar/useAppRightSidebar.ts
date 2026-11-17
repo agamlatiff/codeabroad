@@ -5,16 +5,12 @@ import { userService } from "@/features/user/services/userService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
 import {
-  PROFILE_QUERY_KEY,
-  ACTIVITY_LOGS_QUERY_KEY,
-  DAILY_REWARDS_QUERY_KEY,
+  getProfileQueryKey,
+  getActivityLogsQueryKey,
   getDailyRewardsQueryKey,
-} from "@/features/user/services/userService"
-import {
-  DAILY_QUESTS_QUERY_KEY,
-  VOCAB_QUEST_REWARD_XP,
-  GOLDEN_CHEST_REWARD_XP,
-} from './useQuestsSection'
+  getDailyQuestsQueryKey,
+} from '@/shared/constants/queryKeys'
+import { VOCAB_QUEST_REWARD_XP, GOLDEN_CHEST_REWARD_XP } from './useQuestsSection'
 
 const FLOATING_REWARD_DURATION_MS = 1500
 const HIGHLIGHT_DURATION_MS = 2000
@@ -31,14 +27,10 @@ export interface UseAppRightSidebarOptions {
   onCloseMobileDrawer?: () => void
 }
 
-/**
- * 1:1 Headless controller hook for AppRightSidebar container.
- * Manages mobile slide-over drawer transitions, cross-section scroll/highlight
- * coordination, floating XP bursts, and daily reward claim mutations.
- */
 export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOptions = {}) => {
   const queryClient = useQueryClient()
-  const { user, updateUser } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const updateUser = useAuthStore((s) => s.updateUser)
 
   const { data: dailyRewardsStatus = null } = useQuery({
     queryKey: getDailyRewardsQueryKey(user?.id),
@@ -99,11 +91,12 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
         xp: res.current_xp,
         current_level: res.current_level,
         streak: res.streak,
+        ...(typeof res.current_gems === 'number' ? { gems: res.current_gems } : {}),
       })
-      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(user?.id) })
     },
     onError: () => {
       triggerHaptic('error')

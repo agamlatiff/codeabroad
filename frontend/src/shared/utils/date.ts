@@ -31,15 +31,15 @@ export const getWibDateKey = (date: Date = new Date()): string => {
   }).format(date)
 }
 
+const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
+const DAY_MS = 24 * 60 * 60 * 1000
+
 /**
- * Computes HH:MM:SS remaining until next midnight WIB (UTC+7).
+ * Computes HH:MM:SS remaining until next midnight WIB (UTC+7) using pure epoch math (no DST drift).
  */
 export const getWibMidnightCountdown = (): string => {
-  const now = new Date()
-  const wibNow = new Date(now.getTime() + (7 * 60 + now.getTimezoneOffset()) * 60 * 1000)
-  const wibMidnight = new Date(wibNow)
-  wibMidnight.setHours(24, 0, 0, 0)
-  const diffMs = wibMidnight.getTime() - wibNow.getTime()
+  const wibEpochMs = Date.now() + WIB_OFFSET_MS
+  const diffMs = Math.max(0, DAY_MS - (wibEpochMs % DAY_MS))
 
   const hours = Math.floor(diffMs / (1000 * 60 * 60))
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))

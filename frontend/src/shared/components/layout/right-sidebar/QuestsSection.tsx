@@ -7,6 +7,8 @@ import {
   Translate,
   Lightning,
   Gift,
+  SketchLogo,
+  Play,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { useQuestsSection } from "@/shared/hooks/layout/right-sidebar/useQuestsSection"
@@ -84,9 +86,11 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
               </span>
             </span>
             <span className="font-brand font-black text-amber-700 text-[10px] flex items-center gap-1">
-              <span>🎁 +20 💎</span>
+              <Gift weight="fill" className="w-3 h-3 text-amber-600" />
+              <SketchLogo weight="fill" className="w-3 h-3 text-sky-500" />
+              <span>+20</span>
               <span className="text-slate-400 font-medium">
-                ({isChestUnlocked ? 'Tercapai! 🎉' : `${remainingXp} XP lagi`})
+                ({isChestUnlocked ? 'Tercapai!' : `${remainingXp} XP lagi`})
               </span>
             </span>
           </div>
@@ -111,8 +115,8 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
               }`}
               title={
                 isChestUnlocked
-                  ? 'Klik untuk membuka Peti Emas Hadiah 50 XP! (+20 💎)'
-                  : `Peti Emas Hadiah 50 XP (+20 💎) - ${remainingXp} XP lagi`
+                  ? 'Klik untuk membuka Peti Emas Hadiah 50 XP & 20 Permata'
+                  : `Peti Emas Hadiah 50 XP (+20 Permata) - ${remainingXp} XP lagi`
               }
             >
               <Gift weight={isChestUnlocked ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
@@ -172,7 +176,10 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                     onClick={(e) => onClaimVocabQuest(e)}
                     className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
                   >
-                    KLAIM ⚡
+                    <span className="inline-flex items-center gap-1">
+                      <span>KLAIM</span>
+                      <Lightning weight="fill" className="w-3 h-3" />
+                    </span>
                   </Button3D>
                 ) : (
                   <Button3D
@@ -181,7 +188,10 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                     onClick={() => handleQuestAction(quest)}
                     className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
                   >
-                    MULAI ▶
+                    <span className="inline-flex items-center gap-1">
+                      <span>MULAI</span>
+                      <Play weight="fill" className="w-2.5 h-2.5" />
+                    </span>
                   </Button3D>
                 )}
               </div>

@@ -9,6 +9,7 @@ export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean
   icon?: ReactNode
   fullWidth?: boolean
+  disableSound?: boolean
 }
 
 /**
@@ -22,6 +23,7 @@ export const Button3D = ({
   loading = false,
   icon,
   fullWidth = false,
+  disableSound = false,
   disabled,
   className = '',
   onClick,
@@ -30,7 +32,9 @@ export const Button3D = ({
   const widthStyle = fullWidth ? 'w-full' : ''
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
-    audioEngine.playPop()
+    if (!disableSound) {
+      audioEngine.playPop()
+    }
     onClick?.(e)
   }
 

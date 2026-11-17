@@ -1,14 +1,15 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from "@/features/auth/store/authStore"
+import { useAuthStore } from '@/features/auth/store/authStore'
+import { vocabularyService } from '@/features/exercise/services/vocabularyService'
+import { languageService } from '@/features/curriculum/services/languageService'
 import {
-  DAILY_VOCABULARIES_QUERY_KEY,
-  vocabularyService,
-} from "@/features/exercise/services/vocabularyService"
-import { triggerHaptic } from "@/shared/utils/haptics"
-import { audioEngine } from "@/shared/utils/audio"
+  getDailyVocabulariesQueryKey,
+  getLanguageEnrollmentsQueryKey,
+} from '@/shared/constants/queryKeys'
+import { triggerHaptic } from '@/shared/utils/haptics'
+import { audioEngine } from '@/shared/utils/audio'
 
-export { DAILY_VOCABULARIES_QUERY_KEY }
 const COPY_FEEDBACK_DURATION_MS = 2000
 
 export interface LanguageVocabItem {
@@ -23,12 +24,11 @@ export interface LanguageVocabItem {
 }
 
 export interface DestinationLanguageMeta {
+  languageCode: string
   countryCode: string
   countryName: string
-  targetCity: string
   languageTitle: string
   ttsLangCode: string
-  flagEmoji: string
 }
 
 export interface UseDailyLanguageCardOptions {
@@ -36,61 +36,73 @@ export interface UseDailyLanguageCardOptions {
 }
 
 const DESTINATION_LANGUAGE_MAP: Record<string, DestinationLanguageMeta> = {
-  JP: {
+  ja: {
+    languageCode: 'ja',
     countryCode: 'JP',
     countryName: 'Jepang',
-    targetCity: 'Tokyo',
-    languageTitle: 'Bahasa Jepang Tokyo',
+    languageTitle: 'Bahasa Jepang Harian',
     ttsLangCode: 'ja-JP',
-    flagEmoji: '🇯🇵',
   },
-  DE: {
-    countryCode: 'DE',
-    countryName: 'Jerman',
-    targetCity: 'Berlin',
-    languageTitle: 'Bahasa Jerman Kerja',
-    ttsLangCode: 'de-DE',
-    flagEmoji: '🇩🇪',
-  },
-  SG: {
-    countryCode: 'SG',
-    countryName: 'Singapura',
-    targetCity: 'Singapura',
-    languageTitle: 'Bahasa Inggris Bisnis',
-    ttsLangCode: 'en-SG',
-    flagEmoji: '🇸🇬',
-  },
-  UK: {
+  'en-gb': {
+    languageCode: 'en-gb',
     countryCode: 'UK',
     countryName: 'Inggris',
-    targetCity: 'London',
-    languageTitle: 'Bahasa Inggris Bisnis',
+    languageTitle: 'Bahasa Inggris (UK)',
     ttsLangCode: 'en-GB',
-    flagEmoji: '🇬🇧',
+  },
+  'en-us': {
+    languageCode: 'en-us',
+    countryCode: 'US',
+    countryName: 'Amerika Serikat',
+    languageTitle: 'Bahasa Inggris (US)',
+    ttsLangCode: 'en-US',
+  },
+  de: {
+    languageCode: 'de',
+    countryCode: 'DE',
+    countryName: 'Jerman',
+    languageTitle: 'Bahasa Jerman Harian',
+    ttsLangCode: 'de-DE',
+  },
+  zh: {
+    languageCode: 'zh',
+    countryCode: 'CN',
+    countryName: 'Tiongkok',
+    languageTitle: 'Bahasa Mandarin Harian',
+    ttsLangCode: 'zh-CN',
+  },
+  fr: {
+    languageCode: 'fr',
+    countryCode: 'FR',
+    countryName: 'Prancis',
+    languageTitle: 'Bahasa Prancis Harian',
+    ttsLangCode: 'fr-FR',
   },
 }
 
 /**
- * 1:1 Headless controller hook for DailyLanguageCard in AppRightSidebar.
- * Adapts vocabulary metadata dynamically to the user's targeted career destination country
- * (Tokyo 🇯🇵, Berlin 🇩🇪, Singapore 🇸🇬, London 🇬🇧), pulls daily vocabularies from PostgreSQL,
- * and manages pronunciation via native Web Speech synthesis.
+ * Resolves daily workplace vocabulary cards dynamically to the user's active enrolled language.
  */
 export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions = {}) => {
-  const { user } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
 
-  // Resolve target language metadata dynamically
+  const { data: enrollments = [] } = useQuery({
+    queryKey: getLanguageEnrollmentsQueryKey(user?.id),
+    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    enabled: Boolean(user),
+    staleTime: 1000 * 60 * 5,
+  })
+
   const languageMeta: DestinationLanguageMeta = useMemo(() => {
-    return DESTINATION_LANGUAGE_MAP['JP']
-  }, [])
+    const active = enrollments.find((e) => e.is_active) ?? enrollments[0]
+    const rawCode = (active?.language?.code || 'ja').toLowerCase()
+    return DESTINATION_LANGUAGE_MAP[rawCode] ?? DESTINATION_LANGUAGE_MAP.ja
+  }, [enrollments])
 
   const { data: rawVocabs = [], isLoading } = useQuery({
-    queryKey: [
-      ...DAILY_VOCABULARIES_QUERY_KEY,
-      user?.id ?? 'anonymous',
-      languageMeta.countryCode,
-    ],
+    queryKey: getDailyVocabulariesQueryKey(user?.id, languageMeta.languageCode),
     queryFn: ({ signal }) => vocabularyService.getDailyVocabularies({ signal }),
+    enabled: Boolean(user),
     staleTime: 1000 * 60 * 10,
     retry: false,
   })
@@ -98,26 +110,24 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
   const vocabList: LanguageVocabItem[] = useMemo(() => {
     if (!rawVocabs || rawVocabs.length === 0) return []
     return rawVocabs.map((v) => {
+      const targetText = v.target_text || v.term
       const parts = v.reading ? v.reading.split('•').map((s) => s.trim()) : []
       const kana = parts[0] || v.reading || ''
       const romaji = parts[1] || ''
       return {
         id: v.id,
-        level: `${v.difficulty_level || 'N3'} • ${v.category.toUpperCase()}`,
+        level: `${v.difficulty_level || 'Dasar'} • ${v.category.toUpperCase()}`,
         romaji,
-        kanji: v.term,
-        kana,
-        arti: v.meaning,
-        contoh: v.example_ja,
-        terjemahan: v.example_id,
+        kanji: targetText,
+        kana: kana !== targetText ? kana : '',
+        arti: v.translation || v.meaning,
+        contoh: v.example_target || v.example_ja,
+        terjemahan: v.example_translation || v.example_id,
       }
     })
   }, [rawVocabs])
 
-  const [currentIndex, setCurrentIndex] = useState(() => {
-    const dayOfYear = Math.floor(Date.now() / 86400000)
-    return dayOfYear
-  })
+  const [currentIndex, setCurrentIndex] = useState(0)
   const [copied, setCopied] = useState(false)
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
 
@@ -126,6 +136,7 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
   useEffect(() => {
     return () => {
       if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      audioEngine.stopSpeech()
     }
   }, [])
 
@@ -135,23 +146,31 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
 
   const handleNextVocab = useCallback(() => {
     triggerHaptic('tap')
+    audioEngine.stopSpeech()
+    setIsPlayingAudio(false)
     if (totalVocabsCount > 0) {
       setCurrentIndex((prev) => (prev + 1) % totalVocabsCount)
     }
   }, [totalVocabsCount])
 
-  const handleCopy = useCallback(() => {
+  const handleCopy = useCallback(async () => {
     if (!currentVocab) return
     triggerHaptic('tap')
     const romajiPart = currentVocab.romaji ? ` (${currentVocab.romaji})` : ''
-    void navigator.clipboard.writeText(
-      `${currentVocab.kanji}${romajiPart} - ${currentVocab.arti}`
-    )
-    setCopied(true)
-    if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-    copyTimerRef.current = setTimeout(() => {
-      setCopied(false)
-    }, COPY_FEEDBACK_DURATION_MS)
+    try {
+      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(
+          `${currentVocab.kanji}${romajiPart} - ${currentVocab.arti}`
+        )
+      }
+      setCopied(true)
+      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = setTimeout(() => {
+        setCopied(false)
+      }, COPY_FEEDBACK_DURATION_MS)
+    } catch {
+      // Clipboard API unavailable in non-HTTPS contexts; degrade silently
+    }
   }, [currentVocab])
 
   const handleSpeak = useCallback(
@@ -163,7 +182,7 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
       const phrase =
         typeof textToSpeak === 'string' && textToSpeak
           ? textToSpeak
-          : currentVocab.kana || currentVocab.kanji
+          : currentVocab.kanji || currentVocab.kana
       audioEngine.speakLanguage(
         phrase,
         languageMeta.ttsLangCode,

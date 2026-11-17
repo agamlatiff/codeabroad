@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, type FC, type MouseEvent } from 'react'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { playSound } from "@/shared/utils/sound"
-import { MASCOT_TOKENS, SPEECH_BUBBLE_TOKENS } from "@/features/gamification/tokens/gamificationTokens"
+import { MASCOT_TOKENS, SPEECH_BUBBLE_TOKENS } from "@/shared/tokens/mascotTokens"
 
 export type KodiEmotion =
   | 'welcome'
@@ -108,128 +108,6 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
           viewBox="0 0 180 180"
           className="w-full h-full drop-shadow-md overflow-visible"
         >
-          <style>{`
-            /* Natural double-blink */
-            @keyframes kodi-double-blink {
-              0%, 78%, 100% { transform: scaleY(1); }
-              82% { transform: scaleY(0.08); }
-              86% { transform: scaleY(1); }
-              90% { transform: scaleY(0.08); }
-              94% { transform: scaleY(1); }
-            }
-            /* Laser blink */
-            @keyframes kodi-laser-blink {
-              0%, 82%, 100% { transform: scaleY(1); }
-              88% { transform: scaleY(0.12); }
-              92% { transform: scaleY(1); }
-            }
-            /* Tearful squeeze blink */
-            @keyframes kodi-squeeze-blink {
-              0%, 75%, 100% { transform: scaleY(1); }
-              80%, 85% { transform: scaleY(0.15) scaleX(1.1); }
-              90% { transform: scaleY(1); }
-            }
-            /* Tail animations */
-            @keyframes kodi-tail-happy {
-              0%, 100% { transform: rotate(0deg); }
-              50% { transform: rotate(18deg); }
-            }
-            @keyframes kodi-tail-panic {
-              0%, 100% { transform: scaleY(1) rotate(0deg); }
-              50% { transform: scaleY(0.92) rotate(-8deg); }
-            }
-            @keyframes kodi-tail-fire {
-              0%, 100% { transform: scale(1) rotate(0deg); }
-              50% { transform: scale(1.06) rotate(6deg); }
-            }
-            /* Emotional acting animations */
-            @keyframes kodi-panic-shiver {
-              0%, 100% { transform: translate(0, 0) rotate(0deg); }
-              20% { transform: translate(-2px, 1px) rotate(-1.5deg); }
-              40% { transform: translate(2px, -1px) rotate(1.5deg); }
-              60% { transform: translate(-1.5px, -1px) rotate(-1deg); }
-              80% { transform: translate(1.5px, 1px) rotate(1deg); }
-            }
-            @keyframes kodi-tear-left {
-              0% { opacity: 0; transform: scale(0.3) translate(0, 0); }
-              50% { opacity: 1; transform: scale(1.1) translate(-12px, 14px); }
-              100% { opacity: 0; transform: scale(1.4) translate(-22px, 32px); }
-            }
-            @keyframes kodi-tear-right {
-              0% { opacity: 0; transform: scale(0.3) translate(0, 0); }
-              50% { opacity: 1; transform: scale(1.1) translate(12px, 14px); }
-              100% { opacity: 0; transform: scale(1.4) translate(22px, 32px); }
-            }
-            @keyframes kodi-steam-puff {
-              0% { opacity: 0; transform: translateY(0) scale(0.5); }
-              50% { opacity: 0.8; transform: translateY(-8px) scale(1.1); }
-              100% { opacity: 0; transform: translateY(-16px) scale(1.4); }
-            }
-            @keyframes kodi-spiral-spin {
-              0% { transform: rotate(0deg); }
-              100% { transform: rotate(360deg); }
-            }
-            @keyframes kodi-victory-bounce {
-              0%, 100% { transform: translateY(0) scale(1); }
-              40% { transform: translateY(-14px) scale(1.06) rotate(-2deg); }
-              50% { transform: translateY(-12px) scale(1.04) rotate(2deg); }
-            }
-            @keyframes kodi-flame-roar {
-              0%, 100% { transform: scale(1) translateY(0); filter: drop-shadow(0 0 8px rgba(249, 115, 22, 0.6)); }
-              50% { transform: scale(1.09) translateY(-3px); filter: drop-shadow(0 0 16px rgba(239, 68, 68, 0.9)); }
-            }
-            @keyframes kodi-hyper-type-l {
-              0%, 100% { transform: translateY(0) rotate(0deg); }
-              50% { transform: translateY(-6px) rotate(-15deg); }
-            }
-            @keyframes kodi-hyper-type-r {
-              0%, 100% { transform: translateY(-6px) rotate(15deg); }
-              50% { transform: translateY(0) rotate(0deg); }
-            }
-            @keyframes kodi-gentle-float {
-              0%, 100% { transform: translateY(0); }
-              50% { transform: translateY(-5px); }
-            }
-
-            .k-blink-natural {
-              transform-box: fill-box;
-              transform-origin: center center;
-              animation: kodi-double-blink 3.8s ease-in-out infinite;
-            }
-            .k-blink-laser {
-              transform-box: fill-box;
-              transform-origin: center center;
-              animation: kodi-laser-blink 3.2s ease-in-out infinite;
-            }
-            .k-blink-squeeze {
-              transform-box: fill-box;
-              transform-origin: center center;
-              animation: kodi-squeeze-blink 2.8s ease-in-out infinite;
-            }
-            .k-tail-happy {
-              animation: kodi-tail-happy 2.2s ease-in-out infinite;
-              transform-origin: 125px 145px;
-            }
-            .k-tail-panic {
-              animation: kodi-tail-panic 0.25s ease-in-out infinite;
-              transform-origin: 122px 145px;
-            }
-            .k-tail-fire {
-              animation: kodi-tail-fire 1.2s ease-in-out infinite;
-              transform-origin: 125px 135px;
-            }
-            .k-floaty { animation: kodi-gentle-float 3.2s ease-in-out infinite; }
-            .k-panic { animation: kodi-panic-shiver 0.18s infinite; }
-            .k-tear-l { animation: kodi-tear-left 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) infinite; }
-            .k-tear-r { animation: kodi-tear-right 0.8s cubic-bezier(0.2, 0.8, 0.3, 1) infinite 0.15s; }
-            .k-steam { animation: kodi-steam-puff 1.2s ease-out infinite; }
-            .k-spiral { animation: kodi-spiral-spin 4s linear infinite; transform-origin: center center; }
-            .k-jump { animation: kodi-victory-bounce 1.5s ease-in-out infinite; }
-            .k-fire { animation: kodi-flame-roar 0.9s ease-in-out infinite; transform-origin: 90px 140px; }
-            .k-type-l { animation: kodi-hyper-type-l 0.14s infinite; transform-origin: 65px 125px; }
-            .k-type-r { animation: kodi-hyper-type-r 0.14s infinite; transform-origin: 115px 125px; }
-          `}</style>
-
           {/* ══════════════════════════════════════════════════════════════════
               EMOTION 1: WELCOME / IDLE (COMPANION NODE ROADMAP)
           ══════════════════════════════════════════════════════════════════ */}

@@ -155,22 +155,50 @@ class AudioService {
 
   constructor() {
     this.setupAutoUnlock()
+    this.setupVisibilityPause()
+  }
+
+  private isAuthRoute(): boolean {
+    if (typeof window === 'undefined') return false
+    const p = window.location.pathname
+    return p === '/login' || p === '/register'
+  }
+
+  private setupVisibilityPause(): void {
+    if (typeof document === 'undefined') return
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        this.soundscape?.stop()
+        if (this.ctx && this.ctx.state === 'running') {
+          void this.ctx.suspend().catch(() => {})
+        }
+      } else if (this.isUnlocked && this.mode === 'all' && !this.isAuthRoute()) {
+        if (this.ctx && this.ctx.state === 'suspended') {
+          void this.ctx.resume().then(() => {
+            this.playBgm(this.activeSoundscapeTrack)
+          }).catch(() => {})
+        }
+      }
+    })
   }
 
   /**
-   * Registers one-time user interaction listener to unblock browser autoplay restrictions.
+   * Registers user interaction listeners to unblock browser autoplay restrictions,
+   * re-arming automatically if resume() is rejected or stays suspended.
    */
   private setupAutoUnlock(): void {
     if (typeof window === 'undefined') return
 
-    const unlockHandler = () => {
-      void this.unlock()
-      window.removeEventListener('pointerdown', unlockHandler)
-      window.removeEventListener('keydown', unlockHandler)
+    const unlockHandler = async () => {
+      await this.unlock()
+      if (this.isUnlocked) {
+        window.removeEventListener('pointerdown', unlockHandler)
+        window.removeEventListener('keydown', unlockHandler)
+      }
     }
 
-    window.addEventListener('pointerdown', unlockHandler, { once: true, passive: true })
-    window.addEventListener('keydown', unlockHandler, { once: true, passive: true })
+    window.addEventListener('pointerdown', unlockHandler, { passive: true })
+    window.addEventListener('keydown', unlockHandler, { passive: true })
   }
 
   /**
@@ -181,12 +209,14 @@ class AudioService {
     if (ctx && ctx.state === 'suspended') {
       try {
         await ctx.resume()
-        this.isUnlocked = true
-        if (this.mode === 'all') {
-          this.playBgm(this.activeSoundscapeTrack)
+        if ((ctx.state as AudioContextState) === 'running') {
+          this.isUnlocked = true
+          if (this.mode === 'all' && !this.isAuthRoute()) {
+            this.playBgm(this.activeSoundscapeTrack)
+          }
         }
       } catch {
-        // Ignored if user has not interacted with document yet
+        // Ignored if user has not interacted with document yet; listener remains armed
       }
     } else if (ctx && ctx.state === 'running') {
       this.isUnlocked = true
@@ -278,7 +308,7 @@ class AudioService {
    */
   public playBgm(track: SoundscapeTrack = 'universal'): void {
     this.activeSoundscapeTrack = track
-    if (this.mode !== 'all') return
+    if (this.mode !== 'all' || this.isAuthRoute()) return
 
     const ctx = this.getContext()
     if (!ctx || !this.soundscape) return

@@ -1,12 +1,13 @@
 import { useState, useMemo } from 'react'
 import type { FC } from 'react'
+import { Fire } from '@phosphor-icons/react'
 import {
   getAvatarUrl,
   getInitials,
   getDeterministicGradient,
   type AvatarStyle,
   type AvatarUser,
-} from "@/features/user/utils/avatar"
+} from '@/shared/utils/avatar'
 
 export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 
@@ -36,11 +37,13 @@ export const UserAvatar: FC<UserAvatarProps> = ({
   badgeColor = 'online',
   className = '',
 }) => {
-  const [imageError, setImageError] = useState(false)
+  const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null)
 
   const avatarUrl = useMemo(() => {
     return getAvatarUrl(user, style)
   }, [user, style])
+
+  const imageError = failedAvatarUrl === avatarUrl
 
   const initials = useMemo(() => {
     return getInitials(user?.name, user?.username)
@@ -58,17 +61,16 @@ export const UserAvatar: FC<UserAvatarProps> = ({
       className={`relative inline-flex items-center justify-center shrink-0 rounded-full select-none shadow-sm transition-transform duration-200 hover:scale-105 ${containerSize} ${className}`}
       title={user?.name || user?.username || 'User Profile'}
     >
-      {/* 1. Primary Avatar Image (Illustrated Character / Custom Photo) */}
       {!imageError ? (
         <img
+          key={avatarUrl}
           src={avatarUrl}
           alt={user?.name || user?.username || 'Avatar'}
-          onError={() => setImageError(true)}
+          onError={() => setFailedAvatarUrl(avatarUrl)}
           className="w-full h-full rounded-full object-cover bg-slate-100 border border-slate-200/80 shadow-inner"
           loading="lazy"
         />
       ) : (
-        /* 2. Fallback: Deterministic Colorful Initials Pill if Image Fails */
         <div
           className={`w-full h-full rounded-full bg-gradient-to-tr ${gradientClass} text-white font-extrabold flex items-center justify-center border-2 border-white shadow-sm ${textSize}`}
         >
@@ -76,16 +78,13 @@ export const UserAvatar: FC<UserAvatarProps> = ({
         </div>
       )}
 
-      {/* 3. Optional Gamified Badge (Online Status or Streak Flame) */}
       {showBadge && (
         <span
           className={`absolute rounded-full ring-2 ring-white flex items-center justify-center ${badgeSize} ${
-            badgeColor === 'streak'
-              ? 'bg-amber-500 text-[8px]'
-              : 'bg-emerald-500'
+            badgeColor === 'streak' ? 'bg-amber-500 text-white' : 'bg-emerald-500'
           }`}
         >
-          {badgeColor === 'streak' && '🔥'}
+          {badgeColor === 'streak' && <Fire weight="fill" className="w-2.5 h-2.5" />}
         </span>
       )}
     </div>

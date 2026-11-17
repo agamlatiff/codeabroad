@@ -133,7 +133,7 @@ export const AppTopBar = ({
               <span>{userLevel}</span>
             </div>
 
-            {/* Tokyo League Leaderboard Tactile Button */}
+            {/* Global League Leaderboard Tactile Button */}
             <button
               type="button"
               onClick={() => {
@@ -141,7 +141,7 @@ export const AppTopBar = ({
                 onOpenLeaderboard()
               }}
               className="hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
-              title="Buka Papan Peringkat Liga Tokyo"
+              title="Buka Papan Peringkat Liga Global"
             >
               <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
               <span className="hidden md:inline">Liga</span>

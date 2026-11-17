@@ -1,7 +1,9 @@
+import { useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { Gift, Lightning, X } from '@phosphor-icons/react'
-import { triggerHaptic } from "@/shared/utils/haptics"
-import { useAppRightSidebar } from "@/shared/hooks/layout/right-sidebar/useAppRightSidebar"
+import { triggerHaptic } from '@/shared/utils/haptics'
+import { useAppRightSidebar } from '@/shared/hooks/layout/right-sidebar/useAppRightSidebar'
+import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import { StreakSection } from './StreakSection'
 import { QuestsSection } from './QuestsSection'
 import { DailyLanguageCard } from './DailyLanguageCard'
@@ -23,6 +25,7 @@ export const AppRightSidebar = ({
   isMobileDrawerOpen = false,
   onCloseMobileDrawer,
 }: AppRightSidebarProps) => {
+  const isDesktopRail = useMediaQuery('(min-width: 1280px)')
   const {
     isLanguageReviewed,
     isLanguageHighlighted,
@@ -35,6 +38,17 @@ export const AppRightSidebar = ({
     handleFocusLanguageCard,
     handleCloseMobileDrawer,
   } = useAppRightSidebar({ onCloseMobileDrawer })
+
+  useEffect(() => {
+    if (!isMobileDrawerOpen || isDesktopRail) return
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        handleCloseMobileDrawer()
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [isMobileDrawerOpen, isDesktopRail, handleCloseMobileDrawer])
 
   const sidebarContent = (
     <>
@@ -71,18 +85,26 @@ export const AppRightSidebar = ({
 
   return (
     <>
-      {/* ── DESKTOP STICKY RIGHT RAIL (XL & UP) ── */}
-      <aside
-        className={`hidden xl:block w-[354px] shrink-0 border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none xl:sticky xl:top-0 xl:h-screen xl:overflow-y-auto custom-scrollbar xl:self-start ${className}`}
-      >
-        {sidebarContent}
-      </aside>
+      {/* ── DESKTOP STICKY RIGHT RAIL (XL & UP — SINGLE ACTIVE MOUNT) ── */}
+      {isDesktopRail && (
+        <aside
+          className={`w-[354px] shrink-0 border-l border-slate-200/80 bg-white p-4 xl:px-4.5 xl:py-4 pb-8 space-y-3 select-none sticky top-0 h-screen overflow-y-auto custom-scrollbar self-start ${className}`}
+        >
+          {sidebarContent}
+        </aside>
+      )}
 
-      {/* ── MOBILE & TABLET SLIDE-OVER DRAWER (SSOT - PORTAL) ── */}
-      {(isMobileDrawerOpen || isClosingDrawer) &&
+      {/* ── MOBILE & TABLET SLIDE-OVER DRAWER (SSOT - PORTAL, SINGLE ACTIVE MOUNT) ── */}
+      {!isDesktopRail &&
+        (isMobileDrawerOpen || isClosingDrawer) &&
         typeof document !== 'undefined' &&
         createPortal(
-          <div className="fixed inset-0 z-50 flex justify-end">
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Misi & Hadiah Harian"
+            className="fixed inset-0 z-50 flex justify-end"
+          >
             {/* Backdrop blur overlay */}
             <div
               className={`fixed inset-0 bg-slate-900/40 backdrop-blur-xs transition-opacity ${
@@ -146,7 +168,6 @@ export const AppRightSidebar = ({
               >
                 <Lightning weight="fill" className="w-4 h-4 text-amber-950 animate-bounce" />
                 <span>+{reward.amount} XP</span>
-                <span className="text-xs">⚡</span>
               </div>
             ))}
           </div>,

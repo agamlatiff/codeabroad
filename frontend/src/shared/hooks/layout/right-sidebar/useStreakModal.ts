@@ -1,6 +1,7 @@
 import { useState, useMemo, useCallback } from 'react'
-import { triggerHaptic } from "@/shared/utils/haptics"
-import { soundEngine } from "@/shared/utils/audio"
+import { triggerHaptic } from '@/shared/utils/haptics'
+import { soundEngine } from '@/shared/utils/audio'
+import { getWibDateKey } from '@/shared/utils/date'
 
 export const MONTH_NAMES = [
   'Januari',
@@ -25,6 +26,12 @@ const formatYMD = (y: number, m: number, d: number): string => {
   return `${y}-${mm}-${dd}`
 }
 
+const getWibCalendarToday = () => {
+  const wibKey = getWibDateKey()
+  const [y, m, d] = wibKey.split('-').map(Number)
+  return { year: y, month: m - 1, day: d, key: wibKey }
+}
+
 export interface CalendarDayCell {
   dayNumber: number
   dateStr: string
@@ -39,38 +46,36 @@ export interface UseStreakModalOptions {
   activeDates?: string[]
 }
 
-/**
- * 1:1 Headless controller hook for StreakModal in AppRightSidebar.
- * Computes calendar grid cells, real streak statistics, and month navigation.
- */
 export const useStreakModal = ({
   currentStreak,
   activeDates = [],
 }: UseStreakModalOptions) => {
-  const today = useMemo(() => new Date(), [])
-  const [currentViewDate, setCurrentViewDate] = useState(() => new Date())
+  const wibToday = useMemo(() => getWibCalendarToday(), [])
+  const [currentViewDate, setCurrentViewDate] = useState(
+    () => new Date(wibToday.year, wibToday.month, 1)
+  )
 
   const year = currentViewDate.getFullYear()
   const month = currentViewDate.getMonth()
   const monthLabel = `${MONTH_NAMES[month]} ${year}`
-  const isCurrentMonth = year === today.getFullYear() && month === today.getMonth()
+  const isCurrentMonth = year === wibToday.year && month === wibToday.month
 
-  const todayStr = useMemo(
-    () => formatYMD(today.getFullYear(), today.getMonth(), today.getDate()),
-    [today]
-  )
+  const todayStr = wibToday.key
 
   const activeDateSet = useMemo(() => {
     const set = new Set<string>()
     activeDates.forEach((d) => set.add(d))
     if (currentStreak > 0) {
+      const baseMs = Date.UTC(wibToday.year, wibToday.month, wibToday.day)
       for (let i = 0; i < currentStreak; i++) {
-        const streakDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() - i)
-        set.add(formatYMD(streakDate.getFullYear(), streakDate.getMonth(), streakDate.getDate()))
+        const dt = new Date(baseMs - i * 86400000)
+        set.add(
+          formatYMD(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())
+        )
       }
     }
     return set
-  }, [activeDates, currentStreak, today])
+  }, [activeDates, currentStreak, wibToday])
 
   const { startOffset, daysList } = useMemo(() => {
     const totalDays = new Date(year, month + 1, 0).getDate()
@@ -83,13 +88,13 @@ export const useStreakModal = ({
       const isActive = activeDateSet.has(dateStr)
       const isToday = dateStr === todayStr
       const isPast =
-        year < today.getFullYear() ||
-        (year === today.getFullYear() && month < today.getMonth()) ||
-        (year === today.getFullYear() && month === today.getMonth() && d < today.getDate())
+        year < wibToday.year ||
+        (year === wibToday.year && month < wibToday.month) ||
+        (year === wibToday.year && month === wibToday.month && d < wibToday.day)
       const isFuture =
-        year > today.getFullYear() ||
-        (year === today.getFullYear() && month > today.getMonth()) ||
-        (year === today.getFullYear() && month === today.getMonth() && d > today.getDate())
+        year > wibToday.year ||
+        (year === wibToday.year && month > wibToday.month) ||
+        (year === wibToday.year && month === wibToday.month && d > wibToday.day)
 
       list.push({
         dayNumber: d,
@@ -102,7 +107,7 @@ export const useStreakModal = ({
     }
 
     return { startOffset: offset, daysList: list }
-  }, [year, month, activeDateSet, today, todayStr])
+  }, [year, month, activeDateSet, wibToday, todayStr])
 
   const activeDaysInMonth = useMemo(
     () => daysList.filter((d) => d.isActive).length,
@@ -126,7 +131,8 @@ export const useStreakModal = ({
   const handleResetToToday = useCallback(() => {
     triggerHaptic('tap')
     soundEngine.playPop()
-    setCurrentViewDate(new Date())
+    const today = getWibCalendarToday()
+    setCurrentViewDate(new Date(today.year, today.month, 1))
   }, [])
 
   return {

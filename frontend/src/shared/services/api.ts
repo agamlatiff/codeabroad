@@ -1,198 +1,232 @@
 import type { AxiosResponse, AxiosError, InternalAxiosRequestConfig } from 'axios'
-import { useAuthStore } from "@/features/auth/store/authStore"
-import type { ApiResponse } from "@/shared/types/api"
-import type { AuthResponse } from "@/features/auth/types/auth"
+import type { ApiResponse } from '@/shared/types/api'
+import type { User } from '@/shared/types/user'
 import axios from 'axios'
 
 export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api/v1'
 
+interface RefreshSessionPayload {
+  user?: User | null
+  access_token: string
+  refresh_token: string
+}
+
+export interface AuthInterceptorBridge {
+  getAccessToken: () => string | null
+  getRefreshToken: () => string | null
+  setTokens: (accessToken: string, refreshToken: string) => void
+  updateUser: (updatedFields: Partial<User>) => void
+  clearSession: () => void
+}
+
+let authBridge: AuthInterceptorBridge | null = null
+
 /**
- * Standard request options for service methods (supports cancellation via AbortSignal).
+ * Registers auth state bridge from authStore during initialization,
+ * preventing shared/services/api from importing features/auth directly.
  */
+export const registerAuthInterceptorBridge = (bridge: AuthInterceptorBridge): void => {
+  authBridge = bridge
+}
+
 export interface RequestOptions {
-    signal?: AbortSignal
+  signal?: AbortSignal
 }
 
-/**
- * Unwraps data from standard Go API response envelope (response.go).
- * Throws a formatted Error with backend error message or provided fallback.
- */
 export const unwrapApiResponse = <T>(
-    response: AxiosResponse<ApiResponse<T>>,
-    fallbackError: string = 'Terjadi kesalahan pada server'
+  response: AxiosResponse<ApiResponse<T>>,
+  fallbackError: string = 'Terjadi kesalahan pada server'
 ): T => {
-    if (response.data.success && response.data.data !== undefined) {
-        return response.data.data
-    }
-    throw new Error(response.data.error || fallbackError)
+  if (response.data.success && response.data.data !== undefined) {
+    return response.data.data
+  }
+  throw new Error(response.data.error || fallbackError)
 }
 
-/**
- * Extracts a human-readable backend error message from AxiosError or native Error instances.
- */
 export const extractApiErrorMessage = (
-    error: unknown,
-    fallback: string = 'Terjadi kesalahan pada server'
+  error: unknown,
+  fallback: string = 'Terjadi kesalahan pada server'
 ): string => {
-    if (axios.isAxiosError(error)) {
-        const data = error.response?.data as { error?: unknown; message?: unknown } | undefined
-        if (typeof data?.error === 'string' && data.error.trim().length > 0) {
-            return data.error
-        }
-        if (typeof data?.message === 'string' && data.message.trim().length > 0) {
-            return data.message
-        }
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { error?: unknown; message?: unknown } | undefined
+    if (typeof data?.error === 'string' && data.error.trim().length > 0) {
+      return data.error
     }
-    if (error instanceof Error && error.message.trim().length > 0) {
-        return error.message
+    if (typeof data?.message === 'string' && data.message.trim().length > 0) {
+      return data.message
     }
-    return fallback
+  }
+  if (error instanceof Error && error.message.trim().length > 0) {
+    return error.message
+  }
+  return fallback
+}
+
+export const sanitizeAxiosErrorMessage = (error: unknown): string => {
+  if (axios.isAxiosError(error)) {
+    const status = error.response?.status ?? 'network'
+    const method = (error.config?.method ?? 'GET').toUpperCase()
+    const path = (error.config?.url ?? '').split('?')[0]
+    return `[${method} ${path}] status=${status}`
+  }
+  return error instanceof Error ? error.message : 'Unknown error'
 }
 
 export const api = axios.create({
-    baseURL: API_BASE_URL,
-    timeout: 15000, // 15 seconds request timeout
-    headers: {
-        'Content-Type': 'application/json',
-    },
+  baseURL: API_BASE_URL,
+  timeout: 15000,
+  headers: {
+    'Content-Type': 'application/json',
+  },
 })
 
-// 1. Request Interceptor: Automatically attach Bearer Access Token
 api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const accessToken = useAuthStore.getState().accessToken
-        if (accessToken && config.headers) {
-            config.headers.Authorization = `Bearer ${accessToken}`
-        }
-        return config
-    },
-    (error) => Promise.reject(error)
+  (config: InternalAxiosRequestConfig) => {
+    const accessToken = authBridge?.getAccessToken() ?? null
+    if (accessToken && config.headers) {
+      config.headers.Authorization = `Bearer ${accessToken}`
+    }
+    return config
+  },
+  (error) => Promise.reject(error)
 )
 
-// 2. Response Interceptor: Seamless Auto-Refresh Token Rotation on 401
-let isRefreshing = false
-let failedQueue: Array<{
-    resolve: (value?: unknown) => void
-    reject: (reason?: unknown) => void
-}> = []
+const isAuthBypassPath = (rawUrl?: string): boolean => {
+  if (!rawUrl) return false
+  const cleanPath = rawUrl.split('?')[0].split('#')[0].replace(/\/+$/, '')
+  return (
+    cleanPath.endsWith('/auth/login') ||
+    cleanPath.endsWith('/auth/register') ||
+    cleanPath.endsWith('/auth/refresh') ||
+    cleanPath.endsWith('/auth/logout')
+  )
+}
 
-const processQueue = (error: unknown) => {
-    failedQueue.forEach((promise) => {
-        if (error) {
-            promise.reject(error)
-        } else {
-            promise.resolve()
-        }
-    })
-    failedQueue = []
+let inFlightRefreshPromise: Promise<string | null> | null = null
+
+const performLockedTokenRefresh = async (initiatingRefreshToken: string): Promise<string | null> => {
+  if (!authBridge) {
+    throw new Error('Auth bridge not initialized')
+  }
+
+  // Re-read current refresh token inside lock; another tab or queued caller may have rotated it already.
+  const latestRefreshToken = authBridge.getRefreshToken()
+  const latestAccessToken = authBridge.getAccessToken()
+  if (latestRefreshToken && latestRefreshToken !== initiatingRefreshToken && latestAccessToken) {
+    return latestAccessToken
+  }
+  if (!latestRefreshToken) {
+    return null
+  }
+
+  const response = await axios.post<ApiResponse<RefreshSessionPayload>>(
+    `${API_BASE_URL}/auth/refresh`,
+    { refresh_token: latestRefreshToken },
+    { timeout: 10000 }
+  )
+
+  const data = response.data
+  if (!data.success || !data.data) {
+    throw new Error('Refresh token rejected')
+  }
+
+  const { access_token, refresh_token, user } = data.data
+  authBridge.setTokens(access_token, refresh_token)
+  if (user) {
+    authBridge.updateUser(user)
+  }
+  return access_token
+}
+
+const coordinateRefresh = (initiatingRefreshToken: string): Promise<string | null> => {
+  if (inFlightRefreshPromise) {
+    return inFlightRefreshPromise
+  }
+
+  const run = async () => {
+    try {
+      const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
+      if (locks && typeof locks.request === 'function') {
+        return await locks.request('codeabroad_auth_refresh', () =>
+          performLockedTokenRefresh(initiatingRefreshToken)
+        )
+      }
+      return await performLockedTokenRefresh(initiatingRefreshToken)
+    } finally {
+      inFlightRefreshPromise = null
+    }
+  }
+
+  inFlightRefreshPromise = run()
+  return inFlightRefreshPromise
 }
 
 api.interceptors.response.use(
-    (response) => response,
-    async (error: AxiosError) => {
-        const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean }
+  (response) => response,
+  async (error: AxiosError) => {
+    const originalRequest = error.config as
+      | (InternalAxiosRequestConfig & { _retry?: boolean })
+      | undefined
 
-        // If 401 Unauthorized and request has not been retried yet
-        if (error.response?.status === 401 && originalRequest && !originalRequest._retry) {
-            // Prevent infinite refresh loop or wasteful token rotation on auth endpoints
-            if (
-                originalRequest.url?.includes('/auth/login') ||
-                originalRequest.url?.includes('/auth/register') ||
-                originalRequest.url?.includes('/auth/refresh') ||
-                originalRequest.url?.includes('/auth/logout')
-            ) {
-                return Promise.reject(error)
-            }
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isAuthBypassPath(originalRequest.url)
+    ) {
+      const initiatingRefreshToken = authBridge?.getRefreshToken() ?? null
+      if (!initiatingRefreshToken) {
+        authBridge?.clearSession()
+        return Promise.reject(error)
+      }
 
-            const { refreshToken, setTokens, updateUser, logout } = useAuthStore.getState()
+      originalRequest._retry = true
 
-            if (!refreshToken) {
-                logout()
-                return Promise.reject(error)
-            }
-
-            // Mark original request as retried before queuing or executing refresh
-            originalRequest._retry = true
-
-            // If another refresh call is already in progress, queue this request
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject })
-                })
-                    .then(() => {
-                        const latestToken = useAuthStore.getState().accessToken
-                        if (latestToken && originalRequest.headers) {
-                            originalRequest.headers.Authorization = `Bearer ${latestToken}`
-                        }
-                        return api(originalRequest)
-                    })
-                    .catch((err) => Promise.reject(err))
-            }
-
-            isRefreshing = true
-
-            try {
-                // Request a new token pair from backend
-                const response = await axios.post<ApiResponse<AuthResponse>>(
-                    `${API_BASE_URL}/auth/refresh`,
-                    { refresh_token: refreshToken },
-                    { timeout: 10000 }
-                )
-
-                const data = response.data
-                if (data.success && data.data) {
-                    const { access_token, refresh_token, user } = data.data
-                    setTokens(access_token, refresh_token)
-                    if (user) {
-                        updateUser(user)
-                    }
-
-                    processQueue(null)
-
-                    // Re-attempt original request with the new access token
-                    if (originalRequest.headers) {
-                        originalRequest.headers.Authorization = `Bearer ${access_token}`
-                    }
-                    return api(originalRequest)
-                } else {
-                    throw new Error('Refresh token rejected')
-                }
-            } catch (refreshErr) {
-                // Cross-tab race guard: if another tab rotated the session while our refresh was in flight, reuse it
-                const latestState = useAuthStore.getState()
-                if (
-                    latestState.refreshToken &&
-                    latestState.refreshToken !== refreshToken &&
-                    latestState.accessToken
-                ) {
-                    processQueue(null)
-                    if (originalRequest.headers) {
-                        originalRequest.headers.Authorization = `Bearer ${latestState.accessToken}`
-                    }
-                    return api(originalRequest)
-                }
-
-                processQueue(refreshErr)
-
-                // Only wipe local session on explicit auth rejection (401/403) or invalid refresh payload, not transient network blips
-                const status = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
-                const isExplicitAuthRejection =
-                    status === 401 ||
-                    status === 403 ||
-                    (refreshErr instanceof Error && refreshErr.message === 'Refresh token rejected')
-
-                if (isExplicitAuthRejection) {
-                    logout()
-                    if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
-                        window.location.href = '/login'
-                    }
-                }
-                return Promise.reject(refreshErr)
-            } finally {
-                isRefreshing = false
-            }
+      try {
+        const nextAccessToken = await coordinateRefresh(initiatingRefreshToken)
+        if (!nextAccessToken) {
+          throw new Error('Refresh token rejected')
+        }
+        if (originalRequest.signal?.aborted) {
+          return Promise.reject(error)
+        }
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`
+        }
+        return api(originalRequest)
+      } catch (refreshErr) {
+        const latestRefreshToken = authBridge?.getRefreshToken()
+        const latestAccessToken = authBridge?.getAccessToken()
+        if (
+          latestRefreshToken &&
+          latestRefreshToken !== initiatingRefreshToken &&
+          latestAccessToken
+        ) {
+          if (originalRequest.signal?.aborted) {
+            return Promise.reject(error)
+          }
+          if (originalRequest.headers) {
+            originalRequest.headers.Authorization = `Bearer ${latestAccessToken}`
+          }
+          return api(originalRequest)
         }
 
-        return Promise.reject(error)
+        const status = axios.isAxiosError(refreshErr) ? refreshErr.response?.status : undefined
+        const isExplicitAuthRejection =
+          status === 401 ||
+          status === 403 ||
+          (refreshErr instanceof Error && refreshErr.message === 'Refresh token rejected')
+
+        if (isExplicitAuthRejection) {
+          authBridge?.clearSession()
+          if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+            window.location.href = '/login'
+          }
+        }
+        return Promise.reject(refreshErr)
+      }
     }
+
+    return Promise.reject(error)
+  }
 )

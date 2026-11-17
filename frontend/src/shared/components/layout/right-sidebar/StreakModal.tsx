@@ -1,5 +1,5 @@
-import { createPortal } from 'react-dom'
 import type { FC } from 'react'
+import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import {
   Fire,
   Trophy,
@@ -45,10 +45,16 @@ export const StreakModal: FC<StreakModalProps> = ({
     handleResetToToday,
   } = useStreakModal({ currentStreak, activeDates })
 
-  if (!isOpen || typeof document === 'undefined') return null
-
-  return createPortal(
-    <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-3 sm:p-4 bg-slate-900/50 backdrop-blur-xs animate-fade-in">
+  return (
+    <AccessibleModal
+      isOpen={isOpen}
+      onClose={() => {
+        triggerHaptic('tap')
+        onClose()
+      }}
+      ariaLabel="Kalender Rentetan Belajar"
+      backdropClassName="bg-slate-900/50 backdrop-blur-xs"
+    >
       <div className="bg-white border-2 border-orange-200/90 rounded-3xl p-4 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl animate-pop relative max-h-[92vh] overflow-y-auto">
         {/* ── TOP HEADER ── */}
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
@@ -275,11 +281,10 @@ export const StreakModal: FC<StreakModalProps> = ({
           className="py-2.5 font-black text-xs shadow-[0_3px_0_0_#B45309]"
         >
           <Fire weight="fill" className="w-4 h-4 text-amber-950" />
-          <span>TUTUP & LANJUTKAN BELAJAR 🔥</span>
+          <span>TUTUP & LANJUTKAN BELAJAR</span>
         </Button3D>
       </div>
-    </div>,
-    document.body
+    </AccessibleModal>
   )
 }
 

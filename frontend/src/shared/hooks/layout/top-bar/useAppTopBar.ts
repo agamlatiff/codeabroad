@@ -1,27 +1,25 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useUser } from "@/features/user/hooks/useUser"
+import { useUser } from '@/features/user/hooks/useUser'
 import {
   languageService,
+} from '@/features/curriculum/services/languageService'
+import {
   LANGUAGES_QUERY_KEY,
-  LANGUAGE_ENROLLMENTS_QUERY_KEY,
-} from "@/features/curriculum/services/languageService"
-import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
-import { mapEnrollmentsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
-import { resolveTrackIconType } from "@/features/curriculum/tokens/curriculumTokens"
+  getLanguageEnrollmentsQueryKey,
+} from '@/shared/constants/queryKeys'
+import type { CareerTrackOption } from '@/features/curriculum/types/curriculum'
+import { mapEnrollmentsToTrackOptions } from '@/features/curriculum/utils/curriculumMapper'
+import { resolveTrackIconType } from '@/features/curriculum/tokens/curriculumTokens'
 
-/**
- * 1:1 Headless controller hook for AppTopBar.
- * Resolves active target language metadata and user gamification HUD stats
- * directly from backend endpoints via TanStack Query cache synchronization.
- */
 export const useAppTopBar = (activeTrack: string) => {
   const { data } = useUser()
   const activeUser = data.user
 
   const { data: enrollments = [] } = useQuery({
-    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
+    queryKey: getLanguageEnrollmentsQueryKey(activeUser?.id),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    enabled: Boolean(activeUser),
     staleTime: 1000 * 60 * 5,
   })
 

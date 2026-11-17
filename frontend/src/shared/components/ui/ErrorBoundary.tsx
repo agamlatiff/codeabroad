@@ -25,8 +25,9 @@ export class ErrorBoundary extends Component<Props, State> {
   }
 
   public override componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
-    // In production, this can send to Sentry or an error logging endpoint
-    console.error('[ErrorBoundary] Uncaught application error:', error, errorInfo)
+    if (import.meta.env.DEV) {
+      console.error('[ErrorBoundary] Uncaught application error:', error, errorInfo)
+    }
     this.setState({ errorInfo })
   }
 
@@ -82,7 +83,7 @@ export class ErrorBoundary extends Component<Props, State> {
               </Button3D>
             </div>
 
-            {this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mt-4 text-left border border-slate-700 rounded-xl p-3 bg-slate-900/60">
                 <summary className="text-xs text-slate-400 cursor-pointer font-mono flex items-center gap-1.5 hover:text-slate-200">
                   <Bug size={14} /> Detail Diagnostik Teknis

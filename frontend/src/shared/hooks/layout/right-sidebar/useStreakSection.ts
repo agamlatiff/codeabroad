@@ -45,6 +45,12 @@ export const useStreakSection = () => {
     return Array.from(dates)
   }, [activitySummary])
 
+  const [todayDayIndex] = useState(() => {
+    const wibNow = new Date(Date.now() + 7 * 60 * 60 * 1000)
+    const jsDay = wibNow.getUTCDay()
+    return jsDay === 0 ? 6 : jsDay - 1
+  })
+
   const weeklyStreakDays: WeeklyStreakDayItem[] = useMemo(() => {
     if (activitySummary?.weekly_logs && activitySummary.weekly_logs.length === 7) {
       return activitySummary.weekly_logs.map((log) => ({
@@ -57,9 +63,6 @@ export const useStreakSection = () => {
       }))
     }
 
-    const jsDay = new Date().getDay()
-    const todayDayIndex = jsDay === 0 ? 6 : jsDay - 1
-
     return DEFAULT_WEEKDAY_LABELS.map((label, dayIndex) => ({
       label,
       dayIndex,
@@ -68,7 +71,7 @@ export const useStreakSection = () => {
       xpEarned: 0,
       questsCount: 0,
     }))
-  }, [activitySummary])
+  }, [activitySummary, todayDayIndex])
 
   const handleOpenStreakModal = useCallback(() => {
     triggerHaptic('tap')

@@ -3,9 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { useUserActivity } from "@/features/user/hooks/useUserActivity"
 import { useDailyRewards } from "@/features/user/hooks/useDailyRewards"
 import { triggerHaptic } from "@/shared/utils/haptics"
-import { getWibMidnightCountdown } from "@/shared/utils/date"
+import { getWibMidnightCountdown } from '@/shared/utils/date'
+import { DAILY_QUESTS_QUERY_KEY } from '@/shared/constants/queryKeys'
 
-export const DAILY_QUESTS_QUERY_KEY = ['daily-quests'] as const
+export { DAILY_QUESTS_QUERY_KEY }
 
 export const DAILY_TARGET_XP = 50
 export const VOCAB_QUEST_REWARD_XP = 30

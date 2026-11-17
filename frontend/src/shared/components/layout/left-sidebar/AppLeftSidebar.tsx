@@ -138,9 +138,11 @@ export const AppLeftSidebar = () => {
           </button>
 
           {/* User Profile Avatar with Online Dot */}
-          <div
+          <button
+            type="button"
             onClick={handleOpenSettings}
-            className="relative group cursor-pointer mt-1"
+            aria-label="Buka Pengaturan Profil"
+            className="relative group cursor-pointer mt-1 bg-transparent border-0 p-0 text-left"
           >
             <div className="ring-2 ring-slate-200 hover:ring-blue-400 rounded-full transition-all hover:scale-105">
               <UserAvatar user={user} size="sm" style={avatarStyle} />
@@ -153,7 +155,7 @@ export const AppLeftSidebar = () => {
               <span>Profil &amp; Pengaturan: {user?.name || 'Pembelajar Global'}</span>
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
             </div>
-          </div>
+          </button>
         </div>
       </aside>
 

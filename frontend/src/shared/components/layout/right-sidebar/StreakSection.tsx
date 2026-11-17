@@ -54,10 +54,11 @@ export const StreakSection: FC = () => {
         </div>
 
         {/* 7 Days Duolingo Flame Tokens Row (Clickable) */}
-        <div
+        <button
+          type="button"
           onClick={handleOpenStreakModal}
-          className="grid grid-cols-7 gap-1 sm:gap-1.5 text-center bg-orange-50/30 hover:bg-orange-50/60 border border-orange-100/80 hover:border-orange-300 rounded-2xl p-1.5 sm:p-2 shadow-2xs cursor-pointer transition-colors"
-          title="Klik untuk membuka Kalender Kehadiran & Rentetan Lengkap 📅"
+          className="w-full grid grid-cols-7 gap-1 sm:gap-1.5 text-center bg-orange-50/30 hover:bg-orange-50/60 border border-orange-100/80 hover:border-orange-300 rounded-2xl p-1.5 sm:p-2 shadow-2xs cursor-pointer transition-colors"
+          title="Klik untuk membuka Kalender Kehadiran & Rentetan Lengkap"
         >
           {weeklyStreakDays.map((item) => (
             <div key={item.label} className="flex flex-col items-center gap-1">
@@ -100,7 +101,7 @@ export const StreakSection: FC = () => {
               )}
             </div>
           ))}
-        </div>
+        </button>
       </div>
 
       {/* ── STREAK ATTENDANCE CALENDAR MODAL ── */}

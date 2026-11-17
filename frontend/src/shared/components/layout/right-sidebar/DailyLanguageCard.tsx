@@ -60,12 +60,8 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
     return (
       <div id="daily-language-card" className={`space-y-2 select-none scroll-mt-20 ${className}`}>
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 text-xs">
-            {languageMeta.flagEmoji ? (
-              <span className="text-sm leading-none">{languageMeta.flagEmoji}</span>
-            ) : (
-              <Translate weight="bold" className="w-4 h-4 text-rose-600" />
-            )}
+          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-700 shrink-0 text-[10px] font-brand font-black">
+            {languageMeta.countryCode || <Translate weight="bold" className="w-4 h-4 text-rose-600" />}
           </div>
           <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
             {languageMeta.languageTitle}
@@ -80,15 +76,11 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
 
   return (
     <div id="daily-language-card" className={`space-y-2.5 select-none scroll-mt-20 ${className}`}>
-      {/* ── CARD HEADER (DYNAMIC TO DESTINATION COUNTRY) ── */}
+      {/* ── CARD HEADER (DYNAMIC TO ACTIVE LANGUAGE) ── */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-600 shrink-0 text-xs">
-            {languageMeta.flagEmoji ? (
-              <span className="text-sm leading-none">{languageMeta.flagEmoji}</span>
-            ) : (
-              <Translate weight="bold" className="w-4 h-4 text-rose-600" />
-            )}
+          <div className="w-7 h-7 rounded-xl bg-rose-50 border border-rose-200 flex items-center justify-center text-rose-700 shrink-0 text-[10px] font-brand font-black">
+            {languageMeta.countryCode || <Translate weight="bold" className="w-4 h-4 text-rose-600" />}
           </div>
           <div>
             <h4 className="font-brand font-black text-xs text-slate-900 leading-none">

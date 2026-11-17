@@ -10,6 +10,7 @@ import {
   RocketLaunch,
   Translate,
   LockSimple,
+  Compass,
 } from '@phosphor-icons/react'
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import { TechNihongoLogo } from "@/shared/components/ui/BrandLogos"
@@ -63,7 +64,6 @@ const TrackSwitcherDialog = ({
   }, [onClose])
 
   const handleTrackCardClick = (track: CareerTrackOption) => {
-    if (track.isEnrolled === false) return
     triggerHaptic('tap')
     setSelectedTrack(track.id)
   }
@@ -95,7 +95,7 @@ const TrackSwitcherDialog = ({
   const renderTrackCard = (track: CareerTrackOption) => {
     const isUnenrolled = track.isEnrolled === false
     const isCurrent = track.slug === currentTrack || track.id === currentTrack
-    const isSelected = !isUnenrolled && (track.slug === selectedTrack || track.id === selectedTrack)
+    const isSelected = track.slug === selectedTrack || track.id === selectedTrack
     const stats = trackProgressMap?.[track.slug] || trackProgressMap?.[track.id]
     const completed = stats?.completed ?? 0
     const total = stats?.total ?? 0
@@ -104,22 +104,21 @@ const TrackSwitcherDialog = ({
     return (
       <div
         key={track.id}
-        role={isUnenrolled ? undefined : 'button'}
-        tabIndex={isUnenrolled ? undefined : 0}
-        aria-disabled={isUnenrolled}
+        role="button"
+        tabIndex={0}
         onClick={() => handleTrackCardClick(track)}
         onKeyDown={(e) => {
-          if (!isUnenrolled && (e.key === 'Enter' || e.key === ' ')) {
+          if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault()
             handleTrackCardClick(track)
           }
         }}
-        className={`group relative rounded-2xl p-4 border-2 transition-all ${
-          isUnenrolled
-            ? 'bg-slate-50/70 border-slate-200/80 opacity-65 cursor-not-allowed'
-            : isSelected
-              ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-2 ring-blue-400/30 cursor-pointer'
-              : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300 cursor-pointer'
+        className={`group relative rounded-2xl p-4 border-2 transition-all cursor-pointer ${
+          isSelected
+            ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-2 ring-blue-400/30'
+            : isUnenrolled
+              ? 'bg-slate-50/70 hover:bg-white border-slate-200 hover:border-blue-300'
+              : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
         }`}
       >
         <div className="flex items-start justify-between gap-3">
@@ -150,8 +149,8 @@ const TrackSwitcherDialog = ({
                   </span>
                 ) : track.badgeVariant === 'available' ? (
                   <span className="bg-slate-100 text-slate-700 font-brand font-bold text-[10px] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                    {isUnenrolled && <LockSimple weight="bold" className="w-2.5 h-2.5" />}
-                    <span>{track.badgeLabel}</span>
+                    {isUnenrolled && <LockSimple weight="bold" className="w-2.5 h-2.5 text-blue-600" />}
+                    <span>{isUnenrolled ? 'Daftar & Pelajari' : track.badgeLabel}</span>
                   </span>
                 ) : null}
               </div>
@@ -178,18 +177,21 @@ const TrackSwitcherDialog = ({
             </div>
           </div>
 
-          {!isUnenrolled && (
-            <div className="shrink-0 pt-1 text-slate-400 group-hover:text-slate-700 transition-colors">
-              <CaretRight weight="bold" className="w-4 h-4" />
-            </div>
-          )}
+          <div className="shrink-0 pt-1 text-slate-400 group-hover:text-slate-700 transition-colors">
+            <CaretRight weight="bold" className="w-4 h-4" />
+          </div>
         </div>
       </div>
     )
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Pilih Bahasa dan Gaya Belajar"
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none"
+    >
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative z-10 w-full max-w-lg bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col animate-pop">
@@ -225,7 +227,7 @@ const TrackSwitcherDialog = ({
           <div className="space-y-2.5">
             <div className="flex items-center justify-between px-1">
               <span className="text-[10px] font-brand font-black text-amber-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                <span>🧭</span>
+                <Compass weight="fill" className="w-3.5 h-3.5 text-amber-700 shrink-0" />
                 <span>PILIH GAYA BELAJAR (TAMPILAN)</span>
               </span>
               <span className="text-[10px] text-slate-400 font-medium">
@@ -339,7 +341,7 @@ const TrackSwitcherDialog = ({
                   KATALOG BAHASA LAINNYA
                 </span>
                 <span className="text-[10px] text-slate-400 font-medium">
-                  Pendaftaran bahasa tambahan segera hadir
+                  Klik bahasa untuk daftar &amp; mulai belajar
                 </span>
               </div>
               <div className="space-y-2.5">{catalogLanguages.map(renderTrackCard)}</div>
