@@ -61,11 +61,8 @@ func (e *DomainError) Error() string {
 	return e.Message
 }
 
-func (e *DomainError) Unwrap() error {
-	if e.Err != nil {
-		return e.Err
-	}
-	switch e.Type {
+func sentinelForType(t ErrorType) error {
+	switch t {
 	case ErrorTypeNotFound:
 		return ErrNotFound
 	case ErrorTypeConflict:
@@ -81,11 +78,33 @@ func (e *DomainError) Unwrap() error {
 	}
 }
 
-func (e *DomainError) Is(target error) bool {
-	if t, ok := target.(*DomainError); ok {
-		return e.Code == t.Code
+func (e *DomainError) Unwrap() error {
+	if e == nil {
+		return nil
 	}
-	return errors.Is(e.Unwrap(), target)
+	if e.Err != nil {
+		return e.Err
+	}
+	return sentinelForType(e.Type)
+}
+
+func (e *DomainError) Is(target error) bool {
+	if e == nil || target == nil {
+		return false
+	}
+	if t, ok := target.(*DomainError); ok {
+		if t == nil {
+			return false
+		}
+		return e.Code != "" && e.Code == t.Code
+	}
+	if errors.Is(sentinelForType(e.Type), target) {
+		return true
+	}
+	if e.Err != nil {
+		return errors.Is(e.Err, target)
+	}
+	return false
 }
 
 func NewBadRequestError(code, message string, details map[string]any) *DomainError {

@@ -4,8 +4,11 @@ import (
 	"codeabroad/backend/config"
 	"context"
 	"fmt"
-	"github.com/jackc/pgx/v5/pgxpool"
+	"net"
+	"net/url"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // PostgresDB wraps the PostgreSQL connection pool
@@ -14,28 +17,36 @@ type PostgresDB struct {
 }
 
 func NewPostgresDB(ctx context.Context, cfg *config.Config) (*PostgresDB, error) {
-	// Build the connection URI
-	connStr := fmt.Sprintf(
-		"postgres://%s:%s@%s:%s/%s?sslmode=%s",
-		cfg.DBUser,
-		cfg.DBPassword,
-		cfg.DBHost,
-		cfg.DBPort,
-		cfg.DBName,
-		cfg.DBSSLMode,
-	)
+	if cfg == nil {
+		return nil, fmt.Errorf("postgres config cannot be nil")
+	}
+
+	query := url.Values{}
+	query.Set("sslmode", cfg.DBSSLMode)
+	connURI := (&url.URL{
+		Scheme:   "postgres",
+		User:     url.UserPassword(cfg.DBUser, cfg.DBPassword),
+		Host:     net.JoinHostPort(cfg.DBHost, cfg.DBPort),
+		Path:     "/" + cfg.DBName,
+		RawQuery: query.Encode(),
+	}).String()
 
 	// Parse pool configuration
-	poolConfig, err := pgxpool.ParseConfig(connStr)
+	poolConfig, err := pgxpool.ParseConfig(connURI)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse postgres config: %w", err)
 	}
 
-	// Connection pool tuning parameters
+	// Connection pool tuning parameters & network timeouts
 	poolConfig.MaxConns = 25
 	poolConfig.MinConns = 2
 	poolConfig.MaxConnLifetime = 1 * time.Hour
 	poolConfig.MaxConnIdleTime = 30 * time.Minute
+	poolConfig.ConnConfig.ConnectTimeout = 5 * time.Second
+	if poolConfig.ConnConfig.RuntimeParams == nil {
+		poolConfig.ConnConfig.RuntimeParams = make(map[string]string)
+	}
+	poolConfig.ConnConfig.RuntimeParams["statement_timeout"] = "15000"
 
 	// Create the connection pool
 	pool, err := pgxpool.NewWithConfig(ctx, poolConfig)
@@ -56,11 +67,15 @@ func NewPostgresDB(ctx context.Context, cfg *config.Config) (*PostgresDB, error)
 
 // Close gracefully releases all connections in the pool
 func (p *PostgresDB) Close() {
-	if p.Pool != nil {
+	if p != nil && p.Pool != nil {
 		p.Pool.Close()
 	}
 }
+
 // Ping verifies whether the database connection is still alive
 func (p *PostgresDB) Ping(ctx context.Context) error {
+	if p == nil || p.Pool == nil {
+		return fmt.Errorf("postgres pool is not initialized")
+	}
 	return p.Pool.Ping(ctx)
 }

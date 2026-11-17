@@ -38,9 +38,31 @@ func BadRequest(c *gin.Context, message string) {
 	})
 }
 
+// BindJSON binds request JSON and returns 413 Payload Too Large when BodySizeLimitMiddleware triggers MaxBytesError.
+func BindJSON(c *gin.Context, dst any) bool {
+	if err := c.ShouldBindJSON(dst); err != nil {
+		var maxBytesErr *http.MaxBytesError
+		if errors.As(err, &maxBytesErr) {
+			c.JSON(http.StatusRequestEntityTooLarge, ErrorResponse{
+				Success: false,
+				Error:   "ukuran payload request melebihi batas maksimal yang diizinkan",
+				Code:    "PAYLOAD_TOO_LARGE",
+			})
+			return false
+		}
+		BadRequest(c, "format payload request tidak valid")
+		return false
+	}
+	return true
+}
+
 func Error(c *gin.Context, err error) {
+	if err == nil {
+		return
+	}
+
 	var domainErr *apperror.DomainError
-	if errors.As(err, &domainErr) {
+	if errors.As(err, &domainErr) && domainErr != nil {
 		status := http.StatusInternalServerError
 		switch domainErr.Type {
 		case apperror.ErrorTypeBadRequest:
@@ -67,31 +89,31 @@ func Error(c *gin.Context, err error) {
 	case errors.Is(err, apperror.ErrNotFound):
 		c.JSON(http.StatusNotFound, ErrorResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "resource not found",
 			Code:    "NOT_FOUND",
 		})
 	case errors.Is(err, apperror.ErrConflict):
 		c.JSON(http.StatusConflict, ErrorResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "resource already exists",
 			Code:    "CONFLICT",
 		})
 	case errors.Is(err, apperror.ErrUnauthorized):
 		c.JSON(http.StatusUnauthorized, ErrorResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "unauthorized",
 			Code:    "UNAUTHORIZED",
 		})
 	case errors.Is(err, apperror.ErrForbidden):
 		c.JSON(http.StatusForbidden, ErrorResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "forbidden",
 			Code:    "FORBIDDEN",
 		})
 	case errors.Is(err, apperror.ErrBadRequest):
 		c.JSON(http.StatusBadRequest, ErrorResponse{
 			Success: false,
-			Error:   err.Error(),
+			Error:   "bad request",
 			Code:    "BAD_REQUEST",
 		})
 	default:

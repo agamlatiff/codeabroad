@@ -1,6 +1,8 @@
 package router
 
 import (
+	"log"
+
 	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/internal/app/curriculum"
 	"codeabroad/backend/internal/app/exercise"
@@ -28,14 +30,19 @@ type Config struct {
 	AuthMiddleware         gin.HandlerFunc
 	OptionalAuthMiddleware gin.HandlerFunc
 	CORSAllowedOrigins     []string
+	TrustedProxies         []string
 }
-
-// RouterConfig is an alias for Config to support standard router configurations
-type RouterConfig = Config
 
 // SetupRouter initializes the Gin engine and configures API v1 routes
 func SetupRouter(cfg *Config) *gin.Engine {
 	r := gin.Default()
+	if cfg == nil {
+		cfg = &Config{}
+	}
+	if err := r.SetTrustedProxies(cfg.TrustedProxies); err != nil {
+		log.Printf("router: failed to configure trusted proxies, trusting none: %v", err)
+		_ = r.SetTrustedProxies(nil)
+	}
 
 	r.Use(middleware.SecurityHeadersMiddleware())
 	r.Use(middleware.BodySizeLimitMiddleware(middleware.DefaultMaxBodyBytes))

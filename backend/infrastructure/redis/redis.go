@@ -15,15 +15,24 @@ type RedisClient struct {
 }
 
 func NewRedisClient(ctx context.Context, cfg *config.Config) (*RedisClient, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("redis config cannot be nil")
+	}
 	addr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
 
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: cfg.RedisPassword,
-		DB:       0,
+		Addr:         addr,
+		Password:     cfg.RedisPassword,
+		DB:           0,
+		PoolSize:     20,
+		MinIdleConns: 2,
+		DialTimeout:  2 * time.Second,
+		ReadTimeout:  750 * time.Millisecond,
+		WriteTimeout: 750 * time.Millisecond,
+		MaxRetries:   1,
 	})
 
-	// Checking Redis with a context timeout of 5 minutes
+	// Verify Redis connectivity within 5 seconds
 	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
@@ -38,12 +47,15 @@ func NewRedisClient(ctx context.Context, cfg *config.Config) (*RedisClient, erro
 
 
 func (r *RedisClient) Close() error {
-	if r.Client != nil {
+	if r != nil && r.Client != nil {
 		return r.Client.Close()
 	}
 	return nil
 }
 
 func (r *RedisClient) Ping(ctx context.Context) error {
+	if r == nil || r.Client == nil {
+		return fmt.Errorf("redis client is not initialized")
+	}
 	return r.Client.Ping(ctx).Err()
 }

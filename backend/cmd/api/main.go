@@ -24,6 +24,7 @@ import (
 	"codeabroad/backend/internal/shared/middleware"
 	"codeabroad/backend/internal/shared/router"
 	"codeabroad/backend/internal/app/user"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
@@ -31,6 +32,9 @@ func main() {
 	cfg, err := config.LoadConfig()
 	if err != nil {
 		log.Fatalf("failed to load configuration: %v", err)
+	}
+	if cfg.Env == "production" || cfg.Env == "staging" {
+		gin.SetMode(gin.ReleaseMode)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -70,13 +74,13 @@ func main() {
 	// 5. Initialize Usecases (Business Logic Services)
 	authUsecase := auth.NewUsecase(userRepo, sessionRepo, cfg)
 	userUsecase := user.NewUsecase(userRepo)
-	onboardingUsecase := onboarding.NewUsecaseWithCache(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, curriculumCache)
-	langUsecase := language.NewUsecaseWithCache(langRepo, curriculumCache)
+	onboardingUsecase := onboarding.NewUsecaseWithStore(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, curriculumCache, onboarding.NewPostgresStore(pg))
+	langUsecase := language.NewUsecaseFull(langRepo, curriculumCache, gamificationRepo)
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
 	exerciseUsecase := exercise.NewUsecaseFull(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, curriculumRepo, curriculumCache).
 		WithBadgeAwarder(gamificationRepo)
 	gamificationUsecase := gamification.NewUsecase(gamificationRepo)
-	leaderboardUsecase := leaderboard.NewUsecase(leaderboardRepo)
+	leaderboardUsecase := leaderboard.NewUsecaseWithCache(leaderboardRepo, rdb)
 
 	// 6. Initialize Handlers & Middlewares
 	healthHandler := health.NewHandler(pg, rdb)
@@ -165,9 +169,16 @@ func main() {
 		gamification.DefaultGamificationMutationMessage,
 	)
 	gamificationHandler := gamification.NewHandlerWithRateLimiter(gamificationUsecase, gamificationMutationLimiter)
-	leaderboardHandler := leaderboard.NewHandler(leaderboardUsecase)
-	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
-	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
+	leaderboardReadLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"leaderboard:weekly",
+		leaderboard.DefaultLeaderboardLimit,
+		time.Minute,
+		leaderboard.DefaultLeaderboardMessage,
+	)
+	leaderboardHandler := leaderboard.NewHandlerWithRateLimiter(leaderboardUsecase, leaderboardReadLimiter)
+	authMiddleware := middleware.AuthMiddlewareWithSessionCheck(cfg.JWTSecret, sessionRepo)
+	optionalAuth := middleware.OptionalAuthMiddlewareWithSessionCheck(cfg.JWTSecret, sessionRepo)
 
 	// 7. Setup Gin router with registered routes
 	appRouter := router.SetupRouter(&router.Config{
@@ -183,6 +194,7 @@ func main() {
 		AuthMiddleware:         authMiddleware,
 		OptionalAuthMiddleware: optionalAuth,
 		CORSAllowedOrigins:     cfg.CORSAllowedOrigins,
+		TrustedProxies:         cfg.TrustedProxies,
 	})
 
 	// 8. Configure HTTP server
@@ -195,18 +207,24 @@ func main() {
 	}
 
 	// 9. Start server in a background goroutine
+	serverErrCh := make(chan error, 1)
 	go func() {
 		log.Printf("CodeAbroad API server listening on port %s (%s environment)", cfg.Port, cfg.Env)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			log.Fatalf("server listen error: %v", err)
+			serverErrCh <- err
 		}
 	}()
 
-	// 10. Graceful shutdown listening for OS signals (Ctrl+C, SIGTERM)
+	// 10. Graceful shutdown listening for OS signals or unexpected server error
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
-	<-quit
-	log.Println("shutting down server gracefully...")
+	select {
+	case <-quit:
+		log.Println("shutting down server gracefully...")
+	case srvErr := <-serverErrCh:
+		log.Printf("server listen error: %v", srvErr)
+		return
+	}
 
 	shutdownCtx, shutdownCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutdownCancel()

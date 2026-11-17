@@ -21,16 +21,18 @@ type Config struct {
 	RedisHost                  string
 	RedisPort                  string
 	RedisPassword              string
-	KafkaBrokers               string
 	JWTSecret                  string
 	JWTAccessExpirationMinutes int
 	JWTRefreshExpirationDays   int
 	CORSAllowedOrigins         []string
+	TrustedProxies             []string
 }
 
 func getEnv(key, fallback string) string {
-	if value, exists := os.LookupEnv(key); exists && value != "" {
-		return value
+	if value, exists := os.LookupEnv(key); exists {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			return trimmed
+		}
 	}
 	return fallback
 }
@@ -42,11 +44,17 @@ func LoadConfig() (*Config, error) {
 		_ = godotenv.Load("../.env")
 	}
 
-	env := strings.ToLower(strings.TrimSpace(getEnv("ENV", "development")))
+	env := strings.ToLower(getEnv("ENV", "development"))
+	switch env {
+	case "development", "test", "staging", "production":
+	default:
+		return nil, fmt.Errorf("invalid ENV value %q: must be development, test, staging, or production", env)
+	}
 
-	jwtSecret := strings.TrimSpace(getEnv("JWT_SECRET", defaultDevJWTSecret))
-	if env == "production" && (jwtSecret == "" || jwtSecret == defaultDevJWTSecret || len(jwtSecret) < 32) {
-		return nil, fmt.Errorf("JWT_SECRET must be set to a non-default value of at least 32 characters in production")
+	jwtSecret := getEnv("JWT_SECRET", defaultDevJWTSecret)
+	isLocalDevOrTest := env == "development" || env == "test"
+	if !isLocalDevOrTest && (jwtSecret == "" || jwtSecret == defaultDevJWTSecret || len(jwtSecret) < 32) {
+		return nil, fmt.Errorf("JWT_SECRET must be set to a non-default value of at least 32 characters in %s", env)
 	}
 
 	jwtExpMin, err := strconv.Atoi(getEnv("JWT_EXPIRATION_MINUTES", "15"))
@@ -63,12 +71,23 @@ func LoadConfig() (*Config, error) {
 	var corsOrigins []string
 	for _, origin := range strings.Split(corsOriginsStr, ",") {
 		trimmed := strings.TrimSpace(origin)
+		if trimmed == "*" {
+			return nil, fmt.Errorf("CORS_ALLOWED_ORIGINS cannot include wildcard '*' when credentials are enabled")
+		}
 		if trimmed != "" {
 			corsOrigins = append(corsOrigins, trimmed)
 		}
 	}
 	if len(corsOrigins) == 0 {
 		corsOrigins = []string{"http://localhost:5173", "http://localhost:3000", "http://localhost"}
+	}
+
+	trustedProxiesStr := getEnv("TRUSTED_PROXIES", "")
+	var trustedProxies []string
+	for _, proxy := range strings.Split(trustedProxiesStr, ",") {
+		if trimmed := strings.TrimSpace(proxy); trimmed != "" {
+			trustedProxies = append(trustedProxies, trimmed)
+		}
 	}
 
 	return &Config{
@@ -82,11 +101,11 @@ func LoadConfig() (*Config, error) {
 		DBSSLMode:                  getEnv("DB_SSLMODE", "disable"),
 		RedisHost:                  getEnv("REDIS_HOST", "localhost"),
 		RedisPort:                  getEnv("REDIS_PORT", "6379"),
-		RedisPassword:              getEnv("REDIS_PASSWORD", ""),
-		KafkaBrokers:               getEnv("KAFKA_BROKERS", "localhost:9092"),
+		RedisPassword:              strings.TrimSpace(os.Getenv("REDIS_PASSWORD")),
 		JWTSecret:                  jwtSecret,
 		JWTAccessExpirationMinutes: jwtExpMin,
 		JWTRefreshExpirationDays:   jwtRefreshExpDays,
 		CORSAllowedOrigins:         corsOrigins,
+		TrustedProxies:             trustedProxies,
 	}, nil
 }

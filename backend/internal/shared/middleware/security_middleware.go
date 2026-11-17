@@ -17,15 +17,21 @@ const DefaultMaxBodyBytes int64 = 1 << 20 // 1 MB
 
 // CORSMiddleware configures cross-origin resource sharing policy
 func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
-	if len(allowedOrigins) == 0 {
-		allowedOrigins = []string{"http://localhost:5173", "http://localhost:3000", "http://localhost"}
+	sanitized := make([]string, 0, len(allowedOrigins))
+	for _, o := range allowedOrigins {
+		if o != "" && o != "*" {
+			sanitized = append(sanitized, o)
+		}
+	}
+	if len(sanitized) == 0 {
+		sanitized = []string{"http://localhost:5173", "http://localhost:3000", "http://localhost"}
 	}
 
 	return cors.New(cors.Config{
-		AllowOrigins:     allowedOrigins,
+		AllowOrigins:     sanitized,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		ExposeHeaders:    []string{"Content-Length", "X-RateLimit-Limit", "X-RateLimit-Remaining", "Retry-After"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	})
@@ -35,8 +41,7 @@ func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 func SecurityHeadersMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("X-XSS-Protection", "1; mode=block")
+		c.Header("X-Frame-Options", "SAMEORIGIN")
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		c.Next()
 	}
@@ -77,6 +82,12 @@ type ipRateLimiter struct {
 }
 
 func newIPRateLimiter(maxRequests int, window time.Duration) *ipRateLimiter {
+	if maxRequests <= 0 {
+		maxRequests = 1
+	}
+	if window <= 0 {
+		window = time.Minute
+	}
 	return &ipRateLimiter{
 		visitors:    make(map[string]*rateLimitVisitor),
 		maxRequests: maxRequests,
@@ -101,9 +112,16 @@ func (l *ipRateLimiter) allow(ip string, now time.Time) (allowed bool, remaining
 	visitor, exists := l.visitors[ip]
 	if !exists || now.After(visitor.expiresAt) {
 		if !exists && len(l.visitors) >= maxRateLimitVisitors {
-			for k := range l.visitors {
-				delete(l.visitors, k)
-				break
+			var oldestKey string
+			var oldestExp time.Time
+			for k, v := range l.visitors {
+				if oldestKey == "" || v.expiresAt.Before(oldestExp) {
+					oldestKey = k
+					oldestExp = v.expiresAt
+				}
+			}
+			if oldestKey != "" {
+				delete(l.visitors, oldestKey)
 			}
 		}
 		l.visitors[ip] = &rateLimitVisitor{
@@ -126,6 +144,12 @@ func (l *ipRateLimiter) allow(ip string, now time.Time) (allowed bool, remaining
 }
 
 func buildRateLimitHandler(maxRequests int, window time.Duration, keyFn func(*gin.Context) string, message string) gin.HandlerFunc {
+	if maxRequests <= 0 {
+		maxRequests = 1
+	}
+	if window <= 0 {
+		window = time.Minute
+	}
 	limiter := newIPRateLimiter(maxRequests, window)
 
 	return func(c *gin.Context) {
