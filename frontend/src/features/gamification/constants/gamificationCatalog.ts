@@ -93,22 +93,22 @@ export const DAILY_CHEST_TIERS: DailyChestTierConfig[] = [
 
 export const MILESTONE_CHALLENGES: MilestoneChallengeConfig[] = [
   {
-    id: 'boss-jlpt-n5',
-    title: 'Evaluasi Level JLPT N5 & Penguasaan Aksara',
+    id: 'boss-level-evaluation',
+    title: 'Evaluasi Kesiapan Level & Kosakata Inti',
     subtitle:
-      'Uji pemahaman Hiragana, Katakana, Kanji dasar, serta tata bahasa inti sebelum naik ke level berikutnya.',
-    tags: ['JLPT N5', 'KANJI', 'GRAMMAR'],
+      'Uji penguasaan membaca, menyimak, menulis, dan berbicara pada kurikulum bahasa aktif sebelum naik tingkat.',
+    tags: ['EVALUASI LEVEL', 'READING', 'LISTENING'],
     icon: '🔥',
     xp_reward: 250,
     gem_reward: 50,
     route: '/curriculum',
   },
   {
-    id: 'capstone-keigo-business',
-    title: 'Simulasi Percakapan Kerja & Keigo Jepang',
+    id: 'capstone-global-communication',
+    title: 'Simulasi Komunikasi Profesional & Sertifikasi',
     subtitle:
-      'Latihan dialog situasi kantor, perkenalan profesional (Jikoshoukai), dan tata krama bahasa bisnis.',
-    tags: ['KEIGO', 'SPEAKING', 'LISTENING'],
+      'Latihan dialog situasi kerja internasional, tata bahasa formal, serta kesiapan ujian resmi (JLPT / IELTS / Goethe / HSK / DELF).',
+    tags: ['SPEAKING', 'WRITING', 'SERTIFIKASI'],
     icon: '🏛️',
     xp_reward: 500,
     gem_reward: 100,
@@ -132,7 +132,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'xp-booster',
     title: 'XP Booster Potion 🧪',
-    subtitle: 'Pengganda 2x XP untuk setiap latihan bahasa & kuis selama 30 menit ke depan.',
+    subtitle: 'Bonus perlengkapan koleksi & booster fokus untuk mempercepat progres belajar bahasa.',
     price: 35,
     badge: 'BOOSTER ⚡',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
@@ -144,9 +144,9 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'cv-review',
     title: 'Kupon Review CV Global 📋',
-    subtitle: 'Audit CV (Rirekisho/Lebenslauf) dan portofolio persiapan kerja internasional oleh mentor.',
+    subtitle: 'Audit CV (Rirekisho / Lebenslauf / Resume Internasional) dan portofolio bersama mentor.',
     price: 100,
-    badge: 'KARIER GLOBAL 🇯🇵',
+    badge: 'KARIER GLOBAL 🌐',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     icon: FileText,
     iconBg: 'bg-emerald-50 border-emerald-200',
@@ -156,7 +156,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'mock-interview',
     title: 'Akses VIP Mock Interview 🎙️',
-    subtitle: 'Simulasi 1-on-1 wawancara kerja berbahasa Jepang/Inggris bersama mentor via Discord.',
+    subtitle: 'Simulasi 1-on-1 wawancara kerja berbahasa target bersama mentor via Discord Voice.',
     price: 150,
     badge: 'EKSKLUSIF ⭐',
     badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',

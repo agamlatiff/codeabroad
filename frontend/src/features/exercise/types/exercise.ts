@@ -11,7 +11,6 @@ export type ExerciseType =
   | 'fill_blank'
   | 'listening_choice'
   | 'speaking_repeat'
-  | 'dialogue_roleplay'
   | string
 
 export type SkillPillar = 'reading' | 'listening' | 'speaking' | 'writing' | string
@@ -104,6 +103,7 @@ export interface ReadinessExamAttempt {
   max_score?: number
   score_percent: number
   is_passed: boolean
+  assessed_pillars?: string[]
   analysis_report?: Record<string, unknown>
   attempted_at: string
   level?: ProficiencyLevel

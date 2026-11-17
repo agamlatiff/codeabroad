@@ -61,7 +61,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
 
   const catTokens = resolveMapCategoryTokens(node.category)
   const mascotEmotion = resolveMascotEmotion(node)
-  const isLockedPreview = node.status === 'locked' && isViewingInactiveTrack
+  const isLockedPreview = isViewingInactiveTrack
 
   const modalIconBg =
     node.status === 'completed'
@@ -71,6 +71,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
         : catTokens.modalIconBgLocked
 
   const handleAction = () => {
+    if (isViewingInactiveTrack) return
     onClose()
     const targetRoute = node.route || `/learn/${node.id}`
 
@@ -87,7 +88,12 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
   }
 
   return createPortal(
-    <div className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={node.title}
+      className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
+    >
       <div className="absolute inset-0" onClick={onClose} />
 
       <div className="relative z-10 bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-pop">

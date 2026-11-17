@@ -3,16 +3,16 @@ import { useNavigate } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
 import { authService } from "@/features/auth/services/authService"
 import { useAuthStore } from "@/features/auth/store/authStore"
+import { clearClientSession } from "@/shared/services/sessionCleanup"
 
 /**
  * Shared session sign-out hook.
- * Revokes the server session (best-effort), clears the auth store,
- * clears local user storage, wipes TanStack Query cache, then redirects to /login.
+ * Revokes the server session (best-effort), wipes client auth/feature stores + caches,
+ * preserves audio settings, then redirects to /login.
  */
 export const useLogout = () => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const clearAuthStore = useAuthStore((state) => state.logout)
 
   return useCallback(async (allDevices: boolean = false) => {
     try {
@@ -23,31 +23,8 @@ export const useLogout = () => {
         await authService.logout(currentRefreshToken)
       }
     } finally {
-      // 1. Clear client auth session
-      clearAuthStore()
-
-      // 2. Wipe TanStack Query cache to prevent data bleed
-      queryClient.clear()
-
-      // 3. Clear temporary user-specific storage (purge all codeabroad_* keys to avoid cross-user state bleed)
-      if (typeof window !== 'undefined') {
-        try {
-          const keysToPurge: string[] = []
-          for (let i = 0; i < localStorage.length; i++) {
-            const key = localStorage.key(i)
-            if (key && key.startsWith('codeabroad_')) {
-              keysToPurge.push(key)
-            }
-          }
-          keysToPurge.forEach((k) => localStorage.removeItem(k))
-          sessionStorage.clear()
-        } catch {
-          // Ignore private mode / restricted browser storage errors
-        }
-      }
-
-      // 4. Redirect to login
+      clearClientSession(queryClient)
       navigate('/login', { replace: true })
     }
-  }, [clearAuthStore, queryClient, navigate])
+  }, [queryClient, navigate])
 }

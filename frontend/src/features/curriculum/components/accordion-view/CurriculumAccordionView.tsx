@@ -5,6 +5,7 @@ import { CurriculumUnitCard } from './CurriculumUnitCard'
 export interface CurriculumAccordionViewProps {
   units: SequentialCurriculumUnit[]
   isLoading?: boolean
+  hasError?: boolean
   isUnitCollapsed: (unit: SequentialCurriculumUnit) => boolean
   onToggleCollapse: (unit: SequentialCurriculumUnit) => void
   onLockedClick: (title: string) => void
@@ -18,6 +19,7 @@ export interface CurriculumAccordionViewProps {
 export const CurriculumAccordionView: FC<CurriculumAccordionViewProps> = ({
   units,
   isLoading,
+  hasError = false,
   isUnitCollapsed,
   onToggleCollapse,
   onLockedClick,
@@ -32,6 +34,7 @@ export const CurriculumAccordionView: FC<CurriculumAccordionViewProps> = ({
   }
 
   if (units.length === 0) {
+    if (hasError) return null
     return (
       <div className="bg-white border-2 border-slate-200 rounded-3xl p-8 text-center text-slate-500 text-xs font-semibold shadow-xs">
         Belum ada unit kurikulum yang tersedia untuk level ini.

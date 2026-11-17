@@ -24,10 +24,10 @@ export const MilestoneChallengesSection = ({
         </div>
         <div className="space-y-1.5 max-w-md mx-auto">
           <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
-            Sayembara Capstone Belum Terbuka
+            Tantangan Capstone Belum Terbuka
           </h3>
           <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-            Tantangan evaluasi S-Rank Tokyo memerlukan penguasaan modul fundamental &amp; intermediate. Selesaikan misi kurikulum bahasa terlebih dahulu!
+            Tantangan evaluasi tingkat lanjut memerlukan penguasaan modul dasar &amp; menengah. Selesaikan pelajaran kurikulum bahasa terlebih dahulu!
           </p>
         </div>
         <Button3D

@@ -162,6 +162,8 @@ export interface CompleteLessonResponse {
   gamification: CurriculumGamificationSummary
   unlocked_next_lesson_id?: string | null
   awarded_badges?: CurriculumBadgeDefinition[]
+  session_score?: number
+  session_xp_earned?: number
 }
 
 // ============================================================================

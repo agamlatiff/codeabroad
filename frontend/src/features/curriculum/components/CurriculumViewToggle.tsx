@@ -117,7 +117,7 @@ export const CurriculumViewToggle: FC<CurriculumViewToggleProps> = ({
             />
             <div className="flex items-center gap-1.5">
               <span>Silabus Unit</span>
-              {totalUnitsCount && totalUnitsCount > 0 ? (
+              {typeof totalUnitsCount === 'number' && totalUnitsCount > 0 ? (
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-md ${
                     viewMode === 'syllabus'

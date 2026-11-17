@@ -1,5 +1,6 @@
 import { api, unwrapApiResponse } from '@/shared/services/api'
 import type { RequestOptions } from '@/shared/services/api'
+import { SRS_DUE_QUERY_KEY } from '@/shared/constants/queryKeys'
 import type { ApiResponse } from '@/shared/types/api'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type {
@@ -12,7 +13,7 @@ import type {
   UserSRSReview,
 } from '@/features/exercise/types/exercise'
 
-export const SRS_DUE_QUERY_KEY = ['srs', 'due'] as const
+export { SRS_DUE_QUERY_KEY }
 export const EXAM_QUESTIONS_QUERY_KEY = ['exams', 'questions'] as const
 export const EXAM_RESULT_QUERY_KEY = ['exams', 'result'] as const
 

@@ -1,22 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
+import { z } from 'zod'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
-  CURRICULUM_QUERY_KEY,
   LESSON_DETAIL_QUERY_KEY,
   curriculumService,
 } from '@/features/curriculum/services/curriculumService'
-import { LANGUAGE_ENROLLMENTS_QUERY_KEY } from '@/features/curriculum/services/languageService'
 import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { useExerciseMedia } from '@/features/exercise/hooks/useExerciseMedia'
 import { useExerciseQuestionInputs } from '@/features/exercise/hooks/useExerciseQuestionInputs'
-import {
-  SRS_DUE_QUERY_KEY,
-  exerciseService,
-} from '@/features/exercise/services/exerciseService'
-import { DAILY_VOCABULARIES_QUERY_KEY } from '@/features/exercise/services/vocabularyService'
+import { exerciseService } from '@/features/exercise/services/exerciseService'
+import { invalidateLearningSessionCaches } from '@/features/exercise/utils/sessionCache'
 import {
   computeElapsedSeconds,
   resolveExerciseSpokenText,
@@ -25,36 +21,57 @@ import type {
   LessonCompletionNavigationState,
   SubmitExerciseAnswerResponse,
 } from '@/features/exercise/types/exercise'
-import {
-  PROFILE_QUERY_KEY,
-  ACTIVITY_LOGS_QUERY_KEY,
-  DAILY_REWARDS_QUERY_KEY,
-} from '@/features/user/services/userService'
-import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { extractApiErrorMessage } from '@/shared/services/api'
 import type { ApiResponse } from '@/shared/types/api'
 import { audioService } from '@/shared/services/audioService'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
-export const useLearnWorkspace = () => {
-  const { id } = useParams<{ id: string }>()
+const lessonDraftSchema = z.object({
+  currentIndex: z.number().int().min(0),
+  correctExerciseIds: z.array(z.string()),
+})
+
+const getLessonDraftKey = (userId: string, lessonId?: string) =>
+  lessonId ? `codeabroad_lesson_draft:${userId}:${lessonId}` : null
+
+const loadLessonDraft = (userId: string, lessonId?: string) => {
+  const key = getLessonDraftKey(userId, lessonId)
+  if (!key) return { currentIndex: 0, correctExerciseIds: [] as string[] }
+  try {
+    const raw = sessionStorage.getItem(key)
+    if (!raw) return { currentIndex: 0, correctExerciseIds: [] as string[] }
+    const parsed = lessonDraftSchema.safeParse(JSON.parse(raw))
+    if (!parsed.success) {
+      sessionStorage.removeItem(key)
+      return { currentIndex: 0, correctExerciseIds: [] as string[] }
+    }
+    return parsed.data
+  } catch {
+    return { currentIndex: 0, correctExerciseIds: [] as string[] }
+  }
+}
+
+export const useLearnWorkspace = (id?: string) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const updateUser = useAuthStore((state) => state.updateUser)
   const userId = useAuthStore((state) => state.user?.id ?? 'anonymous')
 
-  // Session state keyed per route lesson ID cleanly during render on route change
-  const [trackedLessonId, setTrackedLessonId] = useState<string | undefined>(id)
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const initialDraft = useMemo(() => loadLessonDraft(userId, id), [userId, id])
+  const [currentIndex, setCurrentIndex] = useState(initialDraft.currentIndex)
   const [submittedResult, setSubmittedResult] =
     useState<SubmitExerciseAnswerResponse | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isScoreTooLowError, setIsScoreTooLowError] = useState(false)
   const [isGrammarDrawerOpen, setIsGrammarDrawerOpen] = useState(false)
-  const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>([])
+  const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>(
+    initialDraft.correctExerciseIds
+  )
 
   const questionStartedAtRef = useRef<number>(0)
+  const submitLockRef = useRef(false)
+  const sessionEpochRef = useRef(0)
 
   const lessonQuery = useQuery({
     queryKey: [...LESSON_DETAIL_QUERY_KEY, userId, id],
@@ -65,7 +82,8 @@ export const useLearnWorkspace = () => {
 
   const lesson = lessonQuery.data ?? null
   const exercises = useMemo(() => lesson?.exercises ?? [], [lesson])
-  const currentExercise = exercises[currentIndex] ?? null
+  const safeIndex = exercises.length > 0 ? Math.min(currentIndex, exercises.length - 1) : 0
+  const currentExercise = exercises[safeIndex] ?? null
   const currentExerciseType = currentExercise?.exercise_type ?? ''
 
   const speechLocale = useActiveSpeechLocale()
@@ -93,16 +111,18 @@ export const useLearnWorkspace = () => {
     submittedResult,
   })
 
-  if (id !== trackedLessonId) {
-    setTrackedLessonId(id)
-    setCurrentIndex(0)
-    setSubmittedResult(null)
-    setSubmitError(null)
-    setIsScoreTooLowError(false)
-    setIsGrammarDrawerOpen(false)
-    setCorrectExerciseIds([])
-    resetInputs()
-  }
+  useEffect(() => {
+    const key = getLessonDraftKey(userId, id)
+    if (!key) return
+    try {
+      sessionStorage.setItem(
+        key,
+        JSON.stringify({ currentIndex: safeIndex, correctExerciseIds })
+      )
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [correctExerciseIds, id, safeIndex, userId])
 
   const {
     isSpeakingAudio,
@@ -133,9 +153,6 @@ export const useLearnWorkspace = () => {
       audioService.stopBgm()
     }
   }, [])
-
-  const isLastExercise =
-    exercises.length > 0 && currentIndex >= exercises.length - 1
 
   const {
     mutateAsync: submitAnswerAsync,
@@ -169,6 +186,8 @@ export const useLearnWorkspace = () => {
   }, [resetInputs, stopMediaSession])
 
   const handleRetryLesson = useCallback(() => {
+    sessionEpochRef.current += 1
+    submitLockRef.current = false
     stopMediaSession()
     triggerHaptic('tap')
     audioEngine.playPop()
@@ -179,7 +198,9 @@ export const useLearnWorkspace = () => {
     setSubmitError(null)
     setIsScoreTooLowError(false)
     questionStartedAtRef.current = Date.now()
-  }, [resetInputs, stopMediaSession])
+    const key = getLessonDraftKey(userId, id)
+    if (key) sessionStorage.removeItem(key)
+  }, [id, resetInputs, stopMediaSession, userId])
 
   const handlePlayAudio = useCallback(() => {
     if (!parsedContent) return
@@ -190,10 +211,17 @@ export const useLearnWorkspace = () => {
   }, [currentExercise?.prompt, parsedContent, playExerciseAudio])
 
   const handleCheckAnswer = useCallback(async () => {
-    if (!currentExercise || !canCheckAnswer || isSubmittingAnswer) {
+    if (
+      !currentExercise ||
+      !canCheckAnswer ||
+      isSubmittingAnswer ||
+      submitLockRef.current
+    ) {
       return
     }
 
+    submitLockRef.current = true
+    const epoch = sessionEpochRef.current
     stopMediaSession()
     setSubmitError(null)
     const elapsedSeconds = computeElapsedSeconds(questionStartedAtRef.current)
@@ -205,6 +233,7 @@ export const useLearnWorkspace = () => {
         time_spent_seconds: elapsedSeconds,
       })
 
+      if (epoch !== sessionEpochRef.current) return
       setSubmittedResult(res)
       if (res.is_correct) {
         triggerHaptic('success')
@@ -217,11 +246,14 @@ export const useLearnWorkspace = () => {
         audioEngine.playError()
       }
     } catch (err) {
+      if (epoch !== sessionEpochRef.current) return
       setSubmitError(
         extractApiErrorMessage(err, 'Gagal mengirim jawaban. Coba lagi.')
       )
       triggerHaptic('error')
       audioEngine.playError()
+    } finally {
+      submitLockRef.current = false
     }
   }, [
     canCheckAnswer,
@@ -233,8 +265,10 @@ export const useLearnWorkspace = () => {
   ])
 
   const handleCompleteLesson = useCallback(async () => {
-    if (!lesson || isCompletingLesson) return
+    if (!lesson || isCompletingLesson || submitLockRef.current) return
 
+    submitLockRef.current = true
+    const epoch = sessionEpochRef.current
     setSubmitError(null)
     setIsScoreTooLowError(false)
     const total = Math.max(1, exercises.length)
@@ -247,6 +281,11 @@ export const useLearnWorkspace = () => {
         score: accuracyPercent,
       })
 
+      if (epoch !== sessionEpochRef.current) return
+
+      const key = getLessonDraftKey(userId, lesson.id)
+      if (key) sessionStorage.removeItem(key)
+
       if (completionResult.gamification) {
         updateUser({
           xp: completionResult.gamification.xp,
@@ -258,21 +297,17 @@ export const useLearnWorkspace = () => {
       }
 
       const actualXpEarned =
-        completionResult.gamification && previousUser
+        completionResult.session_xp_earned ??
+        (completionResult.gamification && previousUser
           ? Math.max(0, completionResult.gamification.xp - previousUser.xp)
-          : lesson.xp_reward
+          : lesson.xp_reward)
 
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: LESSON_DETAIL_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
-      ])
+      await invalidateLearningSessionCaches(queryClient, {
+        includeCurriculum: true,
+        includeLessonDetail: true,
+        includeSrs: true,
+        includeVocab: true,
+      })
 
       triggerHaptic('success')
 
@@ -282,7 +317,7 @@ export const useLearnWorkspace = () => {
         totalExercises: exercises.length,
         correctCount: correctExerciseIds.length,
         totalXpEarned: actualXpEarned,
-        accuracyPercent,
+        accuracyPercent: completionResult.session_score ?? accuracyPercent,
       }
 
       navigate(`/learn/${lesson.id}/complete`, {
@@ -290,6 +325,7 @@ export const useLearnWorkspace = () => {
         state: navState,
       })
     } catch (err) {
+      if (epoch !== sessionEpochRef.current) return
       const errorCode = isAxiosError<ApiResponse<unknown>>(err)
         ? err.response?.data?.code
         : undefined
@@ -309,6 +345,8 @@ export const useLearnWorkspace = () => {
       }
       triggerHaptic('error')
       audioEngine.playError()
+    } finally {
+      submitLockRef.current = false
     }
   }, [
     completeLessonAsync,
@@ -319,25 +357,26 @@ export const useLearnWorkspace = () => {
     navigate,
     queryClient,
     updateUser,
+    userId,
   ])
 
   const handleContinue = useCallback(() => {
     if (submittedResult === null && exercises.length > 0) return
 
-    if (isLastExercise || exercises.length === 0) {
+    if (safeIndex >= exercises.length - 1 || exercises.length === 0) {
       void handleCompleteLesson()
       return
     }
 
     audioEngine.playPop()
     triggerHaptic('tap')
-    setCurrentIndex((prev) => prev + 1)
+    setCurrentIndex((prev) => Math.min(exercises.length - 1, prev + 1))
     resetQuestionInputs()
   }, [
     exercises.length,
     handleCompleteLesson,
-    isLastExercise,
     resetQuestionInputs,
+    safeIndex,
     submittedResult,
   ])
 
@@ -348,7 +387,9 @@ export const useLearnWorkspace = () => {
   }, [navigate, stopMediaSession])
 
   const handleEnterShortcut = useCallback(() => {
-    if (isSubmittingAnswer || isCompletingLesson || isScoreTooLowError) return
+    if (isSubmittingAnswer || isCompletingLesson || submitLockRef.current || isScoreTooLowError) {
+      return
+    }
     if (submittedResult === null) {
       if (canCheckAnswer) {
         void handleCheckAnswer()
@@ -368,9 +409,9 @@ export const useLearnWorkspace = () => {
 
   const progressPercent = useMemo(() => {
     if (exercises.length === 0) return 0
-    const completedSteps = currentIndex + (submittedResult !== null ? 1 : 0)
+    const completedSteps = safeIndex + (submittedResult !== null ? 1 : 0)
     return Math.min(100, Math.round((completedSteps / exercises.length) * 100))
-  }, [currentIndex, exercises.length, submittedResult])
+  }, [exercises.length, safeIndex, submittedResult])
 
   const lessonErrorMessage = lessonQuery.isError
     ? extractApiErrorMessage(
@@ -386,7 +427,7 @@ export const useLearnWorkspace = () => {
     currentExercise,
     currentExerciseType,
     parsedContent,
-    currentIndex,
+    currentIndex: safeIndex,
     progressPercent,
     resolvedCorrectAnswer,
     selectedTokenIndices,
@@ -405,7 +446,7 @@ export const useLearnWorkspace = () => {
     audioPlaybackError,
     correctCount: correctExerciseIds.length,
     canCheckAnswer,
-    isLastExercise,
+    isLastExercise: exercises.length > 0 && safeIndex >= exercises.length - 1,
     isLoading: lessonQuery.isLoading,
     isError: lessonQuery.isError,
     lessonErrorMessage,

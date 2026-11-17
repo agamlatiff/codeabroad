@@ -1,4 +1,4 @@
-import { LockSimple, Sparkle, Translate } from '@phosphor-icons/react'
+import { LockSimple, Sparkle, Translate, WarningCircle } from '@phosphor-icons/react'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { AppRightSidebar } from "@/shared/components/layout/right-sidebar/AppRightSidebar"
@@ -110,7 +110,7 @@ export const CurriculumPage = () => {
           {status.error && (
             <div className="bg-rose-50 border-2 border-rose-300 rounded-3xl p-5 text-rose-800 flex items-center justify-between gap-4 shadow-xs">
               <div className="flex items-center gap-2.5 min-w-0">
-                <span className="text-lg shrink-0">⚠️</span>
+                <WarningCircle weight="fill" className="w-5 h-5 text-rose-600 shrink-0" />
                 <span className="text-xs font-semibold">{status.error}</span>
               </div>
               <button
@@ -128,6 +128,7 @@ export const CurriculumPage = () => {
             <CurriculumMapView
               curriculum={curriculum.data}
               isLoading={status.isLoading}
+              hasError={Boolean(status.error)}
               isViewingInactiveTrack={curriculum.isViewingInactiveTrack}
               isActivatingTrack={status.isSwitchingLanguage}
               onActivateTrack={actions.handleActivateCurrentTrack}
@@ -137,6 +138,7 @@ export const CurriculumPage = () => {
             <CurriculumAccordionView
               units={curriculum.units}
               isLoading={status.isLoading}
+              hasError={Boolean(status.error)}
               isUnitCollapsed={modals.isUnitCollapsed}
               onToggleCollapse={actions.toggleUnitCollapse}
               onLockedClick={actions.handleLockedNodeClick}

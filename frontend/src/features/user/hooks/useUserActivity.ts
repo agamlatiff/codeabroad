@@ -1,14 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { userService, getActivityLogsQueryKey } from "@/features/user/services/userService"
-import type { UserActivitySummaryResponse } from "@/features/user/types/user"
+import { userService } from "@/features/user/services/userService"
+import { getActivityLogsQueryKey } from "@/shared/constants/queryKeys"
+import type { UserActivitySummaryResponse } from "@/shared/types/user"
 
 /**
  * Headless hook managing 7-day learning activity logs, streaks, and attendance calendar.
  * Returns semantic { data, status, actions } objects for clean readability.
  */
 export const useUserActivity = () => {
-  const { user } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
 
   const {
     data: activitySummary = null,

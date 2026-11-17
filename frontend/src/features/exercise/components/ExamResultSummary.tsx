@@ -26,12 +26,19 @@ export const ExamResultSummary = ({
   const { attempt, certificate, awarded_badges } = result
   const isPassed = attempt.is_passed
 
-  const pillars = [
-    { label: 'Reading', score: attempt.reading_score, tone: 'bg-sky-50 border-sky-200 text-sky-900' },
-    { label: 'Listening', score: attempt.listening_score, tone: 'bg-amber-50 border-amber-200 text-amber-900' },
-    { label: 'Writing', score: attempt.writing_score, tone: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
-    { label: 'Speaking', score: attempt.speaking_score, tone: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
+  const allPillars = [
+    { key: 'reading', label: 'Reading', score: attempt.reading_score, tone: 'bg-sky-50 border-sky-200 text-sky-900' },
+    { key: 'listening', label: 'Listening', score: attempt.listening_score, tone: 'bg-amber-50 border-amber-200 text-amber-900' },
+    { key: 'writing', label: 'Writing', score: attempt.writing_score, tone: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    { key: 'speaking', label: 'Speaking', score: attempt.speaking_score, tone: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
   ]
+  const assessedSet =
+    Array.isArray(attempt.assessed_pillars) && attempt.assessed_pillars.length > 0
+      ? new Set(attempt.assessed_pillars.map((p) => p.toLowerCase()))
+      : null
+  const pillars = assessedSet
+    ? allPillars.filter((pillar) => assessedSet.has(pillar.key))
+    : allPillars
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex flex-col items-center justify-center p-4 sm:p-6">
@@ -70,7 +77,15 @@ export const ExamResultSummary = ({
         </div>
 
         {/* 4-Pillar Score Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div
+          className={`grid gap-3 ${
+            pillars.length <= 2
+              ? 'grid-cols-2'
+              : pillars.length === 3
+                ? 'grid-cols-3'
+                : 'grid-cols-2 sm:grid-cols-4'
+          }`}
+        >
           {pillars.map((pillar) => (
             <div
               key={pillar.label}

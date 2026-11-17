@@ -1,7 +1,7 @@
-import type { TokyoDivision } from "@/features/leaderboard/types/leaderboard"
+import type { LeagueDivision } from "@/features/leaderboard/types/leaderboard"
 
 export interface DivisionConfig {
-  id: TokyoDivision
+  id: LeagueDivision
   name: string
   tier: string
   xpRange: string
@@ -11,19 +11,19 @@ export interface DivisionConfig {
   description: string
 }
 
-export const TOKYO_DIVISIONS: DivisionConfig[] = [
+export const LEAGUE_DIVISIONS: DivisionConfig[] = [
   {
-    id: 'shinjuku',
+    id: 'bronze',
     name: 'Liga Perunggu',
     tier: 'Bronze League',
     xpRange: '0 – 299 XP',
     levelLabel: 'Pemula',
     iconColor: 'text-[#B45309]',
     badgeColor: 'border-amber-500 bg-amber-50 text-amber-900',
-    description: 'Zona kompetisi bagi pembelajar baru yang memulai dasar aksara & kosakata global.',
+    description: 'Zona kompetisi bagi pembelajar baru yang memulai dasar kosakata & tata bahasa.',
   },
   {
-    id: 'shibuya',
+    id: 'silver',
     name: 'Liga Perak',
     tier: 'Silver League',
     xpRange: '300 – 799 XP',
@@ -33,23 +33,47 @@ export const TOKYO_DIVISIONS: DivisionConfig[] = [
     description: 'Kompetisi aktif bagi pembelajar yang menguasai tata bahasa inti & percakapan harian.',
   },
   {
-    id: 'akihabara',
+    id: 'gold',
     name: 'Liga Emas',
     tier: 'Gold League',
     xpRange: '800 – 1.499 XP',
     levelLabel: 'Lanjutan',
     iconColor: 'text-[#F59E0B]',
     badgeColor: 'border-amber-400 bg-amber-50/60 text-amber-900',
-    description: 'Pembelajar tingkat lanjut dengan penguasaan Kanji menengah, listening & Keigo.',
+    description: 'Pembelajar tingkat lanjut dengan penguasaan membaca, menyimak & komunikasi formal.',
   },
   {
-    id: 'roppongi',
+    id: 'diamond',
     name: 'Liga Berlian',
     tier: 'Diamond Master',
     xpRange: '1.500+ XP',
     levelLabel: 'Master',
     iconColor: 'text-[#06B6D4]',
     badgeColor: 'border-cyan-500 bg-cyan-50/70 text-cyan-950',
-    description: 'Puncak liga global: siap sertifikasi JLPT/Goethe/IELTS dan komunikasi profesional.',
+    description: 'Puncak liga global: siap sertifikasi JLPT / IELTS / Goethe / HSK / DELF dan karier internasional.',
   },
 ]
+
+/**
+ * Normalizes backend division codes (including legacy Japanese station names)
+ * into canonical LeagueDivision keys.
+ */
+export const normalizeLeagueDivision = (division?: string | null): LeagueDivision => {
+  switch (division?.trim().toLowerCase()) {
+    case 'silver':
+    case 'shibuya':
+      return 'silver'
+    case 'gold':
+    case 'akihabara':
+      return 'gold'
+    case 'diamond':
+    case 'roppongi':
+      return 'diamond'
+    case 'bronze':
+    case 'shinjuku':
+    default:
+      return 'bronze'
+  }
+}
+
+export const TOKYO_DIVISIONS = LEAGUE_DIVISIONS

@@ -1,21 +1,24 @@
-export type TokyoDivision = 'shinjuku' | 'shibuya' | 'akihabara' | 'roppongi'
+export type LeagueDivision = 'bronze' | 'silver' | 'gold' | 'diamond'
+
+/** Transitional alias preserved for compatibility. */
+export type TokyoDivision = LeagueDivision
 
 export interface LeaderboardEntry {
   rank: number
-  user_id: string
+  user_id?: string
   username: string
   name: string
   avatar_url?: string | null
   weekly_xp: number
   streak: number
   current_level: number
-  division: TokyoDivision
+  division: LeagueDivision
   is_current_user: boolean
   zone: 'promotion' | 'safe' | 'demotion'
 }
 
 export interface WeeklyLeaderboardResponse {
-  division: TokyoDivision
+  division: LeagueDivision
   division_name: string
   division_tier: string
   season_week: number

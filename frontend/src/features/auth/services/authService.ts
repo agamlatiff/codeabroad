@@ -1,4 +1,4 @@
-import { api, unwrapApiResponse, type RequestOptions } from "@/shared/services/api"
+import { api, unwrapApiResponse, sanitizeAxiosErrorMessage, type RequestOptions } from "@/shared/services/api"
 import type { ApiResponse } from "@/shared/types/api"
 import type {
   AuthResponse,
@@ -39,7 +39,7 @@ export const authService = {
       await api.post('/auth/logout', refreshToken ? { refresh_token: refreshToken } : undefined)
     } catch (err: unknown) {
       if (import.meta.env.DEV) {
-        console.warn('[authService.logout] Gagal mencabut sesi di server:', err)
+        console.warn('[authService.logout] Gagal mencabut sesi di server:', sanitizeAxiosErrorMessage(err))
       }
     }
   },
@@ -52,7 +52,7 @@ export const authService = {
       await api.post('/auth/logout-all')
     } catch (err: unknown) {
       if (import.meta.env.DEV) {
-        console.warn('[authService.logoutAll] Gagal mencabut semua sesi di server:', err)
+        console.warn('[authService.logoutAll] Gagal mencabut semua sesi di server:', sanitizeAxiosErrorMessage(err))
       }
     }
   },

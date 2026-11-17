@@ -1,13 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
+import { userService } from "@/features/user/services/userService"
 import {
-  userService,
-  PROFILE_QUERY_KEY,
-  DAILY_REWARDS_QUERY_KEY,
-  ACTIVITY_LOGS_QUERY_KEY,
+  getProfileQueryKey,
   getDailyRewardsQueryKey,
-} from "@/features/user/services/userService"
-import type { DailyRewardsStatusResponse, DailyRewardClaimResponse } from "@/features/user/types/user"
+  getActivityLogsQueryKey,
+} from "@/shared/constants/queryKeys"
+import type { DailyRewardsStatusResponse, DailyRewardClaimResponse } from "@/shared/types/user"
 
 /**
  * Headless hook managing daily habit milestone rewards (Vocab Quest & Golden Chest).
@@ -15,7 +14,8 @@ import type { DailyRewardsStatusResponse, DailyRewardClaimResponse } from "@/fea
  */
 export const useDailyRewards = () => {
   const queryClient = useQueryClient()
-  const { user, updateUser } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const updateUser = useAuthStore((s) => s.updateUser)
 
   // 1. Fetch today's claimed status for Vocab Quest and Golden Chest
   const {
@@ -38,16 +38,15 @@ export const useDailyRewards = () => {
   >({
     mutationFn: (rewardType) => userService.claimDailyReward(rewardType),
     onSuccess: (res) => {
-      // Synchronize updated game loop stats into client Zustand store
       updateUser({
         xp: res.current_xp,
         current_level: res.current_level,
         streak: res.streak,
+        ...(typeof res.current_gems === 'number' ? { gems: res.current_gems } : {}),
       })
-      // Invalidate relevant query keys so profile, streaks, and reward cards re-render
-      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(user?.id) })
     },
   })
 

@@ -42,7 +42,7 @@ export const MonthlyBadgeModal = ({
       className="text-center"
     >
       <div className="space-y-5 py-2">
-        {/* Tokyo Guild Special Badge Tag */}
+        {/* Global Guild Special Badge Tag */}
         <div className="flex justify-center">
           <span className="text-[11px] font-brand font-black px-4 py-1 rounded-full border border-amber-300 bg-amber-100 text-amber-950 uppercase tracking-wider shadow-2xs flex items-center gap-1.5">
             <Trophy weight="fill" className="w-3.5 h-3.5 text-amber-700" />
@@ -50,12 +50,12 @@ export const MonthlyBadgeModal = ({
           </span>
         </div>
 
-        {/* Kodi with Golden Roppongi Medallion */}
+        {/* Kodi with Golden Master Medallion */}
         <div className="relative flex items-center justify-center my-3">
           {/* Radiant Aura */}
           <div className="absolute w-44 h-44 bg-gradient-to-tr from-amber-300/40 via-yellow-200/30 to-blue-300/30 rounded-full blur-2xl animate-pulse" />
 
-          {/* Living Kodi Character (Chiikawa Neko Golden Master) */}
+          {/* Living Kodi Character */}
           <div className="relative z-10 flex items-center justify-center">
             <KodiCharacter emotion="celebrate" size={120} interactive />
             {/* Medallion Floating Badge */}
@@ -68,14 +68,14 @@ export const MonthlyBadgeModal = ({
         {/* Challenge Title & Story */}
         <div className="space-y-1.5">
           <h3 className="font-brand font-black text-xl sm:text-2xl text-slate-900 tracking-tight">
-            Lencana Emas Roppongi ({monthYearName})
+            Lencana Emas Bulanan ({monthYearName})
           </h3>
           <p className="text-xs text-slate-600 font-medium max-w-sm mx-auto leading-relaxed">
             {isClaimed
-              ? `Lencana kehormatan edisi ${monthYearName} telah resmi disematkan pada etalase portofolio profil CodeAbroad Anda.`
+              ? `Lencana kehormatan edisi ${monthYearName} telah resmi terpasang pada profil CodeAbroad Anda.`
               : isEligible
-              ? `Selamat! Anda berhasil menuntaskan ${completedCount} misi bulan ini. Klaim lencana emas permanen beserta bonus gems sekarang!`
-              : `Selesaikan ${targetCount - completedCount} misi lagi di bulan ${monthYearName} untuk membuka lencana emas permanen ini.`}
+              ? `Luar biasa! Anda menuntaskan ${completedCount} aktivitas bulan ini. Lencana emas akan terbuka otomatis di akun Anda.`
+              : `Selesaikan ${targetCount - completedCount} misi lagi di bulan ${monthYearName} untuk membuka lencana emas bulanan ini.`}
           </p>
         </div>
 
@@ -105,14 +105,9 @@ export const MonthlyBadgeModal = ({
             <span>Lencana Profil Permanen</span>
           </div>
           <div className="w-1 h-1 bg-slate-300 rounded-full" />
-          <div className="flex items-center gap-1 text-blue-600">
-            <span className="text-base">💎</span>
-            <span>+50 Gems</span>
-          </div>
-          <div className="w-1 h-1 bg-slate-300 rounded-full" />
           <div className="flex items-center gap-1 text-amber-600">
             <span className="text-base">⚡</span>
-            <span>+150 XP</span>
+            <span>Bonus +150 XP Otomatis</span>
           </div>
         </div>
 
@@ -135,10 +130,10 @@ export const MonthlyBadgeModal = ({
               size="md"
               fullWidth
               onClick={handleClaim}
-              className="text-xs py-3 shadow-md ring-4 ring-amber-300 animate-pulse"
+              className="text-xs py-3 shadow-md ring-4 ring-amber-300"
             >
               <Sparkle weight="fill" className="w-4 h-4 mr-1.5 text-amber-950" />
-              KLAIM LENCANA &amp; BONUS SEKARANG (+50 💎)
+              TARGET TERCAPAI • LANJUTKAN BELAJAR
             </Button3D>
           ) : (
             <Button3D
@@ -146,7 +141,7 @@ export const MonthlyBadgeModal = ({
               size="md"
               fullWidth
               onClick={onClose}
-              className="text-xs py-2.5 border-2 border-slate-200 bg-slate-100 text-slate-400 cursor-not-allowed"
+              className="text-xs py-2.5 border-2 border-slate-200 bg-slate-100 text-slate-400"
             >
               BELUM MEMENUHI SYARAT ({completedCount}/{targetCount})
             </Button3D>

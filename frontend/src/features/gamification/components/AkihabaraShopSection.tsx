@@ -5,9 +5,7 @@ export interface AkihabaraShopSectionProps {
   shopItems: ShopItem[]
   userGems: number
   inventory: Record<string, number>
-  isBoosterActive: boolean
   isPurchasingItemId: string | null
-  onUseXPBooster: () => void
   onOpenCVModal: () => void
   onOpenMockModal: () => void
   onPurchaseItem: (item: ShopItem) => void
@@ -17,9 +15,7 @@ export const AkihabaraShopSection = ({
   shopItems,
   userGems,
   inventory,
-  isBoosterActive,
   isPurchasingItemId,
-  onUseXPBooster,
   onOpenCVModal,
   onOpenMockModal,
   onPurchaseItem,
@@ -35,14 +31,14 @@ export const AkihabaraShopSection = ({
           <div>
             <div className="flex items-center gap-2">
               <h3 className="font-extrabold text-base sm:text-lg tracking-tight">
-                Akihabara Arcade &amp; Reward Shop
+                Pasar Hadiah &amp; Perlengkapan Guild
               </h3>
               <span className="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase">
                 AUTO DISPENSE
               </span>
             </div>
             <p className="text-xs text-blue-100 max-w-md">
-              Tukarkan gems sayembara dengan proteksi streak, potion pengganda XP, dan kupon karir Tokyo.
+              Tukarkan Gems hasil belajar Anda dengan proteksi streak, koleksi booster, dan kupon bimbingan karier global.
             </p>
           </div>
         </div>
@@ -113,22 +109,9 @@ export const AkihabaraShopSection = ({
 
                 {/* Action if owned */}
                 {ownedCount > 0 && item.id === 'xp-booster' && (
-                  <div>
-                    {isBoosterActive ? (
-                      <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1 animate-pulse">
-                        <span>⚡ 2x XP Aktif</span>
-                      </span>
-                    ) : (
-                      <Button3D
-                        variant="amber"
-                        size="sm"
-                        onClick={onUseXPBooster}
-                        className="text-xs px-3.5 py-2 ring-2 ring-amber-300"
-                      >
-                        GUNAKAN 🧪
-                      </Button3D>
-                    )}
-                  </div>
+                  <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs flex items-center gap-1">
+                    <span>⚡ {ownedCount}x Tersedia</span>
+                  </span>
                 )}
 
                 {ownedCount > 0 && item.id === 'cv-review' && (

@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from "@/features/auth/services/authService"
 import { loginSchema, type LoginPayload } from "@/features/auth/types/auth"
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
+import { getProfileQueryKey } from "@/shared/constants/queryKeys"
 import {
   resolveLoginErrorMessage,
   resolvePostAuthPath,
@@ -42,8 +42,9 @@ export const useLogin = () => {
   const loginMutation = useMutation({
     mutationFn: (payload: LoginPayload) => authService.login(payload),
     onSuccess: (data, variables) => {
+      queryClient.clear()
       setAuth(data.user, data.access_token, data.refresh_token, variables.remember_me)
-      queryClient.setQueryData(PROFILE_QUERY_KEY, data.user)
+      queryClient.setQueryData(getProfileQueryKey(data.user.id), data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
     onError: (err: unknown) => {

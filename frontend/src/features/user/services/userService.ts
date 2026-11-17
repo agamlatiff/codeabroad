@@ -6,18 +6,24 @@ import type {
   UserActivitySummaryResponse,
   DailyRewardClaimResponse,
   DailyRewardsStatusResponse,
-} from "@/features/user/types/user"
+} from "@/shared/types/user"
+import {
+  PROFILE_QUERY_KEY,
+  ACTIVITY_LOGS_QUERY_KEY,
+  DAILY_REWARDS_QUERY_KEY,
+  getProfileQueryKey,
+  getActivityLogsQueryKey,
+  getDailyRewardsQueryKey,
+} from "@/shared/constants/queryKeys"
 
-export const PROFILE_QUERY_KEY = ['profile'] as const
-export const ACTIVITY_LOGS_QUERY_KEY = ['activity-logs'] as const
-export const DAILY_REWARDS_QUERY_KEY = ['daily-rewards'] as const
-
-export const getProfileQueryKey = (userId?: string | null) =>
-  ['profile', userId ?? 'anonymous'] as const
-export const getActivityLogsQueryKey = (userId?: string | null) =>
-  ['activity-logs', userId ?? 'anonymous'] as const
-export const getDailyRewardsQueryKey = (userId?: string | null) =>
-  ['daily-rewards', userId ?? 'anonymous'] as const
+export {
+  PROFILE_QUERY_KEY,
+  ACTIVITY_LOGS_QUERY_KEY,
+  DAILY_REWARDS_QUERY_KEY,
+  getProfileQueryKey,
+  getActivityLogsQueryKey,
+  getDailyRewardsQueryKey,
+}
 
 /**
  * Service managing user profile, preferences, and daily consistency activity tracking.

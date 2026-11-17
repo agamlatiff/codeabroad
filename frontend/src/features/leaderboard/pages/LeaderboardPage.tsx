@@ -1,5 +1,3 @@
-import { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import {
   Trophy,
@@ -9,57 +7,35 @@ import {
   CaretDown,
   Medal,
 } from '@phosphor-icons/react'
-import type { TokyoDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
-import { TOKYO_DIVISIONS } from "@/features/leaderboard/constants/divisions"
-import { LeaderboardEntryRow } from "@/features/leaderboard/components/LeaderboardEntryRow"
-import { leaderboardService } from "@/features/leaderboard/services/leaderboardService"
+import type { LeagueDivision } from "@/features/leaderboard/types/leaderboard"
+import { LEAGUE_DIVISIONS } from "@/features/leaderboard/constants/divisions"
+import { useWeeklyLeaderboard } from "@/features/leaderboard/hooks/useWeeklyLeaderboard"
+import { LeaderboardStandingsList } from "@/features/leaderboard/components/LeaderboardStandingsList"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { soundEngine } from "@/shared/utils/audio"
-import { Button3D } from "@/shared/components/ui/Button3D"
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 
 export const LeaderboardPage = () => {
-  const navigate = useNavigate()
-  const [selectedDivision, setSelectedDivision] = useState<TokyoDivision>('shinjuku')
-  const [leaderboard, setLeaderboard] = useState<WeeklyLeaderboardResponse | null>(null)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [error, setError] = useState<string | null>(null)
-  const [reloadKey, setReloadKey] = useState(0)
+  const {
+    leaderboard,
+    activeDivision,
+    currentDivisionConfig,
+    isLoading,
+    error,
+    selectDivision,
+    refetch,
+  } = useWeeklyLeaderboard()
 
-  useEffect(() => {
-    let isMounted = true
-    const fetchStandings = async () => {
-      try {
-        setLoading(true)
-        setError(null)
-        const data = await leaderboardService.getWeeklyLeaderboard(selectedDivision)
-        if (isMounted) {
-          setLeaderboard(data)
-        }
-      } catch {
-        if (isMounted) {
-          setError('Gagal memuat papan peringkat. Periksa koneksi Anda lalu coba lagi.')
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false)
-        }
-      }
-    }
-
-    fetchStandings()
-    return () => {
-      isMounted = false
-    }
-  }, [selectedDivision, reloadKey])
-
-  const handleSelectDivision = (div: TokyoDivision) => {
+  const handleSelectDivision = (div: LeagueDivision) => {
     triggerHaptic('tap')
     soundEngine.playLevelUp()
-    setSelectedDivision(div)
+    selectDivision(div)
   }
 
-  const currentDivConfig = TOKYO_DIVISIONS.find((d) => d.id === selectedDivision) || TOKYO_DIVISIONS[0]
+  const daysLabel =
+    leaderboard?.days_remaining === 0
+      ? 'Reset Hari Ini (23:59 WIB)'
+      : `${leaderboard?.days_remaining ?? 5} Hari Tersisa`
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -70,21 +46,21 @@ export const LeaderboardPage = () => {
           {/* ── TOP CONTEXTUAL HEADER ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs">
             <div className="space-y-1.5">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
                   <Trophy weight="fill" className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Tokyo League 2026</span>
+                  <span>Liga Global Mingguan</span>
                 </span>
                 <span className="bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-brand font-black px-2 py-0.5 rounded-full flex items-center gap-1">
                   <Clock weight="bold" className="w-3 h-3 text-blue-600" />
-                  <span>{leaderboard?.days_remaining ?? 5} Hari Tersisa</span>
+                  <span>{daysLabel}</span>
                 </span>
               </div>
               <h1 className="text-xl sm:text-2xl font-brand font-black text-slate-900 tracking-tight">
-                Papan Peringkat Liga Tokyo (Weekly Leagues)
+                Papan Peringkat Liga Mingguan Global
               </h1>
               <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl">
-                Bersaing setiap minggu bersama pembelajar bahasa global lainnya. Capai Top 3 di akhir pekan untuk promosi ke divisi yang lebih bergengsi!
+                Bersaing setiap minggu bersama pembelajar bahasa global lainnya di seluruh jalur bahasa. Capai Top 3 di akhir pekan untuk promosi ke divisi yang lebih tinggi!
               </p>
             </div>
 
@@ -95,19 +71,19 @@ export const LeaderboardPage = () => {
               </div>
               <div className="space-y-0.5">
                 <span className="text-[10px] font-brand font-black text-blue-800 uppercase block">
-                  Liga Musim #{leaderboard?.season_week ?? 42}
+                  Liga Musim #{leaderboard?.season_week ?? 1}
                 </span>
                 <span className="text-xs font-brand font-black text-slate-900">
-                  {currentDivConfig.tier}
+                  {currentDivisionConfig.tier}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* ── 4 TOKYO LEAGUE DIVISION SELECTOR TABS ── */}
+          {/* ── 4 GLOBAL LEAGUE DIVISION SELECTOR TABS ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {TOKYO_DIVISIONS.map((div) => {
-              const isSelected = selectedDivision === div.id
+            {LEAGUE_DIVISIONS.map((div) => {
+              const isSelected = activeDivision === div.id
               return (
                 <button
                   key={div.id}
@@ -172,14 +148,14 @@ export const LeaderboardPage = () => {
               <div className="space-y-0.5">
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-brand font-black text-amber-950 uppercase tracking-wider">
-                    Pool Hadiah Musim #{leaderboard?.season_week ?? 42}
+                    Pool Hadiah Musim #{leaderboard?.season_week ?? 1}
                   </span>
                   <span className="text-[10px] font-mono font-bold bg-amber-200/80 text-amber-900 px-2 py-0.5 rounded-full">
-                    {leaderboard?.days_remaining ?? 5} Hari Tersisa
+                    {daysLabel}
                   </span>
                 </div>
                 <p className="text-xs text-amber-800 font-medium">
-                  Raih Top 3 di akhir pekan untuk memenangkan Gems Tokyo dan tiket promosi otomatis ke divisi berikutnya!
+                  Raih Top 3 setiap akhir minggu (23:59 WIB) untuk memenangkan Gems Hadiah dan promosi otomatis ke divisi berikutnya!
                 </p>
               </div>
             </div>
@@ -201,65 +177,13 @@ export const LeaderboardPage = () => {
 
           {/* ── LEADERBOARD TABLE ROWS ── */}
           <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-4 sm:p-6 space-y-2.5 shadow-xs">
-            {loading ? (
-              <div className="py-16 text-center space-y-3">
-                <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-                <p className="text-xs font-brand font-bold text-slate-400">
-                  Memuat klasemen {currentDivConfig.name}...
-                </p>
-              </div>
-            ) : error ? (
-              <div className="py-12 px-6 text-center space-y-3 bg-rose-50/70 rounded-3xl border-2 border-rose-200">
-                <p className="text-xs sm:text-sm font-brand font-bold text-rose-700">{error}</p>
-                <Button3D
-                  variant="blue"
-                  size="sm"
-                  onClick={() => setReloadKey((k) => k + 1)}
-                  className="text-xs px-5 py-2 mx-auto"
-                >
-                  Coba Lagi
-                </Button3D>
-              </div>
-            ) : !leaderboard?.entries || leaderboard.entries.length === 0 ? (
-              <div className="py-16 px-6 text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200">
-                <div className="flex items-center justify-center mx-auto">
-                  <KodiCharacter emotion="thinking" size={110} />
-                </div>
-                <div className="space-y-1.5 max-w-md mx-auto">
-                  <h3 className="font-brand font-black text-base sm:text-lg text-slate-900">
-                    Belum Ada Peserta di {currentDivConfig.name}
-                  </h3>
-                  <p className="text-xs sm:text-sm text-slate-500 font-medium leading-relaxed">
-                    Jadilah yang pertama masuk ke klasemen {currentDivConfig.name} ({currentDivConfig.xpRange}) minggu ini! Kumpulkan XP dari kurikulum dan latihan bahasa untuk langsung mengamankan posisi Zona Promosi!
-                  </p>
-                </div>
-                <Button3D
-                  variant="blue"
-                  size="md"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    navigate('/curriculum')
-                  }}
-                  className="text-xs sm:text-sm px-6 py-3 mx-auto"
-                >
-                  Buka Kurikulum &amp; Raih XP ▶
-                </Button3D>
-              </div>
-            ) : (
-              <>
-                {leaderboard.entries.map((entry) => (
-                  <LeaderboardEntryRow key={entry.user_id + entry.rank} entry={entry} />
-                ))}
-                {leaderboard.user_rank && !leaderboard.entries.some((e) => e.is_current_user) && (
-                  <div className="pt-2 border-t border-dashed border-slate-200 space-y-1.5">
-                    <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400 px-1">
-                      Posisi Anda Saat Ini
-                    </span>
-                    <LeaderboardEntryRow entry={leaderboard.user_rank} />
-                  </div>
-                )}
-              </>
-            )}
+            <LeaderboardStandingsList
+              leaderboard={leaderboard}
+              divisionConfig={currentDivisionConfig}
+              isLoading={isLoading}
+              error={error}
+              onRetry={() => void refetch()}
+            />
           </div>
 
           {/* ── KODI CHEERING FOOTER ── */}
@@ -273,7 +197,7 @@ export const LeaderboardPage = () => {
                 <span>Tips Liga Mingguan dari Kodi!</span>
               </h4>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
-                Peringkat diperbarui secara otomatis setiap kali Anda menyelesaikan pelajaran kurikulum, latihan SRS, dan kuis kosakata. Konsistensi harian 15 menit sudah cukup untuk mengamankan posisi promosi ke Divisi Roppongi Master!
+                Peringkat diperbarui secara otomatis setiap kali Anda menyelesaikan pelajaran kurikulum, latihan SRS, dan tantangan harian di bahasa apa pun. Konsistensi 15 menit sehari cukup untuk menembus Divisi Berlian Master!
               </p>
             </div>
           </div>

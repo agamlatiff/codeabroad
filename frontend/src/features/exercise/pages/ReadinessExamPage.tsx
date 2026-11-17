@@ -1,14 +1,14 @@
+import { useParams } from 'react-router-dom'
 import { ExamResultSummary } from '@/features/exercise/components/ExamResultSummary'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
+import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
 import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { useReadinessExamPage } from '@/features/exercise/hooks/useReadinessExamPage'
+import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import { Button3D } from '@/shared/components/ui/Button3D'
-import { ArrowLeft, ArrowRight, Certificate, X } from '@phosphor-icons/react'
+import { ArrowLeft, ArrowRight, Certificate } from '@phosphor-icons/react'
 
-/**
- * Interactive 4-pillar Readiness Exam page (/exam/:levelId).
- */
-export const ReadinessExamPage = () => {
+const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
   const {
     questions,
     answersById,
@@ -31,6 +31,7 @@ export const ReadinessExamPage = () => {
     allAnswered,
     examResult,
     submitError,
+    isSubmitConfirmOpen,
     isLoading,
     isError,
     isAlreadyPassed,
@@ -42,7 +43,6 @@ export const ReadinessExamPage = () => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleToggleHint,
@@ -50,10 +50,12 @@ export const ReadinessExamPage = () => {
     handleNextQuestion,
     handleJumpToQuestion,
     handleEnterShortcut,
+    openSubmitConfirm,
+    closeSubmitConfirm,
     handleSubmitExam,
     handleRetryExam,
     handleBackToCurriculum,
-  } = useReadinessExamPage()
+  } = useReadinessExamPage(levelId)
 
   if (isLoading) {
     return (
@@ -118,34 +120,19 @@ export const ReadinessExamPage = () => {
 
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
-      {/* Top Exam Bar */}
-      <header className="shrink-0 bg-white border-b-2 border-slate-200 px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={handleBackToCurriculum}
-          aria-label="Keluar dari Ujian"
-          className="min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-        >
-          <X weight="bold" className="w-6 h-6" />
-        </button>
-
-        <div className="flex-1 max-w-2xl flex items-center gap-3">
-          <div className="flex-1 h-4 rounded-full bg-slate-200 overflow-hidden p-0.5">
-            <div
-              className="h-full rounded-full bg-amber-500 transition-all duration-300"
-              style={{ width: `${Math.max(6, progressPercent)}%` }}
-            />
-          </div>
-          <span className="text-xs font-extrabold text-slate-500 tabular-nums shrink-0">
-            {answeredCount}/{questions.length} terjawab
+      <ExerciseSessionHeader
+        onExit={handleBackToCurriculum}
+        exitAriaLabel="Keluar dari Ujian"
+        progressPercent={progressPercent}
+        progressFillClass="bg-amber-500"
+        counterLabel={`${answeredCount}/${questions.length} terjawab`}
+        rightSlot={
+          <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-800 shrink-0">
+            <Certificate weight="fill" className="w-4 h-4 text-amber-600" />
+            Ujian Kesiapan
           </span>
-        </div>
-
-        <span className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-800 shrink-0">
-          <Certificate weight="fill" className="w-4 h-4 text-amber-600" />
-          Ujian Kesiapan
-        </span>
-      </header>
+        }
+      />
 
       {/* Main Question Stage */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
@@ -159,10 +146,11 @@ export const ReadinessExamPage = () => {
                 <button
                   key={q.id}
                   type="button"
+                  disabled={isSubmitting}
                   onClick={() => handleJumpToQuestion(idx)}
                   aria-label={`Soal ${idx + 1}${isAnswered ? ' (terjawab)' : ' (belum terjawab)'}`}
                   aria-current={isCurrent ? 'step' : undefined}
-                  className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-extrabold border-2 transition-all cursor-pointer ${
+                  className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-extrabold border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${
                     isCurrent
                       ? 'bg-blue-600 border-blue-700 text-white shadow-xs'
                       : isAnswered
@@ -195,7 +183,6 @@ export const ReadinessExamPage = () => {
               onClearTokens={handleClearTokens}
               onSelectOption={handleSelectOption}
               onSetTextInput={handleSetTextInput}
-              onConfirmSpokenSample={handleConfirmSpokenSample}
               onPlayAudio={handlePlayAudio}
               onToggleRecording={handleToggleRecording}
               onToggleHint={handleToggleHint}
@@ -230,6 +217,7 @@ export const ReadinessExamPage = () => {
                   type="button"
                   variant="blue"
                   size="md"
+                  disabled={isSubmitting}
                   onClick={handleNextQuestion}
                   icon={<ArrowRight weight="bold" className="w-4 h-4" />}
                 >
@@ -240,9 +228,9 @@ export const ReadinessExamPage = () => {
                   type="button"
                   variant="emerald"
                   size="md"
-                  disabled={!allAnswered}
+                  disabled={!allAnswered || isSubmitting}
                   loading={isSubmitting}
-                  onClick={() => void handleSubmitExam()}
+                  onClick={openSubmitConfirm}
                 >
                   {allAnswered
                     ? 'Kumpulkan Ujian'
@@ -253,7 +241,55 @@ export const ReadinessExamPage = () => {
           </div>
         </div>
       </footer>
+
+      <AccessibleModal
+        isOpen={isSubmitConfirmOpen}
+        onClose={closeSubmitConfirm}
+        ariaLabel="Konfirmasi Pengumpulan Ujian Kesiapan"
+      >
+        <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl">
+          <div className="space-y-1.5">
+            <h2 className="font-brand font-black text-lg text-slate-900">
+              Kumpulkan Jawaban Ujian?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Seluruh {questions.length} soal sudah terjawab. Setelah dikumpulkan, jawaban akan
+              langsung dinilai oleh sistem untuk kelulusan level ini.
+            </p>
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">
+            <Button3D
+              type="button"
+              variant="white"
+              size="md"
+              fullWidth
+              disabled={isSubmitting}
+              onClick={closeSubmitConfirm}
+            >
+              Periksa Lagi
+            </Button3D>
+            <Button3D
+              type="button"
+              variant="emerald"
+              size="md"
+              fullWidth
+              loading={isSubmitting}
+              onClick={() => void handleSubmitExam()}
+            >
+              Ya, Kumpulkan
+            </Button3D>
+          </div>
+        </div>
+      </AccessibleModal>
     </div>
   )
+}
+
+/**
+ * Interactive Readiness Exam page (/exam/:levelId), keyed per levelId to reset session state cleanly.
+ */
+export const ReadinessExamPage = () => {
+  const { levelId } = useParams<{ levelId: string }>()
+  return <ReadinessExamContent key={levelId ?? 'missing'} levelId={levelId} />
 }
 

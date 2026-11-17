@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
@@ -58,6 +59,7 @@ export const useExerciseMedia = ({
   const [audioPlaybackError, setAudioPlaybackError] = useState<string | null>(null)
 
   const recognitionRef = useRef<BrowserSpeechRecognition | null>(null)
+  const recognitionTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const activeHtmlAudioRef = useRef<HTMLAudioElement | null>(null)
   const audioSessionIdRef = useRef(0)
   const speechSessionIdRef = useRef(0)
@@ -92,6 +94,10 @@ export const useExerciseMedia = ({
 
   const stopActiveRecognition = useCallback(() => {
     speechSessionIdRef.current += 1
+    if (recognitionTimeoutRef.current) {
+      clearTimeout(recognitionTimeoutRef.current)
+      recognitionTimeoutRef.current = null
+    }
     const recognition = recognitionRef.current
     if (recognition) {
       recognition.onresult = null
@@ -131,6 +137,13 @@ export const useExerciseMedia = ({
       setAudioPlaybackError(null)
       triggerHaptic('tap')
       stopActiveAudio()
+
+      const { audioMode, masterVolume } = useAudioStore.getState()
+      if (audioMode === 'muted') {
+        setAudioPlaybackError('Mode audio sedang hening. Aktifkan suara di pengaturan atas.')
+        return
+      }
+
       const sessionId = audioSessionIdRef.current
       setIsSpeakingAudio(true)
 
@@ -168,6 +181,7 @@ export const useExerciseMedia = ({
         }
 
         const audio = new Audio(audioUrl)
+        audio.volume = Math.max(0, Math.min(1, masterVolume))
         activeHtmlAudioRef.current = audio
         audio.onended = () => {
           if (sessionId === audioSessionIdRef.current) {
@@ -219,6 +233,10 @@ export const useExerciseMedia = ({
       }
       recognition.onerror = () => {
         if (sessionId !== speechSessionIdRef.current) return
+        if (recognitionTimeoutRef.current) {
+          clearTimeout(recognitionTimeoutRef.current)
+          recognitionTimeoutRef.current = null
+        }
         setIsRecordingSpeech(false)
         setAudioPlaybackError(
           'Mikrofon gagal menangkap suara. Coba ulangi atau ketik manual.'
@@ -226,11 +244,20 @@ export const useExerciseMedia = ({
       }
       recognition.onend = () => {
         if (sessionId !== speechSessionIdRef.current) return
+        if (recognitionTimeoutRef.current) {
+          clearTimeout(recognitionTimeoutRef.current)
+          recognitionTimeoutRef.current = null
+        }
         setIsRecordingSpeech(false)
       }
 
       recognitionRef.current = recognition
       setIsRecordingSpeech(true)
+      recognitionTimeoutRef.current = setTimeout(() => {
+        if (sessionId !== speechSessionIdRef.current) return
+        stopActiveRecognition()
+        setIsRecordingSpeech(false)
+      }, 10_000)
       recognition.start()
       triggerHaptic('tap')
     } catch {

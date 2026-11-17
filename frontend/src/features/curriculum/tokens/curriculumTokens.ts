@@ -210,13 +210,13 @@ export const resolveTrackIconType = (slugOrCode: string): TrackIconType => {
   if (normalized === 'ja' || normalized.includes('nihongo') || normalized.includes('japan')) {
     return 'nihongo'
   }
-  if (normalized === 'en' || normalized.includes('english')) {
+  if (normalized === 'en' || normalized.startsWith('en-') || normalized.includes('english')) {
     return 'english'
   }
   if (normalized === 'ko' || normalized.includes('korean')) {
     return 'korean'
   }
-  if (normalized === 'de' || normalized.includes('german')) {
+  if (normalized === 'de' || normalized.includes('german') || normalized.includes('deutsch')) {
     return 'german'
   }
   if (normalized === 'zh' || normalized.includes('mandarin') || normalized.includes('chinese')) {

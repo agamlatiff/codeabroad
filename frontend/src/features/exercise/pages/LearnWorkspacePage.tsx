@@ -1,14 +1,13 @@
+import { useParams } from 'react-router-dom'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
+import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
 import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { LessonFeedbackFooter } from '@/features/exercise/components/LessonFeedbackFooter'
 import { LessonGrammarDrawer } from '@/features/exercise/components/LessonGrammarDrawer'
-import { BookOpen, Sparkle, X } from '@phosphor-icons/react'
+import { BookOpen, Sparkle } from '@phosphor-icons/react'
 
-/**
- * Interactive language lesson player (/learn/:id), purely declarative UI driven by useLearnWorkspace.
- */
-export const LearnWorkspacePage = () => {
+const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
   const {
     lesson,
     exercises,
@@ -53,7 +52,7 @@ export const LearnWorkspacePage = () => {
     handleToggleHint,
     handleExitToCurriculum,
     handleEnterShortcut,
-  } = useLearnWorkspace()
+  } = useLearnWorkspace(lessonId)
 
   if (isLoading) {
     return (
@@ -97,51 +96,36 @@ export const LearnWorkspacePage = () => {
 
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
-      {/* Top Progress & Lesson Controls */}
-      <header className="shrink-0 bg-white border-b-2 border-slate-200 px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={handleExitToCurriculum}
-          aria-label="Keluar ke Kurikulum"
-          className="min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-        >
-          <X weight="bold" className="w-6 h-6" />
-        </button>
+      <ExerciseSessionHeader
+        onExit={handleExitToCurriculum}
+        exitAriaLabel="Keluar ke Kurikulum"
+        progressPercent={progressPercent}
+        progressFillClass="bg-emerald-500"
+        counterLabel={
+          exercises.length > 0
+            ? `${Math.min(currentIndex + 1, exercises.length)}/${exercises.length}`
+            : '0/0'
+        }
+        rightSlot={
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700">
+              <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
+              +{lesson.xp_reward} XP
+            </span>
 
-        {/* Step Progress Bar */}
-        <div className="flex-1 max-w-2xl flex items-center gap-3">
-          <div className="flex-1 h-4 rounded-full bg-slate-200 overflow-hidden p-0.5">
-            <div
-              className="h-full rounded-full bg-emerald-500 transition-all duration-300"
-              style={{ width: `${Math.max(6, progressPercent)}%` }}
-            />
+            {lesson.grammar_points.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setIsGrammarDrawerOpen(true)}
+                className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold text-blue-700 transition-colors cursor-pointer"
+              >
+                <BookOpen weight="bold" className="w-4 h-4" />
+                <span className="hidden sm:inline">Tata Bahasa</span>
+              </button>
+            )}
           </div>
-          <span className="text-xs font-extrabold text-slate-500 tabular-nums shrink-0">
-            {exercises.length > 0
-              ? `${Math.min(currentIndex + 1, exercises.length)}/${exercises.length}`
-              : '0/0'}
-          </span>
-        </div>
-
-        {/* Lesson XP Reward & Grammar Reference Button */}
-        <div className="flex items-center gap-2 shrink-0">
-          <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700">
-            <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
-            +{lesson.xp_reward} XP
-          </span>
-
-          {lesson.grammar_points.length > 0 && (
-            <button
-              type="button"
-              onClick={() => setIsGrammarDrawerOpen(true)}
-              className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold text-blue-700 transition-colors cursor-pointer"
-            >
-              <BookOpen weight="bold" className="w-4 h-4" />
-              <span className="hidden sm:inline">Tata Bahasa</span>
-            </button>
-          )}
-        </div>
-      </header>
+        }
+      />
 
       {/* Main Interactive Exercise Stage */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-8">
@@ -200,4 +184,12 @@ export const LearnWorkspacePage = () => {
       />
     </div>
   )
+}
+
+/**
+ * Interactive language lesson player (/learn/:id), keyed per route param to reset state cleanly.
+ */
+export const LearnWorkspacePage = () => {
+  const { id } = useParams<{ id: string }>()
+  return <LearnWorkspaceContent key={id ?? 'missing'} lessonId={id} />
 }

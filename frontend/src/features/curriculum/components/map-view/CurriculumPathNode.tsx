@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom'
-import type { FC, KeyboardEvent, MouseEvent } from 'react'
+import { memo, type FC, type KeyboardEvent, type MouseEvent } from 'react'
 import {
   Check,
   LockSimple,
@@ -27,7 +27,7 @@ export interface CurriculumPathNodeProps {
   onStartLesson?: (route: string) => void
 }
 
-export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
+export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
   node,
   coord,
   onClick,
@@ -254,5 +254,5 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = ({
       ) : null}
     </div>
   )
-}
+})
 

@@ -9,20 +9,16 @@ import {
   SRS_DUE_QUERY_KEY,
   exerciseService,
 } from '@/features/exercise/services/exerciseService'
+import { invalidateLearningSessionCaches } from '@/features/exercise/utils/sessionCache'
 import type {
   SubmitExerciseAnswerRequest,
   SubmitExerciseAnswerResponse,
+  UserSRSReview,
 } from '@/features/exercise/types/exercise'
 import {
   computeElapsedSeconds,
   resolveExerciseSpokenText,
 } from '@/features/exercise/utils/exerciseHelpers'
-import {
-  PROFILE_QUERY_KEY,
-  ACTIVITY_LOGS_QUERY_KEY,
-  DAILY_REWARDS_QUERY_KEY,
-} from '@/features/user/services/userService'
-import { DAILY_QUESTS_QUERY_KEY } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { extractApiErrorMessage } from '@/shared/services/api'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -46,20 +42,25 @@ export const useSrsReviewPage = () => {
   const [isRefetchingBatch, setIsRefetchingBatch] = useState(false)
 
   const questionStartedAtRef = useRef<number>(0)
+  const actionLockRef = useRef(false)
+  const sessionEpochRef = useRef(0)
 
   const dueQueueQuery = useQuery({
     queryKey: [...SRS_DUE_QUERY_KEY, userId, SRS_BATCH_LIMIT],
     queryFn: ({ signal }) => exerciseService.getDueReviews(SRS_BATCH_LIMIT, { signal }),
+    staleTime: Infinity,
     refetchOnMount: 'always',
+    refetchOnWindowFocus: false,
     retry: false,
   })
 
-  const items = useMemo(
+  const items = useMemo<UserSRSReview[]>(
     () => (dueQueueQuery.data?.items ?? []).filter((item) => Boolean(item.exercise)),
     [dueQueueQuery.data]
   )
+  const safeIndex = items.length > 0 ? Math.min(currentIndex, items.length - 1) : 0
   const totalDue = dueQueueQuery.data?.total_due ?? items.length
-  const currentReviewItem = items[currentIndex] ?? null
+  const currentReviewItem = items[safeIndex] ?? null
   const currentExercise = currentReviewItem?.exercise ?? null
 
   const speechLocale = useActiveSpeechLocale()
@@ -138,10 +139,12 @@ export const useSrsReviewPage = () => {
   }, [currentExercise?.prompt, parsedContent, playExerciseAudio])
 
   const handleCheckAnswer = useCallback(async () => {
-    if (!currentExercise || !canCheckAnswer || isSubmittingAnswer) {
+    if (!currentExercise || !canCheckAnswer || isSubmittingAnswer || actionLockRef.current) {
       return
     }
 
+    actionLockRef.current = true
+    const epoch = sessionEpochRef.current
     stopMediaSession()
     setActionError(null)
     const elapsedSeconds = computeElapsedSeconds(questionStartedAtRef.current)
@@ -154,6 +157,7 @@ export const useSrsReviewPage = () => {
         skip_srs_schedule: true,
       })
 
+      if (epoch !== sessionEpochRef.current) return
       setSubmittedResult(res)
       if (res.is_correct) {
         triggerHaptic('success')
@@ -163,11 +167,14 @@ export const useSrsReviewPage = () => {
         audioEngine.playError()
       }
     } catch (err) {
+      if (epoch !== sessionEpochRef.current) return
       setActionError(
         extractApiErrorMessage(err, 'Gagal memeriksa jawaban ulasan. Coba lagi.')
       )
       triggerHaptic('error')
       audioEngine.playError()
+    } finally {
+      actionLockRef.current = false
     }
   }, [
     canCheckAnswer,
@@ -180,8 +187,10 @@ export const useSrsReviewPage = () => {
 
   const handleRateQuality = useCallback(
     async (quality: number) => {
-      if (!currentExercise || isProcessingReview) return
+      if (!currentExercise || isProcessingReview || actionLockRef.current) return
 
+      actionLockRef.current = true
+      const epoch = sessionEpochRef.current
       setActionError(null)
       try {
         await processReviewAsync({
@@ -189,51 +198,49 @@ export const useSrsReviewPage = () => {
           quality,
         })
 
+        if (epoch !== sessionEpochRef.current) return
         const nextReviewedCount = reviewedCount + 1
         setReviewedCount(nextReviewedCount)
 
-        if (currentIndex >= items.length - 1) {
+        if (safeIndex >= items.length - 1) {
           stopMediaSession()
           setIsSessionFinished(true)
           triggerHaptic('success')
           audioEngine.playFanfare()
-          await Promise.all([
-            queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
-            queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
-            queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
-            queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
-            queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
-          ])
+          await invalidateLearningSessionCaches(queryClient, { includeSrs: true })
           return
         }
 
         triggerHaptic('tap')
         audioEngine.playPop()
-        setCurrentIndex((prev) => prev + 1)
+        setCurrentIndex((prev) => Math.min(items.length - 1, prev + 1))
         resetCardInputs()
       } catch (err) {
+        if (epoch !== sessionEpochRef.current) return
         setActionError(
           extractApiErrorMessage(err, 'Gagal menyimpan penilaian memori SRS.')
         )
         triggerHaptic('error')
         audioEngine.playError()
+      } finally {
+        actionLockRef.current = false
       }
     },
     [
       currentExercise,
-      currentIndex,
       isProcessingReview,
       items.length,
       processReviewAsync,
       queryClient,
       resetCardInputs,
       reviewedCount,
+      safeIndex,
       stopMediaSession,
     ]
   )
 
   const handleEnterShortcut = useCallback(() => {
-    if (isSubmittingAnswer || isProcessingReview) return
+    if (isSubmittingAnswer || isProcessingReview || actionLockRef.current) return
     if (submittedResult === null && canCheckAnswer) {
       void handleCheckAnswer()
     }
@@ -246,13 +253,13 @@ export const useSrsReviewPage = () => {
   ])
 
   const handleRestartQueue = useCallback(async () => {
+    sessionEpochRef.current += 1
+    actionLockRef.current = false
     triggerHaptic('tap')
     audioEngine.playPop()
     setIsRefetchingBatch(true)
     try {
-      if (dueQueueQuery.isError || dueQueueQuery.isStale || items.length === 0) {
-        await dueQueueQuery.refetch()
-      }
+      await dueQueueQuery.refetch()
       setCurrentIndex(0)
       setReviewedCount(0)
       setIsSessionFinished(false)
@@ -260,19 +267,13 @@ export const useSrsReviewPage = () => {
     } finally {
       setIsRefetchingBatch(false)
     }
-  }, [dueQueueQuery, items.length, resetCardInputs])
+  }, [dueQueueQuery, resetCardInputs])
 
   const handleBackToCurriculum = useCallback(() => {
     stopMediaSession()
     audioEngine.playPop()
     if (reviewedCount > 0) {
-      void Promise.all([
-        queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
-        queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY }),
-      ])
+      void invalidateLearningSessionCaches(queryClient, { includeSrs: true })
     }
     navigate('/curriculum')
   }, [navigate, queryClient, reviewedCount, stopMediaSession])
@@ -284,9 +285,9 @@ export const useSrsReviewPage = () => {
 
   const progressPercent = useMemo(() => {
     if (items.length === 0) return 0
-    const completed = currentIndex + (submittedResult !== null ? 1 : 0)
+    const completed = safeIndex + (submittedResult !== null ? 1 : 0)
     return Math.min(100, Math.round((completed / items.length) * 100))
-  }, [currentIndex, items.length, submittedResult])
+  }, [items.length, safeIndex, submittedResult])
 
   const queueErrorMessage = dueQueueQuery.isError
     ? extractApiErrorMessage(
@@ -298,7 +299,7 @@ export const useSrsReviewPage = () => {
   return {
     items,
     totalDue,
-    currentIndex,
+    currentIndex: safeIndex,
     reviewedCount,
     progressPercent,
     currentReviewItem,

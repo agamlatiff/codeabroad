@@ -1,7 +1,37 @@
 import { create } from 'zustand'
-import type { User } from "@/features/user/types/user"
+import { z } from 'zod'
+import type { User } from "@/shared/types/user"
+import { registerAuthInterceptorBridge } from "@/shared/services/api"
+import { registerSessionResetHandler } from "@/shared/services/sessionCleanup"
 
 export const AUTH_STORAGE_KEY = 'codeabroad_auth_session'
+
+const persistedUserSchema = z.object({
+  id: z.string().min(1),
+  email: z.string().min(1),
+  name: z.string(),
+  username: z.string(),
+  created_at: z.string().optional().default(''),
+  updated_at: z.string().optional(),
+  bio: z.string().nullable().optional(),
+  is_onboarded: z.boolean().optional().default(false),
+  daily_goal_minutes: z.number().optional(),
+  has_seen_roadmap_tour: z.boolean().optional(),
+  preferred_roadmap_view: z.enum(['map', 'syllabus']).nullable().optional(),
+  avatar_url: z.string().nullable().optional(),
+  xp: z.number().optional().default(0),
+  current_level: z.number().optional().default(1),
+  streak: z.number().optional().default(0),
+  gems: z.number().nullable().optional(),
+  last_active_at: z.string().nullable().optional(),
+})
+
+const persistedSessionSchema = z.object({
+  user: persistedUserSchema.nullable(),
+  accessToken: z.string().min(1).nullable(),
+  refreshToken: z.string().min(1).nullable(),
+  rememberMe: z.boolean(),
+})
 
 export interface AuthSessionData {
   user: User | null
@@ -43,21 +73,22 @@ const hasActiveTokenAndUser = (
 ): boolean => Boolean(data?.user && (data.refreshToken || data.accessToken))
 
 /**
- * Safely parses serialized session JSON.
+ * Safely parses serialized session JSON with strict Zod schema validation.
  */
 const safeParseSession = (raw: string | null): AuthSessionData | null => {
   if (!raw) return null
   try {
-    const parsed = JSON.parse(raw)
-    if (parsed && typeof parsed === 'object') {
-      return {
-        user: parsed.user ?? null,
-        accessToken: parsed.accessToken ?? null,
-        refreshToken: parsed.refreshToken ?? null,
-        rememberMe: Boolean(parsed.rememberMe),
-      }
+    const json = JSON.parse(raw)
+    const result = persistedSessionSchema.safeParse(json)
+    if (!result.success) {
+      return null
     }
-    return null
+    return {
+      user: result.data.user,
+      accessToken: result.data.accessToken,
+      refreshToken: result.data.refreshToken,
+      rememberMe: result.data.rememberMe,
+    }
   } catch {
     return null
   }
@@ -144,6 +175,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     const state = get()
     if (!state.user) return
 
+    const hasDiff = (Object.keys(updatedFields) as Array<keyof User>).some(
+      (key) => state.user![key] !== updatedFields[key]
+    )
+    if (!hasDiff) return
+
     const newUser: User = {
       ...state.user,
       ...updatedFields,
@@ -171,10 +207,32 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 }))
 
-// Cross-tab synchronization listener (auto logout / update on localStorage change)
+registerAuthInterceptorBridge({
+  getAccessToken: () => useAuthStore.getState().accessToken,
+  getRefreshToken: () => useAuthStore.getState().refreshToken,
+  setTokens: (accessToken, refreshToken) => useAuthStore.getState().setTokens(accessToken, refreshToken),
+  updateUser: (updatedFields) => useAuthStore.getState().updateUser(updatedFields),
+  clearSession: () => useAuthStore.getState().logout(),
+})
+
+registerSessionResetHandler(() => {
+  useAuthStore.getState().logout()
+})
+
+// Cross-tab synchronization listener (auto logout / update on localStorage change or full clear)
 if (typeof window !== 'undefined') {
   window.addEventListener('storage', (event) => {
-    if (event.key !== AUTH_STORAGE_KEY || event.storageArea !== cachedLocalStorage) {
+    if (event.storageArea !== cachedLocalStorage) {
+      return
+    }
+    if (event.key === null) {
+      const tabSession = safeParseSession(cachedSessionStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
+      if (!hasActiveTokenAndUser(tabSession)) {
+        useAuthStore.getState().logout()
+      }
+      return
+    }
+    if (event.key !== AUTH_STORAGE_KEY) {
       return
     }
 

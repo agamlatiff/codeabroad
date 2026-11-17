@@ -1,4 +1,4 @@
-import { useEffect, type KeyboardEvent } from 'react'
+import { useEffect, useRef, type KeyboardEvent } from 'react'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type {
   ParsedExerciseContent,
@@ -42,6 +42,9 @@ interface ExercisePromptRendererProps {
   onToggleHint: () => void
   onEnterKey?: () => void
 }
+
+const isImeComposing = (event: { isComposing?: boolean; keyCode?: number }) =>
+  Boolean(event.isComposing || event.keyCode === 229)
 
 const getChoiceOptionClasses = (
   isSelected: boolean,
@@ -116,6 +119,7 @@ export const ExercisePromptRenderer = ({
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
   }
   const isLocked = submittedResult !== null
+  const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
   const selectedChoiceLabel = parsedContent.choiceOptions.find(
     (opt) => opt.id === selectedOptionValue
   )?.text
@@ -123,15 +127,41 @@ export const ExercisePromptRenderer = ({
     selectedChoiceLabel ?? (selectedOptionValue || textInput.trim())
 
   const handleInputKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    if (isImeComposing(event.nativeEvent)) return
     if (event.key === 'Enter' && !isLocked && onEnterKey) {
       event.preventDefault()
       onEnterKey()
     }
   }
 
+  const keyboardStateRef = useRef({
+    exerciseType,
+    isLocked,
+    choiceOptions: parsedContent.choiceOptions,
+    onEnterKey,
+    onSelectOption,
+  })
+
+  useEffect(() => {
+    keyboardStateRef.current = {
+      exerciseType,
+      isLocked,
+      choiceOptions: parsedContent.choiceOptions,
+      onEnterKey,
+      onSelectOption,
+    }
+  }, [exerciseType, isLocked, parsedContent.choiceOptions, onEnterKey, onSelectOption])
+
   useEffect(() => {
     const handleWindowKeyDown = (event: globalThis.KeyboardEvent) => {
-      if (event.defaultPrevented || event.ctrlKey || event.metaKey || event.altKey) {
+      if (
+        event.repeat ||
+        isImeComposing(event) ||
+        event.defaultPrevented ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.altKey
+      ) {
         return
       }
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) {
@@ -148,27 +178,28 @@ export const ExercisePromptRenderer = ({
         target instanceof HTMLAnchorElement ||
         target instanceof HTMLSelectElement
 
+      const current = keyboardStateRef.current
       if (event.key === 'Enter') {
-        if (!isInteractiveTarget && onEnterKey) {
+        if (!isInteractiveTarget && current.onEnterKey) {
           event.preventDefault()
-          onEnterKey()
+          current.onEnterKey()
         }
         return
       }
 
       if (
-        !isLocked &&
+        !current.isLocked &&
         !isTextInput &&
-        exerciseType !== 'sentence_builder' &&
-        exerciseType !== 'speaking_repeat' &&
-        parsedContent.choiceOptions.length > 0
+        current.exerciseType !== 'sentence_builder' &&
+        current.exerciseType !== 'speaking_repeat' &&
+        current.choiceOptions.length > 0
       ) {
         const num = Number.parseInt(event.key, 10)
-        if (num >= 1 && num <= parsedContent.choiceOptions.length) {
-          const opt = parsedContent.choiceOptions[num - 1]
+        if (num >= 1 && num <= current.choiceOptions.length) {
+          const opt = current.choiceOptions[num - 1]
           if (opt) {
             event.preventDefault()
-            onSelectOption(opt.id)
+            current.onSelectOption(opt.id)
           }
         }
       }
@@ -176,7 +207,7 @@ export const ExercisePromptRenderer = ({
 
     window.addEventListener('keydown', handleWindowKeyDown)
     return () => window.removeEventListener('keydown', handleWindowKeyDown)
-  }, [exerciseType, isLocked, onEnterKey, onSelectOption, parsedContent.choiceOptions])
+  }, [])
 
   return (
     <div className="w-full max-w-2xl mx-auto space-y-6">
@@ -240,7 +271,6 @@ export const ExercisePromptRenderer = ({
       {/* Optional Audio Player (Listening & Speaking) */}
       {(exerciseType === 'listening_choice' ||
         exerciseType === 'speaking_repeat' ||
-        exerciseType === 'dialogue_roleplay' ||
         Boolean(parsedContent.audioText)) && (
         <div className="p-5 rounded-2xl bg-blue-50/70 border-2 border-blue-200 space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center gap-3">
@@ -248,6 +278,7 @@ export const ExercisePromptRenderer = ({
               type="button"
               variant="blue"
               size="md"
+              disableSound
               onClick={onPlayAudio}
               icon={
                 <SpeakerHigh
@@ -259,26 +290,26 @@ export const ExercisePromptRenderer = ({
               {isSpeakingAudio ? 'Memutar Audio...' : 'Putar Audio Penutur'}
             </Button3D>
 
-            {parsedContent.romaji && (
+            {parsedContent.romaji && !hideListeningTranscript && (
               <p className="text-sm font-mono text-blue-800 bg-white/80 px-3 py-2 rounded-xl border border-blue-100">
                 {parsedContent.romaji}
               </p>
             )}
           </div>
 
-          {parsedContent.displayText && (
+          {parsedContent.displayText && !hideListeningTranscript && (
             <p className="text-2xl font-extrabold text-slate-900 tracking-wide">
               {parsedContent.displayText}
             </p>
           )}
 
-          {parsedContent.audioText && exerciseType !== 'listening_choice' && (
+          {parsedContent.audioText && !hideListeningTranscript && (
             <p className="text-base font-bold text-slate-800">
               {parsedContent.audioText}
             </p>
           )}
 
-          {parsedContent.phoneticBreakdown.length > 0 && (
+          {parsedContent.phoneticBreakdown.length > 0 && !hideListeningTranscript && (
             <div className="flex flex-wrap gap-1.5">
               {parsedContent.phoneticBreakdown.map((syllable, idx) => (
                 <span
@@ -390,6 +421,7 @@ export const ExercisePromptRenderer = ({
                 type="button"
                 variant={isRecordingSpeech ? 'rose' : 'white'}
                 size="md"
+                disableSound
                 disabled={isLocked}
                 onClick={onToggleRecording}
                 icon={
@@ -409,6 +441,7 @@ export const ExercisePromptRenderer = ({
                 type="button"
                 variant="emerald"
                 size="md"
+                disableSound
                 disabled={isLocked}
                 onClick={onConfirmSpokenSample}
                 data-allow-enter-submit={textInput.trim().length > 0 ? 'true' : undefined}

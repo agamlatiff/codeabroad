@@ -25,7 +25,8 @@ export const SERVER_ERROR_MESSAGE = 'Terjadi kendala pada sistem kami. Silakan c
 /** Normalizes an unknown mutation error into a predictable shape. */
 export const parseAuthError = (err: unknown): ParsedAuthError => {
   if (!isAxiosError<AuthApiErrorPayload>(err)) {
-    return { rawError: '', isNetworkError: true }
+    const rawMsg = err instanceof Error ? err.message.toLowerCase() : ''
+    return { rawError: rawMsg, isNetworkError: false }
   }
   const serverMessage = err.response?.data?.error || err.response?.data?.message
   const serverCode = err.response?.data?.code

@@ -1,10 +1,11 @@
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
+import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
 import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { SrsReviewRatingBar } from '@/features/exercise/components/SrsReviewRatingBar'
 import { useSrsReviewPage } from '@/features/exercise/hooks/useSrsReviewPage'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
-import { Brain, CheckCircle, X } from '@phosphor-icons/react'
+import { Brain, CheckCircle } from '@phosphor-icons/react'
 
 /**
  * Interactive Spaced Repetition System (SM-2) review session page (/review).
@@ -133,36 +134,21 @@ export const SrsReviewPage = () => {
 
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
-      {/* Top SRS Session Progress */}
-      <header className="shrink-0 bg-white border-b-2 border-slate-200 px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
-        <button
-          type="button"
-          onClick={handleBackToCurriculum}
-          aria-label="Kembali ke Kurikulum"
-          className="min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
-        >
-          <X weight="bold" className="w-6 h-6" />
-        </button>
-
-        <div className="flex-1 max-w-2xl flex items-center gap-3">
-          <div className="flex-1 h-4 rounded-full bg-slate-200 overflow-hidden p-0.5">
-            <div
-              className="h-full rounded-full bg-blue-600 transition-all duration-300"
-              style={{ width: `${Math.max(6, progressPercent)}%` }}
-            />
+      <ExerciseSessionHeader
+        onExit={handleBackToCurriculum}
+        exitAriaLabel="Kembali ke Kurikulum"
+        progressPercent={progressPercent}
+        progressFillClass="bg-blue-600"
+        counterLabel={`${currentIndex + 1}/${items.length}`}
+        rightSlot={
+          <div className="hidden sm:flex items-center gap-2 shrink-0">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-xs font-extrabold text-blue-700">
+              <Brain weight="fill" className="w-4 h-4 text-blue-600" />
+              {totalDue} Jatuh Tempo
+            </span>
           </div>
-          <span className="text-xs font-extrabold text-slate-500 tabular-nums shrink-0">
-            {currentIndex + 1}/{items.length}
-          </span>
-        </div>
-
-        <div className="hidden sm:flex items-center gap-2 shrink-0">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-xs font-extrabold text-blue-700">
-            <Brain weight="fill" className="w-4 h-4 text-blue-600" />
-            {totalDue} Jatuh Tempo
-          </span>
-        </div>
-      </header>
+        }
+      />
 
       {/* Active Flashcard / Exercise Stage */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-8">

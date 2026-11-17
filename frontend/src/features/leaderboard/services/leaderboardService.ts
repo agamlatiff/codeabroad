@@ -1,15 +1,17 @@
-import { api, unwrapApiResponse } from "@/shared/services/api"
+import { api, unwrapApiResponse, type RequestOptions } from "@/shared/services/api"
 import type { ApiResponse } from "@/shared/types/api"
-import type { TokyoDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
+import type { LeagueDivision, WeeklyLeaderboardResponse } from "@/features/leaderboard/types/leaderboard"
 
 export const leaderboardService = {
-  // Fetch weekly Tokyo League leaderboard standings
-  async getWeeklyLeaderboard(division?: TokyoDivision): Promise<WeeklyLeaderboardResponse> {
-    const params = new URLSearchParams()
-    if (division) params.append('division', division)
-
-    const url = `/leaderboard/weekly${params.toString() ? `?${params.toString()}` : ''}`
-    const response = await api.get<ApiResponse<WeeklyLeaderboardResponse>>(url)
-    return unwrapApiResponse(response, 'Failed to fetch weekly leaderboard')
+  /** Fetches weekly league standings; omits division param when auto-resolving user's active tier. */
+  async getWeeklyLeaderboard(
+    division?: LeagueDivision,
+    options?: RequestOptions
+  ): Promise<WeeklyLeaderboardResponse> {
+    const response = await api.get<ApiResponse<WeeklyLeaderboardResponse>>('/leaderboard/weekly', {
+      params: division ? { division } : undefined,
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat papan peringkat mingguan.')
   },
 }

@@ -1,4 +1,8 @@
 import { api, unwrapApiResponse, type RequestOptions } from "@/shared/services/api"
+import {
+  LANGUAGES_QUERY_KEY,
+  LANGUAGE_ENROLLMENTS_QUERY_KEY,
+} from "@/shared/constants/queryKeys"
 import type { ApiResponse } from "@/shared/types/api"
 import type {
   Language,
@@ -6,8 +10,7 @@ import type {
   UserLanguageEnrollment,
 } from "@/features/curriculum/types/curriculum"
 
-export const LANGUAGES_QUERY_KEY = ['languages'] as const
-export const LANGUAGE_ENROLLMENTS_QUERY_KEY = ['languages', 'enrollments'] as const
+export { LANGUAGES_QUERY_KEY, LANGUAGE_ENROLLMENTS_QUERY_KEY }
 
 export interface LanguageDetailsResponse {
   language: Language
@@ -67,6 +70,21 @@ export const languageService = {
       { signal: options?.signal }
     )
     return unwrapApiResponse(response, 'Gagal mengganti bahasa belajar aktif.')
+  },
+
+  /**
+   * Enrolls the user into an additional catalog language and activates it.
+   */
+  async enrollLanguage(
+    languageId: string,
+    options?: RequestOptions
+  ): Promise<UserLanguageEnrollment> {
+    const response = await api.post<ApiResponse<UserLanguageEnrollment>>(
+      '/languages/enroll',
+      { language_id: languageId },
+      { signal: options?.signal }
+    )
+    return unwrapApiResponse(response, 'Gagal mendaftar ke bahasa belajar baru.')
   },
 }
 

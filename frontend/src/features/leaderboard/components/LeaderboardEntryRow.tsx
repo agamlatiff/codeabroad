@@ -7,8 +7,9 @@ export interface LeaderboardEntryRowProps {
 }
 
 export const LeaderboardEntryRow = ({ entry, compact = false }: LeaderboardEntryRowProps) => {
-  const isTop3 = entry.rank <= 3
-  const isDemotion = entry.rank > 10
+  const isPromotionZone = entry.zone === 'promotion'
+  const isDemotionZone = entry.zone === 'demotion'
+  const isTop3 = entry.rank >= 1 && entry.rank <= 3
   const isUser = entry.is_current_user
 
   return (
@@ -18,9 +19,9 @@ export const LeaderboardEntryRow = ({ entry, compact = false }: LeaderboardEntry
       } ${
         isUser
           ? 'bg-blue-50/90 border-blue-500 shadow-sm ring-2 ring-blue-500/20'
-          : isTop3
+          : isPromotionZone
           ? 'bg-white border-emerald-200/90 shadow-2xs hover:border-emerald-300'
-          : isDemotion
+          : isDemotionZone
           ? 'bg-white border-rose-200/80 shadow-2xs'
           : 'bg-white border-slate-200/80 shadow-2xs hover:border-slate-300'
       }`}
@@ -61,7 +62,7 @@ export const LeaderboardEntryRow = ({ entry, compact = false }: LeaderboardEntry
                 ANDA
               </span>
             )}
-            {isTop3 && (
+            {isPromotionZone && (
               <span className="bg-emerald-100 text-emerald-800 text-[9px] font-brand font-bold px-2 py-0.5 rounded-md hidden sm:inline-block shrink-0">
                 {compact ? 'Zona Promosi' : 'Zona Promosi 🏆'}
               </span>

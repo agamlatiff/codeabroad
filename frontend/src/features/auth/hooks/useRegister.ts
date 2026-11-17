@@ -7,7 +7,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { authService } from "@/features/auth/services/authService"
 import { registerSchema, type RegisterPayload } from "@/features/auth/types/auth"
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { PROFILE_QUERY_KEY } from "@/features/user/services/userService"
+import { getProfileQueryKey } from "@/shared/constants/queryKeys"
 import {
   resolveRegisterErrorMessage,
   resolvePostAuthPath,
@@ -45,9 +45,10 @@ export const useRegister = () => {
   const registerMutation = useMutation({
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
     onSuccess: (data) => {
+      queryClient.clear()
       // Automatically authenticate on successful registration (default persistent session)
       setAuth(data.user, data.access_token, data.refresh_token, true)
-      queryClient.setQueryData(PROFILE_QUERY_KEY, data.user)
+      queryClient.setQueryData(getProfileQueryKey(data.user.id), data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
     onError: (err: unknown) => {

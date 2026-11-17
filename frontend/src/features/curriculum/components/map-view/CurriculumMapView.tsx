@@ -9,6 +9,7 @@ export interface CurriculumMapViewProps {
   className?: string
   curriculum?: CurriculumResponse | null
   isLoading?: boolean
+  hasError?: boolean
   isViewingInactiveTrack?: boolean
   isActivatingTrack?: boolean
   onActivateTrack?: () => void
@@ -23,6 +24,7 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
   className = '',
   curriculum = null,
   isLoading = false,
+  hasError = false,
   isViewingInactiveTrack = false,
   isActivatingTrack = false,
   onActivateTrack,
@@ -61,27 +63,29 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
       />
 
       {/* ── UNIFIED ADVENTURE GAME STAGE ── */}
-      <div className={MAP_STAGE_TOKENS.canvasContainer}>
-        {units.length === 0 ? (
-          <div className="py-12 text-center space-y-2">
-            <h3 className="font-brand font-black text-base text-slate-800">
-              Kurikulum Bahasa Belum Tersedia
-            </h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Pilih atau aktifkan bahasa target Anda melalui menu pengalih kurikulum di atas.
-            </p>
-          </div>
-        ) : (
-          units.map((unit) => (
-            <CurriculumMapUnitSection
-              key={unit.id}
-              unit={unit}
-              onNodeClick={handleNodeClick}
-              onStartLesson={onStartLesson}
-            />
-          ))
-        )}
-      </div>
+      {units.length === 0 && hasError ? null : (
+        <div className={MAP_STAGE_TOKENS.canvasContainer}>
+          {units.length === 0 ? (
+            <div className="py-12 text-center space-y-2">
+              <h3 className="font-brand font-black text-base text-slate-800">
+                Kurikulum Bahasa Belum Tersedia
+              </h3>
+              <p className="text-xs text-slate-500 font-medium">
+                Pilih atau aktifkan bahasa target Anda melalui menu pengalih kurikulum di atas.
+              </p>
+            </div>
+          ) : (
+            units.map((unit) => (
+              <CurriculumMapUnitSection
+                key={unit.id}
+                unit={unit}
+                onNodeClick={handleNodeClick}
+                onStartLesson={onStartLesson}
+              />
+            ))
+          )}
+        </div>
+      )}
     </div>
   )
 }

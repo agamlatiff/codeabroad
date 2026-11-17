@@ -1,10 +1,11 @@
 import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from "@/features/auth/store/authStore"
 import {
-  languageService,
   LANGUAGES_QUERY_KEY,
-  LANGUAGE_ENROLLMENTS_QUERY_KEY,
-} from "@/features/curriculum/services/languageService"
+  getLanguageEnrollmentsQueryKey,
+} from "@/shared/constants/queryKeys"
+import { languageService } from "@/features/curriculum/services/languageService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
 import { mapEnrollmentsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
@@ -24,8 +25,10 @@ export const useCurriculumSwitcherModal = ({
   onSelectTrack,
   onClose,
 }: UseCurriculumSwitcherModalOptions) => {
+  const userId = useAuthStore((s) => s.user?.id)
+
   const { data: enrollments = [] } = useQuery({
-    queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY,
+    queryKey: getLanguageEnrollmentsQueryKey(userId),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
     enabled,
     staleTime: 1000 * 60 * 5,
@@ -55,7 +58,6 @@ export const useCurriculumSwitcherModal = ({
 
   const handleSelect = useCallback(
     (track: CareerTrackOption) => {
-      if (track.isEnrolled === false) return
       triggerHaptic('success')
       onSelectTrack(track.slug)
       onClose()

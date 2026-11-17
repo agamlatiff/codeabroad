@@ -2,6 +2,12 @@ import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { extractApiErrorMessage } from "@/shared/services/api"
+import {
+  getProfileQueryKey,
+  getLanguageEnrollmentsQueryKey,
+  DAILY_VOCABULARIES_QUERY_KEY,
+  SRS_DUE_QUERY_KEY,
+} from "@/shared/constants/queryKeys"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { useCurriculumStore } from "@/features/curriculum/store/curriculumStore"
 import {
@@ -13,7 +19,7 @@ import {
   languageService,
   LANGUAGE_ENROLLMENTS_QUERY_KEY,
 } from "@/features/curriculum/services/languageService"
-import { userService, PROFILE_QUERY_KEY } from "@/features/user/services/userService"
+import { userService } from "@/features/user/services/userService"
 import { useUser } from "@/features/user/hooks/useUser"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { playSound, playBgm, stopBgm } from "@/shared/utils/sound"
@@ -65,11 +71,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const setViewMode = useCallback(
     (mode: CurriculumViewMode) => {
       triggerHaptic('tap')
-      if (mode === 'map') {
-        playSound('yamanote_jingle')
-      } else {
-        playSound('view_switch')
-      }
+      playSound('view_switch')
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
@@ -81,21 +83,21 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
       setStoreViewMode(mode)
       updateUser({ preferred_roadmap_view: mode })
-      queryClient.setQueryData(PROFILE_QUERY_KEY, (old: typeof user) =>
+      queryClient.setQueryData(getProfileQueryKey(userIdKey), (old: typeof user) =>
         old ? { ...old, preferred_roadmap_view: mode } : old
       )
       userService.updateProfile({ preferred_roadmap_view: mode }).catch((err: unknown) => {
         console.warn('[useCurriculumPage] Failed to persist view mode to backend profile:', err)
       })
     },
-    [setSearchParams, setStoreViewMode, updateUser, queryClient]
+    [setSearchParams, setStoreViewMode, updateUser, queryClient, userIdKey]
   )
 
   // ── 1. RESOLVE REQUESTED LANGUAGE & ENROLLMENTS ──
   const targetLanguageId = explicitLanguageId || routeLanguageId || ''
 
   const { data: enrollments = [] } = useQuery({
-    queryKey: [...LANGUAGE_ENROLLMENTS_QUERY_KEY, userIdKey],
+    queryKey: getLanguageEnrollmentsQueryKey(userIdKey),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
     staleTime: 1000 * 60 * 5,
   })
@@ -235,19 +237,21 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     updateUser({ has_seen_roadmap_tour: true })
     try {
       await userService.updateProfile({ has_seen_roadmap_tour: true })
-      await queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
+      await queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) })
     } catch (err: unknown) {
       updateUser({ has_seen_roadmap_tour: false })
       console.error('[useCurriculumPage] Failed to persist has_seen_roadmap_tour:', err)
     } finally {
       isTourPersistingRef.current = false
     }
-  }, [hasSeenTour, updateUser, queryClient])
+  }, [hasSeenTour, updateUser, queryClient, userIdKey])
 
   // ── 5. LANGUAGE SWITCHING & INTERACTION HANDLERS ──
+  const isSwitchingRef = useRef(false)
+
   const handleSelectLanguage = useCallback(
     async (nextLanguageId: string) => {
-      if (!nextLanguageId) return
+      if (!nextLanguageId || isSwitchingRef.current) return
       triggerHaptic('success')
       playSound('track_change')
       void markTourSeen()
@@ -256,32 +260,43 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         return
       }
 
+      isSwitchingRef.current = true
       setIsSwitchingLanguage(true)
       try {
+        const isEnrolled = enrollments.some((e) => e.language_id === nextLanguageId)
+        if (!isEnrolled) {
+          await languageService.enrollLanguage(nextLanguageId)
+        }
         await languageService.switchActiveLanguage(nextLanguageId)
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
+          queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) }),
+          queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
+          queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
         ])
         navigate('/curriculum', { replace: true })
       } catch (err: unknown) {
         const msg = extractApiErrorMessage(
           err,
-          'Gagal mengganti bahasa aktif. Pastikan bahasa sudah terdaftar.'
+          'Gagal mengganti bahasa aktif. Pastikan bahasa tersedia.'
         )
         showNotification(msg, true)
       } finally {
+        isSwitchingRef.current = false
         setIsSwitchingLanguage(false)
       }
     },
     [
       activeLanguageId,
+      enrollments,
       isViewingInactiveTrack,
       markTourSeen,
       navigate,
       queryClient,
       showNotification,
+      userIdKey,
     ]
   )
 

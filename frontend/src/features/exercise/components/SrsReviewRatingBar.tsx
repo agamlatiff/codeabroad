@@ -41,6 +41,9 @@ export const SrsReviewRatingBar = ({
     const handleKeyDown = (event: globalThis.KeyboardEvent) => {
       if (
         isSubmittingRating ||
+        event.repeat ||
+        event.isComposing ||
+        event.keyCode === 229 ||
         event.defaultPrevented ||
         event.ctrlKey ||
         event.metaKey ||
