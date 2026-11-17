@@ -109,18 +109,23 @@ db-shell:
 	docker exec -it codeabroad-postgres psql -U codeabroad -d codeabroad
 
 redis-cli:
-	docker exec -it codeabroad-redis redis-cli
+	docker exec -it codeabroad-redis sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then exec redis-cli -a "$$REDIS_PASSWORD"; else exec redis-cli; fi'
 
 # -----------------------------------------------------------------------------
-# Database Migration Runner (Supports Local & Managed Cloud Databases)
+# Database Migration Runner (Supports Local Docker & Custom DB_URL Overrides)
 # -----------------------------------------------------------------------------
-DB_URL ?= postgres://codeabroad:codeabroad_secret@localhost:5434/codeabroad?sslmode=disable
+-include .env
+DB_USER ?= codeabroad
+DB_PASSWORD ?= codeabroad_secret
+DB_NAME ?= codeabroad
+DOCKER_MIGRATE_NET ?= container:codeabroad-postgres
+DB_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@localhost:5432/$(DB_NAME)?sslmode=disable
 
 db-migrate-up:
-	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" up
+	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network $(DOCKER_MIGRATE_NET) migrate/migrate -path=/migrations/ -database "$(DB_URL)" up
 
 db-migrate-down:
-	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" down 1
+	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network $(DOCKER_MIGRATE_NET) migrate/migrate -path=/migrations/ -database "$(DB_URL)" down 1
 
 db-migrate-status:
-	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network host migrate/migrate -path=/migrations/ -database "$(DB_URL)" version
+	docker run --rm -v $(CURDIR)/backend/migrations:/migrations --network $(DOCKER_MIGRATE_NET) migrate/migrate -path=/migrations/ -database "$(DB_URL)" version
