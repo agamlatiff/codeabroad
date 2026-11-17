@@ -5,35 +5,25 @@ import { useOnboardingWizard } from '../hooks/useOnboardingWizard'
 import { Step1LanguagePicker } from '../components/Step1LanguagePicker'
 import { Step2PaceAndPlacement } from '../components/Step2PaceAndPlacement'
 import { Step3PlacementTest } from '../components/Step3PlacementTest'
-import { Step4BoardingPass } from '../components/Step4BoardingPass'
 
 const STEP_COPY: Record<
-  1 | 2 | 3 | 4,
-  { badge: string; title: string; subtitle: string }
+  1 | 2 | 3,
+  { title: string; subtitle: string }
 > = {
   1: {
-    badge: 'Langkah 1 dari 3',
     title: 'Bahasa apa yang ingin kamu kuasai?',
     subtitle:
       'Pilih bahasa target untuk menyusun kurikulum, latihan aksara, dan rute belajarmu.',
   },
   2: {
-    badge: 'Langkah 2 dari 3',
     title: 'Atur ritme harian & titik awalmu',
     subtitle:
       'Sesuaikan target waktu belajar harian dan pilih mulai dari nol atau lewat tes penempatan.',
   },
   3: {
-    badge: 'Langkah 3 dari 3',
     title: 'Tes Penempatan Singkat',
     subtitle:
       'Jawab soal diagnostik berikut. Skor ≥ 80% akan otomatis membuka level lanjutan!',
-  },
-  4: {
-    badge: 'Siap Berangkat',
-    title: 'Boarding Pass Belajarmu Sudah Terbit!',
-    subtitle:
-      'Kurikulum dan target harianmu telah aktif. Saatnya memulai sesi pertamamu.',
   },
 }
 
@@ -43,7 +33,6 @@ export function OnboardingPage() {
     currentStep,
     form,
     isLanding,
-    completionResult,
     languages,
     selectedLanguage,
     placementQuestions,
@@ -58,7 +47,6 @@ export function OnboardingPage() {
     submitOnboarding,
     handleNext,
     handleBack,
-    handleFinish,
   } = useOnboardingWizard()
 
   if (isLanding) {
@@ -98,11 +86,9 @@ export function OnboardingPage() {
   }
 
   const copy = STEP_COPY[currentStep]
-  const totalProgressSteps = form.initialPlacementType === 'placement_test' ? 4 : 3
-  const progressValue =
-    currentStep === 4
-      ? 100
-      : Math.round((currentStep / totalProgressSteps) * 100)
+  const totalProgressSteps = form.initialPlacementType === 'placement_test' ? 3 : 2
+  const progressValue = Math.round((currentStep / totalProgressSteps) * 100)
+  const stepBadge = `Langkah ${currentStep} dari ${totalProgressSteps}`
 
   const showSharedFooter = currentStep === 1 || currentStep === 2
 
@@ -112,22 +98,20 @@ export function OnboardingPage() {
       <header className="sticky top-0 z-20 border-b border-slate-200/80 bg-white/90 backdrop-blur-md">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
           <div className="flex items-center gap-3">
-            {currentStep < 4 && (
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  handleBack()
-                }}
-                disabled={isSubmitting}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
-                aria-label="Kembali"
-              >
-                <ArrowLeft className="h-4 w-4" weight="bold" />
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                handleBack()
+              }}
+              disabled={isSubmitting}
+              className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 disabled:opacity-50"
+              aria-label="Kembali"
+            >
+              <ArrowLeft className="h-4 w-4" weight="bold" />
+            </button>
             <span className="text-xs font-bold uppercase tracking-wider text-indigo-600">
-              {copy.badge}
+              {stepBadge}
             </span>
           </div>
 
@@ -192,22 +176,12 @@ export function OnboardingPage() {
           {currentStep === 3 && (
             <Step3PlacementTest
               questions={placementQuestions}
+              languageCode={selectedLanguage?.code}
               isLoading={isLoadingPlacement}
               answers={form.placementAnswers}
               onAnswerChange={setPlacementAnswer}
               onSubmit={submitOnboarding}
               isSubmitting={isSubmitting}
-            />
-          )}
-
-          {currentStep === 4 && (
-            <Step4BoardingPass
-              completionResult={completionResult}
-              user={user}
-              selectedLanguage={selectedLanguage}
-              dailyGoalMinutes={form.dailyGoalMinutes}
-              initialPlacementType={form.initialPlacementType}
-              onContinue={handleFinish}
             />
           )}
         </div>
@@ -243,7 +217,7 @@ export function OnboardingPage() {
               {currentStep === 2 && form.initialPlacementType === 'zero_beginner'
                 ? isSubmitting
                   ? 'Menyimpan...'
-                  : 'Terbitkan Boarding Pass'
+                  : 'Mulai Belajar'
                 : 'Lanjutkan'}
               <ArrowRight className="ml-1.5 inline h-4 w-4" weight="bold" />
             </Button3D>

@@ -3,8 +3,11 @@ import { LockSimple } from '@phosphor-icons/react'
 import type { OnboardingLanguage } from '@/features/onboarding/types/onboarding'
 import {
   JapanFlagIllustration,
-  SingaporeFlagIllustration,
   GermanyFlagIllustration,
+  UKFlagIllustration,
+  USFlagIllustration,
+  ChinaFlagIllustration,
+  FranceFlagIllustration,
 } from './illustrations/FlagIllustrations'
 import { BadgePill } from './BadgePill'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -12,36 +15,48 @@ import { triggerHaptic } from '@/shared/utils/haptics'
 const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
   ja: JapanFlagIllustration,
   de: GermanyFlagIllustration,
-  en: SingaporeFlagIllustration,
-  'en-gb': SingaporeFlagIllustration,
-  'en-us': SingaporeFlagIllustration,
+  en: UKFlagIllustration,
+  'en-gb': UKFlagIllustration,
+  'en-us': USFlagIllustration,
+  zh: ChinaFlagIllustration,
+  fr: FranceFlagIllustration,
 }
 
 const LANGUAGE_META: Record<string, { countryLabel: string; description: string; examLabel: string }> = {
   ja: {
     countryLabel: 'Jepang • JLPT N5 – N1',
-    description: 'Kuasai Kanji, Hiragana, Katakana & percakapan kerja profesional di Tokyo.',
-    examLabel: 'Populer 🇯🇵',
+    description: 'Kuasai Kanji, Hiragana, Katakana & percakapan kerja maupun keseharian di Jepang.',
+    examLabel: 'Populer',
   },
   de: {
     countryLabel: 'Jerman • Goethe A1 – C1',
-    description: 'Persiapan bahasa Jerman standar industri Eropa untuk studi & karier.',
-    examLabel: 'Segera Hadir',
+    description: 'Persiapan bahasa Jerman standar Goethe untuk studi, riset & karier internasional.',
+    examLabel: 'Tersedia',
+  },
+  'en-gb': {
+    countryLabel: 'Inggris (UK) • IELTS / CEFR',
+    description: 'Kuasai bahasa Inggris British untuk studi, beasiswa, dan komunikasi global.',
+    examLabel: 'Tersedia',
+  },
+  'en-us': {
+    countryLabel: 'Inggris (US) • TOEFL / Business',
+    description: 'Bahasa Inggris Amerika untuk presentasi global, interview & kolaborasi internasional.',
+    examLabel: 'Tersedia',
   },
   en: {
     countryLabel: 'Inggris • IELTS / TOEFL',
-    description: 'Bahasa komunikasi global & interview internasional di tech hub dunia.',
-    examLabel: 'Segera Hadir',
+    description: 'Bahasa komunikasi global & sertifikasi akademik internasional.',
+    examLabel: 'Tersedia',
   },
   zh: {
     countryLabel: 'Mandarin • HSK 1 – 6',
-    description: 'Penguasaan Hanzi & Pinyin untuk ekosistem bisnis dan teknologi Asia.',
-    examLabel: 'Segera Hadir',
+    description: 'Penguasaan Hanzi & Pinyin untuk studi, bisnis, dan ekosistem Asia Timur.',
+    examLabel: 'Tersedia',
   },
   fr: {
     countryLabel: 'Prancis • DELF A1 – C1',
-    description: 'Komunikasi profesional dan akademik berbahasa Prancis.',
-    examLabel: 'Segera Hadir',
+    description: 'Komunikasi profesional dan akademik berbahasa Prancis standar DELF.',
+    examLabel: 'Tersedia',
   },
 }
 

@@ -1,7 +1,14 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import axios from 'axios'
+import { z } from 'zod'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { extractApiErrorMessage } from '@/shared/services/api'
+import {
+  getLanguageEnrollmentsQueryKey,
+  getProfileQueryKey,
+} from '@/shared/constants/queryKeys'
 import {
   ONBOARDING_LANGUAGES_QUERY_KEY,
   PLACEMENT_QUESTIONS_QUERY_KEY,
@@ -10,44 +17,36 @@ import {
 import { useOnboardingStore } from '../store/onboardingStore'
 import type { OnboardingPayload, OnboardingProfileResponse } from '../types/onboarding'
 
-function extractErrorCode(error: unknown): string | undefined {
-  if (typeof error !== 'object' || error === null) return undefined
-  const err = error as {
-    response?: { data?: { error?: { code?: string; message?: string }; message?: string } }
-  }
-  return err.response?.data?.error?.code
-}
+const onboardingSubmitSchema = z.object({
+  language_id: z.string().min(1, 'Pilih bahasa tujuan terlebih dahulu.'),
+  daily_goal_minutes: z.union([z.literal(5), z.literal(15), z.literal(30), z.literal(45)]),
+  initial_placement_type: z.enum(['zero_beginner', 'placement_test']),
+})
 
-function extractErrorMessage(error: unknown, fallback: string): string {
-  if (typeof error !== 'object' || error === null) return fallback
-  const err = error as {
-    message?: string
-    response?: { data?: { error?: { message?: string }; message?: string } }
+function extractErrorCode(error: unknown): string | undefined {
+  if (axios.isAxiosError(error)) {
+    const data = error.response?.data as { code?: unknown; error?: { code?: unknown } } | undefined
+    if (typeof data?.code === 'string') return data.code
+    if (typeof data?.error?.code === 'string') return data.error.code
   }
-  return (
-    err.response?.data?.error?.message ||
-    err.response?.data?.message ||
-    err.message ||
-    fallback
-  )
+  return undefined
 }
 
 export function useOnboardingWizard() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const { user, updateUser } = useAuthStore()
+  const user = useAuthStore((s) => s.user)
+  const updateUser = useAuthStore((s) => s.updateUser)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const {
     currentStep,
     form,
     isLanding,
-    completionResult,
     setStep,
     updateForm,
     setPlacementAnswer,
     setIsLanding,
-    setCompletionResult,
     reset,
   } = useOnboardingStore()
 
@@ -84,33 +83,48 @@ export function useOnboardingWizard() {
       onboardingService.completeOnboarding(payload),
     onSuccess: (result: OnboardingProfileResponse) => {
       setErrorMessage(null)
-      setCompletionResult(result)
       updateUser({
         is_onboarded: true,
+        xp: result.xp ?? user?.xp ?? 0,
+        streak: result.streak ?? user?.streak ?? 0,
         daily_goal_minutes: result.daily_goal_minutes ?? form.dailyGoalMinutes,
       })
-      queryClient.invalidateQueries({ queryKey: ['auth'] })
-      queryClient.invalidateQueries({ queryKey: ['curriculum'] })
-      setStep(4)
+      const profileKey = getProfileQueryKey(user?.id)
+      queryClient.setQueryData(profileKey, (old: unknown) =>
+        old && typeof old === 'object' ? { ...old, is_onboarded: true } : old
+      )
+      void queryClient.invalidateQueries({ queryKey: profileKey })
+      void queryClient.invalidateQueries({ queryKey: ['curriculum'] })
+      void queryClient.invalidateQueries({ queryKey: getLanguageEnrollmentsQueryKey(user?.id) })
+      reset()
+      navigate('/curriculum', { replace: true })
     },
     onError: (error: unknown) => {
       const code = extractErrorCode(error)
       if (code === 'ALREADY_ONBOARDED') {
         updateUser({ is_onboarded: true })
+        queryClient.setQueryData(getProfileQueryKey(user?.id), (old: unknown) =>
+          old && typeof old === 'object' ? { ...old, is_onboarded: true } : old
+        )
         reset()
         navigate('/curriculum', { replace: true })
         return
       }
       setErrorMessage(
-        extractErrorMessage(error, 'Gagal menyelesaikan onboarding. Coba lagi.')
+        extractApiErrorMessage(error, 'Gagal menyelesaikan onboarding. Coba lagi.')
       )
     },
   })
 
   const submitOnboarding = () => {
     setErrorMessage(null)
-    if (!form.languageId) {
-      setErrorMessage('Pilih bahasa tujuan terlebih dahulu.')
+    const parsed = onboardingSubmitSchema.safeParse({
+      language_id: form.languageId,
+      daily_goal_minutes: form.dailyGoalMinutes,
+      initial_placement_type: form.initialPlacementType,
+    })
+    if (!parsed.success) {
+      setErrorMessage(parsed.error.issues[0]?.message || 'Lengkapi pilihan onboarding terlebih dahulu.')
       return
     }
 
@@ -173,17 +187,11 @@ export function useOnboardingWizard() {
     }
   }
 
-  const handleFinish = () => {
-    reset()
-    navigate('/curriculum', { replace: true })
-  }
-
   return {
     user,
     currentStep,
     form,
     isLanding,
-    completionResult,
     languages,
     selectedLanguage,
     placementQuestions,
@@ -199,6 +207,5 @@ export function useOnboardingWizard() {
     submitOnboarding,
     handleNext,
     handleBack,
-    handleFinish,
   }
 }

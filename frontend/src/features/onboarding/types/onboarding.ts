@@ -27,10 +27,15 @@ export interface PlacementQuestionItem {
   exercise_type: string
   skill_pillar: string
   prompt: string
+  media_url?: string | null
   content?: {
     options?: Array<string | PlacementQuestionOption>
+    tokens?: string[]
     question?: string
     sentence?: string
+    audio_text?: string
+    display_text?: string
+    target_translation?: string
   }
 }
 
@@ -54,21 +59,24 @@ export interface OnboardingV3Payload {
 
 export type OnboardingPayload = OnboardingV3Payload
 
+/** Mirrors backend onboarding.OnboardingResultResponse (nested shape). */
 export interface OnboardingV3ResultResponse {
-  user_id: string
-  is_onboarded: boolean
-  language_id: string
-  language_code: string
-  language_name: string
-  assigned_level_id: string
-  assigned_level_code: string
-  assigned_level_name: string
-  daily_goal_minutes: number
-  initial_placement_type: 'zero_beginner' | 'placement_test'
-  placement_score_percent: number
-  xp: number
-  streak: number
-  preferred_roadmap_view: 'map' | 'syllabus'
+  user: { id: string; email: string }
+  profile: {
+    daily_goal_minutes: number
+    is_onboarded: boolean
+    preferred_roadmap_view: 'map' | 'syllabus'
+  }
+  enrollment: {
+    id: string
+    language_id: string
+    initial_placement_type: 'zero_beginner' | 'placement_test'
+    placement_score_percent?: number | null
+    language?: { id: string; code: string; name: string } | null
+  }
+  assigned_level: { id: string; code: string; name: string }
+  placement_score_percent?: number
+  gamification_stats: { xp: number; streak: number }
 }
 
 export interface OnboardingProfileResponse {

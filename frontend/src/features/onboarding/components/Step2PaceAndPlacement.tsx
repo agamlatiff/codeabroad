@@ -1,18 +1,49 @@
-import { Clock, Lightning, Compass, CheckCircle } from '@phosphor-icons/react'
+import { Clock, Lightning, CheckCircle } from '@phosphor-icons/react'
 import type { DailyGoalMinutes, InitialPlacementType } from '@/features/onboarding/store/onboardingStore'
 import { BadgePill } from './BadgePill'
+import {
+  DailyPaceIllustration,
+  PlacementPathIllustration,
+} from './illustrations/PaceAndPlacementIllustrations'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 const DAILY_GOAL_OPTIONS: Array<{
   minutes: DailyGoalMinutes
   title: string
   subtitle: string
+  paceEstimate: string
+  intensityBars: number
   badge?: string
 }> = [
-  { minutes: 5, title: '5 Menit / Hari', subtitle: 'Santai & konsisten setiap hari' },
-  { minutes: 15, title: '15 Menit / Hari', subtitle: 'Ritme ideal anti-burnout', badge: 'Rekomendasi' },
-  { minutes: 30, title: '30 Menit / Hari', subtitle: 'Progres cepat menuju target sertifikasi' },
-  { minutes: 45, title: '45 Menit / Hari', subtitle: 'Akselerasi intensif' },
+  {
+    minutes: 5,
+    title: '5 Menit / Hari',
+    subtitle: 'Santai & konsisten setiap hari',
+    paceEstimate: '~1 materi/hari',
+    intensityBars: 1,
+  },
+  {
+    minutes: 15,
+    title: '15 Menit / Hari',
+    subtitle: 'Ritme ideal anti-burnout',
+    paceEstimate: '~2 materi/hari',
+    intensityBars: 2,
+    badge: 'Rekomendasi',
+  },
+  {
+    minutes: 30,
+    title: '30 Menit / Hari',
+    subtitle: 'Progres cepat menuju sertifikasi',
+    paceEstimate: '~3-4 materi/hari',
+    intensityBars: 3,
+  },
+  {
+    minutes: 45,
+    title: '45 Menit / Hari',
+    subtitle: 'Akselerasi intensif',
+    paceEstimate: '~5+ materi/hari',
+    intensityBars: 4,
+  },
 ]
 
 const PLACEMENT_OPTIONS: Array<{
@@ -20,21 +51,21 @@ const PLACEMENT_OPTIONS: Array<{
   title: string
   badge: string
   description: string
-  icon: typeof Compass
+  highlight: string
 }> = [
   {
     type: 'zero_beginner',
     title: 'Mulai dari Nol',
     badge: 'Pemula',
     description: 'Langsung mulai dari Unit 1 Lesson 1 untuk pengenalan aksara dan kalimat dasar.',
-    icon: Compass,
+    highlight: 'Rute bertahap • Langsung masuk kurikulum',
   },
   {
     type: 'placement_test',
     title: 'Tes Penempatan Singkat',
     badge: 'Sudah Punya Dasar',
     description: 'Kerjakan soal diagnostik singkat. Jika skor ≥ 80%, materi awal otomatis dilewati!',
-    icon: Lightning,
+    highlight: 'Soal diagnostik • ~2 menit',
   },
 ]
 
@@ -72,24 +103,50 @@ export const Step2PaceAndPlacement = ({
                   triggerHaptic('tap')
                   onSelectDailyGoal(opt.minutes)
                 }}
-                className={`rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
+                className={`rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
                   isSelected
-                    ? 'bg-blue-50/80 border-2 border-[#2563EB] shadow-sm'
-                    : 'bg-white border border-slate-200 hover:border-blue-300'
+                    ? 'bg-blue-50/80 border-2 border-[#2563EB] shadow-sm -translate-y-0.5'
+                    : 'bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
-                <div className="flex items-center justify-between gap-1">
-                  <span className="text-sm font-extrabold text-slate-900">{opt.title}</span>
-                  {isSelected && <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />}
-                </div>
-                <p className="text-[11px] text-slate-500 leading-snug">{opt.subtitle}</p>
-                {opt.badge && (
-                  <div className="pt-0.5">
-                    <BadgePill variant="blue" size="sm">
-                      {opt.badge}
-                    </BadgePill>
+                <div className="flex items-start justify-between gap-2">
+                  <DailyPaceIllustration minutes={opt.minutes} active={isSelected} />
+                  <div className="flex items-center gap-1">
+                    {opt.badge && (
+                      <BadgePill variant="blue" size="sm">
+                        {opt.badge}
+                      </BadgePill>
+                    )}
+                    {isSelected && (
+                      <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />
+                    )}
                   </div>
-                )}
+                </div>
+
+                <div>
+                  <span className="block text-sm font-extrabold text-slate-900">{opt.title}</span>
+                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{opt.subtitle}</p>
+                </div>
+
+                <div className="space-y-1 pt-0.5">
+                  <div className="flex gap-1" aria-hidden="true">
+                    {[1, 2, 3, 4].map((bar) => (
+                      <span
+                        key={bar}
+                        className={`h-1.5 flex-1 rounded-full transition-colors ${
+                          bar <= opt.intensityBars
+                            ? isSelected
+                              ? 'bg-[#2563EB]'
+                              : 'bg-slate-400'
+                            : 'bg-slate-200'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="block text-[11px] font-semibold text-slate-500">
+                    {opt.paceEstimate}
+                  </span>
+                </div>
               </button>
             )
           })}
@@ -105,7 +162,6 @@ export const Step2PaceAndPlacement = ({
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {PLACEMENT_OPTIONS.map((opt) => {
-            const Icon = opt.icon
             const isSelected = initialPlacementType === opt.type
             return (
               <button
@@ -116,28 +172,37 @@ export const Step2PaceAndPlacement = ({
                   triggerHaptic('tap')
                   onSelectPlacementType(opt.type)
                 }}
-                className={`rounded-3xl p-5 text-left transition-all cursor-pointer flex items-start gap-4 ${
+                className={`rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer flex flex-col gap-3.5 ${
                   isSelected
-                    ? 'bg-blue-50/80 border-2 border-[#2563EB] shadow-md'
+                    ? 'bg-blue-50/80 border-2 border-[#2563EB] shadow-md -translate-y-0.5'
                     : 'bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
-                <div
-                  className={`w-11 h-11 rounded-2xl flex items-center justify-center shrink-0 ${
-                    isSelected ? 'bg-[#2563EB] text-white' : 'bg-slate-100 text-slate-600'
-                  }`}
-                >
-                  <Icon weight="bold" className="w-5 h-5" />
-                </div>
+                <PlacementPathIllustration type={opt.type} active={isSelected} />
 
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className="text-base font-extrabold text-slate-900">{opt.title}</h3>
-                    <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
-                      {opt.badge}
-                    </BadgePill>
+                <div className="flex-1 flex flex-col justify-between gap-2">
+                  <div>
+                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-base font-extrabold text-slate-900">{opt.title}</h3>
+                        {isSelected && (
+                          <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />
+                        )}
+                      </div>
+                      <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
+                        {opt.badge}
+                      </BadgePill>
+                    </div>
+                    <p className="text-xs text-slate-600 leading-relaxed">{opt.description}</p>
                   </div>
-                  <p className="text-xs text-slate-600 leading-relaxed">{opt.description}</p>
+
+                  <span
+                    className={`text-[11px] font-semibold ${
+                      isSelected ? 'text-[#2563EB]' : 'text-slate-400'
+                    }`}
+                  >
+                    {opt.highlight}
+                  </span>
                 </div>
               </button>
             )

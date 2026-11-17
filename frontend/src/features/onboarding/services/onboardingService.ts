@@ -39,20 +39,23 @@ export const onboardingService = {
 
     if (response.data.success && response.data.data) {
       const resData = response.data.data
+      const userId = resData.user?.id ?? ''
       return {
-        id: resData.user_id || '',
-        user_id: resData.user_id || '',
-        is_onboarded: resData.is_onboarded,
-        xp: resData.xp ?? 50,
-        streak: resData.streak ?? 0,
-        daily_goal_minutes: resData.daily_goal_minutes,
-        initial_placement_type: resData.initial_placement_type,
-        placement_score_percent: resData.placement_score_percent,
-        assigned_level_code: resData.assigned_level_code,
-        assigned_level_name: resData.assigned_level_name,
-        language_code: resData.language_code,
-        language_name: resData.language_name,
-        preferred_roadmap_view: resData.preferred_roadmap_view ?? 'map',
+        id: userId,
+        user_id: userId,
+        is_onboarded: resData.profile?.is_onboarded ?? true,
+        xp: resData.gamification_stats?.xp ?? 0,
+        streak: resData.gamification_stats?.streak ?? 0,
+        daily_goal_minutes: resData.profile?.daily_goal_minutes ?? payload.daily_goal_minutes,
+        initial_placement_type:
+          resData.enrollment?.initial_placement_type ?? payload.initial_placement_type,
+        placement_score_percent:
+          resData.placement_score_percent ?? resData.enrollment?.placement_score_percent ?? undefined,
+        assigned_level_code: resData.assigned_level?.code,
+        assigned_level_name: resData.assigned_level?.name,
+        language_code: resData.enrollment?.language?.code,
+        language_name: resData.enrollment?.language?.name,
+        preferred_roadmap_view: resData.profile?.preferred_roadmap_view ?? 'map',
       }
     }
     throw new Error(response.data.error || 'Gagal menyelesaikan onboarding')

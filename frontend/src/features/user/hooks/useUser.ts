@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { userService, PROFILE_QUERY_KEY, getProfileQueryKey } from "@/features/user/services/userService"
-import type { User, UpdateProfilePayload } from "@/features/user/types/user"
+import { userService } from "@/features/user/services/userService"
+import { getProfileQueryKey } from "@/shared/constants/queryKeys"
+import type { User, UpdateProfilePayload } from "@/shared/types/user"
 
 /**
  * Single Source of Truth (SSOT) hook for user profile and preferences.
@@ -11,7 +12,9 @@ import type { User, UpdateProfilePayload } from "@/features/user/types/user"
  */
 export const useUser = () => {
   const queryClient = useQueryClient()
-  const { user: storeUser, isAuthenticated, updateUser } = useAuthStore()
+  const storeUser = useAuthStore((s) => s.user)
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
+  const updateUser = useAuthStore((s) => s.updateUser)
 
   // 1. Fetch latest normalized user profile from PostgreSQL
   const {
@@ -29,7 +32,13 @@ export const useUser = () => {
   // 2. Synchronize fresh database profile into client Zustand store
   useEffect(() => {
     if (profileUser) {
-      updateUser(profileUser)
+      // Onboarding is one-way: never let a stale cached profile downgrade it.
+      const alreadyOnboarded = useAuthStore.getState().user?.is_onboarded === true
+      updateUser(
+        alreadyOnboarded && !profileUser.is_onboarded
+          ? { ...profileUser, is_onboarded: true }
+          : profileUser
+      )
     }
   }, [profileUser, updateUser])
 
@@ -38,7 +47,8 @@ export const useUser = () => {
     mutationFn: (payload: UpdateProfilePayload) => userService.updateProfile(payload),
     onSuccess: (updatedUser: User) => {
       updateUser(updatedUser)
-      void queryClient.invalidateQueries({ queryKey: PROFILE_QUERY_KEY })
+      queryClient.setQueryData(getProfileQueryKey(updatedUser.id), updatedUser)
+      void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(updatedUser.id) })
     },
   })
 
