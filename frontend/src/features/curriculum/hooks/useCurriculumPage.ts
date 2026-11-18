@@ -9,7 +9,6 @@ import {
   SRS_DUE_QUERY_KEY,
 } from "@/shared/constants/queryKeys"
 import { useAuthStore } from "@/features/auth/store/authStore"
-import { useCurriculumStore } from "@/features/curriculum/store/curriculumStore"
 import {
   curriculumService,
   CURRICULUM_QUERY_KEY,
@@ -23,26 +22,14 @@ import { userService } from "@/features/user/services/userService"
 import { useUser } from "@/features/user/hooks/useUser"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { playSound, playBgm, stopBgm } from "@/shared/utils/sound"
-import type {
-  CurriculumViewMode,
-  SequentialCurriculumUnit,
-} from "@/features/curriculum/types/curriculum"
 import { computeCurriculumPageMetrics } from "@/features/curriculum/utils/curriculumMapTransformer"
 
 const TOAST_DURATION_MS = 3200
 
-const isViewMode = (value: string | null): value is CurriculumViewMode =>
-  value === 'map' || value === 'syllabus'
-
-/** Locked units (not active, not completed) start collapsed unless the user toggles them. */
-const isCollapsedByDefault = (unit: SequentialCurriculumUnit): boolean =>
-  !unit.isActive && !unit.isCompleted
-
 /**
  * 1:1 Headless controller hook for CurriculumPage.
  * Orchestrates backend curriculum synchronization via TanStack Query,
- * active language switching, unit accordion state, view mode (Map vs Syllabus),
- * level grammar reference modal, and user profile view persistence.
+ * active language switching, level grammar reference modal, and audio state.
  */
 export const useCurriculumPage = (explicitLanguageId?: string) => {
   const navigate = useNavigate()
@@ -50,48 +37,18 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const queryClient = useQueryClient()
   const { languageId: routeLanguageId } = useParams<{ languageId?: string }>()
 
+  // Strip legacy ?view=map|syllabus query param if present in bookmarks/tabs
+  useEffect(() => {
+    if (!searchParams.has('view')) return
+    const next = new URLSearchParams(searchParams)
+    next.delete('view')
+    setSearchParams(next, { replace: true })
+  }, [searchParams, setSearchParams])
+
   const { data: userData } = useUser()
   const user = userData.user
   const userIdKey = user?.id ?? 'anonymous'
   const updateUser = useAuthStore((s) => s.updateUser)
-
-  // ── 0. CURRICULUM VIEW MODE (Peta Jalur vs Silabus Modul) ──
-  const storedViewMode = useCurriculumStore((s) => s.viewMode)
-  const setStoreViewMode = useCurriculumStore((s) => s.setViewMode)
-
-  const queryView = searchParams.get('view')
-  const userDbView =
-    user?.preferred_roadmap_view && isViewMode(user.preferred_roadmap_view)
-      ? user.preferred_roadmap_view
-      : null
-  const viewMode: CurriculumViewMode = isViewMode(queryView)
-    ? queryView
-    : userDbView || storedViewMode
-
-  const setViewMode = useCallback(
-    (mode: CurriculumViewMode) => {
-      triggerHaptic('tap')
-      playSound('view_switch')
-      setSearchParams(
-        (prev) => {
-          const next = new URLSearchParams(prev)
-          next.set('view', mode)
-          return next
-        },
-        { replace: true }
-      )
-
-      setStoreViewMode(mode)
-      updateUser({ preferred_roadmap_view: mode })
-      queryClient.setQueryData(getProfileQueryKey(userIdKey), (old: typeof user) =>
-        old ? { ...old, preferred_roadmap_view: mode } : old
-      )
-      userService.updateProfile({ preferred_roadmap_view: mode }).catch((err: unknown) => {
-        console.warn('[useCurriculumPage] Failed to persist view mode to backend profile:', err)
-      })
-    },
-    [setSearchParams, setStoreViewMode, updateUser, queryClient, userIdKey]
-  )
 
   // ── 1. RESOLVE REQUESTED LANGUAGE & ENROLLMENTS ──
   const targetLanguageId = explicitLanguageId || routeLanguageId || ''
@@ -117,7 +74,6 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
   const activeLanguageId = curriculumData?.language?.id || targetLanguageId || ''
   const activeLanguageCode = curriculumData?.language?.code || ''
-  const activeLevelId = curriculumData?.level?.id || ''
 
   const currentEnrollment = useMemo(
     () =>
@@ -150,20 +106,16 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
   // ── 3. DERIVED METRICS (BACKEND SSOT) ──
   const {
-    units,
     totalLessonsCount,
     completedLessonsCount,
     overallProgress,
     trackProgressMap,
   } = useMemo(() => computeCurriculumPageMetrics(curriculumData), [curriculumData])
 
-  // ── 4. PAGE UI, GRAMMAR MODAL & TOAST STATES ──
+  // ── 4. PAGE UI & TOAST STATES ──
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false)
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
-  const [isGrammarOpen, setIsGrammarOpen] = useState(false)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false)
-  const [collapsedOverrides, setCollapsedOverrides] = useState<Record<string, boolean>>({})
   const [notification, setNotification] = useState<string | null>(null)
 
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -190,45 +142,17 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     }, TOAST_DURATION_MS)
   }, [])
 
-  // ── 4a. LEVEL GRAMMAR POINTS QUERY (LAZY ON OPEN) ──
-  const {
-    data: grammarPoints = [],
-    isLoading: isGrammarLoading,
-    error: grammarQueryError,
-    refetch: refetchGrammarPoints,
-  } = useQuery({
-    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLevelId],
-    queryFn: ({ signal }) => curriculumService.getGrammarPoints(activeLevelId, { signal }),
-    enabled: isGrammarOpen && Boolean(activeLevelId),
-    staleTime: 1000 * 60 * 10,
-  })
-
-  const grammarError = grammarQueryError
-    ? extractApiErrorMessage(grammarQueryError, 'Gagal memuat daftar grammar level.')
-    : null
-
-  const openGrammarModal = useCallback(() => {
-    triggerHaptic('tap')
-    playSound('modal_open')
-    setIsGrammarOpen(true)
-  }, [])
-
-  const closeGrammarModal = useCallback(() => {
-    playSound('modal_close')
-    setIsGrammarOpen(false)
-  }, [])
-
-  // ── 4b. DATABASE-BACKED FIRST-TIME TOUR ONBOARDING ──
+  // ── 4a. DATABASE-BACKED FIRST-TIME TOUR ONBOARDING ──
   const hasSeenTour = user?.has_seen_roadmap_tour
   const hasTriggeredTourRef = useRef(false)
   const isTourPersistingRef = useRef(false)
 
   useEffect(() => {
-    if (hasSeenTour === false && !hasTriggeredTourRef.current) {
+    if (hasSeenTour === false && enrollments.length >= 2 && !hasTriggeredTourRef.current) {
       hasTriggeredTourRef.current = true
       setIsSwitcherOpen(true)
     }
-  }, [hasSeenTour])
+  }, [hasSeenTour, enrollments.length])
 
   const markTourSeen = useCallback(async () => {
     if (hasSeenTour !== false || isTourPersistingRef.current) return
@@ -306,42 +230,16 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   }, [activeLanguageId, handleSelectLanguage])
 
   const openSwitcher = useCallback(() => {
+    if (enrollments.length < 2) return
     playSound('modal_open')
     setIsSwitcherOpen(true)
-  }, [])
+  }, [enrollments.length])
 
   const closeSwitcher = useCallback(() => {
     playSound('modal_close')
     setIsSwitcherOpen(false)
     void markTourSeen()
   }, [markTourSeen])
-
-  const isUnitCollapsed = useCallback(
-    (unit: SequentialCurriculumUnit): boolean =>
-      collapsedOverrides[unit.id] ?? isCollapsedByDefault(unit),
-    [collapsedOverrides]
-  )
-
-  const toggleUnitCollapse = useCallback((unit: SequentialCurriculumUnit) => {
-    triggerHaptic('tap')
-    playSound('node_tap')
-    setCollapsedOverrides((prev) => ({
-      ...prev,
-      [unit.id]: !(prev[unit.id] ?? isCollapsedByDefault(unit)),
-    }))
-  }, [])
-
-  const handleLockedNodeClick = useCallback(
-    (title: string) => {
-      playSound('node_locked')
-      if (isViewingInactiveTrack) {
-        showNotification(`Aktifkan track bahasa ini terlebih dahulu untuk membuka "${title}"`, true)
-        return
-      }
-      showNotification(`Selesaikan lesson sebelumnya untuk membuka "${title}"`, true)
-    },
-    [isViewingInactiveTrack, showNotification]
-  )
 
   const handleStartLesson = useCallback(
     (route: string) => {
@@ -356,19 +254,12 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     void refetch()
   }, [refetch])
 
-  const handleRefetchGrammar = useCallback(() => {
-    void refetchGrammarPoints()
-  }, [refetchGrammarPoints])
-
   return {
     curriculum: {
       currentLanguageId: activeLanguageId,
       data: curriculumData,
       enrollments,
-      units,
-      viewMode,
       isViewingInactiveTrack,
-      grammarPoints,
       metrics: {
         totalLessonsCount,
         completedLessonsCount,
@@ -379,30 +270,18 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     status: {
       isLoading,
       isSwitchingLanguage,
-      isGrammarLoading,
       error,
-      grammarError,
       notification,
     },
     modals: {
       isSwitcherOpen,
-      isLeaderboardOpen,
-      isGrammarOpen,
       isMobileDrawerOpen,
-      isUnitCollapsed,
     },
     actions: {
       refetch: handleRefetch,
-      refetchGrammar: handleRefetchGrammar,
-      setViewMode,
       openSwitcher,
       closeSwitcher,
-      openGrammarModal,
-      closeGrammarModal,
-      setIsLeaderboardOpen,
       setIsMobileDrawerOpen,
-      toggleUnitCollapse,
-      handleLockedNodeClick,
       handleSelectLanguage,
       handleActivateCurrentTrack,
       handleStartLesson,

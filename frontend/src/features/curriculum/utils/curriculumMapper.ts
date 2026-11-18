@@ -1,103 +1,8 @@
 import type {
-  CurriculumResponse,
   Language,
-  SequentialCurriculumUnit,
-  SequentialPartItem,
   CareerTrackOption,
   UserLanguageEnrollment,
 } from "@/features/curriculum/types/curriculum"
-import { resolveUnitTheme, resolveTrackIconType } from "@/features/curriculum/tokens/curriculumTokens"
-
-/**
- * Pure mapper transforming backend CurriculumResponse units and lessons into
- * SequentialCurriculumUnit view models strictly driven by backend unlock and completion flags.
- */
-export const mapCurriculumUnitsToSequentialUnits = (
-  curriculum: CurriculumResponse | null | undefined
-): SequentialCurriculumUnit[] => {
-  if (!curriculum || !curriculum.units || curriculum.units.length === 0) {
-    return []
-  }
-
-  let lessonCounter = 1
-  const languageCode = curriculum.language?.code?.toUpperCase() || 'LANG'
-  const levelCode = curriculum.level?.code || ''
-
-  return curriculum.units.map((unit, unitIndex): SequentialCurriculumUnit => {
-    const unitNumber = unit.order_index || unitIndex + 1
-    const lessons = unit.lessons || []
-
-    const parts: SequentialPartItem[] = lessons.map((lesson) => {
-      const partNumber = lessonCounter++
-      const isCurrentActive = Boolean(
-        lesson.is_unlocked &&
-          !lesson.is_completed &&
-          curriculum.current_lesson_id === lesson.id
-      )
-
-      return {
-        id: lesson.id,
-        globalPartNumber: partNumber,
-        title: lesson.title,
-        subtitle: lesson.is_skipped
-          ? `Dilewati otomatis via placement • ${levelCode || languageCode}`
-          : lesson.is_completed
-            ? `Selesai dengan skor ${lesson.score}%`
-            : levelCode
-              ? `${curriculum.language?.name || languageCode} • ${levelCode}`
-              : unit.title,
-        chipLabel: `${languageCode} ${String(unitNumber).padStart(2, '0')}.${String(lesson.order_index || partNumber).padStart(2, '0')}`,
-        category: unit.unit_type === 'diagnostic_exam' ? 'boss' : 'language',
-        difficulty:
-          curriculum.level?.tier === 'advanced'
-            ? 'Sulit'
-            : curriculum.level?.tier === 'intermediate'
-              ? 'Menengah'
-              : 'Pemula',
-        estimatedMinutes: 10,
-        xpReward: lesson.xp_reward || 15,
-        route:
-          unit.unit_type === 'diagnostic_exam' && curriculum.level?.id
-            ? `/exam/${curriculum.level.id}`
-            : `/learn/${lesson.id}`,
-        score: lesson.score,
-        is_skipped: lesson.is_skipped,
-        is_completed: lesson.is_completed,
-        is_unlocked: lesson.is_unlocked,
-        isNextActive: isCurrentActive,
-      }
-    })
-
-    const totalCount = unit.total_lessons > 0 ? unit.total_lessons : parts.length
-    const completedCount =
-      unit.completed_lessons > 0
-        ? unit.completed_lessons
-        : parts.filter((p) => p.is_completed).length
-
-    const isCompleted = totalCount > 0 && completedCount >= totalCount
-    const isActive = Boolean(unit.is_unlocked && !isCompleted)
-    const progressPercent =
-      totalCount > 0 ? Math.min(100, Math.round((completedCount / totalCount) * 100)) : 0
-
-    return {
-      id: unit.id,
-      unitNumber,
-      tag: `UNIT ${String(unitNumber).padStart(2, '0')}`,
-      title: unit.title,
-      description: unit.description || '',
-      unitType: unit.unit_type,
-      totalXp: parts.reduce((acc, p) => acc + p.xpReward, 0),
-      progressRate: progressPercent,
-      isUnlocked: unit.is_unlocked,
-      isCompleted,
-      isActive,
-      progressPercent,
-      completedCount,
-      theme: resolveUnitTheme(unitNumber),
-      parts,
-    }
-  })
-}
 
 /**
  * Maps user language enrollments and catalog languages into selectable track options
@@ -125,11 +30,11 @@ export const mapEnrollmentsToTrackOptions = (
     options.push({
       id: enrollment.language_id,
       slug: enrollment.language_id,
+      languageCode: langCode,
       title: `${langName} • ${enrollment.current_level?.code || 'Kurikulum'}`,
       shortTitle: `${langName} ${enrollment.current_level?.code || ''}`.trim(),
       subtitle: `Level aktif: ${levelLabel}`,
       category: 'language',
-      iconType: resolveTrackIconType(langCode),
       badgeLabel: enrollment.is_active ? 'Aktif' : 'Terdaftar',
       badgeVariant: enrollment.is_active ? 'active' : 'available',
       isActive: enrollment.is_active,
@@ -144,11 +49,11 @@ export const mapEnrollmentsToTrackOptions = (
     options.push({
       id: lang.id,
       slug: lang.id,
+      languageCode: lang.code,
       title: lang.name,
       shortTitle: lang.name,
       subtitle: `Kurikulum Bahasa ${lang.name}`,
       category: 'language',
-      iconType: resolveTrackIconType(lang.code),
       badgeLabel: 'Belum Terdaftar',
       badgeVariant: 'available',
       isActive: false,

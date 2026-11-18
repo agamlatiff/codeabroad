@@ -6,7 +6,6 @@ import './index.css'
 import App from './App.tsx'
 import '@/features/auth/store/authStore'
 import '@/features/onboarding/store/onboardingStore'
-import '@/features/curriculum/store/curriculumStore'
 
 const NON_RETRYABLE_STATUS = new Set([400, 401, 403, 404, 409, 413, 422, 429])
 

@@ -78,7 +78,16 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
           <h2 className="text-xs sm:text-sm md:text-base font-brand font-black tracking-tight text-white leading-snug line-clamp-2">
             {unit.title}
           </h2>
+          {unit.description && (
+            <p className="text-[11px] sm:text-xs text-white/85 font-medium leading-relaxed line-clamp-2">
+              {unit.description}
+            </p>
+          )}
         </div>
+
+        <span className="shrink-0 relative z-10 text-[11px] font-brand font-black px-2.5 py-1 rounded-full bg-black/20 border border-white/20 text-white whitespace-nowrap">
+          {unit.parts.filter((p) => p.status === 'completed').length}/{unit.parts.length} Pelajaran
+        </span>
       </div>
 
       {/* ── SERPENTINE SNAKE PATH ── */}

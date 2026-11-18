@@ -45,6 +45,9 @@ const LeaderboardPage = lazy(() =>
     default: m.LeaderboardPage,
   }))
 )
+const GrammarPage = lazy(() =>
+  import('@/features/curriculum/pages/GrammarPage').then((m) => ({ default: m.GrammarPage }))
+)
 const NotFoundPage = lazy(() =>
   import('@/shared/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 )
@@ -81,6 +84,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/curriculum" element={<CurriculumPage />} />
               <Route path="/curriculum/:languageId" element={<CurriculumPage />} />
+              <Route path="/grammar" element={<GrammarPage />} />
               <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
               <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
               <Route path="/courses" element={<Navigate to="/curriculum" replace />} />

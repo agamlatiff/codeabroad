@@ -3,10 +3,8 @@ import type {
   CurriculumUnitData,
   CurriculumPartNode,
   CurriculumNodeStatus,
-  SequentialCurriculumUnit,
 } from "@/features/curriculum/types/curriculum"
 import { resolveMapUnitPalette } from "@/features/curriculum/tokens/curriculumTokens"
-import { mapCurriculumUnitsToSequentialUnits } from './curriculumMapper'
 
 /**
  * Resolves visual node status strictly from backend SSOT flags without client-side unlock overrides.
@@ -39,7 +37,7 @@ export const transformCurriculumToMapUnits = (
 
   return curriculum.units.map((unit, unitIndex): CurriculumUnitData => {
     const palette = resolveMapUnitPalette(unitIndex)
-    const unitNumber = unit.order_index || unitIndex + 1
+    const unitNumber = unitIndex + 1
     const lessons = unit.lessons || []
 
     const parts: CurriculumPartNode[] = lessons.map((lesson) => {
@@ -65,10 +63,14 @@ export const transformCurriculumToMapUnits = (
             ? `${curriculum.language?.name || langCode} • ${levelCode}`
             : `Lesson ${lesson.order_index}`
 
+      const cleanLessonTitle =
+        lesson.title.replace(/^(?:pelajaran|lesson)\s*\d+\s*[:.\-–—]\s*/i, '').trim() ||
+        lesson.title
+
       return {
         id: lesson.id,
         number: lessonNum,
-        title: lesson.title,
+        title: cleanLessonTitle,
         subtitle,
         status,
         route:
@@ -84,40 +86,44 @@ export const transformCurriculumToMapUnits = (
       }
     })
 
-    const totalLessons = unit.total_lessons > 0 ? unit.total_lessons : parts.length
-    const completedLessons =
-      unit.completed_lessons > 0
-        ? unit.completed_lessons
-        : parts.filter((p) => p.status === 'completed').length
+    const cleanTitle = unit.title.replace(/^unit\s*\d+\s*[:.\-–—]\s*/i, '').trim() || unit.title
+    const isLastUnit = unitIndex === curriculum.units.length - 1
+    const allLevelLessonsCompleted =
+      curriculum.units.every((u) => (u.lessons ?? []).every((l) => l.is_completed)) &&
+      curriculum.units.some((u) => (u.lessons?.length ?? 0) > 0)
 
-    const isUnitCompleted = totalLessons > 0 && completedLessons >= totalLessons
-    const isUnitActive = Boolean(unit.is_unlocked && !isUnitCompleted)
+    const bossQuest: CurriculumPartNode | undefined =
+      isLastUnit && curriculum.level?.id
+        ? {
+            id: `exam-${curriculum.level.id}`,
+            number: globalLessonCounter,
+            title: `Ujian Evaluasi Kesiapan ${levelCode || langCode}`,
+            subtitle: allLevelLessonsCompleted
+              ? 'Simulasi Ujian Akhir Level • Siap Diuji'
+              : 'Selesaikan seluruh pelajaran level ini untuk membuka ujian akhir',
+            status: allLevelLessonsCompleted ? 'active' : 'locked',
+            route: `/exam/${curriculum.level.id}`,
+            xpReward: 50,
+            category: 'boss',
+            badgeLabel: levelCode || langCode,
+            isBoss: true,
+          }
+        : undefined
 
     return {
       id: unit.id,
       unitNumber,
-      tag: `UNIT ${unitNumber}`,
-      title: unit.title,
+      title: cleanTitle,
       description: unit.description || '',
-      statusBadge: isUnitCompleted
-        ? 'SELESAI (100%)'
-        : isUnitActive
-          ? 'SEDANG BERJALAN'
-          : 'TERKUNCI',
-      badgeType: isUnitCompleted
-        ? 'completed'
-        : isUnitActive
-          ? 'active'
-          : 'locked',
       bannerGradient: palette.gradient,
       bannerBorder: palette.border,
       parts,
+      bossQuest,
     }
   })
 }
 
 export interface CurriculumPageMetrics {
-  units: SequentialCurriculumUnit[]
   totalLessonsCount: number
   completedLessonsCount: number
   overallProgress: number
@@ -130,12 +136,21 @@ export interface CurriculumPageMetrics {
 export const computeCurriculumPageMetrics = (
   curriculum: CurriculumResponse | null | undefined
 ): CurriculumPageMetrics => {
-  const units = mapCurriculumUnitsToSequentialUnits(curriculum)
+  const rawUnits = curriculum?.units ?? []
 
-  const totalLessonsCount = curriculum?.total_lessons ?? units.reduce((acc, u) => acc + u.parts.length, 0)
+  const totalLessonsCount =
+    curriculum?.total_lessons ??
+    rawUnits.reduce((acc, u) => acc + (u.total_lessons > 0 ? u.total_lessons : (u.lessons?.length ?? 0)), 0)
   const completedLessonsCount =
     curriculum?.completed_lessons ??
-    units.reduce((acc, u) => acc + (u.completedCount ?? 0), 0)
+    rawUnits.reduce(
+      (acc, u) =>
+        acc +
+        (u.completed_lessons > 0
+          ? u.completed_lessons
+          : (u.lessons?.filter((l) => l.is_completed).length ?? 0)),
+      0
+    )
 
   const overallProgress =
     curriculum?.progress_percent ??
@@ -152,7 +167,6 @@ export const computeCurriculumPageMetrics = (
     : {}
 
   return {
-    units,
     totalLessonsCount,
     completedLessonsCount,
     overallProgress,

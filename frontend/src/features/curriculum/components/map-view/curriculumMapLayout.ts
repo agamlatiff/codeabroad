@@ -39,7 +39,7 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
 
   const lessonNodes: PathMapNode[] = unit.parts.map((p): PathMapNode => ({
     id: p.id,
-    title: `Lesson ${p.number}: ${p.title}`,
+    title: `Pelajaran ${p.number}: ${p.title}`,
     subtitle: p.subtitle,
     number: p.number,
     xpReward: p.xpReward,

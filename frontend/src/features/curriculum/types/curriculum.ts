@@ -167,74 +167,19 @@ export interface CompleteLessonResponse {
 }
 
 // ============================================================================
-// UI View Models (Curriculum Accordion, Map View & Language/Track Switcher)
+// UI View Models (Map View & Language Switcher)
 // ============================================================================
 
-export type CurriculumViewMode = 'map' | 'syllabus'
-
 export type CurriculumNodeStatus = 'completed' | 'active' | 'locked'
-
-export interface UnitTheme {
-  gradientBg: string
-  border3D: string
-  tagBg: string
-  tagText: string
-  accentGlow: string
-  btnGuideBg: string
-}
-
-export interface SequentialPartItem {
-  id: string
-  globalPartNumber: number
-  title: string
-  subtitle: string
-  chipLabel: string
-  category: 'language' | 'boss'
-  difficulty: 'Pemula' | 'Menengah' | 'Sulit'
-  estimatedMinutes: number
-  xpReward: number
-  route: string
-  score?: number
-  is_skipped?: boolean
-  is_unlocked?: boolean
-  is_completed?: boolean
-  isNextActive?: boolean
-}
-
-export interface SequentialCurriculumUnit {
-  id: string
-  unitNumber: number
-  tag: string
-  title: string
-  description: string
-  unitType?: UnitType
-  totalXp: number
-  progressRate?: number
-  isUnlocked?: boolean
-  isCompleted?: boolean
-  isActive?: boolean
-  progressPercent?: number
-  completedCount?: number
-  theme?: UnitTheme
-  parts: SequentialPartItem[]
-}
-
-export type TrackIconType =
-  | 'nihongo'
-  | 'english'
-  | 'korean'
-  | 'german'
-  | 'mandarin'
-  | 'default'
 
 export interface CareerTrackOption {
   id: string
   slug: string
+  languageCode?: string
   title: string
   shortTitle: string
   subtitle: string
   category: 'language'
-  iconType: TrackIconType
   badgeLabel: string
   badgeVariant: 'active' | 'available' | 'featured'
   isActive: boolean
@@ -263,11 +208,8 @@ export interface CurriculumPartNode {
 export interface CurriculumUnitData {
   id: string
   unitNumber: number
-  tag: string
   title: string
   description: string
-  statusBadge: string
-  badgeType: CurriculumNodeStatus
   bannerGradient: string
   bannerBorder: string
   parts: CurriculumPartNode[]
