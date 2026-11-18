@@ -316,22 +316,16 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		}
 	}
 
-	preferredView := usr.PreferredRoadmapView
-	if preferredView == "" {
-		preferredView = "map"
-	}
-
 	return &OnboardingResultResponse{
 		User: usr.UserAccount,
 		Profile: user.UserProfile{
-			Name:                 usr.Name,
-			Username:             usr.Username,
-			Bio:                  usr.Bio,
-			AvatarURL:            usr.AvatarURL,
-			DailyGoalMinutes:     req.DailyGoalMinutes,
-			IsOnboarded:          true,
-			HasSeenRoadmapTour:   usr.HasSeenRoadmapTour,
-			PreferredRoadmapView: preferredView,
+			Name:               usr.Name,
+			Username:           usr.Username,
+			Bio:                usr.Bio,
+			AvatarURL:          usr.AvatarURL,
+			DailyGoalMinutes:   req.DailyGoalMinutes,
+			IsOnboarded:        true,
+			HasSeenRoadmapTour: usr.HasSeenRoadmapTour,
 		},
 		Enrollment:        *enrollment,
 		AssignedLevel:     *assignedLevel,

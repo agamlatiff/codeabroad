@@ -101,7 +101,7 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 	repo := user.NewMockRepository()
 	repo.Users["user-123"] = &user.User{
 		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@codeabroad.io"},
-		UserProfile: user.UserProfile{Name: "Initial", Username: "learner123", DailyGoalMinutes: 15, PreferredRoadmapView: "map"},
+		UserProfile: user.UserProfile{Name: "Initial", Username: "learner123", DailyGoalMinutes: 15},
 	}
 	uc := user.NewUsecase(repo)
 
@@ -126,11 +126,9 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 
 	spacedName := "  Budi Santoso  "
 	spacedBio := "  JLPT N4 Learner  "
-	view := "syllabus"
 	updated, err := uc.UpdateProfile(context.Background(), "user-123", &user.UpdateProfileRequest{
-		Name:                 &spacedName,
-		Bio:                  &spacedBio,
-		PreferredRoadmapView: &view,
+		Name: &spacedName,
+		Bio:  &spacedBio,
 	})
 	if err != nil {
 		t.Fatalf("expected valid update to succeed, got %v", err)
@@ -140,9 +138,6 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 	}
 	if updated.Bio == nil || *updated.Bio != "JLPT N4 Learner" {
 		t.Errorf("expected trimmed bio 'JLPT N4 Learner', got %v", updated.Bio)
-	}
-	if updated.PreferredRoadmapView != "syllabus" {
-		t.Errorf("expected preferred_roadmap_view 'syllabus', got %q", updated.PreferredRoadmapView)
 	}
 }
 

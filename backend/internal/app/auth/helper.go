@@ -166,9 +166,8 @@ func (h *Helper) BuildNewUser(req *RegisterRequest, hashedPassword string) *user
 		UserProfile: user.UserProfile{
 			Name:                 req.Name,
 			Username:             req.Username,
-			DailyGoalMinutes:     15,
-			IsOnboarded:          false,
-			PreferredRoadmapView: "map",
+			DailyGoalMinutes: 15,
+			IsOnboarded:      false,
 		},
 		UserGamificationStats: user.UserGamificationStats{
 			XP:           0,

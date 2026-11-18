@@ -35,7 +35,6 @@ const userSelectColumns = `
 	up.daily_goal_minutes,
 	up.is_onboarded,
 	up.has_seen_roadmap_tour,
-	up.preferred_roadmap_view,
 	ug.xp, 
 	ug.current_level, 
 	ug.streak, 
@@ -63,7 +62,6 @@ func scanUser(row pgx.Row, u *User) error {
 		&u.DailyGoalMinutes,
 		&u.IsOnboarded,
 		&u.HasSeenRoadmapTour,
-		&u.PreferredRoadmapView,
 		&u.XP,
 		&u.CurrentLevel,
 		&u.Streak,
@@ -83,12 +81,12 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
-			INSERT INTO user_profiles (user_id, name, username, avatar_url, is_onboarded, daily_goal_minutes, preferred_roadmap_view)
-			SELECT id, $3, $4, $5, $6, $7, COALESCE(NULLIF($8, ''), 'map') FROM new_user
+			INSERT INTO user_profiles (user_id, name, username, avatar_url, is_onboarded, daily_goal_minutes)
+			SELECT id, $3, $4, $5, $6, $7 FROM new_user
 		),
 		new_gamification AS (
 			INSERT INTO user_gamification (user_id, xp, current_level, streak, gems)
-			SELECT id, $9, $10, $11, $12 FROM new_user
+			SELECT id, $8, $9, $10, $11 FROM new_user
 		)
 		SELECT id, created_at, updated_at FROM new_user
 	`
@@ -102,7 +100,6 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 		u.AvatarURL,
 		u.IsOnboarded,
 		u.DailyGoalMinutes,
-		u.PreferredRoadmapView,
 		u.XP,
 		u.CurrentLevel,
 		u.Streak,
@@ -185,10 +182,9 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 			    END,
 			    daily_goal_minutes = COALESCE($5, daily_goal_minutes),
 			    has_seen_roadmap_tour = COALESCE($6, has_seen_roadmap_tour),
-			    preferred_roadmap_view = COALESCE($7, preferred_roadmap_view),
 			    updated_at = NOW()
 			WHERE user_id = $1::uuid
-			RETURNING user_id, name, username, bio, avatar_url, daily_goal_minutes, is_onboarded, has_seen_roadmap_tour, preferred_roadmap_view
+			RETURNING user_id, name, username, bio, avatar_url, daily_goal_minutes, is_onboarded, has_seen_roadmap_tour
 		)
 		SELECT
 			u.id,
@@ -201,7 +197,6 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 			up.daily_goal_minutes,
 			up.is_onboarded,
 			up.has_seen_roadmap_tour,
-			up.preferred_roadmap_view,
 			ug.xp,
 			ug.current_level,
 			ug.streak,
@@ -224,7 +219,6 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 			req.AvatarURL,
 			req.DailyGoalMinutes,
 			req.HasSeenRoadmapTour,
-			req.PreferredRoadmapView,
 		),
 		&u,
 	)

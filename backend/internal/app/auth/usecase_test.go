@@ -56,17 +56,13 @@ func TestRegister_Success(t *testing.T) {
 		t.Fatalf("expected DailyGoalMinutes 15, got: %d", res.User.DailyGoalMinutes)
 	}
 
-	if res.User.PreferredRoadmapView != "map" {
-		t.Fatalf("expected PreferredRoadmapView 'map', got: %s", res.User.PreferredRoadmapView)
-	}
-
 	savedUser, err := userRepo.GetByEmail(ctx, "test@example.com")
 	if err != nil || savedUser == nil {
 		t.Fatal("expected user to be persisted in repository")
 	}
 
-	if savedUser.DailyGoalMinutes != 15 || savedUser.PreferredRoadmapView != "map" {
-		t.Fatalf("expected persisted defaults DailyGoalMinutes=15 and PreferredRoadmapView='map', got %d and %q", savedUser.DailyGoalMinutes, savedUser.PreferredRoadmapView)
+	if savedUser.DailyGoalMinutes != 15 {
+		t.Fatalf("expected persisted default DailyGoalMinutes=15, got %d", savedUser.DailyGoalMinutes)
 	}
 
 	if len(sessionRepo.Sessions) == 0 {
@@ -630,8 +626,8 @@ func TestRegister_SetSessionFailure_GracefulDegradation(t *testing.T) {
 	if res.RefreshToken != "" {
 		t.Fatalf("expected empty RefreshToken when session persistence fails, got: %q", res.RefreshToken)
 	}
-	if res.User.DailyGoalMinutes != 15 || res.User.PreferredRoadmapView != "map" {
-		t.Fatalf("expected user defaults DailyGoalMinutes=15 and PreferredRoadmapView='map', got %d and %q", res.User.DailyGoalMinutes, res.User.PreferredRoadmapView)
+	if res.User.DailyGoalMinutes != 15 {
+		t.Fatalf("expected user default DailyGoalMinutes=15, got %d", res.User.DailyGoalMinutes)
 	}
 
 	savedUser, err := userRepo.GetByEmail(ctx, "graceful@example.com")

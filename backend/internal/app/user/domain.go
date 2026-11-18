@@ -36,9 +36,8 @@ type UserProfile struct {
 	Bio                  *string `json:"bio"`
 	AvatarURL            *string `json:"avatar_url,omitempty"`
 	DailyGoalMinutes     int     `json:"daily_goal_minutes"`
-	IsOnboarded          bool    `json:"is_onboarded"`
-	HasSeenRoadmapTour   bool    `json:"has_seen_roadmap_tour"`
-	PreferredRoadmapView string  `json:"preferred_roadmap_view"`
+	IsOnboarded        bool `json:"is_onboarded"`
+	HasSeenRoadmapTour bool `json:"has_seen_roadmap_tour"`
 }
 
 // UserGamificationStats represents Pillar 3: High-Concurrency Game Loop Stats (user_gamification table)
@@ -76,9 +75,8 @@ type UpdateProfileRequest struct {
 	Name                 *string `json:"name"`
 	Bio                  *string `json:"bio"`
 	AvatarURL            *string `json:"avatar_url"`
-	DailyGoalMinutes     *int    `json:"daily_goal_minutes" binding:"omitempty,oneof=5 15 30 45"`
-	HasSeenRoadmapTour   *bool   `json:"has_seen_roadmap_tour"`
-	PreferredRoadmapView *string `json:"preferred_roadmap_view" binding:"omitempty,oneof=map syllabus"`
+	DailyGoalMinutes   *int    `json:"daily_goal_minutes" binding:"omitempty,oneof=5 15 30 45"`
+	HasSeenRoadmapTour *bool   `json:"has_seen_roadmap_tour"`
 }
 
 // DailyActivityStat holds raw aggregated daily XP and completed lesson counts from persistence

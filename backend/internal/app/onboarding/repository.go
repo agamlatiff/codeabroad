@@ -57,7 +57,7 @@ func (s *PostgresStore) CompleteOnboardingTx(ctx context.Context, params *Comple
 	lockQuery := `
 		SELECT u.id, u.email, u.created_at, u.updated_at,
 		       up.name, up.username, up.bio, up.avatar_url, up.daily_goal_minutes,
-		       up.is_onboarded, up.has_seen_roadmap_tour, up.preferred_roadmap_view,
+		       up.is_onboarded, up.has_seen_roadmap_tour,
 		       ug.xp, ug.current_level, ug.streak, ug.gems, ug.last_active_at
 		FROM users u
 		JOIN user_profiles up ON up.user_id = u.id
@@ -68,7 +68,7 @@ func (s *PostgresStore) CompleteOnboardingTx(ctx context.Context, params *Comple
 	err = tx.QueryRow(ctx, lockQuery, params.UserID).Scan(
 		&usr.ID, &usr.Email, &usr.CreatedAt, &usr.UpdatedAt,
 		&usr.Name, &usr.Username, &usr.Bio, &usr.AvatarURL, &usr.DailyGoalMinutes,
-		&usr.IsOnboarded, &usr.HasSeenRoadmapTour, &usr.PreferredRoadmapView,
+		&usr.IsOnboarded, &usr.HasSeenRoadmapTour,
 		&usr.XP, &usr.CurrentLevel, &usr.Streak, &usr.Gems, &usr.LastActiveAt,
 	)
 	if err != nil {
@@ -213,22 +213,16 @@ func (s *PostgresStore) CompleteOnboardingTx(ctx context.Context, params *Comple
 		return nil, fmt.Errorf("failed to commit onboarding transaction: %w", err)
 	}
 
-	preferredView := usr.PreferredRoadmapView
-	if preferredView == "" {
-		preferredView = "map"
-	}
-
 	return &OnboardingResultResponse{
 		User: usr.UserAccount,
 		Profile: user.UserProfile{
-			Name:                 usr.Name,
-			Username:             usr.Username,
-			Bio:                  usr.Bio,
-			AvatarURL:            usr.AvatarURL,
-			DailyGoalMinutes:     params.DailyGoalMinutes,
-			IsOnboarded:          true,
-			HasSeenRoadmapTour:   usr.HasSeenRoadmapTour,
-			PreferredRoadmapView: preferredView,
+			Name:               usr.Name,
+			Username:           usr.Username,
+			Bio:                usr.Bio,
+			AvatarURL:          usr.AvatarURL,
+			DailyGoalMinutes:   params.DailyGoalMinutes,
+			IsOnboarded:        true,
+			HasSeenRoadmapTour: usr.HasSeenRoadmapTour,
 		},
 		Enrollment:        enrollment,
 		AssignedLevel:     *params.AssignedLevel,

@@ -5,17 +5,8 @@ import (
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
+	"codeabroad/backend/internal/shared/progression"
 )
-
-const xpPerLevel = 100
-
-var wibLocation = func() *time.Location {
-	loc, err := time.LoadLocation("Asia/Jakarta")
-	if err != nil {
-		return time.FixedZone("WIB", 7*3600)
-	}
-	return loc
-}()
 
 // Helper encapsulates business logic for curriculum unlocks and lesson completion evaluation
 type Helper struct{}
@@ -99,37 +90,12 @@ func (h *Helper) CanAccessLesson(isUnitUnlocked bool, prevLessonCompleted bool, 
 
 // EvaluateDailyStreak calculates the updated daily streak based on the last active timestamp adjusted to application timezone (WIB)
 func (h *Helper) EvaluateDailyStreak(currentStreak int, lastActiveAt *time.Time, now time.Time) (newStreak int, changed bool) {
-	loc := wibLocation
-
-	nowInWIB := now.In(loc)
-	today := time.Date(nowInWIB.Year(), nowInWIB.Month(), nowInWIB.Day(), 0, 0, 0, 0, loc)
-
-	newStreak = currentStreak
-	if lastActiveAt == nil {
-		newStreak = 1
-	} else {
-		lastInWIB := lastActiveAt.In(loc)
-		lastActiveDay := time.Date(lastInWIB.Year(), lastInWIB.Month(), lastInWIB.Day(), 0, 0, 0, 0, loc)
-		daysDiff := int(today.Sub(lastActiveDay) / (24 * time.Hour))
-
-		if daysDiff == 1 {
-			newStreak = currentStreak + 1
-		} else if daysDiff > 1 {
-			newStreak = 1
-		} else if currentStreak == 0 {
-			newStreak = 1
-		}
-	}
-
-	return newStreak, newStreak != currentStreak
+	return progression.EvaluateDailyStreak(lastActiveAt, currentStreak, now)
 }
 
 // CalculateLevel computes user level from total XP (100 XP per level, minimum level 1).
 func (h *Helper) CalculateLevel(xp int) int {
-	if xp < 0 {
-		return 1
-	}
-	return (xp / xpPerLevel) + 1
+	return progression.CalculateLevel(xp)
 }
 
 // ComputeVerifiedLessonScore validates exercise attempt completeness and calculates server-verified lesson accuracy.

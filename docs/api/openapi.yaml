@@ -292,9 +292,6 @@ paths:
                   enum: [5, 15, 30, 45]
                 has_seen_roadmap_tour:
                   type: boolean
-                preferred_roadmap_view:
-                  type: string
-                  enum: [map, syllabus]
       responses:
         "200":
           description: Profile updated

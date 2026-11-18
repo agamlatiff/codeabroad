@@ -125,9 +125,6 @@ func (m *MockRepository) UpdateProfile(ctx context.Context, userID string, req *
 	if req.HasSeenRoadmapTour != nil {
 		u.HasSeenRoadmapTour = *req.HasSeenRoadmapTour
 	}
-	if req.PreferredRoadmapView != nil {
-		u.PreferredRoadmapView = *req.PreferredRoadmapView
-	}
 	cp := *u
 	return &cp, nil
 }

@@ -40,7 +40,7 @@ func NewHelper() *Helper {
 func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) error {
 	if req == nil ||
 		(req.Name == nil && req.Bio == nil && req.AvatarURL == nil && req.DailyGoalMinutes == nil &&
-			req.HasSeenRoadmapTour == nil && req.PreferredRoadmapView == nil) {
+			req.HasSeenRoadmapTour == nil) {
 		return apperror.NewBadRequestError(
 			"EMPTY_UPDATE_PROFILE",
 			"minimal satu field profil harus diisi",
@@ -114,22 +114,6 @@ func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) er
 		}
 	}
 
-	return h.ValidateRoadmapView(req.PreferredRoadmapView)
-}
-
-// ValidateRoadmapView ensures preferred_roadmap_view is either "map" or "syllabus"
-func (h *Helper) ValidateRoadmapView(view *string) error {
-	if view == nil {
-		return nil
-	}
-	v := *view
-	if v != "map" && v != "syllabus" {
-		return apperror.NewBadRequestError(
-			"INVALID_ROADMAP_VIEW",
-			"preferred_roadmap_view harus bernilai 'map' atau 'syllabus'",
-			nil,
-		)
-	}
 	return nil
 }
 

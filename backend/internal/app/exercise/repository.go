@@ -409,7 +409,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 				JOIN proficiency_levels pl ON u.level_id = pl.id
 				WHERE pl.language_id = NULLIF($1, '')::uuid
 				  AND u.unit_type = 'diagnostic_exam'
-				  AND u.order_index = 0
+				  AND u.order_index <= 0
 			) AS has_placement
 		)
 		SELECT ` + prefixedSanitizedExerciseSelectColumns + `
@@ -420,7 +420,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 		CROSS JOIN placement_unit_exists pue
 		WHERE pl.language_id = NULLIF($1, '')::uuid
 		  AND (
-			(pue.has_placement AND u.unit_type = 'diagnostic_exam' AND u.order_index = 0)
+			(pue.has_placement AND u.unit_type = 'diagnostic_exam' AND u.order_index <= 0)
 			OR (NOT pue.has_placement AND u.unit_type = 'curriculum')
 		  )
 		ORDER BY pl.order_index ASC, u.order_index ASC, l.order_index ASC, e.order_index ASC, e.id ASC

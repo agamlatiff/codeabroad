@@ -141,7 +141,7 @@ func TestCompleteOnboarding_ManualSelect_InvalidLevel_And_StreakPreservation(t *
 	uRepo := user.NewMockRepository()
 	uRepo.Users["user-1"] = &user.User{
 		UserAccount: user.UserAccount{ID: "user-1"},
-		UserProfile: user.UserProfile{IsOnboarded: false, PreferredRoadmapView: "syllabus"},
+		UserProfile: user.UserProfile{IsOnboarded: false},
 		UserGamificationStats: user.UserGamificationStats{
 			XP:           10,
 			CurrentLevel: 1,
@@ -176,7 +176,7 @@ func TestCompleteOnboarding_ManualSelect_InvalidLevel_And_StreakPreservation(t *
 		t.Fatal("expected error when manual_level_id does not belong to language")
 	}
 
-	// Valid zero_beginner must preserve existing streak of 5 and PreferredRoadmapView
+	// Valid zero_beginner must preserve existing streak of 5
 	res, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
 		LanguageID:           "lang-ja",
 		DailyGoalMinutes:     15,
@@ -187,9 +187,6 @@ func TestCompleteOnboarding_ManualSelect_InvalidLevel_And_StreakPreservation(t *
 	}
 	if res.GamificationStats.Streak != 5 {
 		t.Errorf("expected existing streak 5 to be preserved, got %d", res.GamificationStats.Streak)
-	}
-	if res.Profile.PreferredRoadmapView != "syllabus" {
-		t.Errorf("expected PreferredRoadmapView 'syllabus', got %q", res.Profile.PreferredRoadmapView)
 	}
 }
 
