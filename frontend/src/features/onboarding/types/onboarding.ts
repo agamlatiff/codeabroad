@@ -65,7 +65,6 @@ export interface OnboardingV3ResultResponse {
   profile: {
     daily_goal_minutes: number
     is_onboarded: boolean
-    preferred_roadmap_view: 'map' | 'syllabus'
   }
   enrollment: {
     id: string
@@ -92,5 +91,4 @@ export interface OnboardingProfileResponse {
   assigned_level_name?: string
   language_code?: string
   language_name?: string
-  preferred_roadmap_view?: 'map' | 'syllabus' | null
 }

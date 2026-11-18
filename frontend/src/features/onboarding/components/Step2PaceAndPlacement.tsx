@@ -178,21 +178,21 @@ export const Step2PaceAndPlacement = ({
                     : 'bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
-                <PlacementPathIllustration type={opt.type} active={isSelected} />
+                <div className="flex items-start justify-between gap-2">
+                  <PlacementPathIllustration type={opt.type} active={isSelected} />
+                  <div className="flex items-center gap-1">
+                    <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
+                      {opt.badge}
+                    </BadgePill>
+                    {isSelected && (
+                      <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />
+                    )}
+                  </div>
+                </div>
 
                 <div className="flex-1 flex flex-col justify-between gap-2">
                   <div>
-                    <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-extrabold text-slate-900">{opt.title}</h3>
-                        {isSelected && (
-                          <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />
-                        )}
-                      </div>
-                      <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
-                        {opt.badge}
-                      </BadgePill>
-                    </div>
+                    <h3 className="text-base font-extrabold text-slate-900 mb-1">{opt.title}</h3>
                     <p className="text-xs text-slate-600 leading-relaxed">{opt.description}</p>
                   </div>
 

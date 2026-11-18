@@ -1,26 +1,8 @@
-import React from 'react'
 import { LockSimple } from '@phosphor-icons/react'
 import type { OnboardingLanguage } from '@/features/onboarding/types/onboarding'
-import {
-  JapanFlagIllustration,
-  GermanyFlagIllustration,
-  UKFlagIllustration,
-  USFlagIllustration,
-  ChinaFlagIllustration,
-  FranceFlagIllustration,
-} from './illustrations/FlagIllustrations'
+import { LanguageFlagIllustration } from './illustrations/FlagIllustrations'
 import { BadgePill } from './BadgePill'
 import { triggerHaptic } from '@/shared/utils/haptics'
-
-const FLAG_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
-  ja: JapanFlagIllustration,
-  de: GermanyFlagIllustration,
-  en: UKFlagIllustration,
-  'en-gb': UKFlagIllustration,
-  'en-us': USFlagIllustration,
-  zh: ChinaFlagIllustration,
-  fr: FranceFlagIllustration,
-}
 
 const LANGUAGE_META: Record<string, { countryLabel: string; description: string; examLabel: string }> = {
   ja: {
@@ -77,7 +59,6 @@ export const Step1LanguagePicker = ({
         const code = lang.code?.toLowerCase() || 'ja'
         const isSelected = selectedLanguageId === lang.id
         const isActive = lang.is_active
-        const FlagIllustration = FLAG_MAP[code] || JapanFlagIllustration
         const meta = LANGUAGE_META[code] ?? {
           countryLabel: lang.name,
           description: 'Pelajari bahasa ini secara terstruktur dari nol hingga mahir.',
@@ -125,7 +106,7 @@ export const Step1LanguagePicker = ({
             </div>
 
             <div className="w-24 h-20 mb-4 flex items-center justify-center">
-              <FlagIllustration className="w-full h-full object-contain drop-shadow-xs" />
+              <LanguageFlagIllustration code={code} className="w-full h-full object-contain drop-shadow-xs" />
             </div>
 
             <h3 className="text-lg font-extrabold text-slate-900">{lang.name}</h3>

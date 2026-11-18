@@ -55,7 +55,6 @@ export const onboardingService = {
         assigned_level_name: resData.assigned_level?.name,
         language_code: resData.enrollment?.language?.code,
         language_name: resData.enrollment?.language?.name,
-        preferred_roadmap_view: resData.profile?.preferred_roadmap_view ?? 'map',
       }
     }
     throw new Error(response.data.error || 'Gagal menyelesaikan onboarding')
