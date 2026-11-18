@@ -11,7 +11,7 @@ type CleanupCallback = () => void
 const cleanupCallbacks = new Set<CleanupCallback>()
 
 /**
- * Allows feature stores (e.g., authStore, onboardingStore, curriculumStore) to register
+ * Allows feature stores (e.g., authStore, onboardingStore) to register
  * reset handlers executed on sign-out without introducing shared -> features imports.
  */
 export const registerSessionResetHandler = (fn: CleanupCallback): (() => void) => {

@@ -5,7 +5,6 @@
  * style varian Card, dan kontrol formulir input (FORM_TOKENS).
  *
  * NOTE:
- * - Warna background/border formulir merujuk ke colorTokens.ts
  * - Ketinggian bayangan tombol berada di elevationTokens.ts
  */
 

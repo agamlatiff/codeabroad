@@ -2,7 +2,6 @@ import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { TrackSwitcherModal } from "@/shared/components/layout/top-bar/TrackSwitcherModal"
-import { LeaderboardModal } from "@/features/leaderboard/components/LeaderboardModal"
 import { ChestRewardModal } from "@/features/gamification/components/ChestRewardModal"
 import { MonthlyBadgeModal } from "@/features/gamification/components/MonthlyBadgeModal"
 import { CVReviewSubmissionModal } from "@/features/gamification/components/CVReviewSubmissionModal"
@@ -39,8 +38,6 @@ export const QuestLogPage = () => {
     activeTrack,
     isCourseSwitcherOpen,
     setIsCourseSwitcherOpen,
-    isLeaderboardOpen,
-    setIsLeaderboardOpen,
     selectedChestForModal,
     isChestModalOpen,
     setIsChestModalOpen,
@@ -94,7 +91,6 @@ export const QuestLogPage = () => {
           <AppTopBar
             activeTrack={activeTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
-            onOpenLeaderboard={() => setIsLeaderboardOpen(true)}
             completedCount={completedCount}
             totalCount={totalCount}
             progressPercent={progressPercent}
@@ -389,11 +385,6 @@ export const QuestLogPage = () => {
         currentTrack={activeTrack}
         onSelectTrack={(langId) => void handleSelectTrack(langId)}
         trackProgressMap={EMPTY_PROGRESS_MAP}
-      />
-
-      <LeaderboardModal
-        isOpen={isLeaderboardOpen}
-        onClose={() => setIsLeaderboardOpen(false)}
       />
 
       {selectedChestForModal && (

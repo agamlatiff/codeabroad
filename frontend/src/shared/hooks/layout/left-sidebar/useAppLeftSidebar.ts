@@ -2,6 +2,7 @@ import { useState, useCallback, useMemo } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  BookOpenText,
   Brain,
   SquaresFour,
   Target,
@@ -54,9 +55,15 @@ export const useAppLeftSidebar = () => {
     const rawItems = [
       {
         label: 'Belajar',
-        tooltip: 'Belajar • Peta & Silabus',
+        tooltip: 'Belajar • Peta Belajar',
         href: '/curriculum',
         icon: SquaresFour,
+      },
+      {
+        label: 'Grammar',
+        tooltip: 'Panduan Grammar',
+        href: '/grammar',
+        icon: BookOpenText,
       },
       {
         label: 'Ulasan',

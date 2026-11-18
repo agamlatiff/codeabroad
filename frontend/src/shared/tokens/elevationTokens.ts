@@ -4,7 +4,6 @@
  * hover, pressed active state, glow), efek kaca frosted glass, dan urutan tumpukan z-index layer.
  *
  * NOTE:
- * - Warna bayangan merujuk ke colorTokens.ts
  * - Ukuran tombol & border radius berada di layoutTokens.ts
  */
 

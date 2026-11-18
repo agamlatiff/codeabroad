@@ -17,7 +17,6 @@ const persistedUserSchema = z.object({
   is_onboarded: z.boolean().optional().default(false),
   daily_goal_minutes: z.number().optional(),
   has_seen_roadmap_tour: z.boolean().optional(),
-  preferred_roadmap_view: z.enum(['map', 'syllabus']).nullable().optional(),
   avatar_url: z.string().nullable().optional(),
   xp: z.number().optional().default(0),
   current_level: z.number().optional().default(1),

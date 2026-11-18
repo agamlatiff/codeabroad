@@ -1,23 +1,11 @@
 import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
-import {
-  Check,
-  CaretRight,
-  Sparkle,
-  X,
-  MapTrifold,
-  ListChecks,
-  RocketLaunch,
-  Translate,
-  LockSimple,
-  Compass,
-} from '@phosphor-icons/react'
-import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
-import { TechNihongoLogo } from "@/shared/components/ui/BrandLogos"
-import { Button3D } from "@/shared/components/ui/Button3D"
-import { triggerHaptic } from "@/shared/utils/haptics"
-import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
-import { useCurriculumSwitcherModal } from "@/features/curriculum/hooks/useCurriculumSwitcherModal"
+import { Check, X, RocketLaunch, Translate, LockSimple } from '@phosphor-icons/react'
+import { Button3D } from '@/shared/components/ui/Button3D'
+import { triggerHaptic } from '@/shared/utils/haptics'
+import type { CareerTrackOption } from '@/features/curriculum/types/curriculum'
+import { useCurriculumSwitcherModal } from '@/features/curriculum/hooks/useCurriculumSwitcherModal'
+import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 
 export interface TrackSwitcherModalProps {
   isOpen: boolean
@@ -25,19 +13,9 @@ export interface TrackSwitcherModalProps {
   currentTrack: string
   onSelectTrack: (trackIdOrSlug: string) => void
   trackProgressMap?: Record<string, { completed: number; total: number }>
-  viewMode?: 'map' | 'syllabus'
-  onChangeViewMode?: (mode: 'map' | 'syllabus') => void
-  mode?: 'language'
 }
 
-const renderBrandIcon = (type: CareerTrackOption['iconType']) => {
-  if (type === 'nihongo') {
-    return <TechNihongoLogo className="w-6 h-6" />
-  }
-  return <Translate weight="bold" className="w-6 h-6 text-blue-600" />
-}
-
-interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen' | 'mode'> {
+interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen'> {
   trackOptions: CareerTrackOption[]
 }
 
@@ -46,12 +24,9 @@ const TrackSwitcherDialog = ({
   currentTrack,
   onSelectTrack,
   trackProgressMap,
-  viewMode = 'map',
-  onChangeViewMode,
   trackOptions,
 }: TrackSwitcherDialogProps) => {
   const [selectedTrack, setSelectedTrack] = useState<string>(currentTrack)
-  const [selectedView, setSelectedView] = useState<'map' | 'syllabus'>(viewMode)
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -63,16 +38,6 @@ const TrackSwitcherDialog = ({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [onClose])
 
-  const handleTrackCardClick = (track: CareerTrackOption) => {
-    triggerHaptic('tap')
-    setSelectedTrack(track.id)
-  }
-
-  const handleViewModeCardClick = (nextMode: 'map' | 'syllabus') => {
-    triggerHaptic('tap')
-    setSelectedView(nextMode)
-  }
-
   const handleConfirm = () => {
     triggerHaptic('success')
     const selectedOption = trackOptions.find(
@@ -82,9 +47,6 @@ const TrackSwitcherDialog = ({
     const shouldActivatePreview = Boolean(selectedOption && !selectedOption.isActive)
     if (targetIdentifier && (targetIdentifier !== currentTrack || shouldActivatePreview)) {
       onSelectTrack(targetIdentifier)
-    }
-    if (onChangeViewMode && selectedView !== viewMode) {
-      onChangeViewMode(selectedView)
     }
     onClose()
   }
@@ -102,86 +64,64 @@ const TrackSwitcherDialog = ({
     const percent = total > 0 ? Math.min(100, Math.round((completed / total) * 100)) : 0
 
     return (
-      <div
+      <button
         key={track.id}
-        role="button"
-        tabIndex={0}
-        onClick={() => handleTrackCardClick(track)}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault()
-            handleTrackCardClick(track)
-          }
+        type="button"
+        onClick={() => {
+          triggerHaptic('tap')
+          setSelectedTrack(track.id)
         }}
-        className={`group relative rounded-2xl p-4 border-2 transition-all cursor-pointer ${
+        className={`group text-left rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
           isSelected
-            ? 'bg-blue-50/70 border-blue-500 shadow-xs ring-2 ring-blue-400/30'
+            ? 'bg-blue-50/70 border-[#2563EB] shadow-sm -translate-y-0.5'
             : isUnenrolled
               ? 'bg-slate-50/70 hover:bg-white border-slate-200 hover:border-blue-300'
-              : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
+              : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-blue-300'
         }`}
       >
-        <div className="flex items-start justify-between gap-3">
-          <div className="flex items-start gap-3 min-w-0 flex-1">
-            <div
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
-                isSelected
-                  ? 'bg-white border-blue-300 shadow-2xs'
-                  : 'bg-slate-50 border-slate-200 group-hover:bg-white'
-              }`}
-            >
-              {renderBrandIcon(track.iconType)}
-            </div>
-
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2 flex-wrap">
-                <h4 className="font-brand font-black text-sm text-slate-900 truncate">
-                  {track.title}
-                </h4>
-                {isSelected ? (
-                  <span className="bg-emerald-100 border border-emerald-300 text-emerald-800 font-brand font-black text-[10px] px-2 py-0.5 rounded-full flex items-center gap-1">
-                    <Check weight="bold" className="w-3 h-3" />
-                    <span>{isCurrent ? 'Aktif' : 'Dipilih'}</span>
-                  </span>
-                ) : track.badgeVariant === 'featured' ? (
-                  <span className="bg-rose-100 border border-rose-200 text-rose-700 font-brand font-black text-[10px] px-2 py-0.5 rounded-full">
-                    {track.badgeLabel}
-                  </span>
-                ) : track.badgeVariant === 'available' ? (
-                  <span className="bg-slate-100 text-slate-700 font-brand font-bold text-[10px] px-2 py-0.5 rounded-full inline-flex items-center gap-1">
-                    {isUnenrolled && <LockSimple weight="bold" className="w-2.5 h-2.5 text-blue-600" />}
-                    <span>{isUnenrolled ? 'Daftar & Pelajari' : track.badgeLabel}</span>
-                  </span>
-                ) : null}
-              </div>
-
-              <p className="text-xs text-slate-500 font-medium mt-1 line-clamp-2 leading-relaxed">
-                {track.subtitle}
-              </p>
-
-              {total > 0 && (
-                <div className="mt-2.5 flex items-center gap-3">
-                  <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                    <div
-                      className={`h-full rounded-full transition-all ${
-                        isSelected ? 'bg-blue-600' : 'bg-slate-300'
-                      }`}
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                  <span className="text-[11px] font-bold text-slate-600 shrink-0">
-                    {completed}/{total} Lesson ({percent}%)
-                  </span>
-                </div>
-              )}
-            </div>
+        <div className="flex items-start justify-between gap-2 w-full">
+          <div className="w-14 h-10 rounded-xl border border-slate-200 bg-white overflow-hidden flex items-center justify-center shrink-0">
+            <LanguageFlagIllustration code={track.languageCode} className="w-full h-full object-contain" />
           </div>
 
-          <div className="shrink-0 pt-1 text-slate-400 group-hover:text-slate-700 transition-colors">
-            <CaretRight weight="bold" className="w-4 h-4" />
-          </div>
+          {isSelected ? (
+            <span className="bg-emerald-100 border border-emerald-200 text-emerald-700 font-brand font-black text-[11px] px-2.5 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0">
+              <Check weight="bold" className="w-3 h-3" />
+              <span>{isCurrent ? 'Aktif' : 'Dipilih'}</span>
+            </span>
+          ) : isUnenrolled ? (
+            <span className="bg-slate-100 text-slate-600 font-brand font-bold text-[10px] px-2 py-0.5 rounded-full inline-flex items-center gap-1 shrink-0">
+              <LockSimple weight="bold" className="w-2.5 h-2.5 text-blue-600" />
+              <span>Daftar</span>
+            </span>
+          ) : null}
         </div>
-      </div>
+
+        <div className="min-w-0 w-full">
+          <h4 className="font-brand font-black text-base text-slate-900 truncate">
+            {track.title}
+          </h4>
+          <p className="text-xs text-slate-500 font-medium mt-0.5 truncate">
+            {track.subtitle}
+          </p>
+        </div>
+
+        {total > 0 && (
+          <div className="w-full space-y-1.5 pt-1">
+            <div className="w-full h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+              <div
+                className={`h-full rounded-full transition-all ${
+                  isSelected ? 'bg-[#2563EB]' : 'bg-slate-300'
+                }`}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+            <div className="text-[11px] font-semibold text-slate-500">
+              {completed}/{total} Lesson ({percent}%)
+            </div>
+          </div>
+        )}
+      </button>
     )
   }
 
@@ -189,24 +129,24 @@ const TrackSwitcherDialog = ({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Pilih Bahasa dan Gaya Belajar"
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none"
+      aria-label="Ganti Bahasa"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none"
     >
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative z-10 w-full max-w-lg bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col animate-pop">
+      <div className="relative z-10 w-full max-w-2xl bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col animate-pop">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
-              <Sparkle weight="fill" className="w-5 h-5 text-blue-600" />
+        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/70 shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+              <Translate weight="bold" className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-brand font-black text-base text-slate-900">
-                Pilih Bahasa &amp; Gaya Belajar
+              <h3 className="font-brand font-black text-lg text-slate-900">
+                Ganti Bahasa
               </h3>
-              <p className="text-xs text-slate-500 font-medium">
-                Beralih antar bahasa target yang terdaftar dan atur tampilan kurikulum Anda.
+              <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                Progres tiap bahasa tersimpan terpisah.
               </p>
             </div>
           </div>
@@ -215,157 +155,44 @@ const TrackSwitcherDialog = ({
             type="button"
             onClick={onClose}
             className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
-            aria-label="Tutup pengalih kurikulum"
+            aria-label="Tutup popup ganti bahasa"
           >
             <X weight="bold" className="w-4 h-4" />
           </button>
         </div>
 
         {/* Body */}
-        <div className="p-4 sm:p-5 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
-          {/* ── 1. VIEW MODE SELECTION ── */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-brand font-black text-amber-900 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                <Compass weight="fill" className="w-3.5 h-3.5 text-amber-700 shrink-0" />
-                <span>PILIH GAYA BELAJAR (TAMPILAN)</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">
-                Bisa diubah kapan saja
-              </span>
+        <div className="p-6 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
+          {enrolledLanguages.length === 0 ? (
+            <p className="text-sm text-slate-500 text-center py-6">
+              Memuat daftar bahasa terdaftar...
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              {enrolledLanguages.map(renderTrackCard)}
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-              <div
-                onClick={() => handleViewModeCardClick('map')}
-                className={`group relative rounded-2xl p-3.5 border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                  selectedView === 'map'
-                    ? 'bg-blue-50/80 border-blue-500 shadow-xs ring-2 ring-blue-400/30'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-start gap-2.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                      selectedView === 'map'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 border-slate-200 group-hover:bg-white'
-                    }`}
-                  >
-                    <MapTrifold weight="bold" className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <h5 className="font-brand font-black text-xs text-slate-900">
-                        Peta Jalur (RPG)
-                      </h5>
-                      {selectedView === 'map' && (
-                        <span className="bg-blue-100 text-blue-700 font-brand font-black text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                          <Check weight="bold" className="w-2.5 h-2.5" />
-                          <span>Dipilih</span>
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 font-medium mt-1 leading-snug">
-                      Peta langkah visual interaktif bersama Kodi & checkpoint setiap unit.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div
-                onClick={() => handleViewModeCardClick('syllabus')}
-                className={`group relative rounded-2xl p-3.5 border-2 transition-all cursor-pointer flex flex-col justify-between ${
-                  selectedView === 'syllabus'
-                    ? 'bg-blue-50/80 border-blue-500 shadow-xs ring-2 ring-blue-400/30'
-                    : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-slate-300'
-                }`}
-              >
-                <div className="flex items-start gap-2.5">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                      selectedView === 'syllabus'
-                        ? 'bg-blue-600 text-white border-blue-600 shadow-2xs'
-                        : 'bg-slate-100 text-slate-600 border-slate-200 group-hover:bg-white'
-                    }`}
-                  >
-                    <ListChecks weight="bold" className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-1">
-                      <h5 className="font-brand font-black text-xs text-slate-900">
-                        Silabus Modul
-                      </h5>
-                      {selectedView === 'syllabus' && (
-                        <span className="bg-blue-100 text-blue-700 font-brand font-black text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5">
-                          <Check weight="bold" className="w-2.5 h-2.5" />
-                          <span>Dipilih</span>
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-[11px] text-slate-500 font-medium mt-1 leading-snug">
-                      Daftar unit & lesson akordion terstruktur rapi dan cepat.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* ── 2. AVAILABLE LANGUAGES ── */}
-          <div className="space-y-2.5 pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between px-1">
-              <span className="text-[10px] font-brand font-black text-blue-900 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-2xs">
-                <Translate weight="bold" className="w-3.5 h-3.5" />
-                <span>BAHASA TERDAFTAR ANDA</span>
-              </span>
-              <span className="text-[10px] text-slate-400 font-medium">
-                Progres per bahasa tersimpan terpisah
-              </span>
-            </div>
-            <div className="space-y-2.5">
-              {enrolledLanguages.length === 0 ? (
-                <p className="text-xs text-slate-500 text-center py-6">
-                  Memuat daftar bahasa terdaftar...
-                </p>
-              ) : (
-                enrolledLanguages.map(renderTrackCard)
-              )}
-            </div>
-          </div>
+          )}
 
           {catalogLanguages.length > 0 && (
-            <div className="space-y-2.5 pt-2 border-t border-slate-100">
-              <div className="flex items-center justify-between px-1">
-                <span className="text-[10px] font-brand font-black text-slate-700 bg-slate-100 border border-slate-200 px-2 py-0.5 rounded-md">
-                  KATALOG BAHASA LAINNYA
-                </span>
-                <span className="text-[10px] text-slate-400 font-medium">
-                  Klik bahasa untuk daftar &amp; mulai belajar
-                </span>
+            <div className="space-y-3 pt-3 border-t border-slate-100">
+              <span className="text-[11px] font-brand font-black uppercase tracking-wider text-slate-500 block">
+                Bahasa Lainnya
+              </span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {catalogLanguages.map(renderTrackCard)}
               </div>
-              <div className="space-y-2.5">{catalogLanguages.map(renderTrackCard)}</div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="p-4 bg-slate-50 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2.5 text-xs text-slate-600 font-medium min-w-0 flex-1">
-            <div className="shrink-0 flex items-center justify-center">
-              <KodiCharacter emotion="coding" size={38} />
-            </div>
-            <p className="line-clamp-2">
-              <span className="font-bold text-slate-900">Tips Kodi:</span>{' '}
-              Latihan konsisten 10 menit per hari menjaga streak dan penguasaan bahasa Anda!
-            </p>
-          </div>
+        <div className="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-end shrink-0">
           <Button3D
             variant="blue"
             size="md"
             icon={<RocketLaunch weight="bold" className="w-4 h-4" />}
             onClick={handleConfirm}
-            className="w-full sm:w-auto text-xs px-5 py-2.5 font-brand font-black shrink-0"
+            className="w-full sm:w-auto text-sm px-6 py-2.5 font-brand font-black"
           >
             Mulai Belajar
           </Button3D>
@@ -376,18 +203,13 @@ const TrackSwitcherDialog = ({
   )
 }
 
-/**
- * TrackSwitcherModal
- * Curriculum & Language Selection Modal for backend-driven target languages.
- */
+/** Language Switcher Modal for enrolled target languages (shown only when 2+ languages exist). */
 export const TrackSwitcherModal = ({
   isOpen,
   onClose,
   currentTrack,
   onSelectTrack,
   trackProgressMap,
-  viewMode = 'map',
-  onChangeViewMode,
 }: TrackSwitcherModalProps) => {
   const { trackOptions: languageOptions } = useCurriculumSwitcherModal({
     enabled: isOpen,
@@ -401,13 +223,11 @@ export const TrackSwitcherModal = ({
 
   return (
     <TrackSwitcherDialog
-      key={`language-${currentTrack}-${viewMode}`}
+      key={`language-${currentTrack}`}
       onClose={onClose}
       currentTrack={currentTrack}
       onSelectTrack={onSelectTrack}
       trackProgressMap={trackProgressMap}
-      viewMode={viewMode}
-      onChangeViewMode={onChangeViewMode}
       trackOptions={languageOptions}
     />
   )

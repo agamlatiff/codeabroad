@@ -18,7 +18,7 @@ interface LeaderboardStandingsListProps {
 
 /**
  * Shared standings list (loading, error, empty state, competitor rows, current-user footer)
- * reused by both LeaderboardModal and LeaderboardPage.
+ * used by LeaderboardPage.
  */
 export const LeaderboardStandingsList = ({
   leaderboard,

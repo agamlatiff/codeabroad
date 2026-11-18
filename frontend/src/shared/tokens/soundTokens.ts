@@ -5,7 +5,6 @@
  *
  * NOTE:
  * - Getaran hardware sentuh berada di hapticTokens.ts
- * - Logika aturan game & reward XP berada di gamificationTokens.ts
  */
 
 export type SoundEffectType =
@@ -15,7 +14,6 @@ export type SoundEffectType =
   | 'modal_close'
   | 'quest_start'
   | 'node_locked'
-  | 'view_switch'
   | 'trophy_tap'
   | 'track_change'
   | 'yamanote_jingle'
@@ -179,31 +177,7 @@ export const SOUND_PRESETS: Record<SoundEffectType, SoundConfig> = {
     ],
   },
 
-  // 6. Crisp snappy mechanical slide click when toggling Map vs Syllabus
-  view_switch: {
-    volume: 0.25,
-    steps: [
-      {
-        freq: 920,
-        targetFreq: 1400,
-        type: 'triangle',
-        duration: 0.04,
-        gain: 0.35,
-        rampType: 'exponential',
-      },
-      {
-        freq: 1200,
-        targetFreq: 600,
-        type: 'sine',
-        duration: 0.05,
-        gain: 0.3,
-        delay: 0.03,
-        rampType: 'exponential',
-      },
-    ],
-  },
-
-  // 7. Shimmering golden chime when clicking the unit Trophy Milestone / Boss node
+  // 6. Shimmering golden chime when clicking the unit Trophy Milestone / Boss node
   trophy_tap: {
     volume: 0.4,
     steps: [

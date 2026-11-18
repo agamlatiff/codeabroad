@@ -62,7 +62,6 @@ export const useQuests = () => {
   const [activeTrack, setActiveTrack] = useState('')
 
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
-  const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false)
   const [selectedChestForModal, setSelectedChestForModal] = useState<DailyChestItem | null>(null)
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
   const [isMonthlyBadgeModalOpen, setIsMonthlyBadgeModalOpen] = useState(false)
@@ -504,8 +503,6 @@ export const useQuests = () => {
     activeTrack,
     isCourseSwitcherOpen,
     setIsCourseSwitcherOpen,
-    isLeaderboardOpen,
-    setIsLeaderboardOpen,
     selectedChestForModal,
     isChestModalOpen,
     setIsChestModalOpen,

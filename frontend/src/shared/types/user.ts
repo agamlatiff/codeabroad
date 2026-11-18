@@ -16,7 +16,6 @@ export interface UserProfile {
   is_onboarded: boolean
   daily_goal_minutes?: number
   has_seen_roadmap_tour?: boolean
-  preferred_roadmap_view?: 'map' | 'syllabus' | null
   avatar_url?: string | null
 }
 
@@ -35,7 +34,6 @@ export interface UpdateProfilePayload {
   bio?: string
   daily_goal_minutes?: number
   has_seen_roadmap_tour?: boolean
-  preferred_roadmap_view?: 'map' | 'syllabus'
 }
 
 export interface DailyActivityStat {

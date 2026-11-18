@@ -1,23 +1,19 @@
+import { useState, useRef, useEffect } from 'react'
 import {
   CaretDown,
   Fire,
   Star,
-  Trophy,
   Gift,
-  SpeakerHigh,
-  SpeakerLow,
-  SpeakerSimpleSlash,
   Translate,
 } from '@phosphor-icons/react'
-import { TechNihongoLogo } from "@/shared/components/ui/BrandLogos"
+import { LanguageFlagIllustration } from "@/features/onboarding/components/illustrations/FlagIllustrations"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
 import { triggerHaptic } from "@/shared/utils/haptics"
-import { useAudioStore } from "@/shared/store/audioStore"
+import { computeXpLevelProgress } from "@/shared/utils/progression"
 
 export interface AppTopBarProps {
   activeTrack: string
   onOpenCourseSwitcher: () => void
-  onOpenLeaderboard: () => void
   onOpenMobileSidebar?: () => void
   completedCount: number
   totalCount: number
@@ -28,7 +24,6 @@ export interface AppTopBarProps {
 export const AppTopBar = ({
   activeTrack,
   onOpenCourseSwitcher,
-  onOpenLeaderboard,
   onOpenMobileSidebar,
   completedCount,
   totalCount,
@@ -36,44 +31,77 @@ export const AppTopBar = ({
   unitLabel = 'Modul',
 }: AppTopBarProps) => {
   const {
+    rawXp,
     userXp,
     userStreak,
     userLevel,
     userGems,
     currentTrackConfig,
+    canSwitchLanguage,
   } = useAppTopBar(activeTrack)
 
-  const audioMode = useAudioStore((s) => s.audioMode)
-  const cycleAudioMode = useAudioStore((s) => s.cycleAudioMode)
+  const [showXpPopover, setShowXpPopover] = useState(false)
+  const xpPopoverRef = useRef<HTMLDivElement>(null)
+  const xpProgress = computeXpLevelProgress(rawXp, userLevel)
+
+  useEffect(() => {
+    if (!showXpPopover) return
+    const handleOutside = (e: MouseEvent) => {
+      if (xpPopoverRef.current && !xpPopoverRef.current.contains(e.target as Node)) {
+        setShowXpPopover(false)
+      }
+    }
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setShowXpPopover(false)
+    }
+    document.addEventListener('mousedown', handleOutside)
+    window.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('mousedown', handleOutside)
+      window.removeEventListener('keydown', handleKey)
+    }
+  }, [showXpPopover])
+
+  const trackLabelContent = (
+    <>
+      <div className="w-6 h-4 rounded-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+        {currentTrackConfig.languageCode ? (
+          <LanguageFlagIllustration code={currentTrackConfig.languageCode} className="w-full h-full object-contain" />
+        ) : (
+          <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
+        )}
+      </div>
+      <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
+        <span className="sm:hidden">{currentTrackConfig.shortTitle}</span>
+        <span className="hidden sm:inline">{currentTrackConfig.title}</span>
+      </span>
+    </>
+  )
 
   return (
     <div className="flex flex-col gap-2.5 sm:gap-3">
       {/* ── TOP / MAIN ROW: TRACK SWITCHER (LEFT) & GAME HUD CHIPS (RIGHT) ── */}
       <div className="flex items-center justify-between gap-2 min-w-0 w-full">
-        {/* Left: Clickable Track Switcher Pill & Inline Progress (XL) */}
+        {/* Left: Track Switcher Pill (interactive only when 2+ languages) & Inline Progress (XL) */}
         <div className="flex items-center gap-2.5 min-w-0 shrink">
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('tap')
-              onOpenCourseSwitcher()
-            }}
-            className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink min-w-0"
-            title="Bahasa dan jalur belajar saat ini. Klik untuk beralih."
-          >
-            <div className="w-5 h-5 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-              {currentTrackConfig.iconType === 'nihongo' ? (
-                <TechNihongoLogo className="w-3.5 h-3.5" />
-              ) : (
-                <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
-              )}
+          {canSwitchLanguage ? (
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                onOpenCourseSwitcher()
+              }}
+              className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 hover:border-blue-400 rounded-2xl shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 text-xs font-brand font-black text-slate-800 transition-all cursor-pointer group shrink min-w-0"
+              title="Bahasa dan jalur belajar saat ini. Klik untuk beralih."
+            >
+              {trackLabelContent}
+              <CaretDown weight="bold" className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
+            </button>
+          ) : (
+            <div className="flex items-center gap-2 sm:gap-2.5 px-2.5 sm:px-3.5 py-1.5 bg-white border-2 border-slate-200/90 rounded-2xl shadow-2xs text-xs font-brand font-black text-slate-800 shrink min-w-0">
+              {trackLabelContent}
             </div>
-            <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
-              <span className="sm:hidden">{currentTrackConfig.shortTitle}</span>
-              <span className="hidden sm:inline">{currentTrackConfig.title}</span>
-            </span>
-            <CaretDown weight="bold" className="w-3.5 h-3.5 text-blue-500 group-hover:text-blue-600 transition-colors shrink-0 ml-0.5" />
-          </button>
+          )}
 
           {/* Track Linear Progress Bar (Inline on Desktop XL Only) */}
           <div className="hidden xl:flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
@@ -112,83 +140,54 @@ export const AppTopBar = ({
               <span>{userGems}</span>
             </div>
 
-            {/* XP Star Chip */}
-            <div
-              className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 border border-amber-200/80 text-amber-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all"
-              title={`Total Pengalaman Belajar: ${userXp} XP`}
-            >
-              <Star weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
-              <span>{userXp}</span>
-              <span className="hidden sm:inline">&nbsp;XP</span>
+            {/* Unified XP & Level Chip + Progress Popover */}
+            <div className="relative" ref={xpPopoverRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setShowXpPopover((prev) => !prev)
+                }}
+                aria-expanded={showXpPopover}
+                className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/80 text-amber-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-colors cursor-pointer"
+                title={`Total ${userXp} XP • Lv. ${userLevel} (${xpProgress.xpInLevel}/${xpProgress.xpForNextLevel} XP) — Klik untuk detail`}
+              >
+                <Star weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+                <span>{userXp} XP</span>
+                <span className="hidden sm:inline text-amber-400">·</span>
+                <span className="hidden sm:inline text-blue-600">Lv. {userLevel}</span>
+              </button>
+
+              {showXpPopover && (
+                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border-2 border-slate-200/90 shadow-xl p-4 z-50 space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-brand font-black text-slate-900">
+                      Level {xpProgress.level}
+                    </span>
+                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                      {xpProgress.totalXp.toLocaleString()} Total XP
+                    </span>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="h-2.5 w-full rounded-full bg-slate-100 border border-slate-200/70 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
+                        style={{ width: `${xpProgress.progressPercent}%` }}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                      <span>{xpProgress.xpInLevel} / {xpProgress.xpForNextLevel} XP</span>
+                      <span>{xpProgress.progressPercent}%</span>
+                    </div>
+                  </div>
+
+                  <p className="text-[11px] text-slate-500 leading-snug">
+                    Butuh <span className="font-bold text-slate-700">{xpProgress.xpRemaining} XP</span> lagi untuk naik ke Lv. {xpProgress.level + 1}.
+                  </p>
+                </div>
+              )}
             </div>
-
-            {/* Kodi Companion Level Chip */}
-            <div
-              className="hidden sm:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-blue-50/90 border border-blue-200/80 text-blue-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-              title={`Level Kodi: Tingkat ${userLevel}`}
-            >
-              <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full bg-blue-500 animate-pulse shrink-0" />
-              <span className="hidden md:inline">Tingkat </span>
-              <span className="md:hidden">Lv.</span>
-              <span>{userLevel}</span>
-            </div>
-
-            {/* Global League Leaderboard Tactile Button */}
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic('tap')
-                onOpenLeaderboard()
-              }}
-              className="hidden md:flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-100/90 hover:bg-amber-200/90 border border-amber-300 border-b-2 border-b-amber-400 active:translate-y-0.5 text-amber-900 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer group"
-              title="Buka Papan Peringkat Liga Global"
-            >
-              <Trophy weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-600 group-hover:scale-110 transition-transform shrink-0" />
-              <span className="hidden md:inline">Liga</span>
-            </button>
-
-            {/* Audio Mode Tactile 3D Cycler */}
-            <button
-              type="button"
-              onClick={() => {
-                triggerHaptic('tap')
-                cycleAudioMode()
-              }}
-              className={`flex items-center gap-1 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl border border-b-2 active:translate-y-0.5 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-all cursor-pointer ${
-                audioMode === 'all'
-                  ? 'bg-emerald-50 hover:bg-emerald-100/80 border-emerald-300 border-b-emerald-400 text-emerald-800'
-                  : audioMode === 'sfx_only'
-                  ? 'bg-blue-50 hover:bg-blue-100/80 border-blue-300 border-b-blue-400 text-blue-800'
-                  : 'bg-slate-100 hover:bg-slate-200/80 border-slate-300 border-b-slate-400 text-slate-500'
-              }`}
-              title={`Mode Suara: ${
-                audioMode === 'all'
-                  ? 'Musik & Efek Suara Aktif (Klik untuk ganti ke SFX saja)'
-                  : audioMode === 'sfx_only'
-                  ? 'Efek Suara Saja (Klik untuk senyap)'
-                  : 'Semua Suara Dibisukan (Klik untuk aktifkan)'
-              }`}
-              aria-label="Pengaturan Mode Suara"
-            >
-              {audioMode === 'all' && (
-                <>
-                  <SpeakerHigh weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-600 animate-pulse" />
-                  <span className="hidden lg:inline text-[11px]">BGM & SFX</span>
-                </>
-              )}
-              {audioMode === 'sfx_only' && (
-                <>
-                  <SpeakerLow weight="bold" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" />
-                  <span className="hidden lg:inline text-[11px]">SFX Saja</span>
-                </>
-              )}
-              {audioMode === 'muted' && (
-                <>
-                  <SpeakerSimpleSlash weight="bold" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-400" />
-                  <span className="hidden lg:inline text-[11px]">Hening</span>
-                </>
-              )}
-            </button>
           </div>
 
           {/* ── SEPARATE STANDALONE 3D TACTILE GIFT BUTTON ── */}

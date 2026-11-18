@@ -15,6 +15,7 @@ import { Button3D } from "@/shared/components/ui/Button3D"
 import { UserAvatar } from './UserAvatar'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { useAudioStore } from "@/shared/store/audioStore"
+import { computeXpLevelProgress } from "@/shared/utils/progression"
 import {
   useSettingsModal,
   type UseSettingsModalOptions,
@@ -97,6 +98,23 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             <p className="text-xs text-slate-500 truncate">
               {user?.email || 'user@codeabroad.io'}
             </p>
+            {(() => {
+              const xpProgress = computeXpLevelProgress(user?.xp ?? 0, user?.current_level)
+              return (
+                <div className="mt-2 space-y-1">
+                  <div className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      className="h-full rounded-full bg-[#2563EB] transition-all duration-300"
+                      style={{ width: `${xpProgress.progressPercent}%` }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between text-[10px] font-semibold text-slate-500">
+                    <span>{xpProgress.xpInLevel}/{xpProgress.xpForNextLevel} XP</span>
+                    <span>{xpProgress.xpRemaining} XP lagi ke Lv. {xpProgress.level + 1}</span>
+                  </div>
+                </div>
+              )
+            })()}
           </div>
         </div>
 

@@ -10,7 +10,6 @@ import {
 } from '@/shared/constants/queryKeys'
 import type { CareerTrackOption } from '@/features/curriculum/types/curriculum'
 import { mapEnrollmentsToTrackOptions } from '@/features/curriculum/utils/curriculumMapper'
-import { resolveTrackIconType } from '@/features/curriculum/tokens/curriculumTokens'
 
 export const useAppTopBar = (activeTrack: string) => {
   const { data } = useUser()
@@ -29,7 +28,8 @@ export const useAppTopBar = (activeTrack: string) => {
     staleTime: 1000 * 60 * 10,
   })
 
-  const userXp = typeof activeUser?.xp === 'number' ? activeUser.xp.toLocaleString() : '0'
+  const rawXp = typeof activeUser?.xp === 'number' ? activeUser.xp : 0
+  const userXp = rawXp.toLocaleString()
   const userStreak = typeof activeUser?.streak === 'number' ? activeUser.streak : 0
   const userLevel = typeof activeUser?.current_level === 'number' ? activeUser.current_level : 1
   const userGems = typeof activeUser?.gems === 'number' ? activeUser.gems : 0
@@ -48,18 +48,21 @@ export const useAppTopBar = (activeTrack: string) => {
       shortTitle: 'Bahasa',
       subtitle: '',
       category: 'language',
-      iconType: resolveTrackIconType(activeTrack || ''),
       badgeLabel: 'Aktif',
       badgeVariant: 'active',
       isActive: true,
     }
 
+  const canSwitchLanguage = enrollments.length >= 2
+
   return {
+    rawXp,
     userXp,
     userStreak,
     userLevel,
     userGems,
     trackOptions,
     currentTrackConfig,
+    canSwitchLanguage,
   }
 }
