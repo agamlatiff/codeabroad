@@ -642,8 +642,8 @@ export const FlashcardPage = () => {
         </header>
 
         {/* Card Stage */}
-        <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-10 gap-6 max-w-2xl w-full mx-auto">
-          <div className="relative w-full max-w-lg mx-auto">
+        <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-10 gap-8 max-w-2xl w-full mx-auto overflow-x-clip">
+          <div className="relative w-full max-w-lg mx-auto mb-3 sm:mb-4">
             {/* Upcoming cards peeking fanned behind (real stack that shrinks as you review) */}
             {upcomingCards
               .slice()
@@ -652,15 +652,15 @@ export const FlashcardPage = () => {
                 const depth = upcomingCards.length - revIdx
                 const stackStyle =
                   depth === 1
-                    ? 'translate-x-3 translate-y-1.5 rotate-2'
+                    ? 'translate-x-2.5 sm:translate-x-3.5 translate-y-1 rotate-[1.5deg] scale-[0.985]'
                     : depth === 2
-                      ? 'translate-x-6 translate-y-3 rotate-[4deg]'
-                      : 'translate-x-9 translate-y-[18px] rotate-[6deg]'
+                      ? 'translate-x-5 sm:translate-x-7 translate-y-2 rotate-[3deg] scale-[0.97]'
+                      : 'translate-x-7 sm:translate-x-10 translate-y-3 rotate-[4.5deg] scale-[0.955]'
                 return (
                   <div
                     key={`upcoming-${card.id}`}
                     aria-hidden="true"
-                    className={`absolute inset-0 rounded-3xl bg-white border-2 border-slate-200/90 shadow-[0_6px_0_0_#E2E8F0] origin-bottom-left transition-transform duration-300 ${stackStyle}`}
+                    className={`pointer-events-none select-none absolute inset-0 rounded-3xl bg-white border-2 border-slate-200/90 shadow-[0_6px_0_0_#E2E8F0] origin-center transition-transform duration-300 ${stackStyle}`}
                     style={{ opacity: 1 - depth * 0.18 }}
                   >
                     <span className="absolute top-3 right-4 font-brand font-black text-sm text-slate-400 max-w-[120px] truncate">
@@ -669,7 +669,7 @@ export const FlashcardPage = () => {
                   </div>
                 )
               })}
-            <div className="relative">
+            <div className="relative z-10">
               <FlashcardFlipCard
                 key={`${currentCard.id}-${reviewedCount}`}
                 card={currentCard}
@@ -680,7 +680,7 @@ export const FlashcardPage = () => {
           </div>
 
           {/* Action Controls */}
-          <div className="w-full max-w-lg">
+          <div className="relative z-20 w-full max-w-lg">
             {!isFlipped ? (
               <Button3D
                 variant="blue"
