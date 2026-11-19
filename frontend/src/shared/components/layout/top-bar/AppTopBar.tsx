@@ -223,11 +223,16 @@ export const AppTopBar = ({
           {/* Read-only User Identity Chip */}
           {activeUser && (
             <div
-              className="hidden sm:flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-2xl bg-white border border-slate-200/90 shadow-2xs select-none"
+              className="hidden sm:flex items-center gap-2.5 p-1 pr-3.5 rounded-2xl bg-white border-2 border-slate-200/90 shadow-2xs select-none"
               title={activeUser.name || activeUser.username || 'Pembelajar'}
             >
-              <UserAvatar user={activeUser} size="xs" style={avatarStyle} />
-              <span className="text-[11px] font-brand font-bold text-slate-700 max-w-[96px] truncate">
+              <UserAvatar
+                user={activeUser}
+                size="md"
+                style={avatarStyle}
+                className="ring-2 ring-slate-100 shrink-0"
+              />
+              <span className="text-xs sm:text-[13px] font-brand font-black text-slate-700 max-w-[130px] truncate">
                 {activeUser.name || activeUser.username || 'Pembelajar'}
               </span>
             </div>
