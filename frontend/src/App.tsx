@@ -48,6 +48,11 @@ const LeaderboardPage = lazy(() =>
 const GrammarPage = lazy(() =>
   import('@/features/curriculum/pages/GrammarPage').then((m) => ({ default: m.GrammarPage }))
 )
+const GrammarDetailPage = lazy(() =>
+  import('@/features/curriculum/pages/GrammarDetailPage').then((m) => ({
+    default: m.GrammarDetailPage,
+  }))
+)
 const NotFoundPage = lazy(() =>
   import('@/shared/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 )
@@ -85,6 +90,7 @@ function App() {
               <Route path="/curriculum" element={<CurriculumPage />} />
               <Route path="/curriculum/:languageId" element={<CurriculumPage />} />
               <Route path="/grammar" element={<GrammarPage />} />
+              <Route path="/grammar/:id" element={<GrammarDetailPage />} />
               <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
               <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
               <Route path="/courses" element={<Navigate to="/curriculum" replace />} />

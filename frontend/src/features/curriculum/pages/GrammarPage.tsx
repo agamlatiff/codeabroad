@@ -1,26 +1,16 @@
-import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
+import { useState, useMemo } from 'react'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import {
   BookOpen,
   MagnifyingGlass,
-  SpeakerHigh,
   X,
   Quotes,
-  Copy,
-  Check,
   Eye,
   EyeSlash,
-  SquaresFour,
-  TextAa,
-  ArrowsLeftRight,
-  LinkSimple,
-  ClockCounterClockwise,
-  CrownSimple,
-  ArrowLeft,
   ArrowRight,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
-import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
@@ -28,8 +18,13 @@ import {
   GRAMMAR_POINTS_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
-import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
+import {
+  LEVEL_ACCENT_STYLES,
+  DEFAULT_LEVEL_ACCENT,
+  formatCategoryLabel,
+  renderCategoryIcon,
+} from '@/features/curriculum/constants/grammarStyles'
 
 type JlptLevelFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 
@@ -42,102 +37,53 @@ const JLPT_LEVEL_OPTIONS: Array<{ value: JlptLevelFilter; label: string }> = [
   { value: 'N1', label: 'N1' },
 ]
 
-const CATEGORY_LABELS: Record<string, string> = {
-  sentence_pattern: 'Pola Kalimat',
-  conjugation: 'Konjugasi',
-  particle: 'Partikel',
-  tense: 'Tense',
-  honorific: 'Keigo & Sopan',
-}
+const VALID_JLPT_FILTERS: ReadonlySet<JlptLevelFilter> = new Set([
+  'ALL',
+  'N5',
+  'N4',
+  'N3',
+  'N2',
+  'N1',
+])
 
-interface LevelAccentTheme {
-  topStrip: string
-  badge: string
-  hoverBorder: string
-}
-
-const LEVEL_ACCENT_STYLES: Record<string, LevelAccentTheme> = {
-  N5: {
-    topStrip: 'bg-gradient-to-r from-emerald-400 via-teal-400 to-emerald-500',
-    badge: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    hoverBorder: 'hover:border-emerald-300/90',
-  },
-  N4: {
-    topStrip: 'bg-gradient-to-r from-sky-400 via-blue-400 to-cyan-500',
-    badge: 'bg-sky-50 text-sky-700 border-sky-200',
-    hoverBorder: 'hover:border-sky-300/90',
-  },
-  N3: {
-    topStrip: 'bg-gradient-to-r from-violet-400 via-purple-400 to-indigo-500',
-    badge: 'bg-violet-50 text-violet-700 border-violet-200',
-    hoverBorder: 'hover:border-violet-300/90',
-  },
-  N2: {
-    topStrip: 'bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500',
-    badge: 'bg-amber-50 text-amber-800 border-amber-200',
-    hoverBorder: 'hover:border-amber-300/90',
-  },
-  N1: {
-    topStrip: 'bg-gradient-to-r from-rose-400 via-pink-500 to-rose-500',
-    badge: 'bg-rose-50 text-rose-700 border-rose-200',
-    hoverBorder: 'hover:border-rose-300/90',
-  },
-}
-
-const DEFAULT_LEVEL_ACCENT: LevelAccentTheme = {
-  topStrip: 'bg-gradient-to-r from-slate-400 to-slate-500',
-  badge: 'bg-slate-100 text-slate-700 border-slate-200',
-  hoverBorder: 'hover:border-blue-300/90',
-}
-
-function formatCategoryLabel(category: string): string {
-  return CATEGORY_LABELS[category] ?? category.replace(/_/g, ' ')
-}
-
-function renderCategoryIcon(category: string, className = 'w-3.5 h-3.5') {
-  switch (category) {
-    case 'ALL':
-      return <SquaresFour weight="bold" className={className} />
-    case 'sentence_pattern':
-      return <TextAa weight="bold" className={className} />
-    case 'conjugation':
-      return <ArrowsLeftRight weight="bold" className={className} />
-    case 'particle':
-      return <LinkSimple weight="bold" className={className} />
-    case 'tense':
-      return <ClockCounterClockwise weight="bold" className={className} />
-    case 'honorific':
-      return <CrownSimple weight="fill" className={className} />
-    default:
-      return <BookOpen weight="bold" className={className} />
-  }
+function parseLevelFilterParam(raw: string | null): JlptLevelFilter {
+  const upper = (raw ?? '').trim().toUpperCase() as JlptLevelFilter
+  return VALID_JLPT_FILTERS.has(upper) ? upper : 'N5'
 }
 
 /**
  * Full-width 3D tactile Grammar Guide (/grammar):
- * - Covers JLPT N5-N1 grammar patterns with gradient hero banner, level-colored accent strips,
- *   formula callouts with copy-to-clipboard, Romaji visibility toggle, and tactile Japanese TTS buttons.
+ * - Progressive disclosure: defaults to N5 so beginners see a focused grid rather than 56 cards at once.
+ * - Each card navigates cleanly to its dedicated `/grammar/:id` study page.
  */
 export const GrammarPage = () => {
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
+  const [searchParams, setSearchParams] = useSearchParams()
 
-  // Default to N5 so beginners see a focused set instead of the full 56-card wall.
-  const [levelFilter, setLevelFilter] = useState<JlptLevelFilter>('N5')
+  const levelFilter = useMemo(
+    () => parseLevelFilterParam(searchParams.get('level')),
+    [searchParams]
+  )
   const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
   const [showRomaji, setShowRomaji] = useState(true)
-  const [playingExampleKey, setPlayingExampleKey] = useState<string | null>(null)
-  const [copiedPointId, setCopiedPointId] = useState<string | null>(null)
-  const [selectedPointId, setSelectedPointId] = useState<string | null>(null)
-  const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  useEffect(() => {
-    return () => {
-      audioService.stopSpeech()
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-    }
-  }, [])
+  const handleSelectLevel = (nextLevel: JlptLevelFilter) => {
+    triggerHaptic('tap')
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        if (nextLevel === 'N5') {
+          next.delete('level')
+        } else {
+          next.set('level', nextLevel)
+        }
+        return next
+      },
+      { replace: true }
+    )
+  }
 
   const { data: grammarPoints = [], isLoading } = useQuery({
     queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, 'ja'],
@@ -195,65 +141,6 @@ export const GrammarPage = () => {
       )
     })
   }, [grammarPoints, levelFilter, categoryFilter, searchQuery])
-
-  const selectedIndex = useMemo(
-    () => (selectedPointId ? filteredPoints.findIndex((p) => p.id === selectedPointId) : -1),
-    [filteredPoints, selectedPointId]
-  )
-  const selectedPoint = selectedIndex >= 0 ? filteredPoints[selectedIndex] : null
-
-  const handleOpenPoint = (pointId: string) => {
-    triggerHaptic('tap')
-    setSelectedPointId(pointId)
-  }
-
-  const handleClosePoint = useCallback(() => {
-    audioService.stopSpeech()
-    setPlayingExampleKey(null)
-    setSelectedPointId(null)
-  }, [])
-
-  const handleStepPoint = (direction: -1 | 1) => {
-    const nextPoint = filteredPoints[selectedIndex + direction]
-    if (!nextPoint) return
-    triggerHaptic('tap')
-    audioService.stopSpeech()
-    setPlayingExampleKey(null)
-    setSelectedPointId(nextPoint.id)
-  }
-
-  const handlePlayExample = (exampleKey: string, japaneseText: string, rate?: number) => {
-    triggerHaptic('tap')
-    if (playingExampleKey === exampleKey) {
-      audioService.stopSpeech()
-      setPlayingExampleKey(null)
-      return
-    }
-    audioService.stopSpeech()
-    setPlayingExampleKey(exampleKey)
-    const clear = () => setPlayingExampleKey((prev) => (prev === exampleKey ? null : prev))
-    if (typeof rate === 'number') {
-      audioService.speakLanguage(japaneseText, 'ja-JP', clear, clear, rate)
-    } else {
-      audioService.speakJapanese(japaneseText, clear, clear)
-    }
-  }
-
-  const handleCopyFormula = async (pointId: string, formula: string) => {
-    triggerHaptic('tap')
-    try {
-      if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(formula)
-      }
-      setCopiedPointId(pointId)
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
-      copyTimerRef.current = setTimeout(() => {
-        setCopiedPointId((prev) => (prev === pointId ? null : prev))
-      }, 1500)
-    } catch {
-      // Degrade gracefully when clipboard permission is unavailable
-    }
-  }
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -314,10 +201,7 @@ export const GrammarPage = () => {
                   <button
                     key={opt.value}
                     type="button"
-                    onClick={() => {
-                      triggerHaptic('tap')
-                      setLevelFilter(opt.value)
-                    }}
+                    onClick={() => handleSelectLevel(opt.value)}
                     className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border-2 font-brand font-black text-xs transition-all cursor-pointer active:translate-y-0.5 ${
                       active
                         ? 'bg-[#2563EB] text-white border-[#1D4ED8] shadow-[0_3px_0_0_#1D4ED8]'
@@ -421,8 +305,8 @@ export const GrammarPage = () => {
               💡
             </span>
             <p className="leading-relaxed">
-              Mulai dari <b>satu materi</b> dulu. Klik kartu untuk membuka penjelasan lengkap, contoh kalimat,
-              dan audio pelan <b>0.6x</b>. Baris biru di bawah rumus adalah cara bacanya (Romaji).
+              Mulai dari <b>satu materi</b> dulu. Klik kartu untuk membuka halaman materi lengkap beserta penjelasan,
+              contoh kalimat, dan audio pelan <b>0.6x</b>. Baris biru di bawah rumus adalah cara bacanya (Romaji).
             </p>
           </div>
         )}
@@ -454,12 +338,12 @@ export const GrammarPage = () => {
               const exampleCount = point.examples?.length ?? 0
 
               return (
-                <button
+                <Link
                   key={point.id}
-                  type="button"
-                  onClick={() => handleOpenPoint(point.id)}
+                  to={`/grammar/${encodeURIComponent(point.code || point.id)}`}
+                  onClick={() => triggerHaptic('tap')}
                   aria-label={`Pelajari materi: ${point.title}`}
-                  className={`group text-left bg-white border-2 border-slate-200/90 ${accent.hoverBorder} rounded-3xl overflow-hidden shadow-[0_4px_0_0_#E2E8F0] hover:-translate-y-0.5 hover:shadow-[0_7px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-[0_2px_0_0_#E2E8F0] transition-all flex flex-col cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200`}
+                  className={`group text-left bg-white border-2 border-slate-200/90 ${accent.hoverBorder} rounded-3xl overflow-hidden shadow-[0_4px_0_0_#E2E8F0] hover:-translate-y-0.5 hover:shadow-[0_7px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-[0_2px_0_0_#E2E8F0] transition-all flex flex-col focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200`}
                 >
                   <div className={`h-1.5 w-full ${accent.topStrip}`} />
 
@@ -481,7 +365,7 @@ export const GrammarPage = () => {
                       </span>
                     </div>
 
-                    <h2 className="font-brand font-black text-[15px] sm:text-base text-slate-900 leading-snug line-clamp-2">
+                    <h2 className="font-brand font-black text-[15px] sm:text-base text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
                       {point.title}
                     </h2>
 
@@ -511,244 +395,12 @@ export const GrammarPage = () => {
                       </span>
                     </div>
                   </div>
-                </button>
+                </Link>
               )
             })}
           </div>
         )}
       </main>
-
-      {/* ── FOCUS STUDY MODAL: 1 grammar point at a time ── */}
-      <AccessibleModal
-        isOpen={Boolean(selectedPoint)}
-        onClose={handleClosePoint}
-        ariaLabel={selectedPoint ? `Materi grammar: ${selectedPoint.title}` : 'Materi grammar'}
-      >
-        {selectedPoint && (
-          <GrammarFocusPanel
-            point={selectedPoint}
-            positionLabel={`${selectedIndex + 1} / ${filteredPoints.length}`}
-            showRomaji={showRomaji}
-            isFormulaCopied={copiedPointId === selectedPoint.id}
-            playingExampleKey={playingExampleKey}
-            hasPrev={selectedIndex > 0}
-            hasNext={selectedIndex >= 0 && selectedIndex < filteredPoints.length - 1}
-            onPrev={() => handleStepPoint(-1)}
-            onNext={() => handleStepPoint(1)}
-            onClose={handleClosePoint}
-            onCopyFormula={() => void handleCopyFormula(selectedPoint.id, selectedPoint.formula)}
-            onPlayExample={handlePlayExample}
-          />
-        )}
-      </AccessibleModal>
-    </div>
-  )
-}
-
-interface GrammarFocusPanelProps {
-  point: GrammarPoint
-  positionLabel: string
-  showRomaji: boolean
-  isFormulaCopied: boolean
-  playingExampleKey: string | null
-  hasPrev: boolean
-  hasNext: boolean
-  onPrev: () => void
-  onNext: () => void
-  onClose: () => void
-  onCopyFormula: () => void
-  onPlayExample: (exampleKey: string, japaneseText: string, rate?: number) => void
-}
-
-const SLOW_SPEECH_RATE = 0.58
-
-const GrammarFocusPanel = ({
-  point,
-  positionLabel,
-  showRomaji,
-  isFormulaCopied,
-  playingExampleKey,
-  hasPrev,
-  hasNext,
-  onPrev,
-  onNext,
-  onClose,
-  onCopyFormula,
-  onPlayExample,
-}: GrammarFocusPanelProps) => {
-  const levelCode = (point.level_code ?? 'N5').toUpperCase()
-  const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
-  const examples = point.examples ?? []
-
-  return (
-    <div className="w-full max-w-2xl max-h-[90vh] bg-white rounded-3xl border-2 border-slate-200 shadow-[0_8px_0_0_#CBD5E1] overflow-hidden flex flex-col">
-      <div className={`h-2 w-full ${accent.topStrip}`} />
-
-      {/* Header */}
-      <div className="px-5 sm:px-6 pt-4 pb-3 flex items-start justify-between gap-3 border-b border-slate-100">
-        <div className="space-y-1.5 min-w-0">
-          <div className="flex items-center flex-wrap gap-1.5">
-            <span
-              className={`text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border ${accent.badge}`}
-            >
-              JLPT {levelCode}
-            </span>
-            <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200">
-              {renderCategoryIcon(point.category, 'w-3 h-3')}
-              <span>{formatCategoryLabel(point.category)}</span>
-            </span>
-            <span className="text-[10px] font-mono font-black text-slate-400">{positionLabel}</span>
-          </div>
-          <h2 className="font-brand font-black text-lg sm:text-xl text-slate-900 leading-snug">
-            {point.title}
-          </h2>
-        </div>
-        <button
-          type="button"
-          onClick={onClose}
-          aria-label="Tutup materi"
-          className="w-9 h-9 rounded-xl border-2 border-slate-200 bg-white hover:bg-slate-50 text-slate-500 flex items-center justify-center shrink-0 cursor-pointer shadow-[0_2px_0_0_#E2E8F0] active:translate-y-0.5"
-        >
-          <X weight="bold" className="w-4 h-4" />
-        </button>
-      </div>
-
-      {/* Body */}
-      <div className="flex-1 overflow-y-auto custom-scrollbar px-5 sm:px-6 py-4 space-y-4">
-        {/* Hero formula */}
-        <div className="rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50/70 to-white border-2 border-blue-200/80 p-4 space-y-2">
-          <p className="text-[10px] font-brand font-black uppercase tracking-wider text-blue-500">
-            Rumus
-          </p>
-          <code className="block font-mono text-sm sm:text-base font-extrabold text-blue-950 break-words">
-            {point.formula}
-          </code>
-          {showRomaji && point.formula_reading && (
-            <p className="text-xs sm:text-sm font-bold text-blue-600 break-words">
-              Cara baca: {point.formula_reading}
-            </p>
-          )}
-          <button
-            type="button"
-            onClick={onCopyFormula}
-            className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border text-[11px] font-brand font-black transition-all cursor-pointer active:translate-y-0.5 ${
-              isFormulaCopied
-                ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                : 'bg-white border-blue-200 text-blue-700 hover:bg-blue-50'
-            }`}
-          >
-            {isFormulaCopied ? (
-              <>
-                <Check weight="bold" className="w-3 h-3 text-emerald-600" />
-                <span>Disalin</span>
-              </>
-            ) : (
-              <>
-                <Copy weight="bold" className="w-3 h-3" />
-                <span>Salin Rumus</span>
-              </>
-            )}
-          </button>
-        </div>
-
-        {/* Explanation */}
-        <div className="space-y-1">
-          <p className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-500">
-            Penjelasan
-          </p>
-          <p className="text-sm text-slate-700 leading-relaxed">{point.explanation}</p>
-        </div>
-
-        {/* Examples */}
-        {examples.length > 0 && (
-          <div className="space-y-2">
-            <p className="inline-flex items-center gap-1.5 text-[10px] font-brand font-black uppercase tracking-wider text-slate-500">
-              <Quotes weight="fill" className="w-3 h-3 text-blue-500" />
-              <span>Contoh Kalimat</span>
-            </p>
-            {examples.map((ex, idx) => {
-              const normalKey = `${point.id}-${idx}-normal`
-              const slowKey = `${point.id}-${idx}-slow`
-              const isPlayingNormal = playingExampleKey === normalKey
-              const isPlayingSlow = playingExampleKey === slowKey
-
-              return (
-                <div
-                  key={`${point.id}-${idx}`}
-                  className="rounded-2xl bg-slate-50/95 border border-slate-200/80 px-3.5 py-3 flex items-start justify-between gap-3"
-                >
-                  <div className="flex items-start gap-2.5 min-w-0">
-                    <span className="mt-0.5 px-1.5 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-mono font-black text-slate-500 shrink-0 shadow-2xs">
-                      {String(idx + 1).padStart(2, '0')}
-                    </span>
-                    <div className="min-w-0 space-y-0.5">
-                      <p className="font-brand font-black text-base text-slate-900 break-words leading-snug">
-                        {ex.jp}
-                      </p>
-                      {showRomaji && ex.reading && (
-                        <p className="text-xs font-bold text-blue-600">{ex.reading}</p>
-                      )}
-                      <p className="text-xs sm:text-[13px] font-medium text-slate-600">{ex.id}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-1.5 shrink-0">
-                    <button
-                      type="button"
-                      onClick={() => onPlayExample(normalKey, ex.jp)}
-                      aria-label={`Putar audio normal: ${ex.jp}`}
-                      title="Putar kecepatan normal"
-                      className={`w-9 h-9 rounded-xl border-2 flex items-center justify-center transition-all cursor-pointer active:translate-y-0.5 ${
-                        isPlayingNormal
-                          ? 'bg-blue-600 border-blue-700 text-white shadow-[0_2px_0_0_#1D4ED8] animate-pulse'
-                          : 'bg-blue-50 hover:bg-blue-100 border-blue-200 text-blue-700 shadow-[0_2px_0_0_#BFDBFE]'
-                      }`}
-                    >
-                      <SpeakerHigh weight="fill" className="w-4 h-4" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => onPlayExample(slowKey, ex.jp, SLOW_SPEECH_RATE)}
-                      aria-label={`Putar audio pelan: ${ex.jp}`}
-                      title="Putar pelan 0.6x"
-                      className={`h-9 px-2 rounded-xl border-2 flex items-center justify-center gap-0.5 text-[10px] font-brand font-black transition-all cursor-pointer active:translate-y-0.5 ${
-                        isPlayingSlow
-                          ? 'bg-blue-600 border-blue-700 text-white shadow-[0_2px_0_0_#1D4ED8] animate-pulse'
-                          : 'bg-white hover:bg-blue-50 border-blue-200 text-blue-700 shadow-[0_2px_0_0_#BFDBFE]'
-                      }`}
-                    >
-                      <SpeakerHigh weight="bold" className="w-3.5 h-3.5" />
-                      0.6x
-                    </button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
-        )}
-      </div>
-
-      {/* Footer navigation */}
-      <div className="px-5 sm:px-6 py-3 border-t border-slate-100 bg-slate-50/60 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={onPrev}
-          disabled={!hasPrev}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border-2 border-slate-200 bg-white text-xs font-brand font-black text-slate-700 shadow-[0_2px_0_0_#E2E8F0] hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:translate-y-0.5"
-        >
-          <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
-          <span>Sebelumnya</span>
-        </button>
-        <button
-          type="button"
-          onClick={onNext}
-          disabled={!hasNext}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border-2 border-[#1D4ED8] bg-[#2563EB] text-xs font-brand font-black text-white shadow-[0_3px_0_0_#1D4ED8] hover:bg-blue-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:translate-y-0.5"
-        >
-          <span>Berikutnya</span>
-          <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-        </button>
-      </div>
     </div>
   )
 }
