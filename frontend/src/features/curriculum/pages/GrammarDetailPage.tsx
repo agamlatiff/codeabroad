@@ -13,6 +13,7 @@ import {
   SpeakerHigh,
   CaretRight,
   Sparkle,
+  ListBullets,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { Button3D } from '@/shared/components/ui/Button3D'
@@ -145,7 +146,7 @@ export const GrammarDetailPage = () => {
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       <AppLeftSidebar />
 
-      <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-12 py-6 pb-24 md:pb-16 space-y-6 max-w-5xl">
+      <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 pb-24 md:pb-12 space-y-6">
         {/* Breadcrumb Navigation & Back Link */}
         <nav aria-label="Breadcrumb" className="flex items-center justify-between gap-3 flex-wrap">
           <div className="flex items-center gap-2 text-xs font-brand font-bold text-slate-500">
@@ -200,15 +201,18 @@ export const GrammarDetailPage = () => {
 
         {/* Loading state skeleton */}
         {isLoading && (
-          <div className="space-y-4 animate-pulse">
-            <div className="h-44 rounded-3xl bg-white border-2 border-slate-200/80" />
-            <div className="h-60 rounded-3xl bg-white border-2 border-slate-200/80" />
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start animate-pulse">
+            <div className="xl:col-span-8 space-y-4">
+              <div className="h-56 rounded-3xl bg-white border-2 border-slate-200/80" />
+              <div className="h-64 rounded-3xl bg-white border-2 border-slate-200/80" />
+            </div>
+            <div className="xl:col-span-4 h-96 rounded-3xl bg-white border-2 border-slate-200/80" />
           </div>
         )}
 
         {/* Not Found state */}
         {!isLoading && !currentPoint && (
-          <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-12 text-center space-y-4 shadow-[0_4px_0_0_#E2E8F0]">
+          <div className="max-w-xl mx-auto bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-12 text-center space-y-4 shadow-[0_4px_0_0_#E2E8F0]">
             <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto">
               <BookOpen weight="duotone" className="w-8 h-8" />
             </div>
@@ -231,9 +235,10 @@ export const GrammarDetailPage = () => {
           </div>
         )}
 
-        {/* Main Learning Canvas */}
+        {/* Main 2-Column Learning Canvas */}
         {!isLoading && currentPoint && (
-          <article className="space-y-6">
+          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
+            <article className="xl:col-span-8 min-w-0 space-y-6">
             {/* Hero Header Card */}
             <section className="bg-white border-2 border-slate-200/90 rounded-3xl overflow-hidden shadow-[0_6px_0_0_#E2E8F0] relative">
               <div className={`h-2.5 w-full ${accent.topStrip}`} />
@@ -439,31 +444,106 @@ export const GrammarDetailPage = () => {
                 </button>
               )}
             </nav>
+          </article>
 
-            {/* Practice CTA Banner */}
-            <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-[0_6px_0_0_#1E40AF]">
+          {/* Right Sticky Outline Sidebar */}
+          <aside aria-label="Daftar materi JLPT" className="xl:col-span-4 xl:sticky xl:top-6 space-y-4">
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl shadow-[0_6px_0_0_#E2E8F0] overflow-hidden">
+              <div className={`h-1.5 w-full ${accent.topStrip}`} />
+
+              <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2 min-w-0">
+                  <ListBullets weight="bold" className="w-4 h-4 text-blue-600 shrink-0" />
+                  <h2 className="font-brand font-black text-sm text-slate-900 truncate">
+                    Daftar Materi JLPT {levelCode}
+                  </h2>
+                </div>
+                <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded-lg bg-slate-100 text-slate-600 shrink-0">
+                  {siblingIndex + 1}/{siblingPoints.length}
+                </span>
+              </div>
+
+              <div className="max-h-[440px] overflow-y-auto custom-scrollbar divide-y divide-slate-100">
+                {siblingPoints.map((item, idx) => {
+                  const isActive = item.id === currentPoint.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        if (!isActive) handleNavigatePoint(item)
+                      }}
+                      aria-current={isActive ? 'page' : undefined}
+                      className={`w-full text-left px-4 py-3 flex items-start gap-3 transition-colors cursor-pointer ${
+                        isActive
+                          ? 'bg-blue-50/90 border-l-4 border-l-blue-600'
+                          : 'hover:bg-slate-50'
+                      }`}
+                    >
+                      <span
+                        className={`mt-0.5 px-1.5 py-0.5 rounded-md text-[10px] font-mono font-black shrink-0 ${
+                          isActive
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-slate-100 text-slate-500 border border-slate-200/70'
+                        }`}
+                      >
+                        {String(idx + 1).padStart(2, '0')}
+                      </span>
+                      <div className="min-w-0 flex-1 space-y-0.5">
+                        <p
+                          className={`font-brand font-black text-xs leading-snug line-clamp-1 ${
+                            isActive ? 'text-blue-900' : 'text-slate-800'
+                          }`}
+                        >
+                          {item.title}
+                        </p>
+                        <p className="font-mono text-[11px] font-semibold text-slate-500 truncate">
+                          {item.formula}
+                        </p>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+
+              <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/60">
+                <Link
+                  to={`/grammar?level=${encodeURIComponent(levelCode)}`}
+                  onClick={() => triggerHaptic('tap')}
+                  className="inline-flex items-center gap-1.5 text-xs font-brand font-black text-blue-600 hover:text-blue-700 transition-colors"
+                >
+                  <span>Lihat Semua Materi</span>
+                  <ArrowRight weight="bold" className="w-3.5 h-3.5" />
+                </Link>
+              </div>
+            </div>
+
+            {/* Compact Practice CTA Card */}
+            <div className="p-5 rounded-3xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white space-y-4 shadow-[0_6px_0_0_#1E40AF]">
               <div className="space-y-1">
-                <h3 className="font-brand font-black text-base sm:text-lg">
+                <h3 className="font-brand font-black text-base">
                   Sudah paham konsep pola ini?
                 </h3>
-                <p className="text-xs sm:text-sm text-blue-100">
+                <p className="text-xs text-blue-100 leading-relaxed">
                   Latih langsung lewat soal latihan interaktif di kurikulum pembelajaran.
                 </p>
               </div>
               <Button3D
                 variant="white"
                 size="sm"
+                fullWidth
                 icon={<ArrowRight weight="bold" className="w-4 h-4 text-blue-600" />}
                 onClick={() => {
                   triggerHaptic('tap')
                   navigate('/curriculum')
                 }}
-                className="shrink-0 text-blue-700 font-brand font-black"
+                className="text-blue-700 font-brand font-black"
               >
                 Buka Kurikulum
               </Button3D>
             </div>
-          </article>
+          </aside>
+        </div>
         )}
       </main>
     </div>
