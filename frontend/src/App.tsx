@@ -53,6 +53,9 @@ const GrammarDetailPage = lazy(() =>
     default: m.GrammarDetailPage,
   }))
 )
+const KanaPage = lazy(() =>
+  import('@/features/curriculum/pages/KanaPage').then((m) => ({ default: m.KanaPage }))
+)
 const NotFoundPage = lazy(() =>
   import('@/shared/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 )
@@ -91,6 +94,7 @@ function App() {
               <Route path="/curriculum/:languageId" element={<CurriculumPage />} />
               <Route path="/grammar" element={<GrammarPage />} />
               <Route path="/grammar/:id" element={<GrammarDetailPage />} />
+              <Route path="/kana" element={<KanaPage />} />
               <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
               <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
               <Route path="/courses" element={<Navigate to="/curriculum" replace />} />

@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
@@ -5,9 +6,12 @@ import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSe
 import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { LessonFeedbackFooter } from '@/features/exercise/components/LessonFeedbackFooter'
 import { LessonGrammarDrawer } from '@/features/exercise/components/LessonGrammarDrawer'
-import { BookOpen, Sparkle } from '@phosphor-icons/react'
+import { LessonIntroView } from '@/features/exercise/components/LessonIntroView'
+import { getLessonIntroDeck } from '@/features/exercise/constants/lessonIntroCards'
+import { BookOpen, Sparkle, Translate } from '@phosphor-icons/react'
 
 const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
+  const [isIntroOpen, setIsIntroOpen] = useState<boolean | null>(null)
   const {
     lesson,
     exercises,
@@ -93,6 +97,21 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     )
   }
 
+  const introDeck = getLessonIntroDeck(lesson.slug)
+  const showingIntro = Boolean(introDeck) && (isIntroOpen ?? currentIndex === 0)
+
+  if (introDeck && showingIntro) {
+    return (
+      <LessonIntroView
+        lessonTitle={lesson.title}
+        xpReward={lesson.xp_reward}
+        deck={introDeck}
+        onExit={handleExitToCurriculum}
+        onStartQuiz={() => setIsIntroOpen(false)}
+      />
+    )
+  }
+
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
       <ExerciseSessionHeader
@@ -111,6 +130,17 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
               <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
               +{lesson.xp_reward} XP
             </span>
+
+            {introDeck && (
+              <button
+                type="button"
+                onClick={() => setIsIntroOpen(true)}
+                className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-extrabold text-emerald-700 transition-colors cursor-pointer"
+              >
+                <Translate weight="bold" className="w-4 h-4" />
+                <span className="hidden sm:inline">Kenali Huruf</span>
+              </button>
+            )}
 
             {lesson.grammar_points.length > 0 && (
               <button

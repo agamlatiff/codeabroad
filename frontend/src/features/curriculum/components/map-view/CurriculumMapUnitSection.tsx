@@ -44,7 +44,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
     <section className="space-y-4">
       {/* ── UNIT BANNER HEADER (Sticky per unit section on scroll) ── */}
       <div
-        className={`sticky top-3 z-20 max-w-xl mx-auto w-full text-white rounded-2xl px-5 py-3.5 sm:px-6 sm:py-4 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
+        className={`sticky top-3 z-20 w-full text-white rounded-2xl px-5 py-3.5 sm:px-6 sm:py-4 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
       >
         {/* Glossy Glass Reflection Highlight */}
         <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 via-white/5 to-transparent rounded-t-2xl pointer-events-none" />
@@ -92,7 +92,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
 
       {/* ── SERPENTINE SNAKE PATH ── */}
       {allNodes.length === 0 ? (
-        <div className="max-w-lg mx-auto py-8 text-center text-xs font-medium text-slate-500">
+        <div className="max-w-2xl mx-auto py-8 text-center text-xs font-medium text-slate-500">
           Belum ada lesson tersedia pada unit ini.
         </div>
       ) : (
@@ -120,7 +120,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
           </div>
 
           <div
-            className="relative w-full max-w-lg mx-auto overflow-visible"
+            className="relative w-full max-w-2xl mx-auto overflow-visible"
             style={{ height: `${totalHeight}px` }}
           >
             {/* ── CONTINUOUS SERPENTINE SVG TRACK ── */}

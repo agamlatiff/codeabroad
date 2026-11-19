@@ -132,7 +132,7 @@ export const MAP_MODAL_TOKENS = {
  */
 export const MAP_STAGE_TOKENS = {
   canvasContainer:
-    'max-w-2xl mx-auto w-full bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-7 relative overflow-visible space-y-12 sm:space-y-16 bg-[radial-gradient(#E2E8F0_1.2px,transparent_1.2px)] [background-size:24px_24px]',
+    'w-full bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-7 relative overflow-visible space-y-12 sm:space-y-16 bg-[radial-gradient(#E2E8F0_1.2px,transparent_1.2px)] [background-size:24px_24px]',
 } as const
 
 export const MAP_TRACK_TOKENS = {

@@ -6,11 +6,16 @@ import type {
   CompleteLessonRequest,
   CompleteLessonResponse,
   GrammarPoint,
+  KanaChartResponse,
+  KanaPracticeItem,
+  KanaPracticeResponse,
+  KanaScriptType,
 } from "@/features/curriculum/types/curriculum"
 
 export const CURRICULUM_QUERY_KEY = ['curriculum'] as const
 export const LESSON_DETAIL_QUERY_KEY = ['curriculum', 'lesson'] as const
 export const GRAMMAR_POINTS_QUERY_KEY = ['curriculum', 'grammar-points'] as const
+export const KANA_QUERY_KEY = ['curriculum', 'kana'] as const
 
 /**
  * Service managing language curriculum trees, lesson details, completion, and grammar references.
@@ -96,6 +101,35 @@ export const curriculumService = {
       signal: options?.signal,
     })
     return unwrapApiResponse(response, 'Gagal memuat daftar grammar.')
+  },
+
+  /**
+   * Fetches the full Hiragana/Katakana Gojuon chart merged with user mastery progress.
+   */
+  async getKanaChart(
+    script?: KanaScriptType,
+    options?: RequestOptions
+  ): Promise<KanaChartResponse> {
+    const response = await api.get<ApiResponse<KanaChartResponse>>('/curriculum/kana', {
+      params: script ? { script } : undefined,
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat daftar huruf Hiragana & Katakana.')
+  },
+
+  /**
+   * Records practice/quiz outcomes for one or more Kana characters atomically.
+   */
+  async submitKanaPractice(
+    results: KanaPracticeItem[],
+    options?: RequestOptions
+  ): Promise<KanaPracticeResponse> {
+    const response = await api.post<ApiResponse<KanaPracticeResponse>>(
+      '/curriculum/kana/practice',
+      { results },
+      { signal: options?.signal }
+    )
+    return unwrapApiResponse(response, 'Gagal menyimpan progres latihan huruf.')
   },
 }
 

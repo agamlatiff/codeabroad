@@ -10,6 +10,7 @@ export const MASCOT_TOKENS = {
     welcome: { label: 'Greeting / Hello', aura: 'rgba(59, 130, 246, 0.25)' },
     celebrate: { label: 'Yatta / Milestone Success', aura: 'rgba(16, 185, 129, 0.3)' },
     coding: { label: 'Deep Focus / Quest Active', aura: 'rgba(37, 99, 235, 0.25)' },
+    studying: { label: 'Language Study / Notebook', aura: 'rgba(16, 185, 129, 0.25)' },
     proud: { label: 'Boarding Pass / Offer Unlocked', aura: 'rgba(245, 158, 11, 0.3)' },
     warning: { label: 'Streak Alert / Daily Reminder', aura: 'rgba(251, 146, 60, 0.3)' },
   },

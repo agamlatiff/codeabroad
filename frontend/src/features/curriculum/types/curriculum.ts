@@ -69,9 +69,12 @@ export interface LessonNodeResponse {
   slug?: string
   unit_id: string
   title: string
+  short_title?: string
   icon_name?: string
   xp_reward: number
   order_index: number
+  total_exercises?: number
+  completed_exercises?: number
   is_unlocked: boolean
   is_completed: boolean
   score: number
@@ -124,6 +127,7 @@ export interface LessonDetailResponse {
   slug?: string
   unit_id: string
   title: string
+  short_title?: string
   icon_name?: string
   xp_reward: number
   order_index: number
@@ -135,6 +139,43 @@ export interface LessonDetailResponse {
   grammar_points: GrammarPoint[]
   exercises: CurriculumExercise[]
   created_at: string
+}
+
+export type KanaScriptType = 'hiragana' | 'katakana'
+
+export interface KanaCharacterItem {
+  id: string
+  character: string
+  script: KanaScriptType
+  romaji: string
+  row_group: string
+  row_order: number
+  col_order: number
+  mnemonic: string
+  example_word: string
+  example_reading: string
+  example_meaning: string
+  practice_count: number
+  correct_count: number
+  mastery_score: number
+  is_mastered: boolean
+}
+
+export interface KanaChartResponse {
+  script: string
+  total: number
+  mastered_count: number
+  characters: KanaCharacterItem[]
+}
+
+export interface KanaPracticeItem {
+  character: string
+  is_correct: boolean
+}
+
+export interface KanaPracticeResponse {
+  updated_count: number
+  mastered_total: number
 }
 
 export interface CompleteLessonRequest {
@@ -208,8 +249,11 @@ export interface CurriculumPartNode {
   id: string
   number: number
   title: string
+  shortTitle?: string
   subtitle: string
   iconName?: string
+  totalExercises?: number
+  completedExercises?: number
   status: CurriculumNodeStatus
   route: string
   xpReward: number
@@ -235,9 +279,12 @@ export interface CurriculumUnitData {
 export interface PathMapNode {
   id: string
   title: string
+  shortTitle?: string
   subtitle: string
   number?: number
   iconName?: string
+  totalExercises?: number
+  completedExercises?: number
   xpReward: number
   gemsReward?: number
   score?: number

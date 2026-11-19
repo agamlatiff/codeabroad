@@ -32,6 +32,8 @@ type MockRepository struct {
 	UserStreak           map[string]int
 	UserLastActiveAt     map[string]*time.Time
 	NextLessonID         *string
+	KanaCatalog          []KanaCharacterItem
+	KanaUserProgress     map[string]map[string]*KanaCharacterItem
 	GetGrammarPointsErr  error
 	GetUnitsErr          error
 	GetUnitByIDErr       error
@@ -254,6 +256,7 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 		LevelID:     levelID,
 		UnitType:    unitType,
 		Title:       l.Title,
+		ShortTitle:  l.ShortTitle,
 		IconName:    l.IconName,
 		XPReward:    l.XPReward,
 		OrderIndex:  l.OrderIndex,
@@ -757,5 +760,88 @@ func (m *MockRepository) GetGrammarPointsByLanguageCode(ctx context.Context, lan
 		return res[i].ID < res[j].ID
 	})
 	return res, nil
+}
+
+// ListKanaWithProgress returns mock Kana characters annotated with per-user practice state.
+func (m *MockRepository) ListKanaWithProgress(ctx context.Context, userID string, script string) ([]KanaCharacterItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	normalized := strings.ToLower(strings.TrimSpace(script))
+	res := make([]KanaCharacterItem, 0, len(m.KanaCatalog))
+	userMap := m.KanaUserProgress[userID]
+	for _, ch := range m.KanaCatalog {
+		if normalized != "" && ch.Script != normalized {
+			continue
+		}
+		item := ch
+		if userMap != nil {
+			if st, ok := userMap[ch.Character]; ok && st != nil {
+				item.PracticeCount = st.PracticeCount
+				item.CorrectCount = st.CorrectCount
+				item.MasteryScore = st.MasteryScore
+				item.IsMastered = st.IsMastered
+			}
+		}
+		res = append(res, item)
+	}
+	return res, nil
+}
+
+// RecordKanaPractice stores mock Kana mastery updates atomically for testing.
+func (m *MockRepository) RecordKanaPractice(ctx context.Context, userID string, results []KanaPracticeItem) (int, int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.KanaUserProgress == nil {
+		m.KanaUserProgress = make(map[string]map[string]*KanaCharacterItem)
+	}
+	if m.KanaUserProgress[userID] == nil {
+		m.KanaUserProgress[userID] = make(map[string]*KanaCharacterItem)
+	}
+	known := make(map[string]bool, len(m.KanaCatalog))
+	for _, ch := range m.KanaCatalog {
+		known[ch.Character] = true
+	}
+
+	updated := 0
+	for _, r := range results {
+		ch := strings.TrimSpace(r.Character)
+		if ch == "" || !known[ch] {
+			continue
+		}
+		st, ok := m.KanaUserProgress[userID][ch]
+		if !ok || st == nil {
+			st = &KanaCharacterItem{Character: ch}
+			m.KanaUserProgress[userID][ch] = st
+		}
+		st.PracticeCount++
+		if r.IsCorrect {
+			st.CorrectCount++
+			if st.PracticeCount == 1 {
+				st.MasteryScore = 50
+			} else {
+				st.MasteryScore += 35
+			}
+			if st.MasteryScore > 100 {
+				st.MasteryScore = 100
+			}
+		} else {
+			st.MasteryScore -= 10
+			if st.MasteryScore < 0 {
+				st.MasteryScore = 0
+			}
+		}
+		st.IsMastered = st.MasteryScore >= 70 || st.CorrectCount >= 2
+		updated++
+	}
+
+	masteredTotal := 0
+	for _, st := range m.KanaUserProgress[userID] {
+		if st != nil && st.IsMastered {
+			masteredTotal++
+		}
+	}
+	return updated, masteredTotal, nil
 }
 

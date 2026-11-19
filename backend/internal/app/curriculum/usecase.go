@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"sort"
+	"strings"
 	"sync"
 	"time"
 
@@ -312,6 +313,11 @@ type lessonSlugResolver interface {
 
 type grammarLevelFilterRepository interface {
 	GetGrammarPointsByLanguageCode(ctx context.Context, languageCode string, levelCode string) ([]GrammarPoint, error)
+}
+
+type kanaRepository interface {
+	ListKanaWithProgress(ctx context.Context, userID string, script string) ([]KanaCharacterItem, error)
+	RecordKanaPractice(ctx context.Context, userID string, results []KanaPracticeItem) (int, int, error)
 }
 
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
@@ -730,5 +736,68 @@ func (u *usecase) GetGrammarPointsByLevelFilter(ctx context.Context, userID stri
 		points = []GrammarPoint{}
 	}
 	return points, nil
+}
+
+// GetKanaChart returns the Hiragana or Katakana Gojuon matrix annotated with user mastery stats.
+func (u *usecase) GetKanaChart(ctx context.Context, userID string, script string) (*KanaChartResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	normalized := strings.ToLower(strings.TrimSpace(script))
+	if normalized == "all" {
+		normalized = ""
+	}
+	if normalized != "" && normalized != "hiragana" && normalized != "katakana" {
+		return nil, apperror.ErrBadRequest
+	}
+	kRepo, ok := u.curriculumRepo.(kanaRepository)
+	if !ok {
+		return &KanaChartResponse{Script: normalized, Characters: []KanaCharacterItem{}}, nil
+	}
+	items, err := kRepo.ListKanaWithProgress(ctx, userID, normalized)
+	if err != nil {
+		return nil, err
+	}
+	if items == nil {
+		items = []KanaCharacterItem{}
+	}
+	masteredCount := 0
+	for _, item := range items {
+		if item.IsMastered {
+			masteredCount++
+		}
+	}
+	respScript := normalized
+	if respScript == "" {
+		respScript = "all"
+	}
+	return &KanaChartResponse{
+		Script:        respScript,
+		Total:         len(items),
+		MasteredCount: masteredCount,
+		Characters:    items,
+	}, nil
+}
+
+// SubmitKanaPractice saves one or more Kana tracing or row-drill practice results.
+func (u *usecase) SubmitKanaPractice(ctx context.Context, userID string, req *KanaPracticeRequest) (*KanaPracticeResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	if req == nil || len(req.Results) == 0 {
+		return nil, apperror.ErrBadRequest
+	}
+	kRepo, ok := u.curriculumRepo.(kanaRepository)
+	if !ok {
+		return &KanaPracticeResponse{}, nil
+	}
+	updatedCount, masteredTotal, err := kRepo.RecordKanaPractice(ctx, userID, req.Results)
+	if err != nil {
+		return nil, err
+	}
+	return &KanaPracticeResponse{
+		UpdatedCount:  updatedCount,
+		MasteredTotal: masteredTotal,
+	}, nil
 }
 

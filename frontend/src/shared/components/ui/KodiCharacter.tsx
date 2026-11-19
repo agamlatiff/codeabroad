@@ -7,6 +7,7 @@ export type KodiEmotion =
   | 'welcome'
   | 'happy'
   | 'coding'
+  | 'studying'
   | 'celebrate'
   | 'thinking'
   | 'worried'
@@ -66,7 +67,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
   }
 
   // Normalize emotion aliases
-  const normalizedEmotion: 'welcome' | 'coding' | 'celebrate' | 'thinking' | 'worried' | 'onFire' =
+  const normalizedEmotion: 'welcome' | 'coding' | 'studying' | 'celebrate' | 'thinking' | 'worried' | 'onFire' =
     emotion === 'happy'
       ? 'welcome'
       : emotion === 'warning'
@@ -263,6 +264,87 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               <ellipse cx="114" cy="126" rx="6" ry="5" fill="#BAE6FD" opacity="0.6" />
               <ellipse cx="68" cy="130" rx="7" ry="5.5" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2" className="k-type-l" />
               <ellipse cx="112" cy="130" rx="7" ry="5.5" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2" className="k-type-r" />
+            </g>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              EMOTION 3B: STUDYING (WARM JAPANESE NOTEBOOK & PENCIL)
+          ══════════════════════════════════════════════════════════════════ */}
+          {normalizedEmotion === 'studying' && (
+            <g className="k-floaty">
+              <ellipse cx="90" cy="164" rx="44" ry="7" fill="rgba(15,23,42,0.12)" />
+              {/* Happy Swishing Tail */}
+              <path
+                d="M125,136 C153,140 163,116 149,96 C140,84 129,96 126,118 Z"
+                fill="#FFFBEB"
+                stroke="#0F172A"
+                strokeWidth="3.5"
+                className="k-tail-happy"
+              />
+              {/* Seamless Mochi Cat Body */}
+              <path
+                d="M50,96 C42,66 48,52 42,36 C40,28 48,24 56,30 C64,36 70,46 78,48 C84,49 96,49 102,48 C110,46 116,36 124,30 C132,24 140,28 138,36 C132,52 138,66 130,96 C130,140 118,154 90,154 C62,154 50,140 50,96 Z"
+                fill="#FFFFFF"
+                stroke="#0F172A"
+                strokeWidth="3.5"
+                strokeLinejoin="round"
+              />
+              {/* Pink Inner Ears */}
+              <polygon points="48,34 56,30 52,42" fill="#FECDD3" />
+              <polygon points="132,34 124,30 128,42" fill="#FECDD3" />
+              {/* Soft Blue Study Headband Accent */}
+              <path d="M53,58 Q90,46 127,58" stroke="#2563EB" strokeWidth="6" fill="none" strokeLinecap="round" />
+              <circle cx="90" cy="52" r="4.5" fill="#FBBF24" stroke="#0F172A" strokeWidth="1.8" />
+              {/* Living Sparkling Eyes */}
+              <g className="k-blink-natural">
+                <ellipse cx="72" cy="83" rx="6.5" ry="8.5" fill="#0F172A" />
+                <circle cx="70" cy="80" r="2.5" fill="#FFFFFF" />
+                <circle cx="74" cy="86" r="1.2" fill="#FFFFFF" />
+                <ellipse cx="108" cy="83" rx="6.5" ry="8.5" fill="#0F172A" />
+                <circle cx="106" cy="80" r="2.5" fill="#FFFFFF" />
+                <circle cx="110" cy="86" r="1.2" fill="#FFFFFF" />
+              </g>
+              {/* Warm Cheeks & Cat Smile */}
+              <ellipse cx="57" cy="92" rx="7.5" ry="4.5" fill="#FB7185" opacity="0.72" />
+              <ellipse cx="123" cy="92" rx="7.5" ry="4.5" fill="#FB7185" opacity="0.72" />
+              <polygon points="88,89 92,89 90,92" fill="#FB7185" />
+              <path d="M84,93 Q87,97 90,95 Q93,97 96,93" stroke="#0F172A" strokeWidth="2.4" fill="none" strokeLinecap="round" />
+              {/* Open Japanese Study Notebook */}
+              <g transform="translate(52, 108)">
+                <path
+                  d="M0,4 Q19,0 38,6 Q57,0 76,4 L76,34 Q57,30 38,35 Q19,30 0,34 Z"
+                  fill="#2563EB"
+                  stroke="#0F172A"
+                  strokeWidth="2.4"
+                  strokeLinejoin="round"
+                />
+                <path
+                  d="M4,6 Q20,3 37,8 L37,31 Q20,27 4,30 Z"
+                  fill="#FFFDF5"
+                  stroke="#0F172A"
+                  strokeWidth="1.5"
+                />
+                <path
+                  d="M39,8 Q56,3 72,6 L72,30 Q56,27 39,31 Z"
+                  fill="#FFFFFF"
+                  stroke="#0F172A"
+                  strokeWidth="1.5"
+                />
+                <text x="8" y="21" fontSize="9.5" fontWeight="900" fill="#1D4ED8">あいう</text>
+                <line x1="45" y1="14" x2="66" y2="14" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" />
+                <line x1="45" y1="20" x2="63" y2="20" stroke="#94A3B8" strokeWidth="2" strokeLinecap="round" />
+                <line x1="45" y1="26" x2="60" y2="26" stroke="#10B981" strokeWidth="2.2" strokeLinecap="round" />
+              </g>
+              {/* Yellow Pencil Held in Right Paw */}
+              <g transform="translate(120, 96) rotate(22)">
+                <rect x="0" y="0" width="8" height="24" rx="2" fill="#FBBF24" stroke="#0F172A" strokeWidth="2" />
+                <polygon points="0,24 8,24 4,32" fill="#FEF3C7" stroke="#0F172A" strokeWidth="1.8" />
+                <polygon points="2.5,29 5.5,29 4,32" fill="#0F172A" />
+                <rect x="0" y="-4" width="8" height="5" rx="1.5" fill="#FB7185" stroke="#0F172A" strokeWidth="1.8" />
+              </g>
+              {/* Left & Right Paws Holding Notebook */}
+              <ellipse cx="52" cy="126" rx="7" ry="6" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
+              <ellipse cx="128" cy="126" rx="7" ry="6" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
             </g>
           )}
 

@@ -62,6 +62,7 @@ type Lesson struct {
 	UnitID     string    `json:"unit_id"`
 	Slug       string    `json:"slug"`
 	Title      string    `json:"title"`
+	ShortTitle string    `json:"short_title"`
 	IconName   string    `json:"icon_name"`
 	XPReward   int       `json:"xp_reward"`
 	OrderIndex int       `json:"order_index"`
@@ -85,18 +86,21 @@ type UserLessonProgress struct {
 
 // LessonNodeResponse represents a decorated lesson node on the learner's interactive curriculum
 type LessonNodeResponse struct {
-	ID          string     `json:"id"`
-	UnitID      string     `json:"unit_id"`
-	Slug        string     `json:"slug"`
-	Title       string     `json:"title"`
-	IconName    string     `json:"icon_name"`
-	XPReward    int        `json:"xp_reward"`
-	OrderIndex  int        `json:"order_index"`
-	IsUnlocked  bool       `json:"is_unlocked"`
-	IsCompleted bool       `json:"is_completed"`
-	Score       int        `json:"score"`
-	IsSkipped   bool       `json:"is_skipped"`
-	CompletedAt *time.Time `json:"completed_at,omitempty"`
+	ID                 string     `json:"id"`
+	UnitID             string     `json:"unit_id"`
+	Slug               string     `json:"slug"`
+	Title              string     `json:"title"`
+	ShortTitle         string     `json:"short_title"`
+	IconName           string     `json:"icon_name"`
+	XPReward           int        `json:"xp_reward"`
+	OrderIndex         int        `json:"order_index"`
+	TotalExercises     int        `json:"total_exercises"`
+	CompletedExercises int        `json:"completed_exercises"`
+	IsUnlocked         bool       `json:"is_unlocked"`
+	IsCompleted        bool       `json:"is_completed"`
+	Score              int        `json:"score"`
+	IsSkipped          bool       `json:"is_skipped"`
+	CompletedAt        *time.Time `json:"completed_at,omitempty"`
 }
 
 // UnitNodeResponse represents a decorated curriculum unit with aggregated progress metrics
@@ -138,6 +142,7 @@ type LessonDetailResponse struct {
 	LevelID       string              `json:"-"`
 	UnitType      string              `json:"-"`
 	Title         string              `json:"title"`
+	ShortTitle    string              `json:"short_title"`
 	IconName      string              `json:"icon_name"`
 	XPReward      int                 `json:"xp_reward"`
 	OrderIndex    int                 `json:"order_index"`
@@ -149,6 +154,50 @@ type LessonDetailResponse struct {
 	GrammarPoints []GrammarPoint      `json:"grammar_points"`
 	Exercises     []exercise.Exercise `json:"exercises"`
 	CreatedAt     time.Time           `json:"created_at"`
+}
+
+// KanaCharacterItem represents a Japanese Gojuon character combined with the learner's mastery state.
+type KanaCharacterItem struct {
+	ID             string `json:"id"`
+	Character      string `json:"character"`
+	Script         string `json:"script"`
+	Romaji         string `json:"romaji"`
+	RowGroup       string `json:"row_group"`
+	RowOrder       int    `json:"row_order"`
+	ColOrder       int    `json:"col_order"`
+	Mnemonic       string `json:"mnemonic"`
+	ExampleWord    string `json:"example_word"`
+	ExampleReading string `json:"example_reading"`
+	ExampleMeaning string `json:"example_meaning"`
+	PracticeCount  int    `json:"practice_count"`
+	CorrectCount   int    `json:"correct_count"`
+	MasteryScore   int    `json:"mastery_score"`
+	IsMastered     bool   `json:"is_mastered"`
+}
+
+// KanaChartResponse wraps the full Hiragana or Katakana Gojuon matrix with progress counts.
+type KanaChartResponse struct {
+	Script        string              `json:"script"`
+	Total         int                 `json:"total"`
+	MasteredCount int                 `json:"mastered_count"`
+	Characters    []KanaCharacterItem `json:"characters"`
+}
+
+// KanaPracticeItem records a single character practice or row quiz answer.
+type KanaPracticeItem struct {
+	Character string `json:"character" binding:"required"`
+	IsCorrect bool   `json:"is_correct"`
+}
+
+// KanaPracticeRequest submits one or more practiced Kana characters atomically.
+type KanaPracticeRequest struct {
+	Results []KanaPracticeItem `json:"results" binding:"required,min=1,max=50,dive"`
+}
+
+// KanaPracticeResponse summarizes the updated user Kana mastery counts.
+type KanaPracticeResponse struct {
+	UpdatedCount  int `json:"updated_count"`
+	MasteredTotal int `json:"mastered_total"`
 }
 
 // CompleteLessonRequest defines the payload when a learner submits a finished lesson

@@ -40,9 +40,12 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
   const lessonNodes: PathMapNode[] = unit.parts.map((p): PathMapNode => ({
     id: p.id,
     title: `Pelajaran ${p.number}: ${p.title}`,
+    shortTitle: p.shortTitle,
     subtitle: p.subtitle,
     number: p.number,
     iconName: p.iconName,
+    totalExercises: p.totalExercises,
+    completedExercises: p.completedExercises,
     xpReward: p.xpReward,
     score: p.score,
     isSkipped: p.isSkipped,

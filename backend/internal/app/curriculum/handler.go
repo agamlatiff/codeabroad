@@ -33,6 +33,11 @@ type grammarFilterUsecase interface {
 	GetGrammarPointsByLevelFilter(ctx context.Context, userID string, languageCode string, levelCode string) ([]GrammarPoint, error)
 }
 
+type kanaUsecase interface {
+	GetKanaChart(ctx context.Context, userID string, script string) (*KanaChartResponse, error)
+	SubmitKanaPractice(ctx context.Context, userID string, req *KanaPracticeRequest) (*KanaPracticeResponse, error)
+}
+
 // Handler handles HTTP requests for curriculum navigation and lesson completion
 type Handler struct {
 	curriculumUsecase   Usecase
@@ -217,6 +222,59 @@ func (h *Handler) GetGrammarPoints(c *gin.Context) {
 	response.BadRequest(c, "level_id query parameter is required and must be a valid UUID")
 }
 
+// GetKanaChart handles GET /api/v1/curriculum/kana?script=hiragana|katakana
+func (h *Handler) GetKanaChart(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+	script := strings.TrimSpace(c.Query("script"))
+	if script != "" && !strings.EqualFold(script, "hiragana") && !strings.EqualFold(script, "katakana") && !strings.EqualFold(script, "all") {
+		response.BadRequest(c, "script must be hiragana or katakana")
+		return
+	}
+	kanaUC, ok := h.curriculumUsecase.(kanaUsecase)
+	if !ok {
+		response.Success(c, http.StatusOK, "kana chart retrieved successfully", &KanaChartResponse{
+			Script:     script,
+			Characters: []KanaCharacterItem{},
+		})
+		return
+	}
+	chart, err := kanaUC.GetKanaChart(c.Request.Context(), userID, script)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	response.Success(c, http.StatusOK, "kana chart retrieved successfully", chart)
+}
+
+// SubmitKanaPractice handles POST /api/v1/curriculum/kana/practice
+func (h *Handler) SubmitKanaPractice(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+	var req KanaPracticeRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid kana practice payload")
+		return
+	}
+	kanaUC, ok := h.curriculumUsecase.(kanaUsecase)
+	if !ok {
+		response.Success(c, http.StatusOK, "kana practice recorded successfully", &KanaPracticeResponse{})
+		return
+	}
+	res, err := kanaUC.SubmitKanaPractice(c.Request.Context(), userID, &req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	response.Success(c, http.StatusOK, "kana practice recorded successfully", res)
+}
+
 // RegisterRoutes registers curriculum routes under the protected group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	if authMiddleware == nil {
@@ -237,6 +295,8 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		curriculum.GET("/lessons/:id", h.GetLessonDetail)
 		curriculum.POST("/lessons/:id/complete", completeRateLimiter, h.CompleteLesson)
 		curriculum.GET("/grammar-points", h.GetGrammarPoints)
+		curriculum.GET("/kana", h.GetKanaChart)
+		curriculum.POST("/kana/practice", completeRateLimiter, h.SubmitKanaPractice)
 	}
 }
 

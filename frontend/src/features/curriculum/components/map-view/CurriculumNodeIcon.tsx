@@ -56,7 +56,49 @@ import { MAP_MODAL_TOKENS } from '@/features/curriculum/tokens/curriculumTokens'
  * Maps a backend lesson `icon_name` slug (SSOT) to a solid-rounded Phosphor icon.
  */
 export function renderLessonThematicIcon(iconName: string | undefined, iconClass: string): ReactNode {
+  const glyphSizeClass = iconClass.includes('w-6')
+    ? 'text-[20px]'
+    : iconClass.includes('w-7')
+      ? 'text-[24px]'
+      : 'text-[27px]'
+  const preserveTextColor = iconClass.includes('text-slate-400') ? 'text-slate-400' : ''
+
   switch (iconName) {
+    case 'hiragana':
+      return (
+        <span
+          className={`font-brand font-black leading-none select-none ${glyphSizeClass} ${preserveTextColor}`}
+          aria-hidden="true"
+        >
+          あ
+        </span>
+      )
+    case 'hiragana-ka':
+      return (
+        <span
+          className={`font-brand font-black leading-none select-none ${glyphSizeClass} ${preserveTextColor}`}
+          aria-hidden="true"
+        >
+          か
+        </span>
+      )
+    case 'katakana':
+      return (
+        <span
+          className={`font-brand font-black leading-none select-none ${glyphSizeClass} ${preserveTextColor}`}
+          aria-hidden="true"
+        >
+          ア
+        </span>
+      )
+    case 'numbers':
+      return (
+        <svg viewBox="0 0 32 32" className={iconClass} fill="currentColor" aria-hidden="true">
+          <text x="5" y="14" fontSize="13" fontWeight="900" fontFamily="system-ui, sans-serif" transform="rotate(-10 8 10)">1</text>
+          <text x="16" y="17" fontSize="13" fontWeight="900" fontFamily="system-ui, sans-serif" transform="rotate(8 19 13)">2</text>
+          <text x="10" y="29" fontSize="13" fontWeight="900" fontFamily="system-ui, sans-serif" transform="rotate(-5 14 25)">3</text>
+        </svg>
+      )
     case 'compass':
       return <Compass weight="fill" className={iconClass} />
     case 'translate':

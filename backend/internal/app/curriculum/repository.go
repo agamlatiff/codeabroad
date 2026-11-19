@@ -183,14 +183,36 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	}
 	query := `
 		SELECT 
-			l.id, l.unit_id, l.slug, l.title, COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index,
+			l.id, l.unit_id, l.slug, l.title,
+			COALESCE(NULLIF(l.short_title, ''), l.title) AS short_title,
+			COALESCE(l.icon_name, 'book-open') AS icon_name,
+			l.xp_reward, l.order_index,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
-			ulp.completed_at
+			ulp.completed_at,
+			COALESCE(ex_stats.total_exercises, 0) AS total_exercises,
+			CASE
+				WHEN COALESCE(ulp.is_completed, false) THEN COALESCE(ex_stats.total_exercises, 0)
+				ELSE LEAST(COALESCE(ex_stats.total_exercises, 0), COALESCE(att_stats.completed_exercises, 0))
+			END AS completed_exercises
 		FROM lessons l
 		JOIN units u ON l.unit_id = u.id
 		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
+		LEFT JOIN (
+			SELECT lesson_id, COUNT(*)::int AS total_exercises
+			FROM exercises
+			GROUP BY lesson_id
+		) ex_stats ON ex_stats.lesson_id = l.id
+		LEFT JOIN (
+			SELECT e.lesson_id, COUNT(DISTINCT e.id)::int AS completed_exercises
+			FROM user_exercise_attempts uea
+			JOIN exercises e ON e.id = uea.exercise_id
+			WHERE uea.user_id = $2::uuid
+			  AND uea.is_correct = true
+			  AND COALESCE((uea.selected_answer->>'is_srs_review')::boolean, false) = false
+			GROUP BY e.lesson_id
+		) att_stats ON att_stats.lesson_id = l.id
 		WHERE u.level_id = $1::uuid AND u.unit_type = 'curriculum'
 		ORDER BY u.order_index ASC, u.id ASC, l.order_index ASC, l.id ASC
 	`
@@ -204,8 +226,9 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
-			&l.ID, &l.UnitID, &l.Slug, &l.Title, &l.IconName, &l.XPReward, &l.OrderIndex,
+			&l.ID, &l.UnitID, &l.Slug, &l.Title, &l.ShortTitle, &l.IconName, &l.XPReward, &l.OrderIndex,
 			&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
+			&l.TotalExercises, &l.CompletedExercises,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan lesson row: %w", err)
 		}
@@ -263,7 +286,9 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	}
 	lessonQuery := targetCurriculumLessonCTESQL + `
 		SELECT 
-			l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title, COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index, l.created_at,
+			l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title,
+			COALESCE(NULLIF(l.short_title, ''), l.title) AS short_title,
+			COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index, l.created_at,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -276,7 +301,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	`
 	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
-		&l.ID, &l.UnitID, &l.Slug, &l.LevelID, &l.UnitType, &l.Title, &l.IconName, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
+		&l.ID, &l.UnitID, &l.Slug, &l.LevelID, &l.UnitType, &l.Title, &l.ShortTitle, &l.IconName, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
 		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt, &l.IsUnlocked,
 	)
 	if err != nil {
@@ -744,5 +769,110 @@ func scanLessonAttemptSummary(ctx context.Context, q rowQueryer, userID string, 
 		return nil, fmt.Errorf("failed to get lesson attempt summary: %w", err)
 	}
 	return &summary, nil
+}
+
+// ListKanaWithProgress retrieves Hiragana and/or Katakana Gojuon characters merged with user mastery progress.
+func (r *PostgresRepository) ListKanaWithProgress(ctx context.Context, userID string, script string) ([]KanaCharacterItem, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	normalizedScript := strings.ToLower(strings.TrimSpace(script))
+	query := `
+		SELECT
+			kc.id, kc.character, kc.script, kc.romaji, kc.row_group, kc.row_order, kc.col_order,
+			kc.mnemonic, kc.example_word, kc.example_reading, kc.example_meaning,
+			COALESCE(ukp.practice_count, 0) AS practice_count,
+			COALESCE(ukp.correct_count, 0) AS correct_count,
+			COALESCE(ukp.mastery_score, 0) AS mastery_score,
+			COALESCE(ukp.is_mastered, false) AS is_mastered
+		FROM kana_characters kc
+		LEFT JOIN user_kana_progress ukp ON kc.character = ukp.character AND ukp.user_id = $1::uuid
+		WHERE ($2 = '' OR kc.script = $2)
+		ORDER BY kc.script ASC, kc.row_order ASC, kc.col_order ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, userID, normalizedScript)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query kana characters: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]KanaCharacterItem, 0, 92)
+	for rows.Next() {
+		var item KanaCharacterItem
+		if err := rows.Scan(
+			&item.ID, &item.Character, &item.Script, &item.Romaji, &item.RowGroup, &item.RowOrder, &item.ColOrder,
+			&item.Mnemonic, &item.ExampleWord, &item.ExampleReading, &item.ExampleMeaning,
+			&item.PracticeCount, &item.CorrectCount, &item.MasteryScore, &item.IsMastered,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan kana character row: %w", err)
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in kana chart: %w", err)
+	}
+	return items, nil
+}
+
+// RecordKanaPractice atomically updates a user's mastery progress across one or more Kana characters.
+func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID string, results []KanaPracticeItem) (int, int, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return 0, 0, err
+	}
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return 0, 0, fmt.Errorf("failed to begin kana practice transaction: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	upsertSQL := `
+		INSERT INTO user_kana_progress (user_id, character, practice_count, correct_count, mastery_score, is_mastered, last_practiced_at)
+		SELECT $1::uuid, kc.character, 1, $3, $4, $5, NOW()
+		FROM kana_characters kc
+		WHERE kc.character = $2
+		ON CONFLICT (user_id, character)
+		DO UPDATE SET
+			practice_count    = user_kana_progress.practice_count + 1,
+			correct_count     = user_kana_progress.correct_count + EXCLUDED.correct_count,
+			mastery_score     = LEAST(100, GREATEST(0, user_kana_progress.mastery_score + $6)),
+			is_mastered       = (
+				LEAST(100, GREATEST(0, user_kana_progress.mastery_score + $6)) >= 70
+				OR (user_kana_progress.correct_count + EXCLUDED.correct_count) >= 2
+			),
+			last_practiced_at = NOW()
+	`
+
+	updatedCount := 0
+	for _, res := range results {
+		ch := strings.TrimSpace(res.Character)
+		if ch == "" {
+			continue
+		}
+		incCorrect := 0
+		initScore := 10
+		scoreDelta := -10
+		if res.IsCorrect {
+			incCorrect = 1
+			initScore = 50
+			scoreDelta = 35
+		}
+		tag, execErr := tx.Exec(ctx, upsertSQL, userID, ch, incCorrect, initScore, false, scoreDelta)
+		if execErr != nil {
+			return 0, 0, fmt.Errorf("failed to upsert kana progress for %q: %w", ch, execErr)
+		}
+		if tag.RowsAffected() > 0 {
+			updatedCount++
+		}
+	}
+
+	var masteredTotal int
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*)::int FROM user_kana_progress WHERE user_id = $1::uuid AND is_mastered = true`, userID).Scan(&masteredTotal); err != nil {
+		return 0, 0, fmt.Errorf("failed to count mastered kana: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return 0, 0, fmt.Errorf("failed to commit kana practice tx: %w", err)
+	}
+	return updatedCount, masteredTotal, nil
 }
 

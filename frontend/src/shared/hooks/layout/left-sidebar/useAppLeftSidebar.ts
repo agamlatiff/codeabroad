@@ -6,6 +6,7 @@ import {
   Cards,
   SquaresFour,
   Target,
+  Translate,
   Trophy,
 } from '@phosphor-icons/react'
 import type { Icon } from '@phosphor-icons/react'
@@ -62,6 +63,12 @@ export const useAppLeftSidebar = () => {
         icon: SquaresFour,
       },
       {
+        label: 'Aksara',
+        tooltip: 'Aksara • Hiragana & Katakana',
+        href: '/kana',
+        icon: Translate,
+      },
+      {
         label: 'Grammar',
         tooltip: 'Panduan Grammar',
         href: '/grammar',
@@ -98,6 +105,10 @@ export const useAppLeftSidebar = () => {
         location.pathname === item.href ||
         (item.href === '/curriculum' &&
           location.pathname.startsWith('/curriculum')) ||
+        (item.href === '/kana' &&
+          location.pathname.startsWith('/kana')) ||
+        (item.href === '/grammar' &&
+          location.pathname.startsWith('/grammar')) ||
         (item.href === '/flashcards' &&
           (location.pathname === '/review' || location.pathname === '/flashcard')),
     }))

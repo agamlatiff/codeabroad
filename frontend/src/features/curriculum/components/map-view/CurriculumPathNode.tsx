@@ -83,7 +83,13 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
                 <Sparkle weight="fill" className="w-3 h-3 shrink-0" />
                 <span>Sedang Dipelajari</span>
               </span>
-              {node.badgeLabel && (
+              {(node.totalExercises ?? 0) > 0 ? (
+                <span
+                  className={`text-[10px] font-brand font-black px-2 py-0.5 rounded tabular-nums whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
+                >
+                  {node.completedExercises ?? 0}/{node.totalExercises} Soal
+                </span>
+              ) : node.badgeLabel ? (
                 <span
                   className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
                 >
@@ -92,7 +98,7 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
                   )}
                   <span>{node.badgeLabel}</span>
                 </span>
-              )}
+              ) : null}
             </div>
             <h4 className="font-brand font-black text-xs text-slate-900 leading-snug">
               {node.title}
@@ -119,7 +125,7 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
           } -top-2 hidden md:flex flex-col items-center select-none z-20`}
         >
           <KodiCharacter
-            emotion="coding"
+            emotion="studying"
             size={72}
             interactive
             showSpeechBubble
@@ -227,28 +233,22 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
           </span>
         </div>
       ) : node.status !== 'active' ? (
-        <div className="mt-2 z-20 max-w-[175px] bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-xl px-2.5 py-1 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
-          {node.badgeLabel && (
-            <span
-              className={`text-[9px] font-brand font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md inline-flex items-center gap-1 mb-0.5 ${catTokens.badgeClass}`}
-            >
-              {node.category === 'language' && (
-                <Translate weight="bold" className="w-2.5 h-2.5" />
-              )}
-              <span>{node.badgeLabel}</span>
-            </span>
-          )}
-          <h5 className="font-brand font-black text-[11px] text-slate-900 leading-snug line-clamp-2">
-            {node.title}
+        <div className="mt-2 z-20 max-w-[168px] bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-xl px-3 py-1.5 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
+          <h5 className="font-brand font-black text-xs text-slate-900 leading-tight line-clamp-2">
+            {node.shortTitle || node.title}
           </h5>
           <span
-            className={`text-[10px] font-bold block mt-0.5 ${
+            className={`text-[10px] font-bold block mt-0.5 tabular-nums ${
               node.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'
             }`}
           >
-            {node.status === 'completed'
-              ? `Selesai (+${node.xpReward} XP)`
-              : 'Terkunci'}
+            {(node.totalExercises ?? 0) > 0
+              ? node.status === 'completed'
+                ? `${node.completedExercises ?? node.totalExercises}/${node.totalExercises} • Selesai`
+                : `${node.completedExercises ?? 0}/${node.totalExercises}`
+              : node.status === 'completed'
+                ? `Selesai (+${node.xpReward} XP)`
+                : 'Terkunci'}
           </span>
         </div>
       ) : null}

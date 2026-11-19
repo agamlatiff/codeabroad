@@ -403,3 +403,95 @@ func TestHTTP_CompleteLesson_Unauthorized_Returns401(t *testing.T) {
 		t.Errorf("expected code UNAUTHORIZED, got %q", errResp.Code)
 	}
 }
+
+func TestHTTP_CurriculumIncludesShortTitleAndExerciseCounts(t *testing.T) {
+	r, cRepo, _ := setupCurriculumTestRouter()
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{
+		ID:         "unit-1",
+		LevelID:    "22222222-2222-2222-2222-222222222222",
+		Title:      "Unit 1",
+		UnitType:   "curriculum",
+		OrderIndex: 1,
+	}
+	lessonID := "33333333-3333-3333-3333-333333333333"
+	cRepo.Lessons[lessonID].ShortTitle = "Vokal あ–お"
+	cRepo.Lessons[lessonID].IconName = "hiragana"
+	cRepo.Lessons[lessonID].TotalExercises = 5
+	cRepo.Lessons[lessonID].CompletedExercises = 2
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum?language_id=11111111-1111-1111-1111-111111111111", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK, got %d, body: %s", w.Code, w.Body.String())
+	}
+	var resp struct {
+		Success bool `json:"success"`
+		Data    struct {
+			Units []struct {
+				Lessons []curriculum.LessonNodeResponse `json:"lessons"`
+			} `json:"units"`
+		} `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("decode error: %v", err)
+	}
+	if len(resp.Data.Units) == 0 || len(resp.Data.Units[0].Lessons) == 0 {
+		t.Fatalf("expected at least 1 unit and lesson")
+	}
+	got := resp.Data.Units[0].Lessons[0]
+	if got.ShortTitle != "Vokal あ–お" || got.IconName != "hiragana" || got.TotalExercises != 5 || got.CompletedExercises != 2 {
+		t.Fatalf("unexpected lesson payload: %+v", got)
+	}
+}
+
+func TestHTTP_KanaChartAndPractice(t *testing.T) {
+	r, cRepo, _ := setupCurriculumTestRouter()
+	cRepo.KanaCatalog = []curriculum.KanaCharacterItem{
+		{ID: "k-1", Character: "あ", Script: "hiragana", Romaji: "a", RowGroup: "a", RowOrder: 1, ColOrder: 1},
+		{ID: "k-2", Character: "い", Script: "hiragana", Romaji: "i", RowGroup: "a", RowOrder: 1, ColOrder: 2},
+		{ID: "k-3", Character: "ア", Script: "katakana", Romaji: "a", RowGroup: "a", RowOrder: 1, ColOrder: 1},
+	}
+
+	t.Run("GET invalid script returns 400", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/kana?script=kanji", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("POST practice updates mastery and GET reflects it", func(t *testing.T) {
+		for i := 0; i < 2; i++ {
+			body := []byte(`{"results":[{"character":"あ","is_correct":true}]}`)
+			req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/kana/practice", bytes.NewBuffer(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			if w.Code != http.StatusOK {
+				t.Fatalf("expected 200 OK on practice %d, got %d: %s", i, w.Code, w.Body.String())
+			}
+		}
+
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/kana?script=hiragana", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK, got %d", w.Code)
+		}
+		var chartResp struct {
+			Data curriculum.KanaChartResponse `json:"data"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &chartResp); err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+		if chartResp.Data.Total != 2 || chartResp.Data.MasteredCount != 1 {
+			t.Fatalf("expected 2 total and 1 mastered hiragana, got %+v", chartResp.Data)
+		}
+		if !chartResp.Data.Characters[0].IsMastered || chartResp.Data.Characters[0].CorrectCount != 2 {
+			t.Fatalf("expected あ mastered with correct_count=2, got %+v", chartResp.Data.Characters[0])
+		}
+	})
+}
