@@ -44,7 +44,7 @@ export const LeaderboardPage = () => {
       {/* ── 1. COMPACT NAV RAIL ── */}
       <AppLeftSidebar />
       <div className="flex-1 min-w-0 pb-20 md:pb-12">
-        <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 space-y-6">
+        <main className="flex-1 min-w-0 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
           <AppTopBar
             breadcrumbs={[
               { label: 'Beranda', to: '/curriculum' },

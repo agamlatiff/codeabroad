@@ -847,7 +847,7 @@ export const FlashcardPage = () => {
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       <AppLeftSidebar />
 
-      <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 pb-24 md:pb-12 space-y-6">
+      <main className="flex-1 min-w-0 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 md:pb-12 space-y-5">
         <AppTopBar
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },
@@ -856,25 +856,69 @@ export const FlashcardPage = () => {
           ]}
         />
 
-        {/* Unified Tactile Page Hero Header */}
+        {/* Unified Compact Page Hero Header + Integrated Due Review CTA */}
         <PageHeroHeader
           theme="sky"
           icon={<Cards weight="fill" className="w-6 h-6" />}
           badges={
-            <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-800">
-              Flashcard Kosakata • JLPT N5–N1
-            </span>
+            <>
+              <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-800">
+                Flashcard Kosakata • JLPT N5–N1
+              </span>
+              <span className="text-[11px] font-brand font-black px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
+                {filteredDecks.length} Dek Aktif
+              </span>
+            </>
           }
           title="Belajar & Ulas Flashcard"
-          description="Langsung hafalkan kosakata lewat kartu flip Anki SM-2 depan–belakang kapan saja lintas tingkat JLPT N5 hingga N1."
+          description="Hafalkan kosakata lewat kartu flip Anki SM-2 kapan saja lintas tingkat JLPT N5 hingga N1."
           rightSlot={
-            <div className="flex items-center gap-3 shrink-0">
-              <div className="px-3.5 py-2 rounded-2xl bg-white border-2 border-sky-200/80 text-xs font-brand font-black text-sky-900 shadow-2xs">
-                {filteredDecks.length} Dek Aktif
+            <div className="rounded-2xl bg-white border-2 border-sky-200/80 px-3.5 py-2.5 flex items-center justify-between sm:justify-start gap-3 shadow-2xs">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div
+                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
+                    totalDue > 0
+                      ? 'bg-blue-50 text-blue-600 border-blue-200'
+                      : 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                  }`}
+                >
+                  {totalDue > 0 ? (
+                    <Clock weight="fill" className="w-4.5 h-4.5" />
+                  ) : (
+                    <Sparkle weight="fill" className="w-4.5 h-4.5" />
+                  )}
+                </div>
+                <div className="min-w-0">
+                  <p className="font-brand font-black text-xs text-slate-900 leading-tight whitespace-nowrap">
+                    {dueLoading
+                      ? 'Memeriksa ulasan...'
+                      : totalDue > 0
+                        ? `${totalDue} Jatuh Tempo`
+                        : totalLearned === 0
+                          ? 'Siap Belajar'
+                          : 'Ulasan Beres'}
+                  </p>
+                  <p className="text-[11px] font-medium text-slate-500 whitespace-nowrap">
+                    {totalDue > 0
+                      ? 'Ulas agar tetap ingat'
+                      : totalLearned === 0
+                        ? 'Pilih dek di bawah'
+                        : `${totalLearned} terpantau`}
+                  </p>
+                </div>
               </div>
-              <div className="hidden sm:block">
-                <KodiCharacter emotion="happy" size={64} />
-              </div>
+
+              {totalDue > 0 && (
+                <Button3D
+                  variant="blue"
+                  size="sm"
+                  onClick={startDueSession}
+                  icon={<ArrowRight weight="bold" className="w-3.5 h-3.5" />}
+                  className="shrink-0"
+                >
+                  MULAI ULASAN
+                </Button3D>
+              )}
             </div>
           }
         />
@@ -884,57 +928,6 @@ export const FlashcardPage = () => {
             {sessionError}
           </div>
         )}
-
-        {/* Smart Scheduled Review Banner */}
-        <section className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 shadow-[0_4px_0_0_#E2E8F0] flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-start sm:items-center gap-4">
-            <div
-              className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 border ${
-                totalDue > 0
-                  ? 'bg-blue-50 text-blue-600 border-blue-200'
-                  : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-              }`}
-            >
-              {totalDue > 0 ? (
-                <Clock weight="fill" className="w-6 h-6" />
-              ) : (
-                <Sparkle weight="fill" className="w-6 h-6" />
-              )}
-            </div>
-            <div className="space-y-0.5">
-              <div className="flex items-center gap-2">
-                <h2 className="font-brand font-black text-base text-slate-900">
-                  {dueLoading
-                    ? 'Memeriksa jadwal ulasan...'
-                    : totalDue > 0
-                      ? `${totalDue} Kartu Jatuh Tempo untuk Diulas`
-                      : totalLearned === 0
-                        ? 'Belum Ada Jadwal Ulasan'
-                        : 'Semua Jadwal Ulasan Sudah Beres!'}
-                </h2>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-600">
-                {totalDue > 0
-                  ? 'Ulas kartu ini sekarang agar kosakata tetap menempel di memori jangka panjang.'
-                  : totalLearned === 0
-                    ? 'Pilih salah satu dek topik di bawah untuk mulai belajar. Kartu yang kamu pelajari otomatis terjadwal di sini.'
-                    : `${totalLearned} kartu sudah masuk memori terpantau dan belum ada yang jatuh tempo saat ini.`}
-              </p>
-            </div>
-          </div>
-
-          {totalDue > 0 && (
-            <Button3D
-              variant="blue"
-              size="md"
-              onClick={startDueSession}
-              icon={<ArrowRight weight="bold" className="w-4 h-4" />}
-              className="shrink-0"
-            >
-              MULAI ULASAN
-            </Button3D>
-          )}
-        </section>
 
         {/* Unified 1-Row Filter Toolbar */}
         <FilterToolbar

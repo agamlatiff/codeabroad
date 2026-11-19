@@ -146,7 +146,7 @@ export const GrammarDetailPage = () => {
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       <AppLeftSidebar />
 
-      <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 pb-24 md:pb-12 space-y-6">
+      <main className="flex-1 min-w-0 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 md:pb-12 space-y-5">
         <AppTopBar
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },

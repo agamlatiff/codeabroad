@@ -145,7 +145,7 @@ export const GrammarPage = () => {
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       <AppLeftSidebar />
 
-      <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 pb-24 md:pb-12 space-y-6">
+      <main className="flex-1 min-w-0 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 pb-24 md:pb-12 space-y-5">
         <AppTopBar
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },
@@ -167,11 +167,11 @@ export const GrammarPage = () => {
           description="Referensi pola kalimat, partikel, konjugasi, dan keigo lengkap dengan rumus cepat, contoh nyata, dan pelafalan penutur."
           rightSlot={
             <div className="flex items-center gap-3 shrink-0">
-              <div className="px-3.5 py-2 rounded-2xl bg-white border-2 border-blue-200/80 text-xs font-brand font-black text-blue-900 shadow-2xs">
+              <div className="px-3.5 py-1.5 rounded-2xl bg-white border-2 border-blue-200/80 text-xs font-brand font-black text-blue-900 shadow-2xs">
                 {filteredPoints.length} Materi
               </div>
               <div className="hidden sm:block">
-                <KodiCharacter emotion="happy" size={64} />
+                <KodiCharacter emotion="happy" size={52} />
               </div>
             </div>
           }

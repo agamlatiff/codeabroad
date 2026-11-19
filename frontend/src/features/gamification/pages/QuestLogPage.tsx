@@ -93,9 +93,9 @@ export const QuestLogPage = () => {
       {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
       <AppLeftSidebar />
 
-      {/* ── 2. SINGLE-COLUMN FULL-WIDTH CENTER STAGE ── */}
+      {/* ── 2. SINGLE-COLUMN CENTERED STAGE ── */}
       <div className="flex-1 min-w-0 flex flex-col pb-20 md:pb-12">
-        <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 space-y-6">
+        <main className="flex-1 min-w-0 w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-5 space-y-5">
           {/* ── TOP HUD BAR + BREADCRUMB (SSOT) ── */}
           <AppTopBar
             activeTrack={activeTrack}
