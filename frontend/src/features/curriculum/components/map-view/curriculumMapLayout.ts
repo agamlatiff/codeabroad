@@ -69,17 +69,36 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
       ]
     : lessonNodes
 
-  const { xSequence, verticalSpacing, startY, bottomPadding } = MAP_GEOMETRY
-  const coords = allNodes.map((_, idx) => {
-    const y = startY + idx * verticalSpacing
-    const x = xSequence[idx % xSequence.length]
-    return { x, y }
+  const {
+    xSequence,
+    verticalSpacing,
+    activePopoverExtraSpace,
+    startY,
+    bottomPadding,
+  } = MAP_GEOMETRY
+
+  let currentY = startY
+  const coords = allNodes.map((node, idx) => {
+    const coord = {
+      x: xSequence[idx % xSequence.length],
+      y: currentY,
+    }
+    const isActiveLessonNode = node.status === 'active' && !node.isChest && !node.isTrophy
+    currentY += verticalSpacing + (isActiveLessonNode ? activePopoverExtraSpace : 0)
+    return coord
   })
 
-  const totalHeight =
-    allNodes.length > 0
-      ? startY + (allNodes.length - 1) * verticalSpacing + verticalSpacing * 0.6 + bottomPadding
-      : bottomPadding
+  const lastNode = allNodes[allNodes.length - 1]
+  const isLastNodeActive =
+    Boolean(lastNode) && lastNode.status === 'active' && !lastNode.isChest && !lastNode.isTrophy
+  const lastCoord = coords[coords.length - 1]
+
+  const totalHeight = lastCoord
+    ? lastCoord.y +
+      verticalSpacing * 0.6 +
+      bottomPadding +
+      (isLastNodeActive ? activePopoverExtraSpace : 0)
+    : bottomPadding
 
   const svgPathString = buildSvgPath(coords)
 

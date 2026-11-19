@@ -2,8 +2,8 @@
 import type { IllustrationProps } from "@/features/onboarding/types/onboarding"
 
 // Japan Flag (White field with Vermilion crimson sun disc)
-export const JapanFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
-  <div className="w-full h-full flex items-center justify-center p-3">
+export const JapanFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain', compact = false }: IllustrationProps) => (
+  <div className={`w-full h-full flex items-center justify-center ${compact ? '' : 'p-3'}`}>
     <svg viewBox="0 0 200 130" className={className} fill="none">
       {/* Flag Canvas Frame with subtle drop shadow and border */}
       <rect
@@ -13,8 +13,8 @@ export const JapanFlagIllustration = ({ className = 'w-full h-full max-h-40 obje
         height="118"
         rx="12"
         fill="#FFFFFF"
-        stroke="#E2E8F0"
-        strokeWidth="2"
+        stroke={compact ? '#CBD5E1' : '#E2E8F0'}
+        strokeWidth={compact ? 8 : 2}
       />
       {/* Japan Sun Disc */}
       <circle cx="100" cy="65" r="38" fill="#BC002D" />
@@ -24,8 +24,8 @@ export const JapanFlagIllustration = ({ className = 'w-full h-full max-h-40 obje
 
 
 // Germany Flag (Black, Red, Gold Tricolor)
-export const GermanyFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
-  <div className="w-full h-full flex items-center justify-center p-3">
+export const GermanyFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain', compact = false }: IllustrationProps) => (
+  <div className={`w-full h-full flex items-center justify-center ${compact ? '' : 'p-3'}`}>
     <svg viewBox="0 0 200 130" className={className} fill="none">
       <defs>
         <clipPath id="de-flag-clip">
@@ -48,16 +48,16 @@ export const GermanyFlagIllustration = ({ className = 'w-full h-full max-h-40 ob
         height="118"
         rx="12"
         fill="none"
-        stroke="#E2E8F0"
-        strokeWidth="2"
+        stroke={compact ? '#CBD5E1' : '#E2E8F0'}
+        strokeWidth={compact ? 8 : 2}
       />
     </svg>
   </div>
 )
 
 // United Kingdom Flag
-export const UKFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
-  <div className="w-full h-full flex items-center justify-center p-3">
+export const UKFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain', compact = false }: IllustrationProps) => (
+  <div className={`w-full h-full flex items-center justify-center ${compact ? '' : 'p-3'}`}>
     <svg viewBox="0 0 200 130" className={className} fill="none">
       <defs>
         <clipPath id="uk-flag-clip">
@@ -71,14 +71,14 @@ export const UKFlagIllustration = ({ className = 'w-full h-full max-h-40 object-
         <path d="M100 6V124M6 65H194" stroke="#FFFFFF" strokeWidth="32" />
         <path d="M100 6V124M6 65H194" stroke="#C8102E" strokeWidth="18" />
       </g>
-      <rect x="6" y="6" width="188" height="118" rx="12" fill="none" stroke="#E2E8F0" strokeWidth="2" />
+      <rect x="6" y="6" width="188" height="118" rx="12" fill="none" stroke={compact ? '#CBD5E1' : '#E2E8F0'} strokeWidth={compact ? 8 : 2} />
     </svg>
   </div>
 )
 
 // United States Flag
-export const USFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
-  <div className="w-full h-full flex items-center justify-center p-3">
+export const USFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain', compact = false }: IllustrationProps) => (
+  <div className={`w-full h-full flex items-center justify-center ${compact ? '' : 'p-3'}`}>
     <svg viewBox="0 0 200 130" className={className} fill="none">
       <defs>
         <clipPath id="us-flag-clip">
@@ -101,16 +101,16 @@ export const USFlagIllustration = ({ className = 'w-full h-full max-h-40 object-
         <circle cx="48" cy="56" r="3" fill="#FFFFFF" />
         <circle cx="72" cy="56" r="3" fill="#FFFFFF" />
       </g>
-      <rect x="6" y="6" width="188" height="118" rx="12" fill="none" stroke="#E2E8F0" strokeWidth="2" />
+      <rect x="6" y="6" width="188" height="118" rx="12" fill="none" stroke={compact ? '#CBD5E1' : '#E2E8F0'} strokeWidth={compact ? 8 : 2} />
     </svg>
   </div>
 )
 
 // China Flag
-export const ChinaFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
-  <div className="w-full h-full flex items-center justify-center p-3">
+export const ChinaFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain', compact = false }: IllustrationProps) => (
+  <div className={`w-full h-full flex items-center justify-center ${compact ? '' : 'p-3'}`}>
     <svg viewBox="0 0 200 130" className={className} fill="none">
-      <rect x="6" y="6" width="188" height="118" rx="12" fill="#DE2910" stroke="#E2E8F0" strokeWidth="2" />
+      <rect x="6" y="6" width="188" height="118" rx="12" fill="#DE2910" stroke={compact ? '#CBD5E1' : '#E2E8F0'} strokeWidth={compact ? 8 : 2} />
       <circle cx="40" cy="36" r="12" fill="#FFDE00" />
       <circle cx="64" cy="22" r="4" fill="#FFDE00" />
       <circle cx="71" cy="34" r="4" fill="#FFDE00" />
@@ -121,8 +121,8 @@ export const ChinaFlagIllustration = ({ className = 'w-full h-full max-h-40 obje
 )
 
 // France Flag
-export const FranceFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain' }: IllustrationProps) => (
-  <div className="w-full h-full flex items-center justify-center p-3">
+export const FranceFlagIllustration = ({ className = 'w-full h-full max-h-40 object-contain', compact = false }: IllustrationProps) => (
+  <div className={`w-full h-full flex items-center justify-center ${compact ? '' : 'p-3'}`}>
     <svg viewBox="0 0 200 130" className={className} fill="none">
       <defs>
         <clipPath id="fr-flag-clip">
@@ -134,7 +134,7 @@ export const FranceFlagIllustration = ({ className = 'w-full h-full max-h-40 obj
         <rect x="69" y="6" width="62" height="118" fill="#FFFFFF" />
         <rect x="131" y="6" width="63" height="118" fill="#ED2939" />
       </g>
-      <rect x="6" y="6" width="188" height="118" rx="12" fill="none" stroke="#E2E8F0" strokeWidth="2" />
+      <rect x="6" y="6" width="188" height="118" rx="12" fill="none" stroke={compact ? '#CBD5E1' : '#E2E8F0'} strokeWidth={compact ? 8 : 2} />
     </svg>
   </div>
 )
@@ -153,10 +153,11 @@ const FLAG_BY_CODE: Record<string, ComponentType<IllustrationProps>> = {
 export const LanguageFlagIllustration = ({
   code,
   className,
+  compact = false,
 }: IllustrationProps & { code?: string }) => {
   const normalized = code?.toLowerCase() ?? ''
   const FlagComponent =
     FLAG_BY_CODE[normalized] ??
     (normalized.startsWith('en') ? UKFlagIllustration : JapanFlagIllustration)
-  return <FlagComponent className={className} />
+  return <FlagComponent className={className} compact={compact} />
 }

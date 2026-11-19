@@ -1,7 +1,7 @@
 import { Component, type ErrorInfo, type ReactNode } from 'react'
 import { KodiCharacter } from './KodiCharacter'
 import { Button3D } from './Button3D'
-import { ArrowClockwise, HouseLine, Bug } from '@phosphor-icons/react'
+import { ArrowClockwise, HouseLine, WarningCircle } from '@phosphor-icons/react'
 
 interface Props {
   children: ReactNode
@@ -42,27 +42,28 @@ export class ErrorBoundary extends Component<Props, State> {
   public override render(): ReactNode {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-          <div className="max-w-md w-full bg-slate-800/80 border-2 border-slate-700/80 rounded-3xl p-6 sm:p-8 text-center shadow-2xl backdrop-blur-md">
-            <div className="flex justify-center mb-4">
-              <KodiCharacter
-                emotion="warning"
-                size="lg"
-                showSpeechBubble
-                speechText="Aduh, ada sirkuit yang konslet!"
-                interactive
-              />
+        <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-8 text-center shadow-[0_6px_0_0_#E2E8F0] space-y-5 animate-pop">
+            <div className="flex justify-center">
+              <KodiCharacter emotion="worried" size={104} />
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-brand font-black text-white tracking-tight mb-2">
-              Oops! Terjadi Masalah Teknis
-            </h1>
+            <div className="space-y-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 border border-amber-200 text-amber-700 font-brand font-black text-[11px] uppercase tracking-wider">
+                <WarningCircle weight="fill" className="w-3.5 h-3.5" />
+                <span>Gangguan Sementara</span>
+              </span>
 
-            <p className="text-slate-400 text-sm leading-relaxed mb-6 font-medium">
-              Terjadi kesalahan tidak terduga pada halaman ini. Jangan khawatir, progres dan streak belajarmu tetap aman.
-            </p>
+              <h1 className="text-2xl font-brand font-black text-slate-900 tracking-tight">
+                Halaman Mengalami Kendala
+              </h1>
 
-            <div className="flex flex-col sm:flex-row gap-3 justify-center mb-4">
+              <p className="text-slate-600 text-sm leading-relaxed">
+                Maaf atas ketidaknyamanannya. Coba muat ulang halaman ini — progres, XP, dan streak belajarmu tetap tersimpan aman.
+              </p>
+            </div>
+
+            <div className="flex flex-col sm:flex-row gap-3 justify-center pt-1">
               <Button3D
                 variant="blue"
                 size="md"
@@ -82,17 +83,6 @@ export class ErrorBoundary extends Component<Props, State> {
                 Ke Beranda
               </Button3D>
             </div>
-
-            {import.meta.env.DEV && this.state.error && (
-              <details className="mt-4 text-left border border-slate-700 rounded-xl p-3 bg-slate-900/60">
-                <summary className="text-xs text-slate-400 cursor-pointer font-mono flex items-center gap-1.5 hover:text-slate-200">
-                  <Bug size={14} /> Detail Diagnostik Teknis
-                </summary>
-                <div className="mt-2 text-[11px] font-mono text-rose-300 break-words max-h-32 overflow-y-auto">
-                  {this.state.error.toString()}
-                </div>
-              </details>
-            )}
           </div>
         </div>
       )

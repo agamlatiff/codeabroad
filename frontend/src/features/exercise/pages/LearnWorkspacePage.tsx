@@ -43,7 +43,6 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleCheckAnswer,
@@ -152,7 +151,6 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
             onClearTokens={handleClearTokens}
             onSelectOption={handleSelectOption}
             onSetTextInput={handleSetTextInput}
-            onConfirmSpokenSample={handleConfirmSpokenSample}
             onPlayAudio={handlePlayAudio}
             onToggleRecording={handleToggleRecording}
             onToggleHint={handleToggleHint}

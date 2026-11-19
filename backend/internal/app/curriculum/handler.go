@@ -1,10 +1,12 @@
 package curriculum
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -13,6 +15,23 @@ import (
 	"codeabroad/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
+
+var lessonSlugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+
+func isValidLessonIdentifier(val string) bool {
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "" || len(trimmed) > 160 {
+		return false
+	}
+	if apperror.ValidateEntityUUID(trimmed) == nil {
+		return true
+	}
+	return len(trimmed) >= 2 && lessonSlugRegex.MatchString(trimmed)
+}
+
+type grammarFilterUsecase interface {
+	GetGrammarPointsByLevelFilter(ctx context.Context, userID string, languageCode string, levelCode string) ([]GrammarPoint, error)
+}
 
 // Handler handles HTTP requests for curriculum navigation and lesson completion
 type Handler struct {
@@ -71,15 +90,13 @@ func (h *Handler) GetLessonDetail(c *gin.Context) {
 		return
 	}
 
-	var uri struct {
-		ID string `uri:"id" binding:"required,uuid"`
-	}
-	if err := c.ShouldBindUri(&uri); err != nil {
-		response.BadRequest(c, "invalid lesson ID format, must be a valid UUID")
+	lessonParam := strings.TrimSpace(c.Param("id"))
+	if !isValidLessonIdentifier(lessonParam) {
+		response.BadRequest(c, "invalid lesson identifier format")
 		return
 	}
 
-	lesson, err := h.curriculumUsecase.GetLessonDetail(c.Request.Context(), userID, uri.ID)
+	lesson, err := h.curriculumUsecase.GetLessonDetail(c.Request.Context(), userID, lessonParam)
 	if err != nil {
 		response.Error(c, err)
 		return
@@ -96,11 +113,9 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 		return
 	}
 
-	var uri struct {
-		ID string `uri:"id" binding:"required,uuid"`
-	}
-	if err := c.ShouldBindUri(&uri); err != nil {
-		response.BadRequest(c, "invalid lesson ID format, must be a valid UUID")
+	lessonParam := strings.TrimSpace(c.Param("id"))
+	if !isValidLessonIdentifier(lessonParam) {
+		response.BadRequest(c, "invalid lesson identifier format")
 		return
 	}
 
@@ -120,7 +135,7 @@ func (h *Handler) CompleteLesson(c *gin.Context) {
 			return
 		}
 	}
-	req.LessonID = uri.ID
+	req.LessonID = lessonParam
 
 	res, err := h.curriculumUsecase.CompleteLesson(c.Request.Context(), userID, &req)
 	if err != nil {
@@ -154,7 +169,7 @@ func completeLessonBindErrorMessage(err error) string {
 	return "invalid request payload"
 }
 
-// GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=...
+// GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=... or ?lang=ja&level_code=N5
 func (h *Handler) GetGrammarPoints(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
@@ -162,21 +177,44 @@ func (h *Handler) GetGrammarPoints(c *gin.Context) {
 		return
 	}
 
-	var query struct {
-		LevelID string `form:"level_id" binding:"required,uuid"`
-	}
-	if err := c.ShouldBindQuery(&query); err != nil {
-		response.BadRequest(c, "level_id query parameter is required and must be a valid UUID")
+	rawLevelID := strings.TrimSpace(c.Query("level_id"))
+	if rawLevelID != "" {
+		var query struct {
+			LevelID string `form:"level_id" binding:"required,uuid"`
+		}
+		if err := c.ShouldBindQuery(&query); err != nil {
+			response.BadRequest(c, "level_id query parameter is required and must be a valid UUID")
+			return
+		}
+
+		points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), userID, query.LevelID)
+		if err != nil {
+			response.Error(c, err)
+			return
+		}
+
+		response.Success(c, http.StatusOK, "grammar points retrieved successfully", points)
 		return
 	}
 
-	points, err := h.curriculumUsecase.GetGrammarPoints(c.Request.Context(), userID, query.LevelID)
-	if err != nil {
-		response.Error(c, err)
+	lang := strings.TrimSpace(c.Query("lang"))
+	levelCode := strings.TrimSpace(c.Query("level_code"))
+	if lang == "" && levelCode == "" {
+		response.BadRequest(c, "level_id or level_code query parameter is required")
 		return
 	}
 
-	response.Success(c, http.StatusOK, "grammar points retrieved successfully", points)
+	if filterUC, ok := h.curriculumUsecase.(grammarFilterUsecase); ok {
+		points, err := filterUC.GetGrammarPointsByLevelFilter(c.Request.Context(), userID, lang, levelCode)
+		if err != nil {
+			response.Error(c, err)
+			return
+		}
+		response.Success(c, http.StatusOK, "grammar points retrieved successfully", points)
+		return
+	}
+
+	response.BadRequest(c, "level_id query parameter is required and must be a valid UUID")
 }
 
 // RegisterRoutes registers curriculum routes under the protected group

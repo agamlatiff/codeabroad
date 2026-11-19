@@ -118,12 +118,6 @@ export const useExerciseQuestionInputs = ({
     [submittedResult]
   )
 
-  const handleConfirmSpokenSample = useCallback(() => {
-    if (!parsedContent?.displayText) return
-    const sample = parsedContent.displayText
-    runUnlockedTap(() => setTextInput(sample))
-  }, [parsedContent, runUnlockedTap])
-
   const handleToggleHint = useCallback(() => {
     audioEngine.playPop()
     triggerHaptic('tap')
@@ -147,7 +141,6 @@ export const useExerciseQuestionInputs = ({
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handleToggleHint,
   }
 }

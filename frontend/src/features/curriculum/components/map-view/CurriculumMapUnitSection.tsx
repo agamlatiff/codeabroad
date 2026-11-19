@@ -42,9 +42,9 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
 
   return (
     <section className="space-y-4">
-      {/* ── UNIT BANNER HEADER ── */}
+      {/* ── UNIT BANNER HEADER (Sticky per unit section on scroll) ── */}
       <div
-        className={`max-w-xl mx-auto w-full text-white rounded-2xl px-5 py-3.5 sm:px-6 sm:py-4 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
+        className={`sticky top-3 z-20 max-w-xl mx-auto w-full text-white rounded-2xl px-5 py-3.5 sm:px-6 sm:py-4 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
       >
         {/* Glossy Glass Reflection Highlight */}
         <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 via-white/5 to-transparent rounded-t-2xl pointer-events-none" />
@@ -109,9 +109,6 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
           />
 
           {/* Decorative Ambient Language Learning Stamps on Margins */}
-          <div className="hidden lg:block absolute left-4 top-16 text-slate-300 font-brand font-black text-xl select-none pointer-events-none opacity-60">
-            Aa / 文
-          </div>
           <div className="hidden lg:block absolute right-4 top-28 text-slate-400 font-brand font-bold text-[10px] select-none pointer-events-none bg-white/80 border border-slate-200/80 px-2.5 py-1 rounded-lg shadow-2xs backdrop-blur-xs">
             Kosakata & Tata Bahasa
           </div>

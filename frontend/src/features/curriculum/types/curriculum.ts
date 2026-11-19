@@ -40,14 +40,22 @@ export type GrammarPointCategory =
   | 'sentence_pattern'
   | string
 
+export interface GrammarExample {
+  jp: string
+  reading: string
+  id: string
+}
+
 export interface GrammarPoint {
   id: string
   level_id: string
+  level_code?: string
   code: string
   category: GrammarPointCategory
   title: string
   formula: string
   explanation: string
+  examples?: GrammarExample[]
   order_index: number
   created_at: string
 }
@@ -56,6 +64,7 @@ export type UnitType = 'curriculum' | 'diagnostic_exam' | string
 
 export interface LessonNodeResponse {
   id: string
+  slug?: string
   unit_id: string
   title: string
   xp_reward: number
@@ -109,6 +118,7 @@ export interface CurriculumExercise {
 
 export interface LessonDetailResponse {
   id: string
+  slug?: string
   unit_id: string
   title: string
   xp_reward: number
@@ -161,6 +171,7 @@ export interface CompleteLessonResponse {
   progress: UserLessonProgress
   gamification: CurriculumGamificationSummary
   unlocked_next_lesson_id?: string | null
+  unlocked_next_lesson_slug?: string | null
   awarded_badges?: CurriculumBadgeDefinition[]
   session_score?: number
   session_xp_earned?: number

@@ -11,6 +11,7 @@ import (
 	"codeabroad/backend/internal/app/user"
 	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
+	"strings"
 )
 
 // PostgresRepository implements curriculum.Repository using PostgreSQL
@@ -23,31 +24,20 @@ func NewRepository(db *postgres.PostgresDB) Repository {
 	return &PostgresRepository{db: db}
 }
 
-// GetGrammarPointsByLevelID retrieves all normalized grammar points for a proficiency level
-func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error) {
-	if err := apperror.ValidateEntityUUID(levelID); err != nil {
-		return nil, err
-	}
-	query := `
-		SELECT id, level_id, code, category, title, formula, explanation, order_index, created_at
-		FROM grammar_points
-		WHERE level_id = $1::uuid
-		ORDER BY order_index ASC, id ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, levelID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to query grammar points: %w", err)
-	}
-	defer rows.Close()
-
+func scanGrammarPointsRows(rows pgx.Rows) ([]GrammarPoint, error) {
 	points := make([]GrammarPoint, 0, 16)
 	for rows.Next() {
 		var gp GrammarPoint
+		var examplesRaw []byte
 		if err := rows.Scan(
-			&gp.ID, &gp.LevelID, &gp.Code, &gp.Category, &gp.Title,
-			&gp.Formula, &gp.Explanation, &gp.OrderIndex, &gp.CreatedAt,
+			&gp.ID, &gp.LevelID, &gp.LevelCode, &gp.Code, &gp.Category, &gp.Title,
+			&gp.Formula, &gp.Explanation, &examplesRaw, &gp.OrderIndex, &gp.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan grammar point: %w", err)
+		}
+		gp.Examples = []GrammarExample{}
+		if len(examplesRaw) > 0 {
+			_ = json.Unmarshal(examplesRaw, &gp.Examples)
 		}
 		points = append(points, gp)
 	}
@@ -57,14 +47,62 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 	return points, nil
 }
 
+// GetGrammarPointsByLevelID retrieves all normalized grammar points for a proficiency level
+func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error) {
+	if err := apperror.ValidateEntityUUID(levelID); err != nil {
+		return nil, err
+	}
+	query := `
+		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		FROM grammar_points gp
+		JOIN proficiency_levels pl ON pl.id = gp.level_id
+		WHERE gp.level_id = $1::uuid
+		ORDER BY gp.order_index ASC, gp.id ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, levelID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query grammar points: %w", err)
+	}
+	defer rows.Close()
+	return scanGrammarPointsRows(rows)
+}
+
+// GetGrammarPointsByLanguageCode retrieves grammar points across all levels (N5..N1) or a specific level code.
+func (r *PostgresRepository) GetGrammarPointsByLanguageCode(ctx context.Context, languageCode string, levelCode string) ([]GrammarPoint, error) {
+	lang := strings.ToLower(strings.TrimSpace(languageCode))
+	if lang == "" {
+		lang = "ja"
+	}
+	lvl := strings.ToUpper(strings.TrimSpace(levelCode))
+	if lvl == "ALL" || lvl == "SEMUA" {
+		lvl = ""
+	}
+	query := `
+		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		FROM grammar_points gp
+		JOIN proficiency_levels pl ON pl.id = gp.level_id
+		JOIN languages l ON l.id = pl.language_id
+		WHERE l.code = $1
+		  AND ($2 = '' OR UPPER(pl.code) = $2)
+		ORDER BY pl.order_index ASC, gp.order_index ASC, gp.id ASC
+	`
+	rows, err := r.db.Pool.Query(ctx, query, lang, lvl)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query grammar points by level code: %w", err)
+	}
+	defer rows.Close()
+	return scanGrammarPointsRows(rows)
+}
+
 // GetGrammarPointsByLessonID retrieves distinct grammar points referenced by exercises within a lesson node
 func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, lessonID string) ([]GrammarPoint, error) {
 	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
 		return nil, err
 	}
 	query := `
-		SELECT DISTINCT gp.id, gp.level_id, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.order_index, gp.created_at
+		SELECT DISTINCT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.examples, gp.order_index, gp.created_at
 		FROM grammar_points gp
+		JOIN proficiency_levels pl ON pl.id = gp.level_id
 		JOIN exercises e ON gp.id = e.grammar_point_id
 		WHERE e.lesson_id = $1::uuid
 		ORDER BY gp.order_index ASC, gp.id ASC
@@ -74,22 +112,7 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 		return nil, fmt.Errorf("failed to query grammar points for lesson: %w", err)
 	}
 	defer rows.Close()
-
-	points := make([]GrammarPoint, 0, 8)
-	for rows.Next() {
-		var gp GrammarPoint
-		if err := rows.Scan(
-			&gp.ID, &gp.LevelID, &gp.Code, &gp.Category, &gp.Title,
-			&gp.Formula, &gp.Explanation, &gp.OrderIndex, &gp.CreatedAt,
-		); err != nil {
-			return nil, fmt.Errorf("failed to scan lesson grammar point: %w", err)
-		}
-		points = append(points, gp)
-	}
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("rows iteration error in lesson grammar points: %w", err)
-	}
-	return points, nil
+	return scanGrammarPointsRows(rows)
 }
 
 // GetUnitsByLevelID retrieves all curriculum chapters for a proficiency level
@@ -160,7 +183,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	}
 	query := `
 		SELECT 
-			l.id, l.unit_id, l.title, l.xp_reward, l.order_index,
+			l.id, l.unit_id, l.slug, l.title, l.xp_reward, l.order_index,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -177,11 +200,11 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	}
 	defer rows.Close()
 
-	lessons := make([]LessonNodeResponse, 0, 32)
+	lessons := make([]LessonNodeResponse, 0, 48)
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
-			&l.ID, &l.UnitID, &l.Title, &l.XPReward, &l.OrderIndex,
+			&l.ID, &l.UnitID, &l.Slug, &l.Title, &l.XPReward, &l.OrderIndex,
 			&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan lesson row: %w", err)
@@ -194,6 +217,42 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	return lessons, nil
 }
 
+// ResolveLessonID resolves either a lesson UUID or ASCII slug into its canonical UUID.
+func (r *PostgresRepository) ResolveLessonID(ctx context.Context, idOrSlug string) (string, error) {
+	trimmed := strings.TrimSpace(idOrSlug)
+	if trimmed == "" {
+		return "", apperror.ErrBadRequest
+	}
+	if apperror.ValidateEntityUUID(trimmed) == nil {
+		return trimmed, nil
+	}
+	var lessonID string
+	err := r.db.Pool.QueryRow(ctx, `SELECT id::text FROM lessons WHERE slug = $1`, trimmed).Scan(&lessonID)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return "", ErrLessonNotFound
+		}
+		return "", fmt.Errorf("failed to resolve lesson slug: %w", err)
+	}
+	return lessonID, nil
+}
+
+// GetLessonSlugByID returns the ASCII slug of a lesson by UUID.
+func (r *PostgresRepository) GetLessonSlugByID(ctx context.Context, lessonID string) (*string, error) {
+	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
+		return nil, err
+	}
+	var slug string
+	err := r.db.Pool.QueryRow(ctx, `SELECT slug FROM lessons WHERE id = $1::uuid`, lessonID).Scan(&slug)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to query lesson slug: %w", err)
+	}
+	return &slug, nil
+}
+
 // GetLessonByID retrieves a single lesson with user progress and sequential unlock status
 func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userID string) (*LessonDetailResponse, error) {
 	if err := apperror.ValidateEntityUUID(id); err != nil {
@@ -204,7 +263,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	}
 	lessonQuery := targetCurriculumLessonCTESQL + `
 		SELECT 
-			l.id, l.unit_id, u.level_id, u.unit_type, l.title, l.xp_reward, l.order_index, l.created_at,
+			l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title, l.xp_reward, l.order_index, l.created_at,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -217,7 +276,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	`
 	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
-		&l.ID, &l.UnitID, &l.LevelID, &l.UnitType, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
+		&l.ID, &l.UnitID, &l.Slug, &l.LevelID, &l.UnitType, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
 		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt, &l.IsUnlocked,
 	)
 	if err != nil {

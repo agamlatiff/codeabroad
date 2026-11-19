@@ -43,11 +43,12 @@ export const resolveMapUnitPalette = (index: number): MapUnitPalette =>
   MAP_UNIT_PALETTES[index % MAP_UNIT_PALETTES.length]
 
 export const MAP_GEOMETRY = {
-  xSequence: [135, 200, 265, 200] as const,
-  verticalSpacing: 175,
-  startY: 135,
+  xSequence: [125, 200, 275, 200] as const,
+  verticalSpacing: 240,
+  activePopoverExtraSpace: 80,
+  startY: 105,
   viewboxWidth: 400,
-  bottomPadding: 70,
+  bottomPadding: 90,
   nodeDiscRadius: 36,
 } as const
 

@@ -5,6 +5,7 @@
 
 export interface IllustrationProps {
   className?: string
+  compact?: boolean
 }
 
 export interface OnboardingLanguage {

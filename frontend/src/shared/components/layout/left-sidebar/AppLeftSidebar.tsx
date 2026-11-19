@@ -4,7 +4,6 @@ import {
   SignOut,
   Sparkle,
 } from '@phosphor-icons/react'
-import { UserAvatar } from './UserAvatar'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { useAppLeftSidebar } from "@/shared/hooks/layout/left-sidebar/useAppLeftSidebar"
 import { SettingsModal } from './SettingsModal'
@@ -134,26 +133,6 @@ export const AppLeftSidebar = () => {
             <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-rose-950/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 border border-rose-800/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
               <span>Keluar Akun</span>
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-rose-950" />
-            </div>
-          </button>
-
-          {/* User Profile Avatar with Online Dot */}
-          <button
-            type="button"
-            onClick={handleOpenSettings}
-            aria-label="Buka Pengaturan Profil"
-            className="relative group cursor-pointer mt-1 bg-transparent border-0 p-0 text-left"
-          >
-            <div className="ring-2 ring-slate-200 hover:ring-blue-400 rounded-full transition-all hover:scale-105">
-              <UserAvatar user={user} size="sm" style={avatarStyle} />
-            </div>
-            {/* Online Active Indicator Dot */}
-            <span className="w-3.5 h-3.5 bg-emerald-500 border-2 border-white rounded-full absolute -bottom-0.5 -right-0.5 shadow-2xs" />
-
-            {/* Tooltip */}
-            <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
-              <span>Profil &amp; Pengaturan: {user?.name || 'Pembelajar Global'}</span>
-              <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
             </div>
           </button>
         </div>

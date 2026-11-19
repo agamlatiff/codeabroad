@@ -32,6 +32,7 @@ export interface User extends UserAccount, UserProfile, UserGamificationStats {}
 export interface UpdateProfilePayload {
   name?: string
   bio?: string
+  avatar_url?: string
   daily_goal_minutes?: number
   has_seen_roadmap_tour?: boolean
 }

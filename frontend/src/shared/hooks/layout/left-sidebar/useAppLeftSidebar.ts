@@ -3,7 +3,7 @@ import { useLocation } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BookOpenText,
-  Brain,
+  Cards,
   SquaresFour,
   Target,
   Trophy,
@@ -13,9 +13,11 @@ import { useAuthStore } from "@/features/auth/store/authStore"
 import { useLogout } from "@/features/auth/hooks/useLogout"
 import {
   getProfileQueryKey,
-  getSrsDueQueryKey,
 } from '@/shared/constants/queryKeys'
-import { exerciseService } from '@/features/exercise/services/exerciseService'
+import {
+  flashcardService,
+  FLASHCARD_DUE_QUERY_KEY,
+} from '@/features/flashcard/services/flashcardService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import {
   getSavedAvatarStyle,
@@ -41,15 +43,15 @@ export const useAppLeftSidebar = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>(() => getSavedAvatarStyle())
 
-  const srsDueQuery = useQuery({
-    queryKey: getSrsDueQueryKey(user?.id, 20),
-    queryFn: ({ signal }) => exerciseService.getDueReviews(20, { signal }),
+  const flashcardDueQuery = useQuery({
+    queryKey: [...FLASHCARD_DUE_QUERY_KEY, user?.id ?? 'anonymous', 'ja', 'sidebar'],
+    queryFn: ({ signal }) => flashcardService.getDueQueue('ja', 20, { signal }),
     enabled: Boolean(user),
     staleTime: 60_000,
     retry: false,
   })
 
-  const srsDueCount = srsDueQuery.data?.total_due ?? 0
+  const flashcardDueCount = flashcardDueQuery.data?.total_due ?? 0
 
   const navItems: LeftSidebarNavItem[] = useMemo(() => {
     const rawItems = [
@@ -66,14 +68,14 @@ export const useAppLeftSidebar = () => {
         icon: BookOpenText,
       },
       {
-        label: 'Ulasan',
+        label: 'Flashcard',
         tooltip:
-          srsDueCount > 0
-            ? `Ulasan SRS • ${srsDueCount} kartu jatuh tempo`
-            : 'Ulasan SRS • Memori Harian',
-        href: '/review',
-        icon: Brain,
-        hasBadge: srsDueCount > 0,
+          flashcardDueCount > 0
+            ? `Flashcard • ${flashcardDueCount} kartu jatuh tempo`
+            : 'Flashcard • Belajar & Ulasan Kosakata',
+        href: '/flashcards',
+        icon: Cards,
+        hasBadge: flashcardDueCount > 0,
       },
       {
         label: 'Misi',
@@ -95,9 +97,11 @@ export const useAppLeftSidebar = () => {
       isActive:
         location.pathname === item.href ||
         (item.href === '/curriculum' &&
-          location.pathname.startsWith('/curriculum')),
+          location.pathname.startsWith('/curriculum')) ||
+        (item.href === '/flashcards' &&
+          (location.pathname === '/review' || location.pathname === '/flashcard')),
     }))
-  }, [location.pathname, srsDueCount])
+  }, [location.pathname, flashcardDueCount])
 
   const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
     saveAvatarStyle(style)

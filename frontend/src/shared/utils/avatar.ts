@@ -2,7 +2,7 @@
  * Utility functions for user avatar generation, safe URL validation, and style persistence.
  */
 
-export type AvatarStyle = 'adventurer' | 'bottts' | 'lorelei'
+export type AvatarStyle = 'adventurer'
 
 export const AVATAR_STYLE_STORAGE_KEY = 'codeabroad_avatar_style'
 
@@ -12,18 +12,7 @@ export interface AvatarUser {
   name?: string
 }
 
-export const getSavedAvatarStyle = (): AvatarStyle => {
-  if (typeof window === 'undefined') return 'adventurer'
-  try {
-    const raw = window.localStorage.getItem(AVATAR_STYLE_STORAGE_KEY)
-    if (raw === 'adventurer' || raw === 'bottts' || raw === 'lorelei') {
-      return raw
-    }
-  } catch {
-    // Ignore storage access failures in private browsing
-  }
-  return 'adventurer'
-}
+export const getSavedAvatarStyle = (): AvatarStyle => 'adventurer'
 
 export const saveAvatarStyle = (style: AvatarStyle): void => {
   if (typeof window === 'undefined') return
@@ -75,25 +64,29 @@ export const getDeterministicGradient = (seed: string): string => {
   return gradients[Math.abs(hash) % gradients.length]
 }
 
+const ADVENTURER_BG_COLORS = 'b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf'
+
+export const AVATAR_PRESET_SEEDS = [
+  'akira', 'sakura', 'sora', 'kenji', 'hana',
+  'ren', 'yuna', 'kai', 'mika', 'leo',
+  'aria', 'noah', 'mei', 'riku', 'chloe',
+  'lucas', 'nana', 'haru', 'felix', 'zara',
+] as const
+
+export const buildAdventurerAvatarUrl = (seed: string): string => {
+  const cleanSeed = seed.trim().toLowerCase() || 'learner'
+  return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodeURIComponent(cleanSeed)}&backgroundColor=${ADVENTURER_BG_COLORS}`
+}
+
 export const getAvatarUrl = (
   user?: AvatarUser | null,
-  style: AvatarStyle = 'adventurer'
+  _style: AvatarStyle = 'adventurer'
 ): string => {
+  void _style
   if (isSafeAvatarUrl(user?.avatar_url)) {
     return user.avatar_url.trim()
   }
 
   const seed = (user?.username || user?.name || 'learner').trim().toLowerCase()
-  const encodedSeed = encodeURIComponent(seed)
-  const bgColors = 'b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf'
-
-  switch (style) {
-    case 'bottts':
-      return `https://api.dicebear.com/7.x/bottts/svg?seed=${encodedSeed}&backgroundColor=e0e7ff,dbeafe,fef3c7,f3e8ff`
-    case 'lorelei':
-      return `https://api.dicebear.com/7.x/lorelei/svg?seed=${encodedSeed}&backgroundColor=${bgColors}`
-    case 'adventurer':
-    default:
-      return `https://api.dicebear.com/7.x/adventurer/svg?seed=${encodedSeed}&backgroundColor=${bgColors}`
-  }
+  return buildAdventurerAvatarUrl(seed)
 }

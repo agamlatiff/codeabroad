@@ -4,7 +4,12 @@ import { useUser } from "@/features/user/hooks/useUser"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { extractApiErrorMessage } from "@/shared/services/api"
 import type { User } from "@/shared/types/user"
-import type { AvatarStyle } from "@/shared/utils/avatar"
+import {
+  AVATAR_PRESET_SEEDS,
+  buildAdventurerAvatarUrl,
+  getAvatarUrl,
+  type AvatarStyle,
+} from "@/shared/utils/avatar"
 
 const CLOSE_AFTER_SAVE_MS = 900
 
@@ -19,8 +24,6 @@ const profileSettingsSchema = z.object({
 
 export const AVATAR_STYLE_OPTIONS: { id: AvatarStyle; label: string; desc: string }[] = [
   { id: 'adventurer', label: 'Petualang Global', desc: 'Gaya modern kasual' },
-  { id: 'bottts', label: 'Cyber Mech', desc: 'Robot tech futuristik' },
-  { id: 'lorelei', label: 'Manga Studio', desc: 'Ilustrasi elegan ekspresif' },
 ]
 
 export interface UseSettingsModalOptions {
@@ -48,6 +51,10 @@ export const useSettingsModal = ({
 
   const [name, setName] = useState(user?.name || '')
   const [bio, setBio] = useState(user?.bio || '')
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(() => getAvatarUrl(user))
+  const [avatarOptions, setAvatarOptions] = useState<string[]>(() =>
+    AVATAR_PRESET_SEEDS.map(buildAdventurerAvatarUrl)
+  )
   const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -61,6 +68,7 @@ export const useSettingsModal = ({
     if (isOpen) {
       setName(user?.name || '')
       setBio(user?.bio || '')
+      setSelectedAvatarUrl(getAvatarUrl(user))
       setSelectedAvatarStyle(avatarStyle)
       setSaveSuccess(false)
       setErrorMessage(null)
@@ -89,6 +97,19 @@ export const useSettingsModal = ({
     [onAvatarStyleChange]
   )
 
+  const handleSelectAvatarUrl = useCallback((url: string) => {
+    triggerHaptic('tap')
+    setSelectedAvatarUrl(url)
+  }, [])
+
+  const shuffleAvatarOptions = useCallback(() => {
+    triggerHaptic('tap')
+    const nonce = Math.random().toString(36).slice(2, 7)
+    setAvatarOptions(
+      AVATAR_PRESET_SEEDS.map((seed, idx) => buildAdventurerAvatarUrl(`${seed}-${nonce}-${idx}`))
+    )
+  }, [])
+
   const handleSubmit = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault()
@@ -108,6 +129,7 @@ export const useSettingsModal = ({
         await userActions.updateProfile({
           name: validation.data.name,
           bio: validation.data.bio,
+          avatar_url: selectedAvatarUrl,
         })
         setSaveSuccess(true)
         setErrorMessage(null)
@@ -126,7 +148,7 @@ export const useSettingsModal = ({
         setIsSubmitting(false)
       }
     },
-    [name, bio, userActions, onProfileUpdated, onClose]
+    [name, bio, selectedAvatarUrl, userActions, onProfileUpdated, onClose]
   )
 
   return {
@@ -134,11 +156,15 @@ export const useSettingsModal = ({
     setName,
     bio,
     setBio,
+    selectedAvatarUrl,
+    avatarOptions,
     selectedAvatarStyle,
     avatarStyles: AVATAR_STYLE_OPTIONS,
     isSubmitting: isSubmitting || userStatus.isUpdating,
     saveSuccess,
     errorMessage,
+    handleSelectAvatarUrl,
+    shuffleAvatarOptions,
     handleAvatarSelect,
     handleSubmit,
   }

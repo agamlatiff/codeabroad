@@ -77,5 +77,25 @@ export const curriculumService = {
     })
     return unwrapApiResponse(response, 'Gagal memuat daftar grammar level.')
   },
+
+  /**
+   * Fetches grammar points filtered by language code and optional JLPT level code (e.g. N5..N1).
+   */
+  async getGrammarPointsByFilter(
+    lang = 'ja',
+    levelCode?: string,
+    options?: RequestOptions
+  ): Promise<GrammarPoint[]> {
+    const trimmedLang = lang.trim() || 'ja'
+    const trimmedLevel = levelCode?.trim()
+    const response = await api.get<ApiResponse<GrammarPoint[]>>('/curriculum/grammar-points', {
+      params: {
+        lang: trimmedLang,
+        ...(trimmedLevel && trimmedLevel !== 'ALL' ? { level_code: trimmedLevel } : {}),
+      },
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal memuat daftar grammar.')
+  },
 }
 

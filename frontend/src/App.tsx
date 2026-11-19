@@ -37,8 +37,8 @@ const ReadinessExamPage = lazy(() =>
     default: m.ReadinessExamPage,
   }))
 )
-const SrsReviewPage = lazy(() =>
-  import('@/features/exercise/pages/SrsReviewPage').then((m) => ({ default: m.SrsReviewPage }))
+const FlashcardPage = lazy(() =>
+  import('@/features/flashcard/pages/FlashcardPage').then((m) => ({ default: m.FlashcardPage }))
 )
 const LeaderboardPage = lazy(() =>
   import('@/features/leaderboard/pages/LeaderboardPage').then((m) => ({
@@ -92,7 +92,9 @@ function App() {
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/learn/:id" element={<LearnWorkspacePage />} />
               <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
-              <Route path="/review" element={<SrsReviewPage />} />
+              <Route path="/flashcards" element={<FlashcardPage />} />
+              <Route path="/flashcard" element={<Navigate to="/flashcards" replace />} />
+              <Route path="/review" element={<Navigate to="/flashcards" replace />} />
               <Route path="/exam/:levelId" element={<ReadinessExamPage />} />
               <Route path="/career" element={<Navigate to="/curriculum" replace />} />
             </Route>

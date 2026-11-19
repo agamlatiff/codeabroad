@@ -11,7 +11,6 @@ import {
 import { Button3D } from '@/shared/components/ui/Button3D'
 import {
   ArrowCounterClockwise,
-  Check,
   Lightbulb,
   Microphone,
   SpeakerHigh,
@@ -36,7 +35,6 @@ interface ExercisePromptRendererProps {
   onClearTokens: () => void
   onSelectOption: (value: string) => void
   onSetTextInput: (value: string) => void
-  onConfirmSpokenSample?: () => void
   onPlayAudio: () => void
   onToggleRecording: () => void
   onToggleHint: () => void
@@ -107,7 +105,6 @@ export const ExercisePromptRenderer = ({
   onClearTokens,
   onSelectOption,
   onSetTextInput,
-  onConfirmSpokenSample,
   onPlayAudio,
   onToggleRecording,
   onToggleHint,
@@ -416,7 +413,7 @@ export const ExercisePromptRenderer = ({
       {exerciseType === 'speaking_repeat' && (
         <div className="space-y-4 p-5 rounded-2xl bg-white border-2 border-slate-200 shadow-sm">
           <div className="flex flex-wrap items-center gap-3">
-            {speechRecognitionSupported && (
+            {speechRecognitionSupported ? (
               <Button3D
                 type="button"
                 variant={isRecordingSpeech ? 'rose' : 'white'}
@@ -434,43 +431,48 @@ export const ExercisePromptRenderer = ({
               >
                 {isRecordingSpeech ? 'Hentikan Rekam' : 'Rekam Suara'}
               </Button3D>
-            )}
-
-            {onConfirmSpokenSample && parsedContent.displayText && (
-              <Button3D
-                type="button"
-                variant="emerald"
-                size="md"
-                disableSound
-                disabled={isLocked}
-                onClick={onConfirmSpokenSample}
-                data-allow-enter-submit={textInput.trim().length > 0 ? 'true' : undefined}
-                icon={<Check weight="bold" className="w-4 h-4" />}
-              >
-                Saya Sudah Mengucapkan
-              </Button3D>
+            ) : (
+              <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-bold text-amber-800">
+                Browser ini belum mendukung pengenalan suara (Web Speech API). Gunakan Chrome atau Edge terbaru untuk latihan berbicara.
+              </div>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <label
-              htmlFor={`speaking-transcript-${exercise.id}`}
+            <span
+              id={`speaking-transcript-label-${exercise.id}`}
               className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
             >
               Transkrip Pelafalan Anda
-            </label>
-            <input
-              id={`speaking-transcript-${exercise.id}`}
-              type="text"
-              disabled={isLocked}
-              value={textInput}
-              onChange={(e) => onSetTextInput(e.target.value)}
-              onKeyDown={handleInputKeyDown}
-              placeholder={
-                parsedContent.displayText || 'Ketik atau rekam pelafalan kalimat...'
-              }
-              className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-blue-500 focus:bg-white outline-none font-bold text-slate-900"
-            />
+            </span>
+            <div
+              role="status"
+              aria-labelledby={`speaking-transcript-label-${exercise.id}`}
+              className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 flex items-center justify-between gap-3"
+            >
+              <span
+                className={
+                  textInput.trim().length > 0
+                    ? 'font-bold text-slate-900'
+                    : 'text-sm font-medium text-slate-400'
+                }
+              >
+                {textInput.trim().length > 0
+                  ? textInput
+                  : isRecordingSpeech
+                    ? 'Mendengarkan suaramu...'
+                    : 'Tekan "Rekam Suara" lalu ucapkan kalimat di atas...'}
+              </span>
+              {textInput.trim().length > 0 && !isLocked && (
+                <button
+                  type="button"
+                  onClick={() => onSetTextInput('')}
+                  className="shrink-0 text-xs font-bold text-slate-500 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-200/70 transition-colors cursor-pointer"
+                >
+                  Ulangi Rekam
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

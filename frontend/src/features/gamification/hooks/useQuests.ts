@@ -241,7 +241,7 @@ export const useQuests = () => {
         gem_reward: 0,
         estimated_minutes: 5,
         isCompleted: isXpDone,
-        route: '/review',
+        route: '/flashcards',
         icon: Lightning,
         progressText: isXpDone ? '50/50 XP' : `${Math.min(50, todayEarnedXp)}/50 XP`,
         progressPercent: isXpDone ? 100 : Math.min(100, Math.round((todayEarnedXp / 50) * 100)),

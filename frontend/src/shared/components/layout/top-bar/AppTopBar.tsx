@@ -7,6 +7,7 @@ import {
   Translate,
 } from '@phosphor-icons/react'
 import { LanguageFlagIllustration } from "@/features/onboarding/components/illustrations/FlagIllustrations"
+import { UserAvatar } from "@/shared/components/layout/left-sidebar/UserAvatar"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { computeXpLevelProgress } from "@/shared/utils/progression"
@@ -31,6 +32,8 @@ export const AppTopBar = ({
   unitLabel = 'Modul',
 }: AppTopBarProps) => {
   const {
+    activeUser,
+    avatarStyle,
     rawXp,
     userXp,
     userStreak,
@@ -66,7 +69,7 @@ export const AppTopBar = ({
     <>
       <div className="w-6 h-4 rounded-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
         {currentTrackConfig.languageCode ? (
-          <LanguageFlagIllustration code={currentTrackConfig.languageCode} className="w-full h-full object-contain" />
+          <LanguageFlagIllustration code={currentTrackConfig.languageCode} compact className="w-full h-full object-contain" />
         ) : (
           <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
         )}
@@ -140,8 +143,13 @@ export const AppTopBar = ({
               <span>{userGems}</span>
             </div>
 
-            {/* Unified XP & Level Chip + Progress Popover */}
-            <div className="relative" ref={xpPopoverRef}>
+            {/* Unified XP & Level Chip + Hover/Click Progress Popover */}
+            <div
+              className="relative"
+              ref={xpPopoverRef}
+              onMouseEnter={() => setShowXpPopover(true)}
+              onMouseLeave={() => setShowXpPopover(false)}
+            >
               <button
                 type="button"
                 onClick={() => {
@@ -150,7 +158,7 @@ export const AppTopBar = ({
                 }}
                 aria-expanded={showXpPopover}
                 className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/80 text-amber-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-colors cursor-pointer"
-                title={`Total ${userXp} XP • Lv. ${userLevel} (${xpProgress.xpInLevel}/${xpProgress.xpForNextLevel} XP) — Klik untuk detail`}
+                title={`Total ${userXp} XP • Lv. ${userLevel} (${xpProgress.xpInLevel}/${xpProgress.xpForNextLevel} XP)`}
               >
                 <Star weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
                 <span>{userXp} XP</span>
@@ -159,7 +167,8 @@ export const AppTopBar = ({
               </button>
 
               {showXpPopover && (
-                <div className="absolute right-0 mt-2 w-64 rounded-2xl bg-white border-2 border-slate-200/90 shadow-xl p-4 z-50 space-y-2.5">
+                <div className="absolute right-0 top-full pt-2 z-50">
+                  <div className="w-64 rounded-2xl bg-white border-2 border-slate-200/90 shadow-xl p-4 space-y-2.5">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-brand font-black text-slate-900">
                       Level {xpProgress.level}
@@ -185,6 +194,7 @@ export const AppTopBar = ({
                   <p className="text-[11px] text-slate-500 leading-snug">
                     Butuh <span className="font-bold text-slate-700">{xpProgress.xpRemaining} XP</span> lagi untuk naik ke Lv. {xpProgress.level + 1}.
                   </p>
+                  </div>
                 </div>
               )}
             </div>
@@ -208,6 +218,19 @@ export const AppTopBar = ({
                 <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-2xs" />
               </span>
             </button>
+          )}
+
+          {/* Read-only User Identity Chip */}
+          {activeUser && (
+            <div
+              className="hidden sm:flex items-center gap-2 pl-1.5 pr-2.5 py-1 rounded-2xl bg-white border border-slate-200/90 shadow-2xs select-none"
+              title={activeUser.name || activeUser.username || 'Pembelajar'}
+            >
+              <UserAvatar user={activeUser} size="xs" style={avatarStyle} />
+              <span className="text-[11px] font-brand font-bold text-slate-700 max-w-[96px] truncate">
+                {activeUser.name || activeUser.username || 'Pembelajar'}
+              </span>
+            </div>
           )}
         </div>
       </div>

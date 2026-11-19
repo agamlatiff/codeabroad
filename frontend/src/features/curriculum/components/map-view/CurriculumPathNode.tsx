@@ -67,20 +67,25 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
-        <div className="absolute -top-28 z-30 flex flex-col items-center select-none animate-bounce-subtle pointer-events-auto">
+        <div className="absolute top-full mt-3.5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center select-none animate-bounce-subtle pointer-events-auto">
           <div
-            className={`bg-white border-2 rounded-2xl p-3 shadow-md text-center max-w-[215px] space-y-1.5 relative ${catTokens.popoverBorder}`}
+            className={`bg-white border-2 rounded-2xl p-3.5 shadow-lg text-center w-[252px] space-y-2 relative ${catTokens.popoverBorder}`}
           >
-            <div className="flex items-center justify-center gap-1.5">
+            {/* Upward Speech Bubble Triangle */}
+            <div
+              className={`absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-l-2 border-t-2 rotate-45 ${catTokens.popoverBorder}`}
+            />
+
+            <div className="flex items-center justify-between gap-2">
               <span
-                className={`text-[10px] font-brand font-black uppercase tracking-wider flex items-center justify-center gap-1 ${catTokens.popoverLabelColor}`}
+                className={`text-[10px] font-brand font-black uppercase tracking-wider inline-flex items-center gap-1 whitespace-nowrap ${catTokens.popoverLabelColor}`}
               >
-                <Sparkle weight="fill" className="w-3 h-3" />
+                <Sparkle weight="fill" className="w-3 h-3 shrink-0" />
                 <span>Sedang Dipelajari</span>
               </span>
               {node.badgeLabel && (
                 <span
-                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 ${catTokens.badgeClass}`}
+                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
                 >
                   {node.category === 'language' && (
                     <Translate weight="bold" className="w-2.5 h-2.5" />
@@ -98,15 +103,10 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
               fullWidth
               icon={renderActionIcon(node.category)}
               onClick={handleActiveButtonClick}
-              className="text-[10px] py-1.5"
+              className="text-[11px] py-2 whitespace-nowrap"
             >
               {catTokens.activeButtonText}
             </Button3D>
-
-            {/* Downward Speech Bubble Triangle */}
-            <div
-              className={`absolute -bottom-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-r-2 border-b-2 rotate-45 ${catTokens.popoverBorder}`}
-            />
           </div>
         </div>
       )}

@@ -10,6 +10,7 @@ import {
   SpeakerHigh,
   SpeakerLow,
   SpeakerSimpleSlash,
+  Shuffle,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { UserAvatar } from './UserAvatar'
@@ -36,18 +37,24 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     setName,
     bio,
     setBio,
+    selectedAvatarUrl,
+    avatarOptions,
     selectedAvatarStyle,
-    avatarStyles,
     isSubmitting,
     saveSuccess,
     errorMessage,
-    handleAvatarSelect,
+    handleSelectAvatarUrl,
+    shuffleAvatarOptions,
     handleSubmit,
   } = useSettingsModal(props)
 
-  const { audioMode, setAudioMode, soundscapeTrack, setSoundscapeTrack } = useAudioStore()
+  const { audioMode, setAudioMode } = useAudioStore()
 
   if (!isOpen) return null
+
+  const previewUser = user
+    ? { ...user, avatar_url: selectedAvatarUrl }
+    : { name: 'Pembelajar Global', avatar_url: selectedAvatarUrl }
 
   return (
     <AccessibleModal
@@ -59,7 +66,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
       ariaLabel="Pengaturan Akun"
       backdropClassName="bg-slate-900/50 backdrop-blur-xs"
     >
-      <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-7 max-w-lg w-full space-y-5 shadow-2xl animate-pop relative max-h-[92vh] overflow-y-auto">
+      <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-7 max-w-2xl w-full space-y-5 shadow-2xl animate-pop relative max-h-[92vh] overflow-y-auto">
         {/* Close Button */}
         <button
           type="button"
@@ -78,7 +85,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           <div className="relative group">
             <div className="ring-4 ring-blue-100 rounded-full transition-transform">
               <UserAvatar
-                user={user}
+                user={previewUser}
                 size="lg"
                 style={selectedAvatarStyle}
                 className="w-14 h-14"
@@ -199,39 +206,51 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             />
           </div>
 
-          {/* Pilihan Gaya Avatar */}
-          <div className="space-y-2">
-            <label className="text-xs font-brand font-black text-slate-700 block">
-              Gaya Avatar Profil
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {avatarStyles.map((item) => {
-                const isSelected = selectedAvatarStyle === item.id
+          {/* Pilih Foto Profil (Petualang Global) */}
+          <div className="space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-brand font-black text-slate-700">
+                Pilih Foto Profil ({avatarOptions.length} Pilihan)
+              </label>
+              <button
+                type="button"
+                onClick={shuffleAvatarOptions}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-[11px] font-brand font-bold text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer select-none"
+              >
+                <Shuffle weight="bold" className="w-3.5 h-3.5" />
+                <span>Acak Pilihan</span>
+              </button>
+            </div>
+            <div className="grid grid-cols-5 sm:grid-cols-10 gap-3 justify-items-center py-1">
+              {avatarOptions.map((url, idx) => {
+                const isSelected = selectedAvatarUrl === url
                 return (
                   <button
-                    key={item.id}
+                    key={url}
                     type="button"
-                    onClick={() => handleAvatarSelect(item.id)}
-                    className={`p-2.5 rounded-xl border-2 text-center transition-all cursor-pointer flex flex-col items-center gap-1.5 ${
+                    onClick={() => handleSelectAvatarUrl(url)}
+                    aria-label={`Pilih avatar ${idx + 1}`}
+                    aria-pressed={isSelected}
+                    className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full p-0.5 transition-all cursor-pointer relative flex items-center justify-center bg-white select-none ${
                       isSelected
-                        ? 'border-blue-500 bg-blue-50/70 shadow-xs'
-                        : 'border-slate-200 hover:border-slate-300 bg-white'
+                        ? 'ring-2 ring-[#2563EB] ring-offset-2 shadow-sm'
+                        : 'ring-1 ring-slate-200 hover:ring-blue-300'
                     }`}
                   >
-                    <UserAvatar
-                      user={user}
-                      size="sm"
-                      style={item.id}
-                      className="w-8 h-8 pointer-events-none"
+                    <img
+                      src={url}
+                      alt={`Avatar pilihan ${idx + 1}`}
+                      loading="lazy"
+                      className="w-full h-full rounded-full object-cover pointer-events-none"
                     />
-                    <div className="leading-tight">
-                      <span className="font-brand font-black text-[11px] text-slate-800 block">
-                        {item.label}
+                    {isSelected && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-[#2563EB] text-white flex items-center justify-center shadow-xs ring-2 ring-white"
+                      >
+                        <Check weight="bold" className="w-2.5 h-2.5" />
                       </span>
-                      <span className="text-[9px] text-slate-400 block font-medium">
-                        {item.desc}
-                      </span>
-                    </div>
+                    )}
                   </button>
                 )
               })}
@@ -240,14 +259,9 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
           {/* ── AUDIO & SOUNDSCAPE PREFERENCES ── */}
           <div className="space-y-2.5 pt-3 border-t border-slate-200/80">
-            <div className="flex items-center justify-between">
-              <label className="block text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
-                Suara & Musik Latar (No Copyright)
-              </label>
-              <span className="text-[10px] font-mono text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-md font-bold">
-                100% Royalty Free
-              </span>
-            </div>
+            <label className="block text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
+              Suara & Musik Latar
+            </label>
 
             {/* Audio Mode 3D Segmented Control */}
             <div className="grid grid-cols-3 gap-2">
@@ -299,43 +313,6 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
                 <span className="text-[10px]">Hening</span>
               </button>
             </div>
-
-            {/* BGM Soundscape Theme Selection (If audioMode === 'all') */}
-            {audioMode === 'all' && (
-              <div className="grid grid-cols-2 gap-2 pt-1">
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    setSoundscapeTrack('universal')
-                  }}
-                  className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                    soundscapeTrack === 'universal'
-                      ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-xs'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
-                  }`}
-                >
-                  <span className="text-[11px] font-brand font-black block">☕ Universal Lo-Fi</span>
-                  <span className="text-[9px] text-slate-500 block">Akord 7th hangat untuk fokus belajar bahasa</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    setSoundscapeTrack('japan')
-                  }}
-                  className={`p-2.5 rounded-xl border-2 text-left transition-all cursor-pointer ${
-                    soundscapeTrack === 'japan'
-                      ? 'border-blue-500 bg-blue-50/70 text-blue-900 shadow-xs'
-                      : 'border-slate-200 hover:border-slate-300 text-slate-600 bg-white'
-                  }`}
-                >
-                  <span className="text-[11px] font-brand font-black block">⛩️ Tokyo Zen</span>
-                  <span className="text-[9px] text-slate-500 block">Dawai koto pentatonik tradisional</span>
-                </button>
-              </div>
-            )}
           </div>
 
           {/* Footer Buttons */}

@@ -104,7 +104,6 @@ export const useLearnWorkspace = (id?: string) => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handleToggleHint,
   } = useExerciseQuestionInputs({
     currentExercise,
@@ -283,8 +282,10 @@ export const useLearnWorkspace = (id?: string) => {
 
       if (epoch !== sessionEpochRef.current) return
 
-      const key = getLessonDraftKey(userId, lesson.id)
-      if (key) sessionStorage.removeItem(key)
+      const keyById = getLessonDraftKey(userId, lesson.id)
+      if (keyById) sessionStorage.removeItem(keyById)
+      const keyByParam = getLessonDraftKey(userId, id)
+      if (keyByParam && keyByParam !== keyById) sessionStorage.removeItem(keyByParam)
 
       if (completionResult.gamification) {
         updateUser({
@@ -320,7 +321,7 @@ export const useLearnWorkspace = (id?: string) => {
         accuracyPercent: completionResult.session_score ?? accuracyPercent,
       }
 
-      navigate(`/learn/${lesson.id}/complete`, {
+      navigate(`/learn/${lesson.slug || lesson.id}/complete`, {
         replace: true,
         state: navState,
       })
@@ -352,6 +353,7 @@ export const useLearnWorkspace = (id?: string) => {
     completeLessonAsync,
     correctExerciseIds.length,
     exercises.length,
+    id,
     isCompletingLesson,
     lesson,
     navigate,
@@ -458,7 +460,6 @@ export const useLearnWorkspace = (id?: string) => {
     handleClearTokens,
     handleSelectOption,
     handleSetTextInput,
-    handleConfirmSpokenSample,
     handlePlayAudio,
     handleToggleRecording,
     handleCheckAnswer,

@@ -21,7 +21,10 @@ export const useLessonCompletePage = () => {
   const fanfarePlayedRef = useRef(false)
 
   const rawState = (location.state ?? null) as LessonCompletionNavigationState | null
-  const state = rawState && (!id || rawState.lesson?.id === id) ? rawState : null
+  const state =
+    rawState && (!id || rawState.lesson?.id === id || rawState.lesson?.slug === id)
+      ? rawState
+      : null
 
   const fallbackLessonQuery = useQuery({
     queryKey: [...LESSON_DETAIL_QUERY_KEY, user?.id ?? 'anonymous', id],
@@ -67,28 +70,30 @@ export const useLessonCompletePage = () => {
     lesson?.score ??
     0
   const unlockedNextLessonId = completionResult?.unlocked_next_lesson_id ?? null
+  const unlockedNextLessonTarget =
+    completionResult?.unlocked_next_lesson_slug || unlockedNextLessonId
   const awardedBadges = completionResult?.awarded_badges ?? []
 
   const handleNextLesson = useCallback(() => {
     triggerHaptic('success')
     audioEngine.playSuccess()
-    if (unlockedNextLessonId) {
-      navigate(`/learn/${unlockedNextLessonId}`)
+    if (unlockedNextLessonTarget) {
+      navigate(`/learn/${unlockedNextLessonTarget}`)
       return
     }
     navigate('/curriculum')
-  }, [navigate, unlockedNextLessonId])
+  }, [navigate, unlockedNextLessonTarget])
 
   const handleReplayLesson = useCallback(() => {
     triggerHaptic('tap')
     audioEngine.playPop()
-    const targetLessonId = lesson?.id ?? id
-    if (targetLessonId) {
-      navigate(`/learn/${targetLessonId}`)
+    const targetLesson = lesson?.slug || lesson?.id || id
+    if (targetLesson) {
+      navigate(`/learn/${targetLesson}`)
       return
     }
     navigate('/curriculum')
-  }, [id, lesson?.id, navigate])
+  }, [id, lesson?.id, lesson?.slug, navigate])
 
   const handleBackToCurriculum = useCallback(() => {
     triggerHaptic('tap')

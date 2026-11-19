@@ -6,6 +6,7 @@ import (
 	"codeabroad/backend/internal/app/auth"
 	"codeabroad/backend/internal/app/curriculum"
 	"codeabroad/backend/internal/app/exercise"
+	"codeabroad/backend/internal/app/flashcard"
 	"codeabroad/backend/internal/app/gamification"
 	"codeabroad/backend/internal/app/health"
 	"codeabroad/backend/internal/app/language"
@@ -25,6 +26,7 @@ type Config struct {
 	LanguageHandler        *language.Handler
 	CurriculumHandler      *curriculum.Handler
 	ExerciseHandler        *exercise.Handler
+	FlashcardHandler       *flashcard.Handler
 	GamificationHandler    *gamification.Handler
 	LeaderboardHandler     *leaderboard.Handler
 	AuthMiddleware         gin.HandlerFunc
@@ -71,6 +73,9 @@ func SetupRouter(cfg *Config) *gin.Engine {
 		}
 		if cfg.ExerciseHandler != nil {
 			cfg.ExerciseHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+		}
+		if cfg.FlashcardHandler != nil {
+			cfg.FlashcardHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 		}
 		if cfg.GamificationHandler != nil {
 			cfg.GamificationHandler.RegisterRoutes(v1, cfg.AuthMiddleware)

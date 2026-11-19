@@ -14,6 +14,7 @@ import (
 	"codeabroad/backend/config"
 	"codeabroad/backend/internal/app/curriculum"
 	"codeabroad/backend/internal/app/exercise"
+	"codeabroad/backend/internal/app/flashcard"
 	"codeabroad/backend/internal/app/gamification"
 	"codeabroad/backend/internal/app/health"
 	"codeabroad/backend/infrastructure/postgres"
@@ -68,6 +69,7 @@ func main() {
 	exerciseRepo := exercise.NewRepository(pg)
 	srsRepo := exercise.NewSRSRepository(pg)
 	examRepo := exercise.NewReadinessExamRepository(pg)
+	flashcardRepo := flashcard.NewRepository(pg)
 	gamificationRepo := gamification.NewRepository(pg)
 	leaderboardRepo := leaderboard.NewRepository(pg)
 
@@ -79,6 +81,7 @@ func main() {
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
 	exerciseUsecase := exercise.NewUsecaseFull(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, curriculumRepo, curriculumCache).
 		WithBadgeAwarder(gamificationRepo)
+	flashcardUsecase := flashcard.NewUsecase(flashcardRepo, userRepo)
 	gamificationUsecase := gamification.NewUsecase(gamificationRepo)
 	leaderboardUsecase := leaderboard.NewUsecaseWithCache(leaderboardRepo, rdb)
 
@@ -161,6 +164,14 @@ func main() {
 		srsReviewLimiter,
 		examSubmitLimiter,
 	)
+	flashcardReviewLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
+		rdb.Client,
+		"flashcard:review",
+		flashcard.DefaultFlashcardReviewLimit,
+		time.Minute,
+		flashcard.DefaultFlashcardReviewMessage,
+	)
+	flashcardHandler := flashcard.NewHandlerWithRateLimiter(flashcardUsecase, flashcardReviewLimiter)
 	gamificationMutationLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,
 		"gamification:mutate",
@@ -189,6 +200,7 @@ func main() {
 		LanguageHandler:        langHandler,
 		CurriculumHandler:      curriculumHandler,
 		ExerciseHandler:        exerciseHandler,
+		FlashcardHandler:       flashcardHandler,
 		GamificationHandler:    gamificationHandler,
 		LeaderboardHandler:     leaderboardHandler,
 		AuthMiddleware:         authMiddleware,

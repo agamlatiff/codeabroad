@@ -22,17 +22,26 @@ var (
 // 1. PURE DOMAIN ENTITIES (1:1 with Master Database Schema / ERD)
 // ============================================================================
 
+// GrammarExample holds a real Japanese example sentence with romaji reading and Indonesian meaning.
+type GrammarExample struct {
+	JP      string `json:"jp"`
+	Reading string `json:"reading"`
+	ID      string `json:"id"`
+}
+
 // GrammarPoint represents a normalized syntax rule / tenses / particles (grammar_points table)
 type GrammarPoint struct {
-	ID          string    `json:"id"`
-	LevelID     string    `json:"level_id"`
-	Code        string    `json:"code"`
-	Category    string    `json:"category"` // tense | conjugation | particle | honorific | sentence_pattern
-	Title       string    `json:"title"`
-	Formula     string    `json:"formula"`
-	Explanation string    `json:"explanation"`
-	OrderIndex  int       `json:"order_index"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          string           `json:"id"`
+	LevelID     string           `json:"level_id"`
+	LevelCode   string           `json:"level_code,omitempty"`
+	Code        string           `json:"code"`
+	Category    string           `json:"category"` // tense | conjugation | particle | honorific | sentence_pattern
+	Title       string           `json:"title"`
+	Formula     string           `json:"formula"`
+	Explanation string           `json:"explanation"`
+	Examples    []GrammarExample `json:"examples"`
+	OrderIndex  int              `json:"order_index"`
+	CreatedAt   time.Time        `json:"created_at"`
 }
 
 // Unit represents a static curriculum chapter or diagnostic mock module (units table)
@@ -50,6 +59,7 @@ type Unit struct {
 type Lesson struct {
 	ID         string    `json:"id"`
 	UnitID     string    `json:"unit_id"`
+	Slug       string    `json:"slug"`
 	Title      string    `json:"title"`
 	XPReward   int       `json:"xp_reward"`
 	OrderIndex int       `json:"order_index"`
@@ -75,6 +85,7 @@ type UserLessonProgress struct {
 type LessonNodeResponse struct {
 	ID          string     `json:"id"`
 	UnitID      string     `json:"unit_id"`
+	Slug        string     `json:"slug"`
 	Title       string     `json:"title"`
 	XPReward    int        `json:"xp_reward"`
 	OrderIndex  int        `json:"order_index"`
@@ -120,6 +131,7 @@ type CurriculumResponse struct {
 type LessonDetailResponse struct {
 	ID            string              `json:"id"`
 	UnitID        string              `json:"unit_id"`
+	Slug          string              `json:"slug"`
 	LevelID       string              `json:"-"`
 	UnitType      string              `json:"-"`
 	Title         string              `json:"title"`
@@ -175,8 +187,9 @@ type CompleteLessonResponse struct {
 	SessionScore         *int                           `json:"session_score,omitempty"`
 	XPEarned             int                            `json:"xp_earned"`
 	Gamification         user.UserGamificationStats     `json:"gamification"`
-	UnlockedNextLessonID *string                        `json:"unlocked_next_lesson_id,omitempty"`
-	AwardedBadges        []gamification.BadgeDefinition `json:"awarded_badges,omitempty"`
+	UnlockedNextLessonID   *string                        `json:"unlocked_next_lesson_id,omitempty"`
+	UnlockedNextLessonSlug *string                        `json:"unlocked_next_lesson_slug,omitempty"`
+	AwardedBadges          []gamification.BadgeDefinition `json:"awarded_badges,omitempty"`
 }
 
 // ============================================================================

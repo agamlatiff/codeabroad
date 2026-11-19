@@ -114,10 +114,23 @@ func TestHTTP_GetLessonDetail(t *testing.T) {
 	}
 }
 
+func TestHTTP_GetLessonDetail_BySlug(t *testing.T) {
+	r, cRepo, _ := setupCurriculumTestRouter()
+	cRepo.Lessons["33333333-3333-3333-3333-333333333333"].Slug = "n5-vokal-utama-hiragana"
+
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/lessons/n5-vokal-utama-hiragana", nil)
+	w := httptest.NewRecorder()
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for valid lesson slug, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
 func TestHTTP_GetLessonDetail_InvalidUUID_Returns400(t *testing.T) {
 	r, _, _ := setupCurriculumTestRouter()
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/lessons/not-a-valid-uuid", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/lessons/invalid@lesson!", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 

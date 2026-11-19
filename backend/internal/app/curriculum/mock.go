@@ -250,6 +250,7 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 	return &LessonDetailResponse{
 		ID:          l.ID,
 		UnitID:      l.UnitID,
+		Slug:        l.Slug,
 		LevelID:     levelID,
 		UnitType:    unitType,
 		Title:       l.Title,
@@ -696,5 +697,64 @@ func (m *MockCurriculumCacheRepository) InvalidateCurriculum(ctx context.Context
 		}
 	}
 	return nil
+}
+
+// ResolveLessonID resolves an optional mock lesson slug to its canonical lesson ID.
+func (m *MockRepository) ResolveLessonID(ctx context.Context, idOrSlug string) (string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if _, ok := m.Lessons[idOrSlug]; ok {
+		return idOrSlug, nil
+	}
+	for _, l := range m.Lessons {
+		if l != nil && l.Slug != "" && l.Slug == idOrSlug {
+			return l.ID, nil
+		}
+	}
+	return idOrSlug, nil
+}
+
+// GetLessonSlugByID returns the mock slug for lessonID if configured.
+func (m *MockRepository) GetLessonSlugByID(ctx context.Context, lessonID string) (*string, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if l, ok := m.Lessons[lessonID]; ok && l.Slug != "" {
+		s := l.Slug
+		return &s, nil
+	}
+	return nil, nil
+}
+
+// GetGrammarPointsByLanguageCode returns mock grammar points optionally filtered by levelCode.
+func (m *MockRepository) GetGrammarPointsByLanguageCode(ctx context.Context, languageCode string, levelCode string) ([]GrammarPoint, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.GetGrammarPointsErr != nil {
+		return nil, m.GetGrammarPointsErr
+	}
+	targetLvl := strings.ToUpper(strings.TrimSpace(levelCode))
+	if targetLvl == "ALL" || targetLvl == "SEMUA" {
+		targetLvl = ""
+	}
+	var res []GrammarPoint
+	for _, gp := range m.GrammarPoints {
+		if gp == nil {
+			continue
+		}
+		if targetLvl != "" && strings.ToUpper(gp.LevelCode) != targetLvl {
+			continue
+		}
+		res = append(res, *gp)
+	}
+	sort.Slice(res, func(i, j int) bool {
+		if res[i].OrderIndex != res[j].OrderIndex {
+			return res[i].OrderIndex < res[j].OrderIndex
+		}
+		return res[i].ID < res[j].ID
+	})
+	return res, nil
 }
 

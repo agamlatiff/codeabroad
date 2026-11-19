@@ -305,6 +305,15 @@ func (u *usecase) getCurriculumInternal(ctx context.Context, userID string, lang
 	return res, nil
 }
 
+type lessonSlugResolver interface {
+	ResolveLessonID(ctx context.Context, idOrSlug string) (string, error)
+	GetLessonSlugByID(ctx context.Context, lessonID string) (*string, error)
+}
+
+type grammarLevelFilterRepository interface {
+	GetGrammarPointsByLanguageCode(ctx context.Context, languageCode string, levelCode string) ([]GrammarPoint, error)
+}
+
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
 func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error) {
 	if userID == "" {
@@ -314,7 +323,16 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 		return nil, apperror.ErrBadRequest
 	}
 
-	lesson, err := u.curriculumRepo.GetLessonByID(ctx, lessonID, userID)
+	resolvedLessonID := lessonID
+	if resolver, ok := u.curriculumRepo.(lessonSlugResolver); ok {
+		var rErr error
+		resolvedLessonID, rErr = resolver.ResolveLessonID(ctx, lessonID)
+		if rErr != nil {
+			return nil, rErr
+		}
+	}
+
+	lesson, err := u.curriculumRepo.GetLessonByID(ctx, resolvedLessonID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -455,10 +473,19 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		return nil, apperror.ErrBadRequest
 	}
 
+	resolvedLessonID := req.LessonID
+	if resolver, ok := u.curriculumRepo.(lessonSlugResolver); ok {
+		var rErr error
+		resolvedLessonID, rErr = resolver.ResolveLessonID(ctx, req.LessonID)
+		if rErr != nil {
+			return nil, rErr
+		}
+	}
+
 	now := time.Now().UTC()
 	progress := &UserLessonProgress{
 		UserID:      userID,
-		LessonID:    req.LessonID,
+		LessonID:    resolvedLessonID,
 		IsCompleted: true,
 		Score:       req.Score,
 		IsSkipped:   false,
@@ -470,7 +497,7 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		Progress:     progress,
 		LastActiveAt: now,
 		ActivityType: "lesson_completed",
-		Metadata:     map[string]any{"lesson_id": req.LessonID, "score": req.Score},
+		Metadata:     map[string]any{"lesson_id": resolvedLessonID, "score": req.Score},
 	}
 
 	if err := u.curriculumRepo.RecordLessonCompletionTx(ctx, payload); err != nil {
@@ -537,6 +564,15 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 		lastActive = now
 	}
 
+	var nextLessonSlug *string
+	if nextLessonID != nil {
+		if resolver, ok := u.curriculumRepo.(lessonSlugResolver); ok {
+			if s, sErr := resolver.GetLessonSlugByID(ctx, *nextLessonID); sErr == nil && s != nil && *s != "" {
+				nextLessonSlug = s
+			}
+		}
+	}
+
 	sessionScore := payload.SessionScore
 	return &CompleteLessonResponse{
 		Progress:     *progress,
@@ -549,8 +585,9 @@ func (u *usecase) CompleteLesson(ctx context.Context, userID string, req *Comple
 			Gems:         finalGems,
 			LastActiveAt: &lastActive,
 		},
-		UnlockedNextLessonID: nextLessonID,
-		AwardedBadges:        awardedBadges,
+		UnlockedNextLessonID:   nextLessonID,
+		UnlockedNextLessonSlug: nextLessonSlug,
+		AwardedBadges:          awardedBadges,
 	}, nil
 }
 
@@ -667,6 +704,25 @@ func (u *usecase) GetGrammarPoints(ctx context.Context, userID string, levelID s
 	}
 
 	points, err := u.curriculumRepo.GetGrammarPointsByLevelID(ctx, levelID)
+	if err != nil {
+		return nil, err
+	}
+	if points == nil {
+		points = []GrammarPoint{}
+	}
+	return points, nil
+}
+
+// GetGrammarPointsByLevelFilter retrieves grammar points across all levels (N5..N1) or a specific level code.
+func (u *usecase) GetGrammarPointsByLevelFilter(ctx context.Context, userID string, languageCode string, levelCode string) ([]GrammarPoint, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	filterRepo, ok := u.curriculumRepo.(grammarLevelFilterRepository)
+	if !ok {
+		return []GrammarPoint{}, nil
+	}
+	points, err := filterRepo.GetGrammarPointsByLanguageCode(ctx, languageCode, levelCode)
 	if err != nil {
 		return nil, err
 	}
