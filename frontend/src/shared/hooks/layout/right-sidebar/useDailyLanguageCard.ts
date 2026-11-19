@@ -31,10 +31,6 @@ export interface DestinationLanguageMeta {
   ttsLangCode: string
 }
 
-export interface UseDailyLanguageCardOptions {
-  onReview?: () => void
-}
-
 const DESTINATION_LANGUAGE_MAP: Record<string, DestinationLanguageMeta> = {
   ja: {
     languageCode: 'ja',
@@ -83,7 +79,7 @@ const DESTINATION_LANGUAGE_MAP: Record<string, DestinationLanguageMeta> = {
 /**
  * Resolves daily workplace vocabulary cards dynamically to the user's active enrolled language.
  */
-export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions = {}) => {
+export const useDailyLanguageCard = () => {
   const user = useAuthStore((s) => s.user)
 
   const { data: enrollments = [] } = useQuery({
@@ -178,7 +174,6 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
       if (!currentVocab) return
       triggerHaptic('tap')
       setIsPlayingAudio(true)
-      onReview?.()
       const phrase =
         typeof textToSpeak === 'string' && textToSpeak
           ? textToSpeak
@@ -190,7 +185,7 @@ export const useDailyLanguageCard = ({ onReview }: UseDailyLanguageCardOptions =
         () => setIsPlayingAudio(false)
       )
     },
-    [currentVocab, onReview, languageMeta.ttsLangCode]
+    [currentVocab, languageMeta.ttsLangCode]
   )
 
   return {

@@ -79,4 +79,7 @@ export interface DailyRewardsStatusResponse {
   date: string
   vocab_quest_claimed: boolean
   golden_chest_claimed: boolean
+  today_flashcards_reviewed?: number
+  vocab_quest_target?: number
+  vocab_quest_unlocked?: boolean
 }

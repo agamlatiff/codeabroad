@@ -198,6 +198,8 @@ export const useQuests = () => {
   )
   const todayEarnedXp = todayLog?.xp_earned ?? 0
   const todayLessonsCompleted = todayLog?.lessons_count ?? 0
+  const todayFlashcards = dailyRewardsStatus?.today_flashcards_reviewed ?? 0
+  const vocabTarget = dailyRewardsStatus?.vocab_quest_target ?? 3
   const isVocabDone = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
   const isLessonDone = todayLessonsCompleted >= 1
   const isXpDone = todayEarnedXp >= 50
@@ -220,17 +222,21 @@ export const useQuests = () => {
       },
       {
         id: 'daily-vocab-quest',
-        title: 'Pelajari & Klaim Kosakata Harianmu',
+        title: `Ulas ${vocabTarget} Kartu Flashcard & Klaim Bonus`,
         chip_label: 'KOSAKATA HARIAN',
         difficulty: 'Mudah',
         xp_reward: 30,
         gem_reward: 0,
         estimated_minutes: 5,
         isCompleted: isVocabDone,
-        route: '/curriculum',
+        route: '/flashcards',
         icon: Translate,
-        progressText: isVocabDone ? '1/1 Selesai' : '0/1 Selesai',
-        progressPercent: isVocabDone ? 100 : 0,
+        progressText: isVocabDone
+          ? `${vocabTarget}/${vocabTarget} Selesai`
+          : `${Math.min(vocabTarget, todayFlashcards)}/${vocabTarget} Kartu`,
+        progressPercent: isVocabDone
+          ? 100
+          : Math.min(100, Math.round((todayFlashcards / vocabTarget) * 100)),
       },
       {
         id: 'daily-xp-sprint',
@@ -247,7 +253,7 @@ export const useQuests = () => {
         progressPercent: isXpDone ? 100 : Math.min(100, Math.round((todayEarnedXp / 50) * 100)),
       },
     ],
-    [isLessonDone, isVocabDone, isXpDone, todayEarnedXp]
+    [isLessonDone, isVocabDone, isXpDone, todayEarnedXp, todayFlashcards, vocabTarget]
   )
 
   const filteredDaily = useMemo(() => {

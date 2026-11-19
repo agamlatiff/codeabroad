@@ -19,7 +19,11 @@ import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftS
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { useUser } from '@/features/user/hooks/useUser'
-import { getProfileQueryKey } from '@/shared/constants/queryKeys'
+import {
+  getProfileQueryKey,
+  getDailyRewardsQueryKey,
+  getActivityLogsQueryKey,
+} from '@/shared/constants/queryKeys'
 import {
   flashcardService,
   FLASHCARD_DECKS_QUERY_KEY,
@@ -215,6 +219,8 @@ export const FlashcardPage = () => {
       void queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: FLASHCARD_DUE_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) })
+      void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(userIdKey) })
+      void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(userIdKey) })
     },
   })
 

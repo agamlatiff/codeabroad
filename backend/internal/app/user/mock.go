@@ -12,27 +12,29 @@ import (
 
 // MockRepository implements Repository for unit testing
 type MockRepository struct {
-	mu                    sync.Mutex
-	Users                 map[string]*User
-	ActivityLogs          []UserActivityLog
-	DailyRewardsStatus    map[string]*DailyRewardsStatusResponse
-	CreateError           error
-	GetByIDError          error
-	GetByEmailError       error
-	GetByUsernameError    error
-	UpdateProfileError    error
-	SetOnboardedError     error
-	UpdateGamificationErr error
-	AddGemsError          error
-	LogActivityError      error
-	ClaimRewardError      error
+	mu                      sync.Mutex
+	Users                   map[string]*User
+	ActivityLogs            []UserActivityLog
+	DailyRewardsStatus      map[string]*DailyRewardsStatusResponse
+	FlashcardsReviewedToday map[string]int
+	CreateError             error
+	GetByIDError            error
+	GetByEmailError         error
+	GetByUsernameError      error
+	UpdateProfileError      error
+	SetOnboardedError       error
+	UpdateGamificationErr   error
+	AddGemsError            error
+	LogActivityError        error
+	ClaimRewardError        error
 }
 
 // NewMockRepository creates an in-memory mock user Repository
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		Users:              make(map[string]*User),
-		DailyRewardsStatus: make(map[string]*DailyRewardsStatusResponse),
+		Users:                   make(map[string]*User),
+		DailyRewardsStatus:      make(map[string]*DailyRewardsStatusResponse),
+		FlashcardsReviewedToday: make(map[string]int),
 	}
 }
 
@@ -284,6 +286,9 @@ func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, re
 		if st.VocabQuestClaimed {
 			return nil, ErrDailyRewardAlreadyClaimed
 		}
+		if m.FlashcardsReviewedToday[userID] < VocabQuestDailyFlashcardThreshold {
+			return nil, ErrDailyRewardNotUnlocked
+		}
 		st.VocabQuestClaimed = true
 	} else if rewardType == "golden_chest" {
 		if st.GoldenChestClaimed {
@@ -336,15 +341,22 @@ func (m *MockRepository) GetDailyRewardsStatus(ctx context.Context, userID strin
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	today := progression.TodayWIBDateKey(time.Now())
+	reviewedToday := m.FlashcardsReviewedToday[userID]
 	st, ok := m.DailyRewardsStatus[userID]
 	if !ok || st.Date != today {
 		return &DailyRewardsStatusResponse{
-			Date:               today,
-			VocabQuestClaimed:  false,
-			GoldenChestClaimed: false,
+			Date:                    today,
+			VocabQuestClaimed:       false,
+			GoldenChestClaimed:      false,
+			TodayFlashcardsReviewed: reviewedToday,
+			VocabQuestTarget:        VocabQuestDailyFlashcardThreshold,
+			VocabQuestUnlocked:      reviewedToday >= VocabQuestDailyFlashcardThreshold,
 		}, nil
 	}
 	cp := *st
+	cp.TodayFlashcardsReviewed = reviewedToday
+	cp.VocabQuestTarget = VocabQuestDailyFlashcardThreshold
+	cp.VocabQuestUnlocked = reviewedToday >= VocabQuestDailyFlashcardThreshold
 	return &cp, nil
 }
 

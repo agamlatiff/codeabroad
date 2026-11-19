@@ -27,15 +27,10 @@ export const AppRightSidebar = ({
 }: AppRightSidebarProps) => {
   const isDesktopRail = useMediaQuery('(min-width: 1280px)')
   const {
-    isLanguageReviewed,
-    isLanguageHighlighted,
-    languageSectionRef,
     isClosingDrawer,
     floatingRewards,
-    handleLanguageReview,
     handleClaimVocabQuest,
     handleClaimChest,
-    handleFocusLanguageCard,
     handleCloseMobileDrawer,
   } = useAppRightSidebar({ onCloseMobileDrawer })
 
@@ -60,26 +55,15 @@ export const AppRightSidebar = ({
 
       {/* ── 2. MISI & TARGET HARIAN (1:1 Hook) ── */}
       <QuestsSection
-        isLanguageReviewed={isLanguageReviewed}
         onClaimVocabQuest={(e) => handleClaimVocabQuest(e)}
         onClaimChestReward={(e) => handleClaimChest(e)}
-        onFocusLanguageCard={handleFocusLanguageCard}
       />
 
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
       {/* ── 3. KOSAKATA KERJA HARIAN SESUAI DESTINASI (1:1 Hook) ── */}
-      <div
-        ref={languageSectionRef}
-        className={`transition-all rounded-2xl ${
-          isLanguageHighlighted ? 'ring-4 ring-blue-400' : ''
-        }`}
-      >
-        <DailyLanguageCard
-          onReview={handleLanguageReview}
-        />
-      </div>
+      <DailyLanguageCard />
     </>
   )
 

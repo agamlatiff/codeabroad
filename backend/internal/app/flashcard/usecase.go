@@ -134,6 +134,15 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 			newLevel := progression.CalculateLevel(newXP)
 			newStreak, _ := progression.EvaluateDailyStreak(usr.LastActiveAt, usr.Streak, now)
 			_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, newStreak, &now)
+			_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
+				UserID:       userID,
+				ActivityType: "srs_review_completed",
+				XPEarned:     xpAwarded,
+				Metadata: map[string]any{
+					"card_id": trimmedCardID,
+					"quality": quality,
+				},
+			})
 		}
 	}
 

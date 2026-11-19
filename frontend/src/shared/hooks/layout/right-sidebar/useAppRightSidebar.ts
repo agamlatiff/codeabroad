@@ -13,7 +13,6 @@ import {
 import { VOCAB_QUEST_REWARD_XP, GOLDEN_CHEST_REWARD_XP } from './useQuestsSection'
 
 const FLOATING_REWARD_DURATION_MS = 1500
-const HIGHLIGHT_DURATION_MS = 2000
 const DRAWER_CLOSE_DURATION_MS = 220
 
 export interface FloatingRewardItem {
@@ -40,27 +39,26 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   })
 
   const [isClosingDrawer, setIsClosingDrawer] = useState(false)
-  const [reviewedLanguageSession, setReviewedLanguageSession] = useState(false)
-  const [isLanguageHighlighted, setIsLanguageHighlighted] = useState(false)
   const [floatingRewards, setFloatingRewards] = useState<FloatingRewardItem[]>([])
 
-  const languageSectionRef = useRef<HTMLDivElement | null>(null)
   const rewardTimersRef = useRef<ReturnType<typeof setTimeout>[]>([])
-  const highlightTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const drawerTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const rewardTimers = rewardTimersRef.current
     return () => {
       rewardTimers.forEach((timer) => clearTimeout(timer))
-      if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
       if (drawerTimerRef.current) clearTimeout(drawerTimerRef.current)
     }
   }, [])
 
   const isVocabQuestClaimed = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
   const isChestClaimedToday = Boolean(dailyRewardsStatus?.golden_chest_claimed)
-  const isLanguageReviewed = isVocabQuestClaimed || reviewedLanguageSession
+  const vocabQuestTarget = dailyRewardsStatus?.vocab_quest_target ?? 3
+  const todayFlashcardsReviewed = dailyRewardsStatus?.today_flashcards_reviewed ?? 0
+  const isVocabQuestUnlocked =
+    Boolean(dailyRewardsStatus?.vocab_quest_unlocked) ||
+    todayFlashcardsReviewed >= vocabQuestTarget
 
   const spawnFloatingReward = useCallback((amount: number, clientX?: number, clientY?: number) => {
     const x = typeof clientX === 'number' && clientX > 0 ? clientX : window.innerWidth / 2
@@ -103,23 +101,16 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     },
   })
 
-  const handleLanguageReview = useCallback(() => {
-    if (!isLanguageReviewed) {
-      setReviewedLanguageSession(true)
-      triggerHaptic('success')
-    }
-  }, [isLanguageReviewed])
-
   const handleClaimVocabQuest = useCallback(
     (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
-      if (isVocabQuestClaimed || claimRewardMutation.isPending) return
+      if (isVocabQuestClaimed || !isVocabQuestUnlocked || claimRewardMutation.isPending) return
       claimRewardMutation.mutate({
         rewardType: 'vocab_quest',
         clientX: e?.clientX,
         clientY: e?.clientY,
       })
     },
-    [isVocabQuestClaimed, claimRewardMutation]
+    [isVocabQuestClaimed, isVocabQuestUnlocked, claimRewardMutation]
   )
 
   const handleClaimChest = useCallback(
@@ -134,15 +125,6 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     [isChestClaimedToday, claimRewardMutation]
   )
 
-  const handleFocusLanguageCard = useCallback(() => {
-    languageSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' })
-    setIsLanguageHighlighted(true)
-    if (highlightTimerRef.current) clearTimeout(highlightTimerRef.current)
-    highlightTimerRef.current = setTimeout(() => {
-      setIsLanguageHighlighted(false)
-    }, HIGHLIGHT_DURATION_MS)
-  }, [])
-
   const handleCloseMobileDrawer = useCallback(() => {
     setIsClosingDrawer(true)
     if (drawerTimerRef.current) clearTimeout(drawerTimerRef.current)
@@ -153,16 +135,12 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   }, [onCloseMobileDrawer])
 
   return {
-    isLanguageReviewed,
     isVocabQuestClaimed,
-    isLanguageHighlighted,
-    languageSectionRef,
+    isVocabQuestUnlocked,
     isClosingDrawer,
     floatingRewards,
-    handleLanguageReview,
     handleClaimVocabQuest,
     handleClaimChest,
-    handleFocusLanguageCard,
     handleCloseMobileDrawer,
   }
 }

@@ -532,6 +532,22 @@ func (r *PostgresRepository) ClaimDailyReward(
 		return nil, ErrDailyRewardAlreadyClaimed
 	}
 
+	if rewardType == "vocab_quest" {
+		var todayFlashcards int
+		fcQuery := `
+			SELECT COUNT(*)::int
+			FROM user_flashcard_progress
+			WHERE user_id = $1::uuid
+			  AND last_reviewed_at >= ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta')
+		`
+		if err := tx.QueryRow(ctx, fcQuery, userID).Scan(&todayFlashcards); err != nil {
+			return nil, fmt.Errorf("failed to verify daily flashcard review prerequisite: %w", err)
+		}
+		if todayFlashcards < VocabQuestDailyFlashcardThreshold {
+			return nil, ErrDailyRewardNotUnlocked
+		}
+	}
+
 	if rewardType == "golden_chest" {
 		var todayEarnedXP int
 		xpQuery := `
@@ -607,31 +623,47 @@ func (r *PostgresRepository) ClaimDailyReward(
 	}, nil
 }
 
-// GetDailyRewardsStatus reports whether vocab quests or golden chests have already been claimed today (WIB)
+// GetDailyRewardsStatus reports whether vocab quests or golden chests have already been claimed today (WIB) and flashcard progress
 func (r *PostgresRepository) GetDailyRewardsStatus(ctx context.Context, userID string) (*DailyRewardsStatusResponse, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
 
 	query := `
-		SELECT
-			TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS wib_date,
-			COALESCE(BOOL_OR(activity_type = 'daily_vocab_quest_claim'), false) AS vocab_quest_claimed,
-			COALESCE(BOOL_OR(activity_type = 'daily_golden_chest_claim'), false) AS golden_chest_claimed
-		FROM user_activity_logs
-		WHERE user_id = $1::uuid
-		  AND activity_type IN ('daily_vocab_quest_claim', 'daily_golden_chest_claim')
-		  AND created_at >= ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta')
+		WITH wib_start AS (
+			SELECT ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta') AS start_ts,
+			       TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD') AS wib_date
+		),
+		claims AS (
+			SELECT
+				COALESCE(BOOL_OR(activity_type = 'daily_vocab_quest_claim'), false) AS vocab_quest_claimed,
+				COALESCE(BOOL_OR(activity_type = 'daily_golden_chest_claim'), false) AS golden_chest_claimed
+			FROM user_activity_logs, wib_start
+			WHERE user_id = $1::uuid
+			  AND activity_type IN ('daily_vocab_quest_claim', 'daily_golden_chest_claim')
+			  AND created_at >= wib_start.start_ts
+		),
+		fc AS (
+			SELECT COUNT(*)::int AS reviewed_today
+			FROM user_flashcard_progress, wib_start
+			WHERE user_id = $1::uuid
+			  AND last_reviewed_at >= wib_start.start_ts
+		)
+		SELECT wib_start.wib_date, claims.vocab_quest_claimed, claims.golden_chest_claimed, fc.reviewed_today
+		FROM wib_start, claims, fc
 	`
 	var status DailyRewardsStatusResponse
 	err := r.db.Pool.QueryRow(ctx, query, userID).Scan(
 		&status.Date,
 		&status.VocabQuestClaimed,
 		&status.GoldenChestClaimed,
+		&status.TodayFlashcardsReviewed,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query daily rewards status: %w", err)
 	}
+	status.VocabQuestTarget = VocabQuestDailyFlashcardThreshold
+	status.VocabQuestUnlocked = status.TodayFlashcardsReviewed >= VocabQuestDailyFlashcardThreshold
 	return &status, nil
 }
 

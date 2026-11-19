@@ -116,6 +116,19 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 	claimBody, _ := json.Marshal(map[string]string{
 		"reward_type": "vocab_quest",
 	})
+
+	// Before reviewing 3 flashcards today, claim must fail with 400 Bad Request
+	wLocked := httptest.NewRecorder()
+	reqLocked, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
+	reqLocked.Header.Set("Content-Type", "application/json")
+	reqLocked.Header.Set("Authorization", "Bearer "+token)
+	router.ServeHTTP(wLocked, reqLocked)
+	if wLocked.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request before reviewing 3 flashcards, got: %d, body: %s", wLocked.Code, wLocked.Body.String())
+	}
+
+	repo.FlashcardsReviewedToday["usr-1"] = 3
+
 	wClaim := httptest.NewRecorder()
 	reqClaim, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(claimBody))
 	reqClaim.Header.Set("Content-Type", "application/json")

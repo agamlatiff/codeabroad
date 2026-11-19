@@ -10,18 +10,15 @@ import { useDailyLanguageCard } from "@/shared/hooks/layout/right-sidebar/useDai
 
 export interface DailyLanguageCardProps {
   className?: string
-  onReview?: () => void
 }
 
 /**
  * DailyLanguageCard (SSOT)
- * Pure declarative daily workplace vocabulary card in AppRightSidebar.
- * Adapts dynamically to the user's targeted career destination (Tokyo 🇯🇵, Berlin 🇩🇪, Singapore 🇸🇬, London 🇬🇧).
+ * Pure declarative daily vocabulary card sourced from flashcard pure-vocab cards.
  * Powered 1:1 by useDailyLanguageCard.
  */
 export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
   className = '',
-  onReview,
 }) => {
   const {
     languageMeta,
@@ -34,7 +31,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
     handleNextVocab,
     handleCopy,
     handleSpeak,
-  } = useDailyLanguageCard({ onReview })
+  } = useDailyLanguageCard()
 
   if (isLoading) {
     return (
@@ -114,10 +111,9 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
           <span className="font-brand font-black text-2xl text-slate-900 tracking-wider">
             {currentVocab.kanji}
           </span>
-          {currentVocab.kana && (
+          {(currentVocab.kana || currentVocab.romaji) && (
             <span className="bg-white text-rose-800 border border-rose-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-lg shadow-2xs">
-              {currentVocab.kana}
-              {currentVocab.romaji ? ` • ${currentVocab.romaji}` : ''}
+              {[currentVocab.kana, currentVocab.romaji].filter(Boolean).join(' • ')}
             </span>
           )}
           <span className="inline-flex items-center gap-1 bg-white text-blue-700 border border-blue-200 font-brand font-black text-[10px] px-2 py-0.5 rounded-md shadow-2xs">

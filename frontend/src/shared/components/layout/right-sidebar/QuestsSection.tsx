@@ -10,15 +10,13 @@ import {
   SketchLogo,
   Play,
 } from '@phosphor-icons/react'
-import { Button3D } from "@/shared/components/ui/Button3D"
-import { useQuestsSection } from "@/shared/hooks/layout/right-sidebar/useQuestsSection"
+import { Button3D } from '@/shared/components/ui/Button3D'
+import { useQuestsSection } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { ChestModal } from './ChestModal'
 
 export interface QuestsSectionProps {
-  isLanguageReviewed: boolean
   onClaimVocabQuest: (e?: React.MouseEvent) => void
   onClaimChestReward: (e?: React.MouseEvent) => void
-  onFocusLanguageCard: () => void
 }
 
 /**
@@ -27,15 +25,14 @@ export interface QuestsSectionProps {
  * Powered 1:1 by useQuestsSection.
  */
 export const QuestsSection: FC<QuestsSectionProps> = ({
-  isLanguageReviewed,
   onClaimVocabQuest,
   onClaimChestReward,
-  onFocusLanguageCard,
 }) => {
   const {
     timeLeft,
     dailyTargetXp,
-    todayEarnedXp,
+    clampedTodayXp,
+    extraXp,
     dailyProgressPercent,
     isChestUnlocked,
     isChestClaimedToday,
@@ -47,8 +44,6 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
     handleConfirmClaimChest,
     handleQuestAction,
   } = useQuestsSection({
-    isLanguageReviewed,
-    onFocusLanguageCard,
     onClaimChestReward,
   })
 
@@ -63,7 +58,7 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
             </div>
             <div>
               <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
-                Misi & Target Harian
+                Misi &amp; Target Harian
               </h4>
               <span className="text-[9px] text-slate-400 font-medium">
                 Raih {dailyTargetXp} XP untuk Buka Peti
@@ -76,50 +71,77 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
           </span>
         </div>
 
-        {/* Duolingo Integrated Progress Track with Golden Chest at End */}
-        <div className="p-2 bg-amber-50/30 border border-amber-100/90 rounded-xl space-y-1.5 shadow-2xs">
-          <div className="flex items-center justify-between text-[10px]">
+        {/* Duolingo Integrated Progress Track with Aligned Chest Button */}
+        <div className="p-2.5 bg-amber-50/30 border border-amber-100/90 rounded-xl space-y-2 shadow-2xs">
+          <div className="flex items-center justify-between gap-2 text-[10px]">
             <span className="font-brand font-black text-slate-800 flex items-center gap-1">
-              <Lightning weight="fill" className="w-3 h-3 text-amber-500" />
+              <Lightning weight="fill" className="w-3 h-3 text-amber-500 shrink-0" />
               <span>
-                {todayEarnedXp} / {dailyTargetXp} XP Hari Ini
+                {clampedTodayXp} / {dailyTargetXp} XP Hari Ini
               </span>
+              {extraXp > 0 && (
+                <span className="px-1.5 py-0.5 rounded-md bg-emerald-100 text-emerald-700 font-extrabold text-[9px]">
+                  +{extraXp} ekstra
+                </span>
+              )}
             </span>
-            <span className="font-brand font-black text-amber-700 text-[10px] flex items-center gap-1">
-              <Gift weight="fill" className="w-3 h-3 text-amber-600" />
-              <SketchLogo weight="fill" className="w-3 h-3 text-sky-500" />
-              <span>+20</span>
-              <span className="text-slate-400 font-medium">
-                ({isChestUnlocked ? 'Tercapai!' : `${remainingXp} XP lagi`})
+
+            {isChestClaimedToday ? (
+              <span className="font-brand font-black text-emerald-700 text-[10px] inline-flex items-center gap-1 shrink-0">
+                <CheckCircle weight="fill" className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Diklaim</span>
               </span>
-            </span>
+            ) : (
+              <span className="font-brand font-black text-amber-700 text-[10px] flex items-center gap-1 shrink-0">
+                <Gift weight="fill" className="w-3 h-3 text-amber-600" />
+                <SketchLogo weight="fill" className="w-3 h-3 text-sky-500" />
+                <span>+20</span>
+                <span className="text-slate-500 font-semibold">
+                  ({isChestUnlocked ? 'Siap Klaim!' : `${remainingXp} XP lagi`})
+                </span>
+              </span>
+            )}
           </div>
 
-          {/* Progress Bar Track with Golden Chest Anchor at End */}
+          {/* Progress Bar Track with Vertically Aligned Chest Anchor */}
           <div className="flex items-center gap-2">
             <div className="flex-1 h-2.5 bg-white rounded-full border border-slate-200/90 p-0.5 shadow-inner overflow-hidden relative">
               <div
-                className="h-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706] relative"
+                className={`h-full rounded-full transition-all duration-500 relative ${
+                  isChestClaimedToday
+                    ? 'bg-gradient-to-r from-emerald-400 to-emerald-500 shadow-[0_1px_0_0_#059669]'
+                    : 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 shadow-[0_1px_0_0_#D97706]'
+                }`}
                 style={{ width: `${dailyProgressPercent}%` }}
               >
                 <div className="absolute inset-x-0 top-0 h-[45%] bg-white/35 rounded-full" />
               </div>
             </div>
+
             <button
               type="button"
               onClick={handleOpenChestModal}
-              className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 shadow-2xs transition-transform cursor-pointer ${
-                isChestUnlocked
-                  ? 'bg-amber-400 border-amber-500 text-amber-950 animate-bounce shadow-[0_2px_0_0_#B45309] hover:scale-110 active:scale-95'
-                  : 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200'
+              className={`w-7 h-7 rounded-lg border flex items-center justify-center shrink-0 transition-all cursor-pointer ${
+                isChestClaimedToday
+                  ? 'bg-emerald-50 border-emerald-300 text-emerald-700 shadow-2xs'
+                  : isChestUnlocked
+                    ? 'bg-amber-400 border-amber-500 text-amber-950 ring-2 ring-amber-300/80 shadow-[0_2px_0_0_#B45309] hover:scale-105 active:scale-95'
+                    : 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200 shadow-2xs'
               }`}
+              aria-label="Lihat status Peti Emas Harian"
               title={
-                isChestUnlocked
-                  ? 'Klik untuk membuka Peti Emas Hadiah 50 XP & 20 Permata'
-                  : `Peti Emas Hadiah 50 XP (+20 Permata) - ${remainingXp} XP lagi`
+                isChestClaimedToday
+                  ? 'Hadiah Peti Emas hari ini sudah diklaim'
+                  : isChestUnlocked
+                    ? 'Klik untuk membuka Peti Emas Hadiah 50 XP & 20 Permata'
+                    : `Peti Emas Hadiah 50 XP (+20 Permata) - ${remainingXp} XP lagi`
               }
             >
-              <Gift weight={isChestUnlocked ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
+              {isChestClaimedToday ? (
+                <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+              ) : (
+                <Gift weight={isChestUnlocked ? 'fill' : 'bold'} className="w-3.5 h-3.5" />
+              )}
             </button>
           </div>
         </div>
@@ -153,12 +175,15 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                       {quest.title}
                     </p>
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className="bg-amber-100 text-amber-900 border border-amber-300/80 text-[9px] font-brand font-black px-1.5 py-0.2 rounded flex items-center gap-0.5 shadow-2xs">
+                      <span className="bg-amber-100 text-amber-900 border border-amber-300/80 text-[9px] font-brand font-black px-1.5 py-0.5 rounded flex items-center gap-0.5 shadow-2xs">
                         <Lightning weight="fill" className="w-2.5 h-2.5 text-amber-500" />
                         <span>+{quest.xpReward} XP</span>
                       </span>
-                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1 py-0.2 rounded">
+                      <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded">
                         {quest.chipLabel}
+                      </span>
+                      <span className="text-[9px] font-mono font-bold text-slate-400 px-0.5">
+                        {quest.progressText}
                       </span>
                     </div>
                   </div>
@@ -172,9 +197,9 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                 ) : quest.status === 'ready_to_claim' ? (
                   <Button3D
                     variant="amber"
-                    size="sm"
+                    size="xs"
                     onClick={(e) => onClaimVocabQuest(e)}
-                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#B45309]"
+                    className="shrink-0 shadow-[0_2px_0_0_#B45309]"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>KLAIM</span>
@@ -184,9 +209,9 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                 ) : (
                   <Button3D
                     variant="blue"
-                    size="sm"
+                    size="xs"
                     onClick={() => handleQuestAction(quest)}
-                    className="text-[10px] font-black tracking-wide px-2.5 py-1 shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
+                    className="shrink-0 shadow-[0_2px_0_0_#1D4ED8]"
                   >
                     <span className="inline-flex items-center gap-1">
                       <span>MULAI</span>

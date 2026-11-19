@@ -11,7 +11,7 @@ import (
 var (
 	ErrUserNotFound              = apperror.NewNotFoundError("USER_NOT_FOUND", "user not found")
 	ErrDailyRewardAlreadyClaimed = apperror.NewConflictError("DAILY_REWARD_CLAIMED", "hadiah hari ini sudah diklaim sebelumnya")
-	ErrDailyRewardNotUnlocked    = apperror.NewBadRequestError("DAILY_REWARD_NOT_UNLOCKED", "target XP harian belum tercapai untuk membuka peti hadiah", nil)
+	ErrDailyRewardNotUnlocked    = apperror.NewBadRequestError("DAILY_REWARD_NOT_UNLOCKED", "syarat misi harian belum terpenuhi untuk mengklaim hadiah ini", nil)
 	ErrEmailAlreadyExists        = apperror.NewConflictError("EMAIL_ALREADY_EXISTS", "email sudah terdaftar")
 	ErrUsernameTaken             = apperror.NewConflictError("USERNAME_TAKEN", "username sudah digunakan")
 )
@@ -122,11 +122,14 @@ type DailyRewardClaimResponse struct {
 	ClaimedAt    string `json:"claimed_at"`
 }
 
-// DailyRewardsStatusResponse reports which daily rewards have been claimed today
+// DailyRewardsStatusResponse reports which daily rewards have been claimed today and vocab quest progress
 type DailyRewardsStatusResponse struct {
-	Date               string `json:"date"`
-	VocabQuestClaimed  bool   `json:"vocab_quest_claimed"`
-	GoldenChestClaimed bool   `json:"golden_chest_claimed"`
+	Date                    string `json:"date"`
+	VocabQuestClaimed       bool   `json:"vocab_quest_claimed"`
+	GoldenChestClaimed      bool   `json:"golden_chest_claimed"`
+	TodayFlashcardsReviewed int    `json:"today_flashcards_reviewed"`
+	VocabQuestTarget        int    `json:"vocab_quest_target"`
+	VocabQuestUnlocked      bool   `json:"vocab_quest_unlocked"`
 }
 
 // ============================================================================

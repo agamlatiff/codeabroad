@@ -459,7 +459,18 @@ func (r *PostgresRepository) GetReadinessExamExercises(ctx context.Context, leve
 	return scanExerciseRows(rows, 20, "readiness exam exercise")
 }
 
-// GetDailyVocabularies extracts daily rotated contextual vocabulary cards scoped to the user's active enrollment and unlocked proficiency levels.
+// splitFlashcardFrontText extracts clean display term and optional kana reading from `term（kana）`.
+func splitFlashcardFrontText(frontText string) (term string, kana string) {
+	trimmed := strings.TrimSpace(frontText)
+	openIdx := strings.Index(trimmed, "（")
+	closeIdx := strings.LastIndex(trimmed, "）")
+	if openIdx > 0 && closeIdx > openIdx+len("（") {
+		return strings.TrimSpace(trimmed[:openIdx]), strings.TrimSpace(trimmed[openIdx+len("（") : closeIdx])
+	}
+	return trimmed, ""
+}
+
+// GetDailyVocabularies extracts daily rotated pure-vocabulary cards from flashcards scoped to the user's active language and JLPT level.
 func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
@@ -468,65 +479,32 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 
 	query := `
 		WITH active_enrollment AS (
-			SELECT ule.language_id, ule.current_level_id, active_pl.order_index AS max_level_order
+			SELECT
+				COALESCE(lang.code, 'ja') AS language_code,
+				COALESCE(active_pl.code, 'N5') AS level_code
 			FROM user_language_enrollments ule
+			LEFT JOIN languages lang ON lang.id = ule.language_id
 			LEFT JOIN proficiency_levels active_pl ON ule.current_level_id = active_pl.id
 			WHERE ule.user_id = $1::uuid
 			  AND ule.is_active = true
 			LIMIT 1
 		)
 		SELECT
-			e.id::text,
-			COALESCE(
-				NULLIF(e.content->>'display_text', ''),
-				NULLIF(e.content->>'audio_text', ''),
-				NULLIF(gp.formula, ''),
-				e.prompt
-			) AS term,
-			COALESCE(
-				NULLIF(e.content->>'reading', ''),
-				NULLIF(e.content->>'romaji', ''),
-				''
-			) AS romaji,
-			COALESCE(
-				NULLIF(e.content->>'target_translation', ''),
-				NULLIF(e.content->>'translation', ''),
-				NULLIF(gp.title, ''),
-				e.prompt
-			) AS meaning,
-			COALESCE(NULLIF(gp.category, ''), e.skill_pillar) AS category,
-			COALESCE(
-				NULLIF(e.content->>'audio_text', ''),
-				NULLIF(e.content->>'display_text', ''),
-				NULLIF(e.content->>'sentence_template', ''),
-				e.prompt
-			) AS example_target,
-			COALESCE(
-				NULLIF(e.content->>'translation', ''),
-				NULLIF(e.content->>'target_translation', ''),
-				e.explanation,
-				''
-			) AS example_translation,
-			pl.code AS difficulty_level
-		FROM active_enrollment ae
-		JOIN proficiency_levels pl ON pl.language_id = ae.language_id
-		JOIN units u ON u.level_id = pl.id
-		JOIN lessons l ON l.unit_id = u.id
-		JOIN exercises e ON e.lesson_id = l.id
-		LEFT JOIN grammar_points gp ON e.grammar_point_id = gp.id
-		WHERE u.unit_type = 'curriculum'
-		  AND (ae.max_level_order IS NULL OR pl.order_index <= ae.max_level_order)
-		  AND (
-			COALESCE(e.content->>'display_text', '') <> ''
-			OR COALESCE(e.content->>'audio_text', '') <> ''
-			OR COALESCE(e.content->>'reading', '') <> ''
-			OR COALESCE(e.content->>'romaji', '') <> ''
-		  )
+			fc.id::text,
+			fc.front_text,
+			fc.reading,
+			fc.back_meaning,
+			COALESCE(NULLIF(fc.part_of_speech, ''), fd.title) AS category,
+			fd.jlpt_level AS difficulty_level
+		FROM flashcard_cards fc
+		INNER JOIN flashcard_decks fd ON fd.id = fc.deck_id
+		LEFT JOIN active_enrollment ae ON true
+		WHERE fd.language_code = COALESCE(ae.language_code, 'ja')
 		ORDER BY
-			CASE WHEN ae.current_level_id = pl.id THEN 0 ELSE 1 END ASC,
-			md5(e.id::text || ((NOW() AT TIME ZONE 'Asia/Jakarta')::date)::text) ASC,
-			pl.order_index ASC,
-			e.id ASC
+			CASE WHEN UPPER(fd.jlpt_level) = UPPER(COALESCE(ae.level_code, 'N5')) THEN 0 ELSE 1 END ASC,
+			md5(fc.id::text || ((NOW() AT TIME ZONE 'Asia/Jakarta')::date)::text) ASC,
+			fd.sort_order ASC,
+			fc.sort_order ASC
 		LIMIT $2
 	`
 
@@ -539,21 +517,28 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 	items := make([]VocabularyItem, 0, limit)
 	for rows.Next() {
 		var item VocabularyItem
-		var romaji string
+		var frontText, romaji string
 		if err := rows.Scan(
-			&item.ID, &item.Term, &romaji, &item.Meaning, &item.Category, &item.ExampleJA, &item.ExampleID, &item.DifficultyLevel,
+			&item.ID, &frontText, &romaji, &item.Meaning, &item.Category, &item.DifficultyLevel,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan daily vocabulary row: %w", err)
 		}
-		if romaji != "" && romaji != item.Term {
-			item.Reading = fmt.Sprintf("%s • %s", item.Term, romaji)
-		} else {
-			item.Reading = item.Term
-		}
-		item.TargetText = item.Term
+		term, kana := splitFlashcardFrontText(frontText)
+		romaji = strings.TrimSpace(romaji)
+		item.Term = term
+		item.TargetText = term
 		item.Translation = item.Meaning
-		item.ExampleTarget = item.ExampleJA
-		item.ExampleTranslation = item.ExampleID
+
+		readingHead := kana
+		if readingHead == "" {
+			readingHead = term
+		}
+		if romaji != "" && romaji != readingHead {
+			item.Reading = fmt.Sprintf("%s • %s", readingHead, romaji)
+		} else {
+			item.Reading = readingHead
+		}
+
 		items = append(items, item)
 	}
 	if err := rows.Err(); err != nil {

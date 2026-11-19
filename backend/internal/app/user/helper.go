@@ -21,6 +21,8 @@ const (
 	MaxProfileBioLength = 500
 	// MaxAvatarURLLength caps user avatar URL length
 	MaxAvatarURLLength = 500
+	// VocabQuestDailyFlashcardThreshold defines minimum unique flashcards reviewed today (WIB) to unlock vocab_quest
+	VocabQuestDailyFlashcardThreshold = 3
 	// GoldenChestDailyXPThreshold defines minimum non-chest XP earned today (WIB) to unlock golden_chest
 	GoldenChestDailyXPThreshold = 50
 )

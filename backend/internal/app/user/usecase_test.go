@@ -57,6 +57,15 @@ func TestClaimDailyReward_Success(t *testing.T) {
 		t.Fatalf("expected ErrDailyRewardNotUnlocked before earning daily XP, got %v", err)
 	}
 
+	// Vocab quest must fail before reviewing at least 3 flashcards today (WIB)
+	repo.FlashcardsReviewedToday["user-123"] = 2
+	if _, err := uc.ClaimDailyReward(context.Background(), "user-123", "vocab_quest"); !errors.Is(err, user.ErrDailyRewardNotUnlocked) {
+		t.Fatalf("expected ErrDailyRewardNotUnlocked before reviewing 3 flashcards, got %v", err)
+	}
+
+	// Simulate 3 flashcards reviewed today
+	repo.FlashcardsReviewedToday["user-123"] = 3
+
 	res, err := uc.ClaimDailyReward(context.Background(), "user-123", "vocab_quest")
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
