@@ -31,17 +31,18 @@ type GrammarExample struct {
 
 // GrammarPoint represents a normalized syntax rule / tenses / particles (grammar_points table)
 type GrammarPoint struct {
-	ID          string           `json:"id"`
-	LevelID     string           `json:"level_id"`
-	LevelCode   string           `json:"level_code,omitempty"`
-	Code        string           `json:"code"`
-	Category    string           `json:"category"` // tense | conjugation | particle | honorific | sentence_pattern
-	Title       string           `json:"title"`
-	Formula     string           `json:"formula"`
-	Explanation string           `json:"explanation"`
-	Examples    []GrammarExample `json:"examples"`
-	OrderIndex  int              `json:"order_index"`
-	CreatedAt   time.Time        `json:"created_at"`
+	ID             string           `json:"id"`
+	LevelID        string           `json:"level_id"`
+	LevelCode      string           `json:"level_code,omitempty"`
+	Code           string           `json:"code"`
+	Category       string           `json:"category"` // tense | conjugation | particle | honorific | sentence_pattern
+	Title          string           `json:"title"`
+	Formula        string           `json:"formula"`
+	FormulaReading string           `json:"formula_reading"`
+	Explanation    string           `json:"explanation"`
+	Examples       []GrammarExample `json:"examples"`
+	OrderIndex     int              `json:"order_index"`
+	CreatedAt      time.Time        `json:"created_at"`
 }
 
 // Unit represents a static curriculum chapter or diagnostic mock module (units table)

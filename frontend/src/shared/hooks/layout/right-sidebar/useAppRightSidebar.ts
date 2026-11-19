@@ -5,12 +5,16 @@ import { userService } from "@/features/user/services/userService"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
 import {
+  gamificationService,
+  GAMIFICATION_STATUS_QUERY_KEY,
+} from '@/features/gamification/services/gamificationService'
+import {
   getProfileQueryKey,
   getActivityLogsQueryKey,
   getDailyRewardsQueryKey,
   getDailyQuestsQueryKey,
 } from '@/shared/constants/queryKeys'
-import { VOCAB_QUEST_REWARD_XP, GOLDEN_CHEST_REWARD_XP } from './useQuestsSection'
+import { GOLDEN_CHEST_REWARD_XP } from './useQuestsSection'
 
 const FLOATING_REWARD_DURATION_MS = 1500
 const DRAWER_CLOSE_DURATION_MS = 220
@@ -52,13 +56,7 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     }
   }, [])
 
-  const isVocabQuestClaimed = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
   const isChestClaimedToday = Boolean(dailyRewardsStatus?.golden_chest_claimed)
-  const vocabQuestTarget = dailyRewardsStatus?.vocab_quest_target ?? 3
-  const todayFlashcardsReviewed = dailyRewardsStatus?.today_flashcards_reviewed ?? 0
-  const isVocabQuestUnlocked =
-    Boolean(dailyRewardsStatus?.vocab_quest_unlocked) ||
-    todayFlashcardsReviewed >= vocabQuestTarget
 
   const spawnFloatingReward = useCallback((amount: number, clientX?: number, clientY?: number) => {
     const x = typeof clientX === 'number' && clientX > 0 ? clientX : window.innerWidth / 2
@@ -74,17 +72,12 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   }, [])
 
   const claimRewardMutation = useMutation({
-    mutationFn: ({ rewardType }: { rewardType: 'vocab_quest' | 'golden_chest'; clientX?: number; clientY?: number }) =>
+    mutationFn: ({ rewardType }: { rewardType: 'golden_chest'; clientX?: number; clientY?: number }) =>
       userService.claimDailyReward(rewardType),
     onSuccess: (res, variables) => {
       triggerHaptic('success')
-      if (variables.rewardType === 'golden_chest') {
-        audioEngine.playChestClaim()
-        spawnFloatingReward(GOLDEN_CHEST_REWARD_XP, variables.clientX, variables.clientY)
-      } else {
-        audioEngine.playRewardClaim()
-        spawnFloatingReward(VOCAB_QUEST_REWARD_XP, variables.clientX, variables.clientY)
-      }
+      audioEngine.playChestClaim()
+      spawnFloatingReward(GOLDEN_CHEST_REWARD_XP, variables.clientX, variables.clientY)
       updateUser({
         xp: res.current_xp,
         current_level: res.current_level,
@@ -95,22 +88,46 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
       void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: GAMIFICATION_STATUS_QUERY_KEY })
     },
     onError: () => {
       triggerHaptic('error')
     },
   })
 
-  const handleClaimVocabQuest = useCallback(
-    (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
-      if (isVocabQuestClaimed || !isVocabQuestUnlocked || claimRewardMutation.isPending) return
-      claimRewardMutation.mutate({
-        rewardType: 'vocab_quest',
+  const claimDailyQuestMutation = useMutation({
+    mutationFn: ({ questId }: { questId: string; clientX?: number; clientY?: number }) =>
+      gamificationService.claimDailyQuest(questId),
+    onSuccess: (res, variables) => {
+      triggerHaptic('success')
+      audioEngine.playRewardClaim()
+      spawnFloatingReward(res.xp_awarded, variables.clientX, variables.clientY)
+      updateUser({
+        xp: res.current_xp,
+        current_level: res.current_level,
+        streak: res.streak,
+      })
+      void queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: GAMIFICATION_STATUS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(user?.id) })
+    },
+    onError: () => {
+      triggerHaptic('error')
+    },
+  })
+
+  const handleClaimDailyQuest = useCallback(
+    (questId: string, e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
+      if (!questId || claimDailyQuestMutation.isPending) return
+      claimDailyQuestMutation.mutate({
+        questId,
         clientX: e?.clientX,
         clientY: e?.clientY,
       })
     },
-    [isVocabQuestClaimed, isVocabQuestUnlocked, claimRewardMutation]
+    [claimDailyQuestMutation]
   )
 
   const handleClaimChest = useCallback(
@@ -134,12 +151,16 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     }, DRAWER_CLOSE_DURATION_MS)
   }, [onCloseMobileDrawer])
 
+  const claimingQuestId = claimDailyQuestMutation.isPending
+    ? (claimDailyQuestMutation.variables?.questId ?? null)
+    : null
+
   return {
-    isVocabQuestClaimed,
-    isVocabQuestUnlocked,
     isClosingDrawer,
     floatingRewards,
-    handleClaimVocabQuest,
+    claimingQuestId,
+    isClaimingQuest: claimDailyQuestMutation.isPending,
+    handleClaimDailyQuest,
     handleClaimChest,
     handleCloseMobileDrawer,
   }

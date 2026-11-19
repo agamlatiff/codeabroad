@@ -15,23 +15,32 @@ var (
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "rating ingatan harus antara 0 sampai 5", nil)
 )
 
+// SampleCard represents a compact preview card bundled with a flashcard deck for fanned UI previews.
+type SampleCard struct {
+	ID          string `json:"id"`
+	FrontText   string `json:"front_text"`
+	Reading     string `json:"reading"`
+	BackMeaning string `json:"back_meaning"`
+}
+
 // Deck represents a standalone topic flashcard deck with per-user Anki memory cycle counters.
 type Deck struct {
-	ID             string    `json:"id"`
-	LanguageCode   string    `json:"language_code"`
-	Title          string    `json:"title"`
-	Description    string    `json:"description"`
-	Category       string    `json:"category"`
-	IconName       string    `json:"icon_name"`
-	AccentColor    string    `json:"accent_color"`
-	JLPTLevel      string    `json:"jlpt_level"`
-	SortOrder      int       `json:"sort_order"`
-	TotalCards     int       `json:"total_cards"`
-	NewCards       int       `json:"new_cards"`
-	LearnedCards   int       `json:"learned_cards"`
-	DueCards       int       `json:"due_cards"`
-	ScheduledCards int       `json:"scheduled_cards"`
-	CreatedAt      time.Time `json:"created_at"`
+	ID             string       `json:"id"`
+	LanguageCode   string       `json:"language_code"`
+	Title          string       `json:"title"`
+	Description    string       `json:"description"`
+	Category       string       `json:"category"`
+	IconName       string       `json:"icon_name"`
+	AccentColor    string       `json:"accent_color"`
+	JLPTLevel      string       `json:"jlpt_level"`
+	SortOrder      int          `json:"sort_order"`
+	TotalCards     int          `json:"total_cards"`
+	NewCards       int          `json:"new_cards"`
+	LearnedCards   int          `json:"learned_cards"`
+	DueCards       int          `json:"due_cards"`
+	ScheduledCards int          `json:"scheduled_cards"`
+	SampleCards    []SampleCard `json:"sample_cards"`
+	CreatedAt      time.Time    `json:"created_at"`
 }
 
 // Card represents a single flashcard item with optional user SM-2 scheduling state.

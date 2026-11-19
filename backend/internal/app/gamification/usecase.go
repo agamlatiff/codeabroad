@@ -118,6 +118,33 @@ func (u *usecase) ClaimDailyChest(ctx context.Context, userID string, tier int) 
 	return claim, status, nil
 }
 
+// GetDailyQuests retrieves today's rotating daily quests and progress for the authenticated user
+func (u *usecase) GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	quests, err := u.gamificationRepo.GetDailyQuests(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if quests == nil {
+		quests = []DailyQuestItem{}
+	}
+	return quests, nil
+}
+
+// ClaimDailyQuest validates completion of a rotated daily quest and awards its XP atomically
+func (u *usecase) ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	trimmedID := strings.TrimSpace(questID)
+	if trimmedID == "" {
+		return nil, apperror.ErrBadRequest
+	}
+	return u.gamificationRepo.ClaimDailyQuest(ctx, userID, trimmedID)
+}
+
 // SubmitCoaching creates a mentorship review submission
 func (u *usecase) SubmitCoaching(ctx context.Context, userID string, req *CoachingSubmissionRequest) (*CoachingSubmission, *GamificationStatus, error) {
 	if userID == "" {

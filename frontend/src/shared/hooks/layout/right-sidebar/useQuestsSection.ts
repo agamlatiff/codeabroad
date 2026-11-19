@@ -1,25 +1,32 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/features/auth/store/authStore'
+import { gamificationService } from '@/features/gamification/services/gamificationService'
 import { useUserActivity } from '@/features/user/hooks/useUserActivity'
 import { useDailyRewards } from '@/features/user/hooks/useDailyRewards'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { getWibMidnightCountdown } from '@/shared/utils/date'
-import { DAILY_QUESTS_QUERY_KEY } from '@/shared/constants/queryKeys'
+import {
+  DAILY_QUESTS_QUERY_KEY,
+  getDailyQuestsQueryKey,
+} from '@/shared/constants/queryKeys'
 
 export { DAILY_QUESTS_QUERY_KEY }
 
 export const DAILY_TARGET_XP = 50
-export const VOCAB_QUEST_REWARD_XP = 30
 export const GOLDEN_CHEST_REWARD_XP = 50
 
 export interface SidebarDailyQuestItem {
   id: string
+  code: string
   title: string
   chipLabel: string
   progressText: string
   route: string
   xpReward: number
-  isLanguage: boolean
+  iconName: string
+  slotCategory: string
   status: 'completed' | 'available' | 'ready_to_claim'
 }
 
@@ -29,13 +36,13 @@ export interface UseQuestsSectionOptions {
 
 /**
  * 1:1 Headless controller hook for QuestsSection in AppRightSidebar.
- * Derives daily XP progress and the 3 actionable quests directly from backend activity logs
- * and flashcard review milestones.
+ * Derives daily XP progress and the 3 rotating daily quests from backend gamification SSOT.
  */
 export const useQuestsSection = ({
   onClaimChestReward,
 }: UseQuestsSectionOptions) => {
   const navigate = useNavigate()
+  const user = useAuthStore((s) => s.user)
 
   const [timeLeft, setTimeLeft] = useState('00:00:00')
   const [isChestModalOpen, setIsChestModalOpen] = useState(false)
@@ -57,26 +64,32 @@ export const useQuestsSection = ({
   const { data: rewardsData } = useDailyRewards()
   const dailyRewardsStatus = rewardsData.dailyRewardsStatus
 
+  const { data: dailyQuestsApi = [] } = useQuery({
+    queryKey: getDailyQuestsQueryKey(user?.id),
+    queryFn: ({ signal }) => gamificationService.getDailyQuests({ signal }),
+    enabled: Boolean(user),
+    staleTime: 1000 * 60 * 2,
+  })
+
   const todayLog = useMemo(
     () => activitySummary?.weekly_logs?.find((log) => log.is_today),
     [activitySummary]
   )
 
-  const isVocabQuestClaimed = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
   const isChestClaimedToday = Boolean(dailyRewardsStatus?.golden_chest_claimed)
-  const todayFlashcardsReviewed = dailyRewardsStatus?.today_flashcards_reviewed ?? 0
-  const vocabQuestTarget = dailyRewardsStatus?.vocab_quest_target ?? 3
-  const isVocabQuestUnlocked =
-    Boolean(dailyRewardsStatus?.vocab_quest_unlocked) ||
-    todayFlashcardsReviewed >= vocabQuestTarget
 
-  const todayLessonsCompleted = todayLog?.lessons_count ?? 0
+  const claimedQuestXp = useMemo(
+    () =>
+      dailyQuestsApi
+        .filter((q) => q.is_claimed)
+        .reduce((sum, q) => sum + q.xp_reward, 0),
+    [dailyQuestsApi]
+  )
 
   const todayEarnedXp = useMemo(() => {
     const todayLogXp = todayLog?.xp_earned ?? 0
-    const vocabClaimXp = isVocabQuestClaimed ? VOCAB_QUEST_REWARD_XP : 0
-    return Math.max(todayLogXp, vocabClaimXp)
-  }, [todayLog, isVocabQuestClaimed])
+    return Math.max(todayLogXp, claimedQuestXp)
+  }, [todayLog, claimedQuestXp])
 
   const clampedTodayXp = Math.min(todayEarnedXp, DAILY_TARGET_XP)
   const extraXp = Math.max(0, todayEarnedXp - DAILY_TARGET_XP)
@@ -88,53 +101,24 @@ export const useQuestsSection = ({
   const remainingXp = Math.max(0, DAILY_TARGET_XP - todayEarnedXp)
 
   const activeQuests: SidebarDailyQuestItem[] = useMemo(
-    () => [
-      {
-        id: 'daily-lesson',
-        title: 'Tuntaskan 1 Pelajaran',
-        chipLabel: 'PELAJARAN',
-        progressText: `${Math.min(1, todayLessonsCompleted)}/1`,
-        route: '/curriculum',
-        xpReward: 50,
-        isLanguage: false,
-        status: todayLessonsCompleted >= 1 ? 'completed' : 'available',
-      },
-      {
-        id: 'daily-vocab',
-        title: `Ulas ${vocabQuestTarget} Kartu Flashcard`,
-        chipLabel: 'KOSAKATA',
-        progressText: isVocabQuestClaimed
-          ? `${vocabQuestTarget}/${vocabQuestTarget}`
-          : `${Math.min(vocabQuestTarget, todayFlashcardsReviewed)}/${vocabQuestTarget}`,
-        route: '/flashcards',
-        xpReward: VOCAB_QUEST_REWARD_XP,
-        isLanguage: true,
-        status: isVocabQuestClaimed
+    () =>
+      dailyQuestsApi.map((q) => ({
+        id: q.id,
+        code: q.code,
+        title: q.title,
+        chipLabel: q.chip_label,
+        progressText: q.progress_text,
+        route: q.route || '/curriculum',
+        xpReward: q.xp_reward,
+        iconName: q.icon_name || 'book-open',
+        slotCategory: q.slot_category || 'curriculum',
+        status: q.is_claimed
           ? 'completed'
-          : isVocabQuestUnlocked
+          : q.is_completed
             ? 'ready_to_claim'
             : 'available',
-      },
-      {
-        id: 'daily-xp',
-        title: `Kumpulkan ${DAILY_TARGET_XP} XP Harian`,
-        chipLabel: 'TARGET XP',
-        progressText: `${clampedTodayXp}/${DAILY_TARGET_XP}`,
-        route: '/flashcards',
-        xpReward: GOLDEN_CHEST_REWARD_XP,
-        isLanguage: false,
-        status: isChestUnlocked ? 'completed' : 'available',
-      },
-    ],
-    [
-      clampedTodayXp,
-      isChestUnlocked,
-      isVocabQuestClaimed,
-      isVocabQuestUnlocked,
-      todayFlashcardsReviewed,
-      todayLessonsCompleted,
-      vocabQuestTarget,
-    ]
+      })),
+    [dailyQuestsApi]
   )
 
   const handleOpenChestModal = useCallback(() => {

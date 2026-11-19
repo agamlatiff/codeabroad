@@ -575,7 +575,13 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 		WHERE fd.language_code = COALESCE(ae.language_code, 'ja')
 		ORDER BY
 			CASE WHEN UPPER(fd.jlpt_level) = UPPER(COALESCE(ae.level_code, 'N5')) THEN 0 ELSE 1 END ASC,
-			md5(fc.id::text || wib_day.date_key) ASC,
+			CASE
+				WHEN ufp.last_reviewed_at >= wib_day.start_ts THEN 0
+				WHEN ufp.id IS NOT NULL AND (ufp.next_review_at <= wib_day.start_ts + INTERVAL '1 day' OR ufp.repetitions = 0) THEN 0
+				WHEN ufp.id IS NULL THEN 0
+				ELSE 1
+			END ASC,
+			md5($1::text || ':' || fc.id::text || ':' || wib_day.date_key) ASC,
 			fd.sort_order ASC,
 			fc.sort_order ASC
 		LIMIT $2

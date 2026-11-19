@@ -18,6 +18,7 @@ type MockRepository struct {
 	Badges              map[string]*BadgeDefinition
 	UserBadges          map[string][]UserBadge
 	ChestClaims         map[string][]DailyChestClaim
+	DailyQuests         map[string][]DailyQuestItem
 	DailyQuestsDone     map[string]int
 	CoachingSubmissions []CoachingSubmission
 
@@ -34,18 +35,21 @@ type MockRepository struct {
 	AwardBadgeErr       error
 	GetChestClaimsErr   error
 	ClaimChestErr       error
+	GetDailyQuestsErr   error
+	ClaimDailyQuestErr  error
 	CreateCoachingErr   error
 }
 
 // NewMockRepository creates an in-memory mock gamification Repository
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		Stats:       make(map[string]*user.UserGamificationStats),
-		ShopItems:   make(map[string]*ShopItem),
-		Inventory:   make(map[string][]UserInventoryItem),
+		Stats:           make(map[string]*user.UserGamificationStats),
+		ShopItems:       make(map[string]*ShopItem),
+		Inventory:       make(map[string][]UserInventoryItem),
 		Badges:          make(map[string]*BadgeDefinition),
 		UserBadges:      make(map[string][]UserBadge),
 		ChestClaims:     make(map[string][]DailyChestClaim),
+		DailyQuests:     make(map[string][]DailyQuestItem),
 		DailyQuestsDone: make(map[string]int),
 	}
 }
@@ -445,5 +449,53 @@ func (m *MockRepository) CreateCoachingSubmission(ctx context.Context, sub *Coac
 	}
 	m.CoachingSubmissions = append(m.CoachingSubmissions, *sub)
 	return nil
+}
+
+func (m *MockRepository) GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.GetDailyQuestsErr != nil {
+		return nil, m.GetDailyQuestsErr
+	}
+	list := m.DailyQuests[userID]
+	res := make([]DailyQuestItem, len(list))
+	copy(res, list)
+	return res, nil
+}
+
+func (m *MockRepository) ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.ClaimDailyQuestErr != nil {
+		return nil, m.ClaimDailyQuestErr
+	}
+	list := m.DailyQuests[userID]
+	for i := range list {
+		if list[i].ID == questID {
+			if list[i].IsClaimed {
+				return nil, ErrDailyQuestAlreadyClaimed
+			}
+			if !list[i].IsCompleted {
+				return nil, ErrDailyQuestNotCompleted
+			}
+			list[i].IsClaimed = true
+			st, ok := m.Stats[userID]
+			if !ok {
+				st = &user.UserGamificationStats{CurrentLevel: 1}
+				m.Stats[userID] = st
+			}
+			st.XP += list[i].XPReward
+			st.CurrentLevel = (st.XP / 100) + 1
+			return &ClaimDailyQuestResponse{
+				QuestID:      list[i].ID,
+				XPAwarded:    list[i].XPReward,
+				CurrentXP:    st.XP,
+				CurrentLevel: st.CurrentLevel,
+				Streak:       st.Streak,
+				ClaimedAt:    time.Now().UTC().Format(time.RFC3339),
+			}, nil
+		}
+	}
+	return nil, ErrDailyQuestNotFound
 }
 

@@ -3,7 +3,8 @@ import {
   Target,
   Clock,
   CheckCircle,
-  Code,
+  BookOpen,
+  Cards,
   Translate,
   Lightning,
   Gift,
@@ -15,8 +16,41 @@ import { useQuestsSection } from '@/shared/hooks/layout/right-sidebar/useQuestsS
 import { ChestModal } from './ChestModal'
 
 export interface QuestsSectionProps {
-  onClaimVocabQuest: (e?: React.MouseEvent) => void
+  onClaimDailyQuest: (questId: string, e?: React.MouseEvent) => void
   onClaimChestReward: (e?: React.MouseEvent) => void
+  isClaimingQuest?: boolean
+  claimingQuestId?: string | null
+}
+
+function renderQuestBadgeIcon(iconName: string) {
+  switch (iconName) {
+    case 'cards':
+      return {
+        gradient: 'from-rose-400 to-pink-500 shadow-[0_2px_0_0_#9F1239]',
+        icon: <Cards weight="bold" className="w-4 h-4 text-white" />,
+      }
+    case 'translate':
+      return {
+        gradient: 'from-fuchsia-500 to-rose-500 shadow-[0_2px_0_0_#9F1239]',
+        icon: <Translate weight="bold" className="w-4 h-4 text-white" />,
+      }
+    case 'lightning':
+      return {
+        gradient: 'from-amber-400 to-orange-500 shadow-[0_2px_0_0_#B45309]',
+        icon: <Lightning weight="fill" className="w-4 h-4 text-white" />,
+      }
+    case 'target':
+      return {
+        gradient: 'from-emerald-500 to-teal-600 shadow-[0_2px_0_0_#0F766E]',
+        icon: <Target weight="bold" className="w-4 h-4 text-white" />,
+      }
+    case 'book-open':
+    default:
+      return {
+        gradient: 'from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E3A8A]',
+        icon: <BookOpen weight="bold" className="w-4 h-4 text-white" />,
+      }
+  }
 }
 
 /**
@@ -25,8 +59,10 @@ export interface QuestsSectionProps {
  * Powered 1:1 by useQuestsSection.
  */
 export const QuestsSection: FC<QuestsSectionProps> = ({
-  onClaimVocabQuest,
+  onClaimDailyQuest,
   onClaimChestReward,
+  isClaimingQuest = false,
+  claimingQuestId = null,
 }) => {
   const {
     timeLeft,
@@ -150,6 +186,8 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
         <div className="space-y-1.5">
           {activeQuests.map((quest) => {
             const isDone = quest.status === 'completed'
+            const isClaimingThis = isClaimingQuest && claimingQuestId === quest.id
+            const badge = renderQuestBadgeIcon(quest.iconName)
 
             return (
               <div
@@ -157,15 +195,11 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                 className="p-2 sm:p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-all group"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  {quest.isLanguage ? (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-rose-400 to-pink-500 shadow-[0_2px_0_0_#9F1239] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Translate weight="bold" className="w-4 h-4 text-white" />
-                    </div>
-                  ) : (
-                    <div className="w-8 h-8 rounded-xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E3A8A] text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                      <Code weight="bold" className="w-4 h-4 text-white" />
-                    </div>
-                  )}
+                  <div
+                    className={`w-8 h-8 rounded-xl bg-gradient-to-b ${badge.gradient} text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}
+                  >
+                    {badge.icon}
+                  </div>
 
                   <div className="space-y-0.5 min-w-0 flex-1">
                     <p
@@ -198,11 +232,12 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                   <Button3D
                     variant="amber"
                     size="xs"
-                    onClick={(e) => onClaimVocabQuest(e)}
+                    disabled={isClaimingQuest}
+                    onClick={(e) => onClaimDailyQuest(quest.id, e)}
                     className="shrink-0 shadow-[0_2px_0_0_#B45309]"
                   >
                     <span className="inline-flex items-center gap-1">
-                      <span>KLAIM</span>
+                      <span>{isClaimingThis ? '...' : 'KLAIM'}</span>
                       <Lightning weight="fill" className="w-3 h-3" />
                     </span>
                   </Button3D>

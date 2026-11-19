@@ -704,6 +704,283 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 	return tx.Commit(ctx)
 }
 
+func formatDailyQuestProgress(metricType string, current int, target int) string {
+	switch metricType {
+	case "xp_earned":
+		return fmt.Sprintf("%d/%d XP", current, target)
+	case "flashcards_reviewed", "flashcards_remembered":
+		return fmt.Sprintf("%d/%d Kartu", current, target)
+	default:
+		return fmt.Sprintf("%d/%d", current, target)
+	}
+}
+
+const dailyQuestMetricsCTE = `
+	wib_day AS (
+		SELECT
+			((NOW() AT TIME ZONE 'Asia/Jakarta')::date)::text AS date_key,
+			((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta') AS start_ts
+	),
+	daily_metrics AS (
+		SELECT
+			COALESCE((
+				SELECT COUNT(*)::int FROM user_lesson_progress ulp, wib_day wd
+				WHERE ulp.user_id = $1::uuid AND ulp.is_completed = true AND ulp.is_skipped = false AND ulp.completed_at >= wd.start_ts
+			), 0) AS lessons_completed,
+			COALESCE((
+				SELECT COUNT(*)::int FROM user_lesson_progress ulp, wib_day wd
+				WHERE ulp.user_id = $1::uuid AND ulp.is_completed = true AND ulp.is_skipped = false AND ulp.score >= 85 AND ulp.completed_at >= wd.start_ts
+			), 0) AS high_accuracy_lesson,
+			COALESCE((
+				SELECT COUNT(*)::int FROM user_flashcard_progress ufp, wib_day wd
+				WHERE ufp.user_id = $1::uuid AND ufp.last_reviewed_at >= wd.start_ts
+			), 0) AS flashcards_reviewed,
+			COALESCE((
+				SELECT COUNT(*)::int FROM user_flashcard_progress ufp, wib_day wd
+				WHERE ufp.user_id = $1::uuid AND ufp.last_reviewed_at >= wd.start_ts AND ufp.repetitions > 0
+			), 0) AS flashcards_remembered,
+			COALESCE((
+				SELECT SUM(ual.xp_earned)::int FROM user_activity_logs ual, wib_day wd
+				WHERE ual.user_id = $1::uuid AND ual.activity_type <> 'daily_golden_chest_claim' AND ual.created_at >= wd.start_ts
+			), 0) AS xp_earned,
+			COALESCE((
+				SELECT COUNT(*)::int FROM user_exercise_attempts uea, wib_day wd
+				WHERE uea.user_id = $1::uuid AND uea.is_correct = true AND uea.created_at >= wd.start_ts
+			), 0) AS correct_exercises,
+			EXISTS (
+				SELECT 1 FROM user_activity_logs ual, wib_day wd
+				WHERE ual.user_id = $1::uuid AND ual.activity_type = 'daily_vocab_quest_claim' AND ual.created_at >= wd.start_ts
+			) AS legacy_vocab_claimed
+	)
+`
+
+// GetDailyQuests deterministically selects 3 daily rotated quests (1 per slot) for today's WIB date and computes live progress.
+func (r *PostgresRepository) GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
+
+	query := `
+		WITH ` + dailyQuestMetricsCTE + `,
+		selected_templates AS (
+			SELECT DISTINCT ON (t.slot_category)
+				t.id, t.code, t.slot_category, t.title, t.chip_label, t.metric_type, t.target_value, t.xp_reward, t.route, t.icon_name
+			FROM daily_quest_templates t
+			CROSS JOIN wib_day wd
+			WHERE t.is_active = true
+			ORDER BY t.slot_category, md5($1::text || ':' || t.code || ':' || wd.date_key) ASC, t.sort_order ASC
+		)
+		SELECT
+			st.id::text,
+			st.code,
+			st.slot_category,
+			st.title,
+			st.chip_label,
+			st.metric_type,
+			CASE st.metric_type
+				WHEN 'lessons_completed' THEN dm.lessons_completed
+				WHEN 'high_accuracy_lesson' THEN dm.high_accuracy_lesson
+				WHEN 'flashcards_reviewed' THEN dm.flashcards_reviewed
+				WHEN 'flashcards_remembered' THEN dm.flashcards_remembered
+				WHEN 'xp_earned' THEN dm.xp_earned
+				WHEN 'correct_exercises' THEN dm.correct_exercises
+				ELSE 0
+			END AS raw_progress,
+			st.target_value,
+			st.xp_reward,
+			st.route,
+			st.icon_name,
+			(
+				EXISTS (
+					SELECT 1 FROM user_daily_quest_claims udc
+					WHERE udc.user_id = $1::uuid AND udc.quest_template_id = st.id AND udc.claim_date_wib = wd.date_key
+				)
+				OR (st.slot_category = 'flashcard' AND dm.legacy_vocab_claimed)
+			) AS is_claimed
+		FROM selected_templates st
+		CROSS JOIN wib_day wd
+		CROSS JOIN daily_metrics dm
+		ORDER BY CASE st.slot_category
+			WHEN 'curriculum' THEN 1
+			WHEN 'flashcard' THEN 2
+			ELSE 3
+		END ASC
+	`
+
+	rows, err := r.db.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query daily quests: %w", err)
+	}
+	defer rows.Close()
+
+	quests := make([]DailyQuestItem, 0, 3)
+	for rows.Next() {
+		var q DailyQuestItem
+		var rawValue int
+		if err := rows.Scan(
+			&q.ID, &q.Code, &q.SlotCategory, &q.Title, &q.ChipLabel, &q.MetricType,
+			&rawValue, &q.TargetValue, &q.XPReward, &q.Route, &q.IconName, &q.IsClaimed,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan daily quest item: %w", err)
+		}
+		target := q.TargetValue
+		if target < 1 {
+			target = 1
+		}
+		clamped := rawValue
+		if clamped < 0 {
+			clamped = 0
+		}
+		if clamped > target {
+			clamped = target
+		}
+		q.IsCompleted = rawValue >= target || q.IsClaimed
+		if q.IsClaimed && clamped < target {
+			clamped = target
+		}
+		q.CurrentValue = clamped
+		q.ProgressPercent = (clamped * 100) / target
+		if q.IsCompleted {
+			q.ProgressPercent = 100
+		}
+		q.ProgressText = formatDailyQuestProgress(q.MetricType, clamped, target)
+		quests = append(quests, q)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in daily quests: %w", err)
+	}
+	return quests, nil
+}
+
+// ClaimDailyQuest validates completion of a daily quest and grants its XP atomically in PostgreSQL.
+func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateEntityUUID(questID); err != nil {
+		return nil, ErrDailyQuestNotFound
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin daily quest claim tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "gamification.ClaimDailyQuest")
+
+	var currentXP, currentStreak int
+	var lastActive *time.Time
+	var wibDate string
+	lockQuery := `
+		SELECT xp, streak, last_active_at, TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD')
+		FROM user_gamification
+		WHERE user_id = $1::uuid
+		FOR UPDATE
+	`
+	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &currentStreak, &lastActive, &wibDate); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, user.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to lock user gamification for daily quest: %w", err)
+	}
+
+	metricQuery := `
+		WITH ` + dailyQuestMetricsCTE + `
+		SELECT
+			t.id::text,
+			t.code,
+			t.slot_category,
+			t.target_value,
+			t.xp_reward,
+			CASE t.metric_type
+				WHEN 'lessons_completed' THEN dm.lessons_completed
+				WHEN 'high_accuracy_lesson' THEN dm.high_accuracy_lesson
+				WHEN 'flashcards_reviewed' THEN dm.flashcards_reviewed
+				WHEN 'flashcards_remembered' THEN dm.flashcards_remembered
+				WHEN 'xp_earned' THEN dm.xp_earned
+				WHEN 'correct_exercises' THEN dm.correct_exercises
+				ELSE 0
+			END AS raw_progress,
+			dm.legacy_vocab_claimed
+		FROM daily_quest_templates t
+		CROSS JOIN daily_metrics dm
+		WHERE t.id = $2::uuid AND t.is_active = true
+	`
+	var tmplID, code, slotCategory string
+	var targetValue, xpReward, rawProgress int
+	var legacyVocabClaimed bool
+	if err := tx.QueryRow(ctx, metricQuery, userID, questID).Scan(
+		&tmplID, &code, &slotCategory, &targetValue, &xpReward, &rawProgress, &legacyVocabClaimed,
+	); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrDailyQuestNotFound
+		}
+		return nil, fmt.Errorf("failed to verify daily quest prerequisite: %w", err)
+	}
+
+	if slotCategory == "flashcard" && legacyVocabClaimed {
+		return nil, ErrDailyQuestAlreadyClaimed
+	}
+	if rawProgress < targetValue {
+		return nil, ErrDailyQuestNotCompleted
+	}
+
+	var claimedAt time.Time
+	insertClaimQuery := `
+		INSERT INTO user_daily_quest_claims (user_id, quest_template_id, claim_date_wib, xp_awarded, claimed_at)
+		VALUES ($1::uuid, $2::uuid, $3, $4, NOW())
+		ON CONFLICT (user_id, quest_template_id, claim_date_wib) DO NOTHING
+		RETURNING claimed_at
+	`
+	if err := tx.QueryRow(ctx, insertClaimQuery, userID, tmplID, wibDate, xpReward).Scan(&claimedAt); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrDailyQuestAlreadyClaimed
+		}
+		return nil, fmt.Errorf("failed to insert daily quest claim: %w", err)
+	}
+
+	now := time.Now().UTC()
+	newXP := currentXP + xpReward
+	newLevel := progression.CalculateLevel(newXP)
+	newStreak, streakChanged := progression.EvaluateDailyStreak(lastActive, currentStreak, now)
+	if !streakChanged {
+		newStreak = currentStreak
+	}
+
+	updateStatsQuery := `
+		UPDATE user_gamification
+		SET xp = $2,
+		    current_level = $3,
+		    streak = $4,
+		    last_active_at = NOW(),
+		    updated_at = NOW()
+		WHERE user_id = $1::uuid
+	`
+	if _, err := tx.Exec(ctx, updateStatsQuery, userID, newXP, newLevel, newStreak); err != nil {
+		return nil, fmt.Errorf("failed to update gamification stats for daily quest: %w", err)
+	}
+
+	logQuery := `
+		INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		VALUES ($1::uuid, 'quest_completed', $2, jsonb_build_object('quest_id', $3::text, 'quest_code', $4::text, 'date_wib', $5::text), NOW())
+	`
+	if _, err := tx.Exec(ctx, logQuery, userID, xpReward, tmplID, code, wibDate); err != nil {
+		return nil, fmt.Errorf("failed to log quest_completed activity: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit daily quest claim: %w", err)
+	}
+
+	return &ClaimDailyQuestResponse{
+		QuestID:      tmplID,
+		XPAwarded:    xpReward,
+		CurrentXP:    newXP,
+		CurrentLevel: newLevel,
+		Streak:       newStreak,
+		ClaimedAt:    claimedAt.UTC().Format(time.RFC3339),
+	}, nil
+}
+
 // CreateCoachingSubmission atomically consumes the required coaching coupon from user_inventories
 // and records a mentorship or CV review request.
 func (r *PostgresRepository) CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error {

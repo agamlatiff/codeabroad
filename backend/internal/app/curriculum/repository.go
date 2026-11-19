@@ -31,7 +31,7 @@ func scanGrammarPointsRows(rows pgx.Rows) ([]GrammarPoint, error) {
 		var examplesRaw []byte
 		if err := rows.Scan(
 			&gp.ID, &gp.LevelID, &gp.LevelCode, &gp.Code, &gp.Category, &gp.Title,
-			&gp.Formula, &gp.Explanation, &examplesRaw, &gp.OrderIndex, &gp.CreatedAt,
+			&gp.Formula, &gp.FormulaReading, &gp.Explanation, &examplesRaw, &gp.OrderIndex, &gp.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan grammar point: %w", err)
 		}
@@ -53,7 +53,7 @@ func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, leve
 		return nil, err
 	}
 	query := `
-		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.order_index, gp.created_at
 		FROM grammar_points gp
 		JOIN proficiency_levels pl ON pl.id = gp.level_id
 		WHERE gp.level_id = $1::uuid
@@ -78,7 +78,7 @@ func (r *PostgresRepository) GetGrammarPointsByLanguageCode(ctx context.Context,
 		lvl = ""
 	}
 	query := `
-		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.order_index, gp.created_at
 		FROM grammar_points gp
 		JOIN proficiency_levels pl ON pl.id = gp.level_id
 		JOIN languages l ON l.id = pl.language_id
@@ -100,7 +100,7 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 		return nil, err
 	}
 	query := `
-		SELECT DISTINCT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		SELECT DISTINCT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.order_index, gp.created_at
 		FROM grammar_points gp
 		JOIN proficiency_levels pl ON pl.id = gp.level_id
 		JOIN exercises e ON gp.id = e.grammar_point_id

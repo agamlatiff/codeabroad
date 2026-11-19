@@ -91,3 +91,30 @@ export interface CoachingSubmissionResponse {
   submission: CoachingSubmissionRecord
   status: GamificationStatus
 }
+
+export interface DailyQuestApiItem {
+  id: string
+  code: string
+  slot_category: string
+  title: string
+  chip_label: string
+  metric_type: string
+  current_value: number
+  target_value: number
+  progress_percent: number
+  progress_text: string
+  xp_reward: number
+  route: string
+  icon_name: string
+  is_completed: boolean
+  is_claimed: boolean
+}
+
+export interface ClaimDailyQuestApiResponse {
+  quest_id: string
+  xp_awarded: number
+  current_xp: number
+  current_level: number
+  streak: number
+  claimed_at: string
+}

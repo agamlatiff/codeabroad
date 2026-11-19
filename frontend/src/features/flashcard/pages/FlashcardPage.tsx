@@ -15,6 +15,7 @@ import {
   ArrowsClockwise,
   Fire,
   MagnifyingGlass,
+  SquaresFour,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { Button3D } from '@/shared/components/ui/Button3D'
@@ -24,13 +25,18 @@ import {
   getProfileQueryKey,
   getDailyRewardsQueryKey,
   getActivityLogsQueryKey,
+  DAILY_QUESTS_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
 import {
   flashcardService,
   FLASHCARD_DECKS_QUERY_KEY,
   FLASHCARD_DUE_QUERY_KEY,
 } from '@/features/flashcard/services/flashcardService'
-import type { FlashcardCard, FlashcardDeck } from '@/features/flashcard/types/flashcard'
+import type {
+  FlashcardCard,
+  FlashcardDeck,
+  FlashcardSampleCard,
+} from '@/features/flashcard/types/flashcard'
 import { FlashcardFlipCard } from '@/features/flashcard/components/FlashcardFlipCard'
 import {
   previewAnkiIntervals,
@@ -42,6 +48,69 @@ import { playSound } from '@/shared/utils/sound'
 
 type SessionMode = 'lobby' | 'session' | 'complete'
 type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
+type DeckViewMode = 'fanned' | 'grid'
+
+/** Progressive tilt for the 4-card fan (left → right), widening further on hover. */
+const FAN_CARD_LAYOUT = [
+  { rest: 'rotate-[-8deg] translate-y-2', hover: 'group-hover:rotate-[-14deg] group-hover:-translate-x-3 group-hover:translate-y-3' },
+  { rest: 'rotate-[-3deg] translate-y-0.5', hover: 'group-hover:rotate-[-5deg] group-hover:-translate-x-1' },
+  { rest: 'rotate-[3deg] translate-y-0.5', hover: 'group-hover:rotate-[5deg] group-hover:translate-x-1' },
+  { rest: 'rotate-[8deg] translate-y-2', hover: 'group-hover:rotate-[13deg] group-hover:translate-x-3 group-hover:translate-y-1' },
+] as const
+
+/**
+ * Fanned stack of up to 4 overlapping mini flashcards widening to the right,
+ * like a hand of playing cards: back cards peek their word in the top-left corner,
+ * the front (right-most) card shows term, reading, and meaning.
+ */
+const FannedDeckCardsPreview = ({ cards }: { cards: FlashcardSampleCard[] }) => {
+  const fanCards = cards.slice(0, 4)
+  if (fanCards.length === 0) return null
+  const offset = FAN_CARD_LAYOUT.length - fanCards.length
+
+  return (
+    <div aria-hidden="true" className="flex items-end justify-center h-32 pt-2 pl-6">
+      {fanCards.map((card, idx) => {
+        const layout = FAN_CARD_LAYOUT[idx + offset]
+        const isFront = idx === fanCards.length - 1
+        return (
+          <div
+            key={card.id}
+            style={{ zIndex: idx + 1 }}
+            className={`relative -ml-7 first:ml-0 w-[88px] sm:w-24 h-28 rounded-2xl border-2 bg-white origin-bottom transition-transform duration-300 ease-out ${layout.rest} ${layout.hover} ${
+              isFront
+                ? 'border-blue-300 shadow-[0_4px_0_0_#BFDBFE]'
+                : 'border-slate-200 shadow-[0_3px_0_0_#E2E8F0]'
+            }`}
+          >
+            <span className="absolute top-1.5 left-2 font-brand font-black text-[11px] leading-none text-slate-700 max-w-[64px] truncate">
+              {card.front_text}
+            </span>
+            {isFront ? (
+              <div className="absolute inset-0 flex flex-col items-center justify-center px-1.5 pt-3 text-center gap-0.5">
+                <span className="font-brand font-black text-lg text-slate-900 leading-tight break-all line-clamp-2">
+                  {card.front_text}
+                </span>
+                {card.reading && card.reading !== card.front_text && (
+                  <span className="text-[9px] font-bold text-rose-600 truncate max-w-full">
+                    {card.reading}
+                  </span>
+                )}
+                <span className="text-[9px] font-bold text-blue-600 truncate max-w-full">
+                  {card.back_meaning}
+                </span>
+              </div>
+            ) : (
+              <span className="absolute bottom-1.5 right-2 font-brand font-black text-[11px] leading-none text-slate-300 rotate-180 max-w-[64px] truncate">
+                {card.front_text}
+              </span>
+            )}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
 
 interface RatingOption {
   quality: number
@@ -151,7 +220,9 @@ export const FlashcardPage = () => {
   const userIdKey = userData.user?.id ?? 'anonymous'
 
   const [mode, setMode] = useState<SessionMode>('lobby')
-  const [levelFilter, setLevelFilter] = useState<JlptFilter>('ALL')
+  // Default to N5 so the lobby opens focused instead of showing every JLPT deck at once.
+  const [levelFilter, setLevelFilter] = useState<JlptFilter>('N5')
+  const [deckViewMode, setDeckViewMode] = useState<DeckViewMode>('fanned')
   const [searchQuery, setSearchQuery] = useState('')
 
   const [sessionTitle, setSessionTitle] = useState('')
@@ -224,6 +295,7 @@ export const FlashcardPage = () => {
       void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) })
       void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(userIdKey) })
       void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(userIdKey) })
+      void queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY })
     },
   })
 
@@ -312,6 +384,14 @@ export const FlashcardPage = () => {
 
   const currentCardId = queue[0]
   const currentCard = currentCardId ? cardMap[currentCardId] : undefined
+  const upcomingCards = useMemo(
+    () =>
+      queue
+        .slice(1, 4)
+        .map((id) => cardMap[id])
+        .filter((card): card is FlashcardCard => Boolean(card)),
+    [queue, cardMap]
+  )
 
   const handleRate = useCallback(
     async (quality: number) => {
@@ -563,12 +643,41 @@ export const FlashcardPage = () => {
 
         {/* Card Stage */}
         <main className="flex-1 flex flex-col items-center justify-center px-4 py-6 sm:py-10 gap-6 max-w-2xl w-full mx-auto">
-          <FlashcardFlipCard
-            key={`${currentCard.id}-${reviewedCount}`}
-            card={currentCard}
-            isFlipped={isFlipped}
-            onToggleFlip={() => setIsFlipped((prev) => !prev)}
-          />
+          <div className="relative w-full max-w-lg mx-auto">
+            {/* Upcoming cards peeking fanned behind (real stack that shrinks as you review) */}
+            {upcomingCards
+              .slice()
+              .reverse()
+              .map((card, revIdx) => {
+                const depth = upcomingCards.length - revIdx
+                const stackStyle =
+                  depth === 1
+                    ? 'translate-x-3 translate-y-1.5 rotate-2'
+                    : depth === 2
+                      ? 'translate-x-6 translate-y-3 rotate-[4deg]'
+                      : 'translate-x-9 translate-y-[18px] rotate-[6deg]'
+                return (
+                  <div
+                    key={`upcoming-${card.id}`}
+                    aria-hidden="true"
+                    className={`absolute inset-0 rounded-3xl bg-white border-2 border-slate-200/90 shadow-[0_6px_0_0_#E2E8F0] origin-bottom-left transition-transform duration-300 ${stackStyle}`}
+                    style={{ opacity: 1 - depth * 0.18 }}
+                  >
+                    <span className="absolute top-3 right-4 font-brand font-black text-sm text-slate-400 max-w-[120px] truncate">
+                      {card.front_text}
+                    </span>
+                  </div>
+                )
+              })}
+            <div className="relative">
+              <FlashcardFlipCard
+                key={`${currentCard.id}-${reviewedCount}`}
+                card={currentCard}
+                isFlipped={isFlipped}
+                onToggleFlip={() => setIsFlipped((prev) => !prev)}
+              />
+            </div>
+          </div>
 
           {/* Action Controls */}
           <div className="w-full max-w-lg">
@@ -756,13 +865,43 @@ export const FlashcardPage = () => {
 
         {/* Topic Decks Grid */}
         <section className="space-y-3">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-sm font-brand font-black uppercase tracking-wider text-slate-700">
               Dek Topik Siap Pakai ({filteredDecks.length})
             </h2>
-            <span className="text-xs font-semibold text-slate-500">
-              Klik dek mana saja untuk langsung mulai
-            </span>
+            <div
+              role="group"
+              aria-label="Tampilan dek"
+              className="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200"
+            >
+              {(
+                [
+                  { value: 'fanned', label: 'Tumpukan Mengipas', icon: <Cards weight="bold" className="w-3.5 h-3.5" /> },
+                  { value: 'grid', label: 'Grid', icon: <SquaresFour weight="bold" className="w-3.5 h-3.5" /> },
+                ] as const
+              ).map((opt) => {
+                const active = deckViewMode === opt.value
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    aria-pressed={active}
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      setDeckViewMode(opt.value)
+                    }}
+                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-brand font-black transition-all cursor-pointer ${
+                      active
+                        ? 'bg-white text-blue-700 shadow-[0_2px_0_0_#CBD5E1] border border-slate-200'
+                        : 'text-slate-500 hover:text-slate-700'
+                    }`}
+                  >
+                    {opt.icon}
+                    <span>{opt.label}</span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {decksLoading ? (
@@ -798,14 +937,24 @@ export const FlashcardPage = () => {
                       ? 'Mulai Belajar'
                       : 'Latihan Ulang'
 
+                const sampleCards = deck.sample_cards ?? []
+                const isFanned = deckViewMode === 'fanned' && sampleCards.length > 0
+
                 return (
                   <button
                     key={deck.id}
                     type="button"
                     disabled={loadingSession}
                     onClick={() => void startDeckSession(deck)}
-                    className={`group text-left bg-white border-2 border-slate-200/90 ${style.border} rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] hover:shadow-[0_6px_0_0_#CBD5E1] active:translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 disabled:opacity-60`}
+                    className={`group relative text-left bg-white border-2 border-slate-200/90 ${style.border} rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] hover:shadow-[0_6px_0_0_#CBD5E1] active:translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 disabled:opacity-60 ${
+                      isFanned ? 'hover:-translate-y-1.5 hover:z-20 overflow-hidden' : ''
+                    }`}
                   >
+                    {isFanned && (
+                      <div className="-mx-5 -mt-5 mb-1 px-5 pb-2 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
+                        <FannedDeckCardsPreview cards={sampleCards} />
+                      </div>
+                    )}
                     <div className="flex items-start gap-3.5">
                       <div
                         className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${style.badge}`}

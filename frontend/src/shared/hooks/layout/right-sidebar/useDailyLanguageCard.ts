@@ -14,6 +14,7 @@ import {
   getLanguageEnrollmentsQueryKey,
   getDailyRewardsQueryKey,
   getActivityLogsQueryKey,
+  DAILY_QUESTS_QUERY_KEY,
   getProfileQueryKey,
 } from '@/shared/constants/queryKeys'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -221,6 +222,7 @@ export const useDailyLanguageCard = () => {
       void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) })
       void queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: FLASHCARD_DUE_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY })
     },
   })
 

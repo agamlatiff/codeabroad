@@ -127,6 +127,41 @@ func (h *Handler) ClaimDailyChest(c *gin.Context) {
 	})
 }
 
+// GetDailyQuests handles GET /api/v1/gamification/daily-quests
+func (h *Handler) GetDailyQuests(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	quests, err := h.gamificationUsecase.GetDailyQuests(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "daily quests retrieved successfully", quests)
+}
+
+// ClaimDailyQuest handles POST /api/v1/gamification/daily-quests/:id/claim
+func (h *Handler) ClaimDailyQuest(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	questID := c.Param("id")
+	res, err := h.gamificationUsecase.ClaimDailyQuest(c.Request.Context(), userID, questID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "daily quest claimed successfully", res)
+}
+
 // SubmitCoaching handles POST /api/v1/gamification/coaching
 func (h *Handler) SubmitCoaching(c *gin.Context) {
 	userID := c.GetString("userID")
@@ -163,14 +198,17 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 	group.GET("/status", h.GetStatus)
 	group.GET("/shop", h.ListShopItems)
 	group.GET("/badges", h.ListBadges)
+	group.GET("/daily-quests", h.GetDailyQuests)
 
 	if h.mutationLimiter != nil {
 		group.POST("/shop/buy", h.mutationLimiter, h.BuyShopItem)
 		group.POST("/chests/claim", h.mutationLimiter, h.ClaimDailyChest)
+		group.POST("/daily-quests/:id/claim", h.mutationLimiter, h.ClaimDailyQuest)
 		group.POST("/coaching", h.mutationLimiter, h.SubmitCoaching)
 	} else {
 		group.POST("/shop/buy", h.BuyShopItem)
 		group.POST("/chests/claim", h.ClaimDailyChest)
+		group.POST("/daily-quests/:id/claim", h.ClaimDailyQuest)
 		group.POST("/coaching", h.SubmitCoaching)
 	}
 }

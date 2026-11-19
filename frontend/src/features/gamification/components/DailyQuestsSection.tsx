@@ -23,6 +23,8 @@ export interface DailyQuestsSectionProps {
   claimedDailyChests: Record<number, boolean>
   onOpenChest: (chest: DailyChestItem) => void
   onStartQuest: (route: string) => void
+  onClaimQuest?: (questId: string) => void
+  claimingQuestId?: string | null
   onContinueCurriculum: () => void
 }
 
@@ -35,6 +37,8 @@ export const DailyQuestsSection = ({
   claimedDailyChests,
   onOpenChest,
   onStartQuest,
+  onClaimQuest,
+  claimingQuestId,
   onContinueCurriculum,
 }: DailyQuestsSectionProps) => {
   const dailyChests: DailyChestItem[] = useMemo(
@@ -245,7 +249,7 @@ export const DailyQuestsSection = ({
 
               {/* Right: Tactile Action Button */}
               <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
-                {isDone ? (
+                {questItem.isClaimed ? (
                   <Button3D
                     variant="ghost"
                     size="sm"
@@ -256,6 +260,16 @@ export const DailyQuestsSection = ({
                       <Check weight="bold" className="w-3.5 h-3.5 text-emerald-600" />
                       <span>SELESAI</span>
                     </span>
+                  </Button3D>
+                ) : isDone && onClaimQuest ? (
+                  <Button3D
+                    variant="amber"
+                    size="sm"
+                    loading={claimingQuestId === questItem.id}
+                    onClick={() => onClaimQuest(questItem.id)}
+                    className="text-xs px-4 py-2"
+                  >
+                    KLAIM +{questItem.xp_reward} XP ⚡
                   </Button3D>
                 ) : (
                   <Button3D

@@ -2,6 +2,7 @@ package flashcard
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -34,6 +35,24 @@ const deckSelectFromClause = `
 			COUNT(p.id)::int AS learned_cards,
 			COUNT(CASE WHEN p.id IS NOT NULL AND p.next_review_at <= NOW() THEN 1 END)::int AS due_cards,
 			COUNT(CASE WHEN p.id IS NOT NULL AND p.next_review_at > NOW() THEN 1 END)::int AS scheduled_cards,
+			COALESCE((
+				SELECT json_agg(
+					json_build_object(
+						'id', s.id::text,
+						'front_text', s.front_text,
+						'reading', s.reading,
+						'back_meaning', s.back_meaning
+					)
+					ORDER BY s.sort_order ASC, s.created_at ASC
+				)
+				FROM (
+					SELECT fc.id, fc.front_text, fc.reading, fc.back_meaning, fc.sort_order, fc.created_at
+					FROM flashcard_cards fc
+					WHERE fc.deck_id = d.id
+					ORDER BY fc.sort_order ASC, fc.created_at ASC
+					LIMIT 4
+				) s
+			), '[]'::json) AS sample_cards,
 			d.created_at
 		FROM flashcard_decks d
 		LEFT JOIN flashcard_cards c ON c.deck_id = d.id
@@ -46,6 +65,7 @@ type rowScanner interface {
 
 func scanDeckRow(scanner rowScanner) (Deck, error) {
 	var d Deck
+	var sampleCardsRaw []byte
 	err := scanner.Scan(
 		&d.ID,
 		&d.LanguageCode,
@@ -61,8 +81,13 @@ func scanDeckRow(scanner rowScanner) (Deck, error) {
 		&d.LearnedCards,
 		&d.DueCards,
 		&d.ScheduledCards,
+		&sampleCardsRaw,
 		&d.CreatedAt,
 	)
+	d.SampleCards = []SampleCard{}
+	if err == nil && len(sampleCardsRaw) > 0 {
+		_ = json.Unmarshal(sampleCardsRaw, &d.SampleCards)
+	}
 	return d, err
 }
 

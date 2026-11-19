@@ -152,3 +152,74 @@ func TestHTTP_ListBadges_And_SubmitCoachingWithoutCoupon(t *testing.T) {
 		t.Fatalf("expected 400 Bad Request when user lacks cv-review coupon, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+func TestHTTP_GetAndClaimDailyQuests(t *testing.T) {
+	r, repo := setupGamificationTestRouter()
+	repo.DailyQuests["usr-123"] = []gamification.DailyQuestItem{
+		{
+			ID:              "dq-1",
+			Code:            "dq_lesson_1",
+			SlotCategory:    "curriculum",
+			Title:           "Tuntaskan 1 Pelajaran Bahasa",
+			ChipLabel:       "PELAJARAN",
+			MetricType:      "lessons_completed",
+			CurrentValue:    1,
+			TargetValue:     1,
+			ProgressPercent: 100,
+			ProgressText:    "1/1",
+			XPReward:        50,
+			Route:           "/curriculum",
+			IconName:        "book-open",
+			IsCompleted:     true,
+			IsClaimed:       false,
+		},
+		{
+			ID:              "dq-2",
+			Code:            "dq_fc_review_3",
+			SlotCategory:    "flashcard",
+			Title:           "Ulas 3 Kartu Flashcard",
+			ChipLabel:       "KOSAKATA",
+			MetricType:      "flashcards_reviewed",
+			CurrentValue:    1,
+			TargetValue:     3,
+			ProgressPercent: 33,
+			ProgressText:    "1/3 Kartu",
+			XPReward:        30,
+			Route:           "/flashcards",
+			IconName:        "cards",
+			IsCompleted:     false,
+			IsClaimed:       false,
+		},
+	}
+
+	reqList, _ := http.NewRequest(http.MethodGet, "/api/v1/gamification/daily-quests", nil)
+	wList := httptest.NewRecorder()
+	r.ServeHTTP(wList, reqList)
+	if wList.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for GET /daily-quests, got %d: %s", wList.Code, wList.Body.String())
+	}
+
+	// Claim incomplete quest -> 400
+	reqIncomplete, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/daily-quests/dq-2/claim", nil)
+	wIncomplete := httptest.NewRecorder()
+	r.ServeHTTP(wIncomplete, reqIncomplete)
+	if wIncomplete.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for incomplete daily quest, got %d: %s", wIncomplete.Code, wIncomplete.Body.String())
+	}
+
+	// Claim completed quest -> 200
+	reqClaim, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/daily-quests/dq-1/claim", nil)
+	wClaim := httptest.NewRecorder()
+	r.ServeHTTP(wClaim, reqClaim)
+	if wClaim.Code != http.StatusOK {
+		t.Fatalf("expected 200 for claiming completed daily quest, got %d: %s", wClaim.Code, wClaim.Body.String())
+	}
+
+	// Duplicate claim -> 409 Conflict
+	reqDup, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/daily-quests/dq-1/claim", nil)
+	wDup := httptest.NewRecorder()
+	r.ServeHTTP(wDup, reqDup)
+	if wDup.Code != http.StatusConflict {
+		t.Fatalf("expected 409 Conflict on duplicate daily quest claim, got %d: %s", wDup.Code, wDup.Body.String())
+	}
+}

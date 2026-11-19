@@ -18,6 +18,9 @@ var (
 	ErrItemUnavailable        = apperror.NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
 	ErrInvalidCoachingPayload = apperror.NewBadRequestError("INVALID_COACHING_PAYLOAD", "coaching submission fields are invalid", nil)
 	ErrInsufficientCoupons    = apperror.NewBadRequestError("INSUFFICIENT_COUPONS", "you do not own an active coupon for this coaching service", nil)
+	ErrDailyQuestNotFound     = apperror.NewNotFoundError("DAILY_QUEST_NOT_FOUND", "misi harian tidak ditemukan")
+	ErrDailyQuestNotCompleted = apperror.NewBadRequestError("DAILY_QUEST_NOT_COMPLETED", "target misi harian belum tercapai", nil)
+	ErrDailyQuestAlreadyClaimed = apperror.NewConflictError("DAILY_QUEST_ALREADY_CLAIMED", "hadiah misi harian ini sudah diklaim hari ini")
 )
 
 const (
@@ -151,6 +154,35 @@ type CoachingSubmissionRequest struct {
 	Notes             string `json:"notes" binding:"max=2000"`
 }
 
+// DailyQuestItem represents a daily rotated mission resolved from backend PostgreSQL templates and live user progress.
+type DailyQuestItem struct {
+	ID              string `json:"id"`
+	Code            string `json:"code"`
+	SlotCategory    string `json:"slot_category"`
+	Title           string `json:"title"`
+	ChipLabel       string `json:"chip_label"`
+	MetricType      string `json:"metric_type"`
+	CurrentValue    int    `json:"current_value"`
+	TargetValue     int    `json:"target_value"`
+	ProgressPercent int    `json:"progress_percent"`
+	ProgressText    string `json:"progress_text"`
+	XPReward        int    `json:"xp_reward"`
+	Route           string `json:"route"`
+	IconName        string `json:"icon_name"`
+	IsCompleted     bool   `json:"is_completed"`
+	IsClaimed       bool   `json:"is_claimed"`
+}
+
+// ClaimDailyQuestResponse represents the atomic reward response after claiming a completed daily quest.
+type ClaimDailyQuestResponse struct {
+	QuestID      string `json:"quest_id"`
+	XPAwarded    int    `json:"xp_awarded"`
+	CurrentXP    int    `json:"current_xp"`
+	CurrentLevel int    `json:"current_level"`
+	Streak       int    `json:"streak"`
+	ClaimedAt    string `json:"claimed_at"`
+}
+
 // Repository specifies persistence operations for gamification elements
 type Repository interface {
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
@@ -166,16 +198,20 @@ type Repository interface {
 	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*UserBadge, error)
 	GetDailyChestClaims(ctx context.Context, userID string, claimDate string) ([]DailyChestClaim, error)
 	ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, newLevel int) error
+	GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error)
+	ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error)
 	CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error
 }
 
-// Usecase specifies business operations for shop, chests, and badges
+// Usecase specifies business operations for shop, chests, badges, and daily quests
 type Usecase interface {
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
 	ListShopItems(ctx context.Context) ([]ShopItem, error)
 	BuyShopItem(ctx context.Context, userID string, itemID string) (*UserInventoryItem, *GamificationStatus, error)
 	ListBadges(ctx context.Context, userID string) ([]BadgeDefinition, []UserBadge, error)
 	ClaimDailyChest(ctx context.Context, userID string, tier int) (*DailyChestClaim, *GamificationStatus, error)
+	GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error)
+	ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error)
 	SubmitCoaching(ctx context.Context, userID string, req *CoachingSubmissionRequest) (*CoachingSubmission, *GamificationStatus, error)
 }
 

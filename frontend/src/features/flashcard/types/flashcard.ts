@@ -1,3 +1,11 @@
+/** Compact preview card bundled with a deck (first cards by sort order) for fanned UI previews. */
+export interface FlashcardSampleCard {
+  id: string
+  front_text: string
+  reading: string
+  back_meaning: string
+}
+
 export interface FlashcardDeck {
   id: string
   language_code: string
@@ -13,6 +21,7 @@ export interface FlashcardDeck {
   due_cards: number
   new_cards: number
   scheduled_cards: number
+  sample_cards?: FlashcardSampleCard[]
   created_at: string
 }
 

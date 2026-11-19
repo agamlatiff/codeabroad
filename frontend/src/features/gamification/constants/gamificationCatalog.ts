@@ -43,6 +43,7 @@ export interface DailyQuestViewItem {
   gem_reward: number
   estimated_minutes: number
   isCompleted: boolean
+  isClaimed?: boolean
   route: string
   icon: Icon
   progressText: string

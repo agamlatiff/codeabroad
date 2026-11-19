@@ -3,7 +3,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useUser } from '@/features/user/hooks/useUser'
 import { useUserActivity } from '@/features/user/hooks/useUserActivity'
-import { useDailyRewards } from '@/features/user/hooks/useDailyRewards'
 import { languageService } from '@/features/curriculum/services/languageService'
 import { CURRICULUM_QUERY_KEY } from '@/features/curriculum/services/curriculumService'
 import {
@@ -26,6 +25,7 @@ import {
   getActivityLogsQueryKey,
   getDailyRewardsQueryKey,
   getLanguageEnrollmentsQueryKey,
+  getDailyQuestsQueryKey,
   DAILY_VOCABULARIES_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
@@ -33,7 +33,7 @@ import { extractApiErrorMessage } from '@/shared/services/api'
 import { getWibDateKey } from '@/shared/utils/date'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { audioEngine } from '@/shared/utils/audio'
-import { BookOpen, Flask, Lightning, Translate } from '@phosphor-icons/react'
+import { BookOpen, Cards, Flask, Lightning, Target, Translate } from '@phosphor-icons/react'
 import type { KodiEmotion } from '@/shared/components/ui/KodiCharacter'
 import type { CVReviewSubmissionPayload } from '@/features/gamification/components/CVReviewSubmissionModal'
 import type { MockInterviewSchedulePayload } from '@/features/gamification/components/MockInterviewScheduleModal'
@@ -53,9 +53,6 @@ export const useQuests = () => {
   const {
     data: { activitySummary },
   } = useUserActivity()
-  const {
-    data: { dailyRewardsStatus },
-  } = useDailyRewards()
 
   const [activeTab, setActiveTab] = useState<QuestPageTab>('daily')
   const [searchQuery, setSearchQuery] = useState('')
@@ -116,6 +113,13 @@ export const useQuests = () => {
     queryFn: ({ signal }) => gamificationService.listBadges({ signal }),
     enabled: Boolean(user),
     staleTime: 120_000,
+  })
+
+  const dailyQuestsQuery = useQuery({
+    queryKey: getDailyQuestsQueryKey(userId),
+    queryFn: ({ signal }) => gamificationService.getDailyQuests({ signal }),
+    enabled: Boolean(user),
+    staleTime: 1000 * 60 * 2,
   })
 
   const gamificationStatus = statusQuery.data ?? null
@@ -191,69 +195,37 @@ export const useQuests = () => {
     return Math.max(1, lastDay - wibDay)
   }, [wibYear, wibMonth, wibDay])
 
-  // Daily progress derived purely from backend activity summary & rewards
-  const todayLog = useMemo(
-    () => activitySummary?.weekly_logs?.find((log) => log.is_today),
-    [activitySummary]
-  )
-  const todayEarnedXp = todayLog?.xp_earned ?? 0
-  const todayLessonsCompleted = todayLog?.lessons_count ?? 0
-  const todayFlashcards = dailyRewardsStatus?.today_flashcards_reviewed ?? 0
-  const vocabTarget = dailyRewardsStatus?.vocab_quest_target ?? 3
-  const isVocabDone = Boolean(dailyRewardsStatus?.vocab_quest_claimed)
-  const isLessonDone = todayLessonsCompleted >= 1
-  const isXpDone = todayEarnedXp >= 50
-
+  // Daily quests rotate per user + WIB date from backend SSOT (/gamification/daily-quests)
   const dailyQuests = useMemo<DailyQuestViewItem[]>(
-    () => [
-      {
-        id: 'daily-lesson-sprint',
-        title: 'Tuntaskan 1 Pelajaran Bahasa di Kurikulum',
-        chip_label: 'PELAJARAN HARIAN',
-        difficulty: 'Pemula',
-        xp_reward: 50,
-        gem_reward: 0,
-        estimated_minutes: 15,
-        isCompleted: isLessonDone,
-        route: '/curriculum',
-        icon: BookOpen,
-        progressText: isLessonDone ? '1/1 Selesai' : '0/1 Selesai',
-        progressPercent: isLessonDone ? 100 : 0,
-      },
-      {
-        id: 'daily-vocab-quest',
-        title: `Ulas ${vocabTarget} Kartu Flashcard & Klaim Bonus`,
-        chip_label: 'KOSAKATA HARIAN',
-        difficulty: 'Mudah',
-        xp_reward: 30,
-        gem_reward: 0,
-        estimated_minutes: 5,
-        isCompleted: isVocabDone,
-        route: '/flashcards',
-        icon: Translate,
-        progressText: isVocabDone
-          ? `${vocabTarget}/${vocabTarget} Selesai`
-          : `${Math.min(vocabTarget, todayFlashcards)}/${vocabTarget} Kartu`,
-        progressPercent: isVocabDone
-          ? 100
-          : Math.min(100, Math.round((todayFlashcards / vocabTarget) * 100)),
-      },
-      {
-        id: 'daily-xp-sprint',
-        title: 'Kumpulkan 50 XP dari Latihan Bahasa',
-        chip_label: 'TARGET XP HARIAN',
-        difficulty: 'Mudah',
-        xp_reward: 40,
-        gem_reward: 0,
-        estimated_minutes: 5,
-        isCompleted: isXpDone,
-        route: '/flashcards',
-        icon: Lightning,
-        progressText: isXpDone ? '50/50 XP' : `${Math.min(50, todayEarnedXp)}/50 XP`,
-        progressPercent: isXpDone ? 100 : Math.min(100, Math.round((todayEarnedXp / 50) * 100)),
-      },
-    ],
-    [isLessonDone, isVocabDone, isXpDone, todayEarnedXp, todayFlashcards, vocabTarget]
+    () =>
+      (dailyQuestsQuery.data ?? []).map((q) => {
+        const icon =
+          q.icon_name === 'cards'
+            ? Cards
+            : q.icon_name === 'translate'
+              ? Translate
+              : q.icon_name === 'lightning'
+                ? Lightning
+                : q.icon_name === 'target'
+                  ? Target
+                  : BookOpen
+        return {
+          id: q.id,
+          title: q.title,
+          chip_label: q.chip_label,
+          difficulty: q.slot_category === 'curriculum' ? 'Pemula' : 'Mudah',
+          xp_reward: q.xp_reward,
+          gem_reward: 0,
+          estimated_minutes: q.slot_category === 'curriculum' ? 15 : 5,
+          isCompleted: q.is_completed,
+          isClaimed: q.is_claimed,
+          route: q.route || '/curriculum',
+          icon,
+          progressText: q.progress_text,
+          progressPercent: q.progress_percent,
+        }
+      }),
+    [dailyQuestsQuery.data]
   )
 
   const filteredDaily = useMemo(() => {
@@ -338,8 +310,37 @@ export const useQuests = () => {
       queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userId) }),
       queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(userId) }),
       queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(userId) }),
+      queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(userId) }),
     ])
   }, [queryClient, userId])
+
+  const [claimingQuestId, setClaimingQuestId] = useState<string | null>(null)
+
+  const handleClaimDailyQuest = useCallback(
+    async (questId: string) => {
+      if (!questId || claimingQuestId) return
+      setClaimingQuestId(questId)
+      try {
+        const res = await gamificationService.claimDailyQuest(questId)
+        triggerHaptic('success')
+        audioEngine.playRewardClaim()
+        updateUser({
+          xp: res.current_xp,
+          current_level: res.current_level,
+          streak: res.streak,
+        })
+        triggerFloatingReward(`+${res.xp_awarded} XP`)
+        showToast(`Misi harian diklaim! +${res.xp_awarded} XP masuk ke akunmu.`)
+        await invalidateGamificationCaches()
+      } catch (err) {
+        triggerHaptic('error')
+        showToast(extractApiErrorMessage(err, 'Gagal mengklaim hadiah misi harian.'))
+      } finally {
+        setClaimingQuestId(null)
+      }
+    },
+    [claimingQuestId, updateUser, triggerFloatingReward, showToast, invalidateGamificationCaches]
+  )
 
   // Mutations
   const claimChestMutation = useMutation({
@@ -542,7 +543,9 @@ export const useQuests = () => {
     completedCount,
     totalCount,
     progressPercent,
-    isLoading: statusQuery.isLoading,
+    isLoading: statusQuery.isLoading || dailyQuestsQuery.isLoading,
+    claimingQuestId,
+    handleClaimDailyQuest,
     handleSelectTrack,
     handleOpenChest,
     handleConfirmClaimChest,

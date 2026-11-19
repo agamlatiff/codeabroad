@@ -71,6 +71,8 @@ export const QuestLogPage = () => {
     totalCount,
     progressPercent,
     isLoading,
+    claimingQuestId,
+    handleClaimDailyQuest,
     handleSelectTrack,
     handleOpenChest,
     handleConfirmClaimChest,
@@ -323,6 +325,8 @@ export const QuestLogPage = () => {
               hasSearchNoResults={hasNoResults}
               claimedDailyChests={claimedDailyChests}
               onOpenChest={handleOpenChest}
+              onClaimQuest={handleClaimDailyQuest}
+              claimingQuestId={claimingQuestId}
               onStartQuest={(route) => navigate(route)}
               onContinueCurriculum={() => {
                 triggerHaptic('tap')

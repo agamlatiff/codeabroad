@@ -1,10 +1,13 @@
 import { api, unwrapApiResponse, type RequestOptions } from "@/shared/services/api"
 import type { ApiResponse } from "@/shared/types/api"
+import { DAILY_QUESTS_QUERY_KEY } from "@/shared/constants/queryKeys"
 import type {
   BadgeDefinition,
   ClaimChestResponse,
+  ClaimDailyQuestApiResponse,
   CoachingSubmissionRequest,
   CoachingSubmissionResponse,
+  DailyQuestApiItem,
   GamificationStatus,
   ShopItem,
   UserBadge,
@@ -15,6 +18,7 @@ export type * from "@/features/gamification/types/gamification"
 export const GAMIFICATION_STATUS_QUERY_KEY = ['gamification', 'status'] as const
 export const GAMIFICATION_SHOP_QUERY_KEY = ['gamification', 'shop'] as const
 export const GAMIFICATION_BADGES_QUERY_KEY = ['gamification', 'badges'] as const
+export const GAMIFICATION_DAILY_QUESTS_QUERY_KEY = DAILY_QUESTS_QUERY_KEY
 
 export const gamificationService = {
   async getStatus(options?: RequestOptions): Promise<GamificationStatus> {
@@ -61,5 +65,20 @@ export const gamificationService = {
       req
     )
     return unwrapApiResponse(response, 'Gagal mengirim pengajuan mentoring.')
+  },
+
+  async getDailyQuests(options?: RequestOptions): Promise<DailyQuestApiItem[]> {
+    const response = await api.get<ApiResponse<DailyQuestApiItem[]>>(
+      '/gamification/daily-quests',
+      { signal: options?.signal }
+    )
+    return unwrapApiResponse(response, 'Gagal memuat daftar misi harian.')
+  },
+
+  async claimDailyQuest(questId: string): Promise<ClaimDailyQuestApiResponse> {
+    const response = await api.post<ApiResponse<ClaimDailyQuestApiResponse>>(
+      `/gamification/daily-quests/${encodeURIComponent(questId)}/claim`
+    )
+    return unwrapApiResponse(response, 'Gagal mengklaim hadiah misi harian.')
   },
 }

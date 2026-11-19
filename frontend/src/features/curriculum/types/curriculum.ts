@@ -54,6 +54,8 @@ export interface GrammarPoint {
   category: GrammarPointCategory
   title: string
   formula: string
+  /** Romaji reading of the formula (particles は→wa, へ→e, を→o). */
+  formula_reading?: string
   explanation: string
   examples?: GrammarExample[]
   order_index: number
