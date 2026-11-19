@@ -212,7 +212,21 @@ func TestHTTP_GetDueReviews_InvalidLimitReturns400(t *testing.T) {
 func TestHTTP_GetDailyVocabularies_Success(t *testing.T) {
 	r, exRepo, _, _ := setupExerciseTestRouter()
 	exRepo.DailyVocabularies = []exercise.VocabularyItem{
-		{ID: "v-1", Term: "おはよう", Reading: "おはよう • Ohayou", Meaning: "Selamat pagi", Category: "greeting", DifficultyLevel: "N5"},
+		{
+			ID:              "v-1",
+			DeckID:          "deck-1",
+			DeckTitle:       "Salam & Sapaan",
+			LanguageCode:    "ja",
+			Term:            "おはよう",
+			Kana:            "おはよう",
+			Romaji:          "ohayou",
+			Reading:         "おはよう • Ohayou",
+			Meaning:         "Selamat pagi",
+			Category:        "greeting",
+			QuizChoices:     []string{"Selamat malam", "Selamat pagi", "Permisi"},
+			IsReviewedToday: true,
+			DifficultyLevel: "N5",
+		},
 	}
 
 	req, _ := http.NewRequest(http.MethodGet, "/api/v1/vocabularies/daily?limit=5", nil)
@@ -221,6 +235,21 @@ func TestHTTP_GetDailyVocabularies_Success(t *testing.T) {
 
 	if w.Code != http.StatusOK {
 		t.Fatalf("expected 200 OK on /vocabularies/daily, got: %d, body: %s", w.Code, w.Body.String())
+	}
+
+	var parsed struct {
+		Success bool                      `json:"success"`
+		Data    []exercise.VocabularyItem `json:"data"`
+	}
+	if err := json.Unmarshal(w.Body.Bytes(), &parsed); err != nil {
+		t.Fatalf("failed to decode daily vocab response: %v", err)
+	}
+	if len(parsed.Data) != 1 {
+		t.Fatalf("expected 1 vocabulary item, got %d", len(parsed.Data))
+	}
+	got := parsed.Data[0]
+	if got.DeckID != "deck-1" || got.LanguageCode != "ja" || !got.IsReviewedToday || len(got.QuizChoices) != 3 {
+		t.Fatalf("unexpected enriched vocabulary payload: %+v", got)
 	}
 }
 

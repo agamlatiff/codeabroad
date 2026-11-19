@@ -181,18 +181,25 @@ type ReadinessExamResponse struct {
 
 // VocabularyItem represents a daily contextual vocabulary/expression card derived from active curriculum exercises
 type VocabularyItem struct {
-	ID                 string `json:"id"`
-	Term               string `json:"term"`
-	TargetText         string `json:"target_text,omitempty"`
-	Reading            string `json:"reading"`
-	Meaning            string `json:"meaning"`
-	Translation        string `json:"translation,omitempty"`
-	Category           string `json:"category"`
-	ExampleJA          string `json:"example_ja"`
-	ExampleTarget      string `json:"example_target,omitempty"`
-	ExampleID          string `json:"example_id"`
-	ExampleTranslation string `json:"example_translation,omitempty"`
-	DifficultyLevel    string `json:"difficulty_level"`
+	ID                 string   `json:"id"`
+	DeckID             string   `json:"deck_id,omitempty"`
+	DeckTitle          string   `json:"deck_title,omitempty"`
+	LanguageCode       string   `json:"language_code,omitempty"`
+	Term               string   `json:"term"`
+	TargetText         string   `json:"target_text,omitempty"`
+	Kana               string   `json:"kana,omitempty"`
+	Romaji             string   `json:"romaji,omitempty"`
+	Reading            string   `json:"reading"`
+	Meaning            string   `json:"meaning"`
+	Translation        string   `json:"translation,omitempty"`
+	Category           string   `json:"category"`
+	QuizChoices        []string `json:"quiz_choices,omitempty"`
+	IsReviewedToday    bool     `json:"is_reviewed_today"`
+	ExampleJA          string   `json:"example_ja"`
+	ExampleTarget      string   `json:"example_target,omitempty"`
+	ExampleID          string   `json:"example_id"`
+	ExampleTranslation string   `json:"example_translation,omitempty"`
+	DifficultyLevel    string   `json:"difficulty_level"`
 }
 
 // Repository specifies persistence operations for exercises and telemetry

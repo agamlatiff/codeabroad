@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"log"
+	"sort"
 	"strings"
 	"time"
 
@@ -470,6 +472,50 @@ func splitFlashcardFrontText(frontText string) (term string, kana string) {
 	return trimmed, ""
 }
 
+// buildDeterministicQuizChoices returns up to 3 deduplicated meaning options sorted deterministically per card.
+func buildDeterministicQuizChoices(cardID string, correctMeaning string, distractors []string) []string {
+	correct := strings.TrimSpace(correctMeaning)
+	if correct == "" {
+		return nil
+	}
+
+	seen := map[string]bool{strings.ToLower(correct): true}
+	choices := []string{correct}
+	for _, d := range distractors {
+		trimmed := strings.TrimSpace(d)
+		if trimmed == "" {
+			continue
+		}
+		key := strings.ToLower(trimmed)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		choices = append(choices, trimmed)
+		if len(choices) >= 3 {
+			break
+		}
+	}
+
+	hashChoice := func(choice string) uint64 {
+		h := fnv.New64a()
+		_, _ = h.Write([]byte(cardID))
+		_, _ = h.Write([]byte(":"))
+		_, _ = h.Write([]byte(choice))
+		return h.Sum64()
+	}
+
+	sort.Slice(choices, func(i, j int) bool {
+		hi := hashChoice(choices[i])
+		hj := hashChoice(choices[j])
+		if hi == hj {
+			return choices[i] < choices[j]
+		}
+		return hi < hj
+	})
+	return choices
+}
+
 // GetDailyVocabularies extracts daily rotated pure-vocabulary cards from flashcards scoped to the user's active language and JLPT level.
 func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
@@ -488,21 +534,48 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 			WHERE ule.user_id = $1::uuid
 			  AND ule.is_active = true
 			LIMIT 1
+		),
+		wib_day AS (
+			SELECT
+				((NOW() AT TIME ZONE 'Asia/Jakarta')::date)::text AS date_key,
+				((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta') AS start_ts
 		)
 		SELECT
 			fc.id::text,
+			fd.id::text AS deck_id,
+			fd.title AS deck_title,
+			fd.language_code,
 			fc.front_text,
 			fc.reading,
 			fc.back_meaning,
 			COALESCE(NULLIF(fc.part_of_speech, ''), fd.title) AS category,
-			fd.jlpt_level AS difficulty_level
+			fd.jlpt_level AS difficulty_level,
+			COALESCE(ufp.last_reviewed_at >= wib_day.start_ts, false) AS is_reviewed_today,
+			COALESCE(
+				ARRAY(
+					SELECT back_meaning
+					FROM (
+						SELECT DISTINCT d_fc.back_meaning
+						FROM flashcard_cards d_fc
+						INNER JOIN flashcard_decks d_fd ON d_fd.id = d_fc.deck_id
+						WHERE d_fd.language_code = fd.language_code
+						  AND d_fc.id <> fc.id
+						  AND LOWER(TRIM(d_fc.back_meaning)) <> LOWER(TRIM(fc.back_meaning))
+					) distinct_meanings
+					ORDER BY md5(fc.id::text || distinct_meanings.back_meaning || wib_day.date_key)
+					LIMIT 2
+				),
+				ARRAY[]::text[]
+			) AS distractors
 		FROM flashcard_cards fc
 		INNER JOIN flashcard_decks fd ON fd.id = fc.deck_id
+		CROSS JOIN wib_day
 		LEFT JOIN active_enrollment ae ON true
+		LEFT JOIN user_flashcard_progress ufp ON ufp.card_id = fc.id AND ufp.user_id = $1::uuid
 		WHERE fd.language_code = COALESCE(ae.language_code, 'ja')
 		ORDER BY
 			CASE WHEN UPPER(fd.jlpt_level) = UPPER(COALESCE(ae.level_code, 'N5')) THEN 0 ELSE 1 END ASC,
-			md5(fc.id::text || ((NOW() AT TIME ZONE 'Asia/Jakarta')::date)::text) ASC,
+			md5(fc.id::text || wib_day.date_key) ASC,
 			fd.sort_order ASC,
 			fc.sort_order ASC
 		LIMIT $2
@@ -518,8 +591,19 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 	for rows.Next() {
 		var item VocabularyItem
 		var frontText, romaji string
+		var distractors []string
 		if err := rows.Scan(
-			&item.ID, &frontText, &romaji, &item.Meaning, &item.Category, &item.DifficultyLevel,
+			&item.ID,
+			&item.DeckID,
+			&item.DeckTitle,
+			&item.LanguageCode,
+			&frontText,
+			&romaji,
+			&item.Meaning,
+			&item.Category,
+			&item.DifficultyLevel,
+			&item.IsReviewedToday,
+			&distractors,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan daily vocabulary row: %w", err)
 		}
@@ -527,7 +611,10 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 		romaji = strings.TrimSpace(romaji)
 		item.Term = term
 		item.TargetText = term
+		item.Kana = kana
+		item.Romaji = romaji
 		item.Translation = item.Meaning
+		item.QuizChoices = buildDeterministicQuizChoices(item.ID, item.Meaning, distractors)
 
 		readingHead := kana
 		if readingHead == "" {

@@ -1,4 +1,5 @@
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   Cards,
@@ -144,6 +145,8 @@ function renderDeckIcon(iconName: string) {
  */
 export const FlashcardPage = () => {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const handledDeckParamRef = useRef<string | null>(null)
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
 
@@ -224,43 +227,82 @@ export const FlashcardPage = () => {
     },
   })
 
-  const initSessionQueue = (cards: FlashcardCard[], title: string, deckId: string | null) => {
-    const nextMap: Record<string, FlashcardCard> = {}
-    const nextQueue: string[] = []
-    for (const card of cards) {
-      nextMap[card.id] = card
-      nextQueue.push(card.id)
-    }
-    setActiveDeckId(deckId)
-    setSessionTitle(title)
-    setCardMap(nextMap)
-    setQueue(nextQueue)
-    setRequeuedIds(new Set())
-    setCompletedIds(new Set())
-    setInitialTotal(cards.length)
-    setIsFlipped(false)
-    setSessionXp(0)
-    setReviewedCount(0)
-    setMode('session')
-  }
-
-  const startDeckSession = async (deck: FlashcardDeck) => {
-    triggerHaptic('tap')
-    setLoadingSession(true)
-    setSessionError(null)
-    try {
-      const detail = await flashcardService.getDeck(deck.id)
-      if (detail.cards.length === 0) {
-        setSessionError('Dek ini belum memiliki kartu.')
-        return
+  const initSessionQueue = useCallback(
+    (cards: FlashcardCard[], title: string, deckId: string | null) => {
+      const nextMap: Record<string, FlashcardCard> = {}
+      const nextQueue: string[] = []
+      for (const card of cards) {
+        nextMap[card.id] = card
+        nextQueue.push(card.id)
       }
-      initSessionQueue(detail.cards, deck.title, deck.id)
-    } catch {
-      setSessionError('Gagal memuat kartu dek. Coba lagi sebentar.')
-    } finally {
-      setLoadingSession(false)
+      setActiveDeckId(deckId)
+      setSessionTitle(title)
+      setCardMap(nextMap)
+      setQueue(nextQueue)
+      setRequeuedIds(new Set())
+      setCompletedIds(new Set())
+      setInitialTotal(cards.length)
+      setIsFlipped(false)
+      setSessionXp(0)
+      setReviewedCount(0)
+      setMode('session')
+    },
+    []
+  )
+
+  const startDeckSession = useCallback(
+    async (deck: FlashcardDeck) => {
+      triggerHaptic('tap')
+      setLoadingSession(true)
+      setSessionError(null)
+      try {
+        const detail = await flashcardService.getDeck(deck.id)
+        if (detail.cards.length === 0) {
+          setSessionError('Dek ini belum memiliki kartu.')
+          return
+        }
+        initSessionQueue(detail.cards, deck.title, deck.id)
+      } catch {
+        setSessionError('Gagal memuat kartu dek. Coba lagi sebentar.')
+      } finally {
+        setLoadingSession(false)
+      }
+    },
+    [initSessionQueue]
+  )
+
+  // Deep-link handler: /flashcards?deck=<id> starts that deck directly once loaded
+  useEffect(() => {
+    const requestedDeckId = searchParams.get('deck')
+    if (!requestedDeckId || decksLoading || decks.length === 0) return
+    if (handledDeckParamRef.current === requestedDeckId) return
+    const targetDeck = decks.find((d) => d.id === requestedDeckId)
+    if (!targetDeck) return
+
+    handledDeckParamRef.current = requestedDeckId
+    setSearchParams({}, { replace: true })
+
+    let cancelled = false
+    flashcardService
+      .getDeck(targetDeck.id)
+      .then((detail) => {
+        if (cancelled) return
+        if (detail.cards.length === 0) {
+          setSessionError('Dek ini belum memiliki kartu.')
+          return
+        }
+        initSessionQueue(detail.cards, targetDeck.title, targetDeck.id)
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setSessionError('Gagal memuat kartu dek. Coba lagi sebentar.')
+        }
+      })
+
+    return () => {
+      cancelled = true
     }
-  }
+  }, [decks, decksLoading, initSessionQueue, searchParams, setSearchParams])
 
   const startDueSession = () => {
     if (!dueQueue || dueQueue.cards.length === 0) return

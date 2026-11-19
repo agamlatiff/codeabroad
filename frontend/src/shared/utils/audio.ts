@@ -64,9 +64,10 @@ class AudioEngineProxy {
     text: string,
     lang = 'ja-JP',
     onEnd?: () => void,
-    onError?: () => void
+    onError?: () => void,
+    rate?: number
   ): void {
-    audioService.speakLanguage(text, lang, onEnd, onError)
+    audioService.speakLanguage(text, lang, onEnd, onError, rate)
   }
 
   public speakJapanese(text: string, onEnd?: () => void, onError?: () => void): void {

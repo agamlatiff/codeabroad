@@ -411,7 +411,8 @@ class AudioService {
     text: string,
     lang = 'ja-JP',
     onEnd?: () => void,
-    onError?: () => void
+    onError?: () => void,
+    rate = 0.88
   ): void {
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       onError?.()
@@ -426,7 +427,7 @@ class AudioService {
       window.speechSynthesis.cancel()
       const utterance = new SpeechSynthesisUtterance(text)
       utterance.lang = lang
-      utterance.rate = 0.88
+      utterance.rate = rate
       utterance.pitch = 1.05
 
       const voices = window.speechSynthesis.getVoices()
