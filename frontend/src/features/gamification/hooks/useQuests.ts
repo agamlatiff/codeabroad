@@ -221,6 +221,7 @@ export const useQuests = () => {
           isClaimed: q.is_claimed,
           route: q.route || '/curriculum',
           icon,
+          iconName: q.icon_name || 'book-open',
           progressText: q.progress_text,
           progressPercent: q.progress_percent,
         }

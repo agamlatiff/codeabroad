@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ReactNode } from 'react'
 import {
   CaretDown,
   Fire,
@@ -8,28 +8,33 @@ import {
 } from '@phosphor-icons/react'
 import { LanguageFlagIllustration } from "@/features/onboarding/components/illustrations/FlagIllustrations"
 import { UserAvatar } from "@/shared/components/layout/left-sidebar/UserAvatar"
+import { AppBreadcrumb, type BreadcrumbItem } from "@/shared/components/ui/AppBreadcrumb"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { computeXpLevelProgress } from "@/shared/utils/progression"
 
 export interface AppTopBarProps {
-  activeTrack: string
-  onOpenCourseSwitcher: () => void
+  activeTrack?: string
+  onOpenCourseSwitcher?: () => void
   onOpenMobileSidebar?: () => void
-  completedCount: number
-  totalCount: number
-  progressPercent: number
+  completedCount?: number
+  totalCount?: number
+  progressPercent?: number
   unitLabel?: string
+  breadcrumbs?: BreadcrumbItem[]
+  breadcrumbRightSlot?: ReactNode
 }
 
 export const AppTopBar = ({
-  activeTrack,
+  activeTrack = '',
   onOpenCourseSwitcher,
   onOpenMobileSidebar,
-  completedCount,
-  totalCount,
-  progressPercent,
+  completedCount = 0,
+  totalCount = 0,
+  progressPercent = 0,
   unitLabel = 'Modul',
+  breadcrumbs,
+  breadcrumbRightSlot,
 }: AppTopBarProps) => {
   const {
     activeUser,
@@ -85,9 +90,9 @@ export const AppTopBar = ({
     <div className="flex flex-col gap-2.5 sm:gap-3">
       {/* ── TOP / MAIN ROW: TRACK SWITCHER (LEFT) & GAME HUD CHIPS (RIGHT) ── */}
       <div className="flex items-center justify-between gap-2 min-w-0 w-full">
-        {/* Left: Track Switcher Pill (interactive only when 2+ languages) & Inline Progress (XL) */}
+        {/* Left: Track Switcher Pill (interactive only when 2+ languages & handler passed) & Optional Progress (XL) */}
         <div className="flex items-center gap-2.5 min-w-0 shrink">
-          {canSwitchLanguage ? (
+          {canSwitchLanguage && onOpenCourseSwitcher ? (
             <button
               type="button"
               onClick={() => {
@@ -107,17 +112,19 @@ export const AppTopBar = ({
           )}
 
           {/* Track Linear Progress Bar (Inline on Desktop XL Only) */}
-          <div className="hidden xl:flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
-            <div className="w-24 2xl:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
-              <div
-                className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
-                style={{ width: `${progressPercent}%` }}
-              />
+          {totalCount > 0 && (
+            <div className="hidden xl:flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
+              <div className="w-24 2xl:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
+                <div
+                  className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+              <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
+                {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
+              </span>
             </div>
-            <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
-              {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
-            </span>
-          </div>
+          )}
         </div>
 
         {/* ── RIGHT: GAME STATUS HUD + SEPARATE TACTILE GIFT BUTTON ── */}
@@ -241,17 +248,28 @@ export const AppTopBar = ({
       </div>
 
       {/* ── ROW 2: LINEAR PROGRESS SUB-BAR (MOBILE & TABLET VIEWPORTS ONLY) ── */}
-      <div className="xl:hidden flex items-center justify-between gap-3 bg-white/95 border border-slate-200/90 rounded-2xl px-3.5 py-1.5 shadow-2xs">
-        <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
-          <div
-            className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
-            style={{ width: `${progressPercent}%` }}
-          />
+      {totalCount > 0 && (
+        <div className="xl:hidden flex items-center justify-between gap-3 bg-white/95 border border-slate-200/90 rounded-2xl px-3.5 py-1.5 shadow-2xs">
+          <div className="flex-1 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5">
+            <div
+              className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
+          <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
+            {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
+          </span>
         </div>
-        <span className="text-[11px] font-mono font-bold text-slate-600 shrink-0 whitespace-nowrap">
-          {completedCount}/{totalCount} {unitLabel} ({progressPercent}%)
-        </span>
-      </div>
+      )}
+
+      {/* ── INTEGRATED BREADCRUMB TRAIL ── */}
+      {(breadcrumbs && breadcrumbs.length > 0) || breadcrumbRightSlot ? (
+        <AppBreadcrumb
+          items={breadcrumbs ?? []}
+          rightSlot={breadcrumbRightSlot}
+          className="pt-0.5"
+        />
+      ) : null}
     </div>
   )
 }

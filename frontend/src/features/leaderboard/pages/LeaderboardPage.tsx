@@ -1,4 +1,6 @@
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
+import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
+import { PageHeroHeader } from "@/shared/components/ui/PageHeroHeader"
 import {
   Trophy,
   Clock,
@@ -42,43 +44,49 @@ export const LeaderboardPage = () => {
       {/* ── 1. COMPACT NAV RAIL ── */}
       <AppLeftSidebar />
       <div className="flex-1 min-w-0 pb-20 md:pb-12">
-        <main className="max-w-4xl mx-auto px-4 sm:px-8 py-6 space-y-6">
-          {/* ── TOP CONTEXTUAL HEADER ── */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-7 shadow-xs">
-            <div className="space-y-1.5">
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider flex items-center gap-1">
+        <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 space-y-6">
+          <AppTopBar
+            breadcrumbs={[
+              { label: 'Beranda', to: '/curriculum' },
+              { label: 'Papan Peringkat' },
+              { label: currentDivisionConfig.name },
+            ]}
+          />
+
+          {/* ── UNIFIED CLEAN TACTILE HERO HEADER ── */}
+          <PageHeroHeader
+            theme="violet"
+            icon={<Trophy weight="fill" className="w-6 h-6" />}
+            badges={
+              <>
+                <span className="bg-amber-100 text-amber-900 border border-amber-300 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full uppercase tracking-wider inline-flex items-center gap-1">
                   <Trophy weight="fill" className="w-3.5 h-3.5 text-amber-600" />
                   <span>Liga Global Mingguan</span>
                 </span>
-                <span className="bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-brand font-black px-2 py-0.5 rounded-full flex items-center gap-1">
+                <span className="bg-blue-100 text-blue-800 border border-blue-200 text-[10px] font-brand font-black px-2.5 py-0.5 rounded-full inline-flex items-center gap-1">
                   <Clock weight="bold" className="w-3 h-3 text-blue-600" />
                   <span>{daysLabel}</span>
                 </span>
+              </>
+            }
+            title="Papan Peringkat Liga Mingguan Global"
+            description="Bersaing setiap minggu bersama pembelajar bahasa global lainnya di seluruh jalur bahasa. Capai Top 3 di akhir pekan untuk promosi ke divisi yang lebih tinggi!"
+            rightSlot={
+              <div className="flex items-center gap-3 shrink-0 bg-white border-2 border-violet-200/80 rounded-2xl p-3 shadow-2xs">
+                <div className="shrink-0 flex items-center justify-center">
+                  <KodiCharacter emotion="onFire" size={56} />
+                </div>
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-brand font-black text-violet-700 uppercase block">
+                    Liga Musim #{leaderboard?.season_week ?? 1}
+                  </span>
+                  <span className="text-xs font-brand font-black text-slate-900">
+                    {currentDivisionConfig.tier}
+                  </span>
+                </div>
               </div>
-              <h1 className="text-xl sm:text-2xl font-brand font-black text-slate-900 tracking-tight">
-                Papan Peringkat Liga Mingguan Global
-              </h1>
-              <p className="text-xs sm:text-sm text-slate-500 font-medium max-w-xl">
-                Bersaing setiap minggu bersama pembelajar bahasa global lainnya di seluruh jalur bahasa. Capai Top 3 di akhir pekan untuk promosi ke divisi yang lebih tinggi!
-              </p>
-            </div>
-
-            {/* Kodi Mascot Visual */}
-            <div className="flex items-center gap-3 shrink-0 self-start sm:self-auto bg-blue-50/70 border border-blue-200/80 rounded-2xl p-3">
-              <div className="shrink-0 flex items-center justify-center">
-                <KodiCharacter emotion="onFire" size={56} />
-              </div>
-              <div className="space-y-0.5">
-                <span className="text-[10px] font-brand font-black text-blue-800 uppercase block">
-                  Liga Musim #{leaderboard?.season_week ?? 1}
-                </span>
-                <span className="text-xs font-brand font-black text-slate-900">
-                  {currentDivisionConfig.tier}
-                </span>
-              </div>
-            </div>
-          </div>
+            }
+          />
 
           {/* ── 4 GLOBAL LEAGUE DIVISION SELECTOR TABS ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

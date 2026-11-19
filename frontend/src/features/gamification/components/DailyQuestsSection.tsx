@@ -3,11 +3,11 @@ import {
   Lightning,
   Sparkle,
   Check,
-  CheckCircle,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import { CountdownBadge } from "@/features/gamification/components/CountdownBadge"
+import { DailyQuestIconBadge } from "@/features/gamification/components/DailyQuestIconBadge"
 import {
   DAILY_CHEST_TIERS,
   type DailyChestItem,
@@ -173,32 +173,24 @@ export const DailyQuestsSection = ({
       <div className="space-y-3.5 pt-1">
         {quests.map((questItem, idx) => {
           const isDone = questItem.isCompleted
-          const QuestIcon = questItem.icon
 
           return (
             <div
               key={questItem.id}
-              className={`border-2 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 shadow-2xs ${
+              className={`group border-2 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-200 shadow-2xs ${
                 isDone
                   ? 'bg-emerald-50/40 border-emerald-200/90 border-b-[3px] border-b-emerald-300'
                   : 'bg-white border-2 border-slate-200/90 border-b-[4px] border-b-slate-300 hover:border-b-[5px] hover:-translate-y-0.5'
               }`}
             >
-              {/* Left: Icon & Info */}
+              {/* Left: Unified 3D Icon & Info */}
               <div className="flex items-center gap-4 min-w-0">
-                <div
-                  className={`w-13 h-13 rounded-2xl border-2 flex items-center justify-center shrink-0 shadow-2xs ${
-                    isDone
-                      ? 'bg-emerald-100 border-emerald-300 text-emerald-700'
-                      : 'bg-blue-50 border-blue-200 text-[#2563EB]'
-                  }`}
-                >
-                  {isDone ? (
-                    <CheckCircle weight="fill" className="w-7 h-7 text-emerald-600" />
-                  ) : (
-                    <QuestIcon weight="bold" className="w-6 h-6" />
-                  )}
-                </div>
+                <DailyQuestIconBadge
+                  iconName={questItem.iconName}
+                  size="md"
+                  isCompleted={isDone}
+                  showCompletedCheck
+                />
 
                 <div className="space-y-1.5 min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">

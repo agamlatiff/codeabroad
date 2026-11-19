@@ -41,13 +41,27 @@ const deckSelectFromClause = `
 						'id', s.id::text,
 						'front_text', s.front_text,
 						'reading', s.reading,
-						'back_meaning', s.back_meaning
+						'back_meaning', s.back_meaning,
+						'status', s.status
 					)
 					ORDER BY s.sort_order ASC, s.created_at ASC
 				)
 				FROM (
-					SELECT fc.id, fc.front_text, fc.reading, fc.back_meaning, fc.sort_order, fc.created_at
+					SELECT
+						fc.id,
+						fc.front_text,
+						fc.reading,
+						fc.back_meaning,
+						CASE
+							WHEN ufp.id IS NULL THEN 'new'
+							WHEN ufp.next_review_at <= NOW() OR ufp.repetitions = 0 THEN 'due'
+							ELSE 'mastered'
+						END AS status,
+						fc.sort_order,
+						fc.created_at
 					FROM flashcard_cards fc
+					LEFT JOIN user_flashcard_progress ufp
+						ON ufp.card_id = fc.id AND ufp.user_id = $1::uuid
 					WHERE fc.deck_id = d.id
 					ORDER BY fc.sort_order ASC, fc.created_at ASC
 					LIMIT 4

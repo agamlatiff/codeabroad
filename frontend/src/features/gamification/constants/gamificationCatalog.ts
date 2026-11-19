@@ -46,6 +46,7 @@ export interface DailyQuestViewItem {
   isClaimed?: boolean
   route: string
   icon: Icon
+  iconName?: string
   progressText: string
   progressPercent: number
 }

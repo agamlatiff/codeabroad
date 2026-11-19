@@ -34,6 +34,13 @@ export const CurriculumPage = () => {
             totalCount={curriculum.metrics.totalLessonsCount}
             progressPercent={curriculum.metrics.overallProgress}
             unitLabel="Lesson"
+            breadcrumbs={[
+              { label: 'Beranda', to: '/curriculum' },
+              { label: 'Kurikulum' },
+              ...(curriculum.data?.level?.code
+                ? [{ label: `JLPT ${curriculum.data.level.code}` }]
+                : []),
+            ]}
           />
 
           {/* ── INACTIVE LANGUAGE ACTIVATION BANNER ── */}

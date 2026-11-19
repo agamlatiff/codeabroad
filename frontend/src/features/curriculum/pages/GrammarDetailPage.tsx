@@ -11,11 +11,11 @@ import {
   EyeSlash,
   Quotes,
   SpeakerHigh,
-  CaretRight,
   Sparkle,
   ListBullets,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
+import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
@@ -147,57 +147,39 @@ export const GrammarDetailPage = () => {
       <AppLeftSidebar />
 
       <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 pb-24 md:pb-12 space-y-6">
-        {/* Breadcrumb Navigation & Back Link */}
-        <nav aria-label="Breadcrumb" className="flex items-center justify-between gap-3 flex-wrap">
-          <div className="flex items-center gap-2 text-xs font-brand font-bold text-slate-500">
-            <Link
-              to="/grammar"
-              onClick={() => triggerHaptic('tap')}
-              className="inline-flex items-center gap-1.5 text-slate-600 hover:text-blue-600 transition-colors"
+        <AppTopBar
+          breadcrumbs={[
+            { label: 'Beranda', to: '/curriculum' },
+            { label: 'Panduan Grammar', to: '/grammar' },
+            {
+              label: `JLPT ${levelCode}`,
+              to: `/grammar?level=${encodeURIComponent(levelCode)}`,
+            },
+            ...(currentPoint ? [{ label: currentPoint.title }] : []),
+          ]}
+          breadcrumbRightSlot={
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                setShowRomaji((prev) => !prev)
+              }}
+              aria-pressed={showRomaji}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-brand font-black border-2 transition-all cursor-pointer active:translate-y-0.5 shadow-2xs ${
+                showRomaji
+                  ? 'bg-blue-50 text-blue-700 border-blue-200'
+                  : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+              }`}
             >
-              <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
-              <span>Panduan Grammar</span>
-            </Link>
-            <CaretRight weight="bold" className="w-3 h-3 text-slate-400" />
-            <Link
-              to={`/grammar?level=${encodeURIComponent(levelCode)}`}
-              onClick={() => triggerHaptic('tap')}
-              className="px-2 py-0.5 rounded-md bg-slate-100 hover:bg-blue-50 text-slate-700 hover:text-blue-700 font-black transition-colors"
-            >
-              JLPT {levelCode}
-            </Link>
-            {currentPoint && (
-              <>
-                <CaretRight weight="bold" className="w-3 h-3 text-slate-400" />
-                <span className="text-slate-900 font-black truncate max-w-[200px] sm:max-w-md">
-                  {currentPoint.title}
-                </span>
-              </>
-            )}
-          </div>
-
-          {/* Romaji visibility toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              triggerHaptic('tap')
-              setShowRomaji((prev) => !prev)
-            }}
-            aria-pressed={showRomaji}
-            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-brand font-black border-2 transition-all cursor-pointer active:translate-y-0.5 shadow-2xs ${
-              showRomaji
-                ? 'bg-blue-50 text-blue-700 border-blue-200'
-                : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
-            }`}
-          >
-            {showRomaji ? (
-              <Eye weight="fill" className="w-4 h-4 text-blue-600" />
-            ) : (
-              <EyeSlash weight="bold" className="w-4 h-4 text-slate-500" />
-            )}
-            <span>Romaji: {showRomaji ? 'Tampil' : 'Sembunyi'}</span>
-          </button>
-        </nav>
+              {showRomaji ? (
+                <Eye weight="fill" className="w-4 h-4 text-blue-600" />
+              ) : (
+                <EyeSlash weight="bold" className="w-4 h-4 text-slate-500" />
+              )}
+              <span>Romaji: {showRomaji ? 'Tampil' : 'Sembunyi'}</span>
+            </button>
+          }
+        />
 
         {/* Loading state skeleton */}
         {isLoading && (

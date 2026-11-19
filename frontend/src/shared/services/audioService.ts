@@ -405,6 +405,56 @@ class AudioService {
   }
 
   /**
+   * Plays a soft filtered white-noise sweep evoking physical cards sliding or flipping.
+   */
+  private playNoiseSweep(durationSec: number, startHz: number, endHz: number, peakGain: number): void {
+    if (this.mode === 'muted') return
+    const ctx = this.getContext()
+    if (!ctx || !this.masterGain) return
+
+    try {
+      const sampleCount = Math.max(1, Math.floor(ctx.sampleRate * durationSec))
+      const buffer = ctx.createBuffer(1, sampleCount, ctx.sampleRate)
+      const data = buffer.getChannelData(0)
+      for (let i = 0; i < sampleCount; i++) {
+        data[i] = Math.random() * 2 - 1
+      }
+
+      const source = ctx.createBufferSource()
+      source.buffer = buffer
+
+      const now = ctx.currentTime
+      const filter = ctx.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.Q.setValueAtTime(1.5, now)
+      filter.frequency.setValueAtTime(startHz, now)
+      filter.frequency.exponentialRampToValueAtTime(endHz, now + durationSec)
+
+      const gain = ctx.createGain()
+      gain.gain.setValueAtTime(0.0001, now)
+      gain.gain.linearRampToValueAtTime(peakGain, now + durationSec * 0.28)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + durationSec)
+
+      source.connect(filter)
+      filter.connect(gain)
+      gain.connect(this.masterGain)
+
+      source.start(now)
+      source.stop(now + durationSec)
+    } catch {
+      // Degrade gracefully when AudioContext is not yet unlocked
+    }
+  }
+
+  public playCardSlide(): void {
+    this.playNoiseSweep(0.11, 750, 1850, 0.11)
+  }
+
+  public playCardFlip(): void {
+    this.playNoiseSweep(0.075, 1350, 2600, 0.085)
+  }
+
+  /**
    * Synthesizes language pronunciation via Web Speech API.
    */
   public speakLanguage(

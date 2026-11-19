@@ -5,6 +5,7 @@ import {
   Cards,
   Sparkle,
   Clock,
+  Check,
   CheckCircle,
   ArrowRight,
   X,
@@ -14,10 +15,11 @@ import {
   Train,
   ArrowsClockwise,
   Fire,
-  MagnifyingGlass,
-  SquaresFour,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
+import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
+import { PageHeroHeader } from '@/shared/components/ui/PageHeroHeader'
+import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { useUser } from '@/features/user/hooks/useUser'
@@ -45,65 +47,152 @@ import {
 } from '@/features/flashcard/utils/ankiScheduler'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
+import { audioEngine } from '@/shared/utils/audio'
 
 type SessionMode = 'lobby' | 'session' | 'complete'
 type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
-type DeckViewMode = 'fanned' | 'grid'
 
-/** Progressive tilt for the 4-card fan (left → right), widening further on hover. */
-const FAN_CARD_LAYOUT = [
-  { rest: 'rotate-[-8deg] translate-y-2', hover: 'group-hover:rotate-[-14deg] group-hover:-translate-x-3 group-hover:translate-y-3' },
-  { rest: 'rotate-[-3deg] translate-y-0.5', hover: 'group-hover:rotate-[-5deg] group-hover:-translate-x-1' },
-  { rest: 'rotate-[3deg] translate-y-0.5', hover: 'group-hover:rotate-[5deg] group-hover:translate-x-1' },
-  { rest: 'rotate-[8deg] translate-y-2', hover: 'group-hover:rotate-[13deg] group-hover:translate-x-3 group-hover:translate-y-1' },
+interface DeckAccentStyle {
+  badge: string
+  border: string
+  stageBg: string
+  frontBorder: string
+  innerBorder: string
+  dotHex: string
+}
+
+const FAN_ARC_TRANSFORMS = [
+  { rest: 'rotate-[-13deg] translate-y-3', spreadLeft: 'group-hover:rotate-[-18deg] group-hover:-translate-x-2' },
+  { rest: 'rotate-[-5deg] translate-y-1', spreadLeft: 'group-hover:rotate-[-7deg] group-hover:-translate-x-1' },
+  { rest: 'rotate-[3deg] translate-y-0.5', spreadLeft: 'group-hover:rotate-[5deg] group-hover:translate-x-1' },
+  { rest: 'rotate-[11deg] translate-y-2.5', spreadLeft: 'group-hover:rotate-[15deg] group-hover:translate-x-2' },
 ] as const
 
+function getAdaptiveTermSizeClass(text: string): string {
+  const len = text.trim().length
+  if (len <= 3) return 'text-lg sm:text-xl leading-none'
+  if (len <= 5) return 'text-sm sm:text-[15px] leading-tight'
+  if (len <= 8) return 'text-xs leading-tight'
+  return 'text-[10px] sm:text-[11px] leading-tight'
+}
+
 /**
- * Fanned stack of up to 4 overlapping mini flashcards widening to the right,
- * like a hand of playing cards: back cards peek their word in the top-left corner,
- * the front (right-most) card shows term, reading, and meaning.
+ * Interactive collectible 4-card arc fan widening to the right:
+ * - Supports per-card hover peek (lifts touched card to z-30 with reading & meaning)
+ * - Highlights SM-2 card status (mastered check stamp, due amber dot)
+ * - Adapts typography cleanly to Japanese word length with zero corner text duplication.
  */
-const FannedDeckCardsPreview = ({ cards }: { cards: FlashcardSampleCard[] }) => {
+const FannedDeckCardsPreview = ({
+  cards,
+  deckStyle,
+  jlptLevel,
+}: {
+  cards: FlashcardSampleCard[]
+  deckStyle: DeckAccentStyle
+  jlptLevel: string
+}) => {
+  const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const fanCards = cards.slice(0, 4)
   if (fanCards.length === 0) return null
-  const offset = FAN_CARD_LAYOUT.length - fanCards.length
+  const offset = FAN_ARC_TRANSFORMS.length - fanCards.length
+  const defaultFrontIdx = fanCards.length - 1
 
   return (
-    <div aria-hidden="true" className="flex items-end justify-center h-32 pt-2 pl-6">
+    <div
+      className="flex items-end justify-center h-36 pt-3 pl-6"
+      onMouseLeave={() => setHoveredIdx(null)}
+    >
       {fanCards.map((card, idx) => {
-        const layout = FAN_CARD_LAYOUT[idx + offset]
-        const isFront = idx === fanCards.length - 1
+        const arc = FAN_ARC_TRANSFORMS[idx + offset]
+        const isShowcased = hoveredIdx !== null ? hoveredIdx === idx : idx === defaultFrontIdx
+        const isPeeking = hoveredIdx === idx
+        const isMastered = card.status === 'mastered'
+        const isDue = card.status === 'due'
+
+        const positionClass = isPeeking
+          ? '-translate-y-4 rotate-0 scale-105'
+          : hoveredIdx !== null && idx < hoveredIdx
+            ? `${arc.rest} -translate-x-1.5`
+            : hoveredIdx !== null && idx > hoveredIdx
+              ? `${arc.rest} translate-x-1.5`
+              : `${arc.rest} ${arc.spreadLeft}`
+
+        const cardBorderClass = isMastered
+          ? 'border-emerald-300 ring-1 ring-amber-300/60 shadow-[0_4px_0_0_#A7F3D0]'
+          : isShowcased
+            ? `${deckStyle.frontBorder} shadow-[0_4px_0_0_#BFDBFE]`
+            : 'border-slate-200/95 shadow-[0_3px_0_0_#E2E8F0]'
+
         return (
           <div
             key={card.id}
-            style={{ zIndex: idx + 1 }}
-            className={`relative -ml-7 first:ml-0 w-[88px] sm:w-24 h-28 rounded-2xl border-2 bg-white origin-bottom transition-transform duration-300 ease-out ${layout.rest} ${layout.hover} ${
-              isFront
-                ? 'border-blue-300 shadow-[0_4px_0_0_#BFDBFE]'
-                : 'border-slate-200 shadow-[0_3px_0_0_#E2E8F0]'
-            }`}
+            onMouseEnter={() => setHoveredIdx(idx)}
+            style={{ zIndex: isPeeking ? 30 : idx + 1 }}
+            className={`relative -ml-7 first:ml-0 w-[90px] sm:w-[98px] h-[118px] rounded-2xl border-2 bg-white origin-bottom-left transition-all duration-300 ease-out ${positionClass} ${cardBorderClass}`}
           >
-            <span className="absolute top-1.5 left-2 font-brand font-black text-[11px] leading-none text-slate-700 max-w-[64px] truncate">
-              {card.front_text}
-            </span>
-            {isFront ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-1.5 pt-3 text-center gap-0.5">
-                <span className="font-brand font-black text-lg text-slate-900 leading-tight break-all line-clamp-2">
+            {/* Subtle collectible inner card frame */}
+            <div
+              aria-hidden="true"
+              className={`pointer-events-none absolute inset-1.5 rounded-xl border ${
+                isShowcased ? deckStyle.innerBorder : 'border-slate-100'
+              }`}
+            />
+
+            {/* Status indicator (top-right) */}
+            {isMastered ? (
+              <span
+                aria-hidden="true"
+                className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 border border-white text-white flex items-center justify-center shadow-2xs"
+                title="Sudah dikuasai (SM-2)"
+              >
+                <Check weight="bold" className="w-2.5 h-2.5" />
+              </span>
+            ) : isDue ? (
+              <span
+                aria-hidden="true"
+                className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-100"
+                title="Jatuh tempo untuk diulas"
+              />
+            ) : null}
+
+            {isShowcased ? (
+              <>
+                <span className="absolute top-1.5 left-2 px-1.5 py-0.5 rounded bg-slate-100/90 font-brand font-black text-[8px] uppercase tracking-wider text-slate-500">
+                  {jlptLevel}
+                </span>
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-2 pt-3.5 text-center gap-0.5">
+                  <span
+                    className={`font-brand font-black text-slate-900 break-keep text-center ${getAdaptiveTermSizeClass(
+                      card.front_text
+                    )}`}
+                  >
+                    {card.front_text}
+                  </span>
+                  {card.reading && card.reading !== card.front_text && (
+                    <span className="text-[9px] font-bold text-rose-600 truncate max-w-full">
+                      {card.reading}
+                    </span>
+                  )}
+                  <span className="text-[9px] font-bold text-blue-600 line-clamp-1 max-w-full">
+                    {card.back_meaning}
+                  </span>
+                </div>
+              </>
+            ) : (
+              <>
+                <span className="absolute top-2 left-2 font-brand font-black text-[10px] leading-none text-slate-700 max-w-[54px] truncate">
                   {card.front_text}
                 </span>
-                {card.reading && card.reading !== card.front_text && (
-                  <span className="text-[9px] font-bold text-rose-600 truncate max-w-full">
-                    {card.reading}
-                  </span>
-                )}
-                <span className="text-[9px] font-bold text-blue-600 truncate max-w-full">
-                  {card.back_meaning}
+                <span
+                  aria-hidden="true"
+                  className="absolute inset-0 flex items-center justify-center text-slate-200/70 font-brand font-black text-xl pointer-events-none select-none"
+                >
+                  語
                 </span>
-              </div>
-            ) : (
-              <span className="absolute bottom-1.5 right-2 font-brand font-black text-[11px] leading-none text-slate-300 rotate-180 max-w-[64px] truncate">
-                {card.front_text}
-              </span>
+                <span className="absolute bottom-2 right-2 font-brand font-black text-[10px] leading-none text-slate-300 rotate-180 max-w-[54px] truncate">
+                  {card.front_text}
+                </span>
+              </>
             )}
           </div>
         )
@@ -121,12 +210,12 @@ interface RatingOption {
 }
 
 const JLPT_FILTER_OPTIONS: Array<{ value: JlptFilter; label: string }> = [
-  { value: 'ALL', label: 'Semua' },
   { value: 'N5', label: 'N5' },
   { value: 'N4', label: 'N4' },
   { value: 'N3', label: 'N3' },
   { value: 'N2', label: 'N2' },
   { value: 'N1', label: 'N1' },
+  { value: 'ALL', label: 'Semua' },
 ]
 
 const RATING_OPTIONS: RatingOption[] = [
@@ -160,30 +249,54 @@ const RATING_OPTIONS: RatingOption[] = [
   },
 ]
 
-const DECK_ACCENT_STYLES: Record<string, { badge: string; border: string }> = {
+const DECK_ACCENT_STYLES: Record<string, DeckAccentStyle> = {
   emerald: {
     badge: 'bg-emerald-50 text-emerald-600 border-emerald-200',
     border: 'hover:border-emerald-300',
+    stageBg: 'bg-gradient-to-b from-emerald-50/85 via-emerald-50/35 to-white',
+    frontBorder: 'border-emerald-300',
+    innerBorder: 'border-emerald-100',
+    dotHex: 'rgba(16, 185, 129, 0.18)',
   },
   blue: {
     badge: 'bg-blue-50 text-blue-600 border-blue-200',
     border: 'hover:border-blue-300',
+    stageBg: 'bg-gradient-to-b from-blue-50/85 via-sky-50/35 to-white',
+    frontBorder: 'border-blue-300',
+    innerBorder: 'border-blue-100',
+    dotHex: 'rgba(59, 130, 246, 0.18)',
   },
   amber: {
     badge: 'bg-amber-50 text-amber-600 border-amber-200',
     border: 'hover:border-amber-300',
+    stageBg: 'bg-gradient-to-b from-amber-50/85 via-orange-50/35 to-white',
+    frontBorder: 'border-amber-300',
+    innerBorder: 'border-amber-100',
+    dotHex: 'rgba(245, 158, 11, 0.20)',
   },
   violet: {
     badge: 'bg-violet-50 text-violet-600 border-violet-200',
     border: 'hover:border-violet-300',
+    stageBg: 'bg-gradient-to-b from-violet-50/85 via-purple-50/35 to-white',
+    frontBorder: 'border-violet-300',
+    innerBorder: 'border-violet-100',
+    dotHex: 'rgba(139, 92, 246, 0.18)',
   },
   cyan: {
     badge: 'bg-cyan-50 text-cyan-600 border-cyan-200',
     border: 'hover:border-cyan-300',
+    stageBg: 'bg-gradient-to-b from-cyan-50/85 via-sky-50/35 to-white',
+    frontBorder: 'border-cyan-300',
+    innerBorder: 'border-cyan-100',
+    dotHex: 'rgba(6, 182, 212, 0.18)',
   },
   rose: {
     badge: 'bg-rose-50 text-rose-600 border-rose-200',
     border: 'hover:border-rose-300',
+    stageBg: 'bg-gradient-to-b from-rose-50/85 via-pink-50/35 to-white',
+    frontBorder: 'border-rose-300',
+    innerBorder: 'border-rose-100',
+    dotHex: 'rgba(244, 63, 94, 0.18)',
   },
 }
 
@@ -222,7 +335,6 @@ export const FlashcardPage = () => {
   const [mode, setMode] = useState<SessionMode>('lobby')
   // Default to N5 so the lobby opens focused instead of showing every JLPT deck at once.
   const [levelFilter, setLevelFilter] = useState<JlptFilter>('N5')
-  const [deckViewMode, setDeckViewMode] = useState<DeckViewMode>('fanned')
   const [searchQuery, setSearchQuery] = useState('')
 
   const [sessionTitle, setSessionTitle] = useState('')
@@ -318,6 +430,7 @@ export const FlashcardPage = () => {
       setSessionXp(0)
       setReviewedCount(0)
       setMode('session')
+      audioEngine.playCardSlide()
     },
     []
   )
@@ -399,6 +512,7 @@ export const FlashcardPage = () => {
 
       triggerHaptic('tap')
       playSound(quality >= 3 ? 'zen_bell' : 'node_tap')
+      audioEngine.playCardSlide()
 
       let updatedCard: FlashcardCard
       try {
@@ -734,19 +848,36 @@ export const FlashcardPage = () => {
       <AppLeftSidebar />
 
       <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 pb-24 md:pb-12 space-y-6">
-        {/* Page Header */}
-        <header className="space-y-1">
-          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-brand font-black text-[11px] uppercase tracking-wider">
-            <Cards weight="fill" className="w-3.5 h-3.5" />
-            <span>Flashcard Kosakata • JLPT N5–N1</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-brand font-black text-slate-900 tracking-tight">
-            Belajar &amp; Ulas Flashcard
-          </h1>
-          <p className="text-sm text-slate-600">
-            Langsung hafalkan kosakata lewat kartu flip Anki SM-2 depan–belakang kapan saja lintas tingkat JLPT N5 hingga N1.
-          </p>
-        </header>
+        <AppTopBar
+          breadcrumbs={[
+            { label: 'Beranda', to: '/curriculum' },
+            { label: 'Flashcards' },
+            { label: levelFilter === 'ALL' ? 'Semua Level' : `JLPT ${levelFilter}` },
+          ]}
+        />
+
+        {/* Unified Tactile Page Hero Header */}
+        <PageHeroHeader
+          theme="sky"
+          icon={<Cards weight="fill" className="w-6 h-6" />}
+          badges={
+            <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-800">
+              Flashcard Kosakata • JLPT N5–N1
+            </span>
+          }
+          title="Belajar & Ulas Flashcard"
+          description="Langsung hafalkan kosakata lewat kartu flip Anki SM-2 depan–belakang kapan saja lintas tingkat JLPT N5 hingga N1."
+          rightSlot={
+            <div className="flex items-center gap-3 shrink-0">
+              <div className="px-3.5 py-2 rounded-2xl bg-white border-2 border-sky-200/80 text-xs font-brand font-black text-sky-900 shadow-2xs">
+                {filteredDecks.length} Dek Aktif
+              </div>
+              <div className="hidden sm:block">
+                <KodiCharacter emotion="happy" size={64} />
+              </div>
+            </div>
+          }
+        />
 
         {sessionError && (
           <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
@@ -805,103 +936,29 @@ export const FlashcardPage = () => {
           )}
         </section>
 
-        {/* Level Filter Tabs & Search */}
-        <section className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-          <div className="flex flex-wrap items-center gap-2">
-            {JLPT_FILTER_OPTIONS.map((opt) => {
-              const active = levelFilter === opt.value
-              const count = levelCounts[opt.value]
-              return (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() => {
-                    triggerHaptic('tap')
-                    setLevelFilter(opt.value)
-                  }}
-                  className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border-2 font-brand font-black text-xs transition-all cursor-pointer ${
-                    active
-                      ? 'bg-[#2563EB] text-white border-[#1D4ED8] shadow-[0_3px_0_0_#1D4ED8]'
-                      : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50 shadow-[0_2px_0_0_#E2E8F0]'
-                  }`}
-                >
-                  <span>{opt.label}</span>
-                  <span
-                    className={`px-1.5 py-0.5 rounded-md text-[10px] ${
-                      active ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'
-                    }`}
-                  >
-                    {count}
-                  </span>
-                </button>
-              )
-            })}
-          </div>
+        {/* Unified 1-Row Filter Toolbar */}
+        <FilterToolbar
+          levelOptions={JLPT_FILTER_OPTIONS.map((opt) => ({
+            value: opt.value,
+            label: opt.label,
+            count: levelCounts[opt.value],
+          }))}
+          selectedLevel={levelFilter}
+          onSelectLevel={(v) => setLevelFilter(v as JlptFilter)}
+          searchValue={searchQuery}
+          onSearchChange={setSearchQuery}
+          searchPlaceholder="Cari judul atau topik dek..."
+        />
 
-          <div className="relative w-full lg:w-72">
-            <MagnifyingGlass
-              weight="bold"
-              className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
-            />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari judul atau topik dek..."
-              className="w-full pl-10 pr-9 py-2.5 rounded-xl bg-white border-2 border-slate-200 focus:border-[#2563EB] outline-none text-xs sm:text-sm font-medium text-slate-800 placeholder:text-slate-400 transition-colors"
-            />
-            {searchQuery && (
-              <button
-                type="button"
-                onClick={() => setSearchQuery('')}
-                aria-label="Hapus pencarian"
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center cursor-pointer"
-              >
-                <X weight="bold" className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </section>
-
-        {/* Topic Decks Grid */}
+        {/* Permanent Fanned Collectible Decks Grid */}
         <section className="space-y-3">
           <div className="flex items-center justify-between gap-3 flex-wrap">
             <h2 className="text-sm font-brand font-black uppercase tracking-wider text-slate-700">
               Dek Topik Siap Pakai ({filteredDecks.length})
             </h2>
-            <div
-              role="group"
-              aria-label="Tampilan dek"
-              className="inline-flex items-center p-1 rounded-xl bg-slate-100 border border-slate-200"
-            >
-              {(
-                [
-                  { value: 'fanned', label: 'Tumpukan Mengipas', icon: <Cards weight="bold" className="w-3.5 h-3.5" /> },
-                  { value: 'grid', label: 'Grid', icon: <SquaresFour weight="bold" className="w-3.5 h-3.5" /> },
-                ] as const
-              ).map((opt) => {
-                const active = deckViewMode === opt.value
-                return (
-                  <button
-                    key={opt.value}
-                    type="button"
-                    aria-pressed={active}
-                    onClick={() => {
-                      triggerHaptic('tap')
-                      setDeckViewMode(opt.value)
-                    }}
-                    className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-brand font-black transition-all cursor-pointer ${
-                      active
-                        ? 'bg-white text-blue-700 shadow-[0_2px_0_0_#CBD5E1] border border-slate-200'
-                        : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    {opt.icon}
-                    <span>{opt.label}</span>
-                  </button>
-                )
-              })}
-            </div>
+            <span className="text-xs font-semibold text-slate-500">
+              Arahkan kursor ke kartu untuk mengintip kata, klik dek untuk mulai
+            </span>
           </div>
 
           {decksLoading ? (
@@ -909,7 +966,7 @@ export const FlashcardPage = () => {
               {Array.from({ length: 6 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="h-44 rounded-3xl bg-white border-2 border-slate-200/80 animate-pulse"
+                  className="h-64 rounded-3xl bg-white border-2 border-slate-200/80 animate-pulse"
                 />
               ))}
             </div>
@@ -923,12 +980,15 @@ export const FlashcardPage = () => {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
               {filteredDecks.map((deck) => {
                 const style = DECK_ACCENT_STYLES[deck.accent_color] ?? DECK_ACCENT_STYLES.blue
+                const totalCards = Math.max(1, deck.total_cards || 1)
                 const newCards = deck.new_cards ?? 0
                 const dueCards = deck.due_cards ?? 0
                 const scheduledCards = deck.scheduled_cards ?? 0
+                const masteredPercent = Math.round((scheduledCards / totalCards) * 100)
+                const duePercent = Math.round((dueCards / totalCards) * 100)
 
                 const ctaLabel =
                   dueCards > 0
@@ -938,7 +998,6 @@ export const FlashcardPage = () => {
                       : 'Latihan Ulang'
 
                 const sampleCards = deck.sample_cards ?? []
-                const isFanned = deckViewMode === 'fanned' && sampleCards.length > 0
 
                 return (
                   <button
@@ -946,13 +1005,21 @@ export const FlashcardPage = () => {
                     type="button"
                     disabled={loadingSession}
                     onClick={() => void startDeckSession(deck)}
-                    className={`group relative text-left bg-white border-2 border-slate-200/90 ${style.border} rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] hover:shadow-[0_6px_0_0_#CBD5E1] active:translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 disabled:opacity-60 ${
-                      isFanned ? 'hover:-translate-y-1.5 hover:z-20 overflow-hidden' : ''
-                    }`}
+                    className={`group relative text-left bg-white border-2 border-slate-200/90 ${style.border} rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] hover:shadow-[0_7px_0_0_#CBD5E1] hover:-translate-y-1.5 hover:z-20 active:translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 disabled:opacity-60 overflow-hidden`}
                   >
-                    {isFanned && (
-                      <div className="-mx-5 -mt-5 mb-1 px-5 pb-2 bg-gradient-to-b from-slate-50 to-white border-b border-slate-100">
-                        <FannedDeckCardsPreview cards={sampleCards} />
+                    {sampleCards.length > 0 && (
+                      <div
+                        className={`-mx-5 -mt-5 mb-0.5 px-5 pb-2 border-b border-slate-100 ${style.stageBg}`}
+                        style={{
+                          backgroundImage: `radial-gradient(${style.dotHex} 1px, transparent 1px)`,
+                          backgroundSize: '12px 12px',
+                        }}
+                      >
+                        <FannedDeckCardsPreview
+                          cards={sampleCards}
+                          deckStyle={style}
+                          jlptLevel={deck.jlpt_level}
+                        />
                       </div>
                     )}
                     <div className="flex items-start gap-3.5">
@@ -981,23 +1048,43 @@ export const FlashcardPage = () => {
                       </div>
                     </div>
 
-                    {/* Anki 3-State Memory Cycle Pills & Dynamic CTA */}
-                    <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100">
-                      <div className="flex items-center flex-wrap gap-1.5 text-[10px] font-brand font-extrabold">
-                        <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
-                          Baru {newCards}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/70">
-                          Ulas {dueCards}
-                        </span>
-                        <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/70">
-                          Ingat {scheduledCards}
-                        </span>
+                    {/* Segmented Mastery Micro-Progress Bar + Anki 3-State Pills & Dynamic CTA */}
+                    <div className="space-y-2.5 pt-2 border-t border-slate-100">
+                      <div
+                        aria-hidden="true"
+                        className="h-1.5 w-full rounded-full bg-slate-100 overflow-hidden flex"
+                      >
+                        {masteredPercent > 0 && (
+                          <div
+                            className="h-full bg-emerald-500 transition-all duration-300"
+                            style={{ width: `${masteredPercent}%` }}
+                          />
+                        )}
+                        {duePercent > 0 && (
+                          <div
+                            className="h-full bg-amber-400 transition-all duration-300"
+                            style={{ width: `${duePercent}%` }}
+                          />
+                        )}
                       </div>
 
-                      <span className="text-[11px] font-brand font-black text-blue-600 group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1 shrink-0">
-                        {ctaLabel} <ArrowRight weight="bold" className="w-3 h-3" />
-                      </span>
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center flex-wrap gap-1.5 text-[10px] font-brand font-extrabold">
+                          <span className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
+                            Baru {newCards}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200/70">
+                            Ulas {dueCards}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200/70">
+                            Ingat {scheduledCards}
+                          </span>
+                        </div>
+
+                        <span className="text-[11px] font-brand font-black text-blue-600 group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1 shrink-0">
+                          {ctaLabel} <ArrowRight weight="bold" className="w-3 h-3" />
+                        </span>
+                      </div>
                     </div>
                   </button>
                 )

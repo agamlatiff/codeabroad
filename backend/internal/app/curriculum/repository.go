@@ -183,7 +183,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	}
 	query := `
 		SELECT 
-			l.id, l.unit_id, l.slug, l.title, l.xp_reward, l.order_index,
+			l.id, l.unit_id, l.slug, l.title, COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -204,7 +204,7 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	for rows.Next() {
 		var l LessonNodeResponse
 		if err := rows.Scan(
-			&l.ID, &l.UnitID, &l.Slug, &l.Title, &l.XPReward, &l.OrderIndex,
+			&l.ID, &l.UnitID, &l.Slug, &l.Title, &l.IconName, &l.XPReward, &l.OrderIndex,
 			&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan lesson row: %w", err)
@@ -263,7 +263,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	}
 	lessonQuery := targetCurriculumLessonCTESQL + `
 		SELECT 
-			l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title, l.xp_reward, l.order_index, l.created_at,
+			l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title, COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index, l.created_at,
 			COALESCE(ulp.is_completed, false) AS is_completed,
 			COALESCE(ulp.score, 0) AS score,
 			COALESCE(ulp.is_skipped, false) AS is_skipped,
@@ -276,7 +276,7 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	`
 	var l LessonDetailResponse
 	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
-		&l.ID, &l.UnitID, &l.Slug, &l.LevelID, &l.UnitType, &l.Title, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
+		&l.ID, &l.UnitID, &l.Slug, &l.LevelID, &l.UnitType, &l.Title, &l.IconName, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
 		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt, &l.IsUnlocked,
 	)
 	if err != nil {

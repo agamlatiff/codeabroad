@@ -69,6 +69,7 @@ export interface LessonNodeResponse {
   slug?: string
   unit_id: string
   title: string
+  icon_name?: string
   xp_reward: number
   order_index: number
   is_unlocked: boolean
@@ -123,6 +124,7 @@ export interface LessonDetailResponse {
   slug?: string
   unit_id: string
   title: string
+  icon_name?: string
   xp_reward: number
   order_index: number
   is_unlocked: boolean
@@ -207,6 +209,7 @@ export interface CurriculumPartNode {
   number: number
   title: string
   subtitle: string
+  iconName?: string
   status: CurriculumNodeStatus
   route: string
   xpReward: number
@@ -234,6 +237,7 @@ export interface PathMapNode {
   title: string
   subtitle: string
   number?: number
+  iconName?: string
   xpReward: number
   gemsReward?: number
   score?: number

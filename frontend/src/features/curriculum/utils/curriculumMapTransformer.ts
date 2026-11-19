@@ -72,6 +72,7 @@ export const transformCurriculumToMapUnits = (
         number: lessonNum,
         title: cleanLessonTitle,
         subtitle,
+        iconName: lesson.icon_name || undefined,
         status,
         route:
           unit.unit_type === 'diagnostic_exam' && curriculum.level?.id

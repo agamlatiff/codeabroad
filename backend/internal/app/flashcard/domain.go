@@ -21,6 +21,7 @@ type SampleCard struct {
 	FrontText   string `json:"front_text"`
 	Reading     string `json:"reading"`
 	BackMeaning string `json:"back_meaning"`
+	Status      string `json:"status"`
 }
 
 // Deck represents a standalone topic flashcard deck with per-user Anki memory cycle counters.

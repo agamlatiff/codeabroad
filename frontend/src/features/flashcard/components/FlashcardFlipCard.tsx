@@ -30,6 +30,7 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
       style={{ perspective: '1200px' }}
       onClick={() => {
         triggerHaptic('tap')
+        audioService.playCardFlip()
         onToggleFlip()
       }}
       role="button"
@@ -39,6 +40,7 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
         if (e.key === ' ' || e.key === 'Enter') {
           e.preventDefault()
           triggerHaptic('tap')
+          audioService.playCardFlip()
           onToggleFlip()
         }
       }}

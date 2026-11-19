@@ -1,9 +1,12 @@
+export type FlashcardSampleCardStatus = 'new' | 'due' | 'mastered'
+
 /** Compact preview card bundled with a deck (first cards by sort order) for fanned UI previews. */
 export interface FlashcardSampleCard {
   id: string
   front_text: string
   reading: string
   back_meaning: string
+  status?: FlashcardSampleCardStatus
 }
 
 export interface FlashcardDeck {

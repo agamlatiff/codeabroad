@@ -1,6 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
+import { PageHeroHeader } from "@/shared/components/ui/PageHeroHeader"
 import { TrackSwitcherModal } from "@/shared/components/layout/top-bar/TrackSwitcherModal"
 import { ChestRewardModal } from "@/features/gamification/components/ChestRewardModal"
 import { MonthlyBadgeModal } from "@/features/gamification/components/MonthlyBadgeModal"
@@ -27,6 +28,12 @@ import {
 export type { QuestPageTab }
 
 const EMPTY_PROGRESS_MAP: Record<string, { completed: number; total: number }> = {}
+
+const QUEST_TAB_LABELS: Record<QuestPageTab, string> = {
+  daily: 'Misi Harian',
+  boss: 'Tantangan',
+  shop: 'Pasar Guild',
+}
 
 export const QuestLogPage = () => {
   const navigate = useNavigate()
@@ -86,10 +93,10 @@ export const QuestLogPage = () => {
       {/* ── 1. LEFT NAV RAIL (SSOT) ── */}
       <AppLeftSidebar />
 
-      {/* ── 2. SINGLE-COLUMN CENTER STAGE ── */}
+      {/* ── 2. SINGLE-COLUMN FULL-WIDTH CENTER STAGE ── */}
       <div className="flex-1 min-w-0 flex flex-col pb-20 md:pb-12">
-        <main className="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-8 py-6 space-y-7">
-          {/* ── TOP HUD BAR (SSOT) ── */}
+        <main className="flex-1 min-w-0 w-full px-4 sm:px-8 lg:px-10 py-6 space-y-6">
+          {/* ── TOP HUD BAR + BREADCRUMB (SSOT) ── */}
           <AppTopBar
             activeTrack={activeTrack}
             onOpenCourseSwitcher={() => setIsCourseSwitcherOpen(true)}
@@ -97,6 +104,11 @@ export const QuestLogPage = () => {
             totalCount={totalCount}
             progressPercent={progressPercent}
             unitLabel="Misi"
+            breadcrumbs={[
+              { label: 'Beranda', to: '/curriculum' },
+              { label: 'Misi & Toko' },
+              { label: QUEST_TAB_LABELS[activeTab] },
+            ]}
           />
 
           {/* Toast Notification Banner */}
@@ -124,101 +136,91 @@ export const QuestLogPage = () => {
             </div>
           )}
 
-          {/* ── 1. LIVING HERO BANNER: KODI MASCOT & MONTHLY CHALLENGE ── */}
-          <div className="bg-gradient-to-br from-amber-500/10 via-amber-50/40 to-blue-500/10 border-2 border-amber-300 border-b-[5px] border-b-amber-400 rounded-3xl p-6 sm:p-7 shadow-2xs relative overflow-hidden">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              {/* Left Column: Monthly Challenge Details */}
-              <div className="space-y-3.5 flex-1 min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span
-                    className={`font-brand font-black text-[11px] px-3 py-1 rounded-full border uppercase tracking-wider ${kodiCompanion.badgeBg}`}
+          {/* ── 1. UNIFIED CLEAN TACTILE HERO BANNER: KODI MASCOT & MONTHLY CHALLENGE ── */}
+          <PageHeroHeader
+            theme="amber"
+            icon={<Medal weight="fill" className="w-6 h-6" />}
+            badges={
+              <>
+                <span
+                  className={`font-brand font-black text-[11px] px-3 py-0.5 rounded-full border uppercase tracking-wider ${kodiCompanion.badgeBg}`}
+                >
+                  {kodiCompanion.badge}
+                </span>
+                <span className="text-xs font-bold text-slate-500 inline-flex items-center gap-1">
+                  <Clock weight="bold" className="w-3.5 h-3.5 text-slate-400" />
+                  <span>Sisa {daysLeftInMonth} Hari di Bulan Ini</span>
+                </span>
+              </>
+            }
+            title={`Lencana Emas Bulanan (${currentMonthYearName})`}
+            description="Selesaikan 25 misi dan pelajaran bahasa bulan ini untuk membuka pencapaian lencana emas di profil Anda."
+            bottomSlot={
+              <div className="space-y-2.5 max-w-lg">
+                <div className="flex items-center justify-between text-xs font-brand font-black">
+                  <span className="text-slate-700 flex items-center gap-1.5">
+                    <Medal weight="fill" className="w-4 h-4 text-amber-500" />
+                    <span>
+                      {monthlyCompletedCount} / {monthlyTargetCount} Misi Selesai
+                    </span>
+                  </span>
+                  <span className="text-amber-700 font-bold">
+                    {monthlyCompletedCount >= monthlyTargetCount
+                      ? '🎉 Lencana Terbuka!'
+                      : `${monthlyTargetCount - monthlyCompletedCount} misi lagi`}
+                  </span>
+                </div>
+                <div className="h-3 bg-white/95 rounded-full border border-amber-300 p-0.5 shadow-inner overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706]"
+                    style={{ width: `${monthlyProgressPercent}%` }}
+                  />
+                </div>
+                <div className="pt-1">
+                  <Button3D
+                    variant={monthlyCompletedCount >= monthlyTargetCount ? 'amber' : 'white'}
+                    size="sm"
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      setIsMonthlyBadgeModalOpen(true)
+                    }}
+                    className={`text-xs px-4 py-2 ${
+                      isMonthlyBadgeClaimed
+                        ? 'bg-emerald-50 text-emerald-800 border-2 border-emerald-300'
+                        : 'text-slate-700'
+                    }`}
                   >
-                    {kodiCompanion.badge}
-                  </span>
-                  <span className="text-xs font-bold text-slate-500 flex items-center gap-1">
-                    <Clock weight="bold" className="w-3.5 h-3.5 text-slate-400" />
-                    <span>Sisa {daysLeftInMonth} Hari di Bulan Ini</span>
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <h1 className="text-xl sm:text-2xl font-black text-[#0F172A] tracking-tight">
-                    Lencana Emas Bulanan ({currentMonthYearName})
-                  </h1>
-                  <p className="text-xs sm:text-sm text-slate-600 font-medium leading-relaxed">
-                    Selesaikan 25 misi dan pelajaran bahasa bulan ini untuk membuka pencapaian lencana emas di profil Anda.
-                  </p>
-                </div>
-
-                {/* Monthly Challenge Progress Track */}
-                <div className="space-y-2 pt-1 max-w-lg">
-                  <div className="flex items-center justify-between text-xs font-brand font-black">
-                    <span className="text-slate-700 flex items-center gap-1.5">
-                      <Medal weight="fill" className="w-4 h-4 text-amber-500" />
-                      <span>
-                        {monthlyCompletedCount} / {monthlyTargetCount} Misi Selesai
+                    {isMonthlyBadgeClaimed ? (
+                      <span className="flex items-center gap-1.5">
+                        <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+                        <span>LENCANA EMAS AKTIF DI PROFIL</span>
                       </span>
-                    </span>
-                    <span className="text-amber-700 font-bold">
-                      {monthlyCompletedCount >= monthlyTargetCount
-                        ? '🎉 Lencana Terbuka!'
-                        : `${monthlyTargetCount - monthlyCompletedCount} misi lagi`}
-                    </span>
-                  </div>
-                  <div className="h-3.5 bg-white/90 rounded-full border border-amber-300 p-0.5 shadow-inner overflow-hidden">
-                    <div
-                      className="h-full bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#D97706]"
-                      style={{ width: `${monthlyProgressPercent}%` }}
-                    />
-                  </div>
-
-                  {/* Monthly Challenge Action Button */}
-                  <div className="pt-2">
-                    <Button3D
-                      variant={monthlyCompletedCount >= monthlyTargetCount ? 'amber' : 'ghost'}
-                      size="sm"
-                      onClick={() => {
-                        triggerHaptic('tap')
-                        setIsMonthlyBadgeModalOpen(true)
-                      }}
-                      className={`text-xs px-4 py-2 ${
-                        isMonthlyBadgeClaimed
-                          ? 'bg-emerald-50 text-emerald-800 border-2 border-emerald-300'
-                          : 'border-2 border-slate-200 bg-white/80 text-slate-700 hover:bg-white'
-                      }`}
-                    >
-                      {isMonthlyBadgeClaimed ? (
-                        <span className="flex items-center gap-1.5">
-                          <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
-                          <span>LENCANA EMAS AKTIF DI PROFIL</span>
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5">
-                          <Medal weight="bold" className="w-4 h-4 text-amber-600" />
-                          <span>LIHAT DETAIL LENCANA BULANAN ➔</span>
-                        </span>
-                      )}
-                    </Button3D>
-                  </div>
+                    ) : (
+                      <span className="flex items-center gap-1.5">
+                        <Medal weight="bold" className="w-4 h-4 text-amber-600" />
+                        <span>LIHAT DETAIL LENCANA BULANAN ➔</span>
+                      </span>
+                    )}
+                  </Button3D>
                 </div>
               </div>
-
-              {/* Right Column: Live Kodi Companion with Speech Bubble */}
-              <div className="flex flex-col items-center sm:items-end justify-center shrink-0 self-center md:self-auto space-y-2">
+            }
+            rightSlot={
+              <div className="flex flex-col items-center sm:items-end justify-center space-y-2">
                 <div className="relative bg-white border-2 border-amber-300 rounded-2xl px-4 py-2.5 shadow-2xs text-xs font-brand font-black text-slate-800 leading-snug max-w-xs text-center sm:text-left">
                   <span>{kodiCompanion.speech}</span>
                   <div className="hidden sm:block absolute -bottom-2 right-10 w-3 h-3 bg-white border-b-2 border-r-2 border-amber-300 transform rotate-45" />
                 </div>
 
-                <div className="w-28 h-28 sm:w-32 sm:h-32 relative group flex items-center justify-center">
+                <div className="w-24 h-24 sm:w-28 sm:h-28 relative group flex items-center justify-center">
                   <div className="absolute inset-0 bg-amber-400/20 rounded-full filter blur-xl transform group-hover:scale-110 transition-transform" />
                   <div className="relative z-10 drop-shadow-md transform group-hover:scale-105 transition-transform duration-300">
-                    <KodiCharacter emotion={kodiCompanion.emotion} size={110} />
+                    <KodiCharacter emotion={kodiCompanion.emotion} size={96} />
                   </div>
                 </div>
               </div>
-            </div>
-          </div>
+            }
+          />
 
           {/* ── 2. FILTER TABS & SEARCH BAR ── */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

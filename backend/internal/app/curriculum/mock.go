@@ -254,6 +254,7 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 		LevelID:     levelID,
 		UnitType:    unitType,
 		Title:       l.Title,
+		IconName:    l.IconName,
 		XPReward:    l.XPReward,
 		OrderIndex:  l.OrderIndex,
 		IsUnlocked:  l.IsUnlocked,

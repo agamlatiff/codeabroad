@@ -60,6 +60,14 @@ class AudioEngineProxy {
     audioService.playFanfare()
   }
 
+  public playCardSlide(): void {
+    audioService.playCardSlide()
+  }
+
+  public playCardFlip(): void {
+    audioService.playCardFlip()
+  }
+
   public speakLanguage(
     text: string,
     lang = 'ja-JP',

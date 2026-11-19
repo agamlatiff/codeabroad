@@ -42,6 +42,7 @@ export const assembleUnitNodes = (unit: CurriculumUnitData): UnitLayoutAssembly 
     title: `Pelajaran ${p.number}: ${p.title}`,
     subtitle: p.subtitle,
     number: p.number,
+    iconName: p.iconName,
     xpReward: p.xpReward,
     score: p.score,
     isSkipped: p.isSkipped,

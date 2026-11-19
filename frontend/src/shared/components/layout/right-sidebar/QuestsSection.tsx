@@ -3,15 +3,13 @@ import {
   Target,
   Clock,
   CheckCircle,
-  BookOpen,
-  Cards,
-  Translate,
   Lightning,
   Gift,
   SketchLogo,
   Play,
 } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { DailyQuestIconBadge } from '@/features/gamification/components/DailyQuestIconBadge'
 import { useQuestsSection } from '@/shared/hooks/layout/right-sidebar/useQuestsSection'
 import { ChestModal } from './ChestModal'
 
@@ -20,37 +18,6 @@ export interface QuestsSectionProps {
   onClaimChestReward: (e?: React.MouseEvent) => void
   isClaimingQuest?: boolean
   claimingQuestId?: string | null
-}
-
-function renderQuestBadgeIcon(iconName: string) {
-  switch (iconName) {
-    case 'cards':
-      return {
-        gradient: 'from-rose-400 to-pink-500 shadow-[0_2px_0_0_#9F1239]',
-        icon: <Cards weight="bold" className="w-4 h-4 text-white" />,
-      }
-    case 'translate':
-      return {
-        gradient: 'from-fuchsia-500 to-rose-500 shadow-[0_2px_0_0_#9F1239]',
-        icon: <Translate weight="bold" className="w-4 h-4 text-white" />,
-      }
-    case 'lightning':
-      return {
-        gradient: 'from-amber-400 to-orange-500 shadow-[0_2px_0_0_#B45309]',
-        icon: <Lightning weight="fill" className="w-4 h-4 text-white" />,
-      }
-    case 'target':
-      return {
-        gradient: 'from-emerald-500 to-teal-600 shadow-[0_2px_0_0_#0F766E]',
-        icon: <Target weight="bold" className="w-4 h-4 text-white" />,
-      }
-    case 'book-open':
-    default:
-      return {
-        gradient: 'from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E3A8A]',
-        icon: <BookOpen weight="bold" className="w-4 h-4 text-white" />,
-      }
-  }
 }
 
 /**
@@ -187,7 +154,6 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
           {activeQuests.map((quest) => {
             const isDone = quest.status === 'completed'
             const isClaimingThis = isClaimingQuest && claimingQuestId === quest.id
-            const badge = renderQuestBadgeIcon(quest.iconName)
 
             return (
               <div
@@ -195,11 +161,11 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                 className="p-2 sm:p-2.5 bg-white border border-slate-200/90 hover:border-blue-400 rounded-xl flex items-center justify-between gap-2 shadow-2xs hover:shadow-xs transition-all group"
               >
                 <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                  <div
-                    className={`w-8 h-8 rounded-xl bg-gradient-to-b ${badge.gradient} text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}
-                  >
-                    {badge.icon}
-                  </div>
+                  <DailyQuestIconBadge
+                    iconName={quest.iconName}
+                    size="sm"
+                    isCompleted={isDone}
+                  />
 
                   <div className="space-y-0.5 min-w-0 flex-1">
                     <p

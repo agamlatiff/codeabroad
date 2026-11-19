@@ -62,6 +62,7 @@ type Lesson struct {
 	UnitID     string    `json:"unit_id"`
 	Slug       string    `json:"slug"`
 	Title      string    `json:"title"`
+	IconName   string    `json:"icon_name"`
 	XPReward   int       `json:"xp_reward"`
 	OrderIndex int       `json:"order_index"`
 	CreatedAt  time.Time `json:"created_at"`
@@ -88,6 +89,7 @@ type LessonNodeResponse struct {
 	UnitID      string     `json:"unit_id"`
 	Slug        string     `json:"slug"`
 	Title       string     `json:"title"`
+	IconName    string     `json:"icon_name"`
 	XPReward    int        `json:"xp_reward"`
 	OrderIndex  int        `json:"order_index"`
 	IsUnlocked  bool       `json:"is_unlocked"`
@@ -136,6 +138,7 @@ type LessonDetailResponse struct {
 	LevelID       string              `json:"-"`
 	UnitType      string              `json:"-"`
 	Title         string              `json:"title"`
+	IconName      string              `json:"icon_name"`
 	XPReward      int                 `json:"xp_reward"`
 	OrderIndex    int                 `json:"order_index"`
 	IsUnlocked    bool                `json:"is_unlocked"`
