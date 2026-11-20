@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
@@ -18,10 +18,11 @@ import {
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
-import { PageHeroHeader } from '@/shared/components/ui/PageHeroHeader'
 import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
+import { FlashcardHeroIllustration } from '@/features/flashcard/components/FlashcardHeroIllustration'
+import { FlashcardDeckStageDecor } from '@/features/flashcard/components/FlashcardDeckStageDecor'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
   getProfileQueryKey,
@@ -53,11 +54,13 @@ type SessionMode = 'lobby' | 'session' | 'complete'
 type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 
 interface DeckAccentStyle {
-  badge: string
+  iconTile: string
   border: string
   stageBg: string
   frontBorder: string
   innerBorder: string
+  cardTopStrip: string
+  levelPill: string
   dotHex: string
 }
 
@@ -72,8 +75,28 @@ function getAdaptiveTermSizeClass(text: string): string {
   const len = text.trim().length
   if (len <= 3) return 'text-lg sm:text-xl leading-none'
   if (len <= 5) return 'text-sm sm:text-[15px] leading-tight'
-  if (len <= 8) return 'text-xs leading-tight'
-  return 'text-[10px] sm:text-[11px] leading-tight'
+  if (len <= 7) return 'text-xs leading-tight'
+  if (len <= 9) return 'text-[10px] leading-tight'
+  return 'text-[9px] leading-tight'
+}
+
+function getThematicDeckKanji(iconName: string): string {
+  switch (iconName) {
+    case 'hand-waving':
+      return '礼'
+    case 'clock':
+      return '時'
+    case 'bowl-food':
+      return '食'
+    case 'person-simple-run':
+      return '動'
+    case 'train':
+      return '旅'
+    case 'sparkle':
+      return '彩'
+    default:
+      return '語'
+  }
 }
 
 /**
@@ -86,20 +109,23 @@ const FannedDeckCardsPreview = ({
   cards,
   deckStyle,
   jlptLevel,
+  iconName,
 }: {
   cards: FlashcardSampleCard[]
   deckStyle: DeckAccentStyle
   jlptLevel: string
+  iconName: string
 }) => {
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null)
   const fanCards = cards.slice(0, 4)
   if (fanCards.length === 0) return null
   const offset = FAN_ARC_TRANSFORMS.length - fanCards.length
   const defaultFrontIdx = fanCards.length - 1
+  const thematicKanji = getThematicDeckKanji(iconName)
 
   return (
     <div
-      className="flex items-end justify-center h-36 pt-3 pl-6"
+      className="relative z-10 flex items-end justify-center h-36 pt-3 pl-6"
       onMouseLeave={() => setHoveredIdx(null)}
     >
       {fanCards.map((card, idx) => {
@@ -128,13 +154,21 @@ const FannedDeckCardsPreview = ({
             key={card.id}
             onMouseEnter={() => setHoveredIdx(idx)}
             style={{ zIndex: isPeeking ? 30 : idx + 1 }}
-            className={`relative -ml-7 first:ml-0 w-[90px] sm:w-[98px] h-[118px] rounded-2xl border-2 bg-white origin-bottom-left transition-all duration-300 ease-out ${positionClass} ${cardBorderClass}`}
+            className={`relative -ml-7 first:ml-0 w-[92px] sm:w-[100px] h-[120px] rounded-2xl border-2 bg-white origin-bottom-left transition-all duration-300 ease-out overflow-hidden ${positionClass} ${cardBorderClass}`}
           >
+            {/* Accent Top Strip on Showcased Card */}
+            {isShowcased && (
+              <div
+                aria-hidden="true"
+                className={`absolute top-0 inset-x-0 h-1.5 ${deckStyle.cardTopStrip}`}
+              />
+            )}
+
             {/* Subtle collectible inner card frame */}
             <div
               aria-hidden="true"
               className={`pointer-events-none absolute inset-1.5 rounded-xl border ${
-                isShowcased ? deckStyle.innerBorder : 'border-slate-100'
+                isShowcased ? `${deckStyle.innerBorder} top-2` : 'border-slate-100'
               }`}
             />
 
@@ -142,7 +176,7 @@ const FannedDeckCardsPreview = ({
             {isMastered ? (
               <span
                 aria-hidden="true"
-                className="absolute top-1.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 border border-white text-white flex items-center justify-center shadow-2xs"
+                className="absolute top-2.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 border border-white text-white flex items-center justify-center shadow-2xs"
                 title="Sudah dikuasai (SM-2)"
               >
                 <Check weight="bold" className="w-2.5 h-2.5" />
@@ -150,19 +184,21 @@ const FannedDeckCardsPreview = ({
             ) : isDue ? (
               <span
                 aria-hidden="true"
-                className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-100"
+                className="absolute top-3 right-2 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-100"
                 title="Jatuh tempo untuk diulas"
               />
             ) : null}
 
             {isShowcased ? (
               <>
-                <span className="absolute top-1.5 left-2 px-1.5 py-0.5 rounded bg-slate-100/90 font-brand font-black text-[8px] uppercase tracking-wider text-slate-500">
+                <span
+                  className={`absolute top-2.5 left-2 px-1.5 py-0.5 rounded font-brand font-black text-[8px] uppercase tracking-wider border ${deckStyle.levelPill}`}
+                >
                   {jlptLevel}
                 </span>
-                <div className="absolute inset-0 flex flex-col items-center justify-center px-2 pt-3.5 text-center gap-0.5">
+                <div className="absolute inset-0 flex flex-col items-center justify-center px-2 pt-4 text-center gap-0.5">
                   <span
-                    className={`font-brand font-black text-slate-900 break-keep text-center ${getAdaptiveTermSizeClass(
+                    className={`font-brand font-black text-slate-900 break-words max-w-full text-center ${getAdaptiveTermSizeClass(
                       card.front_text
                     )}`}
                   >
@@ -185,9 +221,9 @@ const FannedDeckCardsPreview = ({
                 </span>
                 <span
                   aria-hidden="true"
-                  className="absolute inset-0 flex items-center justify-center text-slate-200/70 font-brand font-black text-xl pointer-events-none select-none"
+                  className="absolute inset-0 flex items-center justify-center text-slate-200/75 font-brand font-black text-xl pointer-events-none select-none"
                 >
-                  語
+                  {thematicKanji}
                 </span>
                 <span className="absolute bottom-2 right-2 font-brand font-black text-[10px] leading-none text-slate-300 rotate-180 max-w-[54px] truncate">
                   {card.front_text}
@@ -265,51 +301,63 @@ const RATING_OPTIONS: RatingOption[] = [
 
 const DECK_ACCENT_STYLES: Record<string, DeckAccentStyle> = {
   emerald: {
-    badge: 'bg-emerald-50 text-emerald-600 border-emerald-200',
+    iconTile: 'bg-gradient-to-b from-emerald-400 to-teal-600 shadow-[0_3px_0_0_#0F766E] text-white',
     border: 'hover:border-emerald-300',
     stageBg: 'bg-gradient-to-b from-emerald-50/85 via-emerald-50/35 to-white',
     frontBorder: 'border-emerald-300',
     innerBorder: 'border-emerald-100',
+    cardTopStrip: 'bg-gradient-to-r from-emerald-400 to-teal-500',
+    levelPill: 'bg-emerald-50 text-emerald-700 border-emerald-200',
     dotHex: 'rgba(16, 185, 129, 0.18)',
   },
   blue: {
-    badge: 'bg-blue-50 text-blue-600 border-blue-200',
+    iconTile: 'bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8] text-white',
     border: 'hover:border-blue-300',
     stageBg: 'bg-gradient-to-b from-blue-50/85 via-sky-50/35 to-white',
     frontBorder: 'border-blue-300',
     innerBorder: 'border-blue-100',
+    cardTopStrip: 'bg-gradient-to-r from-sky-400 to-blue-500',
+    levelPill: 'bg-blue-50 text-blue-700 border-blue-200',
     dotHex: 'rgba(59, 130, 246, 0.18)',
   },
   amber: {
-    badge: 'bg-amber-50 text-amber-600 border-amber-200',
+    iconTile: 'bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_3px_0_0_#B45309] text-white',
     border: 'hover:border-amber-300',
     stageBg: 'bg-gradient-to-b from-amber-50/85 via-orange-50/35 to-white',
     frontBorder: 'border-amber-300',
     innerBorder: 'border-amber-100',
+    cardTopStrip: 'bg-gradient-to-r from-amber-400 to-orange-500',
+    levelPill: 'bg-amber-50 text-amber-800 border-amber-200',
     dotHex: 'rgba(245, 158, 11, 0.20)',
   },
   violet: {
-    badge: 'bg-violet-50 text-violet-600 border-violet-200',
+    iconTile: 'bg-gradient-to-b from-violet-500 to-purple-600 shadow-[0_3px_0_0_#6D28D9] text-white',
     border: 'hover:border-violet-300',
     stageBg: 'bg-gradient-to-b from-violet-50/85 via-purple-50/35 to-white',
     frontBorder: 'border-violet-300',
     innerBorder: 'border-violet-100',
+    cardTopStrip: 'bg-gradient-to-r from-violet-500 to-purple-500',
+    levelPill: 'bg-violet-50 text-violet-700 border-violet-200',
     dotHex: 'rgba(139, 92, 246, 0.18)',
   },
   cyan: {
-    badge: 'bg-cyan-50 text-cyan-600 border-cyan-200',
+    iconTile: 'bg-gradient-to-b from-cyan-400 to-sky-600 shadow-[0_3px_0_0_#0369A1] text-white',
     border: 'hover:border-cyan-300',
     stageBg: 'bg-gradient-to-b from-cyan-50/85 via-sky-50/35 to-white',
     frontBorder: 'border-cyan-300',
     innerBorder: 'border-cyan-100',
+    cardTopStrip: 'bg-gradient-to-r from-cyan-400 to-sky-500',
+    levelPill: 'bg-cyan-50 text-cyan-800 border-cyan-200',
     dotHex: 'rgba(6, 182, 212, 0.18)',
   },
   rose: {
-    badge: 'bg-rose-50 text-rose-600 border-rose-200',
+    iconTile: 'bg-gradient-to-b from-rose-400 to-pink-600 shadow-[0_3px_0_0_#BE123C] text-white',
     border: 'hover:border-rose-300',
     stageBg: 'bg-gradient-to-b from-rose-50/85 via-pink-50/35 to-white',
     frontBorder: 'border-rose-300',
     innerBorder: 'border-rose-100',
+    cardTopStrip: 'bg-gradient-to-r from-rose-400 to-pink-500',
+    levelPill: 'bg-rose-50 text-rose-700 border-rose-200',
     dotHex: 'rgba(244, 63, 94, 0.18)',
   },
 }
@@ -346,6 +394,7 @@ export const FlashcardPage = () => {
   const handledReviewParamRef = useRef<boolean>(false)
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
+  const heroPatternId = `flashcards-hero-seigaiha-${useId().replace(/:/g, '')}`
 
   const [mode, setMode] = useState<SessionMode>('lobby')
   const [lobbyLevelMemory, setLobbyLevelMemory] = useState<JlptFilter>(() =>
@@ -902,6 +951,18 @@ export const FlashcardPage = () => {
   // ── HYBRID FLASHCARD LOBBY ──
   const totalDue = dueQueue?.total_due ?? 0
   const totalLearned = dueQueue?.total_learned ?? 0
+  const levelDecksForProgress =
+    levelFilter === 'ALL'
+      ? decks
+      : decks.filter((deck) => deck.jlpt_level.toUpperCase() === levelFilter)
+  const levelTotalCards = levelDecksForProgress.reduce((sum, d) => sum + (d.total_cards || 0), 0)
+  const levelMasteredCards = levelDecksForProgress.reduce(
+    (sum, d) => sum + (d.scheduled_cards || 0),
+    0
+  )
+  const levelMasteryPercent =
+    levelTotalCards > 0 ? Math.min(100, Math.round((levelMasteredCards / levelTotalCards) * 100)) : 0
+  const levelProgressLabel = levelFilter === 'ALL' ? 'Semua Level' : `JLPT ${levelFilter}`
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -916,72 +977,135 @@ export const FlashcardPage = () => {
           ]}
         />
 
-        {/* Unified Compact Page Hero Header + Integrated Due Review CTA */}
-        <PageHeroHeader
-          theme="sky"
-          icon={<Cards weight="fill" className="w-6 h-6" />}
-          badges={
-            <>
-              <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-800">
-                Flashcard Kosakata • JLPT N5–N1
-              </span>
-              <span className="text-[11px] font-brand font-black px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
-                {filteredDecks.length} Dek Aktif
-              </span>
-            </>
-          }
-          title="Belajar & Ulas Flashcard"
-          description="Hafalkan kosakata lewat kartu flip Anki SM-2 kapan saja lintas tingkat JLPT N5 hingga N1."
-          rightSlot={
-            <div className="rounded-2xl bg-white border-2 border-sky-200/80 px-3.5 py-2.5 flex items-center justify-between sm:justify-start gap-3 shadow-2xs">
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div
-                  className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 border ${
-                    totalDue > 0
-                      ? 'bg-blue-50 text-blue-600 border-blue-200'
-                      : 'bg-emerald-50 text-emerald-600 border-emerald-200'
-                  }`}
-                >
-                  {totalDue > 0 ? (
-                    <Clock weight="fill" className="w-4.5 h-4.5" />
-                  ) : (
-                    <Sparkle weight="fill" className="w-4.5 h-4.5" />
-                  )}
-                </div>
-                <div className="min-w-0">
-                  <p className="font-brand font-black text-xs text-slate-900 leading-tight whitespace-nowrap">
-                    {dueLoading
-                      ? 'Memeriksa ulasan...'
-                      : totalDue > 0
-                        ? `${totalDue} Jatuh Tempo`
-                        : totalLearned === 0
-                          ? 'Siap Belajar'
-                          : 'Ulasan Beres'}
-                  </p>
-                  <p className="text-[11px] font-medium text-slate-500 whitespace-nowrap">
-                    {totalDue > 0
-                      ? 'Ulas agar tetap ingat'
-                      : totalLearned === 0
-                        ? 'Pilih dek di bawah'
-                        : `${totalLearned} terpantau`}
-                  </p>
-                </div>
+        {/* Custom Editorial Flashcard Hero Banner with Kodi & Fanned Vector Cards */}
+        <section className="relative rounded-3xl border-2 border-slate-200/90 bg-gradient-to-br from-sky-50/75 via-white to-blue-50/45 shadow-[0_4px_0_0_#E2E8F0] overflow-hidden">
+          <div className="h-1.5 w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500" />
+
+          {/* Subtle Japanese Seigaiha Background Pattern */}
+          <svg
+            className="absolute inset-0 w-full h-full text-sky-700 opacity-[0.055] pointer-events-none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <pattern id={heroPatternId} width="48" height="24" patternUnits="userSpaceOnUse">
+                <path
+                  d="M0 24A12 12 0 0 1 24 24M24 24A12 12 0 0 1 48 24M12 12A12 12 0 0 1 36 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
+          </svg>
+
+          <div className="relative z-10 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            {/* Left Info + Level Mastery Bar */}
+            <div className="flex items-start gap-3.5 min-w-0 flex-1">
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8] text-white flex items-center justify-center shrink-0">
+                <Cards weight="fill" className="w-6 h-6" />
               </div>
 
-              {totalDue > 0 && (
-                <Button3D
-                  variant="blue"
-                  size="sm"
-                  onClick={startDueSession}
-                  icon={<ArrowRight weight="bold" className="w-3.5 h-3.5" />}
-                  className="shrink-0"
-                >
-                  MULAI ULASAN
-                </Button3D>
-              )}
+              <div className="space-y-2.5 min-w-0 flex-1">
+                <div className="space-y-1">
+                  <div className="flex items-center flex-wrap gap-2">
+                    <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-800">
+                      Flashcard Kosakata • JLPT N5–N1
+                    </span>
+                    <span className="text-[11px] font-brand font-black px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
+                      {filteredDecks.length} Dek Aktif
+                    </span>
+                  </div>
+
+                  <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 tracking-tight leading-snug">
+                    Belajar &amp; Ulas Flashcard
+                  </h1>
+
+                  <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
+                    Hafalkan kosakata lewat kartu flip Anki SM-2 kapan saja lintas tingkat JLPT N5 hingga N1.
+                  </p>
+                </div>
+
+                {/* Mini Level Mastery Progress Bar */}
+                <div className="max-w-md space-y-1 pt-0.5">
+                  <div className="flex items-center justify-between text-[11px] font-bold">
+                    <span className="text-slate-600">
+                      {levelProgressLabel}:{' '}
+                      <span className="font-mono font-black text-slate-800">
+                        {levelMasteredCards} / {levelTotalCards} Kata Dikuasai
+                      </span>
+                    </span>
+                    <span className="font-mono font-black text-sky-700">{levelMasteryPercent}%</span>
+                  </div>
+                  <div className="h-2 w-full rounded-full bg-white border border-sky-200/80 p-0.5 overflow-hidden shadow-inner">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 transition-all duration-500"
+                      style={{ width: `${levelMasteryPercent}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
-          }
-        />
+
+            {/* Right: Custom Floating Card Mascot Illustration + Due Review Card */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
+              <FlashcardHeroIllustration
+                totalDue={totalDue}
+                totalLearned={totalLearned}
+                className="hidden md:flex shrink-0"
+              />
+
+              <div className="rounded-2xl bg-white/95 border-2 border-sky-200/85 px-4 py-3 flex items-center justify-between sm:justify-start gap-3 shadow-2xs">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div
+                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white ${
+                      totalDue > 0
+                        ? 'bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E40AF]'
+                        : 'bg-gradient-to-b from-emerald-400 to-teal-500 shadow-[0_2px_0_0_#0F766E]'
+                    }`}
+                  >
+                    {totalDue > 0 ? (
+                      <Clock weight="fill" className="w-4.5 h-4.5" />
+                    ) : (
+                      <Sparkle weight="fill" className="w-4.5 h-4.5" />
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-brand font-black text-xs text-slate-900 leading-tight whitespace-nowrap">
+                      {dueLoading
+                        ? 'Memeriksa ulasan...'
+                        : totalDue > 0
+                          ? `${totalDue} Jatuh Tempo`
+                          : totalLearned === 0
+                            ? 'Siap Belajar'
+                            : 'Ulasan Beres'}
+                    </p>
+                    <p className="text-[11px] font-medium text-slate-500 whitespace-nowrap">
+                      {totalDue > 0
+                        ? 'Ulas agar tetap ingat'
+                        : totalLearned === 0
+                          ? 'Pilih dek di bawah'
+                          : `${totalLearned} terpantau`}
+                    </p>
+                  </div>
+                </div>
+
+                {totalDue > 0 && (
+                  <Button3D
+                    variant="blue"
+                    size="sm"
+                    onClick={startDueSession}
+                    icon={<ArrowRight weight="bold" className="w-3.5 h-3.5" />}
+                    className="shrink-0"
+                  >
+                    MULAI ULASAN
+                  </Button3D>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
 
         {sessionError && (
           <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">
@@ -1024,13 +1148,28 @@ export const FlashcardPage = () => {
               ))}
             </div>
           ) : filteredDecks.length === 0 ? (
-            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 text-center space-y-2 shadow-[0_4px_0_0_#E2E8F0]">
-              <p className="font-brand font-black text-base text-slate-800">
-                Tidak ada dek yang cocok
-              </p>
-              <p className="text-xs sm:text-sm text-slate-500">
-                Coba ubah filter tingkat JLPT atau kata kunci pencarianmu.
-              </p>
+            <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 text-center space-y-3 shadow-[0_4px_0_0_#E2E8F0]">
+              <div className="flex justify-center">
+                <KodiCharacter emotion="curious" size={88} interactive />
+              </div>
+              <div className="space-y-1">
+                <p className="font-brand font-black text-base text-slate-800">
+                  Tidak ada dek yang cocok
+                </p>
+                <p className="text-xs sm:text-sm text-slate-500">
+                  Coba ubah filter tingkat JLPT atau kata kunci pencarianmu.
+                </p>
+              </div>
+              {searchQuery.trim().length > 0 && (
+                <Button3D
+                  variant="white"
+                  size="sm"
+                  onClick={() => setSearchQuery('')}
+                  className="text-xs px-4 py-2 mx-auto"
+                >
+                  Reset Pencarian
+                </Button3D>
+              )}
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
@@ -1062,22 +1201,27 @@ export const FlashcardPage = () => {
                   >
                     {sampleCards.length > 0 && (
                       <div
-                        className={`-mx-5 -mt-5 mb-0.5 px-5 pb-2 border-b border-slate-100 ${style.stageBg}`}
+                        className={`relative overflow-hidden -mx-5 -mt-5 mb-0.5 px-5 pb-2 border-b border-slate-100 ${style.stageBg}`}
                         style={{
                           backgroundImage: `radial-gradient(${style.dotHex} 1px, transparent 1px)`,
                           backgroundSize: '12px 12px',
                         }}
                       >
+                        <FlashcardDeckStageDecor
+                          iconName={deck.icon_name}
+                          accentColor={deck.accent_color}
+                        />
                         <FannedDeckCardsPreview
                           cards={sampleCards}
                           deckStyle={style}
                           jlptLevel={deck.jlpt_level}
+                          iconName={deck.icon_name}
                         />
                       </div>
                     )}
                     <div className="flex items-start gap-3.5">
                       <div
-                        className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${style.badge}`}
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${style.iconTile}`}
                       >
                         {renderDeckIcon(deck.icon_name)}
                       </div>
