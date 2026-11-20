@@ -9,10 +9,13 @@ import {
   renderCategoryIcon,
 } from '@/features/curriculum/constants/grammarStyles'
 import { KodiCharacter, type KodiEmotion } from '@/shared/components/ui/KodiCharacter'
+import { GrammarCoverDecor } from '@/features/curriculum/components/GrammarCoverDecor'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 interface EditorialCoverTheme {
   backdrop: string
+  spineBar: string
+  dotHex: string
   pillClass: string
   accentText: string
   orbBg: string
@@ -23,6 +26,8 @@ interface EditorialCoverTheme {
 const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
   particle: {
     backdrop: 'bg-gradient-to-br from-[#FEF9E7] via-[#FFFDF4] to-[#FDE68A]/55',
+    spineBar: 'bg-gradient-to-b from-amber-400 to-orange-500',
+    dotHex: 'rgba(217, 119, 6, 0.14)',
     pillClass: 'bg-slate-900 text-amber-300',
     accentText: 'text-amber-700',
     orbBg: 'bg-amber-300/30',
@@ -31,6 +36,8 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
   },
   sentence_pattern: {
     backdrop: 'bg-gradient-to-br from-[#EFF6FF] via-[#F8FBFF] to-[#BFDBFE]/55',
+    spineBar: 'bg-gradient-to-b from-sky-400 to-blue-600',
+    dotHex: 'rgba(37, 99, 235, 0.12)',
     pillClass: 'bg-slate-900 text-sky-300',
     accentText: 'text-blue-700',
     orbBg: 'bg-sky-300/30',
@@ -39,6 +46,8 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
   },
   conjugation: {
     backdrop: 'bg-gradient-to-br from-[#ECFDF5] via-[#F6FEFA] to-[#A7F3D0]/55',
+    spineBar: 'bg-gradient-to-b from-emerald-400 to-teal-600',
+    dotHex: 'rgba(5, 150, 105, 0.14)',
     pillClass: 'bg-slate-900 text-emerald-300',
     accentText: 'text-emerald-700',
     orbBg: 'bg-emerald-300/30',
@@ -47,6 +56,8 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
   },
   tense: {
     backdrop: 'bg-gradient-to-br from-[#FFF1F2] via-[#FFF9FA] to-[#FECDD3]/60',
+    spineBar: 'bg-gradient-to-b from-rose-400 to-pink-600',
+    dotHex: 'rgba(225, 29, 72, 0.12)',
     pillClass: 'bg-slate-900 text-rose-300',
     accentText: 'text-rose-700',
     orbBg: 'bg-rose-300/30',
@@ -55,6 +66,8 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
   },
   honorific: {
     backdrop: 'bg-gradient-to-br from-[#F5F3FF] via-[#FAF8FF] to-[#DDD6FE]/65',
+    spineBar: 'bg-gradient-to-b from-violet-500 to-purple-600',
+    dotHex: 'rgba(124, 58, 237, 0.13)',
     pillClass: 'bg-slate-900 text-violet-300',
     accentText: 'text-violet-700',
     orbBg: 'bg-violet-300/30',
@@ -107,10 +120,19 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
       aria-label={`Pelajari materi: ${point.title}`}
       className={`group bg-white border-2 border-slate-200/90 ${accent.hoverBorder} rounded-3xl overflow-hidden shadow-[0_4px_0_0_#E2E8F0] hover:-translate-y-0.5 hover:shadow-[0_7px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-[0_2px_0_0_#E2E8F0] transition-all flex flex-col md:flex-row focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200`}
     >
+      {/* ── TACTILE BOOK-SPINE CATEGORY ACCENT BAR ── */}
+      <div aria-hidden="true" className={`h-1.5 w-full md:h-auto md:w-2 shrink-0 ${cover.spineBar}`} />
+
       {/* ── LEFT GRAPHIC EDITORIAL COVER PANEL ── */}
       <div
-        className={`relative md:w-[320px] lg:w-[360px] shrink-0 p-5 sm:p-6 ${cover.backdrop} border-b md:border-b-0 md:border-r border-slate-200/70 flex items-center justify-between gap-3 overflow-hidden`}
+        className={`relative md:w-[316px] lg:w-[356px] shrink-0 p-5 sm:p-6 ${cover.backdrop} border-b md:border-b-0 md:border-r border-slate-200/70 flex items-center justify-between gap-3 overflow-hidden`}
+        style={{
+          backgroundImage: `radial-gradient(${cover.dotHex} 1px, transparent 1px)`,
+          backgroundSize: '12px 12px',
+        }}
       >
+        <GrammarCoverDecor category={point.category} />
+
         {/* Soft background motif */}
         <div
           aria-hidden="true"
