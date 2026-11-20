@@ -9,7 +9,7 @@ import { MonthlyBadgeEmblem } from "@/features/gamification/components/MonthlyBa
 import { CVReviewSubmissionModal } from "@/features/gamification/components/CVReviewSubmissionModal"
 import { MockInterviewScheduleModal } from "@/features/gamification/components/MockInterviewScheduleModal"
 import { DailyQuestsSection } from "@/features/gamification/components/DailyQuestsSection"
-import { MilestoneChallengesSection } from "@/features/gamification/components/MilestoneChallengesSection"
+import { MilestonesAndBadgesSection } from "@/features/gamification/components/MilestonesAndBadgesSection"
 import { AkihabaraShopSection } from "@/features/gamification/components/AkihabaraShopSection"
 import { useQuests } from "@/features/gamification/hooks/useQuests"
 import type { QuestPageTab } from "@/features/gamification/constants/gamificationCatalog"
@@ -32,11 +32,9 @@ import {
 
 export type { QuestPageTab }
 
-const EMPTY_PROGRESS_MAP: Record<string, { completed: number; total: number }> = {}
-
 const QUEST_TAB_LABELS: Record<QuestPageTab, string> = {
   daily: 'Misi Harian',
-  boss: 'Tantangan',
+  milestones: 'Ujian & Lencana',
   shop: 'Pasar Guild',
 }
 
@@ -48,7 +46,10 @@ export const QuestLogPage = () => {
     setActiveTab,
     shopCategory,
     setShopCategory,
+    badgeFilter,
+    setBadgeFilter,
     activeTrack,
+    trackProgressMap,
     isCourseSwitcherOpen,
     setIsCourseSwitcherOpen,
     selectedChestForModal,
@@ -70,7 +71,10 @@ export const QuestLogPage = () => {
     shopItems,
     filteredShopItems,
     dailyQuests,
-    milestoneChallenges,
+    levelExamSummary,
+    achievementBadges,
+    filteredBadges,
+    earnedBadgeCount,
     dailyDoneCount,
     totalDailyTarget,
     dailyProgressPercent,
@@ -86,6 +90,7 @@ export const QuestLogPage = () => {
     displayedKodiSpeech,
     handleCycleKodiTip,
     isLoading,
+    isMilestonesLoading,
     claimingQuestId,
     handleClaimDailyQuest,
     handleSelectTrack,
@@ -163,9 +168,9 @@ export const QuestLogPage = () => {
                       Icon: Lightning,
                     },
                     {
-                      id: 'boss' as QuestPageTab,
-                      label: 'Tantangan',
-                      badge: `${milestoneChallenges.length}`,
+                      id: 'milestones' as QuestPageTab,
+                      label: 'Ujian & Lencana',
+                      badge: `${earnedBadgeCount}/${achievementBadges.length || 7}`,
                       Icon: Trophy,
                     },
                     {
@@ -242,14 +247,18 @@ export const QuestLogPage = () => {
                 />
               )}
 
-              {activeTab === 'boss' && (
-                <MilestoneChallengesSection
-                  challenges={milestoneChallenges}
-                  onStartChallenge={(route) => navigate(route)}
-                  onContinueCurriculum={() => {
-                    triggerHaptic('tap')
-                    navigate('/curriculum')
-                  }}
+              {activeTab === 'milestones' && (
+                <MilestonesAndBadgesSection
+                  examSummary={levelExamSummary}
+                  badges={filteredBadges}
+                  totalBadgeCount={achievementBadges.length}
+                  earnedBadgeCount={earnedBadgeCount}
+                  badgeFilter={badgeFilter}
+                  onChangeBadgeFilter={setBadgeFilter}
+                  isLoading={isMilestonesLoading}
+                  onNavigate={(route) => navigate(route)}
+                  onSwitchToDaily={() => setActiveTab('daily')}
+                  onOpenTrackSwitcher={() => setIsCourseSwitcherOpen(true)}
                 />
               )}
 
@@ -506,7 +515,7 @@ export const QuestLogPage = () => {
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
         onSelectTrack={(langId) => void handleSelectTrack(langId)}
-        trackProgressMap={EMPTY_PROGRESS_MAP}
+        trackProgressMap={trackProgressMap}
       />
 
       {selectedChestForModal && (

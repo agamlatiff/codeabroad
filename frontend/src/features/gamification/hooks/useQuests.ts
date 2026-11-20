@@ -1,11 +1,24 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { isAxiosError } from 'axios'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useUser } from '@/features/user/hooks/useUser'
 import { useUserActivity } from '@/features/user/hooks/useUserActivity'
 import { languageService } from '@/features/curriculum/services/languageService'
-import { CURRICULUM_QUERY_KEY } from '@/features/curriculum/services/curriculumService'
+import {
+  curriculumService,
+  CURRICULUM_QUERY_KEY,
+} from '@/features/curriculum/services/curriculumService'
+import type { CurriculumResponse, LessonNodeResponse } from '@/features/curriculum/types/curriculum'
+import {
+  flashcardService,
+  FLASHCARD_DECKS_QUERY_KEY,
+} from '@/features/flashcard/services/flashcardService'
+import {
+  exerciseService,
+  EXAM_RESULT_QUERY_KEY,
+} from '@/features/exercise/services/exerciseService'
 import {
   gamificationService,
   GAMIFICATION_STATUS_QUERY_KEY,
@@ -14,10 +27,11 @@ import {
 } from '@/features/gamification/services/gamificationService'
 import {
   SHOP_ITEMS,
-  MILESTONE_CHALLENGES,
+  type AchievementBadgeViewItem,
+  type BadgeFilterTab,
   type DailyChestItem,
   type DailyQuestViewItem,
-  type MilestoneChallengeViewItem,
+  type LevelExamSummary,
   type QuestPageTab,
   type ShopCategoryFilter,
   type ShopItem,
@@ -42,7 +56,7 @@ import type { MockInterviewSchedulePayload } from '@/features/gamification/compo
 
 export type QuestTab = 'all' | 'daily' | 'main' | 'side'
 
-const VALID_QUEST_TABS: ReadonlySet<QuestPageTab> = new Set(['daily', 'boss', 'shop'])
+const VALID_QUEST_TABS: ReadonlySet<QuestPageTab> = new Set(['daily', 'milestones', 'shop'])
 const URGENT_RESET_THRESHOLD_MS = 2 * 60 * 60 * 1000
 
 const KODI_QUEST_TIPS: ReadonlyArray<{ emotion: KodiEmotion; speech: string }> = [
@@ -69,8 +83,59 @@ const KODI_QUEST_TIPS: ReadonlyArray<{ emotion: KodiEmotion; speech: string }> =
 ]
 
 function parseQuestTabParam(raw: string | null): QuestPageTab {
-  const lower = (raw ?? '').trim().toLowerCase() as QuestPageTab
-  return VALID_QUEST_TABS.has(lower) ? lower : 'daily'
+  const lower = (raw ?? '').trim().toLowerCase()
+  if (lower === 'boss' || lower === 'badges' || lower === 'exam' || lower === 'milestones') {
+    return 'milestones'
+  }
+  if (lower === 'shop') return 'shop'
+  return VALID_QUEST_TABS.has(lower as QuestPageTab) ? (lower as QuestPageTab) : 'daily'
+}
+
+function cleanLessonDisplayTitle(title: string, shortTitle?: string): string {
+  if (shortTitle?.trim()) return shortTitle.trim()
+  return title.replace(/^(?:pelajaran|lesson)\s*\d+\s*[:.\-–—]\s*/i, '').trim() || title
+}
+
+function resolveNextActiveLesson(curriculum: CurriculumResponse | null): {
+  route: string
+  title: string | null
+} {
+  if (!curriculum) return { route: '/curriculum', title: null }
+  let fallbackUnlocked: LessonNodeResponse | null = null
+
+  for (const unit of curriculum.units ?? []) {
+    for (const lesson of unit.lessons ?? []) {
+      if (curriculum.current_lesson_id && lesson.id === curriculum.current_lesson_id) {
+        return {
+          route: `/learn/${lesson.slug || lesson.id}`,
+          title: cleanLessonDisplayTitle(lesson.title, lesson.short_title),
+        }
+      }
+      if (!fallbackUnlocked && lesson.is_unlocked && !lesson.is_completed) {
+        fallbackUnlocked = lesson
+      }
+    }
+  }
+
+  if (fallbackUnlocked) {
+    return {
+      route: `/learn/${fallbackUnlocked.slug || fallbackUnlocked.id}`,
+      title: cleanLessonDisplayTitle(fallbackUnlocked.title, fallbackUnlocked.short_title),
+    }
+  }
+
+  return { route: '/curriculum', title: null }
+}
+
+function formatEarnedDate(isoDate?: string | null): string | null {
+  if (!isoDate) return null
+  const parsed = new Date(isoDate)
+  if (Number.isNaN(parsed.getTime())) return null
+  return parsed.toLocaleDateString('id-ID', {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  })
 }
 
 function formatDisplayFirstName(rawName?: string): string {
@@ -112,6 +177,7 @@ export const useQuests = () => {
 
   const [activeTipIndex, setActiveTipIndex] = useState<number | null>(null)
   const [shopCategory, setShopCategory] = useState<ShopCategoryFilter>('all')
+  const [badgeFilter, setBadgeFilter] = useState<BadgeFilterTab>('all')
 
   const setActiveTab = useCallback(
     (nextTab: QuestPageTab) => {
@@ -183,6 +249,67 @@ export const useQuests = () => {
     queryKey: [...GAMIFICATION_BADGES_QUERY_KEY, userId],
     queryFn: ({ signal }) => gamificationService.listBadges({ signal }),
     enabled: Boolean(user),
+    staleTime: 120_000,
+  })
+
+  const curriculumQuery = useQuery({
+    queryKey: [...CURRICULUM_QUERY_KEY, userId],
+    queryFn: ({ signal }) => curriculumService.getCurriculum(undefined, { signal }),
+    enabled: Boolean(user),
+    staleTime: 120_000,
+  })
+
+  const enrollmentsQuery = useQuery({
+    queryKey: getLanguageEnrollmentsQueryKey(userId),
+    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    enabled: Boolean(user),
+    staleTime: 120_000,
+  })
+
+  const activeCurriculum = curriculumQuery.data ?? null
+  const activeLevel = activeCurriculum?.level ?? null
+  const activeLevelId = activeLevel?.id ?? ''
+  const activeLangCode = activeCurriculum?.language?.code || 'ja'
+
+  const earnedBadgeByKey = useMemo(() => {
+    const map = new Map<string, string>()
+    const list = badgesQuery.data?.user_badges ?? statusQuery.data?.badges ?? []
+    for (const item of list) {
+      map.set(item.badge_key, item.awarded_at)
+    }
+    return map
+  }, [badgesQuery.data?.user_badges, statusQuery.data?.badges])
+
+  const completedCurriculumLessons = activeCurriculum?.completed_lessons ?? 0
+  const totalCurriculumLessons = activeCurriculum?.total_lessons ?? 0
+  const allLevelLessonsCompleted =
+    totalCurriculumLessons > 0 && completedCurriculumLessons >= totalCurriculumLessons
+  const activeLevelCodeLower = (activeLevel?.code ?? '').toLowerCase()
+  const hasLevelMasteryBadge = Boolean(
+    activeLevelCodeLower && earnedBadgeByKey.has(`${activeLevelCodeLower}_mastery`)
+  )
+
+  const flashcardDecksQuery = useQuery({
+    queryKey: [...FLASHCARD_DECKS_QUERY_KEY, activeLangCode, userId],
+    queryFn: ({ signal }) => flashcardService.listDecks(activeLangCode, { signal }),
+    enabled: Boolean(user && activeTab === 'milestones'),
+    staleTime: 120_000,
+  })
+
+  const examResultQuery = useQuery({
+    queryKey: [...EXAM_RESULT_QUERY_KEY, activeLevelId, userId],
+    queryFn: async ({ signal }) => {
+      try {
+        return await exerciseService.getExamResult(activeLevelId, { signal })
+      } catch (err) {
+        if (isAxiosError(err) && err.response?.status === 404) {
+          return null
+        }
+        throw err
+      }
+    },
+    enabled: Boolean(user && activeLevelId && (allLevelLessonsCompleted || hasLevelMasteryBadge)),
+    retry: false,
     staleTime: 120_000,
   })
 
@@ -319,18 +446,214 @@ export const useQuests = () => {
     [dailyQuestsQuery.data]
   )
 
-  const earnedBadgeKeys = useMemo(() => {
-    const list = badgesQuery.data?.user_badges ?? gamificationStatus?.badges ?? []
-    return new Set(list.map((b) => b.badge_key))
-  }, [badgesQuery.data?.user_badges, gamificationStatus?.badges])
+  const levelExamSummary = useMemo<LevelExamSummary | null>(() => {
+    if (!activeCurriculum || !activeLevel?.id) return null
+    const nextLesson = resolveNextActiveLesson(activeCurriculum)
+    const passedResult = examResultQuery.data ?? null
+    const status: LevelExamSummary['status'] = passedResult?.attempt?.is_passed
+      ? 'passed'
+      : allLevelLessonsCompleted
+        ? 'ready'
+        : 'locked'
+    const totalLessons = activeCurriculum.total_lessons
+    const completedLessons = Math.min(totalLessons, activeCurriculum.completed_lessons)
+    const progressPercent =
+      totalLessons > 0 ? Math.min(100, Math.round((completedLessons / totalLessons) * 100)) : 0
 
-  const milestoneChallenges = useMemo<MilestoneChallengeViewItem[]>(
-    () =>
-      MILESTONE_CHALLENGES.map((challenge) => ({
-        ...challenge,
-        isCompleted: earnedBadgeKeys.has(challenge.id),
-      })),
-    [earnedBadgeKeys]
+    return {
+      levelId: activeLevel.id,
+      levelCode: activeLevel.code,
+      languageName: activeCurriculum.language?.name || 'Bahasa Target',
+      examName: activeLevel.official_exam_name || `Evaluasi Kesiapan ${activeLevel.code}`,
+      passingScorePercent: activeLevel.passing_score_percent || 60,
+      completedLessons,
+      totalLessons,
+      progressPercent,
+      status,
+      nextLessonRoute: nextLesson.route,
+      nextLessonTitle: nextLesson.title,
+      examRoute: `/exam/${encodeURIComponent(activeLevel.id)}`,
+      passedResult,
+    }
+  }, [activeCurriculum, activeLevel, allLevelLessonsCompleted, examResultQuery.data])
+
+  const enrolledLanguageCount = enrollmentsQuery.data?.length ?? (activeCurriculum ? 1 : 0)
+  const learnedFlashcardsCount = useMemo(
+    () => (flashcardDecksQuery.data ?? []).reduce((sum, deck) => sum + (deck.learned_cards || 0), 0),
+    [flashcardDecksQuery.data]
+  )
+  const currentUserStreak = gamificationStatus?.streak ?? user?.streak ?? 0
+
+  const achievementBadges = useMemo<AchievementBadgeViewItem[]>(() => {
+    const catalog = badgesQuery.data?.catalog ?? []
+    const nextLessonRoute = levelExamSummary?.nextLessonRoute ?? '/curriculum'
+
+    const items = catalog.map<AchievementBadgeViewItem>((def) => {
+      const awardedAtIso = earnedBadgeByKey.get(def.id) ?? null
+      const isEarned = earnedBadgeByKey.has(def.id)
+      const awardedAt = formatEarnedDate(awardedAtIso)
+
+      let description = def.description
+      let currentProgress = isEarned ? 1 : 0
+      let targetProgress = 1
+      let progressLabel = isEarned ? '1/1 Tercapai' : '0/1 Tercapai'
+      let actionLabel: string | null = null
+      let actionType: AchievementBadgeViewItem['actionType'] = null
+      let actionRoute: string | undefined
+
+      switch (def.id) {
+        case 'akihabara_novice': {
+          currentProgress = isEarned ? 1 : 0
+          targetProgress = 1
+          progressLabel = isEarned ? '1/1 Onboarding Selesai' : '0/1 Onboarding'
+          break
+        }
+        case 'first_step': {
+          currentProgress = isEarned ? 1 : Math.min(1, completedCurriculumLessons)
+          targetProgress = 1
+          progressLabel = `${currentProgress}/1 Pelajaran`
+          if (!isEarned) {
+            actionLabel = 'Mulai Pelajaran'
+            actionType = 'navigate'
+            actionRoute = nextLessonRoute
+          }
+          break
+        }
+        case 'streak_7': {
+          targetProgress = 7
+          currentProgress = isEarned ? 7 : Math.min(7, currentUserStreak)
+          progressLabel = `${currentProgress}/7 Hari`
+          if (!isEarned) {
+            actionLabel = 'Ke Misi Harian'
+            actionType = 'switch_tab_daily'
+          }
+          break
+        }
+        case 'streak_30': {
+          targetProgress = 30
+          currentProgress = isEarned ? 30 : Math.min(30, currentUserStreak)
+          progressLabel = `${currentProgress}/30 Hari`
+          if (!isEarned) {
+            actionLabel = 'Ke Misi Harian'
+            actionType = 'switch_tab_daily'
+          }
+          break
+        }
+        case 'srs_veteran': {
+          targetProgress = 25
+          currentProgress = isEarned ? 25 : Math.min(25, learnedFlashcardsCount)
+          progressLabel = flashcardDecksQuery.data
+            ? `${currentProgress}/25 Kartu`
+            : 'Target: 25 Kartu SRS'
+          if (!isEarned) {
+            actionLabel = 'Latihan Flashcard'
+            actionType = 'navigate'
+            actionRoute = '/flashcards'
+          }
+          break
+        }
+        case 'n5_mastery': {
+          description = 'Meraih skor ≥ 80% pada Ujian Kesiapan JLPT N5 (kelulusan level ≥ 60%).'
+          if (isEarned || levelExamSummary?.status === 'passed') {
+            currentProgress = 1
+            targetProgress = 1
+            progressLabel = 'Skor ≥ 80% Tercapai'
+          } else if (levelExamSummary && levelExamSummary.totalLessons > 0) {
+            currentProgress = levelExamSummary.completedLessons
+            targetProgress = levelExamSummary.totalLessons
+            progressLabel =
+              levelExamSummary.status === 'ready'
+                ? 'Ujian Siap • Butuh ≥ 80%'
+                : `${currentProgress}/${targetProgress} Pelajaran`
+          } else {
+            progressLabel = 'Selesaikan Unit & Ujian N5'
+          }
+          if (!isEarned) {
+            if (levelExamSummary?.status === 'ready') {
+              actionLabel = 'Mulai Ujian N5'
+              actionType = 'navigate'
+              actionRoute = levelExamSummary.examRoute
+            } else {
+              actionLabel = 'Lanjutkan Kurikulum'
+              actionType = 'navigate'
+              actionRoute = nextLessonRoute
+            }
+          }
+          break
+        }
+        case 'multilingual_explorer': {
+          targetProgress = 2
+          currentProgress = isEarned ? 2 : Math.min(2, enrolledLanguageCount)
+          progressLabel = `${currentProgress}/2 Bahasa`
+          if (!isEarned) {
+            actionLabel = 'Tambah Bahasa'
+            actionType = 'open_track_switcher'
+          }
+          break
+        }
+        default: {
+          if (!isEarned) {
+            actionLabel = 'Lanjutkan Belajar'
+            actionType = 'navigate'
+            actionRoute = '/curriculum'
+          }
+          break
+        }
+      }
+
+      const progressPercent =
+        isEarned
+          ? 100
+          : targetProgress > 0
+            ? Math.min(100, Math.round((currentProgress / targetProgress) * 100))
+            : 0
+
+      return {
+        id: def.id,
+        title: def.title,
+        description,
+        category: def.category,
+        icon: def.icon,
+        xpReward: def.xp_reward,
+        isEarned,
+        awardedAt,
+        currentProgress,
+        targetProgress,
+        progressLabel,
+        progressPercent,
+        actionLabel,
+        actionType,
+        actionRoute,
+      }
+    })
+
+    return items.sort((a, b) => {
+      if (a.isEarned !== b.isEarned) return a.isEarned ? -1 : 1
+      if (!a.isEarned && !b.isEarned && b.progressPercent !== a.progressPercent) {
+        return b.progressPercent - a.progressPercent
+      }
+      return a.xpReward - b.xpReward
+    })
+  }, [
+    badgesQuery.data?.catalog,
+    completedCurriculumLessons,
+    currentUserStreak,
+    earnedBadgeByKey,
+    enrolledLanguageCount,
+    flashcardDecksQuery.data,
+    learnedFlashcardsCount,
+    levelExamSummary,
+  ])
+
+  const filteredBadges = useMemo(() => {
+    if (badgeFilter === 'earned') return achievementBadges.filter((b) => b.isEarned)
+    if (badgeFilter === 'locked') return achievementBadges.filter((b) => !b.isEarned)
+    return achievementBadges
+  }, [achievementBadges, badgeFilter])
+
+  const earnedBadgeCount = useMemo(
+    () => achievementBadges.filter((b) => b.isEarned).length,
+    [achievementBadges]
   )
 
   const dailyDoneCount = dailyQuests.filter((d) => d.isCompleted).length
@@ -378,12 +701,20 @@ export const useQuests = () => {
       }
     }
 
-    if (activeTab === 'boss') {
+    if (activeTab === 'milestones') {
+      if (levelExamSummary?.status === 'ready') {
+        return {
+          emotion: 'cheering' as KodiEmotion,
+          badge: 'Ujian Siap Dibuka!',
+          badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
+          speech: `Semua pelajaran ${levelExamSummary.levelCode} sudah beres, ${userFirstName}! Yuk uji kemampuanmu untuk naik tingkat.`,
+        }
+      }
       return {
         emotion: 'explaining' as KodiEmotion,
         badge: timeGreeting,
         badgeBg: 'bg-violet-100 text-violet-900 border-violet-300',
-        speech: `Tantangan S-Rank menguji kesiapan levelmu, ${userFirstName}. Selesaikan modul kurikulum untuk meraih bounty besar!`,
+        speech: `Kamu sudah meraih ${earnedBadgeCount} dari ${achievementBadges.length || 7} lencana, ${userFirstName}. Kejar milestone terdekat untuk bonus XP!`,
       }
     }
 
@@ -420,7 +751,18 @@ export const useQuests = () => {
       badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
       speech: `Keren, ${userFirstName}! Tinggal ${totalDailyTarget - dailyDoneCount} misi lagi untuk membuka Peti Emas Harian!`,
     }
-  }, [activeTab, dailyDoneCount, isResetUrgent, timeGreeting, totalDailyTarget, userFirstName, userGems])
+  }, [
+    achievementBadges.length,
+    activeTab,
+    dailyDoneCount,
+    earnedBadgeCount,
+    isResetUrgent,
+    levelExamSummary,
+    timeGreeting,
+    totalDailyTarget,
+    userFirstName,
+    userGems,
+  ])
 
   const activeTip = activeTipIndex !== null ? KODI_QUEST_TIPS[activeTipIndex] : null
   const displayedKodiEmotion = activeTip ? activeTip.emotion : kodiCompanion.emotion
@@ -477,23 +819,35 @@ export const useQuests = () => {
     async (languageId: string) => {
       if (!languageId) return
       try {
+        const isAlreadyEnrolled = (enrollmentsQuery.data ?? []).some(
+          (enrollment) => enrollment.language_id === languageId
+        )
+        if (!isAlreadyEnrolled) {
+          await languageService.enrollLanguage(languageId)
+        }
         await languageService.switchActiveLanguage(languageId)
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: getLanguageEnrollmentsQueryKey(userId) }),
           queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
+          queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_BADGES_QUERY_KEY, userId] }),
+          queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, userId] }),
+          queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY }),
         ])
         triggerHaptic('success')
         setActiveTrack(languageId)
         setIsCourseSwitcherOpen(false)
+        if (!isAlreadyEnrolled) {
+          showToast('Berhasil mendaftar & beralih ke bahasa baru!')
+        }
       } catch (err: unknown) {
         triggerHaptic('error')
         audioEngine.playError()
         showToast(extractApiErrorMessage(err, 'Gagal mengganti bahasa aktif. Silakan coba lagi.'))
       }
     },
-    [queryClient, showToast, userId]
+    [enrollmentsQuery.data, queryClient, showToast, userId]
   )
 
   const handleOpenChest = useCallback(
@@ -616,9 +970,22 @@ export const useQuests = () => {
   const dailyProgressPercent =
     totalDailyTarget > 0 ? Math.min(100, Math.round((dailyDoneCount / totalDailyTarget) * 100)) : 0
 
-  const totalCount = dailyQuests.length + MILESTONE_CHALLENGES.length
-  const completedCount =
-    dailyDoneCount + milestoneChallenges.filter((challenge) => challenge.isCompleted).length
+  const trackProgressMap = useMemo<Record<string, { completed: number; total: number }>>(() => {
+    if (!activeCurriculum?.language) return {}
+    const stats = {
+      completed: activeCurriculum.completed_lessons,
+      total: activeCurriculum.total_lessons,
+    }
+    return {
+      [activeCurriculum.language.id]: stats,
+      [activeCurriculum.language.code]: stats,
+    }
+  }, [activeCurriculum])
+
+  const resolvedActiveTrack = activeTrack || activeCurriculum?.language?.code || ''
+
+  const totalCount = dailyQuests.length + achievementBadges.length
+  const completedCount = dailyDoneCount + earnedBadgeCount
   const progressPercent =
     totalCount > 0 ? Math.min(100, Math.round((completedCount / totalCount) * 100)) : 0
 
@@ -627,7 +994,10 @@ export const useQuests = () => {
     setActiveTab,
     shopCategory,
     setShopCategory,
-    activeTrack,
+    badgeFilter,
+    setBadgeFilter,
+    activeTrack: resolvedActiveTrack,
+    trackProgressMap,
     isCourseSwitcherOpen,
     setIsCourseSwitcherOpen,
     selectedChestForModal,
@@ -649,7 +1019,10 @@ export const useQuests = () => {
     shopItems,
     filteredShopItems,
     dailyQuests,
-    milestoneChallenges,
+    levelExamSummary,
+    achievementBadges,
+    filteredBadges,
+    earnedBadgeCount,
     dailyDoneCount,
     totalDailyTarget,
     dailyProgressPercent,
@@ -669,6 +1042,7 @@ export const useQuests = () => {
     totalCount,
     progressPercent,
     isLoading: statusQuery.isLoading || dailyQuestsQuery.isLoading,
+    isMilestonesLoading: badgesQuery.isLoading || curriculumQuery.isLoading,
     claimingQuestId,
     handleClaimDailyQuest,
     handleSelectTrack,

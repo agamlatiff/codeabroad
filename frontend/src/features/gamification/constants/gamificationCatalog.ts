@@ -3,14 +3,15 @@ import {
   Flask,
   FileText,
   Microphone,
-  Fire,
-  GraduationCap,
   type Icon,
 } from '@phosphor-icons/react'
+import type { ReadinessExamResponse } from '@/features/exercise/types/exercise'
 
-export type QuestPageTab = 'daily' | 'boss' | 'shop'
+export type QuestPageTab = 'daily' | 'milestones' | 'shop'
 
 export type ShopCategoryFilter = 'all' | 'protection' | 'booster' | 'career'
+
+export type BadgeFilterTab = 'all' | 'earned' | 'locked'
 
 export interface ShopItem {
   id: string
@@ -55,21 +56,38 @@ export interface DailyQuestViewItem {
   progressPercent: number
 }
 
-export interface MilestoneChallengeConfig {
-  id: string
-  title: string
-  subtitle: string
-  tags: string[]
-  icon: string
-  iconComponent: Icon
-  iconBg: string
-  xp_reward: number
-  gem_reward: number
-  route: string
+export interface LevelExamSummary {
+  levelId: string
+  levelCode: string
+  languageName: string
+  examName: string
+  passingScorePercent: number
+  completedLessons: number
+  totalLessons: number
+  progressPercent: number
+  status: 'locked' | 'ready' | 'passed'
+  nextLessonRoute: string
+  nextLessonTitle: string | null
+  examRoute: string
+  passedResult: ReadinessExamResponse | null
 }
 
-export interface MilestoneChallengeViewItem extends MilestoneChallengeConfig {
-  isCompleted: boolean
+export interface AchievementBadgeViewItem {
+  id: string
+  title: string
+  description: string
+  category: string
+  icon: string
+  xpReward: number
+  isEarned: boolean
+  awardedAt: string | null
+  currentProgress: number
+  targetProgress: number
+  progressLabel: string
+  progressPercent: number
+  actionLabel: string | null
+  actionType: 'navigate' | 'switch_tab_daily' | 'open_track_switcher' | null
+  actionRoute?: string
 }
 
 export const DAILY_CHEST_TIERS: DailyChestTierConfig[] = [
@@ -96,35 +114,6 @@ export const DAILY_CHEST_TIERS: DailyChestTierConfig[] = [
     gemReward: 30,
     xpReward: 100,
     icon: 'gold',
-  },
-]
-
-export const MILESTONE_CHALLENGES: MilestoneChallengeConfig[] = [
-  {
-    id: 'boss-level-evaluation',
-    title: 'Evaluasi Kesiapan Level & Kosakata Inti',
-    subtitle:
-      'Uji penguasaan membaca, menyimak, menulis, dan berbicara pada kurikulum bahasa aktif sebelum naik tingkat.',
-    tags: ['EVALUASI LEVEL', 'READING', 'LISTENING'],
-    icon: '🔥',
-    iconComponent: Fire,
-    iconBg: 'bg-gradient-to-b from-orange-400 to-rose-500 shadow-[0_3px_0_0_#BE123C]',
-    xp_reward: 250,
-    gem_reward: 50,
-    route: '/curriculum',
-  },
-  {
-    id: 'capstone-global-communication',
-    title: 'Simulasi Komunikasi Profesional & Sertifikasi',
-    subtitle:
-      'Latihan dialog situasi kerja internasional, tata bahasa formal, serta kesiapan ujian resmi (JLPT / IELTS / Goethe / HSK / DELF).',
-    tags: ['SPEAKING', 'WRITING', 'SERTIFIKASI'],
-    icon: '🏛️',
-    iconComponent: GraduationCap,
-    iconBg: 'bg-gradient-to-b from-indigo-500 to-violet-600 shadow-[0_3px_0_0_#4338CA]',
-    xp_reward: 500,
-    gem_reward: 100,
-    route: '/curriculum',
   },
 ]
 
