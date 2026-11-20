@@ -218,6 +218,20 @@ const JLPT_FILTER_OPTIONS: Array<{ value: JlptFilter; label: string }> = [
   { value: 'ALL', label: 'Semua' },
 ]
 
+const VALID_JLPT_FILTERS: ReadonlySet<JlptFilter> = new Set([
+  'ALL',
+  'N5',
+  'N4',
+  'N3',
+  'N2',
+  'N1',
+])
+
+function parseFlashcardLevelParam(raw: string | null): JlptFilter {
+  const upper = (raw ?? '').trim().toUpperCase() as JlptFilter
+  return VALID_JLPT_FILTERS.has(upper) ? upper : 'N5'
+}
+
 const RATING_OPTIONS: RatingOption[] = [
   {
     quality: 1,
@@ -329,12 +343,19 @@ export const FlashcardPage = () => {
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const handledDeckParamRef = useRef<string | null>(null)
+  const handledReviewParamRef = useRef<boolean>(false)
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
 
   const [mode, setMode] = useState<SessionMode>('lobby')
-  // Default to N5 so the lobby opens focused instead of showing every JLPT deck at once.
-  const [levelFilter, setLevelFilter] = useState<JlptFilter>('N5')
+  const [lobbyLevelMemory, setLobbyLevelMemory] = useState<JlptFilter>(() =>
+    parseFlashcardLevelParam(searchParams.get('level'))
+  )
+  const rawLevelParam = searchParams.get('level')
+  const levelFilter = useMemo(
+    () => (rawLevelParam ? parseFlashcardLevelParam(rawLevelParam) : lobbyLevelMemory),
+    [rawLevelParam, lobbyLevelMemory]
+  )
   const [searchQuery, setSearchQuery] = useState('')
 
   const [sessionTitle, setSessionTitle] = useState('')
@@ -435,11 +456,29 @@ export const FlashcardPage = () => {
     []
   )
 
+  const handleSelectLevel = (nextLevel: JlptFilter) => {
+    setLobbyLevelMemory(nextLevel)
+    setSearchParams({ level: nextLevel }, { replace: true })
+  }
+
+  // Canonicalize lobby URL so default N5 reflects explicitly in ?level=N5
+  useEffect(() => {
+    if (mode !== 'lobby') return
+    if (searchParams.has('deck') || searchParams.get('mode') === 'review') return
+    const currentRaw = searchParams.get('level')
+    const normalized = parseFlashcardLevelParam(currentRaw)
+    if (!currentRaw || currentRaw.trim().toUpperCase() !== normalized) {
+      setSearchParams({ level: lobbyLevelMemory }, { replace: true })
+    }
+  }, [lobbyLevelMemory, mode, searchParams, setSearchParams])
+
   const startDeckSession = useCallback(
     async (deck: FlashcardDeck) => {
       triggerHaptic('tap')
       setLoadingSession(true)
       setSessionError(null)
+      handledDeckParamRef.current = deck.id
+      setSearchParams({ deck: deck.id }, { replace: true })
       try {
         const detail = await flashcardService.getDeck(deck.id)
         if (detail.cards.length === 0) {
@@ -453,7 +492,7 @@ export const FlashcardPage = () => {
         setLoadingSession(false)
       }
     },
-    [initSessionQueue]
+    [initSessionQueue, setSearchParams]
   )
 
   // Deep-link handler: /flashcards?deck=<id> starts that deck directly once loaded
@@ -465,7 +504,6 @@ export const FlashcardPage = () => {
     if (!targetDeck) return
 
     handledDeckParamRef.current = requestedDeckId
-    setSearchParams({}, { replace: true })
 
     let cancelled = false
     flashcardService
@@ -487,11 +525,30 @@ export const FlashcardPage = () => {
     return () => {
       cancelled = true
     }
-  }, [decks, decksLoading, initSessionQueue, searchParams, setSearchParams])
+  }, [decks, decksLoading, initSessionQueue, searchParams])
+
+  // Deep-link handler: /flashcards?mode=review starts due queue automatically if available
+  useEffect(() => {
+    if (searchParams.get('mode') !== 'review') return
+    if (handledReviewParamRef.current || mode !== 'lobby') return
+    if (dueLoading || !dueQueue || dueQueue.cards.length === 0) return
+    handledReviewParamRef.current = true
+    let cancelled = false
+    Promise.resolve(dueQueue.cards).then((cards) => {
+      if (!cancelled) {
+        initSessionQueue(cards, 'Ulasan Terjadwal', null)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [dueLoading, dueQueue, initSessionQueue, mode, searchParams])
 
   const startDueSession = () => {
     if (!dueQueue || dueQueue.cards.length === 0) return
     triggerHaptic('tap')
+    handledReviewParamRef.current = true
+    setSearchParams({ mode: 'review' }, { replace: true })
     initSessionQueue(dueQueue.cards, 'Ulasan Terjadwal', null)
   }
 
@@ -602,6 +659,9 @@ export const FlashcardPage = () => {
 
   const exitToLobby = () => {
     triggerHaptic('tap')
+    handledDeckParamRef.current = null
+    handledReviewParamRef.current = false
+    setSearchParams({ level: lobbyLevelMemory }, { replace: true })
     setMode('lobby')
     setQueue([])
     setCardMap({})
@@ -937,7 +997,7 @@ export const FlashcardPage = () => {
             count: levelCounts[opt.value],
           }))}
           selectedLevel={levelFilter}
-          onSelectLevel={(v) => setLevelFilter(v as JlptFilter)}
+          onSelectLevel={(v) => handleSelectLevel(v as JlptFilter)}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           searchPlaceholder="Cari judul atau topik dek..."

@@ -1,3 +1,5 @@
+import { useEffect, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { PageHeroHeader } from "@/shared/components/ui/PageHeroHeader"
@@ -17,7 +19,24 @@ import { triggerHaptic } from "@/shared/utils/haptics"
 import { soundEngine } from "@/shared/utils/audio"
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 
+const VALID_LEAGUE_DIVISIONS: ReadonlySet<LeagueDivision> = new Set([
+  'bronze',
+  'silver',
+  'gold',
+  'diamond',
+])
+
 export const LeaderboardPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams()
+  const rawDivisionParam = searchParams.get('division')?.trim().toLowerCase() ?? ''
+  const urlDivision = useMemo(
+    () =>
+      VALID_LEAGUE_DIVISIONS.has(rawDivisionParam as LeagueDivision)
+        ? (rawDivisionParam as LeagueDivision)
+        : undefined,
+    [rawDivisionParam]
+  )
+
   const {
     leaderboard,
     activeDivision,
@@ -26,12 +45,20 @@ export const LeaderboardPage = () => {
     error,
     selectDivision,
     refetch,
-  } = useWeeklyLeaderboard()
+  } = useWeeklyLeaderboard({ initialDivision: urlDivision })
+
+  useEffect(() => {
+    if (isLoading || !activeDivision) return
+    if (rawDivisionParam !== activeDivision) {
+      setSearchParams({ division: activeDivision }, { replace: true })
+    }
+  }, [activeDivision, isLoading, rawDivisionParam, setSearchParams])
 
   const handleSelectDivision = (div: LeagueDivision) => {
     triggerHaptic('tap')
     soundEngine.playLevelUp()
     selectDivision(div)
+    setSearchParams({ division: div }, { replace: true })
   }
 
   const daysLabel =

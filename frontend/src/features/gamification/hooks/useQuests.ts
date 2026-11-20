@@ -1,4 +1,5 @@
 import { useState, useMemo, useCallback, useEffect, useRef } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useUser } from '@/features/user/hooks/useUser'
@@ -40,12 +41,20 @@ import type { MockInterviewSchedulePayload } from '@/features/gamification/compo
 
 export type QuestTab = 'all' | 'daily' | 'main' | 'side'
 
+const VALID_QUEST_TABS: ReadonlySet<QuestPageTab> = new Set(['daily', 'boss', 'shop'])
+
+function parseQuestTabParam(raw: string | null): QuestPageTab {
+  const lower = (raw ?? '').trim().toLowerCase() as QuestPageTab
+  return VALID_QUEST_TABS.has(lower) ? lower : 'daily'
+}
+
 /**
  * Pure backend-backed SSOT controller hook for QuestLogPage (/quests).
  * Avoids client-only localStorage gamification overrides and 1s parent timer ticks.
  */
 export const useQuests = () => {
   const queryClient = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
   const { user, updateUser } = useAuthStore()
   const userId = user?.id ?? 'anonymous'
 
@@ -54,7 +63,22 @@ export const useQuests = () => {
     data: { activitySummary },
   } = useUserActivity()
 
-  const [activeTab, setActiveTab] = useState<QuestPageTab>('daily')
+  const rawTabParam = searchParams.get('tab')
+  const activeTab = useMemo(() => parseQuestTabParam(rawTabParam), [rawTabParam])
+
+  useEffect(() => {
+    if (!rawTabParam || rawTabParam.trim().toLowerCase() !== activeTab) {
+      setSearchParams({ tab: activeTab }, { replace: true })
+    }
+  }, [activeTab, rawTabParam, setSearchParams])
+
+  const setActiveTab = useCallback(
+    (nextTab: QuestPageTab) => {
+      setSearchParams({ tab: nextTab }, { replace: true })
+    },
+    [setSearchParams]
+  )
+
   const [searchQuery, setSearchQuery] = useState('')
   const [activeTrack, setActiveTrack] = useState('')
 

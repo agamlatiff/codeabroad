@@ -95,6 +95,7 @@ function App() {
               <Route path="/grammar" element={<GrammarPage />} />
               <Route path="/grammar/:id" element={<GrammarDetailPage />} />
               <Route path="/kana" element={<KanaPage />} />
+              <Route path="/kana/:script" element={<KanaPage />} />
               <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
               <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
               <Route path="/courses" element={<Navigate to="/curriculum" replace />} />

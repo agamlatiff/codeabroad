@@ -70,7 +70,7 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
           {/* ── FONDASI ALFABET BANNER (HINGGA PEMULA BISA BELAJAR HIRAGANA/KATAKANA DULU) ── */}
           {units.length > 0 && (!curriculum?.language?.code || curriculum.language.code === 'ja') && (
             <Link
-              to="/kana"
+              to="/kana/hiragana"
               className="group block w-full rounded-2xl border-2 border-emerald-200/90 bg-gradient-to-r from-emerald-50 via-white to-teal-50/80 hover:border-emerald-400 hover:shadow-md transition-all p-4 sm:px-5 sm:py-4 shadow-[0_3px_0_0_rgba(16,185,129,0.14)]"
             >
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">

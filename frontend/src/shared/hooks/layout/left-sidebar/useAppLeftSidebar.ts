@@ -65,7 +65,7 @@ export const useAppLeftSidebar = () => {
       {
         label: 'Aksara',
         tooltip: 'Aksara • Hiragana & Katakana',
-        href: '/kana',
+        href: '/kana/hiragana',
         icon: Translate,
       },
       {
@@ -105,7 +105,7 @@ export const useAppLeftSidebar = () => {
         location.pathname === item.href ||
         (item.href === '/curriculum' &&
           location.pathname.startsWith('/curriculum')) ||
-        (item.href === '/kana' &&
+        (item.href.startsWith('/kana') &&
           location.pathname.startsWith('/kana')) ||
         (item.href === '/grammar' &&
           location.pathname.startsWith('/grammar')) ||

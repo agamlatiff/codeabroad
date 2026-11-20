@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect, useState, useMemo } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, Quotes, ArrowRight } from '@phosphor-icons/react'
+import { BookOpen } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { PageHeroHeader } from '@/shared/components/ui/PageHeroHeader'
@@ -13,13 +13,8 @@ import {
   GRAMMAR_POINTS_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
-import { triggerHaptic } from '@/shared/utils/haptics'
-import {
-  LEVEL_ACCENT_STYLES,
-  DEFAULT_LEVEL_ACCENT,
-  formatCategoryLabel,
-  renderCategoryIcon,
-} from '@/features/curriculum/constants/grammarStyles'
+import { formatCategoryLabel } from '@/features/curriculum/constants/grammarStyles'
+import { GrammarEditorialCard } from '@/features/curriculum/components/GrammarEditorialCard'
 
 type JlptLevelFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 
@@ -56,21 +51,40 @@ export const GrammarPage = () => {
   const userIdKey = userData.user?.id ?? 'anonymous'
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const levelFilter = useMemo(
-    () => parseLevelFilterParam(searchParams.get('level')),
-    [searchParams]
-  )
-  const [categoryFilter, setCategoryFilter] = useState<string>('ALL')
+  const rawLevelParam = searchParams.get('level')
+  const levelFilter = useMemo(() => parseLevelFilterParam(rawLevelParam), [rawLevelParam])
+  const categoryFilter = searchParams.get('category')?.trim() || 'ALL'
   const [searchQuery, setSearchQuery] = useState('')
+
+  // Ensure default N5 reflects explicitly in /grammar?level=N5 for consistent sharable URLs
+  useEffect(() => {
+    if (!rawLevelParam || rawLevelParam.trim().toUpperCase() !== levelFilter) {
+      const next = new URLSearchParams(searchParams)
+      next.set('level', levelFilter)
+      setSearchParams(next, { replace: true })
+    }
+  }, [levelFilter, rawLevelParam, searchParams, setSearchParams])
 
   const handleSelectLevel = (nextLevel: JlptLevelFilter) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
-        if (nextLevel === 'N5') {
-          next.delete('level')
+        next.set('level', nextLevel)
+        return next
+      },
+      { replace: true }
+    )
+  }
+
+  const handleSelectCategory = (nextCat: string) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('level', levelFilter)
+        if (nextCat === 'ALL') {
+          next.delete('category')
         } else {
-          next.set('level', nextLevel)
+          next.set('category', nextCat)
         }
         return next
       },
@@ -188,7 +202,7 @@ export const GrammarPage = () => {
           onSelectLevel={(v) => handleSelectLevel(v as JlptLevelFilter)}
           categoryOptions={categoryOptions}
           selectedCategory={categoryFilter}
-          onSelectCategory={setCategoryFilter}
+          onSelectCategory={handleSelectCategory}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           searchPlaceholder="Cari pola kalimat, partikel, atau contoh..."
@@ -207,13 +221,13 @@ export const GrammarPage = () => {
           </div>
         )}
 
-        {/* Compact Scannable Grammar Cards Grid */}
+        {/* Horizontal Editorial Grammar Cards (LingoDeer-inspired) */}
         {isLoading ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {Array.from({ length: 6 }).map((_, idx) => (
+          <div className="space-y-4">
+            {Array.from({ length: 4 }).map((_, idx) => (
               <div
                 key={idx}
-                className="h-52 rounded-3xl bg-white border-2 border-slate-200/80 animate-pulse"
+                className="h-48 rounded-3xl bg-white border-2 border-slate-200/80 animate-pulse"
               />
             ))}
           </div>
@@ -227,73 +241,10 @@ export const GrammarPage = () => {
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filteredPoints.map((point, pointIdx) => {
-              const levelCode = (point.level_code ?? 'N5').toUpperCase()
-              const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
-              const exampleCount = point.examples?.length ?? 0
-
-              return (
-                <Link
-                  key={point.id}
-                  to={`/grammar/${encodeURIComponent(point.code || point.id)}`}
-                  onClick={() => triggerHaptic('tap')}
-                  aria-label={`Pelajari materi: ${point.title}`}
-                  className={`group text-left bg-white border-2 border-slate-200/90 ${accent.hoverBorder} rounded-3xl overflow-hidden shadow-[0_4px_0_0_#E2E8F0] hover:-translate-y-0.5 hover:shadow-[0_7px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-[0_2px_0_0_#E2E8F0] transition-all flex flex-col focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200`}
-                >
-                  <div className={`h-1.5 w-full ${accent.topStrip}`} />
-
-                  <div className="p-4 sm:p-5 flex-1 flex flex-col gap-3">
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center flex-wrap gap-1.5">
-                        <span
-                          className={`text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-lg border ${accent.badge}`}
-                        >
-                          {levelCode}
-                        </span>
-                        <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200">
-                          {renderCategoryIcon(point.category, 'w-3 h-3')}
-                          <span>{formatCategoryLabel(point.category)}</span>
-                        </span>
-                      </div>
-                      <span className="text-[10px] font-mono font-black text-slate-400">
-                        #{String(pointIdx + 1).padStart(2, '0')}
-                      </span>
-                    </div>
-
-                    <h2 className="font-brand font-black text-[15px] sm:text-base text-slate-900 leading-snug line-clamp-2 group-hover:text-blue-600 transition-colors">
-                      {point.title}
-                    </h2>
-
-                    <div className="rounded-2xl bg-gradient-to-r from-blue-50/95 via-indigo-50/60 to-white border border-blue-200/80 border-l-4 border-l-blue-500 px-3 py-2 space-y-0.5">
-                      <code className="block font-mono text-xs sm:text-[13px] font-extrabold text-blue-950 break-words">
-                        {point.formula}
-                      </code>
-                      {point.formula_reading && (
-                        <p className="text-[11px] font-bold text-blue-600 break-words">
-                          {point.formula_reading}
-                        </p>
-                      )}
-                    </div>
-
-                    <p className="text-xs text-slate-500 leading-relaxed line-clamp-2">
-                      {point.explanation}
-                    </p>
-
-                    <div className="mt-auto pt-2 flex items-center justify-between gap-2 border-t border-slate-100">
-                      <span className="inline-flex items-center gap-1 text-[10px] font-brand font-bold text-slate-500">
-                        <Quotes weight="fill" className="w-3 h-3 text-blue-400" />
-                        {exampleCount} contoh kalimat
-                      </span>
-                      <span className="inline-flex items-center gap-1 text-xs font-brand font-black text-blue-600 group-hover:gap-1.5 transition-all">
-                        Pelajari Materi
-                        <ArrowRight weight="bold" className="w-3.5 h-3.5" />
-                      </span>
-                    </div>
-                  </div>
-                </Link>
-              )
-            })}
+          <div className="space-y-4">
+            {filteredPoints.map((point, pointIdx) => (
+              <GrammarEditorialCard key={point.id} point={point} index={pointIdx} />
+            ))}
           </div>
         )}
       </main>

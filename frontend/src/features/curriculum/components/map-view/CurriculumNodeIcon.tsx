@@ -56,11 +56,15 @@ import { MAP_MODAL_TOKENS } from '@/features/curriculum/tokens/curriculumTokens'
  * Maps a backend lesson `icon_name` slug (SSOT) to a solid-rounded Phosphor icon.
  */
 export function renderLessonThematicIcon(iconName: string | undefined, iconClass: string): ReactNode {
-  const glyphSizeClass = iconClass.includes('w-6')
-    ? 'text-[20px]'
-    : iconClass.includes('w-7')
-      ? 'text-[24px]'
-      : 'text-[27px]'
+  const glyphSizeClass = iconClass.includes('w-11')
+    ? 'text-[38px]'
+    : iconClass.includes('w-10')
+      ? 'text-[34px]'
+      : iconClass.includes('w-9')
+        ? 'text-[30px]'
+        : iconClass.includes('w-7') || iconClass.includes('w-8')
+          ? 'text-[26px]'
+          : 'text-[20px]'
   const preserveTextColor = iconClass.includes('text-slate-400') ? 'text-slate-400' : ''
 
   switch (iconName) {

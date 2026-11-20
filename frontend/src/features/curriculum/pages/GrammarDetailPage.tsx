@@ -150,7 +150,7 @@ export const GrammarDetailPage = () => {
         <AppTopBar
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },
-            { label: 'Panduan Grammar', to: '/grammar' },
+            { label: 'Panduan Grammar', to: `/grammar?level=${encodeURIComponent(levelCode)}` },
             {
               label: `JLPT ${levelCode}`,
               to: `/grammar?level=${encodeURIComponent(levelCode)}`,
@@ -210,7 +210,7 @@ export const GrammarDetailPage = () => {
               variant="blue"
               size="sm"
               icon={<ArrowLeft weight="bold" className="w-4 h-4" />}
-              onClick={() => navigate('/grammar')}
+              onClick={() => navigate('/grammar?level=N5')}
             >
               Kembali ke Daftar Grammar
             </Button3D>

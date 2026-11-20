@@ -154,7 +154,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           {deck.kanaLinkScript ? (
             <Link
-              to={`/kana?script=${deck.kanaLinkScript}`}
+              to={`/kana/${deck.kanaLinkScript}`}
               className="inline-flex items-center gap-1.5 text-xs font-brand font-black text-emerald-700 hover:text-emerald-800 px-3 py-2 rounded-xl hover:bg-emerald-50 transition-colors"
             >
               <Translate weight="bold" className="w-4 h-4" />

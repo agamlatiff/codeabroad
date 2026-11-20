@@ -67,9 +67,9 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
-        <div className="absolute top-full mt-3.5 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center select-none animate-bounce-subtle pointer-events-auto">
+        <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center select-none animate-bounce-subtle pointer-events-auto">
           <div
-            className={`bg-white border-2 rounded-2xl p-3.5 shadow-lg text-center w-[252px] space-y-2 relative ${catTokens.popoverBorder}`}
+            className={`bg-white border-2 rounded-2xl p-4 shadow-lg text-center w-[288px] sm:w-[304px] space-y-2.5 relative ${catTokens.popoverBorder}`}
           >
             {/* Upward Speech Bubble Triangle */}
             <div
@@ -78,38 +78,38 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
 
             <div className="flex items-center justify-between gap-2">
               <span
-                className={`text-[10px] font-brand font-black uppercase tracking-wider inline-flex items-center gap-1 whitespace-nowrap ${catTokens.popoverLabelColor}`}
+                className={`text-[11px] font-brand font-black uppercase tracking-wider inline-flex items-center gap-1 whitespace-nowrap ${catTokens.popoverLabelColor}`}
               >
-                <Sparkle weight="fill" className="w-3 h-3 shrink-0" />
+                <Sparkle weight="fill" className="w-3.5 h-3.5 shrink-0" />
                 <span>Sedang Dipelajari</span>
               </span>
               {(node.totalExercises ?? 0) > 0 ? (
                 <span
-                  className={`text-[10px] font-brand font-black px-2 py-0.5 rounded tabular-nums whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
+                  className={`text-[11px] font-brand font-black px-2.5 py-0.5 rounded-md tabular-nums whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
                 >
                   {node.completedExercises ?? 0}/{node.totalExercises} Soal
                 </span>
               ) : node.badgeLabel ? (
                 <span
-                  className={`text-[9px] font-brand font-black uppercase px-1.5 py-0.5 rounded inline-flex items-center gap-1 whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
+                  className={`text-[10px] font-brand font-black uppercase px-2 py-0.5 rounded inline-flex items-center gap-1 whitespace-nowrap shrink-0 ${catTokens.badgeClass}`}
                 >
                   {node.category === 'language' && (
-                    <Translate weight="bold" className="w-2.5 h-2.5" />
+                    <Translate weight="bold" className="w-3 h-3" />
                   )}
                   <span>{node.badgeLabel}</span>
                 </span>
               ) : null}
             </div>
-            <h4 className="font-brand font-black text-xs text-slate-900 leading-snug">
+            <h4 className="font-brand font-black text-sm text-slate-900 leading-snug">
               {node.title}
             </h4>
             <Button3D
               variant={catTokens.activeButtonVariant}
-              size="sm"
+              size="md"
               fullWidth
               icon={renderActionIcon(node.category)}
               onClick={handleActiveButtonClick}
-              className="text-[11px] py-2 whitespace-nowrap"
+              className="text-xs py-2.5 whitespace-nowrap"
             >
               {catTokens.activeButtonText}
             </Button3D>
@@ -121,12 +121,12 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
         <div
           className={`absolute ${
-            coord.x > 200 ? '-left-32 sm:-left-36' : '-right-32 sm:-right-36'
-          } -top-2 hidden md:flex flex-col items-center select-none z-20`}
+            coord.x > 200 ? '-left-40 sm:-left-44' : '-right-40 sm:-right-44'
+          } -top-5 hidden md:flex flex-col items-center select-none z-20`}
         >
           <KodiCharacter
             emotion="studying"
-            size={72}
+            size={96}
             interactive
             showSpeechBubble
             speechText="Ayo lanjut!"
@@ -141,11 +141,11 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
         aria-label={`${node.title} (${node.status === 'completed' ? 'selesai' : node.status === 'active' ? 'aktif' : 'terkunci'})`}
         onClick={() => onClick(node)}
         onKeyDown={handleKeyDown}
-        className="relative z-10 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/50 rounded-2xl"
+        className="relative z-10 cursor-pointer focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-400/50 rounded-3xl"
       >
         {node.isChest ? (
           <div
-            className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
+            className={`w-24 h-24 rounded-3xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
               node.status === 'completed'
                 ? MAP_MILESTONE_DISC_TOKENS.chest.completed
                 : node.status === 'active'
@@ -156,19 +156,19 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
           >
             <Gift
               weight="fill"
-              className={`w-9 h-9 drop-shadow-xs ${
+              className={`w-11 h-11 drop-shadow-xs ${
                 node.status === 'locked' ? 'text-slate-400' : 'text-amber-950'
               }`}
             />
             {node.status === 'completed' && (
-              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center text-white shadow-xs">
-                <Check weight="bold" className="w-3.5 h-3.5" />
+              <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center text-white shadow-xs">
+                <Check weight="bold" className="w-4 h-4" />
               </div>
             )}
           </div>
         ) : node.isTrophy ? (
           <div
-            className={`w-18 h-18 rounded-2xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
+            className={`w-24 h-24 rounded-3xl flex items-center justify-center transition-all active:shadow-none active:translate-y-1 border-2 ${
               node.status === 'completed'
                 ? MAP_MILESTONE_DISC_TOKENS.trophy.completed
                 : MAP_MILESTONE_DISC_TOKENS.trophy.locked
@@ -177,44 +177,44 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
           >
             <Trophy
               weight="fill"
-              className={`w-9 h-9 drop-shadow-xs ${
+              className={`w-11 h-11 drop-shadow-xs ${
                 node.status === 'completed' ? 'text-amber-950' : 'text-slate-400'
               }`}
             />
             {node.status === 'completed' && (
-              <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center text-white shadow-xs">
-                <Check weight="bold" className="w-3.5 h-3.5" />
+              <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center text-white shadow-xs">
+                <Check weight="bold" className="w-4 h-4" />
               </div>
             )}
           </div>
         ) : node.status === 'completed' ? (
           <div className="relative">
             <div
-              className={`w-16 h-16 rounded-full hover:brightness-105 active:translate-y-1 text-white font-brand font-black text-2xl active:shadow-none flex items-center justify-center transition-all group-hover:scale-105 ${catTokens.discCompleted}`}
+              className={`w-[84px] h-[84px] rounded-full hover:brightness-105 active:translate-y-1 text-white font-brand font-black text-3xl active:shadow-none flex items-center justify-center transition-all group-hover:scale-105 ${catTokens.discCompleted}`}
             >
-              {renderNodeSymbol(node, 'w-7 h-7')}
+              {renderNodeSymbol(node, 'w-10 h-10')}
             </div>
-            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center text-white shadow-xs">
-              <Check weight="bold" className="w-3.5 h-3.5 stroke-[2]" />
+            <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-emerald-600 border-2 border-white flex items-center justify-center text-white shadow-xs">
+              <Check weight="bold" className="w-4 h-4 stroke-[2]" />
             </div>
           </div>
         ) : node.status === 'active' ? (
           <div className="relative">
             <div
-              className={`w-18 h-18 rounded-full hover:brightness-105 active:translate-y-1 text-white font-brand font-black text-3xl active:shadow-none flex items-center justify-center transition-all group-hover:scale-105 ${catTokens.discActive}`}
+              className={`w-24 h-24 rounded-full hover:brightness-105 active:translate-y-1 text-white font-brand font-black text-4xl active:shadow-none flex items-center justify-center transition-all group-hover:scale-105 ${catTokens.discActive}`}
             >
-              {renderNodeSymbol(node, 'w-8 h-8')}
+              {renderNodeSymbol(node, 'w-11 h-11')}
             </div>
           </div>
         ) : (
           <div className="relative">
             <div
-              className={`w-16 h-16 rounded-full active:translate-y-1 text-slate-400 font-brand font-black text-2xl active:shadow-none flex items-center justify-center transition-all ${MAP_MILESTONE_DISC_TOKENS.lockedLesson}`}
+              className={`w-[84px] h-[84px] rounded-full active:translate-y-1 text-slate-400 font-brand font-black text-3xl active:shadow-none flex items-center justify-center transition-all ${MAP_MILESTONE_DISC_TOKENS.lockedLesson}`}
             >
-              {renderNodeSymbol(node, 'w-7 h-7 text-slate-400')}
+              {renderNodeSymbol(node, 'w-10 h-10 text-slate-400')}
             </div>
-            <div className="absolute -top-1 -right-1 w-6 h-6 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-slate-600 shadow-2xs">
-              <LockSimple weight="bold" className="w-3.5 h-3.5" />
+            <div className="absolute -top-1 -right-1 w-7 h-7 rounded-full bg-slate-300 border-2 border-white flex items-center justify-center text-slate-600 shadow-2xs">
+              <LockSimple weight="bold" className="w-4 h-4" />
             </div>
           </div>
         )}
@@ -223,22 +223,22 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
       {/* ── COLLISION-FREE PILLS & LABELS ── */}
       {node.isTrophy ? (
         <div
-          className={`mt-2.5 z-20 rounded-full px-2.5 py-0.5 text-center shadow-2xs inline-flex items-center gap-1 ${MAP_MILESTONE_PILL_TOKENS.trophy}`}
+          className={`mt-3 z-20 rounded-full px-3.5 py-1 text-center shadow-2xs inline-flex items-center gap-1.5 ${MAP_MILESTONE_PILL_TOKENS.trophy}`}
         >
-          <Trophy weight="fill" className="w-3 h-3 text-yellow-700" />
-          <span className="font-brand font-black text-[10px]">
+          <Trophy weight="fill" className="w-3.5 h-3.5 text-yellow-700" />
+          <span className="font-brand font-black text-xs">
             {node.status === 'completed'
               ? `Lulus (+${node.xpReward} XP)`
               : `Evaluasi Unit (+${node.xpReward} XP)`}
           </span>
         </div>
       ) : node.status !== 'active' ? (
-        <div className="mt-2 z-20 max-w-[168px] bg-white/95 backdrop-blur-xs border border-slate-200/90 rounded-xl px-3 py-1.5 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
-          <h5 className="font-brand font-black text-xs text-slate-900 leading-tight line-clamp-2">
+        <div className="mt-3 z-20 max-w-[205px] bg-white/95 backdrop-blur-xs border-2 border-slate-200/90 rounded-2xl px-4 py-2 text-center shadow-2xs group-hover:border-blue-400 transition-colors">
+          <h5 className="font-brand font-black text-[13px] sm:text-sm text-slate-900 leading-tight line-clamp-2">
             {node.shortTitle || node.title}
           </h5>
           <span
-            className={`text-[10px] font-bold block mt-0.5 tabular-nums ${
+            className={`text-[11px] sm:text-xs font-bold block mt-0.5 tabular-nums ${
               node.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'
             }`}
           >

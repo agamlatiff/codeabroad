@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
@@ -46,23 +46,30 @@ const ROW_LABELS: Record<number, string> = {
   11: 'Konsonan Tunggal N',
 }
 
-const parseScriptParam = (raw: string | null): KanaScriptType =>
-  raw?.trim().toLowerCase() === 'katakana' ? 'katakana' : 'hiragana'
+const VALID_KANA_SCRIPTS: ReadonlySet<KanaScriptType> = new Set(['hiragana', 'katakana'])
 
 /**
- * Interactive Japanese Alphabet Workshop (/kana):
+ * Interactive Japanese Alphabet Workshop (/kana/:script):
  * - 46 Hiragana + 46 Katakana Gojuon matrix synced with PostgreSQL mastery.
- * - Instant audio playback (Normal & 0.6x), visual mnemonics, HTML5 tracing pad, and 5-char row drills.
+ * - Keeps active script, selected character (?char=), and drill row (?drill=) synchronized in the URL.
  */
 export const KanaPage = () => {
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
+  const { script: routeScript } = useParams<{ script?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
 
-  const activeScript = parseScriptParam(searchParams.get('script'))
-  const [selectedCharValue, setSelectedCharValue] = useState<string | null>(null)
-  const [activeDrillRowOrder, setActiveDrillRowOrder] = useState<number | null>(null)
+  const normalizedRouteScript = routeScript?.trim().toLowerCase() ?? ''
+  const hasValidRouteScript = VALID_KANA_SCRIPTS.has(normalizedRouteScript as KanaScriptType)
+  const legacyQueryScript = searchParams.get('script')?.trim().toLowerCase()
+  const activeScript: KanaScriptType =
+    normalizedRouteScript === 'katakana' ||
+    (!hasValidRouteScript && legacyQueryScript === 'katakana')
+      ? 'katakana'
+      : 'hiragana'
+
   const [playingSpeed, setPlayingSpeed] = useState<'normal' | 'slow' | 'word' | null>(null)
 
   const kanaQuery = useQuery({
@@ -86,14 +93,46 @@ export const KanaPage = () => {
   const totalCount = kanaQuery.data?.total ?? 46
   const masteryPercent = totalCount > 0 ? Math.round((masteredCount / totalCount) * 100) : 0
 
+  const urlCharParam = searchParams.get('char')?.trim() ?? ''
+  const urlDrillParam = searchParams.get('drill')?.trim() ?? ''
+
+  // Canonicalize /kana and legacy /kana?script=... into /kana/:script?char=...
+  useEffect(() => {
+    if (!hasValidRouteScript) {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('script')
+      if (!nextParams.get('char') && !nextParams.get('drill')) {
+        nextParams.set('char', 'a')
+      }
+      const qs = nextParams.toString()
+      navigate(`/kana/${activeScript}${qs ? `?${qs}` : ''}`, { replace: true })
+      return
+    }
+    if (characters.length > 0 && !urlCharParam && !urlDrillParam) {
+      setSearchParams({ char: characters[0].romaji }, { replace: true })
+    }
+  }, [
+    activeScript,
+    characters,
+    hasValidRouteScript,
+    navigate,
+    searchParams,
+    setSearchParams,
+    urlCharParam,
+    urlDrillParam,
+  ])
+
   const selectedChar: KanaCharacterItem | null = useMemo(() => {
     if (characters.length === 0) return null
-    if (selectedCharValue) {
-      const found = characters.find((c) => c.character === selectedCharValue)
+    if (urlCharParam) {
+      const target = urlCharParam.toLowerCase()
+      const found = characters.find(
+        (c) => c.romaji.toLowerCase() === target || c.character === urlCharParam
+      )
       if (found) return found
     }
     return characters[0]
-  }, [characters, selectedCharValue])
+  }, [characters, urlCharParam])
 
   const groupedRows = useMemo(() => {
     const byRow = new Map<number, KanaCharacterItem[]>()
@@ -105,46 +144,39 @@ export const KanaPage = () => {
     return Array.from(byRow.entries())
       .sort(([a], [b]) => a - b)
       .map(([rowOrder, items]) => {
+        const sortedItems = [...items].sort((a, b) => a.col_order - b.col_order)
         const colMap = new Map<number, KanaCharacterItem>()
-        for (const item of items) {
+        for (const item of sortedItems) {
           colMap.set(item.col_order, item)
         }
         return {
           rowOrder,
+          rowKey: sortedItems[0]?.row_group ?? String(rowOrder),
           label: ROW_LABELS[rowOrder] ?? `Baris ${rowOrder}`,
-          items: items.sort((a, b) => a.col_order - b.col_order),
+          items: sortedItems,
           slots: [1, 2, 3, 4, 5].map((col) => colMap.get(col) ?? null),
         }
       })
   }, [characters])
 
-  const activeDrillRow = useMemo(
-    () => groupedRows.find((r) => r.rowOrder === activeDrillRowOrder) ?? null,
-    [groupedRows, activeDrillRowOrder]
-  )
+  const activeDrillRow = useMemo(() => {
+    if (!urlDrillParam) return null
+    const lower = urlDrillParam.toLowerCase()
+    return (
+      groupedRows.find(
+        (r) => r.rowKey.toLowerCase() === lower || String(r.rowOrder) === urlDrillParam
+      ) ?? null
+    )
+  }, [groupedRows, urlDrillParam])
 
   const handleSelectScript = (nextScript: KanaScriptType) => {
     triggerHaptic('tap')
-    setSelectedCharValue(null)
-    setActiveDrillRowOrder(null)
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev)
-        if (nextScript === 'hiragana') {
-          next.delete('script')
-        } else {
-          next.set('script', nextScript)
-        }
-        return next
-      },
-      { replace: true }
-    )
+    navigate(`/kana/${nextScript}?char=a`, { replace: true })
   }
 
   const handleSelectCell = (item: KanaCharacterItem) => {
     triggerHaptic('tap')
-    setSelectedCharValue(item.character)
-    setActiveDrillRowOrder(null)
+    setSearchParams({ char: item.romaji }, { replace: true })
     setPlayingSpeed('normal')
     const clear = () => setPlayingSpeed((prev) => (prev === 'normal' ? null : prev))
     audioService.speakJapanese(item.character, clear, clear)
@@ -162,9 +194,9 @@ export const KanaPage = () => {
     }
   }
 
-  const handleStartRowDrill = (rowOrder: number, firstChar?: KanaCharacterItem) => {
+  const handleStartRowDrill = (rowKey: string, firstChar?: KanaCharacterItem) => {
     triggerHaptic('tap')
-    setActiveDrillRowOrder(rowOrder)
+    setSearchParams({ drill: rowKey }, { replace: true })
     if (firstChar) {
       audioService.speakJapanese(firstChar.character)
     }
@@ -376,9 +408,9 @@ export const KanaPage = () => {
 
                       <button
                         type="button"
-                        onClick={() => handleStartRowDrill(row.rowOrder, row.items[0])}
+                        onClick={() => handleStartRowDrill(row.rowKey, row.items[0])}
                         className={`w-[74px] h-[60px] rounded-2xl border-2 flex flex-col items-center justify-center gap-0.5 text-[11px] font-brand font-black transition-all cursor-pointer ${
-                          activeDrillRowOrder === row.rowOrder
+                          activeDrillRow?.rowOrder === row.rowOrder
                             ? 'bg-blue-600 border-blue-700 text-white shadow-[0_4px_0_0_#1D4ED8]'
                             : 'bg-slate-50 border-slate-200 text-slate-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700'
                         }`}
@@ -402,7 +434,12 @@ export const KanaPage = () => {
                   allScriptChars={characters}
                   isSubmitting={practiceMutation.isPending}
                   onFinishDrill={handleFinishDrill}
-                  onClose={() => setActiveDrillRowOrder(null)}
+                  onClose={() =>
+                    setSearchParams(
+                      { char: selectedChar?.romaji ?? characters[0]?.romaji ?? 'a' },
+                      { replace: true }
+                    )
+                  }
                 />
               ) : selectedChar ? (
                 <div className="bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-5 sm:p-6 space-y-5">

@@ -43,13 +43,13 @@ export const resolveMapUnitPalette = (index: number): MapUnitPalette =>
   MAP_UNIT_PALETTES[index % MAP_UNIT_PALETTES.length]
 
 export const MAP_GEOMETRY = {
-  xSequence: [125, 200, 275, 200] as const,
-  verticalSpacing: 240,
-  activePopoverExtraSpace: 80,
-  startY: 105,
+  xSequence: [110, 200, 290, 200] as const,
+  verticalSpacing: 270,
+  activePopoverExtraSpace: 100,
+  startY: 118,
   viewboxWidth: 400,
-  bottomPadding: 90,
-  nodeDiscRadius: 36,
+  bottomPadding: 110,
+  nodeDiscRadius: 46,
 } as const
 
 export const MAP_MILESTONE_REWARDS = {
@@ -80,8 +80,8 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     badgeClass: 'bg-blue-50 text-blue-700 border border-blue-200',
     activeButtonVariant: 'blue',
     activeButtonText: 'MULAI SESI BELAJAR',
-    discCompleted: 'bg-emerald-500 shadow-[0_5px_0_0_#047857]',
-    discActive: 'bg-blue-600 shadow-[0_6px_0_0_#1D4ED8] ring-8 ring-blue-100',
+    discCompleted: 'bg-emerald-500 shadow-[0_7px_0_0_#047857]',
+    discActive: 'bg-blue-600 shadow-[0_8px_0_0_#1D4ED8] ring-[10px] ring-blue-100',
     modalIconBgActive: 'bg-blue-600 border-blue-700 text-white shadow-[0_3px_0_0_#1D4ED8]',
     modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
     modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
@@ -92,8 +92,8 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
     activeButtonVariant: 'amber',
     activeButtonText: 'MULAI EVALUASI',
-    discCompleted: 'bg-emerald-500 shadow-[0_5px_0_0_#047857]',
-    discActive: 'bg-amber-500 shadow-[0_6px_0_0_#B45309] ring-8 ring-amber-100',
+    discCompleted: 'bg-emerald-500 shadow-[0_7px_0_0_#047857]',
+    discActive: 'bg-amber-500 shadow-[0_8px_0_0_#B45309] ring-[10px] ring-amber-100',
     modalIconBgActive: 'bg-amber-500 border-amber-600 text-white shadow-[0_3px_0_0_#B45309]',
     modalIconBgCompleted: 'bg-emerald-100 border-emerald-300 text-emerald-700',
     modalIconBgLocked: 'bg-slate-100 border-slate-300 text-slate-500',
@@ -138,16 +138,16 @@ export const MAP_STAGE_TOKENS = {
 export const MAP_TRACK_TOKENS = {
   glow: {
     stroke: '#93C5FD',
-    strokeWidth: 20,
+    strokeWidth: 26,
     opacity: 0.35,
   },
   base: {
     stroke: '#E2E8F0',
-    strokeWidth: 12,
+    strokeWidth: 16,
   },
   dash: {
-    strokeWidth: 4,
-    dashArray: '10 12',
+    strokeWidth: 5,
+    dashArray: '12 14',
     completed: {
       stroke: '#10B981',
       opacity: 0.75,
@@ -189,7 +189,7 @@ export const MAP_MILESTONE_DISC_TOKENS = {
     locked: 'bg-slate-100 border-slate-300 shadow-[0_4px_0_0_#CBD5E1]',
   },
   lockedLesson:
-    'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 shadow-[0_4px_0_0_#CBD5E1]',
+    'bg-slate-100 hover:bg-slate-200 border-2 border-slate-200 shadow-[0_6px_0_0_#CBD5E1]',
 } as const
 
 export const MAP_MILESTONE_PILL_TOKENS = {
