@@ -7,7 +7,6 @@ import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
-import { DidYouKnowCallout } from '@/shared/components/ui/DidYouKnowCallout'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
   curriculumService,
@@ -309,22 +308,6 @@ export const GrammarPage = () => {
           onSearchChange={setSearchQuery}
           searchPlaceholder="Cari pola kalimat, partikel, atau contoh..."
         />
-
-        {/* Beginner-friendly Tahukah Kamu? callout */}
-        {!isLoading && filteredPoints.length > 0 && (
-          <DidYouKnowCallout
-            tone="amber"
-            emotion="curious"
-            badge="Tahukah Kamu?"
-            title="Apa itu Partikel, Predikat, dan Konjugasi di Bahasa Jepang?"
-            description={
-              <>
-                <b>Partikel</b> adalah penanda kecil (seperti <code>は</code>, <code>の</code>, <code>を</code>) di belakang kata untuk menjelaskan perannya, <b>Predikat</b> selalu ditaruh di akhir kalimat, dan <b>Konjugasi</b> mengubah akhiran kata kerja (seperti <code>-masu</code> / <code>-masen</code>). Klik kartu di bawah untuk penjelasan lengkap &amp; audio pelan <b>0.6x</b>.
-              </>
-            }
-            example="Contoh singkat: わたしは がくせい です — 「は」 (wa) adalah partikel topik, sedangkan 「です」 menutup kalimat secara sopan."
-          />
-        )}
 
         {/* Horizontal Editorial Grammar Cards (LingoDeer-inspired) */}
         {isLoading ? (
