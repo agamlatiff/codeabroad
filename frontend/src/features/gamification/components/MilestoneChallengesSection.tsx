@@ -77,15 +77,19 @@ export const MilestoneChallengesSection = ({
 
       {/* Tactile Mission Slat Cartridges */}
       <div className="bg-white border-2 border-slate-200/90 rounded-3xl divide-y-2 divide-slate-100 shadow-2xs overflow-hidden">
-        {challenges.map((challenge, idx) => (
+        {challenges.map((challenge, idx) => {
+          const ChallengeIcon = challenge.iconComponent
+          return (
           <div
             key={challenge.id}
             className="p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5 hover:bg-slate-50/80 transition-colors group"
           >
             {/* Left: Indicator & Track Info */}
             <div className="flex items-start sm:items-center gap-4 min-w-0 flex-1">
-              <div className="w-12 h-12 rounded-2xl bg-slate-100 border-2 border-slate-200 flex items-center justify-center shrink-0 group-hover:scale-105 group-hover:border-blue-400 transition-all text-2xl shadow-2xs">
-                {challenge.icon}
+              <div
+                className={`w-13 h-13 rounded-2xl ${challenge.iconBg} text-white flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform`}
+              >
+                <ChallengeIcon weight="fill" className="w-6 h-6" />
               </div>
 
               <div className="space-y-1.5 min-w-0 flex-1">
@@ -158,7 +162,8 @@ export const MilestoneChallengesSection = ({
               </div>
             </div>
           </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

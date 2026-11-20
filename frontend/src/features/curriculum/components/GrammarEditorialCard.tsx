@@ -17,7 +17,7 @@ interface EditorialCoverTheme {
   accentText: string
   orbBg: string
   tagline: string
-  kodiEmotion: KodiEmotion
+  emotions: KodiEmotion[]
 }
 
 const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
@@ -27,7 +27,7 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
     accentText: 'text-amber-700',
     orbBg: 'bg-amber-300/30',
     tagline: 'Hubung. Fokus. Jelas.',
-    kodiEmotion: 'studying',
+    emotions: ['studying', 'writing', 'curious', 'explaining'],
   },
   sentence_pattern: {
     backdrop: 'bg-gradient-to-br from-[#EFF6FF] via-[#F8FBFF] to-[#BFDBFE]/55',
@@ -35,7 +35,7 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
     accentText: 'text-blue-700',
     orbBg: 'bg-sky-300/30',
     tagline: 'Pola. Struktur. Lancar.',
-    kodiEmotion: 'welcome',
+    emotions: ['reading', 'chatting', 'welcome', 'idea'],
   },
   conjugation: {
     backdrop: 'bg-gradient-to-br from-[#ECFDF5] via-[#F6FEFA] to-[#A7F3D0]/55',
@@ -43,7 +43,7 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
     accentText: 'text-emerald-700',
     orbBg: 'bg-emerald-300/30',
     tagline: 'Ubah. Bentuk. Tepat.',
-    kodiEmotion: 'thinking',
+    emotions: ['idea', 'explaining', 'writing', 'cheering'],
   },
   tense: {
     backdrop: 'bg-gradient-to-br from-[#FFF1F2] via-[#FFF9FA] to-[#FECDD3]/60',
@@ -51,7 +51,7 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
     accentText: 'text-rose-700',
     orbBg: 'bg-rose-300/30',
     tagline: 'Waktu. Masa. Konteks.',
-    kodiEmotion: 'celebrate',
+    emotions: ['clock', 'listening', 'curious', 'reading'],
   },
   honorific: {
     backdrop: 'bg-gradient-to-br from-[#F5F3FF] via-[#FAF8FF] to-[#DDD6FE]/65',
@@ -59,7 +59,7 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
     accentText: 'text-violet-700',
     orbBg: 'bg-violet-300/30',
     tagline: 'Sopan. Bisnis. Hormat.',
-    kodiEmotion: 'onFire',
+    emotions: ['polite', 'chatting', 'welcome', 'cheering'],
   },
 }
 
@@ -96,6 +96,7 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
   const levelCode = (point.level_code ?? 'N5').toUpperCase()
   const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
   const cover = CATEGORY_COVER_THEMES[point.category] ?? DEFAULT_COVER_THEME
+  const kodiEmotion = cover.emotions[index % cover.emotions.length]
   const exampleCount = point.examples?.length ?? 0
   const { primary, accentSub } = splitEditorialTitle(point.title, point.category)
 
@@ -144,7 +145,7 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
 
         {/* Expressive Kodi companion inside poster illustration */}
         <div className="relative z-10 shrink-0 transition-transform duration-300 group-hover:scale-105 group-hover:-rotate-2">
-          <KodiCharacter emotion={cover.kodiEmotion} size={86} interactive={false} />
+          <KodiCharacter emotion={kodiEmotion} size={86} interactive={false} />
         </div>
       </div>
 

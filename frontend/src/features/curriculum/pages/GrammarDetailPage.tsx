@@ -17,6 +17,7 @@ import {
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { DidYouKnowCallout } from '@/shared/components/ui/DidYouKnowCallout'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
   curriculumService,
@@ -31,6 +32,7 @@ import {
   formatCategoryLabel,
   renderCategoryIcon,
 } from '@/features/curriculum/constants/grammarStyles'
+import { resolveGrammarDidYouKnow } from '@/features/curriculum/constants/grammarDidYouKnow'
 
 const SLOW_SPEECH_RATE = 0.58
 
@@ -306,6 +308,9 @@ export const GrammarDetailPage = () => {
                 </div>
               </div>
             </section>
+
+            {/* Beginner-Friendly Contextual "Tahukah Kamu?" Callout */}
+            <DidYouKnowCallout {...resolveGrammarDidYouKnow(currentPoint)} />
 
             {/* Example Sentences Section */}
             {examples.length > 0 && (

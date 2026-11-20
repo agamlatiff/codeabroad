@@ -3,6 +3,8 @@ import {
   Flask,
   FileText,
   Microphone,
+  Fire,
+  GraduationCap,
   type Icon,
 } from '@phosphor-icons/react'
 
@@ -57,6 +59,8 @@ export interface MilestoneChallengeConfig {
   subtitle: string
   tags: string[]
   icon: string
+  iconComponent: Icon
+  iconBg: string
   xp_reward: number
   gem_reward: number
   route: string
@@ -101,6 +105,8 @@ export const MILESTONE_CHALLENGES: MilestoneChallengeConfig[] = [
       'Uji penguasaan membaca, menyimak, menulis, dan berbicara pada kurikulum bahasa aktif sebelum naik tingkat.',
     tags: ['EVALUASI LEVEL', 'READING', 'LISTENING'],
     icon: '🔥',
+    iconComponent: Fire,
+    iconBg: 'bg-gradient-to-b from-orange-400 to-rose-500 shadow-[0_3px_0_0_#BE123C]',
     xp_reward: 250,
     gem_reward: 50,
     route: '/curriculum',
@@ -112,6 +118,8 @@ export const MILESTONE_CHALLENGES: MilestoneChallengeConfig[] = [
       'Latihan dialog situasi kerja internasional, tata bahasa formal, serta kesiapan ujian resmi (JLPT / IELTS / Goethe / HSK / DELF).',
     tags: ['SPEAKING', 'WRITING', 'SERTIFIKASI'],
     icon: '🏛️',
+    iconComponent: GraduationCap,
+    iconBg: 'bg-gradient-to-b from-indigo-500 to-violet-600 shadow-[0_3px_0_0_#4338CA]',
     xp_reward: 500,
     gem_reward: 100,
     route: '/curriculum',
@@ -127,8 +135,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     badge: 'POPULER 🔥',
     badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
     icon: ShieldCheck,
-    iconBg: 'bg-blue-50 border-blue-200',
-    iconColor: 'text-blue-600',
+    iconBg: 'bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8]',
+    iconColor: 'text-white',
     category: 'protection',
   },
   {
@@ -139,8 +147,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     badge: 'BOOSTER ⚡',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     icon: Flask,
-    iconBg: 'bg-amber-50 border-amber-200',
-    iconColor: 'text-amber-600',
+    iconBg: 'bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_3px_0_0_#B45309]',
+    iconColor: 'text-white',
     category: 'booster',
   },
   {
@@ -151,8 +159,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     badge: 'KARIER GLOBAL 🌐',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     icon: FileText,
-    iconBg: 'bg-emerald-50 border-emerald-200',
-    iconColor: 'text-emerald-600',
+    iconBg: 'bg-gradient-to-b from-emerald-400 to-teal-600 shadow-[0_3px_0_0_#0F766E]',
+    iconColor: 'text-white',
     category: 'career',
   },
   {
@@ -163,8 +171,8 @@ export const SHOP_ITEMS: ShopItem[] = [
     badge: 'EKSKLUSIF ⭐',
     badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Microphone,
-    iconBg: 'bg-purple-50 border-purple-200',
-    iconColor: 'text-purple-600',
+    iconBg: 'bg-gradient-to-b from-violet-500 to-purple-600 shadow-[0_3px_0_0_#6D28D9]',
+    iconColor: 'text-white',
     category: 'career',
   },
 ]

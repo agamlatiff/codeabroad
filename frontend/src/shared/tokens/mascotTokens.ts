@@ -2,6 +2,34 @@
  * Shared Mascot ("Kodi") & Speech Bubble Design Tokens.
  */
 
+export type KodiStudyEmotion =
+  | 'curious'
+  | 'reading'
+  | 'idea'
+  | 'polite'
+  | 'explaining'
+  | 'listening'
+  | 'writing'
+  | 'chatting'
+  | 'clock'
+  | 'cheering'
+
+const KODI_STUDY_EMOTION_SET: ReadonlySet<string> = new Set<KodiStudyEmotion>([
+  'curious',
+  'reading',
+  'idea',
+  'polite',
+  'explaining',
+  'listening',
+  'writing',
+  'chatting',
+  'clock',
+  'cheering',
+])
+
+export const isKodiStudyEmotion = (emotion: string): emotion is KodiStudyEmotion =>
+  KODI_STUDY_EMOTION_SET.has(emotion)
+
 export const MASCOT_TOKENS = {
   name: 'Kodi',
   species: 'Language Companion',
@@ -11,6 +39,16 @@ export const MASCOT_TOKENS = {
     celebrate: { label: 'Yatta / Milestone Success', aura: 'rgba(16, 185, 129, 0.3)' },
     coding: { label: 'Deep Focus / Quest Active', aura: 'rgba(37, 99, 235, 0.25)' },
     studying: { label: 'Language Study / Notebook', aura: 'rgba(16, 185, 129, 0.25)' },
+    curious: { label: 'Curious / Did You Know', aura: 'rgba(245, 158, 11, 0.25)' },
+    reading: { label: 'Reading / Ocha Time', aura: 'rgba(59, 130, 246, 0.25)' },
+    idea: { label: 'Aha Idea / Lightbulb', aura: 'rgba(250, 204, 21, 0.30)' },
+    polite: { label: 'Polite Keigo / Ojigi', aura: 'rgba(168, 85, 247, 0.25)' },
+    explaining: { label: 'Sensei Explaining Pattern', aura: 'rgba(14, 165, 233, 0.25)' },
+    listening: { label: 'Audio Listening / Headphones', aura: 'rgba(244, 63, 94, 0.25)' },
+    writing: { label: 'Calligraphy / Washi Notes', aura: 'rgba(16, 185, 129, 0.25)' },
+    chatting: { label: 'Conversation / Greeting', aura: 'rgba(56, 189, 248, 0.25)' },
+    clock: { label: 'Tense & Time Mastery', aura: 'rgba(251, 113, 133, 0.25)' },
+    cheering: { label: 'Uchiwa Fan Cheer', aura: 'rgba(245, 158, 11, 0.25)' },
     proud: { label: 'Boarding Pass / Offer Unlocked', aura: 'rgba(245, 158, 11, 0.3)' },
     warning: { label: 'Streak Alert / Daily Reminder', aura: 'rgba(251, 146, 60, 0.3)' },
   },

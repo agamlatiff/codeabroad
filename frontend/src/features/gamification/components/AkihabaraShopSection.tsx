@@ -73,9 +73,9 @@ export const AkihabaraShopSection = ({
               {/* Left Item Token & Info */}
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 <div
-                  className={`w-12 h-12 rounded-2xl border-2 ${item.iconBg} flex items-center justify-center ${item.iconColor} shadow-2xs shrink-0 group-hover:scale-105 transition-transform`}
+                  className={`w-13 h-13 rounded-2xl ${item.iconBg} flex items-center justify-center ${item.iconColor} shrink-0 group-hover:scale-105 transition-transform`}
                 >
-                  <ItemIcon weight="bold" className="w-6 h-6" />
+                  <ItemIcon weight="fill" className="w-6 h-6" />
                 </div>
 
                 <div className="space-y-0.5 min-w-0 flex-1">

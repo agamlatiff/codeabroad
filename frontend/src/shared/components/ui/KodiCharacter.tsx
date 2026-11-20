@@ -1,7 +1,13 @@
 import { useState, useRef, useEffect, type FC, type MouseEvent } from 'react'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { playSound } from "@/shared/utils/sound"
-import { MASCOT_TOKENS, SPEECH_BUBBLE_TOKENS } from "@/shared/tokens/mascotTokens"
+import {
+  MASCOT_TOKENS,
+  SPEECH_BUBBLE_TOKENS,
+  isKodiStudyEmotion,
+  type KodiStudyEmotion,
+} from "@/shared/tokens/mascotTokens"
+import { KodiStudyExpressionSvg } from "./KodiStudyExpressions"
 
 export type KodiEmotion =
   | 'welcome'
@@ -14,6 +20,7 @@ export type KodiEmotion =
   | 'warning'
   | 'onFire'
   | 'proud'
+  | KodiStudyEmotion
 
 export interface KodiCharacterProps {
   emotion?: KodiEmotion
@@ -67,7 +74,15 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
   }
 
   // Normalize emotion aliases
-  const normalizedEmotion: 'welcome' | 'coding' | 'studying' | 'celebrate' | 'thinking' | 'worried' | 'onFire' =
+  const normalizedEmotion:
+    | 'welcome'
+    | 'coding'
+    | 'studying'
+    | 'celebrate'
+    | 'thinking'
+    | 'worried'
+    | 'onFire'
+    | KodiStudyEmotion =
     emotion === 'happy'
       ? 'welcome'
       : emotion === 'warning'
@@ -505,6 +520,13 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               <circle cx="56" cy="126" r="9" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
               <circle cx="124" cy="126" r="9" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
             </g>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════════
+              EMOTION 7+: 10 STUDY / GRAMMAR / DID-YOU-KNOW EXPRESSIONS
+          ══════════════════════════════════════════════════════════════════ */}
+          {isKodiStudyEmotion(normalizedEmotion) && (
+            <KodiStudyExpressionSvg emotion={normalizedEmotion} />
           )}
         </svg>
       </div>

@@ -187,8 +187,10 @@ export const useQuests = () => {
         badge: remote.badge || fallback?.badge || 'ITEM',
         badgeColor: fallback?.badgeColor || 'bg-blue-100 text-blue-800 border-blue-200',
         icon: fallback?.icon || Flask,
-        iconBg: fallback?.iconBg || 'bg-blue-50 border-blue-200',
-        iconColor: fallback?.iconColor || 'text-blue-600',
+        iconBg:
+          fallback?.iconBg ||
+          'bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_3px_0_0_#1E3A8A]',
+        iconColor: fallback?.iconColor || 'text-white',
         category:
           remote.category === 'booster' || remote.category === 'boost'
             ? 'booster'
