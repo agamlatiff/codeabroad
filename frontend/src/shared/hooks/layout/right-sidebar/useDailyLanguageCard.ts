@@ -1,21 +1,12 @@
 import { useState, useMemo, useCallback, useRef, useEffect } from 'react'
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { vocabularyService } from '@/features/exercise/services/vocabularyService'
 import { languageService } from '@/features/curriculum/services/languageService'
-import {
-  flashcardService,
-  FLASHCARD_DECKS_QUERY_KEY,
-  FLASHCARD_DUE_QUERY_KEY,
-} from '@/features/flashcard/services/flashcardService'
 import type { VocabularyItem } from '@/features/exercise/types/vocabulary'
 import {
   getDailyVocabulariesQueryKey,
   getLanguageEnrollmentsQueryKey,
-  getDailyRewardsQueryKey,
-  getActivityLogsQueryKey,
-  DAILY_QUESTS_QUERY_KEY,
-  getProfileQueryKey,
 } from '@/shared/constants/queryKeys'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { audioEngine } from '@/shared/utils/audio'
@@ -112,12 +103,10 @@ function buildFallbackChoices(current: VocabularyItem, allItems: VocabularyItem[
  * Interactive Daily Language Card controller:
  * - Renders backend flashcard-backed daily vocabularies with Kana/Romaji/Flag metadata.
  * - Supports 2-speed pronunciation audio (`normal` 0.9x and `slow` 0.58x) without XP bypass.
- * - Supports interactive `Belajar | Tebak` mini-quiz persisting SM-2 reviews & XP to PostgreSQL.
+ * - Supports interactive `Belajar | Tebak` quick drill (0 XP; XP & SM-2 stay in Lesson & /flashcards).
  */
 export const useDailyLanguageCard = () => {
-  const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
-  const userIdKey = user?.id ?? 'anonymous'
 
   const { data: enrollments = [] } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(user?.id),
@@ -150,8 +139,7 @@ export const useDailyLanguageCard = () => {
   const [copied, setCopied] = useState(false)
   const [playingSpeed, setPlayingSpeed] = useState<AudioPlaybackSpeed | null>(null)
   const [selectedChoiceByCardId, setSelectedChoiceByCardId] = useState<Record<string, string>>({})
-  const [xpAwardedByCardId, setXpAwardedByCardId] = useState<Record<string, number>>({})
-  const [localReviewedIds, setLocalReviewedIds] = useState<Set<string>>(() => new Set())
+  const [localCorrectIds, setLocalCorrectIds] = useState<Set<string>>(() => new Set())
 
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -186,12 +174,12 @@ export const useDailyLanguageCard = () => {
         kana,
         arti: v.translation || v.meaning,
         quizChoices: choices,
-        isReviewedToday: Boolean(v.is_reviewed_today) || localReviewedIds.has(v.id),
+        isReviewedToday: Boolean(v.is_reviewed_today) || localCorrectIds.has(v.id),
         contoh: v.example_target || v.example_ja,
         terjemahan: v.example_translation || v.example_id,
       }
     })
-  }, [rawVocabs, languageMeta.languageCode, localReviewedIds])
+  }, [rawVocabs, languageMeta.languageCode, localCorrectIds])
 
   const totalVocabsCount = vocabList.length
   const normalizedIndex =
@@ -202,29 +190,6 @@ export const useDailyLanguageCard = () => {
     () => vocabList.filter((item) => item.isReviewedToday).length,
     [vocabList]
   )
-
-  const reviewCardMutation = useMutation({
-    mutationFn: ({ cardId, quality }: { cardId: string; quality: number }) =>
-      flashcardService.reviewCard(cardId, quality),
-    onSuccess: (res, variables) => {
-      setLocalReviewedIds((prev) => {
-        const next = new Set(prev)
-        next.add(variables.cardId)
-        return next
-      })
-      setXpAwardedByCardId((prev) => ({
-        ...prev,
-        [variables.cardId]: res.xp_awarded,
-      }))
-      void queryClient.invalidateQueries({ queryKey: dailyVocabQueryKey })
-      void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(userIdKey) })
-      void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(userIdKey) })
-      void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) })
-      void queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: FLASHCARD_DUE_QUERY_KEY })
-      void queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY })
-    },
-  })
 
   const handleNextVocab = useCallback(() => {
     triggerHaptic('tap')
@@ -292,7 +257,7 @@ export const useDailyLanguageCard = () => {
 
   const handleSelectQuizChoice = useCallback(
     (choice: string) => {
-      if (!currentVocab || reviewCardMutation.isPending) return
+      if (!currentVocab) return
       if (selectedChoiceByCardId[currentVocab.id]) return
 
       const isCorrect =
@@ -306,22 +271,30 @@ export const useDailyLanguageCard = () => {
       triggerHaptic(isCorrect ? 'success' : 'error')
       if (isCorrect) {
         audioEngine.playSuccess()
+        setLocalCorrectIds((prev) => {
+          const next = new Set(prev)
+          next.add(currentVocab.id)
+          return next
+        })
       } else {
         audioEngine.playError()
       }
-
-      if (!currentVocab.isReviewedToday) {
-        reviewCardMutation.mutate({
-          cardId: currentVocab.id,
-          quality: isCorrect ? 4 : 1,
-        })
-      }
     },
-    [currentVocab, reviewCardMutation, selectedChoiceByCardId]
+    [currentVocab, selectedChoiceByCardId]
   )
 
+  const handleRetryQuizChoice = useCallback(() => {
+    if (!currentVocab) return
+    triggerHaptic('tap')
+    setSelectedChoiceByCardId((prev) => {
+      if (!(currentVocab.id in prev)) return prev
+      const next = { ...prev }
+      delete next[currentVocab.id]
+      return next
+    })
+  }, [currentVocab])
+
   const selectedQuizChoice = currentVocab ? selectedChoiceByCardId[currentVocab.id] ?? null : null
-  const lastXpAwarded = currentVocab ? xpAwardedByCardId[currentVocab.id] ?? null : null
 
   return {
     languageMeta,
@@ -334,13 +307,12 @@ export const useDailyLanguageCard = () => {
     copied,
     playingSpeed,
     selectedQuizChoice,
-    lastXpAwarded,
-    isSubmittingQuiz: reviewCardMutation.isPending,
     handleSetCardMode,
     handlePrevVocab,
     handleNextVocab,
     handleCopy,
     handleSpeak,
     handleSelectQuizChoice,
+    handleRetryQuizChoice,
   }
 }

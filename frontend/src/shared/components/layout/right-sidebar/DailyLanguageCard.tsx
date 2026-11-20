@@ -24,7 +24,7 @@ export interface DailyLanguageCardProps {
  * DailyLanguageCard (SSOT)
  * Interactive daily vocabulary mini-widget in AppRightSidebar:
  * - Official SVG country flag badge matching the active enrolled language.
- * - Toggle between `Belajar` (study card + kana/romaji + meaning) and `Tebak` (3-choice quick quiz persisted to SM-2).
+ * - Toggle between `Belajar` (study card + kana/romaji + meaning) and `Tebak` (0 XP 3-choice quick practice).
  * - Two-speed pronunciation TTS (`Normal` and `0.6x`) plus deep-link to the source flashcard deck.
  */
 export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
@@ -41,14 +41,13 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
     copied,
     playingSpeed,
     selectedQuizChoice,
-    lastXpAwarded,
-    isSubmittingQuiz,
     handleSetCardMode,
     handlePrevVocab,
     handleNextVocab,
     handleCopy,
     handleSpeak,
     handleSelectQuizChoice,
+    handleRetryQuizChoice,
   } = useDailyLanguageCard()
 
   if (isLoading) {
@@ -324,7 +323,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
                     <button
                       key={choice}
                       type="button"
-                      disabled={hasAnsweredQuiz || isSubmittingQuiz}
+                      disabled={hasAnsweredQuiz}
                       onClick={() => handleSelectQuizChoice(choice)}
                       className={`w-full px-3 py-1.5 rounded-xl border-2 text-left text-[11px] font-brand font-bold transition-all cursor-pointer disabled:cursor-default flex items-center justify-between gap-2 ${btnClass}`}
                     >
@@ -354,24 +353,31 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
                       )}
                       <span>
                         {isQuizCorrect
-                          ? lastXpAwarded
-                            ? `Tepat! Masuk SM-2 (+${lastXpAwarded} XP)`
-                            : 'Tepat!'
-                          : lastXpAwarded
-                            ? `Arti: ${currentVocab.arti} • Masuk antrean ulang (+${lastXpAwarded} XP)`
-                            : `Arti yang benar: ${currentVocab.arti}`}
+                          ? `Tepat! Arti: ${currentVocab.arti}`
+                          : `Belum tepat • Arti: ${currentVocab.arti}`}
                       </span>
                     </div>
 
-                    {totalVocabsCount > 1 && (
-                      <button
-                        type="button"
-                        onClick={handleNextVocab}
-                        className="shrink-0 px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 font-brand font-black text-[10px] hover:bg-slate-50 cursor-pointer"
-                      >
-                        Lanjut →
-                      </button>
-                    )}
+                    <div className="flex items-center gap-1 shrink-0">
+                      {!isQuizCorrect && (
+                        <button
+                          type="button"
+                          onClick={handleRetryQuizChoice}
+                          className="px-2 py-1 rounded-lg bg-white border border-rose-200 text-rose-700 font-brand font-black text-[10px] hover:bg-rose-50 cursor-pointer"
+                        >
+                          Ulangi
+                        </button>
+                      )}
+                      {totalVocabsCount > 1 && (
+                        <button
+                          type="button"
+                          onClick={handleNextVocab}
+                          className="px-2 py-1 rounded-lg bg-white border border-slate-200 text-slate-800 font-brand font-black text-[10px] hover:bg-slate-50 cursor-pointer"
+                        >
+                          Lanjut →
+                        </button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}
