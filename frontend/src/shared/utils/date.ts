@@ -35,11 +35,25 @@ const WIB_OFFSET_MS = 7 * 60 * 60 * 1000
 const DAY_MS = 24 * 60 * 60 * 1000
 
 /**
+ * Returns the current hour (0-23) in WIB (Asia/Jakarta, UTC+7) using pure epoch math.
+ */
+export const getWibHour = (date: Date = new Date()): number => {
+  return new Date(date.getTime() + WIB_OFFSET_MS).getUTCHours()
+}
+
+/**
+ * Returns milliseconds remaining until the next midnight WIB (UTC+7).
+ */
+export const getWibMidnightRemainingMs = (nowMs: number = Date.now()): number => {
+  const wibEpochMs = nowMs + WIB_OFFSET_MS
+  return Math.max(0, DAY_MS - (wibEpochMs % DAY_MS))
+}
+
+/**
  * Computes HH:MM:SS remaining until next midnight WIB (UTC+7) using pure epoch math (no DST drift).
  */
 export const getWibMidnightCountdown = (): string => {
-  const wibEpochMs = Date.now() + WIB_OFFSET_MS
-  const diffMs = Math.max(0, DAY_MS - (wibEpochMs % DAY_MS))
+  const diffMs = getWibMidnightRemainingMs()
 
   const hours = Math.floor(diffMs / (1000 * 60 * 60))
   const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60))

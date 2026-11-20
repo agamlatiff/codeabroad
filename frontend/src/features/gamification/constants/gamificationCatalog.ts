@@ -10,6 +10,8 @@ import {
 
 export type QuestPageTab = 'daily' | 'boss' | 'shop'
 
+export type ShopCategoryFilter = 'all' | 'protection' | 'booster' | 'career'
+
 export interface ShopItem {
   id: string
   title: string
@@ -74,26 +76,26 @@ export const DAILY_CHEST_TIERS: DailyChestTierConfig[] = [
   {
     tier: 1,
     label: 'Peti Perunggu',
-    reward: '+5 💎 & XP',
+    reward: '+5 Gems · +20 XP',
     gemReward: 5,
     xpReward: 20,
-    icon: '🥉',
+    icon: 'bronze',
   },
   {
     tier: 2,
     label: 'Peti Perak',
-    reward: '+15 💎 & XP',
+    reward: '+15 Gems · +50 XP',
     gemReward: 15,
     xpReward: 50,
-    icon: '🥈',
+    icon: 'silver',
   },
   {
     tier: 3,
     label: 'Peti Emas',
-    reward: '+30 💎 & XP',
+    reward: '+30 Gems · +100 XP',
     gemReward: 30,
     xpReward: 100,
-    icon: '👑',
+    icon: 'gold',
   },
 ]
 
@@ -129,10 +131,10 @@ export const MILESTONE_CHALLENGES: MilestoneChallengeConfig[] = [
 export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'streak-freeze',
-    title: 'Streak Freeze ❄️',
+    title: 'Streak Freeze',
     subtitle: 'Perlindungan 1 hari penuh dari pemutusan streak saat Anda berhalangan hadir.',
     price: 20,
-    badge: 'POPULER 🔥',
+    badge: 'POPULER',
     badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
     icon: ShieldCheck,
     iconBg: 'bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8]',
@@ -141,10 +143,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'xp-booster',
-    title: 'XP Booster Potion 🧪',
+    title: 'XP Booster Potion',
     subtitle: 'Bonus perlengkapan koleksi & booster fokus untuk mempercepat progres belajar bahasa.',
     price: 35,
-    badge: 'BOOSTER ⚡',
+    badge: 'BOOSTER',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     icon: Flask,
     iconBg: 'bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_3px_0_0_#B45309]',
@@ -153,10 +155,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'cv-review',
-    title: 'Kupon Review CV Global 📋',
+    title: 'Kupon Review CV Global',
     subtitle: 'Audit CV (Rirekisho / Lebenslauf / Resume Internasional) dan portofolio bersama mentor.',
     price: 100,
-    badge: 'KARIER GLOBAL 🌐',
+    badge: 'KARIER GLOBAL',
     badgeColor: 'bg-emerald-100 text-emerald-800 border-emerald-200',
     icon: FileText,
     iconBg: 'bg-gradient-to-b from-emerald-400 to-teal-600 shadow-[0_3px_0_0_#0F766E]',
@@ -165,10 +167,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'mock-interview',
-    title: 'Akses VIP Mock Interview 🎙️',
+    title: 'Akses VIP Mock Interview',
     subtitle: 'Simulasi 1-on-1 wawancara kerja berbahasa target bersama mentor via Discord Voice.',
     price: 150,
-    badge: 'EKSKLUSIF ⭐',
+    badge: 'EKSKLUSIF',
     badgeColor: 'bg-purple-100 text-purple-800 border-purple-200',
     icon: Microphone,
     iconBg: 'bg-gradient-to-b from-violet-500 to-purple-600 shadow-[0_3px_0_0_#6D28D9]',

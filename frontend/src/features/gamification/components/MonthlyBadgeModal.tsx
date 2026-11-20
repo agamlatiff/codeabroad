@@ -1,14 +1,17 @@
 import { Medal, Sparkle, Check, Trophy } from '@phosphor-icons/react'
 import { Modal3D } from './Modal3D'
 import { Button3D } from "@/shared/components/ui/Button3D"
+import { XpBoltIcon } from "@/shared/components/ui/GamificationIcons"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
+import { MonthlyBadgeEmblem } from "@/features/gamification/components/MonthlyBadgeEmblem"
 
 export interface MonthlyBadgeModalProps {
   isOpen: boolean
   onClose: () => void
   monthYearName: string
+  monthShort?: string
   completedCount: number
   targetCount: number
   isClaimed: boolean
@@ -19,6 +22,7 @@ export const MonthlyBadgeModal = ({
   isOpen,
   onClose,
   monthYearName,
+  monthShort,
   completedCount,
   targetCount,
   isClaimed,
@@ -27,6 +31,8 @@ export const MonthlyBadgeModal = ({
   if (!isOpen) return null
 
   const isEligible = completedCount >= targetCount
+  const progressPercent = Math.min(100, Math.round((completedCount / targetCount) * 100))
+  const resolvedMonthShort = (monthShort || monthYearName.slice(0, 3) || 'BLN').toUpperCase()
 
   const handleClaim = () => {
     triggerHaptic('success')
@@ -50,17 +56,19 @@ export const MonthlyBadgeModal = ({
           </span>
         </div>
 
-        {/* Kodi with Golden Master Medallion */}
+        {/* Kodi with Japanese Golden Medallion Emblem */}
         <div className="relative flex items-center justify-center my-3">
-          {/* Radiant Aura */}
           <div className="absolute w-44 h-44 bg-gradient-to-tr from-amber-300/40 via-yellow-200/30 to-blue-300/30 rounded-full blur-2xl animate-pulse" />
 
-          {/* Living Kodi Character */}
           <div className="relative z-10 flex items-center justify-center">
             <KodiCharacter emotion="celebrate" size={120} interactive />
-            {/* Medallion Floating Badge */}
-            <div className="absolute -bottom-2 -right-4 w-14 h-14 rounded-3xl bg-gradient-to-br from-amber-300 via-yellow-400 to-amber-600 border-3 border-white shadow-xl flex items-center justify-center text-white z-20">
-              <Medal weight="fill" className="w-8 h-8 text-amber-950 drop-shadow-sm" />
+            <div className="relative -ml-4 bg-white/95 rounded-2xl border-2 border-amber-300 p-1 shadow-lg z-20">
+              <MonthlyBadgeEmblem
+                monthShort={resolvedMonthShort}
+                progressPercent={progressPercent}
+                isUnlocked={isClaimed || isEligible}
+                size={68}
+              />
             </div>
           </div>
         </div>
@@ -93,7 +101,7 @@ export const MonthlyBadgeModal = ({
           <div className="h-3 bg-white rounded-full border border-amber-300 p-0.5 shadow-inner overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-amber-400 to-amber-500 rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.round((completedCount / targetCount) * 100))}%` }}
+              style={{ width: `${progressPercent}%` }}
             />
           </div>
         </div>
@@ -101,12 +109,12 @@ export const MonthlyBadgeModal = ({
         {/* Claim Rewards Info */}
         <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-around text-xs font-brand font-black text-slate-800">
           <div className="flex items-center gap-1.5">
-            <span className="text-base">🏅</span>
+            <Medal weight="fill" className="w-4 h-4 text-amber-500" />
             <span>Lencana Profil Permanen</span>
           </div>
           <div className="w-1 h-1 bg-slate-300 rounded-full" />
-          <div className="flex items-center gap-1 text-amber-600">
-            <span className="text-base">⚡</span>
+          <div className="flex items-center gap-1.5 text-amber-700">
+            <XpBoltIcon className="w-4 h-4 shrink-0" />
             <span>Bonus +150 XP Otomatis</span>
           </div>
         </div>

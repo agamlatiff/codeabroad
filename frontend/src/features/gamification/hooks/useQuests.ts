@@ -19,6 +19,7 @@ import {
   type DailyQuestViewItem,
   type MilestoneChallengeViewItem,
   type QuestPageTab,
+  type ShopCategoryFilter,
   type ShopItem,
 } from '@/features/gamification/constants/gamificationCatalog'
 import {
@@ -31,7 +32,7 @@ import {
   SRS_DUE_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
 import { extractApiErrorMessage } from '@/shared/services/api'
-import { getWibDateKey } from '@/shared/utils/date'
+import { getWibDateKey, getWibHour, getWibMidnightRemainingMs } from '@/shared/utils/date'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { audioEngine } from '@/shared/utils/audio'
 import { BookOpen, Cards, Flask, Lightning, Target, Translate } from '@phosphor-icons/react'
@@ -42,10 +43,47 @@ import type { MockInterviewSchedulePayload } from '@/features/gamification/compo
 export type QuestTab = 'all' | 'daily' | 'main' | 'side'
 
 const VALID_QUEST_TABS: ReadonlySet<QuestPageTab> = new Set(['daily', 'boss', 'shop'])
+const URGENT_RESET_THRESHOLD_MS = 2 * 60 * 60 * 1000
+
+const KODI_QUEST_TIPS: ReadonlyArray<{ emotion: KodiEmotion; speech: string }> = [
+  {
+    emotion: 'idea',
+    speech: 'Tips: Mulai dari misi kilat 5 menit dulu agar Peti Perunggu langsung siap dibuka!',
+  },
+  {
+    emotion: 'explaining',
+    speech: 'Setiap pelajaran & misi yang selesai otomatis ikut dihitung ke target Lencana Bulanan.',
+  },
+  {
+    emotion: 'curious',
+    speech: 'Kumpulkan Gems dari Peti Harian untuk ditukar Streak Freeze atau Review CV di Pasar Guild.',
+  },
+  {
+    emotion: 'clock',
+    speech: 'Misi harian direset otomatis pukul 00:00 WIB. Luangkan 10 menit sebelum tidur biar streak aman!',
+  },
+  {
+    emotion: 'cheering',
+    speech: 'Tuntaskan ketiga misi hari ini untuk membuka Peti Emas (+30 Gems & +100 XP).',
+  },
+]
 
 function parseQuestTabParam(raw: string | null): QuestPageTab {
   const lower = (raw ?? '').trim().toLowerCase() as QuestPageTab
   return VALID_QUEST_TABS.has(lower) ? lower : 'daily'
+}
+
+function formatDisplayFirstName(rawName?: string): string {
+  const firstToken = (rawName ?? '').trim().split(/\s+/)[0] || ''
+  if (!firstToken) return 'Sobat'
+  return firstToken.charAt(0).toUpperCase() + firstToken.slice(1)
+}
+
+function getWibTimeGreeting(hour: number): string {
+  if (hour >= 4 && hour <= 10) return 'Semangat Pagi!'
+  if (hour >= 11 && hour <= 14) return 'Semangat Siang!'
+  if (hour >= 15 && hour <= 17) return 'Semangat Sore!'
+  return 'Semangat Malam!'
 }
 
 /**
@@ -72,14 +110,23 @@ export const useQuests = () => {
     }
   }, [activeTab, rawTabParam, setSearchParams])
 
+  const [activeTipIndex, setActiveTipIndex] = useState<number | null>(null)
+  const [shopCategory, setShopCategory] = useState<ShopCategoryFilter>('all')
+
   const setActiveTab = useCallback(
     (nextTab: QuestPageTab) => {
+      setActiveTipIndex(null)
       setSearchParams({ tab: nextTab }, { replace: true })
     },
     [setSearchParams]
   )
 
-  const [searchQuery, setSearchQuery] = useState('')
+  const handleCycleKodiTip = useCallback(() => {
+    triggerHaptic('tap')
+    audioEngine.playPop()
+    setActiveTipIndex((prev) => (prev === null ? 0 : (prev + 1) % KODI_QUEST_TIPS.length))
+  }, [])
+
   const [activeTrack, setActiveTrack] = useState('')
 
   const [isCourseSwitcherOpen, setIsCourseSwitcherOpen] = useState(false)
@@ -201,6 +248,11 @@ export const useQuests = () => {
     })
   }, [shopQuery.data])
 
+  const filteredShopItems = useMemo(() => {
+    if (shopCategory === 'all') return shopItems
+    return shopItems.filter((item) => item.category === shopCategory)
+  }, [shopItems, shopCategory])
+
   // Pure UTC+7 WIB calendar calculations
   const todayDateKey = useMemo(() => getWibDateKey(), [])
   const [wibYear, wibMonth, wibDay] = useMemo(
@@ -214,6 +266,18 @@ export const useQuests = () => {
         year: 'numeric',
         timeZone: 'Asia/Jakarta',
       }),
+    [wibYear, wibMonth]
+  )
+  const currentMonthShort = useMemo(
+    () =>
+      new Date(Date.UTC(wibYear, wibMonth - 1, 15))
+        .toLocaleDateString('id-ID', {
+          month: 'short',
+          timeZone: 'Asia/Jakarta',
+        })
+        .replace('.', '')
+        .slice(0, 3)
+        .toUpperCase(),
     [wibYear, wibMonth]
   )
   const daysLeftInMonth = useMemo(() => {
@@ -255,33 +319,19 @@ export const useQuests = () => {
     [dailyQuestsQuery.data]
   )
 
-  const filteredDaily = useMemo(() => {
-    if (!searchQuery.trim()) return dailyQuests
-    const q = searchQuery.toLowerCase()
-    return dailyQuests.filter(
-      (item) => item.title.toLowerCase().includes(q) || item.chip_label.toLowerCase().includes(q)
-    )
-  }, [dailyQuests, searchQuery])
-
   const earnedBadgeKeys = useMemo(() => {
     const list = badgesQuery.data?.user_badges ?? gamificationStatus?.badges ?? []
     return new Set(list.map((b) => b.badge_key))
   }, [badgesQuery.data?.user_badges, gamificationStatus?.badges])
 
-  const milestoneChallenges = useMemo<MilestoneChallengeViewItem[]>(() => {
-    const items: MilestoneChallengeViewItem[] = MILESTONE_CHALLENGES.map((challenge) => ({
-      ...challenge,
-      isCompleted: earnedBadgeKeys.has(challenge.id),
-    }))
-    if (!searchQuery.trim()) return items
-    const q = searchQuery.toLowerCase()
-    return items.filter(
-      (c) =>
-        c.title.toLowerCase().includes(q) ||
-        c.subtitle.toLowerCase().includes(q) ||
-        c.tags.some((t) => t.toLowerCase().includes(q))
-    )
-  }, [earnedBadgeKeys, searchQuery])
+  const milestoneChallenges = useMemo<MilestoneChallengeViewItem[]>(
+    () =>
+      MILESTONE_CHALLENGES.map((challenge) => ({
+        ...challenge,
+        isCompleted: earnedBadgeKeys.has(challenge.id),
+      })),
+    [earnedBadgeKeys]
+  )
 
   const dailyDoneCount = dailyQuests.filter((d) => d.isCompleted).length
   const totalDailyTarget = dailyQuests.length
@@ -305,31 +355,76 @@ export const useQuests = () => {
   )
   const isMonthlyBadgeClaimed = Boolean(gamificationStatus?.monthly_badge_claimed)
 
-  const userFirstName = user?.name ? user.name.split(' ')[0] : 'Sobat'
+  const userFirstName = formatDisplayFirstName(user?.name)
+  const wibHour = getWibHour()
+  const timeGreeting = getWibTimeGreeting(wibHour)
+  const isResetUrgent = getWibMidnightRemainingMs() < URGENT_RESET_THRESHOLD_MS
+
   const kodiCompanion = useMemo(() => {
+    if (activeTab === 'shop') {
+      if (userGems < 20) {
+        return {
+          emotion: 'curious' as KodiEmotion,
+          badge: timeGreeting,
+          badgeBg: 'bg-sky-100 text-sky-900 border-sky-300',
+          speech: `Halo ${userFirstName}! Kumpulkan ${20 - userGems} Gems lagi dari Peti Harian untuk menukar Streak Freeze pertamamu.`,
+        }
+      }
+      return {
+        emotion: 'idea' as KodiEmotion,
+        badge: 'Pasar Guild Aktif',
+        badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
+        speech: `Saldo kamu ${userGems} Gems, ${userFirstName}! Pilih proteksi streak atau kupon karier di etalase guild.`,
+      }
+    }
+
+    if (activeTab === 'boss') {
+      return {
+        emotion: 'explaining' as KodiEmotion,
+        badge: timeGreeting,
+        badgeBg: 'bg-violet-100 text-violet-900 border-violet-300',
+        speech: `Tantangan S-Rank menguji kesiapan levelmu, ${userFirstName}. Selesaikan modul kurikulum untuk meraih bounty besar!`,
+      }
+    }
+
+    if (totalDailyTarget > 0 && dailyDoneCount >= totalDailyTarget) {
+      return {
+        emotion: 'celebrate' as KodiEmotion,
+        badge: 'Semua Misi Tuntas!',
+        badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+        speech: `Luar biasa, ${userFirstName}! Semua misi harian selesai — jangan lupa buka ketiga Peti Hadiahmu!`,
+      }
+    }
+
+    if (isResetUrgent) {
+      return {
+        emotion: 'clock' as KodiEmotion,
+        badge: timeGreeting,
+        badgeBg: 'bg-rose-100 text-rose-900 border-rose-300',
+        speech: `Sisa waktu harian kurang dari 2 jam, ${userFirstName}! Yuk tuntaskan misi tercepat agar streak aman.`,
+      }
+    }
+
     if (dailyDoneCount === 0) {
       return {
         emotion: 'welcome' as KodiEmotion,
-        badge: 'Semangat Pagi! ⚡',
-        badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
+        badge: timeGreeting,
+        badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
         speech: `Halo ${userFirstName}! Selesaikan 3 misi hari ini untuk menjaga streak dan membuka Peti Emas!`,
       }
     }
-    if (dailyDoneCount < totalDailyTarget) {
-      return {
-        emotion: 'coding' as KodiEmotion,
-        badge: 'Sedang Berjalan 🚀',
-        badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
-        speech: `Keren banget! Tinggal ${totalDailyTarget - dailyDoneCount} misi lagi untuk membuka Peti Emas Harian!`,
-      }
-    }
+
     return {
-      emotion: 'celebrate' as KodiEmotion,
-      badge: 'Semua Misi Tuntas! 🎉',
-      badgeBg: 'bg-emerald-100 text-emerald-900 border-emerald-300',
-      speech: `Luar biasa, ${userFirstName}! Semua misi harian tuntas dan streak Anda aman!`,
+      emotion: 'cheering' as KodiEmotion,
+      badge: timeGreeting,
+      badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
+      speech: `Keren, ${userFirstName}! Tinggal ${totalDailyTarget - dailyDoneCount} misi lagi untuk membuka Peti Emas Harian!`,
     }
-  }, [dailyDoneCount, totalDailyTarget, userFirstName])
+  }, [activeTab, dailyDoneCount, isResetUrgent, timeGreeting, totalDailyTarget, userFirstName, userGems])
+
+  const activeTip = activeTipIndex !== null ? KODI_QUEST_TIPS[activeTipIndex] : null
+  const displayedKodiEmotion = activeTip ? activeTip.emotion : kodiCompanion.emotion
+  const displayedKodiSpeech = activeTip ? activeTip.speech : kodiCompanion.speech
 
   const invalidateGamificationCaches = useCallback(async () => {
     await Promise.all([
@@ -518,10 +613,8 @@ export const useQuests = () => {
     [invalidateGamificationCaches, showToast, updateUser]
   )
 
-  const hasNoResults =
-    searchQuery.trim().length > 0 &&
-    ((activeTab === 'daily' && filteredDaily.length === 0) ||
-      (activeTab === 'boss' && milestoneChallenges.length === 0))
+  const dailyProgressPercent =
+    totalDailyTarget > 0 ? Math.min(100, Math.round((dailyDoneCount / totalDailyTarget) * 100)) : 0
 
   const totalCount = dailyQuests.length + MILESTONE_CHALLENGES.length
   const completedCount =
@@ -532,8 +625,8 @@ export const useQuests = () => {
   return {
     activeTab,
     setActiveTab,
-    searchQuery,
-    setSearchQuery,
+    shopCategory,
+    setShopCategory,
     activeTrack,
     isCourseSwitcherOpen,
     setIsCourseSwitcherOpen,
@@ -554,19 +647,24 @@ export const useQuests = () => {
     inventory,
     claimedDailyChests,
     shopItems,
+    filteredShopItems,
     dailyQuests,
-    filteredDaily,
     milestoneChallenges,
     dailyDoneCount,
     totalDailyTarget,
+    dailyProgressPercent,
     currentMonthYearName,
+    currentMonthShort,
     daysLeftInMonth,
     monthlyCompletedCount,
     monthlyTargetCount,
     monthlyProgressPercent,
     isMonthlyBadgeClaimed,
     kodiCompanion,
-    hasNoResults,
+    displayedKodiEmotion,
+    displayedKodiSpeech,
+    activeTipIndex,
+    handleCycleKodiTip,
     completedCount,
     totalCount,
     progressPercent,

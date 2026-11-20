@@ -9,6 +9,7 @@ import {
 import { LanguageFlagIllustration } from "@/features/onboarding/components/illustrations/FlagIllustrations"
 import { UserAvatar } from "@/shared/components/layout/left-sidebar/UserAvatar"
 import { AppBreadcrumb, type BreadcrumbItem } from "@/shared/components/ui/AppBreadcrumb"
+import { GemIcon } from "@/shared/components/ui/GamificationIcons"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { computeXpLevelProgress } from "@/shared/utils/progression"
@@ -146,7 +147,7 @@ export const AppTopBar = ({
               className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
               title={`Saldo Permata Tokyo: ${userGems} Gems`}
             >
-              <span className="text-xs sm:text-sm shrink-0">💎</span>
+              <GemIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
               <span>{userGems}</span>
             </div>
 
