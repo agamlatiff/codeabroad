@@ -24,32 +24,32 @@ export interface N5UnitStudyGuide {
 
 const STAGE_META: Record<N5StageNumber, { title: string; subtitle: string }> = {
   1: {
-    title: 'Fondasi Aksara & Kalimat Pertama',
-    subtitle: 'Kuasai 46 Hiragana + Tenten/Maru/Yōon sambil menyapa dan menyusun kalimat pertama.',
+    title: 'Fondasi Huruf & Kalimat Pertama',
+    subtitle: 'Kuasai 46 Hiragana beserta bunyi variasinya sambil berlatih menyapa dan menyusun kalimat pertama.',
   },
   2: {
-    title: 'Identitas, Keluarga, Angka & Kalender',
-    subtitle: 'Gabungkan Katakana awal, 25+ Kanji dasar, kata bantu hitung, dan penyebutan jam/hari.',
+    title: 'Identitas, Keluarga, Angka & Jadwal',
+    subtitle: 'Mulai baca Katakana dan 25+ Kanji dasar untuk menyebut nama negara, cara hitung benda, jam, dan hari.',
   },
   3: {
-    title: 'Rutinitas Harian & Verba SOPAN (～ます)',
-    subtitle: 'Bedakan partikel に vs で vs を, ajak teman, dan ceritakan perjalanan naik transportasi.',
+    title: 'Rutinitas Harian & Aktivitas Sopan',
+    subtitle: 'Ceritakan kegiatan sehari-hari, bedakan penanda tempat dan alat, ajak teman, serta bahas transportasi.',
   },
   4: {
     title: 'Ruang, Keberadaan & Kata Sifat',
-    subtitle: 'Tuntaskan seluruh 46 Katakana, posisi ruangan, pakaian, Sifat-I vs Sifat-Na, & perbandingan.',
+    subtitle: 'Tuntaskan seluruh 46 Katakana sambil belajar letak benda, belanja pakaian, sifat benda, dan cuaca.',
   },
   5: {
-    title: 'Jantung N5 — Bentuk-TE & Bentuk-NAI',
-    subtitle: 'Kuasai konjugasi penentu kelulusan N5: permintaan, izin, larangan, kewajiban, & perubahan.',
+    title: 'Bentuk Sambung, Izin & Kewajiban',
+    subtitle: 'Pelajari cara meminta tolong dengan sopan, meminta izin, aturan larangan, berobat di klinik, dan perubahan keadaan.',
   },
   6: {
-    title: 'Lampau, Pengalaman, Kamus & Gaya Kasual',
-    subtitle: 'Ceritakan kejadian lampau (~た), hobi dengan Bentuk Kamus, opini (~と思う), & anak kalimat.',
+    title: 'Lampau, Pengalaman, Kamus & Gaya Santai',
+    subtitle: 'Ceritakan kejadian lampau dan pengalaman, bahas hobi dengan bentuk kamus, sampaikan opini, serta gaya bicara santai.',
   },
   7: {
-    title: 'Keinginan, Saling Bantu & Ujian Kesiapan N5',
-    subtitle: 'Ekspresikan niat (~たい), sudut pandang memberi/menerima, & simulasi penuh JLPT N5.',
+    title: 'Keinginan, Saling Bantu & Simulasi JLPT N5',
+    subtitle: 'Ungkapkan keinginan, tujuan pergi, budaya saling membantu, hingga simulasi penuh kesiapan ujian JLPT N5.',
   },
 }
 
