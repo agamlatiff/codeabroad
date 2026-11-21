@@ -138,6 +138,11 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
       <div
         role="button"
         tabIndex={0}
+        data-tour={
+          node.status === 'active' && !node.isChest && !node.isTrophy
+            ? 'active-lesson-node'
+            : undefined
+        }
         aria-label={`${node.title} (${node.status === 'completed' ? 'selesai' : node.status === 'active' ? 'aktif' : 'terkunci'})`}
         onClick={() => onClick(node)}
         onKeyDown={handleKeyDown}

@@ -61,6 +61,7 @@ export const AppLeftSidebar = () => {
                 <Link
                   key={item.label}
                   to={item.href}
+                  data-tour={item.tourId}
                   onClick={() => triggerHaptic('tap')}
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative group ${
                     item.isActive
@@ -147,6 +148,7 @@ export const AppLeftSidebar = () => {
             <Link
               key={item.label}
               to={item.href}
+              data-tour={item.tourId}
               onClick={() => triggerHaptic('tap')}
               className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all relative ${
                 item.isActive ? 'text-blue-600 font-bold' : 'text-slate-500'

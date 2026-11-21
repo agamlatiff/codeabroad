@@ -33,6 +33,7 @@ export interface LeftSidebarNavItem {
   icon: Icon
   hasBadge?: boolean
   isActive: boolean
+  tourId?: string
 }
 
 export const useAppLeftSidebar = () => {
@@ -67,6 +68,7 @@ export const useAppLeftSidebar = () => {
         tooltip: 'Langkah 1 • Hiragana, Katakana & Kanji',
         href: '/kana/hiragana',
         icon: Translate,
+        tourId: 'nav-kana',
       },
       {
         label: 'Flashcard',
@@ -77,12 +79,14 @@ export const useAppLeftSidebar = () => {
         href: '/flashcards',
         icon: Cards,
         hasBadge: flashcardDueCount > 0,
+        tourId: 'nav-flashcards',
       },
       {
         label: 'Grammar',
         tooltip: 'Langkah 3 • Pola & Rumus Kalimat',
         href: '/grammar',
         icon: BookOpenText,
+        tourId: 'nav-grammar',
       },
       {
         label: 'Misi',

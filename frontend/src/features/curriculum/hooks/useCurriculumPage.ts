@@ -116,6 +116,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
   const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false)
+  const [isTourOpen, setIsTourOpen] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
 
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -142,17 +143,33 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     }, TOAST_DURATION_MS)
   }, [])
 
-  // ── 4a. DATABASE-BACKED FIRST-TIME TOUR ONBOARDING ──
+  // ── 4a. DATABASE-BACKED FIRST-TIME SPOTLIGHT TOUR & REPLAY ──
   const hasSeenTour = user?.has_seen_roadmap_tour
   const hasTriggeredTourRef = useRef(false)
   const isTourPersistingRef = useRef(false)
+  const tourRequestedViaUrl = searchParams.get('tour') === '1'
 
   useEffect(() => {
-    if (hasSeenTour === false && enrollments.length >= 2 && !hasTriggeredTourRef.current) {
-      hasTriggeredTourRef.current = true
-      setIsSwitcherOpen(true)
+    if (isLoading || !curriculumData) return
+
+    if (tourRequestedViaUrl) {
+      const nextParams = new URLSearchParams(searchParams)
+      nextParams.delete('tour')
+      const timer = window.setTimeout(() => {
+        setSearchParams(nextParams, { replace: true })
+        setIsTourOpen(true)
+      }, 150)
+      return () => window.clearTimeout(timer)
     }
-  }, [hasSeenTour, enrollments.length])
+
+    if (hasSeenTour === false && !hasTriggeredTourRef.current) {
+      hasTriggeredTourRef.current = true
+      const timer = window.setTimeout(() => {
+        setIsTourOpen(true)
+      }, 450)
+      return () => window.clearTimeout(timer)
+    }
+  }, [curriculumData, hasSeenTour, isLoading, searchParams, setSearchParams, tourRequestedViaUrl])
 
   const markTourSeen = useCallback(async () => {
     if (hasSeenTour !== false || isTourPersistingRef.current) return
@@ -169,6 +186,16 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       isTourPersistingRef.current = false
     }
   }, [hasSeenTour, updateUser, queryClient, userIdKey])
+
+  const completeTour = useCallback(() => {
+    setIsTourOpen(false)
+    void markTourSeen()
+  }, [markTourSeen])
+
+  const skipTour = useCallback(() => {
+    setIsTourOpen(false)
+    void markTourSeen()
+  }, [markTourSeen])
 
   // ── 5. LANGUAGE SWITCHING & INTERACTION HANDLERS ──
   const isSwitchingRef = useRef(false)
@@ -276,6 +303,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     modals: {
       isSwitcherOpen,
       isMobileDrawerOpen,
+      isTourOpen,
     },
     actions: {
       refetch: handleRefetch,
@@ -285,6 +313,8 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       handleSelectLanguage,
       handleActivateCurrentTrack,
       handleStartLesson,
+      completeTour,
+      skipTour,
     },
   }
 }

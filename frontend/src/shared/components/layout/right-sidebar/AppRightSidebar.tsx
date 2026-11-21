@@ -49,25 +49,29 @@ export const AppRightSidebar = ({
 
   const sidebarContent = (
     <>
-      {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (1:1 Hook) ── */}
-      <StreakSection />
+      <div data-tour="right-streak-quests" className="space-y-3">
+        {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (1:1 Hook) ── */}
+        <StreakSection />
 
-      {/* ── SUBTLE SECTION DIVIDER ── */}
-      <div className="h-[1px] bg-slate-100" />
+        {/* ── SUBTLE SECTION DIVIDER ── */}
+        <div className="h-[1px] bg-slate-100" />
 
-      {/* ── 2. MISI & TARGET HARIAN (1:1 Hook) ── */}
-      <QuestsSection
-        onClaimDailyQuest={(questId, e) => handleClaimDailyQuest(questId, e)}
-        onClaimChestReward={(e) => handleClaimChest(e)}
-        isClaimingQuest={isClaimingQuest}
-        claimingQuestId={claimingQuestId}
-      />
+        {/* ── 2. MISI & TARGET HARIAN (1:1 Hook) ── */}
+        <QuestsSection
+          onClaimDailyQuest={(questId, e) => handleClaimDailyQuest(questId, e)}
+          onClaimChestReward={(e) => handleClaimChest(e)}
+          isClaimingQuest={isClaimingQuest}
+          claimingQuestId={claimingQuestId}
+        />
+      </div>
 
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
       {/* ── 3. KOSAKATA KERJA HARIAN SESUAI DESTINASI (1:1 Hook) ── */}
-      <DailyLanguageCard />
+      <div data-tour="right-daily-card">
+        <DailyLanguageCard />
+      </div>
     </>
   )
 

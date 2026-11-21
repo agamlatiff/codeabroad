@@ -1,4 +1,5 @@
 import type { FC } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import {
   X,
@@ -11,6 +12,7 @@ import {
   SpeakerLow,
   SpeakerSimpleSlash,
   Shuffle,
+  Compass,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { UserAvatar } from './UserAvatar'
@@ -31,6 +33,7 @@ export type SettingsModalProps = UseSettingsModalOptions
  */
 export const SettingsModal: FC<SettingsModalProps> = (props) => {
   const { isOpen, onClose, user } = props
+  const navigate = useNavigate()
 
   const {
     name,
@@ -313,6 +316,25 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
                 <span className="text-[10px]">Hening</span>
               </button>
             </div>
+          </div>
+
+          {/* ── PANDUAN FITUR ── */}
+          <div className="space-y-2 pt-3 border-t border-slate-200/80">
+            <label className="block text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
+              Panduan Fitur
+            </label>
+            <button
+              type="button"
+              onClick={() => {
+                triggerHaptic('tap')
+                onClose()
+                navigate('/curriculum?tour=1')
+              }}
+              className="w-full py-2.5 px-3.5 rounded-xl border-2 border-blue-200 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 text-xs font-brand font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:translate-y-0.5"
+            >
+              <Compass weight="bold" className="w-4 h-4" />
+              <span>Ulangi Panduan Fitur</span>
+            </button>
           </div>
 
           {/* Footer Buttons */}

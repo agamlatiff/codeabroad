@@ -4,8 +4,81 @@ import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { AppRightSidebar } from "@/shared/components/layout/right-sidebar/AppRightSidebar"
 import { TrackSwitcherModal } from "@/shared/components/layout/top-bar/TrackSwitcherModal"
 import { Button3D } from "@/shared/components/ui/Button3D"
+import {
+  SpotlightTourOverlay,
+  type SpotlightTourStep,
+} from "@/shared/components/ui/SpotlightTourOverlay"
 import { CurriculumMapView } from "@/features/curriculum/components/map-view/CurriculumMapView"
 import { useCurriculumPage } from "@/features/curriculum/hooks/useCurriculumPage"
+
+const CURRICULUM_TOUR_STEPS: SpotlightTourStep[] = [
+  {
+    id: 'active-node',
+    targetSelector: '[data-tour="active-lesson-node"]',
+    badge: 'Peta Belajar',
+    title: 'Mulai dari Node yang Menyala',
+    description:
+      'Setiap lingkaran di peta ini adalah satu misi singkat. Klik node yang menyala untuk membaca materi pengantar terlebih dahulu sebelum kuis interaktif.',
+    mascotEmotion: 'studying',
+    placement: 'bottom',
+    padding: 12,
+  },
+  {
+    id: 'nav-kana',
+    targetSelector: '[data-tour="nav-kana"]',
+    badge: 'Langkah 1',
+    title: 'Kenali Aksara Dasar',
+    description:
+      'Baru mulai dari nol? Pelajari huruf Hiragana, Katakana, dan Kanji lengkap dengan audio penutur asli dan latihan cepat di menu Aksara.',
+    mascotEmotion: 'explaining',
+    placement: 'right',
+    padding: 8,
+  },
+  {
+    id: 'nav-flashcards',
+    targetSelector: '[data-tour="nav-flashcards"]',
+    badge: 'Langkah 2',
+    title: 'Hafalan Cerdas dengan Flashcard',
+    description:
+      'Ulangi huruf dan kosakata harian memakai dek Flashcard pintar. Sistem pengingat otomatis menjadwalkan kartu sebelum kamu sempat lupa.',
+    mascotEmotion: 'idea',
+    placement: 'right',
+    padding: 8,
+  },
+  {
+    id: 'nav-grammar',
+    targetSelector: '[data-tour="nav-grammar"]',
+    badge: 'Langkah 3',
+    title: 'Pahami Rumus Pola Kalimat',
+    description:
+      'Bingung cara menyusun kalimat? Buka menu Grammar untuk melihat rumus warna-warni, arti kata per bagian, dan kuis pemahaman singkat.',
+    mascotEmotion: 'reading',
+    placement: 'right',
+    padding: 8,
+  },
+  {
+    id: 'right-streak-quests',
+    targetSelector: '[data-tour="right-streak-quests"]',
+    badge: 'Target Harian',
+    title: 'Jaga Api Streak & Misi Harian',
+    description:
+      'Belajar 5–15 menit setiap hari untuk menyalakan rentetan belajar dan menuntaskan Misi Harian agar bonus XP serta Gems cepat terkumpul.',
+    mascotEmotion: 'onFire',
+    placement: 'left',
+    padding: 10,
+  },
+  {
+    id: 'right-daily-card',
+    targetSelector: '[data-tour="right-daily-card"]',
+    badge: 'Kosakata Harian',
+    title: 'Kartu Bahasa Harian',
+    description:
+      'Temukan satu kosakata praktis baru setiap hari di sini agar kosakata kerja dan sehari-hari makin menempel.',
+    mascotEmotion: 'celebrate',
+    placement: 'left',
+    padding: 10,
+  },
+]
 
 /**
  * CurriculumPage (SSOT Master Language Learning Screen)
@@ -124,6 +197,14 @@ export const CurriculumPage = () => {
           <span className="text-sm font-semibold">{status.notification}</span>
         </div>
       )}
+
+      {/* ── SPOTLIGHT PRODUCT TOUR ── */}
+      <SpotlightTourOverlay
+        isOpen={modals.isTourOpen}
+        steps={CURRICULUM_TOUR_STEPS}
+        onComplete={actions.completeTour}
+        onSkip={actions.skipTour}
+      />
     </div>
   )
 }
