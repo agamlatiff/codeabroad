@@ -4,12 +4,12 @@ import (
 	"context"
 	"testing"
 
-	"codeabroad/backend/internal/app/curriculum"
-	"codeabroad/backend/internal/app/exercise"
-	"codeabroad/backend/internal/app/gamification"
-	"codeabroad/backend/internal/app/language"
-	"codeabroad/backend/internal/app/onboarding"
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/app/curriculum"
+	"merantalk/backend/internal/app/exercise"
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/app/language"
+	"merantalk/backend/internal/app/onboarding"
+	"merantalk/backend/internal/app/user"
 )
 
 func TestCompleteOnboarding_ZeroBeginner(t *testing.T) {

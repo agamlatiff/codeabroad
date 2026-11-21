@@ -31,9 +31,9 @@ export const isKodiStudyEmotion = (emotion: string): emotion is KodiStudyEmotion
   KODI_STUDY_EMOTION_SET.has(emotion)
 
 export const MASCOT_TOKENS = {
-  name: 'Kodi',
+  name: 'Mera',
   species: 'Language Companion',
-  title: 'Kodi — CodeAbroad Companion',
+  title: 'Mera — Merantalk Companion',
   emotions: {
     welcome: { label: 'Greeting / Hello', aura: 'rgba(59, 130, 246, 0.25)' },
     celebrate: { label: 'Yatta / Milestone Success', aura: 'rgba(16, 185, 129, 0.3)' },

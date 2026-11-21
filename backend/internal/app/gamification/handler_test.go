@@ -7,8 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"codeabroad/backend/internal/app/gamification"
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/app/user"
 	"github.com/gin-gonic/gin"
 )
 
@@ -114,7 +114,7 @@ func TestHTTP_SubmitCoaching(t *testing.T) {
 
 	body, _ := json.Marshal(gamification.CoachingSubmissionRequest{
 		Type:              "mock-interview",
-		DiscordHandle:     "kodi#1234",
+		DiscordHandle:     "mera#1234",
 		InterviewLanguage: "nihongo",
 		FocusTopic:        "Japanese Business Culture",
 	})

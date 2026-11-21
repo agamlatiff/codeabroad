@@ -1,4 +1,4 @@
-# CodeAbroad Technical Standards & Quality Gate Policy
+# Merantalk Technical Standards & Quality Gate Policy
 
 ## 0. Single Source of Truth (SSOT) Precedence
 - Primary references for product requirements, data modeling, and API contracts are **`.agents/docs/prd.md`**, **`.agents/docs/erd.md`**, **`docs/api/openapi.yaml`**, and the **actual codebase structure** (`backend/internal/app/*`, `frontend/src/features/*`, `frontend/src/shared/*`).

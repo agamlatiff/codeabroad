@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"codeabroad/backend/internal/app/language"
+	"merantalk/backend/internal/app/language"
 	"github.com/gin-gonic/gin"
 )
 

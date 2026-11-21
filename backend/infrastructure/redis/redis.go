@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"codeabroad/backend/config"
+	"merantalk/backend/config"
 
 	"github.com/redis/go-redis/v9"
 )

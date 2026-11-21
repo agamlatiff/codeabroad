@@ -4,7 +4,7 @@
 
 export type AvatarStyle = 'adventurer'
 
-export const AVATAR_STYLE_STORAGE_KEY = 'codeabroad_avatar_style'
+export const AVATAR_STYLE_STORAGE_KEY = 'merantalk_avatar_style'
 
 export interface AvatarUser {
   avatar_url?: string | null
@@ -37,7 +37,7 @@ export const isSafeAvatarUrl = (url?: string | null): url is string => {
 }
 
 export const getInitials = (name?: string, username?: string): string => {
-  const source = (name || username || 'CA').trim()
+  const source = (name || username || 'MT').trim()
   const parts = source.split(/\s+/).filter(Boolean)
 
   if (parts.length >= 2) {

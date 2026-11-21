@@ -42,6 +42,13 @@ export interface SoundConfig {
 }
 
 export const SOUND_STORAGE_KEYS = {
+  muted: 'merantalk_sound_muted',
+  volume: 'merantalk_sound_volume',
+  audioMode: 'merantalk_audio_mode',
+  bgmVolume: 'merantalk_bgm_volume',
+} as const
+
+export const LEGACY_SOUND_STORAGE_KEYS = {
   muted: 'codeabroad_sound_muted',
   volume: 'codeabroad_sound_volume',
   audioMode: 'codeabroad_audio_mode',

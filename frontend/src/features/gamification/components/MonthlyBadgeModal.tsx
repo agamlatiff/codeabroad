@@ -80,7 +80,7 @@ export const MonthlyBadgeModal = ({
           </h3>
           <p className="text-xs text-slate-600 font-medium max-w-sm mx-auto leading-relaxed">
             {isClaimed
-              ? `Lencana kehormatan edisi ${monthYearName} telah resmi terpasang pada profil CodeAbroad Anda.`
+              ? `Lencana kehormatan edisi ${monthYearName} telah resmi terpasang pada profil Merantalk Anda.`
               : isEligible
               ? `Luar biasa! Anda menuntaskan ${completedCount} aktivitas bulan ini. Lencana emas akan terbuka otomatis di akun Anda.`
               : `Selesaikan ${targetCount - completedCount} misi lagi di bulan ${monthYearName} untuk membuka lencana emas bulanan ini.`}

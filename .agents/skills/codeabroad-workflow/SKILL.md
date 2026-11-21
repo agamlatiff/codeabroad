@@ -1,12 +1,12 @@
 ---
 name: codeabroad-workflow
 description: >-
-  CodeAbroad development workflow aligned with .agents/docs/prd.md,
+  Merantalk development workflow aligned with .agents/docs/prd.md,
   .agents/docs/erd.md, docs/api/openapi.yaml, and .agents/rules/*.
-  Use whenever planning, implementing, testing, or reviewing features in CodeAbroad.
+  Use whenever planning, implementing, testing, or reviewing features in Merantalk.
 ---
 
-# CodeAbroad Engineering Workflow
+# Merantalk Engineering Workflow
 
 This skill aligns feature delivery with the current repository architecture, documentation, and workspace rules.
 

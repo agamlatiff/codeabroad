@@ -103,7 +103,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               </span>
             </div>
             <p className="text-xs text-slate-500 truncate">
-              {user?.email || 'user@codeabroad.io'}
+              {user?.email || 'user@merantalk.id'}
             </p>
             {(() => {
               const xpProgress = computeXpLevelProgress(user?.xp ?? 0, user?.current_level)

@@ -1,4 +1,4 @@
-# Entity Relationship Diagram (ERD) - CodeAbroad
+# Entity Relationship Diagram (ERD) - Merantalk
 **Version:** 3.0 (Global Language Mastery Platform, Anki SRS & Diagnostic Exam Engine)  
 **Last Updated:** 2026-11-09  
 **Database:** PostgreSQL 16 (`pgcrypto`)  
@@ -7,7 +7,7 @@
 
 ## 🗺️ 1. Conceptual Architecture & Bounded Contexts
 
-CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamification Engine** dengan **Universal Language Mastery Engine** (Jepang 🇯🇵, Inggris 🇬🇧/🇺🇸, Jerman 🇩🇪, Mandarin 🇨🇳, Prancis 🇫🇷). Sistem mencakup 4 pilar kemampuan (*Reading, Listening, Writing, Speaking*), bank tata bahasa & konjugasi ternormalisasi, evaluasi cerdas multi-aksara, pengulangan berjarak (Anki SRS SM-2), serta simulasi ujian kesiapan (Mock Exam):
+Merantalk mengadopsi arsitektur modular yang memadukan **Core Identity & Gamification Engine** dengan **Universal Language Mastery Engine** (Jepang 🇯🇵, Inggris 🇬🇧/🇺🇸, Jerman 🇩🇪, Mandarin 🇨🇳, Prancis 🇫🇷). Sistem mencakup 4 pilar kemampuan (*Reading, Listening, Writing, Speaking*), bank tata bahasa & konjugasi ternormalisasi, evaluasi cerdas multi-aksara, pengulangan berjarak (Anki SRS SM-2), serta simulasi ujian kesiapan (Mock Exam):
 
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
@@ -334,19 +334,19 @@ CodeAbroad mengadopsi arsitektur modular yang memadukan **Core Identity & Gamifi
 
 ## 📊 3. DBML Script (dbdiagram.io)
 
-Copy-paste kode DBML berikut langsung ke **[dbdiagram.io](https://dbdiagram.io)** untuk memvisualisasikan diagram interaktif relasi database CodeAbroad v3.0:
+Copy-paste kode DBML berikut langsung ke **[dbdiagram.io](https://dbdiagram.io)** untuk memvisualisasikan diagram interaktif relasi database Merantalk v3.0:
 
 ```dbml
 // ============================================================================
-// CodeAbroad ERD (Database Markup Language - dbdiagram.io)
+// Merantalk ERD (Database Markup Language - dbdiagram.io)
 // Version: 3.0 (Global Language Mastery Platform & Anki SRS Engine)
 // Paste this directly into https://dbdiagram.io
 // ============================================================================
 
-Project CodeAbroad {
+Project Merantalk {
   database_type: 'PostgreSQL'
   Note: '''
-    # CodeAbroad Database Schema (v3.0)
+    # Merantalk Database Schema (v3.0)
     World-class gamified language learning mastery platform.
     Features:
       - Multi-Language & Multi-Script (Japanese Kanji/Kana, English, German, Mandarin)

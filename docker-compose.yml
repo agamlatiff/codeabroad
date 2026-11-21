@@ -4,30 +4,30 @@ services:
   # ---------------------------------------------------------------------------
   postgres:
     image: postgres:16-alpine
-    container_name: codeabroad-postgres
+    container_name: merantalk-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_USER: ${DB_USER:-codeabroad}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-codeabroad_secret}
-      POSTGRES_DB: ${DB_NAME:-codeabroad}
+      POSTGRES_USER: ${DB_USER:-merantalk}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-merantalk_secret}
+      POSTGRES_DB: ${DB_NAME:-merantalk}
     ports:
       - "127.0.0.1:${DB_PORT:-5432}:5432"
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - merantalk_postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-codeabroad} -d ${DB_NAME:-codeabroad}" ]
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-merantalk} -d ${DB_NAME:-merantalk}" ]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - codeabroad-network
+      - merantalk-network
 
   # ---------------------------------------------------------------------------
   # 2. Redis Session & Cache
   # ---------------------------------------------------------------------------
   redis:
     image: redis:7-alpine
-    container_name: codeabroad-redis
+    container_name: merantalk-redis
     restart: unless-stopped
     command:
       [
@@ -36,11 +36,11 @@ services:
         "if [ -n \"$$REDIS_PASSWORD\" ]; then exec redis-server --requirepass \"$$REDIS_PASSWORD\"; else exec redis-server; fi",
       ]
     environment:
-      REDIS_PASSWORD: ${REDIS_PASSWORD:-codeabroad_redis_secret}
+      REDIS_PASSWORD: ${REDIS_PASSWORD-merantalk_redis_secret}
     ports:
       - "127.0.0.1:${REDIS_PORT:-6379}:6379"
     volumes:
-      - redis_data:/data
+      - merantalk_redis_data:/data
     healthcheck:
       test:
         [
@@ -51,7 +51,7 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - codeabroad-network
+      - merantalk-network
 
   # ---------------------------------------------------------------------------
   # 3. Backend Golang API
@@ -60,20 +60,20 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: codeabroad-backend
+    container_name: merantalk-backend
     restart: unless-stopped
     environment:
       - PORT=8080
       - ENV=${ENV:-development}
       - DB_HOST=postgres
       - DB_PORT=5432
-      - DB_USER=${DB_USER:-codeabroad}
-      - DB_PASSWORD=${DB_PASSWORD:-codeabroad_secret}
-      - DB_NAME=${DB_NAME:-codeabroad}
+      - DB_USER=${DB_USER:-merantalk}
+      - DB_PASSWORD=${DB_PASSWORD:-merantalk_secret}
+      - DB_NAME=${DB_NAME:-merantalk}
       - DB_SSLMODE=${DB_SSLMODE:-disable}
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - REDIS_PASSWORD=${REDIS_PASSWORD:-codeabroad_redis_secret}
+      - REDIS_PASSWORD=${REDIS_PASSWORD-merantalk_redis_secret}
       - JWT_SECRET=${JWT_SECRET:-super-secret-jwt-key-must-be-at-least-32-chars-long}
       - JWT_EXPIRATION_MINUTES=15
       - JWT_REFRESH_EXPIRATION_DAYS=30
@@ -93,7 +93,7 @@ services:
       redis:
         condition: service_healthy
     networks:
-      - codeabroad-network
+      - merantalk-network
 
   # ---------------------------------------------------------------------------
   # 4. Frontend React Vite SPA
@@ -102,19 +102,19 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    container_name: codeabroad-frontend
+    container_name: merantalk-frontend
     restart: unless-stopped
     expose:
       - "80"
     networks:
-      - codeabroad-network
+      - merantalk-network
 
   # ---------------------------------------------------------------------------
   # 5. Gateway Reverse Proxy (Nginx)
   # ---------------------------------------------------------------------------
   nginx:
     image: nginx:1.27-alpine
-    container_name: codeabroad-nginx
+    container_name: merantalk-nginx
     restart: unless-stopped
     ports:
       - "80:80"
@@ -126,15 +126,15 @@ services:
       frontend:
         condition: service_started
     networks:
-      - codeabroad-network
+      - merantalk-network
 
 # -----------------------------------------------------------------------------
 # Volumes & Networks
 # -----------------------------------------------------------------------------
 volumes:
-  postgres_data:
-  redis_data:
+  merantalk_postgres_data:
+  merantalk_redis_data:
 
 networks:
-  codeabroad-network:
+  merantalk-network:
     driver: bridge

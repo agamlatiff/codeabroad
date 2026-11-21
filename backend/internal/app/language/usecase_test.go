@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"codeabroad/backend/internal/app/language"
+	"merantalk/backend/internal/app/language"
 )
 
 func setupMockLanguageRepo() *language.MockRepository {

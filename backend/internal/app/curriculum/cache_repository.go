@@ -9,8 +9,8 @@ import (
 	"math/rand/v2"
 	"time"
 
-	infraRedis "codeabroad/backend/infrastructure/redis"
-	"codeabroad/backend/internal/shared/apperror"
+	infraRedis "merantalk/backend/infrastructure/redis"
+	"merantalk/backend/internal/shared/apperror"
 	"github.com/redis/go-redis/v9"
 )
 

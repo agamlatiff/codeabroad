@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	"codeabroad/backend/config"
-	"codeabroad/backend/internal/app/auth"
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/config"
+	"merantalk/backend/internal/app/auth"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )

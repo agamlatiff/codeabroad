@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/app/user"
 )
 
 // MockRepository implements Repository for unit testing

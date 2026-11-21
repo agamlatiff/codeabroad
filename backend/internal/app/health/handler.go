@@ -6,8 +6,8 @@ import (
 	"sync"
 	"time"
 
-	"codeabroad/backend/infrastructure/postgres"
-	"codeabroad/backend/infrastructure/redis"
+	"merantalk/backend/infrastructure/postgres"
+	"merantalk/backend/infrastructure/redis"
 	"github.com/gin-gonic/gin"
 )
 

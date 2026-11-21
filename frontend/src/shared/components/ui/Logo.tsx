@@ -144,7 +144,7 @@ export const Logo: FC<LogoProps> = ({
         <span
           className={`font-brand ${activeSize.text} font-bold tracking-tight lowercase ${activeColor.text} transition-colors`}
         >
-          codeabroad
+          merantalk
         </span>
       )}
     </div>

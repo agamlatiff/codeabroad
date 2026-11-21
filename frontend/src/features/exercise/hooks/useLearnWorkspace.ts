@@ -37,18 +37,32 @@ const lessonDraftSchema = z.object({
 })
 
 const getLessonDraftKey = (userId: string, lessonId?: string) =>
+  lessonId ? `merantalk_lesson_draft:${userId}:${lessonId}` : null
+
+const getLegacyLessonDraftKey = (userId: string, lessonId?: string) =>
   lessonId ? `codeabroad_lesson_draft:${userId}:${lessonId}` : null
 
 const loadLessonDraft = (userId: string, lessonId?: string) => {
   const key = getLessonDraftKey(userId, lessonId)
+  const legacyKey = getLegacyLessonDraftKey(userId, lessonId)
   if (!key) return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
   try {
-    const raw = sessionStorage.getItem(key)
+    let raw = sessionStorage.getItem(key)
+    let migratedFromLegacy = false
+    if (!raw && legacyKey) {
+      raw = sessionStorage.getItem(legacyKey)
+      migratedFromLegacy = Boolean(raw)
+    }
     if (!raw) return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
     const parsed = lessonDraftSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) {
       sessionStorage.removeItem(key)
+      if (legacyKey) sessionStorage.removeItem(legacyKey)
       return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
+    }
+    if (migratedFromLegacy && legacyKey) {
+      sessionStorage.setItem(key, raw)
+      sessionStorage.removeItem(legacyKey)
     }
     return parsed.data
   } catch {

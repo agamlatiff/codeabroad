@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🌍 CodeAbroad
+# 🌍 Merantalk
 
 ### *Master Languages. Achieve Global Certification.*
 
@@ -21,12 +21,12 @@ Combining **Duolingo 3D Tactile Physics**, **Anki Spaced Repetition (SuperMemo S
 
 ---
 
-## 📖 About CodeAbroad
+## 📖 About Merantalk
 
-**CodeAbroad** is an open-source, gamified language acquisition and certification platform. Unlike generic language apps that focus on mindless vocabulary memorization, CodeAbroad bridges three worlds into a unified pedagogical engine:
+**Merantalk** is an open-source, gamified language acquisition and certification platform. Unlike generic language apps that focus on mindless vocabulary memorization, Merantalk bridges three worlds into a unified pedagogical engine:
 
 1. 🎮 **The Tactile Delight of Duolingo 3D:**  
-   Chunky physical 3D buttons (4px depth), an interactive serpentine RPG roadmap, procedural Web Audio synthesizer soundscape (zero network latency), daily streak flames, golden reward chests, and an empathetic companion mascot (**Kodi**).
+   Chunky physical 3D buttons (4px depth), an interactive serpentine RPG roadmap, procedural Web Audio synthesizer soundscape (zero network latency), daily streak flames, golden reward chests, and an empathetic companion mascot (**Mera**).
 2. 🧠 **The Pedagogical Rigor of Anki SRS (SuperMemo SM-2):**  
    Eliminating the forgetting curve. Every mistake made in daily lessons or exams is automatically scheduled into an adaptive Spaced Repetition memory queue with dynamic interval math ($1 \to 3 \to 6 \to 12 \to 30$ days).
 3. 🏛️ **The Standard of Official International Certifications:**  
@@ -41,7 +41,7 @@ Combining **Duolingo 3D Tactile Physics**, **Anki Spaced Repetition (SuperMemo S
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   CODEABROAD 6 GLOBAL DESTINATION TRACKS                                        │
+│                                   MERANTALK 6 GLOBAL DESTINATION TRACKS                                        │
 ├──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┤
 │   🇯🇵 JEPANG      │ 🇬🇧 INGGRIS (UK)  │ 🇺🇸 INGGRIS (US)  │    🇩🇪 JERMAN     │   🇨🇳 MANDARIN    │    🇫🇷 PRANCIS    │
 │  (Tokyo Track)   │  (London Track)  │(Silicon Valley)  │  (Berlin Track)  │ (Shanghai Track) │  (Paris Track)   │
@@ -62,7 +62,7 @@ Combining **Duolingo 3D Tactile Physics**, **Anki Spaced Repetition (SuperMemo S
 | :--- | :--- |
 | 🧩 **Visual Syntax Builder** | Interactive drag-and-drop / tap-to-assemble sentence builder with color-coded syntax roles and distractor tiles |
 | 👂 **Multi-Pillar 4 Indera** | Reading (dynamic Furigana `<ruby>`), Listening (native audio + 0.75x Turtle mode), Writing (multi-script tolerance), Speaking (Web Speech API mic recognition) |
-| 🦉 **Kodi AI Diagnostic Coach** | Instant conceptual error analysis via `diagnostic_rubric` explaining *why* a specific mistake was made (e.g. particle `で` vs `に`, case `Akkusativ` vs `Dativ`) |
+| 🦉 **Mera AI Diagnostic Coach** | Instant conceptual error analysis via `diagnostic_rubric` explaining *why* a specific mistake was made (e.g. particle `で` vs `に`, case `Akkusativ` vs `Dativ`) |
 | 🗂️ **Automated Anki SRS Decks** | SuperMemo SM-2 spaced repetition queue auto-scheduling failed exercises into daily review warm-ups |
 | 📋 **Diagnostic Mock Exam Engine** | Full-length timed mock exams simulating official testing conditions, sectional cutoffs, and pass probability prediction |
 | 🛡️ **Adaptive Placement Test** | 10-minute dynamic test allowing experienced learners to skip beginner levels with auto-completed prior units and zero-clutter SRS |
@@ -99,7 +99,7 @@ Combining **Duolingo 3D Tactile Physics**, **Anki Spaced Repetition (SuperMemo S
 
 ## 🗄️ Database Architecture & ERD (v3.0)
 
-CodeAbroad v3.0 unites **Core Identity & Gamification** with the **Universal Language Curriculum & SRS Engine**:
+Merantalk v3.0 unites **Core Identity & Gamification** with the **Universal Language Curriculum & SRS Engine**:
 
 ```text
 ┌────────────────────────────────────────────────────────┐
@@ -251,4 +251,4 @@ Visit `http://localhost:5173` to start your language mastery journey!
 
 ## 📄 License
 
-CodeAbroad is licensed under the [MIT License](LICENSE).
+Merantalk is licensed under the [MIT License](LICENSE).

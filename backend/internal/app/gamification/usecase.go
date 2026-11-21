@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 type usecase struct {

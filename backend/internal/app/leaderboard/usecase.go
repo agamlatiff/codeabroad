@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	infraRedis "codeabroad/backend/infrastructure/redis"
-	"codeabroad/backend/internal/shared/progression"
+	infraRedis "merantalk/backend/infrastructure/redis"
+	"merantalk/backend/internal/shared/progression"
 	"golang.org/x/sync/singleflight"
 )
 

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"codeabroad/backend/infrastructure/postgres"
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/infrastructure/postgres"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
 

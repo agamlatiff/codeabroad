@@ -1,4 +1,4 @@
-# Product Requirements Document (PRD) - CodeAbroad
+# Product Requirements Document (PRD) - Merantalk
 **Version:** 3.0 (Global Multi-Country Language Mastery Platform, Anki SRS & Diagnostic Exam Engine)  
 **Status:** In Active Development (v0.4.0)  
 **Last Updated:** 2026-11-09  
@@ -21,12 +21,12 @@ Industri pembelajaran bahasa digital saat ini terbelah menjadi tiga kubu yang te
 
 ---
 
-### 1.2 Misi Produk & Cakupan 6 Track Bahasa Resmi (The CodeAbroad Mission)
-**CodeAbroad** hadir sebagai platform pembelajaran bahasa bertaraf internasional yang dirancang secara modular untuk mempersiapkan talenta global menembus karir, studi, dan kehidupan di 6 destinasi bahasa utama dunia:
+### 1.2 Misi Produk & Cakupan 6 Track Bahasa Resmi (The Merantalk Mission)
+**Merantalk** hadir sebagai platform pembelajaran bahasa bertaraf internasional yang dirancang secara modular untuk mempersiapkan talenta global menembus karir, studi, dan kehidupan di 6 destinasi bahasa utama dunia:
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   CODEABROAD 6 GLOBAL DESTINATION TRACKS                                        │
+│                                   MERANTALK 6 GLOBAL DESTINATION TRACKS                                        │
 ├──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┤
 │   🇯🇵 JEPANG      │ 🇬🇧 INGGRIS (UK)  │ 🇺🇸 INGGRIS (US)  │    🇩🇪 JERMAN     │   🇨🇳 MANDARIN    │    🇫🇷 PRANCIS    │
 │  (Tokyo Track)   │  (London Track)  │(Silicon Valley)  │  (Berlin Track)  │ (Shanghai Track) │  (Paris Track)   │
@@ -41,9 +41,9 @@ Industri pembelajaran bahasa digital saat ini terbelah menjadi tiga kubu yang te
 
 > *"Memberdayakan pembelajar global untuk mencapai kemahiran bahasa yang mendalam (True Linguistic Mastery), retensi memori permanen bebas lupa, dan kesiapan ujian sertifikasi resmi internasional melalui gamifikasi 3D taktil yang menyenangkan, pemahaman tata bahasa visual, dan simulasi diagnostik yang presisi."*
 
-Tiga pilar filosofis utama CodeAbroad:
+Tiga pilar filosofis utama Merantalk:
 * 🎮 **The Delight of Duolingo 3D Tactile Physics:**  
-  Menghadirkan kenikmatan belajar harian dengan tombol fisik berkedalaman 4px, alur roadmap serpentine interaktif, partikel konfeti kemenangan, synthesizer audio prosedural Web Audio API tanpa beban kuota, serta maskot pendamping setia (**Kodi**).
+  Menghadirkan kenikmatan belajar harian dengan tombol fisik berkedalaman 4px, alur roadmap serpentine interaktif, partikel konfeti kemenangan, synthesizer audio prosedural Web Audio API tanpa beban kuota, serta maskot pendamping setia (**Mera**).
 * 🧠 **The Pedagogical Rigor of Anki SRS (SuperMemo SM-2):**  
   Menghilangkan kebiasaan lupa (*Eliminating the Forgetting Curve*). Setiap kali pengguna melakukan kesalahan pada latihan harian, butir soal tersebut secara otomatis masuk ke antrean kartu memori *Spaced Repetition* dengan penyesuaian interval dinamis (`ease_factor` & `interval_days`).
 * 🏛️ **The Standard of Official International Certifications:**  
@@ -53,7 +53,7 @@ Tiga pilar filosofis utama CodeAbroad:
 
 ### 1.3 Landasan Ilmu Kognitif & Pedagogi Bahasa (Cognitive Science Foundations)
 
-CodeAbroad dibangun di atas 4 teori pemerolehan bahasa modern yang diterapkan secara universal di seluruh bahasa target:
+Merantalk dibangun di atas 4 teori pemerolehan bahasa modern yang diterapkan secara universal di seluruh bahasa target:
 
 #### A. Mastery Over Memorization: Balok Sintaksis Berkode Warna (Color-Coded Syntax Blocks)
 Alih-alih menghafal kalimat secara mekanis, pengguna diajarkan memahami **arsitektur kalimat** menggunakan balok peran tata bahasa universal:
@@ -95,21 +95,21 @@ Alih-alih menghafal kalimat secara mekanis, pengguna diajarkan memahami **arsite
 
 ---
 
-#### C. Evaluasi Cerdas & Remediasi Instan (The Kodi AI Coach Lintas Bahasa)
+#### C. Evaluasi Cerdas & Remediasi Instan (The Mera AI Coach Lintas Bahasa)
 Ketika pengguna menjawab salah, sistem membaca `diagnostic_rubric` untuk memberikan edukasi langsung sesuai kaidah bahasa terkait:
 
 * 🇯🇵 **Kasus Jepang (Jebakan Partikel):**  
   Pengguna memilih `で` alih-alih `に` untuk *"Saya pergi ke Tokyo"*.  
-  *Kodi:* *"Kamu memilih で. Hati-hati! Partikel で digunakan untuk tempat aktivitas (misal: makan di resto), sedangkan arah tujuan pergerakan wajib menggunakan partikel に atau へ."*
+  *Mera:* *"Kamu memilih で. Hati-hati! Partikel で digunakan untuk tempat aktivitas (misal: makan di resto), sedangkan arah tujuan pergerakan wajib menggunakan partikel に atau へ."*
 * 🇩🇪 **Kasus Jerman (Jebakan Kasus Akkusativ vs Dativ):**  
   Pengguna memilih *"auf dem Tisch"* alih-alih *"auf den Tisch"* untuk kalimat meletakkan cangkir ke atas meja.  
-  *Kodi:* *"Kamu memilih dem (Dativ). Ingat aturan Wechselpräposition: jika menyatakan perpindahan posisi / gerakan ke suatu tempat, gunakan Akkusativ (den Tisch). Dativ hanya untuk posisi yang sudah diam!"*
+  *Mera:* *"Kamu memilih dem (Dativ). Ingat aturan Wechselpräposition: jika menyatakan perpindahan posisi / gerakan ke suatu tempat, gunakan Akkusativ (den Tisch). Dativ hanya untuk posisi yang sudah diam!"*
 * 🇬🇧 **Kasus Inggris (Jebakan Present Perfect vs Past Simple):**  
   Pengguna memilih *"I have seen him yesterday"*.  
-  *Kodi:* *"Hati-hati! Kata keterangan waktu lampau spesifik ('yesterday', 'last night') tidak boleh menggunakan Present Perfect. Gunakan Past Simple: 'I saw him yesterday'."*
+  *Mera:* *"Hati-hati! Kata keterangan waktu lampau spesifik ('yesterday', 'last night') tidak boleh menggunakan Present Perfect. Gunakan Past Simple: 'I saw him yesterday'."*
 * 🇨🇳 **Kasus Mandarin (Jebakan Kata Satuan / Measure Words):**  
   Pengguna memilih *"一个人"* vs *"一本书"* atau salah menggunakan kata satuan umum '个' untuk benda lembaran.  
-  *Kodi:* *"Untuk benda lembaran tipis seperti tiket atau kertas (票, 纸), gunakan kata satuan 张 (zhāng), bukan 个 (gè)!"*
+  *Mera:* *"Untuk benda lembaran tipis seperti tiket atau kertas (票, 纸), gunakan kata satuan 张 (zhāng), bukan 个 (gè)!"*
 
 ---
 
@@ -134,18 +134,18 @@ Simulasi ujian diagnostik sebelum pengguna membayar ujian resmi (\$100–\$250):
 
 ### 1.4 Delapan Metodologi Pembelajaran Ilmiah (The 8 Scientific Pedagogical Methodologies)
 
-CodeAbroad memadukan 8 metodologi pedagogi teruji dari ranah sains kognitif dan akuisisi bahasa untuk menjamin pemahaman nyata dan retensi permanen:
+Merantalk memadukan 8 metodologi pedagogi teruji dari ranah sains kognitif dan akuisisi bahasa untuk menjamin pemahaman nyata dan retensi permanen:
 
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           8 METODOLOGI PEDAGOGI ILMIAH CODEABROAD                                │
+│                           8 METODOLOGI PEDAGOGI ILMIAH MERANTALK                                │
 ├──────────────────────────┬───────────────────────────────────────────────────────────────────────┤
 │ 1. Spaced Repetition     │ Pengulangan berjarak adaptif (SM-2) tepat saat kurva memori menurun.  │
 │ 2. Active Recall         │ Memaksa otak memanggil ingatan aktif (bukan membaca pasif).           │
 │ 3. Syntax Scaffolding    │ Balok berkode warna mereduksi beban kognitif struktur asing (SOV/V2). │
 │ 4. Multi-Sensory         │ Aktivasi 4 indera serentak: Telinga, Mata, Tangan, dan Mulut.         │
 │ 5. Pushed Output         │ Keseimbangan Comprehensible Input (Krashen) & Produksi Aktif (Swain). │
-│ 6. Formative Feedback    │ Koreksi instan berbasis logika via Kodi (mencegah kesalahan membatu). │
+│ 6. Formative Feedback    │ Koreksi instan berbasis logika via Mera (mencegah kesalahan membatu). │
 │ 7. Microlearning Habits  │ Ritual mikro 15 menit konsisten bebas burnout (Atomic Habits).        │
 │ 8. Mastery Benchmark     │ Penguasaan bertingkat 80% & simulasi ujian patokan resmi dunia.       │
 └──────────────────────────┴───────────────────────────────────────────────────────────────────────┘
@@ -172,7 +172,7 @@ CodeAbroad memadukan 8 metodologi pedagogi teruji dari ranah sains kognitif dan 
    * *Manfaat Pedagogis:* Menghilangkan sindrom *"paham saat mendengarkan, tetapi membeku saat harus berbicara"*.
 
 6. **Metode Immediate Formative Feedback — Koreksi Diagnostik Berbasis Logika:**
-   * *Mekanisme:* Saat pengguna keliru, sistem membaca rubrik diagnostik (`diagnostic_rubric`) dan Kodi langsung membedah letak kekeliruan berpikirnya saat itu juga (*Point-of-Performance Remediation*).
+   * *Mekanisme:* Saat pengguna keliru, sistem membaca rubrik diagnostik (`diagnostic_rubric`) dan Mera langsung membedah letak kekeliruan berpikirnya saat itu juga (*Point-of-Performance Remediation*).
    * *Manfaat Pedagogis:* Mencegah *fossilization* (kekeliruan tata bahasa yang membatu permanen karena tidak pernah dikoreksi logikanya).
 
 7. **Metode Microlearning & Habit Stacking — Ritual Mikro 15 Menit:**
@@ -231,7 +231,7 @@ CodeAbroad memadukan 8 metodologi pedagogi teruji dari ranah sains kognitif dan 
      * Mengerjakan 15 soal adaptif.
      * Jika meraih skor $\ge 80\%$ pada materi level awal (misal: N5 untuk Jepang atau A1 untuk Jerman), sistem secara otomatis menandai seluruh unit level awal sebagai *Completed* dan membuka gerbang awal level berikutnya (JLPT N4 atau CEFR A2).
 5. **Langkah D: Penerbitan Tiket Fisik 3D (The Boarding Pass Milestone):**
-   * Kodi menyerahkan tiket penerbangan interaktif 3D sesuai destinasi pilihan:
+   * Mera menyerahkan tiket penerbangan interaktif 3D sesuai destinasi pilihan:
      * 🇯🇵 Jakarta ➔ Tokyo (`CGK ✈️ HND`)
      * 🇩🇪 Jakarta ➔ Berlin (`CGK ✈️ BER`)
      * 🇬🇧 Jakarta ➔ London (`CGK ✈️ LHR`)
@@ -281,7 +281,7 @@ Setiap hari, pengguna disambut dengan siklus belajar harian berdurasi 15 menit y
      * **Latihan 2 (Listening):** Mendengarkan klip suara native dan memilih makna yang tepat.
      * **Latihan 3 (Writing - Sentence Builder):** Menyusun balok kata fisik sesuai aturan urutan kata (SOV di Jepang, V2 di Jerman, SVO di Inggris & Mandarin).
      * **Latihan 4 (Fill-in-the-Blank):** Melengkapi partikel/artikel/konjugasi waktu.
-       * *Skenario Kesalahan:* Jika keliru, bottom-sheet Kodi muncul seketika memberikan penjelasan edukatif sesuai kaidah linguistik bahasa tersebut, dan otomatis menyuntikkan soal ke antrean kartu Anki besok!
+       * *Skenario Kesalahan:* Jika keliru, bottom-sheet Mera muncul seketika memberikan penjelasan edukatif sesuai kaidah linguistik bahasa tersebut, dan otomatis menyuntikkan soal ke antrean kartu Anki besok!
 
 #### ⏰ Menit 11–14: Latihan Bicara Aktif (Active Speech & Pushed Output)
 * Pengguna menekan tombol mikrofon 3D tebal dan melafalkan kalimat target.
@@ -305,7 +305,7 @@ Setiap hari, pengguna disambut dengan siklus belajar harian berdurasi 15 menit y
   * **Zero Hints & No Undo:** Fitur petunjuk dinonaktifkan untuk menguji pemahaman orisinal.
   * **Ambang Batas Kelulusan 80%:** Pengguna wajib meraih minimal nilai 80 untuk membuka Unit kurikulum berikutnya.
   * **Jika Lulus:** Animasi gembok emas terbuka dengan dentang suara kunci logam 3D, menganugerahkan **Lencana Unit (Badge)** ke profil pengguna.
-  * **Jika Belum Lulus:** Kodi menyajikan analisis kelemahan spesifik dan mengarahkan kembali ke modul latihan penguatan.
+  * **Jika Belum Lulus:** Mera menyajikan analisis kelemahan spesifik dan mengarahkan kembali ke modul latihan penguatan.
 
 ---
 
@@ -328,7 +328,7 @@ Ketika pengguna menyelesaikan seluruh unit dalam satu level resmi (misal: seluru
 
 ### 2.5 Stage 5: Lompatan Level & Pembelajaran Multi-Bahasa Bebas Konflik
 
-Setelah lulus ujian kesiapan di satu level, ekosistem CodeAbroad memberikan kebebasan penuh:
+Setelah lulus ujian kesiapan di satu level, ekosistem Merantalk memberikan kebebasan penuh:
 1. **Lompatan Level Vertikal:** Pengguna dapat langsung naik kelas ke level berikutnya (misal: dari JLPT N5 naik ke JLPT N4, atau Goethe A1 naik ke A2) dengan kurikulum yang menyambung secara logis.
 2. **Eksplorasi Multi-Bahasa Bebas Bentrok (Multi-Language Switching):**
    * Pengguna dapat membuka TopBar dan mengaktifkan bahasa lain (misal: beralih dari Jepang ke Jerman atau Mandarin).
@@ -341,22 +341,22 @@ Setelah lulus ujian kesiapan di satu level, ekosistem CodeAbroad memberikan kebe
 ### 3.1 Personas 6 Track Destinasi
 1. **Persona 1: Rian (24 thn) — Target Kerja & Beasiswa di Tokyo 🇯🇵**
    * *Target:* JLPT N5 hingga N2. Sering bingung membedakan partikel (に vs で) dan konjugasi bentuk lampau/te-form.
-   * *Solusi CodeAbroad:* Latihan susun balok peran kalimat, toggle Furigana dinamis, dan kartu Anki otomatis untuk partikel yang sering keliru.
+   * *Solusi Merantalk:* Latihan susun balok peran kalimat, toggle Furigana dinamis, dan kartu Anki otomatis untuk partikel yang sering keliru.
 2. **Persona 2: Nadia (27 thn) — Profesional Menuju Berlin / Uni Eropa 🇩🇪**
    * *Target:* Goethe-Zertifikat A1–B2 untuk visa kerja tenaga ahli IT. Membutuhkan penguasaan gender kata benda (*der/die/das*), kasus (*Akkusativ/Dativ*), dan tenses (*Das Perfekt*).
-   * *Solusi CodeAbroad:* Latihan balok sintaksis posisi kata kerja (V2), kartu artikel Anki, dan evaluasi fonetik vokal Umlaut.
+   * *Solusi Merantalk:* Latihan balok sintaksis posisi kata kerja (V2), kartu artikel Anki, dan evaluasi fonetik vokal Umlaut.
 3. **Persona 3: Kevin (22 thn) — Mahasiswa Menuju Cambridge / London 🇬🇧**
    * *Target:* Skor IELTS 7.5+ (CEFR C1) untuk kuliah magister di Inggris. Membutuhkan penguasaan ejaan British (*colour, organise*), aksen non-rhotic, dan esai formal IELTS Writing Task 2.
-   * *Solusi CodeAbroad:* Mock Exam simulasi IELTS dengan evaluasi tata bahasa tingkat lanjut dan transkrip audio aksen British native.
+   * *Solusi Merantalk:* Mock Exam simulasi IELTS dengan evaluasi tata bahasa tingkat lanjut dan transkrip audio aksen British native.
 4. **Persona 4: Maya (25 thn) — Software Engineer Menuju Silicon Valley / New York 🇺🇸**
    * *Target:* Skor TOEFL iBT 105+ dan kelancaran komunikasi engineering tech culture US. Membutuhkan penguasaan ejaan American (*color, organize*), idiom kerja (*circle back, touch base*), dan pelafalan rhotic flap-t.
-   * *Solusi CodeAbroad:* Latihan speaking repeat dengan pengujian audio Amerika, kuis kosakata workplace US, dan persiapan TOEFL diagnostik.
+   * *Solusi Merantalk:* Latihan speaking repeat dengan pengujian audio Amerika, kuis kosakata workplace US, dan persiapan TOEFL diagnostik.
 5. **Persona 5: David (26 thn) — Hardware Engineer & Supply Chain ke Shenzhen / Shanghai 🇨🇳**
    * *Target:* HSK 3 hingga HSK 5 untuk kolaborasi teknologi dan manufaktur perangkat keras. Membutuhkan pengenalan karakter Hanzi dan pelafalan 4 nada Pinyin.
-   * *Solusi CodeAbroad:* Evaluasi nada Pinyin via Web Speech API, dekonstruksi radikal Hanzi, dan kartu memori nada sandhi.
+   * *Solusi Merantalk:* Evaluasi nada Pinyin via Web Speech API, dekonstruksi radikal Hanzi, dan kartu memori nada sandhi.
 6. **Persona 6: Claire (25 thn) — Peneliti AI Menuju Paris 🇫🇷**
    * *Target:* DELF B1–B2 untuk studi dan riset di Prancis. Membutuhkan pemahaman gender kata benda dan perbedaan tenses *Passé Composé* vs *Imparfait*.
-   * *Solusi CodeAbroad:* Latihan konjugasi kata kerja interaktif dan pengenalan aksen fonetik Prancis.
+   * *Solusi Merantalk:* Latihan konjugasi kata kerja interaktif dan pengenalan aksen fonetik Prancis.
 
 ### 3.2 Core Product Metrics
 | Metrik | Target | Instrumen Pengukuran |
@@ -448,7 +448,7 @@ Setiap sesi pelajaran (`lessons`) menyajikan rangkaian latihan interaktif yang m
 | **Reading** | `fill_blank` | Melengkapi partikel/artikel/konjugasi yang hilang sesuai tenses dan konteks kalimat. |
 | **Listening** | `listening_choice` | Audio penutur asli berkualitas tinggi dengan pilihan ganda makna atau transkrip kalimat. |
 | **Speaking** | `speaking_repeat` | Merekam suara via mikrofon browser, dianalisis menggunakan Web Speech API / pembanding fonetik dengan threshold akurasi. |
-| **Integrated** | `dialogue_roleplay` | Percakapan situasi nyata dua arah dengan maskot Kodi. |
+| **Integrated** | `dialogue_roleplay` | Percakapan situasi nyata dua arah dengan maskot Mera. |
 
 #### 4.4.1 Deep Dive Interaksi: `sentence_builder` (Balok Sintaksis Visual)
 * **Tata Letak & Interaksi:**
@@ -482,12 +482,12 @@ Setiap sesi pelajaran (`lessons`) menyajikan rangkaian latihan interaktif yang m
     Jika pengguna sedang berada di transportasi umum, perpustakaan, atau lingkungan bising, pengguna dapat mengklik tombol *"Tidak bisa bicara sekarang"*. Sistem akan menonaktifkan latihan speaking selama 15 menit dan menggantinya dengan latihan menulis tanpa penalti streak atau XP!
 * **Pencocokan Fonetik & Threshold:**
   * Akurasi $\ge 75\%$: **Lulus Sempurna** (Lampu hijau bersinar, audio chime).
-  * Akurasi $60\% - 74\%$: **Hampir Benar** (Kodi memberi tips artikulasi suku kata mana yang kurang jelas).
+  * Akurasi $60\% - 74\%$: **Hampir Benar** (Mera memberi tips artikulasi suku kata mana yang kurang jelas).
   * Akurasi $< 60\%$: **Ulangi Sekali Lagi** (Diberikan kesempatan 2x mencoba sebelum masuk antrean Anki).
 
 #### 4.4.5 Deep Dive Interaksi: `dialogue_roleplay` (Simulasi Percakapan Nyata)
 * **Interaksi Bergilir (Turn-Based Chat):**
-  * Kodi memulai dialog dalam setting situasional (misal: memesan makanan di kedai ramen Tokyo, menanyakan arah di stasiun Berlin Hauptbahnhof, atau memesan teh di Shanghai).
+  * Mera memulai dialog dalam setting situasional (misal: memesan makanan di kedai ramen Tokyo, menanyakan arah di stasiun Berlin Hauptbahnhof, atau memesan teh di Shanghai).
   * Pengguna memilih respon kalimat yang tepat atau melafalkan balasan menggunakan mikrofon.
   * Setiap giliran dialog disertai translasi kontekstual yang dapat di-tap (*tap-to-translate*).
 
@@ -498,12 +498,12 @@ Setiap sesi pelajaran (`lessons`) menyajikan rangkaian latihan interaktif yang m
 * Tampilan Furigana interaktif di frontend menggunakan tag standar `<ruby>` yang dapat diaktifkan/dinonaktifkan oleh pengguna (Mode Pemula vs Mode Ujian Asli).
 
 #### 4.4.7 Rubrik Diagnostik Kesalahan Cerdas (`diagnostic_rubric JSONB`):
-* Jika pengguna salah memilih opsi, Kodi tidak hanya memberi tanda silang, melainkan membaca rubrik diagnostik kesalahan umum (*Common Misconceptions*) untuk memberikan edukasi instan.
+* Jika pengguna salah memilih opsi, Mera tidak hanya memberi tanda silang, melainkan membaca rubrik diagnostik kesalahan umum (*Common Misconceptions*) untuk memberikan edukasi instan.
 
 ---
 
 ### 4.5 Spesifikasi Algoritma Anki Spaced Repetition (SuperMemo SM-2)
-CodeAbroad mengadopsi rumus matematika **SuperMemo SM-2** yang telah disesuaikan:
+Merantalk mengadopsi rumus matematika **SuperMemo SM-2** yang telah disesuaikan:
 
 1. **Rating Kualitas Jawaban ($q \in [0, 5]$):**
    * $q = 5$: Jawaban sempurna tanpa ragu-ragu (< 4 detik).
@@ -526,12 +526,12 @@ CodeAbroad mengadopsi rumus matematika **SuperMemo SM-2** yang telah disesuaikan
      * $n > 2 \implies I_n = I_{n-1} \times EF'$
 
 4. **Manajemen Kartu "Leech":**
-   Kartu yang gagal diulang lebih dari 5 kali berturut-turut diberi label *Leech*, dan Kodi akan memberikan saran khusus untuk mengulang kembali materi teori di Unit kurikulum terkait.
+   Kartu yang gagal diulang lebih dari 5 kali berturut-turut diberi label *Leech*, dan Mera akan memberikan saran khusus untuk mengulang kembali materi teori di Unit kurikulum terkait.
 
 #### 4.5.1 Protokol Remediasi Cerdas untuk Kartu "Leech"
 * **Definisi Leech:** Kartu memori yang gagal diingat pengguna sebanyak $\ge 5$ kali berturut-turut ($q < 3$). Kondisi ini membuktikan bahwa metode hafalan pasif tidak lagi mempan dan pengguna mengalami *kebuntuan pemahaman konsep*.
-* **Intervensi Proaktif Kodi:**
-  * Alih-alih membiarkan kartu terus muncul dan membuat frustrasi, Kodi mengunci kartu sementara dan menyajikan kartu bantuan (*Conceptual Rescue Card*):  
+* **Intervensi Proaktif Mera:**
+  * Alih-alih membiarkan kartu terus muncul dan membuat frustrasi, Mera mengunci kartu sementara dan menyajikan kartu bantuan (*Conceptual Rescue Card*):  
     *"Kartu ini agak membandel ya! Jangan cuma dihafal bunyinya. Yuk kita bedah kaidah dasarnya!"*
   * Sistem menyertakan tautan satu-klik langsung ke modul materi dan puzzle susun balok kalimat (`sentence_builder`) di Unit kurikulum terkait, mengubah kegagalan hafalan mekanis menjadi pemahaman logika aktif.
 
@@ -556,7 +556,7 @@ Banyak ujian resmi dunia yang tidak hanya mensyaratkan skor total rata-rata, mel
 ---
 
 ### 4.7 Gamifikasi & Desain Audio Tactile 3D
-* **Desain Visual:** Standar Duolingo 3D Tactile Physics (Clean Light Mode, tombol fisik tebal berkedalaman 4px, partikel konfeti kemenangan, dan maskot Kodi).
+* **Desain Visual:** Standar Duolingo 3D Tactile Physics (Clean Light Mode, tombol fisik tebal berkedalaman 4px, partikel konfeti kemenangan, dan maskot Mera).
 * **Audio Interaktif:** Web Audio API Procedural Synthesizer (`AudioService.ts`) menghasilkan 13 efek suara taktil (klik balok kata, jawaban benar, jawaban salah, naik level, klaim peti emas, streak flame) tanpa ketergantungan file audio eksternal yang berat.
 * **Siklus Harian:**
   * Streak harian bertingkat dengan api animasi (`streak`).
@@ -581,10 +581,10 @@ Pengguna dapat menentukan ritme komitmen waktu belajar harian sesuai gaya hidup 
 
 ---
 
-### 4.8 Sistem Perilaku & State Machine Maskot Kodi (The Kodi Companion Engine)
-Kodi bertindak sebagai tutor AI dan pendamping emosional pembelajar dengan 5 kondisi emosional visual (*State Machine*):
+### 4.8 Sistem Perilaku & State Machine Maskot Mera (The Mera Companion Engine)
+Mera bertindak sebagai tutor AI dan pendamping emosional pembelajar dengan 5 kondisi emosional visual (*State Machine*):
 
-| State Emosi Kodi | Pemicu Antarmuka (UX Trigger) | Perilaku & Ekspresi Visual |
+| State Emosi Mera | Pemicu Antarmuka (UX Trigger) | Perilaku & Ekspresi Visual |
 | :--- | :--- | :--- |
 | `IDLE` | Berada di Roadmap atau Dashboard | Duduk santai di sebelah node aktif, mata berkedip lembut dengan pose menyemangati. |
 | `CHEERING` | Pengguna menjawab benar / kombo 3x | Melompat gembira dengan partikel bintang kecil dan senyum lebar. |
@@ -595,7 +595,7 @@ Kodi bertindak sebagai tutor AI dan pendamping emosional pembelajar dengan 5 kon
 ---
 
 ### 4.9 Sistem Audio Prosedural & Sintesis Suara (Audio System Specifications)
-Arsitektur suara CodeAbroad mengadopsi **Web Audio API Procedural Synthesizer** murni (`audioService.ts`) yang menghasilkan 13 preset SFX taktil tanpa memerlukan download aset audio MP3 eksternal yang membebani kuota:
+Arsitektur suara Merantalk mengadopsi **Web Audio API Procedural Synthesizer** murni (`audioService.ts`) yang menghasilkan 13 preset SFX taktil tanpa memerlukan download aset audio MP3 eksternal yang membebani kuota:
 
 1. `tap`: Klik tajam frekuensi 800Hz untuk peletakan balok kata.
 2. `card_flip`: Suara gesekan kartu memori Anki berputar.
@@ -637,7 +637,7 @@ Untuk menjamin kualitas eksekusi engineering dan fokus pedagogis, batasan cakupa
 * **v1.3 (Advanced Levels):** Ekspansi kurikulum tingkat menengah (**JLPT N4–N3**, **Goethe B1–B2**, **IELTS 7.0–8.0**).
 
 ### 5.3 Explicit Out-of-Scope (Bukan Bagian dari Produk)
-* ❌ **Tutor Tatap Muka Manusia 1-on-1:** Platform berfokus 100% pada *self-paced mastery*, gamifikasi interaktif, dan pembimbing AI (Kodi). Tidak ada fitur booking guru privat manusia.
+* ❌ **Tutor Tatap Muka Manusia 1-on-1:** Platform berfokus 100% pada *self-paced mastery*, gamifikasi interaktif, dan pembimbing AI (Mera). Tidak ada fitur booking guru privat manusia.
 * ❌ **Streaming Video / Live Classroom:** Tidak ada panggilan video langsung antar-pengguna demi menjaga performa server yang ringan dan privasi pengguna.
 * ❌ **Forum Diskusi Bebas Tanpa Moderasi:** Interaksi sosial dibatasi pada sistem yang sehat dan memotivasi (*Weekly Leaderboard* dan profil publik) untuk mencegah spam dan toksisitas.
 * ❌ **Mode Offline Penuh (Lokal SQLite):** Versi web membutuhkan koneksi internet untuk sinkronisasi state. Mode offline penuh dicadangkan untuk aplikasi mobile native di masa mendatang.
@@ -662,7 +662,7 @@ Untuk menjamin kualitas eksekusi engineering dan fokus pedagogis, batasan cakupa
 
 * **Komitmen Akses Inti 100% Gratis (Zero Paywall on Learning):**  
   Seluruh materi kurikulum inti, modul tata bahasa visual, latihan 4 pilar, sistem Anki SRS harian, dan streak flame dapat diakses secara **penuh dan gratis tanpa batasan kuota energi/nyawa yang membatasi belajar**.
-* **Fitur Opsional Masa Depan (CodeAbroad Pro):**  
+* **Fitur Opsional Masa Depan (Merantalk Pro):**  
   Monetisasi opsional di masa mendatang hanya diperuntukkan bagi fitur tingkat lanjut non-kurikulum, seperti: simulasi Diagnostic Mock Exam tanpa batas dengan sertifikat digital terverifikasi dan analisis heatmap pengucapan fonetik AI mendalam.
 
 ---

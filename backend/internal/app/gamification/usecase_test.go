@@ -5,9 +5,9 @@ import (
 	"errors"
 	"testing"
 
-	"codeabroad/backend/internal/app/gamification"
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 func setupMockGamificationRepo() *gamification.MockRepository {

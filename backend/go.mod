@@ -1,4 +1,4 @@
-module codeabroad/backend
+module merantalk/backend
 
 go 1.26.4
 

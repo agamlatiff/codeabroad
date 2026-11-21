@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"strings"
 
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 // Helper encapsulates calculation rules for progression, chests, and arcade shop

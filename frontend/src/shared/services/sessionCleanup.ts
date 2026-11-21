@@ -1,10 +1,13 @@
 import type { QueryClient } from '@tanstack/react-query'
-import { SOUND_STORAGE_KEYS } from '@/shared/tokens/soundTokens'
+import { SOUND_STORAGE_KEYS, LEGACY_SOUND_STORAGE_KEYS } from '@/shared/tokens/soundTokens'
 
 const PRESERVED_LOCAL_KEYS = new Set<string>([
+  'merantalk_audio_storage',
+  'merantalk_avatar_style',
   'codeabroad_audio_storage',
   'codeabroad_avatar_style',
   ...Object.values(SOUND_STORAGE_KEYS),
+  ...Object.values(LEGACY_SOUND_STORAGE_KEYS),
 ])
 
 type CleanupCallback = () => void
@@ -43,7 +46,11 @@ export const clearClientSession = (queryClient?: QueryClient | null): void => {
       const keysToRemove: string[] = []
       for (let i = 0; i < window.localStorage.length; i++) {
         const key = window.localStorage.key(i)
-        if (key && key.startsWith('codeabroad') && !PRESERVED_LOCAL_KEYS.has(key)) {
+        if (
+          key &&
+          (key.startsWith('merantalk') || key.startsWith('codeabroad')) &&
+          !PRESERVED_LOCAL_KEYS.has(key)
+        ) {
           keysToRemove.push(key)
         }
       }

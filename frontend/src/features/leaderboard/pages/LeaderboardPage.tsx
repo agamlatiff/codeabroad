@@ -221,7 +221,7 @@ export const LeaderboardPage = () => {
             />
           </div>
 
-          {/* ── KODI CHEERING FOOTER ── */}
+          {/* ── MERA CHEERING FOOTER ── */}
           <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 flex items-center gap-4 shadow-xs">
             <div className="shrink-0 flex items-center justify-center">
               <KodiCharacter emotion="celebrate" size={64} />
@@ -229,7 +229,7 @@ export const LeaderboardPage = () => {
             <div className="space-y-1">
               <h4 className="font-brand font-black text-xs text-slate-900 flex items-center gap-1">
                 <Sparkle weight="fill" className="w-3.5 h-3.5 text-amber-500" />
-                <span>Tips Liga Mingguan dari Kodi!</span>
+                <span>Tips Liga Mingguan dari Mera!</span>
               </h4>
               <p className="text-xs text-slate-600 font-medium leading-relaxed">
                 Peringkat diperbarui secara otomatis setiap kali Anda menyelesaikan pelajaran kurikulum, latihan SRS, dan tantangan harian di bahasa apa pun. Konsistensi 15 menit sehari cukup untuk menembus Divisi Berlian Master!

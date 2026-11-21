@@ -5,8 +5,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"codeabroad/backend/internal/app/health"
-	"codeabroad/backend/internal/shared/router"
+	"merantalk/backend/internal/app/health"
+	"merantalk/backend/internal/shared/router"
 	"github.com/gin-gonic/gin"
 )
 

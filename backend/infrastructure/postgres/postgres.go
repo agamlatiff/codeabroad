@@ -1,7 +1,7 @@
 package postgres
 
 import (
-	"codeabroad/backend/config"
+	"merantalk/backend/config"
 	"context"
 	"fmt"
 	"net"

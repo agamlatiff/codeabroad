@@ -7,12 +7,12 @@ import (
 	"fmt"
 	"time"
 
-	"codeabroad/backend/infrastructure/postgres"
-	"codeabroad/backend/internal/app/gamification"
-	"codeabroad/backend/internal/app/language"
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/shared/progression"
+	"merantalk/backend/infrastructure/postgres"
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/app/language"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/progression"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 )

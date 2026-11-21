@@ -147,7 +147,7 @@ const coordinateRefresh = (initiatingRefreshToken: string): Promise<string | nul
     try {
       const locks = typeof navigator !== 'undefined' ? navigator.locks : undefined
       if (locks && typeof locks.request === 'function') {
-        return await locks.request('codeabroad_auth_refresh', () =>
+        return await locks.request('merantalk_auth_refresh', () =>
           performLockedTokenRefresh(initiatingRefreshToken)
         )
       }

@@ -10,8 +10,8 @@ import (
 	"sync"
 	"time"
 
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 // MockRepository implements Repository for unit testing

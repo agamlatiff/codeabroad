@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/app/user"
 )
 
 func TestGetProfile_Success(t *testing.T) {
@@ -14,10 +14,10 @@ func TestGetProfile_Success(t *testing.T) {
 	repo.Users["user-123"] = &user.User{
 		UserAccount: user.UserAccount{
 			ID:    "user-123",
-			Email: "learner@codeabroad.io",
+			Email: "learner@merantalk.id",
 		},
 		UserProfile: user.UserProfile{
-			Name:             "CodeAbroad Learner",
+			Name:             "Merantalk Learner",
 			Username:         "learner123",
 			DailyGoalMinutes: 15,
 		},
@@ -28,8 +28,8 @@ func TestGetProfile_Success(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}
-	if res.Name != "CodeAbroad Learner" {
-		t.Errorf("expected name 'CodeAbroad Learner', got '%s'", res.Name)
+	if res.Name != "Merantalk Learner" {
+		t.Errorf("expected name 'Merantalk Learner', got '%s'", res.Name)
 	}
 	if res.DailyGoalMinutes != 15 {
 		t.Errorf("expected daily goal 15, got %d", res.DailyGoalMinutes)
@@ -109,7 +109,7 @@ func TestClaimDailyReward_Success(t *testing.T) {
 func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 	repo := user.NewMockRepository()
 	repo.Users["user-123"] = &user.User{
-		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@codeabroad.io"},
+		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@merantalk.id"},
 		UserProfile: user.UserProfile{Name: "Initial", Username: "learner123", DailyGoalMinutes: 15},
 	}
 	uc := user.NewUsecase(repo)
@@ -153,7 +153,7 @@ func TestUpdateProfile_ValidationAndTrimming(t *testing.T) {
 func TestGetActivityLogs_IdempotentDailyLogin(t *testing.T) {
 	repo := user.NewMockRepository()
 	repo.Users["user-123"] = &user.User{
-		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@codeabroad.io"},
+		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@merantalk.id"},
 		UserProfile: user.UserProfile{Name: "Learner", Username: "learner123"},
 		UserGamificationStats: user.UserGamificationStats{
 			XP:           20,

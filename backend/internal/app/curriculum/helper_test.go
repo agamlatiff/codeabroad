@@ -4,8 +4,8 @@ import (
 	"errors"
 	"testing"
 
-	"codeabroad/backend/internal/app/curriculum"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/curriculum"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 func TestHelper_CalculateReplayXP(t *testing.T) {

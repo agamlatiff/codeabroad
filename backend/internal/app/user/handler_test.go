@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"codeabroad/backend/internal/app/auth"
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/middleware"
+	"merantalk/backend/internal/app/auth"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -98,7 +98,7 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 	repo.Users["usr-1"] = &user.User{
 		UserAccount: user.UserAccount{
 			ID:    "usr-1",
-			Email: "reward@codeabroad.dev",
+			Email: "reward@merantalk.id",
 		},
 		UserProfile: user.UserProfile{
 			Name:     "Reward Tester",
@@ -111,7 +111,7 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 		},
 	}
 	router := setupUserTestRouter(repo)
-	token := generateTestToken("usr-1", "reward@codeabroad.dev")
+	token := generateTestToken("usr-1", "reward@merantalk.id")
 
 	claimBody, _ := json.Marshal(map[string]string{
 		"reward_type": "vocab_quest",
@@ -164,10 +164,10 @@ func TestHTTP_ClaimDailyReward_Success(t *testing.T) {
 func TestHTTP_ClaimDailyReward_InvalidRewardType(t *testing.T) {
 	repo := user.NewMockRepository()
 	repo.Users["usr-1"] = &user.User{
-		UserAccount: user.UserAccount{ID: "usr-1", Email: "reward@codeabroad.dev"},
+		UserAccount: user.UserAccount{ID: "usr-1", Email: "reward@merantalk.id"},
 	}
 	router := setupUserTestRouter(repo)
-	token := generateTestToken("usr-1", "reward@codeabroad.dev")
+	token := generateTestToken("usr-1", "reward@merantalk.id")
 
 	claimBody, _ := json.Marshal(map[string]string{
 		"reward_type": "lesson_milestone",
@@ -186,11 +186,11 @@ func TestHTTP_ClaimDailyReward_InvalidRewardType(t *testing.T) {
 func TestHTTP_UpdateProfile_BlankNameReturnsBadRequest(t *testing.T) {
 	repo := user.NewMockRepository()
 	repo.Users["usr-1"] = &user.User{
-		UserAccount: user.UserAccount{ID: "usr-1", Email: "user@codeabroad.dev"},
+		UserAccount: user.UserAccount{ID: "usr-1", Email: "user@merantalk.id"},
 		UserProfile: user.UserProfile{Name: "Original Name", Username: "orig"},
 	}
 	router := setupUserTestRouter(repo)
-	token := generateTestToken("usr-1", "user@codeabroad.dev")
+	token := generateTestToken("usr-1", "user@merantalk.id")
 
 	body, _ := json.Marshal(map[string]any{"name": "   "})
 	w := httptest.NewRecorder()
@@ -207,7 +207,7 @@ func TestHTTP_UpdateProfile_BlankNameReturnsBadRequest(t *testing.T) {
 func TestHTTP_DailyRewardRateLimiterTriggered(t *testing.T) {
 	repo := user.NewMockRepository()
 	repo.Users["usr-1"] = &user.User{
-		UserAccount: user.UserAccount{ID: "usr-1", Email: "rl@codeabroad.dev"},
+		UserAccount: user.UserAccount{ID: "usr-1", Email: "rl@merantalk.id"},
 	}
 
 	gin.SetMode(gin.TestMode)
@@ -222,7 +222,7 @@ func TestHTTP_DailyRewardRateLimiterTriggered(t *testing.T) {
 	)
 	h.RegisterRoutes(v1, middleware.AuthMiddleware(testJWTSecret))
 
-	token := generateTestToken("usr-1", "rl@codeabroad.dev")
+	token := generateTestToken("usr-1", "rl@merantalk.id")
 	body, _ := json.Marshal(map[string]string{"reward_type": "vocab_quest"})
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodPost, "/api/v1/users/me/daily-rewards/claim", bytes.NewBuffer(body))

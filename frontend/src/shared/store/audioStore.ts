@@ -10,7 +10,25 @@ import {
   DEFAULT_MASTER_VOLUME,
   DEFAULT_BGM_VOLUME,
   SOUND_STORAGE_KEYS,
+  LEGACY_SOUND_STORAGE_KEYS,
 } from "@/shared/tokens/soundTokens"
+
+const AUDIO_STORAGE_KEY = 'merantalk_audio_storage'
+const LEGACY_AUDIO_STORAGE_KEY = 'codeabroad_audio_storage'
+
+if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+  try {
+    if (!localStorage.getItem(AUDIO_STORAGE_KEY)) {
+      const legacyAudio = localStorage.getItem(LEGACY_AUDIO_STORAGE_KEY)
+      if (legacyAudio) {
+        localStorage.setItem(AUDIO_STORAGE_KEY, legacyAudio)
+        localStorage.removeItem(LEGACY_AUDIO_STORAGE_KEY)
+      }
+    }
+  } catch {
+    // Ignore storage access errors
+  }
+}
 
 export interface AudioState {
   audioMode: AudioPlaybackMode
@@ -43,15 +61,21 @@ const getInitialSettings = () => {
   }
 
   let mode: AudioPlaybackMode = 'all'
-  const legacyMode = localStorage.getItem(SOUND_STORAGE_KEYS.audioMode) as AudioPlaybackMode | null
+  const legacyMode = (localStorage.getItem(SOUND_STORAGE_KEYS.audioMode) ||
+    localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.audioMode)) as AudioPlaybackMode | null
   if (legacyMode === 'all' || legacyMode === 'sfx_only' || legacyMode === 'muted') {
     mode = legacyMode
-  } else if (localStorage.getItem(SOUND_STORAGE_KEYS.muted) === 'true') {
+  } else if (
+    localStorage.getItem(SOUND_STORAGE_KEYS.muted) === 'true' ||
+    localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.muted) === 'true'
+  ) {
     mode = 'muted'
   }
 
   let masterVol = DEFAULT_MASTER_VOLUME
-  const storedVol = localStorage.getItem(SOUND_STORAGE_KEYS.volume)
+  const storedVol =
+    localStorage.getItem(SOUND_STORAGE_KEYS.volume) ||
+    localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.volume)
   if (storedVol !== null) {
     const parsed = parseFloat(storedVol)
     if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
@@ -136,7 +160,7 @@ export const useAudioStore = create<AudioState>()(
       },
     }),
     {
-      name: 'codeabroad_audio_storage',
+      name: AUDIO_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state) => {
         if (state) {

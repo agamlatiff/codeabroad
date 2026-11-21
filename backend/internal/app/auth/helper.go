@@ -10,16 +10,16 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"codeabroad/backend/config"
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/progression"
+	"merantalk/backend/config"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/progression"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
 
 // dummyPasswordHash is a pre-computed valid bcrypt hash used to equalize execution timing (~70ms)
 // when a queried user does not exist, mitigating timing-based user enumeration attacks.
-var dummyPasswordHash, _ = bcrypt.GenerateFromPassword([]byte("codeabroad-dummy-bcrypt-salt-for-timing-attack-protection"), bcrypt.DefaultCost)
+var dummyPasswordHash, _ = bcrypt.GenerateFromPassword([]byte("merantalk-dummy-bcrypt-salt-for-timing-attack-protection"), bcrypt.DefaultCost)
 
 // usernameRegex validates standard alphanumeric, underscore, and hyphen handles (3-30 chars)
 var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,30}$`)

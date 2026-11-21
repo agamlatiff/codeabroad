@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
 	"github.com/golang-jwt/jwt/v5"
 )
 

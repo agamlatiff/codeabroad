@@ -8,8 +8,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/shared/progression"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/progression"
 )
 
 const (
@@ -137,7 +137,7 @@ func (h *Helper) ResolveDailyRewardXP(rewardType string) (int, error) {
 	return xp, err
 }
 
-// CalculateLevel computes the user level from total XP according to CodeAbroad progression rules (100 XP per level)
+// CalculateLevel computes the user level from total XP according to Merantalk progression rules (100 XP per level)
 func CalculateLevel(xp int) int {
 	return progression.CalculateLevel(xp)
 }

@@ -1,4 +1,4 @@
-# CodeAbroad — Developer Automation Makefile
+# Merantalk — Developer Automation Makefile
 .PHONY: help dev dev-backend build-backend test-backend test-coverage lint-backend tidy-backend \
         dev-frontend build-frontend lint-frontend install-frontend \
         docker-up docker-down docker-logs docker-ps docker-restart \
@@ -7,7 +7,7 @@
 # Default target when running 'make'
 help:
 	@echo "=========================================================="
-	@echo "🚀 CodeAbroad Development Commands"
+	@echo "🚀 Merantalk Development Commands"
 	@echo "=========================================================="
 	@echo "Fullstack Development:"
 	@echo "  make dev                  Run both backend & frontend concurrently"
@@ -106,19 +106,19 @@ docker-restart:
 # Direct Container Shell Access
 # -----------------------------------------------------------------------------
 db-shell:
-	docker exec -it codeabroad-postgres psql -U codeabroad -d codeabroad
+	docker exec -it merantalk-postgres psql -U merantalk -d merantalk
 
 redis-cli:
-	docker exec -it codeabroad-redis sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then exec redis-cli -a "$$REDIS_PASSWORD"; else exec redis-cli; fi'
+	docker exec -it merantalk-redis sh -c 'if [ -n "$$REDIS_PASSWORD" ]; then exec redis-cli -a "$$REDIS_PASSWORD"; else exec redis-cli; fi'
 
 # -----------------------------------------------------------------------------
 # Database Migration Runner (Supports Local Docker & Custom DB_URL Overrides)
 # -----------------------------------------------------------------------------
 -include .env
-DB_USER ?= codeabroad
-DB_PASSWORD ?= codeabroad_secret
-DB_NAME ?= codeabroad
-DOCKER_MIGRATE_NET ?= container:codeabroad-postgres
+DB_USER ?= merantalk
+DB_PASSWORD ?= merantalk_secret
+DB_NAME ?= merantalk
+DOCKER_MIGRATE_NET ?= container:merantalk-postgres
 DB_URL ?= postgres://$(DB_USER):$(DB_PASSWORD)@localhost:5432/$(DB_NAME)?sslmode=disable
 
 db-migrate-up:

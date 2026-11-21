@@ -400,7 +400,7 @@ export const QuestLogPage = () => {
                     <button
                       type="button"
                       onClick={handleCycleKodiTip}
-                      title="Klik Kodi untuk tips belajar"
+                      title="Klik Mera untuk tips belajar"
                       className="group flex flex-col items-center gap-1 cursor-pointer focus:outline-none"
                     >
                       <div className="relative flex items-center justify-center">
@@ -410,7 +410,7 @@ export const QuestLogPage = () => {
                         </div>
                       </div>
                       <span className="text-[10px] font-bold text-amber-800/80 group-hover:text-amber-900 transition-colors">
-                        Klik Kodi untuk tips belajar
+                        Klik Mera untuk tips belajar
                       </span>
                     </button>
                   </div>

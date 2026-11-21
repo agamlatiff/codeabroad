@@ -7,8 +7,8 @@ import (
 	"sort"
 	"sync"
 
-	"codeabroad/backend/internal/app/gamification"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 // CurriculumCacheInvalidator clears per-user cached curriculum state when active language changes.

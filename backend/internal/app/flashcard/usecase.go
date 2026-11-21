@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"codeabroad/backend/internal/app/user"
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/shared/progression"
+	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/progression"
 )
 
 const (

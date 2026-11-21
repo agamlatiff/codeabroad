@@ -1,14 +1,14 @@
 openapi: 3.0.3
 info:
-  title: CodeAbroad API Documentation
+  title: Merantalk API Documentation
   description: >
-    Official RESTful API documentation for CodeAbroad — Global Language Mastery Platform,
+    Official RESTful API documentation for Merantalk — Global Language Mastery Platform,
     Anki SRS & Diagnostic Exam Engine.
     Covers Authentication, User Profiles, Onboarding, Languages, Curriculum, Exercises,
     Vocabularies, Spaced Repetition (SRS), Mock Exams, Gamification, and Leaderboards.
   version: 3.0.0
   contact:
-    name: CodeAbroad Engineering Team
+    name: Merantalk Engineering Team
     url: https://github.com/agamlatiff/codeabroad
 
 servers:

@@ -8,7 +8,7 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"codeabroad/backend/internal/shared/progression"
+	"merantalk/backend/internal/shared/progression"
 )
 
 func normalizeLimit(limit int, defaultLimit int, maxLimit int) int {

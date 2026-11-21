@@ -3,10 +3,10 @@ package onboarding
 import (
 	"context"
 
-	"codeabroad/backend/internal/app/gamification"
-	"codeabroad/backend/internal/app/language"
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/app/language"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/user"
 )
 
 // Specific Onboarding Errors

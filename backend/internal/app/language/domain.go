@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 // Specific Language & Enrollment Domain Errors

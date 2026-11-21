@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"strings"
 
-	"codeabroad/backend/infrastructure/postgres"
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/infrastructure/postgres"
+	"merantalk/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
 

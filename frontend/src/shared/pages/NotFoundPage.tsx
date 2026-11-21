@@ -18,7 +18,7 @@ export const NotFoundPage = () => {
             emotion="thinking"
             size="xl"
             showSpeechBubble
-            speechText="Hmm, radar Kodi tidak mendeteksi koordinat ini!"
+            speechText="Hmm, radar Mera tidak mendeteksi koordinat ini!"
             interactive
           />
         </div>

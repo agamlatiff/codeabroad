@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/shared/progression"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/progression"
 )
 
 // Helper encapsulates business logic for curriculum unlocks and lesson completion evaluation

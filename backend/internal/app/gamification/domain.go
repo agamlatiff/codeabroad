@@ -4,8 +4,8 @@ import (
 	"context"
 	"time"
 
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/app/user"
 )
 
 // Specific Gamification Domain Errors

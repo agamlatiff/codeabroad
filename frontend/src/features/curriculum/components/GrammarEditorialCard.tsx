@@ -150,7 +150,7 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
           <span
             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[9px] font-brand font-black uppercase tracking-wider shadow-2xs ${cover.pillClass}`}
           >
-            CODEABROAD • {levelCode}
+            MERANTALK • {levelCode}
           </span>
 
           <div className="space-y-0.5">

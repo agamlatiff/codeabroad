@@ -48,20 +48,34 @@ const persistedOnboardingSchema = z.object({
   version: z.number().optional(),
 })
 
+const LEGACY_ONBOARDING_STORAGE_KEY = 'codeabroad_onboarding_v3_draft'
+
 const validatedSessionStorage: StateStorage = {
   getItem: (name) => {
-    const raw = sessionStorage.getItem(name)
+    let raw = sessionStorage.getItem(name)
+    let migratedFromLegacy = false
+    if (!raw) {
+      raw = sessionStorage.getItem(LEGACY_ONBOARDING_STORAGE_KEY)
+      migratedFromLegacy = Boolean(raw)
+    }
     if (!raw) return null
     try {
       const parsedJson = JSON.parse(raw)
       const parsed = persistedOnboardingSchema.safeParse(parsedJson)
       if (!parsed.success) {
         sessionStorage.removeItem(name)
+        sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
         return null
       }
-      return JSON.stringify(parsed.data)
+      const serialized = JSON.stringify(parsed.data)
+      if (migratedFromLegacy) {
+        sessionStorage.setItem(name, serialized)
+        sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
+      }
+      return serialized
     } catch {
       sessionStorage.removeItem(name)
+      sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
       return null
     }
   },
@@ -101,7 +115,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
         }),
     }),
     {
-      name: 'codeabroad_onboarding_v3_draft',
+      name: 'merantalk_onboarding_v3_draft',
       storage: createJSONStorage(() => validatedSessionStorage),
       partialize: (state) => ({
         currentStep: state.currentStep,

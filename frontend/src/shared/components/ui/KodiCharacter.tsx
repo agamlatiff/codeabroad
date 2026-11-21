@@ -97,7 +97,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
         interactive ? 'cursor-pointer group' : ''
       } ${className}`}
       onClick={interactive ? handleClick : undefined}
-      title="Kodi (Chiikawa Neko) — CodeAbroad Companion"
+      title="Mera — Merantalk Companion"
     >
       {/* ── 1. OPTIONAL SPEECH BUBBLE ── */}
       {showSpeechBubble && speechText && (

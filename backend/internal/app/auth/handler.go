@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"strings"
 
-	"codeabroad/backend/internal/shared/apperror"
-	"codeabroad/backend/internal/shared/response"
+	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
 

@@ -42,11 +42,11 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               {heroTitle || 'Kuasai Bahasa Asing untuk Dunia'}
             </h2>
             <p className="text-white/80 text-sm font-normal mt-3 leading-relaxed font-['Plus_Jakarta_Sans',sans-serif] max-w-sm">
-              {heroSubtitle || 'Latihan bahasa terstruktur dari nol hingga siap kerja global bersama Kodi.'}
+              {heroSubtitle || 'Latihan bahasa terstruktur dari nol hingga siap kerja global bersama Mera.'}
             </p>
           </div>
 
-          {/* Bottom: Kodi Mascot on Stepped 3D Glass Podium */}
+          {/* Bottom: Mera Mascot on Stepped 3D Glass Podium */}
           <div className="flex flex-col items-center justify-center relative pt-4 pb-6">
             <div className="relative flex items-center justify-center group cursor-pointer">
               {/* Subtle Ambient Backlight */}
@@ -56,9 +56,9 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               <div className="absolute -top-10 -right-8 z-30 select-none transition-all duration-300 ease-out group-hover:scale-105 group-hover:-rotate-2 group-hover:-translate-y-1">
                 <div className="relative bg-white text-slate-900 px-4 py-2.5 rounded-[22px] border-2 border-slate-200 shadow-[0_4px_0_0_#CBD5E1] max-w-[220px] text-center">
                   <p className="text-[13px] font-bold tracking-tight leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
-                    {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
+                    {speechBubble || 'Halo! Siap lanjut belajar hari ini? 🚀'}
                   </p>
-                  {/* Manga Tail pointing towards Kodi */}
+                  {/* Manga Tail pointing towards Mera */}
                   <div className="absolute -bottom-2.5 left-6 w-3.5 h-3.5 bg-white border-b-2 border-l-2 border-slate-200 -rotate-45" />
                 </div>
               </div>
@@ -69,11 +69,11 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               <div className="w-74 xl:w-[310px] h-20 xl:h-22 bg-white/[0.28] rounded-[50%] border-2 border-white/45 backdrop-blur-lg absolute -bottom-4 z-0 shadow-[inset_0_2px_8px_rgba(255,255,255,0.4),0_10px_25px_rgba(0,0,0,0.15)] transition-transform duration-500 group-hover:scale-[1.02]" />
               <div className="w-52 xl:w-56 h-6 bg-black/40 rounded-[50%] blur-sm absolute -bottom-0.5 z-0 origin-center transition-all duration-300 group-hover:scale-90 group-hover:opacity-60" />
 
-              {/* Primary Mascot Character (Living Chiikawa Neko Master) */}
+              {/* Primary Mascot Character */}
               {heroImage ? (
                 <img
                   src={heroImage}
-                  alt="Kodi Mascot CodeAbroad"
+                  alt="Mera Mascot Merantalk"
                   className="w-72 xl:w-80 h-72 xl:h-80 object-contain select-none drop-shadow-2xl relative z-10 transition-transform duration-300 ease-out group-hover:-translate-y-2 group-hover:scale-[1.03]"
                 />
               ) : (
@@ -91,18 +91,18 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
 
       {/* ── 2. MOBILE & TABLET ADAPTIVE CONTAINER (ERGONOMIC & COHESIVE) ── */}
       <div className="flex-1 h-full flex flex-col justify-center items-center px-4 py-6 sm:px-8 md:py-10 lg:py-4 lg:px-8 xl:py-6 xl:px-12 w-full lg:overflow-y-auto">
-        {/* Mobile / Tablet Top Header: Logo + Kodi Companion Greeting */}
+        {/* Mobile / Tablet Top Header: Logo + Mera Companion Greeting */}
         <div className="w-full max-w-sm md:max-w-md lg:hidden mb-6">
           <div className="flex items-center justify-between mb-4">
             <Logo variant="slate" size="sm" />
           </div>
 
-          {/* Integrated Kodi Companion Card (Mobile & Tablet) */}
+          {/* Integrated Mera Companion Card (Mobile & Tablet) */}
           <div className="relative bg-gradient-to-r from-blue-50/90 via-white to-sky-50/60 border border-blue-100 rounded-2xl p-3 sm:p-3.5 shadow-sm flex items-center gap-3">
             {heroImage ? (
               <img
                 src={heroImage}
-                alt="Kodi Mascot"
+                alt="Mera Mascot"
                 className="w-14 h-14 sm:w-16 sm:h-16 object-contain shrink-0 drop-shadow-sm select-none"
               />
             ) : (
@@ -112,7 +112,7 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
             )}
             <div className="flex-1 min-w-0 pl-1 pr-1">
               <div className="relative inline-block bg-white text-slate-800 text-[11px] sm:text-xs font-semibold px-3 py-2 rounded-2xl border border-blue-100 shadow-sm leading-snug font-['Plus_Jakarta_Sans',sans-serif]">
-                {speechBubble || 'Halo! Siap lanjut push code hari ini? 🚀'}
+                {speechBubble || 'Halo! Siap lanjut belajar hari ini? 🚀'}
                 <div className="absolute top-1/2 -left-1.5 -translate-y-1/2 w-2.5 h-2.5 bg-white border-l border-b border-blue-100 rotate-45" />
               </div>
             </div>

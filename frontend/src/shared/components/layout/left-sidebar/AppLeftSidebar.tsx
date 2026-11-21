@@ -36,18 +36,18 @@ export const AppLeftSidebar = () => {
             to="/curriculum"
             onClick={() => triggerHaptic('tap')}
             className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border-2 border-slate-200/90 shadow-[0_3px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer relative group"
-            title="CodeAbroad Hub"
+            title="Merantalk Hub"
           >
             <img
               src="/favicon.svg"
-              alt="CodeAbroad Kodi"
+              alt="Merantalk Mera"
               className="w-9 h-9 object-contain drop-shadow-xs transition-transform group-hover:scale-110"
             />
 
             {/* Brand Tooltip */}
             <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 flex items-center gap-1.5 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
               <Sparkle weight="fill" className="w-3 h-3 text-amber-400" />
-              <span>CodeAbroad Platform</span>
+              <span>Merantalk Platform</span>
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
             </div>
           </Link>

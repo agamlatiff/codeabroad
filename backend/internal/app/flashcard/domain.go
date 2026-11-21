@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 var nonSlugCharsRegex = regexp.MustCompile(`[^a-z0-9]+`)

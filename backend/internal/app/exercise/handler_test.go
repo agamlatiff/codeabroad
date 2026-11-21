@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"codeabroad/backend/internal/app/exercise"
-	"codeabroad/backend/internal/app/language"
-	"codeabroad/backend/internal/app/user"
+	"merantalk/backend/internal/app/exercise"
+	"merantalk/backend/internal/app/language"
+	"merantalk/backend/internal/app/user"
 	"github.com/gin-gonic/gin"
 )
 

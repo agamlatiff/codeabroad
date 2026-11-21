@@ -5,7 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"codeabroad/backend/internal/app/leaderboard"
+	"merantalk/backend/internal/app/leaderboard"
 )
 
 func TestGetWeeklyLeaderboard_Success(t *testing.T) {

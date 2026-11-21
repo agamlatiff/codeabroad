@@ -4,7 +4,8 @@ import type { User } from "@/shared/types/user"
 import { registerAuthInterceptorBridge } from "@/shared/services/api"
 import { registerSessionResetHandler } from "@/shared/services/sessionCleanup"
 
-export const AUTH_STORAGE_KEY = 'codeabroad_auth_session'
+export const AUTH_STORAGE_KEY = 'merantalk_auth_session'
+const LEGACY_AUTH_STORAGE_KEY = 'codeabroad_auth_session'
 
 const persistedUserSchema = z.object({
   id: z.string().min(1),
@@ -93,20 +94,44 @@ const safeParseSession = (raw: string | null): AuthSessionData | null => {
   }
 }
 
+const readAndMigrateSession = (
+  storage: Storage | null,
+  rememberMe: boolean
+): AuthSessionData | null => {
+  if (!storage) return null
+  const primary = safeParseSession(storage.getItem(AUTH_STORAGE_KEY))
+  if (hasActiveTokenAndUser(primary) && primary) {
+    return { ...primary, rememberMe }
+  }
+  const legacyRaw = storage.getItem(LEGACY_AUTH_STORAGE_KEY)
+  const legacy = safeParseSession(legacyRaw)
+  if (hasActiveTokenAndUser(legacy) && legacy) {
+    const migrated: AuthSessionData = { ...legacy, rememberMe }
+    try {
+      storage.setItem(AUTH_STORAGE_KEY, JSON.stringify(migrated))
+      storage.removeItem(LEGACY_AUTH_STORAGE_KEY)
+    } catch {
+      // Ignore storage quota/privacy restrictions
+    }
+    return migrated
+  }
+  return null
+}
+
 /**
  * Loads initial session from browser storage (localStorage or sessionStorage based on rememberMe).
  */
 const loadInitialSession = (): AuthSessionData => {
   // 1. Check persistent localStorage session (rememberMe: true)
-  const storedLocal = safeParseSession(cachedLocalStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
-  if (hasActiveTokenAndUser(storedLocal) && storedLocal) {
-    return { ...storedLocal, rememberMe: true }
+  const storedLocal = readAndMigrateSession(cachedLocalStorage, true)
+  if (storedLocal) {
+    return storedLocal
   }
 
   // 2. Check transient sessionStorage session (rememberMe: false)
-  const storedSession = safeParseSession(cachedSessionStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
-  if (hasActiveTokenAndUser(storedSession) && storedSession) {
-    return { ...storedSession, rememberMe: false }
+  const storedSession = readAndMigrateSession(cachedSessionStorage, false)
+  if (storedSession) {
+    return storedSession
   }
 
   // 3. Fallback unauthenticated default
@@ -125,9 +150,13 @@ const persistSession = (data: AuthSessionData | null, rememberMe: boolean) => {
   if (hasActiveTokenAndUser(data) && data) {
     primary?.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
     secondary?.removeItem(AUTH_STORAGE_KEY)
+    cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+    cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
   } else {
     cachedLocalStorage?.removeItem(AUTH_STORAGE_KEY)
     cachedSessionStorage?.removeItem(AUTH_STORAGE_KEY)
+    cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+    cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
   }
 }
 

@@ -27,7 +27,8 @@ interface LocalKanjiProgressEntry {
   is_mastered: boolean
 }
 
-const KANJI_FALLBACK_STORAGE_KEY = 'codeabroad_kanji_fallback_progress_v1'
+const KANJI_FALLBACK_STORAGE_KEY = 'merantalk_kanji_fallback_progress_v1'
+const LEGACY_KANJI_FALLBACK_STORAGE_KEY = 'codeabroad_kanji_fallback_progress_v1'
 const KANJI_FALLBACK_CHAR_SET = new Set(KANJI_N5_CATALOG.map((item) => item.character))
 const memoryKanjiProgress: Record<string, LocalKanjiProgressEntry> = {}
 
@@ -36,10 +37,19 @@ function readLocalKanjiProgress(): Record<string, LocalKanjiProgressEntry> {
     return memoryKanjiProgress
   }
   try {
-    const raw = window.localStorage.getItem(KANJI_FALLBACK_STORAGE_KEY)
+    let raw = window.localStorage.getItem(KANJI_FALLBACK_STORAGE_KEY)
+    let migratedFromLegacy = false
+    if (!raw) {
+      raw = window.localStorage.getItem(LEGACY_KANJI_FALLBACK_STORAGE_KEY)
+      migratedFromLegacy = Boolean(raw)
+    }
     if (!raw) return memoryKanjiProgress
     const parsed = JSON.parse(raw) as unknown
     if (!parsed || typeof parsed !== 'object') return memoryKanjiProgress
+    if (migratedFromLegacy) {
+      window.localStorage.setItem(KANJI_FALLBACK_STORAGE_KEY, raw)
+      window.localStorage.removeItem(LEGACY_KANJI_FALLBACK_STORAGE_KEY)
+    }
     return { ...memoryKanjiProgress, ...(parsed as Record<string, LocalKanjiProgressEntry>) }
   } catch {
     return memoryKanjiProgress

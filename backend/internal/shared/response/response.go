@@ -5,7 +5,7 @@ import (
 	"log"
 	"net/http"
 
-	"codeabroad/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/apperror"
 	"github.com/gin-gonic/gin"
 )
 

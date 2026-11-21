@@ -58,7 +58,7 @@ export function OnboardingPage() {
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 mb-4">
             <Sparkle className="h-3.5 w-3.5" weight="fill" />
-            <span>CodeAbroad Language Mastery</span>
+            <span>Merantalk Language Mastery</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
             Halo{user?.name ? `, ${user.name}` : ''}! Siap mulai perjalanan bahasamu?

@@ -3,8 +3,8 @@ package onboarding
 import (
 	"sort"
 
-	"codeabroad/backend/internal/app/exercise"
-	"codeabroad/backend/internal/app/language"
+	"merantalk/backend/internal/app/exercise"
+	"merantalk/backend/internal/app/language"
 )
 
 // Helper encapsulates business logic for grading placement questions and resolving initial levels

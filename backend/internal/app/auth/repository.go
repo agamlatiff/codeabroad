@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	infraRedis "codeabroad/backend/infrastructure/redis"
+	infraRedis "merantalk/backend/infrastructure/redis"
 	"github.com/redis/go-redis/v9"
 )
 
