@@ -2155,3 +2155,99 @@ func TestCompleteLesson_PopulatesSessionScoreAndSkipPrecedingFiltersByLanguage(t
 		t.Fatalf("expected SessionScore=75 and XPEarned=20, got score=%v xp=%d", res.SessionScore, res.XPEarned)
 	}
 }
+
+func TestSubmitGrammarCheck_MasterySRSAndEnrichment(t *testing.T) {
+	ctx := context.Background()
+	cRepo := curriculum.NewMockRepository()
+	cRepo.GrammarPoints["gp-n5-1"] = &curriculum.GrammarPoint{
+		ID:         "gp-n5-1",
+		LevelID:    "lvl-n5",
+		LevelCode:  "N5",
+		Code:       "GP-JA-N5-001",
+		Category:   "particle",
+		Title:      "Partikel WA",
+		OrderIndex: 1,
+	}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese"}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", Name: "JLPT N5", OrderIndex: 1}
+	lvlID := "lvl-n5"
+	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlID,
+		CurrentLevel:   lRepo.Levels["lvl-n5"],
+		IsActive:       true,
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil)
+	checkUC := uc.(interface {
+		SubmitGrammarCheck(context.Context, string, string, *curriculum.SubmitGrammarCheckRequest) (*curriculum.SubmitGrammarCheckResponse, error)
+		GetGrammarPointsByLevelFilter(context.Context, string, string, string) ([]curriculum.GrammarPoint, error)
+	})
+
+	// 1. Failing check (2/3) keeps is_understood = false
+	failRes, err := checkUC.SubmitGrammarCheck(ctx, "user-1", "GP-JA-N5-001", &curriculum.SubmitGrammarCheckRequest{
+		CorrectCount:   2,
+		TotalQuestions: 3,
+	})
+	if err != nil {
+		t.Fatalf("expected 2/3 submit to succeed, got %v", err)
+	}
+	if failRes.Progress.IsUnderstood || failRes.Progress.QuizScore != 67 || failRes.UnderstoodTotal != 0 {
+		t.Fatalf("unexpected fail result: %+v", failRes)
+	}
+
+	// 2. Passing check (3/3) marks is_understood = true & schedules SRS review
+	passRes, err := checkUC.SubmitGrammarCheck(ctx, "user-1", "gp-n5-1", &curriculum.SubmitGrammarCheckRequest{
+		CorrectCount:   3,
+		TotalQuestions: 3,
+	})
+	if err != nil {
+		t.Fatalf("expected 3/3 submit to succeed, got %v", err)
+	}
+	if !passRes.Progress.IsUnderstood || passRes.Progress.QuizScore != 100 || passRes.Progress.AttemptsCount != 2 || passRes.UnderstoodTotal != 1 {
+		t.Fatalf("unexpected pass result: %+v", passRes)
+	}
+	if passRes.Progress.NextReviewAt == nil || !passRes.Progress.NextReviewAt.After(time.Now().UTC().Add(48*time.Hour)) {
+		t.Fatalf("expected next_review_at > 48h from now on pass, got %v", passRes.Progress.NextReviewAt)
+	}
+
+	// 3. Re-trying and getting 2/3 must NOT downgrade is_understood or best quiz_score
+	retryFailRes, err := checkUC.SubmitGrammarCheck(ctx, "user-1", "GP-JA-N5-001", &curriculum.SubmitGrammarCheckRequest{
+		CorrectCount:   2,
+		TotalQuestions: 3,
+	})
+	if err != nil {
+		t.Fatalf("expected retry submit to succeed, got %v", err)
+	}
+	if !retryFailRes.Progress.IsUnderstood || retryFailRes.Progress.QuizScore != 100 || retryFailRes.Progress.AttemptsCount != 3 {
+		t.Fatalf("expected mastered state & best score preserved, got %+v", retryFailRes.Progress)
+	}
+
+	// 4. Both GetGrammarPoints and GetGrammarPointsByLevelFilter enrich user progress
+	lvlPts, err := uc.GetGrammarPoints(ctx, "user-1", "lvl-n5")
+	if err != nil || len(lvlPts) != 1 || !lvlPts[0].IsUnderstood || lvlPts[0].QuizScore != 100 || lvlPts[0].AttemptsCount != 3 {
+		t.Fatalf("expected enriched GetGrammarPoints, err=%v pts=%+v", err, lvlPts)
+	}
+	filterPts, err := checkUC.GetGrammarPointsByLevelFilter(ctx, "user-1", "ja", "N5")
+	if err != nil || len(filterPts) != 1 || !filterPts[0].IsUnderstood || filterPts[0].QuizScore != 100 {
+		t.Fatalf("expected enriched GetGrammarPointsByLevelFilter, err=%v pts=%+v", err, filterPts)
+	}
+
+	// 5. Validation & not found errors
+	if _, err := checkUC.SubmitGrammarCheck(ctx, "user-1", "GP-JA-N5-001", &curriculum.SubmitGrammarCheckRequest{
+		CorrectCount:   4,
+		TotalQuestions: 3,
+	}); !errors.Is(err, apperror.ErrBadRequest) {
+		t.Fatalf("expected ErrBadRequest when correct_count > total_questions, got %v", err)
+	}
+	if _, err := checkUC.SubmitGrammarCheck(ctx, "user-1", "GP-UNKNOWN", &curriculum.SubmitGrammarCheckRequest{
+		CorrectCount:   3,
+		TotalQuestions: 3,
+	}); !errors.Is(err, apperror.ErrNotFound) {
+		t.Fatalf("expected ErrNotFound for unknown code, got %v", err)
+	}
+}

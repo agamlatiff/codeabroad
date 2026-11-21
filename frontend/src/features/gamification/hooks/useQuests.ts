@@ -10,6 +10,10 @@ import {
   curriculumService,
   CURRICULUM_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
+import {
+  contextualizeDailyQuestTarget,
+  resolveCurriculumActiveGuidance,
+} from '@/features/curriculum/constants/n5UnitStudyGuides'
 import type { CurriculumResponse, LessonNodeResponse } from '@/features/curriculum/types/curriculum'
 import {
   flashcardService,
@@ -412,7 +416,13 @@ export const useQuests = () => {
     return Math.max(1, lastDay - wibDay)
   }, [wibYear, wibMonth, wibDay])
 
+  const activeGuidance = useMemo(
+    () => resolveCurriculumActiveGuidance(activeCurriculum),
+    [activeCurriculum]
+  )
+
   // Daily quests rotate per user + WIB date from backend SSOT (/gamification/daily-quests)
+  // and route to the unit-matched Flashcard deck or next Lesson.
   const dailyQuests = useMemo<DailyQuestViewItem[]>(
     () =>
       (dailyQuestsQuery.data ?? []).map((q) => {
@@ -426,24 +436,25 @@ export const useQuests = () => {
                 : q.icon_name === 'target'
                   ? Target
                   : BookOpen
+        const target = contextualizeDailyQuestTarget(q, activeGuidance)
         return {
           id: q.id,
           title: q.title,
-          chip_label: q.chip_label,
+          chip_label: target.chipLabel,
           difficulty: q.slot_category === 'curriculum' ? 'Pemula' : 'Mudah',
           xp_reward: q.xp_reward,
           gem_reward: 0,
           estimated_minutes: q.slot_category === 'curriculum' ? 15 : 5,
           isCompleted: q.is_completed,
           isClaimed: q.is_claimed,
-          route: q.route || '/curriculum',
+          route: target.route,
           icon,
           iconName: q.icon_name || 'book-open',
           progressText: q.progress_text,
           progressPercent: q.progress_percent,
         }
       }),
-    [dailyQuestsQuery.data]
+    [activeGuidance, dailyQuestsQuery.data]
   )
 
   const levelExamSummary = useMemo<LevelExamSummary | null>(() => {
@@ -982,7 +993,8 @@ export const useQuests = () => {
     }
   }, [activeCurriculum])
 
-  const resolvedActiveTrack = activeTrack || activeCurriculum?.language?.code || ''
+  const resolvedActiveTrack =
+    activeTrack || activeCurriculum?.language?.id || activeCurriculum?.language?.code || ''
 
   const totalCount = dailyQuests.length + achievementBadges.length
   const completedCount = dailyDoneCount + earnedBadgeCount

@@ -15,6 +15,7 @@ import {
   Train,
   ArrowsClockwise,
   Fire,
+  Translate,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
@@ -35,10 +36,12 @@ import {
   FLASHCARD_DECKS_QUERY_KEY,
   FLASHCARD_DUE_QUERY_KEY,
 } from '@/features/flashcard/services/flashcardService'
-import type {
-  FlashcardCard,
-  FlashcardDeck,
-  FlashcardSampleCard,
+import {
+  getFlashcardDeckSlug,
+  matchesFlashcardDeckParam,
+  type FlashcardCard,
+  type FlashcardDeck,
+  type FlashcardSampleCard,
 } from '@/features/flashcard/types/flashcard'
 import { FlashcardFlipCard } from '@/features/flashcard/components/FlashcardFlipCard'
 import {
@@ -52,6 +55,17 @@ import { audioEngine } from '@/shared/utils/audio'
 
 type SessionMode = 'lobby' | 'session' | 'complete'
 type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
+type DeckCategoryFilter = 'ALL' | 'hiragana' | 'katakana' | 'kanji' | 'vocab'
+
+const DECK_CATEGORY_OPTIONS: Array<{ value: DeckCategoryFilter; label: string }> = [
+  { value: 'ALL', label: 'Semua Jenis Dek' },
+  { value: 'hiragana', label: 'Huruf Hiragana' },
+  { value: 'katakana', label: 'Huruf Katakana' },
+  { value: 'kanji', label: 'Huruf Kanji N5' },
+  { value: 'vocab', label: 'Kosakata & Ungkapan' },
+]
+
+const CHARACTER_DECK_CATEGORIES = new Set(['hiragana', 'katakana', 'kanji'])
 
 interface DeckAccentStyle {
   iconTile: string
@@ -94,6 +108,8 @@ function getThematicDeckKanji(iconName: string): string {
       return '旅'
     case 'sparkle':
       return '彩'
+    case 'translate':
+      return '字'
     default:
       return '語'
   }
@@ -376,6 +392,8 @@ function renderDeckIcon(iconName: string) {
       return <Train weight="fill" className="w-6 h-6" />
     case 'sparkle':
       return <Sparkle weight="fill" className="w-6 h-6" />
+    case 'translate':
+      return <Translate weight="fill" className="w-6 h-6" />
     default:
       return <Cards weight="fill" className="w-6 h-6" />
   }
@@ -405,6 +423,7 @@ export const FlashcardPage = () => {
     () => (rawLevelParam ? parseFlashcardLevelParam(rawLevelParam) : lobbyLevelMemory),
     [rawLevelParam, lobbyLevelMemory]
   )
+  const [categoryFilter, setCategoryFilter] = useState<DeckCategoryFilter>('ALL')
   const [searchQuery, setSearchQuery] = useState('')
 
   const [sessionTitle, setSessionTitle] = useState('')
@@ -457,6 +476,12 @@ export const FlashcardPage = () => {
       if (levelFilter !== 'ALL' && deck.jlpt_level.toUpperCase() !== levelFilter) {
         return false
       }
+      const cat = deck.category.toLowerCase()
+      if (categoryFilter === 'vocab') {
+        if (CHARACTER_DECK_CATEGORIES.has(cat)) return false
+      } else if (categoryFilter !== 'ALL' && cat !== categoryFilter) {
+        return false
+      }
       if (!query) return true
       return (
         deck.title.toLowerCase().includes(query) ||
@@ -464,7 +489,7 @@ export const FlashcardPage = () => {
         deck.jlpt_level.toLowerCase().includes(query)
       )
     })
-  }, [decks, levelFilter, searchQuery])
+  }, [decks, levelFilter, categoryFilter, searchQuery])
 
   const reviewMutation = useMutation({
     mutationFn: ({ cardId, quality }: { cardId: string; quality: number }) =>
@@ -526,8 +551,9 @@ export const FlashcardPage = () => {
       triggerHaptic('tap')
       setLoadingSession(true)
       setSessionError(null)
-      handledDeckParamRef.current = deck.id
-      setSearchParams({ deck: deck.id }, { replace: true })
+      const deckSlug = getFlashcardDeckSlug(deck)
+      handledDeckParamRef.current = deckSlug
+      setSearchParams({ deck: deckSlug }, { replace: true })
       try {
         const detail = await flashcardService.getDeck(deck.id)
         if (detail.cards.length === 0) {
@@ -544,15 +570,21 @@ export const FlashcardPage = () => {
     [initSessionQueue, setSearchParams]
   )
 
-  // Deep-link handler: /flashcards?deck=<id> starts that deck directly once loaded
+  // Deep-link handler: /flashcards?deck=<slug|id> canonicalizes to slug and starts that deck
   useEffect(() => {
-    const requestedDeckId = searchParams.get('deck')
-    if (!requestedDeckId || decksLoading || decks.length === 0) return
-    if (handledDeckParamRef.current === requestedDeckId) return
-    const targetDeck = decks.find((d) => d.id === requestedDeckId)
+    const requestedDeckParam = searchParams.get('deck')
+    if (!requestedDeckParam || decksLoading || decks.length === 0) return
+    const targetDeck = decks.find((d) => matchesFlashcardDeckParam(d, requestedDeckParam))
     if (!targetDeck) return
 
-    handledDeckParamRef.current = requestedDeckId
+    const canonicalSlug = getFlashcardDeckSlug(targetDeck)
+    if (requestedDeckParam !== canonicalSlug) {
+      setSearchParams({ deck: canonicalSlug }, { replace: true })
+      return
+    }
+    if (handledDeckParamRef.current === canonicalSlug) return
+
+    handledDeckParamRef.current = canonicalSlug
 
     let cancelled = false
     flashcardService
@@ -574,7 +606,7 @@ export const FlashcardPage = () => {
     return () => {
       cancelled = true
     }
-  }, [decks, decksLoading, initSessionQueue, searchParams])
+  }, [decks, decksLoading, initSessionQueue, searchParams, setSearchParams])
 
   // Deep-link handler: /flashcards?mode=review starts due queue automatically if available
   useEffect(() => {
@@ -592,14 +624,6 @@ export const FlashcardPage = () => {
       cancelled = true
     }
   }, [dueLoading, dueQueue, initSessionQueue, mode, searchParams])
-
-  const startDueSession = () => {
-    if (!dueQueue || dueQueue.cards.length === 0) return
-    triggerHaptic('tap')
-    handledReviewParamRef.current = true
-    setSearchParams({ mode: 'review' }, { replace: true })
-    initSessionQueue(dueQueue.cards, 'Ulasan Terjadwal', null)
-  }
 
   const currentCardId = queue[0]
   const currentCard = currentCardId ? cardMap[currentCardId] : undefined
@@ -951,18 +975,6 @@ export const FlashcardPage = () => {
   // ── HYBRID FLASHCARD LOBBY ──
   const totalDue = dueQueue?.total_due ?? 0
   const totalLearned = dueQueue?.total_learned ?? 0
-  const levelDecksForProgress =
-    levelFilter === 'ALL'
-      ? decks
-      : decks.filter((deck) => deck.jlpt_level.toUpperCase() === levelFilter)
-  const levelTotalCards = levelDecksForProgress.reduce((sum, d) => sum + (d.total_cards || 0), 0)
-  const levelMasteredCards = levelDecksForProgress.reduce(
-    (sum, d) => sum + (d.scheduled_cards || 0),
-    0
-  )
-  const levelMasteryPercent =
-    levelTotalCards > 0 ? Math.min(100, Math.round((levelMasteredCards / levelTotalCards) * 100)) : 0
-  const levelProgressLabel = levelFilter === 'ALL' ? 'Semua Level' : `JLPT ${levelFilter}`
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -1000,110 +1012,30 @@ export const FlashcardPage = () => {
             <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
           </svg>
 
-          <div className="relative z-10 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            {/* Left Info + Level Mastery Bar */}
-            <div className="flex items-start gap-3.5 min-w-0 flex-1">
+          <div className="relative z-10 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            {/* Left Info */}
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8] text-white flex items-center justify-center shrink-0">
                 <Cards weight="fill" className="w-6 h-6" />
               </div>
 
-              <div className="space-y-2.5 min-w-0 flex-1">
-                <div className="space-y-1">
-                  <div className="flex items-center flex-wrap gap-2">
-                    <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-sky-100 border border-sky-200 text-sky-800">
-                      Flashcard Kosakata • JLPT N5–N1
-                    </span>
-                    <span className="text-[11px] font-brand font-black px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
-                      {filteredDecks.length} Dek Aktif
-                    </span>
-                  </div>
+              <div className="space-y-1 min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 tracking-tight leading-snug">
+                  Belajar &amp; Ulas Flashcard
+                </h1>
 
-                  <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 tracking-tight leading-snug">
-                    Belajar &amp; Ulas Flashcard
-                  </h1>
-
-                  <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
-                    Hafalkan kosakata lewat kartu flip Anki SM-2 kapan saja lintas tingkat JLPT N5 hingga N1.
-                  </p>
-                </div>
-
-                {/* Mini Level Mastery Progress Bar */}
-                <div className="max-w-md space-y-1 pt-0.5">
-                  <div className="flex items-center justify-between text-[11px] font-bold">
-                    <span className="text-slate-600">
-                      {levelProgressLabel}:{' '}
-                      <span className="font-mono font-black text-slate-800">
-                        {levelMasteredCards} / {levelTotalCards} Kata Dikuasai
-                      </span>
-                    </span>
-                    <span className="font-mono font-black text-sky-700">{levelMasteryPercent}%</span>
-                  </div>
-                  <div className="h-2 w-full rounded-full bg-white border border-sky-200/80 p-0.5 overflow-hidden shadow-inner">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 transition-all duration-500"
-                      style={{ width: `${levelMasteryPercent}%` }}
-                    />
-                  </div>
-                </div>
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
+                  Hafalkan kosakata lewat kartu flip kapan saja lintas tingkat JLPT N5 hingga N1.
+                </p>
               </div>
             </div>
 
-            {/* Right: Custom Floating Card Mascot Illustration + Due Review Card */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
-              <FlashcardHeroIllustration
-                totalDue={totalDue}
-                totalLearned={totalLearned}
-                className="hidden md:flex shrink-0"
-              />
-
-              <div className="rounded-2xl bg-white/95 border-2 border-sky-200/85 px-4 py-3 flex items-center justify-between sm:justify-start gap-3 shadow-2xs">
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 text-white ${
-                      totalDue > 0
-                        ? 'bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E40AF]'
-                        : 'bg-gradient-to-b from-emerald-400 to-teal-500 shadow-[0_2px_0_0_#0F766E]'
-                    }`}
-                  >
-                    {totalDue > 0 ? (
-                      <Clock weight="fill" className="w-4.5 h-4.5" />
-                    ) : (
-                      <Sparkle weight="fill" className="w-4.5 h-4.5" />
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-brand font-black text-xs text-slate-900 leading-tight whitespace-nowrap">
-                      {dueLoading
-                        ? 'Memeriksa ulasan...'
-                        : totalDue > 0
-                          ? `${totalDue} Jatuh Tempo`
-                          : totalLearned === 0
-                            ? 'Siap Belajar'
-                            : 'Ulasan Beres'}
-                    </p>
-                    <p className="text-[11px] font-medium text-slate-500 whitespace-nowrap">
-                      {totalDue > 0
-                        ? 'Ulas agar tetap ingat'
-                        : totalLearned === 0
-                          ? 'Pilih dek di bawah'
-                          : `${totalLearned} terpantau`}
-                    </p>
-                  </div>
-                </div>
-
-                {totalDue > 0 && (
-                  <Button3D
-                    variant="blue"
-                    size="sm"
-                    onClick={startDueSession}
-                    icon={<ArrowRight weight="bold" className="w-3.5 h-3.5" />}
-                    className="shrink-0"
-                  >
-                    MULAI ULASAN
-                  </Button3D>
-                )}
-              </div>
-            </div>
+            {/* Right: Custom Floating Card Mascot Illustration */}
+            <FlashcardHeroIllustration
+              totalDue={totalDue}
+              totalLearned={totalLearned}
+              className="hidden md:flex shrink-0"
+            />
           </div>
         </section>
 
@@ -1122,9 +1054,12 @@ export const FlashcardPage = () => {
           }))}
           selectedLevel={levelFilter}
           onSelectLevel={(v) => handleSelectLevel(v as JlptFilter)}
+          categoryOptions={DECK_CATEGORY_OPTIONS}
+          selectedCategory={categoryFilter}
+          onSelectCategory={(v) => setCategoryFilter(v as DeckCategoryFilter)}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Cari judul atau topik dek..."
+          searchPlaceholder="Cari judul, huruf, atau topik dek..."
         />
 
         {/* Permanent Fanned Collectible Decks Grid */}

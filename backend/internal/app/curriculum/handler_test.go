@@ -452,14 +452,33 @@ func TestHTTP_KanaChartAndPractice(t *testing.T) {
 		{ID: "k-1", Character: "あ", Script: "hiragana", Romaji: "a", RowGroup: "a", RowOrder: 1, ColOrder: 1},
 		{ID: "k-2", Character: "い", Script: "hiragana", Romaji: "i", RowGroup: "a", RowOrder: 1, ColOrder: 2},
 		{ID: "k-3", Character: "ア", Script: "katakana", Romaji: "a", RowGroup: "a", RowOrder: 1, ColOrder: 1},
+		{ID: "k-4", Character: "一", Script: "kanji", Romaji: "ichi • satu", RowGroup: "kanji_num1", RowOrder: 1, ColOrder: 1},
 	}
 
 	t.Run("GET invalid script returns 400", func(t *testing.T) {
-		req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/kana?script=kanji", nil)
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/kana?script=hangul", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
 		if w.Code != http.StatusBadRequest {
 			t.Fatalf("expected 400, got %d", w.Code)
+		}
+	})
+
+	t.Run("GET kanji script returns 200 with kanji items", func(t *testing.T) {
+		req, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/kana?script=kanji", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+		}
+		var chartResp struct {
+			Data curriculum.KanaChartResponse `json:"data"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &chartResp); err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+		if chartResp.Data.Script != "kanji" || chartResp.Data.Total != 1 || chartResp.Data.Characters[0].Character != "一" {
+			t.Fatalf("expected 1 kanji item 一, got %+v", chartResp.Data)
 		}
 	})
 
@@ -492,6 +511,83 @@ func TestHTTP_KanaChartAndPractice(t *testing.T) {
 		}
 		if !chartResp.Data.Characters[0].IsMastered || chartResp.Data.Characters[0].CorrectCount != 2 {
 			t.Fatalf("expected あ mastered with correct_count=2, got %+v", chartResp.Data.Characters[0])
+		}
+	})
+}
+
+func TestHTTP_GrammarCheckEndpoint(t *testing.T) {
+	r, cRepo, _ := setupCurriculumTestRouter()
+	cRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{
+		ID:        "gp-1",
+		LevelID:   "22222222-2222-2222-2222-222222222222",
+		LevelCode: "N5",
+		Code:      "GP-JA-N5-001",
+		Category:  "particle",
+		Title:     "Partikel WA",
+	}
+
+	t.Run("POST 3/3 marks understood and GET reflects progress", func(t *testing.T) {
+		body := []byte(`{"correct_count":3,"total_questions":3}`)
+		req, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/grammar-points/GP-JA-N5-001/check", bytes.NewBuffer(body))
+		req.Header.Set("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK, got %d: %s", w.Code, w.Body.String())
+		}
+		var checkResp struct {
+			Data curriculum.SubmitGrammarCheckResponse `json:"data"`
+		}
+		if err := json.Unmarshal(w.Body.Bytes(), &checkResp); err != nil {
+			t.Fatalf("decode failed: %v", err)
+		}
+		if !checkResp.Data.Progress.IsUnderstood || checkResp.Data.UnderstoodTotal != 1 {
+			t.Fatalf("expected understood=true total=1, got %+v", checkResp.Data)
+		}
+
+		getReq, _ := http.NewRequest(http.MethodGet, "/api/v1/curriculum/grammar-points?lang=ja&level_code=N5", nil)
+		getW := httptest.NewRecorder()
+		r.ServeHTTP(getW, getReq)
+		if getW.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK on GET, got %d", getW.Code)
+		}
+		var listResp struct {
+			Data []curriculum.GrammarPoint `json:"data"`
+		}
+		if err := json.Unmarshal(getW.Body.Bytes(), &listResp); err != nil {
+			t.Fatalf("decode GET failed: %v", err)
+		}
+		if len(listResp.Data) != 1 || !listResp.Data[0].IsUnderstood {
+			t.Fatalf("expected enriched IsUnderstood=true, got %+v", listResp.Data)
+		}
+	})
+
+	t.Run("invalid payload and unknown code return 400 / 404", func(t *testing.T) {
+		badBody := []byte(`{"correct_count":5,"total_questions":3}`)
+		req1, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/grammar-points/GP-JA-N5-001/check", bytes.NewBuffer(badBody))
+		req1.Header.Set("Content-Type", "application/json")
+		w1 := httptest.NewRecorder()
+		r.ServeHTTP(w1, req1)
+		if w1.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request, got %d", w1.Code)
+		}
+
+		zeroBody := []byte(`{"correct_count":0,"total_questions":0}`)
+		req2, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/grammar-points/GP-JA-N5-001/check", bytes.NewBuffer(zeroBody))
+		req2.Header.Set("Content-Type", "application/json")
+		w2 := httptest.NewRecorder()
+		r.ServeHTTP(w2, req2)
+		if w2.Code != http.StatusBadRequest {
+			t.Fatalf("expected 400 Bad Request for total=0, got %d", w2.Code)
+		}
+
+		okBody := []byte(`{"correct_count":3,"total_questions":3}`)
+		req3, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/grammar-points/UNKNOWN-CODE/check", bytes.NewBuffer(okBody))
+		req3.Header.Set("Content-Type", "application/json")
+		w3 := httptest.NewRecorder()
+		r.ServeHTTP(w3, req3)
+		if w3.Code != http.StatusNotFound {
+			t.Fatalf("expected 404 Not Found for unknown grammar code, got %d", w3.Code)
 		}
 	})
 }

@@ -58,31 +58,31 @@ export const useAppLeftSidebar = () => {
     const rawItems = [
       {
         label: 'Belajar',
-        tooltip: 'Belajar • Peta Belajar',
+        tooltip: 'Peta Belajar • Alur Utama',
         href: '/curriculum',
         icon: SquaresFour,
       },
       {
         label: 'Aksara',
-        tooltip: 'Aksara • Hiragana & Katakana',
+        tooltip: 'Langkah 1 • Hiragana, Katakana & Kanji',
         href: '/kana/hiragana',
         icon: Translate,
-      },
-      {
-        label: 'Grammar',
-        tooltip: 'Panduan Grammar',
-        href: '/grammar',
-        icon: BookOpenText,
       },
       {
         label: 'Flashcard',
         tooltip:
           flashcardDueCount > 0
-            ? `Flashcard • ${flashcardDueCount} kartu jatuh tempo`
-            : 'Flashcard • Belajar & Ulasan Kosakata',
+            ? `Langkah 2 • Flashcard (${flashcardDueCount} kartu jatuh tempo)`
+            : 'Langkah 2 • Kartu Huruf & Kosakata',
         href: '/flashcards',
         icon: Cards,
         hasBadge: flashcardDueCount > 0,
+      },
+      {
+        label: 'Grammar',
+        tooltip: 'Langkah 3 • Pola & Rumus Kalimat',
+        href: '/grammar',
+        icon: BookOpenText,
       },
       {
         label: 'Misi',

@@ -85,7 +85,6 @@ export const QuestLogPage = () => {
     monthlyTargetCount,
     monthlyProgressPercent,
     isMonthlyBadgeClaimed,
-    kodiCompanion,
     displayedKodiEmotion,
     displayedKodiSpeech,
     handleCycleKodiTip,
@@ -310,19 +309,6 @@ export const QuestLogPage = () => {
                 </svg>
 
                 <div className="relative z-10 p-5 space-y-4">
-                  {/* Top Pill Row: Dynamic Greeting & Days Left */}
-                  <div className="flex items-center justify-between gap-2 flex-wrap">
-                    <span
-                      className={`font-brand font-black text-[11px] px-3 py-0.5 rounded-full border uppercase tracking-wider ${kodiCompanion.badgeBg}`}
-                    >
-                      {kodiCompanion.badge}
-                    </span>
-                    <span className="text-[11px] font-bold text-slate-500 inline-flex items-center gap-1">
-                      <Clock weight="bold" className="w-3.5 h-3.5 text-slate-400" />
-                      <span>Sisa {daysLeftInMonth} Hari</span>
-                    </span>
-                  </div>
-
                   {/* Centerpiece Monthly Medallion & Info */}
                   <div className="flex items-center gap-3.5">
                     <div className="shrink-0 drop-shadow-xs">
@@ -334,9 +320,15 @@ export const QuestLogPage = () => {
                       />
                     </div>
                     <div className="min-w-0 flex-1 space-y-1">
-                      <span className="text-[10px] font-black uppercase tracking-wider text-amber-700 block">
-                        Lencana Bulanan
-                      </span>
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-amber-700">
+                          Lencana Bulanan
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100/80 border border-amber-200/90 text-[10px] font-brand font-black text-amber-800 whitespace-nowrap">
+                          <Clock weight="bold" className="w-3 h-3 text-amber-600" />
+                          <span>Sisa {daysLeftInMonth} Hari</span>
+                        </span>
+                      </div>
                       <h2 className="font-brand font-black text-base text-slate-900 leading-snug">
                         Lencana Emas ({currentMonthYearName})
                       </h2>

@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
+	"strings"
 	"time"
 
 	"codeabroad/backend/infrastructure/postgres"
 	"codeabroad/backend/internal/app/user"
 	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
-	"strings"
 )
 
 // PostgresRepository implements curriculum.Repository using PostgreSQL
@@ -29,15 +30,25 @@ func scanGrammarPointsRows(rows pgx.Rows) ([]GrammarPoint, error) {
 	for rows.Next() {
 		var gp GrammarPoint
 		var examplesRaw []byte
+		var learningGuideRaw []byte
 		if err := rows.Scan(
 			&gp.ID, &gp.LevelID, &gp.LevelCode, &gp.Code, &gp.Category, &gp.Title,
-			&gp.Formula, &gp.FormulaReading, &gp.Explanation, &examplesRaw, &gp.OrderIndex, &gp.CreatedAt,
+			&gp.Formula, &gp.FormulaReading, &gp.Explanation, &examplesRaw, &learningGuideRaw,
+			&gp.PracticeLessonSlug, &gp.PracticeLessonTitle, &gp.PracticeUnitOrder,
+			&gp.OrderIndex, &gp.CreatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("failed to scan grammar point: %w", err)
 		}
 		gp.Examples = []GrammarExample{}
 		if len(examplesRaw) > 0 {
 			_ = json.Unmarshal(examplesRaw, &gp.Examples)
+		}
+		if len(learningGuideRaw) > 0 {
+			var guide GrammarLearningGuide
+			if err := json.Unmarshal(learningGuideRaw, &guide); err == nil &&
+				(guide.Analogy != "" || len(guide.Breakdowns) > 0 || len(guide.Quiz) > 0) {
+				gp.LearningGuide = &guide
+			}
 		}
 		points = append(points, gp)
 	}
@@ -47,15 +58,36 @@ func scanGrammarPointsRows(rows pgx.Rows) ([]GrammarPoint, error) {
 	return points, nil
 }
 
+const grammarSelectCols = `
+	gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title,
+	gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.learning_guide,
+	COALESCE(pln.slug, ''), COALESCE(pln.title, ''), COALESCE(pln.order_index, 0),
+	gp.order_index, gp.created_at
+`
+
+const grammarPracticeLessonLateralJoin = `
+	LEFT JOIN LATERAL (
+		SELECT l.slug, l.title, u.order_index
+		FROM exercises e
+		JOIN lessons l ON l.id = e.lesson_id
+		JOIN units u ON u.id = l.unit_id
+		WHERE e.grammar_point_id = gp.id
+		  AND u.unit_type = 'curriculum'
+		ORDER BY u.order_index ASC, l.order_index ASC
+		LIMIT 1
+	) pln ON true
+`
+
 // GetGrammarPointsByLevelID retrieves all normalized grammar points for a proficiency level
 func (r *PostgresRepository) GetGrammarPointsByLevelID(ctx context.Context, levelID string) ([]GrammarPoint, error) {
 	if err := apperror.ValidateEntityUUID(levelID); err != nil {
 		return nil, err
 	}
 	query := `
-		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		SELECT ` + grammarSelectCols + `
 		FROM grammar_points gp
 		JOIN proficiency_levels pl ON pl.id = gp.level_id
+		` + grammarPracticeLessonLateralJoin + `
 		WHERE gp.level_id = $1::uuid
 		ORDER BY gp.order_index ASC, gp.id ASC
 	`
@@ -78,10 +110,11 @@ func (r *PostgresRepository) GetGrammarPointsByLanguageCode(ctx context.Context,
 		lvl = ""
 	}
 	query := `
-		SELECT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		SELECT ` + grammarSelectCols + `
 		FROM grammar_points gp
 		JOIN proficiency_levels pl ON pl.id = gp.level_id
 		JOIN languages l ON l.id = pl.language_id
+		` + grammarPracticeLessonLateralJoin + `
 		WHERE l.code = $1
 		  AND ($2 = '' OR UPPER(pl.code) = $2)
 		ORDER BY pl.order_index ASC, gp.order_index ASC, gp.id ASC
@@ -100,11 +133,15 @@ func (r *PostgresRepository) GetGrammarPointsByLessonID(ctx context.Context, les
 		return nil, err
 	}
 	query := `
-		SELECT DISTINCT gp.id, gp.level_id, pl.code, gp.code, gp.category, gp.title, gp.formula, gp.formula_reading, gp.explanation, gp.examples, gp.order_index, gp.created_at
+		SELECT ` + grammarSelectCols + `
 		FROM grammar_points gp
 		JOIN proficiency_levels pl ON pl.id = gp.level_id
-		JOIN exercises e ON gp.id = e.grammar_point_id
-		WHERE e.lesson_id = $1::uuid
+		` + grammarPracticeLessonLateralJoin + `
+		WHERE EXISTS (
+			SELECT 1 FROM exercises e
+			WHERE e.grammar_point_id = gp.id
+			  AND e.lesson_id = $1::uuid
+		)
 		ORDER BY gp.order_index ASC, gp.id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query, lessonID)
@@ -842,6 +879,39 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 			last_practiced_at = NOW()
 	`
 
+	flashcardSyncSQL := `
+		INSERT INTO user_flashcard_progress (
+			user_id, card_id, ease_factor, interval_days, repetitions, next_review_at, last_reviewed_at, updated_at
+		)
+		SELECT
+			$1::uuid, fc.id, 2.5,
+			CASE WHEN $3 THEN 1 ELSE 0 END,
+			CASE WHEN $3 THEN 1 ELSE 0 END,
+			CASE WHEN $3 THEN NOW() + INTERVAL '1 day' ELSE NOW() + INTERVAL '1 minute' END,
+			NOW(), NOW()
+		FROM flashcard_cards fc
+		JOIN flashcard_decks fd ON fd.id = fc.deck_id
+		WHERE fc.front_text = $2
+		  AND fd.category IN ('hiragana', 'katakana', 'kanji')
+		ON CONFLICT (user_id, card_id)
+		DO UPDATE SET
+			repetitions = CASE WHEN $3 THEN user_flashcard_progress.repetitions + 1 ELSE 0 END,
+			interval_days = CASE
+				WHEN $3 AND user_flashcard_progress.repetitions = 0 THEN 1
+				WHEN $3 AND user_flashcard_progress.repetitions = 1 THEN 3
+				WHEN $3 THEN GREATEST(4, ROUND(user_flashcard_progress.interval_days * user_flashcard_progress.ease_factor)::int)
+				ELSE 1
+			END,
+			next_review_at = CASE
+				WHEN $3 AND user_flashcard_progress.repetitions = 0 THEN NOW() + INTERVAL '1 day'
+				WHEN $3 AND user_flashcard_progress.repetitions = 1 THEN NOW() + INTERVAL '3 days'
+				WHEN $3 THEN NOW() + (GREATEST(4, ROUND(user_flashcard_progress.interval_days * user_flashcard_progress.ease_factor)::int) || ' days')::interval
+				ELSE NOW() + INTERVAL '1 minute'
+			END,
+			last_reviewed_at = NOW(),
+			updated_at = NOW()
+	`
+
 	updatedCount := 0
 	for _, res := range results {
 		ch := strings.TrimSpace(res.Character)
@@ -862,6 +932,7 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 		}
 		if tag.RowsAffected() > 0 {
 			updatedCount++
+			_, _ = tx.Exec(ctx, flashcardSyncSQL, userID, ch, res.IsCorrect)
 		}
 	}
 
@@ -874,5 +945,136 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 		return 0, 0, fmt.Errorf("failed to commit kana practice tx: %w", err)
 	}
 	return updatedCount, masteredTotal, nil
+}
+
+// GetUserGrammarProgressMap retrieves all grammar understanding progress records keyed by grammar_point_id.
+func (r *PostgresRepository) GetUserGrammarProgressMap(ctx context.Context, userID string) (map[string]UserGrammarProgress, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	query := `
+		SELECT id, user_id, grammar_point_id, quiz_score, correct_count, total_questions,
+		       attempts_count, is_understood, understood_at, next_review_at, last_attempted_at
+		FROM user_grammar_progress
+		WHERE user_id = $1::uuid
+	`
+	rows, err := r.db.Pool.Query(ctx, query, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query user grammar progress: %w", err)
+	}
+	defer rows.Close()
+
+	res := make(map[string]UserGrammarProgress)
+	for rows.Next() {
+		var p UserGrammarProgress
+		if err := rows.Scan(
+			&p.ID, &p.UserID, &p.GrammarPointID, &p.QuizScore, &p.CorrectCount,
+			&p.TotalQuestions, &p.AttemptsCount, &p.IsUnderstood,
+			&p.UnderstoodAt, &p.NextReviewAt, &p.LastAttemptedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan user grammar progress: %w", err)
+		}
+		res[p.GrammarPointID] = p
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("rows iteration error in user grammar progress: %w", err)
+	}
+	return res, nil
+}
+
+// RecordGrammarCheck atomically persists a learner's mini comprehension quiz outcome and schedules spaced review.
+func (r *PostgresRepository) RecordGrammarCheck(
+	ctx context.Context,
+	userID string,
+	grammarPointIDOrCode string,
+	correctCount int,
+	totalQuestions int,
+) (*SubmitGrammarCheckResponse, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	trimmed := strings.TrimSpace(grammarPointIDOrCode)
+	if trimmed == "" {
+		return nil, apperror.ErrBadRequest
+	}
+
+	var gpID string
+	var lookupErr error
+	if apperror.ValidateEntityUUID(trimmed) == nil {
+		lookupErr = r.db.Pool.QueryRow(ctx, `SELECT id FROM grammar_points WHERE id = $1::uuid`, trimmed).Scan(&gpID)
+	} else {
+		lookupErr = r.db.Pool.QueryRow(ctx, `SELECT id FROM grammar_points WHERE UPPER(code) = UPPER($1)`, trimmed).Scan(&gpID)
+	}
+	if lookupErr != nil {
+		if errors.Is(lookupErr, pgx.ErrNoRows) {
+			return nil, apperror.ErrNotFound
+		}
+		return nil, fmt.Errorf("failed to lookup grammar point: %w", lookupErr)
+	}
+
+	quizScore := int(math.Round(float64(correctCount) * 100.0 / float64(totalQuestions)))
+	if quizScore < 0 {
+		quizScore = 0
+	} else if quizScore > 100 {
+		quizScore = 100
+	}
+	passedNow := correctCount >= totalQuestions
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin grammar check tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback(ctx) }()
+
+	upsertSQL := `
+		INSERT INTO user_grammar_progress (
+			user_id, grammar_point_id, quiz_score, correct_count, total_questions,
+			attempts_count, is_understood, understood_at, next_review_at, last_attempted_at
+		)
+		VALUES (
+			$1::uuid, $2::uuid, $3, $4, $5,
+			1, $6,
+			CASE WHEN $6 THEN NOW() ELSE NULL END,
+			CASE WHEN $6 THEN NOW() + INTERVAL '3 days' ELSE NOW() + INTERVAL '1 day' END,
+			NOW()
+		)
+		ON CONFLICT (user_id, grammar_point_id)
+		DO UPDATE SET
+			quiz_score        = GREATEST(user_grammar_progress.quiz_score, EXCLUDED.quiz_score),
+			correct_count     = GREATEST(user_grammar_progress.correct_count, EXCLUDED.correct_count),
+			total_questions   = EXCLUDED.total_questions,
+			attempts_count    = user_grammar_progress.attempts_count + 1,
+			is_understood     = user_grammar_progress.is_understood OR EXCLUDED.is_understood,
+			understood_at     = COALESCE(user_grammar_progress.understood_at, EXCLUDED.understood_at),
+			next_review_at    = CASE
+				WHEN user_grammar_progress.is_understood AND $6 THEN NOW() + INTERVAL '7 days'
+				WHEN $6 THEN NOW() + INTERVAL '3 days'
+				ELSE NOW() + INTERVAL '1 day'
+			END,
+			last_attempted_at = NOW()
+		RETURNING id, user_id, grammar_point_id, quiz_score, correct_count, total_questions,
+		          attempts_count, is_understood, understood_at, next_review_at, last_attempted_at
+	`
+	var prog UserGrammarProgress
+	if err := tx.QueryRow(ctx, upsertSQL, userID, gpID, quizScore, correctCount, totalQuestions, passedNow).Scan(
+		&prog.ID, &prog.UserID, &prog.GrammarPointID, &prog.QuizScore, &prog.CorrectCount,
+		&prog.TotalQuestions, &prog.AttemptsCount, &prog.IsUnderstood,
+		&prog.UnderstoodAt, &prog.NextReviewAt, &prog.LastAttemptedAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to upsert user grammar progress: %w", err)
+	}
+
+	var understoodTotal int
+	if err := tx.QueryRow(ctx, `SELECT COUNT(*)::int FROM user_grammar_progress WHERE user_id = $1::uuid AND is_understood = true`, userID).Scan(&understoodTotal); err != nil {
+		return nil, fmt.Errorf("failed to count understood grammar points: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit grammar check tx: %w", err)
+	}
+	return &SubmitGrammarCheckResponse{
+		Progress:        prog,
+		UnderstoodTotal: understoodTotal,
+	}, nil
 }
 

@@ -1,18 +1,15 @@
-import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
-  ArrowLeft,
   Check,
   CheckCircle,
   Lightbulb,
   Play,
   SpeakerHigh,
-  Sparkle,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
-import { PageHeroHeader } from '@/shared/components/ui/PageHeroHeader'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
   curriculumService,
@@ -25,12 +22,15 @@ import type {
 } from '@/features/curriculum/types/curriculum'
 import { KanaTracingPad } from '@/features/curriculum/components/kana/KanaTracingPad'
 import { KanaRowDrillCard } from '@/features/curriculum/components/kana/KanaRowDrillCard'
+import { KanaHeroIllustration } from '@/features/curriculum/components/KanaHeroIllustration'
+import { KANJI_ROW_LABELS } from '@/features/curriculum/constants/kanjiCatalog'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 const SLOW_SPEECH_RATE = 0.58
 
 const VOWEL_COLUMNS = ['a', 'i', 'u', 'e', 'o'] as const
+const KANJI_COLUMNS = ['#1', '#2', '#3', '#4', '#5'] as const
 
 const ROW_LABELS: Record<number, string> = {
   1: 'Vokal Dasar',
@@ -46,16 +46,213 @@ const ROW_LABELS: Record<number, string> = {
   11: 'Konsonan Tunggal N',
 }
 
-const VALID_KANA_SCRIPTS: ReadonlySet<KanaScriptType> = new Set(['hiragana', 'katakana'])
+const VALID_KANA_SCRIPTS: ReadonlySet<KanaScriptType> = new Set([
+  'hiragana',
+  'katakana',
+  'kanji',
+])
+
+interface ScriptMenuMeta {
+  script: KanaScriptType
+  title: string
+  glyph: string
+  countLabel: string
+  subtitle: string
+  activeCardClass: string
+  inactiveCardClass: string
+  badgeActiveClass: string
+  badgeInactiveClass: string
+  watermarkClass: string
+  heroTileClass: string
+}
+
+const SCRIPT_MENU_META: ReadonlyArray<ScriptMenuMeta> = [
+  {
+    script: 'hiragana',
+    title: 'Hiragana',
+    glyph: 'あ',
+    countLabel: '46 Huruf',
+    subtitle: 'Huruf dasar kata asli Jepang',
+    activeCardClass:
+      'bg-gradient-to-br from-emerald-50 via-white to-teal-50/80 border-emerald-500 shadow-[0_4px_0_0_#10B981] -translate-y-0.5',
+    inactiveCardClass:
+      'bg-white border-slate-200/90 hover:border-emerald-300 hover:bg-emerald-50/25 shadow-[0_3px_0_0_#E2E8F0] hover:-translate-y-0.5',
+    badgeActiveClass: 'bg-emerald-600 text-white',
+    badgeInactiveClass: 'bg-emerald-50 text-emerald-700 border border-emerald-200/80',
+    watermarkClass: 'text-emerald-600/12',
+    heroTileClass: 'from-emerald-500 to-teal-600 shadow-[0_3px_0_0_#065F46]',
+  },
+  {
+    script: 'katakana',
+    title: 'Katakana',
+    glyph: 'ア',
+    countLabel: '46 Huruf',
+    subtitle: 'Kata serapan & nama asing',
+    activeCardClass:
+      'bg-gradient-to-br from-sky-50 via-white to-blue-50/80 border-sky-500 shadow-[0_4px_0_0_#0284C7] -translate-y-0.5',
+    inactiveCardClass:
+      'bg-white border-slate-200/90 hover:border-sky-300 hover:bg-sky-50/25 shadow-[0_3px_0_0_#E2E8F0] hover:-translate-y-0.5',
+    badgeActiveClass: 'bg-sky-600 text-white',
+    badgeInactiveClass: 'bg-sky-50 text-sky-700 border border-sky-200/80',
+    watermarkClass: 'text-sky-600/12',
+    heroTileClass: 'from-sky-500 to-blue-600 shadow-[0_3px_0_0_#1D4ED8]',
+  },
+  {
+    script: 'kanji',
+    title: 'Kanji',
+    glyph: '漢',
+    countLabel: '50 Kanji N5',
+    subtitle: 'Karakter inti JLPT N5 & arti',
+    activeCardClass:
+      'bg-gradient-to-br from-amber-50 via-white to-orange-50/80 border-amber-500 shadow-[0_4px_0_0_#D97706] -translate-y-0.5',
+    inactiveCardClass:
+      'bg-white border-slate-200/90 hover:border-amber-300 hover:bg-amber-50/25 shadow-[0_3px_0_0_#E2E8F0] hover:-translate-y-0.5',
+    badgeActiveClass: 'bg-amber-600 text-white',
+    badgeInactiveClass: 'bg-amber-50 text-amber-800 border border-amber-200/80',
+    watermarkClass: 'text-amber-600/12',
+    heroTileClass: 'from-amber-500 to-orange-600 shadow-[0_3px_0_0_#B45309]',
+  },
+]
+
+function resolveScriptParam(raw?: string | null): KanaScriptType | null {
+  const lower = (raw ?? '').trim().toLowerCase()
+  return VALID_KANA_SCRIPTS.has(lower as KanaScriptType) ? (lower as KanaScriptType) : null
+}
+
+function getDefaultCharParam(script: KanaScriptType): string {
+  return script === 'kanji' ? '一' : 'a'
+}
+
+function getCharQueryKey(item: KanaCharacterItem): string {
+  return item.script === 'kanji' ? item.character : item.romaji
+}
+
+function renderScriptMenuEmblem(script: KanaScriptType, isActive: boolean): ReactNode {
+  if (script === 'hiragana') {
+    return (
+      <svg viewBox="0 0 56 56" fill="none" className="w-13 h-13 shrink-0" aria-hidden="true">
+        <rect
+          x="3"
+          y="4"
+          width="50"
+          height="48"
+          rx="15"
+          fill={isActive ? '#10B981' : '#ECFDF5'}
+          stroke={isActive ? '#065F46' : '#A7F3D0'}
+          strokeWidth="2.2"
+        />
+        <path
+          d="M11 39C18 33 26 42 34 36C39 32 43 34 45 36"
+          stroke={isActive ? '#A7F3D0' : '#34D399'}
+          strokeWidth="2.4"
+          strokeLinecap="round"
+        />
+        <circle cx="43" cy="14" r="3" fill={isActive ? '#FDE68A' : '#10B981'} opacity="0.85" />
+        <text
+          x="28"
+          y="34"
+          textAnchor="middle"
+          fill={isActive ? '#FFFFFF' : '#065F46'}
+          fontSize="24"
+          fontWeight="900"
+          fontFamily="system-ui, -apple-system, sans-serif"
+        >
+          あ
+        </text>
+      </svg>
+    )
+  }
+
+  if (script === 'katakana') {
+    return (
+      <svg viewBox="0 0 56 56" fill="none" className="w-13 h-13 shrink-0" aria-hidden="true">
+        <rect
+          x="3"
+          y="4"
+          width="50"
+          height="48"
+          rx="15"
+          fill={isActive ? '#0284C7' : '#F0F9FF'}
+          stroke={isActive ? '#1E3A8A' : '#BAE6FD'}
+          strokeWidth="2.2"
+        />
+        <path
+          d="M11 16V11H16M40 11H45V16M11 40V45H16M45 40V45H40"
+          stroke={isActive ? '#BAE6FD' : '#38BDF8'}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        <text
+          x="28"
+          y="35"
+          textAnchor="middle"
+          fill={isActive ? '#FFFFFF' : '#0369A1'}
+          fontSize="24"
+          fontWeight="900"
+          fontFamily="system-ui, -apple-system, sans-serif"
+        >
+          ア
+        </text>
+      </svg>
+    )
+  }
+
+  return (
+    <svg viewBox="0 0 56 56" fill="none" className="w-13 h-13 shrink-0" aria-hidden="true">
+      <rect
+        x="3"
+        y="4"
+        width="50"
+        height="48"
+        rx="15"
+        fill={isActive ? '#D97706' : '#FFFBEB'}
+        stroke={isActive ? '#92400E' : '#FDE68A'}
+        strokeWidth="2.2"
+      />
+      {/* Traditional Genkouyoushi Grid Crosshair */}
+      <path
+        d="M28 9V47M9 28H47"
+        stroke={isActive ? '#FDE68A' : '#F59E0B'}
+        strokeOpacity={isActive ? '0.45' : '0.35'}
+        strokeWidth="1.5"
+        strokeDasharray="3 3"
+      />
+      {/* Mini Hanko Stamp Accent */}
+      <rect
+        x="38"
+        y="36"
+        width="9"
+        height="9"
+        rx="2"
+        fill={isActive ? '#FFF1F2' : '#FFE4E6'}
+        stroke="#E11D48"
+        strokeWidth="1.3"
+      />
+      <text
+        x="27"
+        y="35"
+        textAnchor="middle"
+        fill={isActive ? '#FFFFFF' : '#92400E'}
+        fontSize="23"
+        fontWeight="900"
+        fontFamily="system-ui, -apple-system, sans-serif"
+      >
+        漢
+      </text>
+    </svg>
+  )
+}
 
 /**
- * Interactive Japanese Alphabet Workshop (/kana/:script):
- * - 46 Hiragana + 46 Katakana Gojuon matrix synced with PostgreSQL mastery.
+ * Interactive Japanese Alphabet & Kanji Workshop (/kana/:script):
+ * - 46 Hiragana + 46 Katakana Gojuon + 50 foundational JLPT N5 Kanji.
  * - Keeps active script, selected character (?char=), and drill row (?drill=) synchronized in the URL.
  */
 export const KanaPage = () => {
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
+  const heroPatternId = `kana-hero-seigaiha-${useId().replace(/:/g, '')}`
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { script: routeScript } = useParams<{ script?: string }>()
@@ -63,12 +260,12 @@ export const KanaPage = () => {
 
   const normalizedRouteScript = routeScript?.trim().toLowerCase() ?? ''
   const hasValidRouteScript = VALID_KANA_SCRIPTS.has(normalizedRouteScript as KanaScriptType)
-  const legacyQueryScript = searchParams.get('script')?.trim().toLowerCase()
+  const legacyQueryScript = searchParams.get('script')
   const activeScript: KanaScriptType =
-    normalizedRouteScript === 'katakana' ||
-    (!hasValidRouteScript && legacyQueryScript === 'katakana')
-      ? 'katakana'
-      : 'hiragana'
+    resolveScriptParam(routeScript) ?? resolveScriptParam(legacyQueryScript) ?? 'hiragana'
+
+  const activeScriptMeta =
+    SCRIPT_MENU_META.find((item) => item.script === activeScript) ?? SCRIPT_MENU_META[0]
 
   const [playingSpeed, setPlayingSpeed] = useState<'normal' | 'slow' | 'word' | null>(null)
 
@@ -89,9 +286,6 @@ export const KanaPage = () => {
     () => kanaQuery.data?.characters ?? [],
     [kanaQuery.data?.characters]
   )
-  const masteredCount = kanaQuery.data?.mastered_count ?? 0
-  const totalCount = kanaQuery.data?.total ?? 46
-  const masteryPercent = totalCount > 0 ? Math.round((masteredCount / totalCount) * 100) : 0
 
   const urlCharParam = searchParams.get('char')?.trim() ?? ''
   const urlDrillParam = searchParams.get('drill')?.trim() ?? ''
@@ -102,14 +296,14 @@ export const KanaPage = () => {
       const nextParams = new URLSearchParams(searchParams)
       nextParams.delete('script')
       if (!nextParams.get('char') && !nextParams.get('drill')) {
-        nextParams.set('char', 'a')
+        nextParams.set('char', getDefaultCharParam(activeScript))
       }
       const qs = nextParams.toString()
       navigate(`/kana/${activeScript}${qs ? `?${qs}` : ''}`, { replace: true })
       return
     }
     if (characters.length > 0 && !urlCharParam && !urlDrillParam) {
-      setSearchParams({ char: characters[0].romaji }, { replace: true })
+      setSearchParams({ char: getCharQueryKey(characters[0]) }, { replace: true })
     }
   }, [
     activeScript,
@@ -149,15 +343,19 @@ export const KanaPage = () => {
         for (const item of sortedItems) {
           colMap.set(item.col_order, item)
         }
+        const label =
+          activeScript === 'kanji'
+            ? (KANJI_ROW_LABELS[rowOrder] ?? `Grup Kanji ${rowOrder}`)
+            : (ROW_LABELS[rowOrder] ?? `Baris ${rowOrder}`)
         return {
           rowOrder,
           rowKey: sortedItems[0]?.row_group ?? String(rowOrder),
-          label: ROW_LABELS[rowOrder] ?? `Baris ${rowOrder}`,
+          label,
           items: sortedItems,
           slots: [1, 2, 3, 4, 5].map((col) => colMap.get(col) ?? null),
         }
       })
-  }, [characters])
+  }, [activeScript, characters])
 
   const activeDrillRow = useMemo(() => {
     if (!urlDrillParam) return null
@@ -171,12 +369,13 @@ export const KanaPage = () => {
 
   const handleSelectScript = (nextScript: KanaScriptType) => {
     triggerHaptic('tap')
-    navigate(`/kana/${nextScript}?char=a`, { replace: true })
+    const defaultChar = getDefaultCharParam(nextScript)
+    navigate(`/kana/${nextScript}?char=${encodeURIComponent(defaultChar)}`, { replace: true })
   }
 
   const handleSelectCell = (item: KanaCharacterItem) => {
     triggerHaptic('tap')
-    setSearchParams({ char: item.romaji }, { replace: true })
+    setSearchParams({ char: getCharQueryKey(item) }, { replace: true })
     setPlayingSpeed('normal')
     const clear = () => setPlayingSpeed((prev) => (prev === 'normal' ? null : prev))
     audioService.speakJapanese(item.character, clear, clear)
@@ -212,6 +411,14 @@ export const KanaPage = () => {
     void practiceMutation.mutate([{ character: selectedChar.character, is_correct: true }])
   }
 
+  const columnHeaders = activeScript === 'kanji' ? KANJI_COLUMNS : VOWEL_COLUMNS
+  const activeBreadcrumbLabel =
+    activeScript === 'hiragana'
+      ? 'Hiragana'
+      : activeScript === 'katakana'
+        ? 'Katakana'
+        : 'Kanji'
+
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-emerald-600/20">
       <AppLeftSidebar />
@@ -221,86 +428,121 @@ export const KanaPage = () => {
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },
             { label: 'Aksara Jepang' },
-            { label: activeScript === 'hiragana' ? 'Hiragana' : 'Katakana' },
+            { label: activeBreadcrumbLabel },
           ]}
         />
 
-        <PageHeroHeader
-          theme="emerald"
-          icon={
-            <span className="font-brand font-black text-2xl leading-none">
-              {activeScript === 'hiragana' ? 'あ' : 'ア'}
-            </span>
-          }
-          badges={
-            <>
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-100/90 border border-emerald-200 text-emerald-700 text-[10px] font-brand font-black uppercase tracking-wider">
-                <Sparkle weight="fill" className="w-3 h-3" />
-                Fondasi Nol • Gojūon
-              </span>
-              <Link
-                to="/curriculum"
-                className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-emerald-700 transition-colors"
+        {/* Custom Editorial Aksara Hero Banner with 3-Script Calligraphy & Kodi Illustration */}
+        <section className="relative rounded-3xl border-2 border-slate-200/90 bg-gradient-to-br from-emerald-50/75 via-white to-teal-50/45 shadow-[0_4px_0_0_#E2E8F0] overflow-hidden">
+          <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-500 to-sky-500" />
+
+          {/* Subtle Japanese Seigaiha Background Pattern */}
+          <svg
+            className="absolute inset-0 w-full h-full text-emerald-700 opacity-[0.05] pointer-events-none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <pattern id={heroPatternId} width="48" height="24" patternUnits="userSpaceOnUse">
+                <path
+                  d="M0 24A12 12 0 0 1 24 24M24 24A12 12 0 0 1 48 24M12 12A12 12 0 0 1 36 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
+          </svg>
+
+          <div className="relative z-10 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            {/* Left Info */}
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
+              <div
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-b ${activeScriptMeta.heroTileClass} text-white flex items-center justify-center shrink-0 transition-all`}
               >
-                <ArrowLeft weight="bold" className="w-3 h-3" />
-                Kembali ke Peta Belajar
-              </Link>
-            </>
-          }
-          title="Belajar Huruf Hiragana & Katakana"
-          description="Kenali bunyi, trik ingat visual, latihan coretan menulis, dan kuis cepat 5 huruf per baris sebelum lanjut ke pelajaran kalimat."
-          rightSlot={
-            <div className="bg-white/95 border border-emerald-200/90 rounded-2xl px-4 py-2.5 min-w-[165px] space-y-1.5 shadow-2xs">
-              <div className="flex items-center justify-between gap-2 text-xs font-brand font-black text-emerald-800 tabular-nums">
-                <span>Dikuasai</span>
-                <span>
-                  {masteredCount}/{totalCount}
+                <span className="font-brand font-black text-2xl leading-none">
+                  {activeScriptMeta.glyph}
                 </span>
               </div>
-              <div className="w-full h-2 rounded-full bg-emerald-100 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-300"
-                  style={{ width: `${masteryPercent}%` }}
-                />
+
+              <div className="space-y-1 min-w-0 flex-1">
+                <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 tracking-tight leading-snug">
+                  Belajar Huruf Hiragana, Katakana &amp; Kanji
+                </h1>
+
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
+                  Kenali bunyi, arti karakter, trik ingat visual, latihan coretan menulis, dan kuis cepat per baris sebelum lanjut ke pelajaran kalimat.
+                </p>
               </div>
             </div>
-          }
-        />
 
-        {/* Script Switcher + Learning Tip */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div className="inline-flex p-1 bg-white border-2 border-slate-200 rounded-2xl shadow-2xs self-start">
-            <button
-              type="button"
-              onClick={() => handleSelectScript('hiragana')}
-              className={`px-4 py-2 rounded-xl font-brand font-black text-xs transition-all cursor-pointer ${
-                activeScript === 'hiragana'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              あ Hiragana (46 Huruf)
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSelectScript('katakana')}
-              className={`px-4 py-2 rounded-xl font-brand font-black text-xs transition-all cursor-pointer ${
-                activeScript === 'katakana'
-                  ? 'bg-emerald-600 text-white shadow-xs'
-                  : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              ア Katakana (46 Huruf)
-            </button>
+            {/* Right: Custom 3-Script Calligraphy & Kodi Mascot Illustration */}
+            <KanaHeroIllustration
+              activeScript={activeScript}
+              className="hidden md:flex shrink-0"
+            />
+          </div>
+        </section>
+
+        {/* Eye-Catching Illustrated 3-Script Menu (Hiragana / Katakana / Kanji) */}
+        <section aria-label="Pilih jenis huruf Jepang" className="space-y-2.5">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+            {SCRIPT_MENU_META.map((item) => {
+              const isActive = activeScript === item.script
+              return (
+                <button
+                  key={item.script}
+                  type="button"
+                  aria-pressed={isActive}
+                  onClick={() => handleSelectScript(item.script)}
+                  className={`group relative overflow-hidden rounded-2xl border-2 p-3.5 text-left transition-all cursor-pointer flex items-center gap-3.5 ${
+                    isActive ? item.activeCardClass : item.inactiveCardClass
+                  }`}
+                >
+                  {/* Decorative Slanted Calligraphic Glyph Watermark */}
+                  <span
+                    aria-hidden="true"
+                    className={`pointer-events-none select-none absolute -right-2 -bottom-4 text-6xl font-black leading-none rotate-12 transition-transform duration-300 group-hover:scale-110 ${item.watermarkClass}`}
+                  >
+                    {item.glyph}
+                  </span>
+
+                  {/* Custom Vector Emblem */}
+                  <div className="relative z-10 transition-transform duration-200 group-hover:scale-105">
+                    {renderScriptMenuEmblem(item.script, isActive)}
+                  </div>
+
+                  {/* Label + Count Pill + Short Description */}
+                  <div className="relative z-10 min-w-0 flex-1 space-y-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-brand font-black text-sm sm:text-base text-slate-900 leading-tight">
+                        {item.title}
+                      </span>
+                      <span
+                        className={`text-[10px] font-brand font-black px-2 py-0.5 rounded-full whitespace-nowrap ${
+                          isActive ? item.badgeActiveClass : item.badgeInactiveClass
+                        }`}
+                      >
+                        {item.countLabel}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-medium text-slate-500 leading-snug truncate">
+                      {item.subtitle}
+                    </p>
+                  </div>
+                </button>
+              )
+            })}
           </div>
 
           <p className="text-xs font-medium text-slate-500">
-            Klik huruf apa saja untuk mendengar suaranya, atau tekan{' '}
-            <span className="font-bold text-slate-700">Latih Baris</span> untuk kuis mini 5 huruf.
+            Klik karakter apa saja untuk mendengar pelafalannya, atau tekan{' '}
+            <span className="font-bold text-slate-700">Latih</span> untuk kuis mini per baris.
           </p>
-        </div>
+        </section>
 
-        {/* 2-Column Workspace: Left Gojuon Table + Right Study / Tracing / Drill */}
+        {/* 2-Column Workspace: Left Matrix + Right Study / Tracing / Drill */}
         {kanaQuery.isLoading ? (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
             <div className="xl:col-span-7 h-96 rounded-3xl bg-white border-2 border-slate-200 animate-pulse" />
@@ -309,7 +551,7 @@ export const KanaPage = () => {
         ) : kanaQuery.isError ? (
           <div className="rounded-3xl bg-rose-50 border-2 border-rose-200 p-6 text-center space-y-2">
             <p className="font-brand font-black text-sm text-rose-800">
-              Gagal memuat tabel aksara Gojūon
+              Gagal memuat tabel aksara Jepang
             </p>
             <button
               type="button"
@@ -321,17 +563,17 @@ export const KanaPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            {/* LEFT: Interactive 5-Column Gojuon Matrix */}
+            {/* LEFT: Interactive 5-Column Matrix */}
             <div className="xl:col-span-7 bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 space-y-3">
-              {/* Vowel Column Header */}
+              {/* Column Header */}
               <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-1 border-b border-slate-100">
                 <div className="grid grid-cols-5 gap-2 text-center">
-                  {VOWEL_COLUMNS.map((v) => (
+                  {columnHeaders.map((col) => (
                     <span
-                      key={v}
+                      key={col}
                       className="text-[10px] font-brand font-black uppercase tracking-widest text-slate-400"
                     >
-                      {v}
+                      {col}
                     </span>
                   ))}
                 </div>
@@ -371,7 +613,7 @@ export const KanaPage = () => {
                               key={slot.id}
                               type="button"
                               onClick={() => handleSelectCell(slot)}
-                              className={`relative h-[60px] rounded-2xl border-2 flex flex-col items-center justify-center transition-all cursor-pointer select-none ${
+                              className={`relative h-[60px] rounded-2xl border-2 flex flex-col items-center justify-center px-1 transition-all cursor-pointer select-none ${
                                 isSelected
                                   ? 'bg-blue-600 border-blue-700 text-white shadow-[0_4px_0_0_#1D4ED8] -translate-y-0.5'
                                   : slot.is_mastered
@@ -395,9 +637,9 @@ export const KanaPage = () => {
                                 {slot.character}
                               </span>
                               <span
-                                className={`text-[10px] font-brand font-bold mt-1 ${
-                                  isSelected ? 'text-blue-100' : 'text-slate-500'
-                                }`}
+                                className={`font-brand font-bold mt-1 max-w-full truncate ${
+                                  activeScript === 'kanji' ? 'text-[9.5px]' : 'text-[10px]'
+                                } ${isSelected ? 'text-blue-100' : 'text-slate-500'}`}
                               >
                                 {slot.romaji}
                               </span>
@@ -436,7 +678,13 @@ export const KanaPage = () => {
                   onFinishDrill={handleFinishDrill}
                   onClose={() =>
                     setSearchParams(
-                      { char: selectedChar?.romaji ?? characters[0]?.romaji ?? 'a' },
+                      {
+                        char: selectedChar
+                          ? getCharQueryKey(selectedChar)
+                          : characters[0]
+                            ? getCharQueryKey(characters[0])
+                            : getDefaultCharParam(activeScript),
+                      },
                       { replace: true }
                     )
                   }
@@ -453,10 +701,20 @@ export const KanaPage = () => {
                       </div>
                       <div className="min-w-0 space-y-1">
                         <span className="text-[10px] font-brand font-black uppercase tracking-wider text-blue-600 block">
-                          {selectedChar.script === 'hiragana' ? 'Hiragana' : 'Katakana'} • Bunyi
+                          {selectedChar.script === 'hiragana'
+                            ? 'Hiragana • Bunyi'
+                            : selectedChar.script === 'katakana'
+                              ? 'Katakana • Bunyi'
+                              : 'Kanji JLPT N5 • Bacaan & Arti'}
                         </span>
-                        <div className="flex items-center gap-2">
-                          <span className="text-2xl font-brand font-black text-slate-900 uppercase">
+                        <div className="flex items-center flex-wrap gap-2">
+                          <span
+                            className={`font-brand font-black text-slate-900 ${
+                              selectedChar.script === 'kanji'
+                                ? 'text-lg sm:text-xl leading-snug'
+                                : 'text-2xl uppercase'
+                            }`}
+                          >
                             {selectedChar.romaji}
                           </span>
                           {selectedChar.is_mastered && (

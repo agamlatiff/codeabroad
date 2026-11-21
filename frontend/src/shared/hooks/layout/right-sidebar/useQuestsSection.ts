@@ -2,6 +2,14 @@ import { useState, useEffect, useMemo, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import {
+  CURRICULUM_QUERY_KEY,
+  curriculumService,
+} from '@/features/curriculum/services/curriculumService'
+import {
+  contextualizeDailyQuestTarget,
+  resolveCurriculumActiveGuidance,
+} from '@/features/curriculum/constants/n5UnitStudyGuides'
 import { gamificationService } from '@/features/gamification/services/gamificationService'
 import { useUserActivity } from '@/features/user/hooks/useUserActivity'
 import { useDailyRewards } from '@/features/user/hooks/useDailyRewards'
@@ -71,6 +79,18 @@ export const useQuestsSection = ({
     staleTime: 1000 * 60 * 2,
   })
 
+  const { data: curriculumData = null } = useQuery({
+    queryKey: [...CURRICULUM_QUERY_KEY, user?.id],
+    queryFn: ({ signal }) => curriculumService.getCurriculum(undefined, { signal }),
+    enabled: Boolean(user),
+    staleTime: 120_000,
+  })
+
+  const activeGuidance = useMemo(
+    () => resolveCurriculumActiveGuidance(curriculumData),
+    [curriculumData]
+  )
+
   const todayLog = useMemo(
     () => activitySummary?.weekly_logs?.find((log) => log.is_today),
     [activitySummary]
@@ -102,23 +122,26 @@ export const useQuestsSection = ({
 
   const activeQuests: SidebarDailyQuestItem[] = useMemo(
     () =>
-      dailyQuestsApi.map((q) => ({
-        id: q.id,
-        code: q.code,
-        title: q.title,
-        chipLabel: q.chip_label,
-        progressText: q.progress_text,
-        route: q.route || '/curriculum',
-        xpReward: q.xp_reward,
-        iconName: q.icon_name || 'book-open',
-        slotCategory: q.slot_category || 'curriculum',
-        status: q.is_claimed
-          ? 'completed'
-          : q.is_completed
-            ? 'ready_to_claim'
-            : 'available',
-      })),
-    [dailyQuestsApi]
+      dailyQuestsApi.map((q) => {
+        const target = contextualizeDailyQuestTarget(q, activeGuidance)
+        return {
+          id: q.id,
+          code: q.code,
+          title: q.title,
+          chipLabel: target.chipLabel,
+          progressText: q.progress_text,
+          route: target.route,
+          xpReward: q.xp_reward,
+          iconName: q.icon_name || 'book-open',
+          slotCategory: q.slot_category || 'curriculum',
+          status: q.is_claimed
+            ? 'completed'
+            : q.is_completed
+              ? 'ready_to_claim'
+              : 'available',
+        }
+      }),
+    [activeGuidance, dailyQuestsApi]
   )
 
   const handleOpenChestModal = useCallback(() => {

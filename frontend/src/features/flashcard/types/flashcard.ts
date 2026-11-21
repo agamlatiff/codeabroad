@@ -11,6 +11,7 @@ export interface FlashcardSampleCard {
 
 export interface FlashcardDeck {
   id: string
+  slug?: string
   language_code: string
   title: string
   description: string
@@ -26,6 +27,36 @@ export interface FlashcardDeck {
   scheduled_cards: number
   sample_cards?: FlashcardSampleCard[]
   created_at: string
+}
+
+/** Converts a deck title into a clean lowercase URL slug (matching backend SlugifyDeckTitle). */
+export function slugifyFlashcardDeckTitle(title: string): string {
+  return title
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/** Resolves the canonical URL slug for a flashcard deck. */
+export function getFlashcardDeckSlug(
+  deck: Pick<FlashcardDeck, 'id' | 'title' | 'slug'>
+): string {
+  const explicit = deck.slug?.trim()
+  if (explicit) return explicit
+  return slugifyFlashcardDeckTitle(deck.title) || deck.id
+}
+
+/** Matches a `?deck=` query value against a deck's slug, slugified title, UUID, or category. */
+export function matchesFlashcardDeckParam(deck: FlashcardDeck, rawParam: string): boolean {
+  const normalized = rawParam.trim().toLowerCase()
+  if (!normalized) return false
+  return (
+    deck.id.toLowerCase() === normalized ||
+    (deck.slug?.trim().toLowerCase() ?? '') === normalized ||
+    slugifyFlashcardDeckTitle(deck.title) === normalized ||
+    deck.category.toLowerCase() === normalized
+  )
 }
 
 export interface FlashcardCard {

@@ -46,7 +46,7 @@ export const MAP_GEOMETRY = {
   xSequence: [110, 200, 290, 200] as const,
   verticalSpacing: 270,
   activePopoverExtraSpace: 100,
-  startY: 118,
+  startY: 86,
   viewboxWidth: 400,
   bottomPadding: 110,
   nodeDiscRadius: 46,

@@ -3,10 +3,21 @@ package flashcard
 import (
 	"context"
 	"math"
+	"regexp"
+	"strings"
 	"time"
 
 	"codeabroad/backend/internal/shared/apperror"
 )
+
+var nonSlugCharsRegex = regexp.MustCompile(`[^a-z0-9]+`)
+
+// SlugifyDeckTitle converts a flashcard deck title into a clean lowercase URL slug.
+func SlugifyDeckTitle(title string) string {
+	normalized := strings.ToLower(strings.TrimSpace(title))
+	slug := nonSlugCharsRegex.ReplaceAllString(normalized, "-")
+	return strings.Trim(slug, "-")
+}
 
 // Domain errors for the flashcard bounded context.
 var (
@@ -27,6 +38,7 @@ type SampleCard struct {
 // Deck represents a standalone topic flashcard deck with per-user Anki memory cycle counters.
 type Deck struct {
 	ID             string       `json:"id"`
+	Slug           string       `json:"slug"`
 	LanguageCode   string       `json:"language_code"`
 	Title          string       `json:"title"`
 	Description    string       `json:"description"`

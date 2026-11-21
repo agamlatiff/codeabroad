@@ -38,6 +38,10 @@ type kanaUsecase interface {
 	SubmitKanaPractice(ctx context.Context, userID string, req *KanaPracticeRequest) (*KanaPracticeResponse, error)
 }
 
+type grammarCheckUsecase interface {
+	SubmitGrammarCheck(ctx context.Context, userID string, grammarPointIDOrCode string, req *SubmitGrammarCheckRequest) (*SubmitGrammarCheckResponse, error)
+}
+
 // Handler handles HTTP requests for curriculum navigation and lesson completion
 type Handler struct {
 	curriculumUsecase   Usecase
@@ -222,7 +226,7 @@ func (h *Handler) GetGrammarPoints(c *gin.Context) {
 	response.BadRequest(c, "level_id query parameter is required and must be a valid UUID")
 }
 
-// GetKanaChart handles GET /api/v1/curriculum/kana?script=hiragana|katakana
+// GetKanaChart handles GET /api/v1/curriculum/kana?script=hiragana|katakana|kanji
 func (h *Handler) GetKanaChart(c *gin.Context) {
 	userID := c.GetString("userID")
 	if userID == "" {
@@ -230,8 +234,12 @@ func (h *Handler) GetKanaChart(c *gin.Context) {
 		return
 	}
 	script := strings.TrimSpace(c.Query("script"))
-	if script != "" && !strings.EqualFold(script, "hiragana") && !strings.EqualFold(script, "katakana") && !strings.EqualFold(script, "all") {
-		response.BadRequest(c, "script must be hiragana or katakana")
+	if script != "" &&
+		!strings.EqualFold(script, "hiragana") &&
+		!strings.EqualFold(script, "katakana") &&
+		!strings.EqualFold(script, "kanji") &&
+		!strings.EqualFold(script, "all") {
+		response.BadRequest(c, "script must be hiragana, katakana, or kanji")
 		return
 	}
 	kanaUC, ok := h.curriculumUsecase.(kanaUsecase)
@@ -275,6 +283,36 @@ func (h *Handler) SubmitKanaPractice(c *gin.Context) {
 	response.Success(c, http.StatusOK, "kana practice recorded successfully", res)
 }
 
+// SubmitGrammarCheck handles POST /api/v1/curriculum/grammar-points/:id/check
+func (h *Handler) SubmitGrammarCheck(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+	idOrCode := strings.TrimSpace(c.Param("id"))
+	if idOrCode == "" || len(idOrCode) > 64 {
+		response.BadRequest(c, "grammar point identifier is required")
+		return
+	}
+	var req SubmitGrammarCheckRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "invalid grammar check payload")
+		return
+	}
+	checkUC, ok := h.curriculumUsecase.(grammarCheckUsecase)
+	if !ok {
+		response.Success(c, http.StatusOK, "grammar check recorded successfully", &SubmitGrammarCheckResponse{})
+		return
+	}
+	res, err := checkUC.SubmitGrammarCheck(c.Request.Context(), userID, idOrCode, &req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+	response.Success(c, http.StatusOK, "grammar check recorded successfully", res)
+}
+
 // RegisterRoutes registers curriculum routes under the protected group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
 	if authMiddleware == nil {
@@ -295,6 +333,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		curriculum.GET("/lessons/:id", h.GetLessonDetail)
 		curriculum.POST("/lessons/:id/complete", completeRateLimiter, h.CompleteLesson)
 		curriculum.GET("/grammar-points", h.GetGrammarPoints)
+		curriculum.POST("/grammar-points/:id/check", completeRateLimiter, h.SubmitGrammarCheck)
 		curriculum.GET("/kana", h.GetKanaChart)
 		curriculum.POST("/kana/practice", completeRateLimiter, h.SubmitKanaPractice)
 	}

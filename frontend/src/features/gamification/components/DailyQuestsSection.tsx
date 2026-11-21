@@ -92,11 +92,11 @@ export const DailyQuestsSection = ({
     <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-6 space-y-5 shadow-2xs">
       {/* Header with Unified 3D Icon & Countdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="flex items-center gap-3.5">
+        <div className="flex items-center gap-3.5 min-w-0 flex-1">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_3px_0_0_#B45309] text-white flex items-center justify-center shrink-0">
             <Lightning weight="fill" className="w-6 h-6" />
           </div>
-          <div>
+          <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="font-brand font-black text-base sm:text-lg text-[#0F172A]">
                 Misi Harian ({dailyDoneCount}/{chestTargetDenominator} Selesai)

@@ -37,7 +37,7 @@ export const CountdownBadge = ({ className = '' }: CountdownBadgeProps) => {
           ? 'Kurang dari 2 jam sebelum misi harian direset pukul 00:00 WIB!'
           : 'Misi harian diperbarui otomatis setiap pukul 00:00 WIB'
       }
-      className={`text-xs font-black px-3.5 py-1.5 rounded-2xl border-2 flex items-center gap-1.5 shadow-2xs self-start sm:self-auto transition-colors ${
+      className={`text-[11px] font-brand font-black px-3 py-1.5 rounded-2xl border-2 inline-flex items-center gap-1.5 shadow-2xs self-start sm:self-auto shrink-0 whitespace-nowrap tabular-nums transition-colors ${
         countdown.isUrgent
           ? 'bg-rose-50 text-rose-700 border-rose-200'
           : 'bg-[#FFFBEB] text-[#B45309] border-amber-200'
@@ -47,7 +47,7 @@ export const CountdownBadge = ({ className = '' }: CountdownBadgeProps) => {
         <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
       ) : null}
       <Clock weight="bold" className="w-3.5 h-3.5 shrink-0" />
-      <span>Reset dalam: {countdown.timeLeft}</span>
+      <span className="whitespace-nowrap">Reset dalam: {countdown.timeLeft}</span>
     </span>
   )
 }

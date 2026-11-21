@@ -230,7 +230,13 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
         </p>
 
         <div className="flex items-center justify-center gap-3">
-          <span className="text-4xl sm:text-5xl font-brand font-black text-slate-900 tracking-wide">
+          <span
+            className={`font-brand font-black text-slate-900 tracking-wide ${
+              isPickKana && currentQuestion.target.romaji.length > 6
+                ? 'text-xl sm:text-2xl leading-snug'
+                : 'text-4xl sm:text-5xl'
+            }`}
+          >
             {isPickKana
               ? `"${currentQuestion.target.romaji.toUpperCase()}"`
               : currentQuestion.target.character}
@@ -273,7 +279,15 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
               onClick={() => handleSelectOption(opt)}
               className={`min-h-[64px] rounded-2xl border-2 px-4 py-3 font-brand font-black transition-all shadow-[0_3px_0_0_rgba(15,23,42,0.06)] cursor-pointer disabled:cursor-default ${cardClass}`}
             >
-              <span className={isPickKana ? 'text-2xl' : 'text-lg uppercase tracking-wider'}>
+              <span
+                className={
+                  isPickKana
+                    ? 'text-2xl'
+                    : optValue.length > 6
+                      ? 'text-xs sm:text-sm leading-snug block'
+                      : 'text-lg uppercase tracking-wider'
+                }
+              >
                 {optValue}
               </span>
             </button>

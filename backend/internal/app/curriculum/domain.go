@@ -29,20 +29,111 @@ type GrammarExample struct {
 	ID      string `json:"id"`
 }
 
+// GrammarFormulaPart represents a single color-coded block inside a beginner-friendly grammar formula.
+type GrammarFormulaPart struct {
+	Text  string `json:"text"`
+	Label string `json:"label"`
+	Role  string `json:"role"`
+}
+
+// GrammarBreakdownToken represents one word/chunk inside an interactive sentence breakdown.
+type GrammarBreakdownToken struct {
+	JP      string `json:"jp"`
+	Reading string `json:"reading"`
+	Meaning string `json:"meaning"`
+	Role    string `json:"role"`
+}
+
+// GrammarExampleBreakdown shows a Japanese sentence decomposed token-by-token with full translation.
+type GrammarExampleBreakdown struct {
+	Tokens      []GrammarBreakdownToken `json:"tokens"`
+	Translation string                  `json:"translation"`
+}
+
+// GrammarFormVariation represents one conjugation/polarity form (Positif, Negatif, Tanya, etc.).
+type GrammarFormVariation struct {
+	Label   string `json:"label"`
+	JP      string `json:"jp"`
+	Reading string `json:"reading"`
+	ID      string `json:"id"`
+}
+
+// GrammarCommonMistake highlights a frequent beginner pitfall alongside its corrected form and reason.
+type GrammarCommonMistake struct {
+	Wrong string `json:"wrong"`
+	Right string `json:"right"`
+	Why   string `json:"why"`
+}
+
+// GrammarMiniQuizItem defines an embedded comprehension check question on the grammar detail page.
+type GrammarMiniQuizItem struct {
+	Question string   `json:"question"`
+	Options  []string `json:"options"`
+	Answer   int      `json:"answer"`
+	Why      string   `json:"why"`
+}
+
+// GrammarLearningGuide holds beginner-friendly structured teaching content stored in grammar_points.learning_guide.
+type GrammarLearningGuide struct {
+	Analogy      string                    `json:"analogy"`
+	WhenToUse    []string                  `json:"when_to_use"`
+	FormulaParts []GrammarFormulaPart      `json:"formula_parts"`
+	Steps        []string                  `json:"steps"`
+	Breakdowns   []GrammarExampleBreakdown `json:"breakdowns"`
+	Forms        []GrammarFormVariation    `json:"forms"`
+	Mistakes     []GrammarCommonMistake    `json:"mistakes"`
+	Quiz         []GrammarMiniQuizItem     `json:"quiz"`
+}
+
+// UserGrammarProgress captures per-user comprehension quiz mastery & next spaced-repetition review timestamp.
+type UserGrammarProgress struct {
+	ID              string     `json:"id"`
+	UserID          string     `json:"user_id"`
+	GrammarPointID  string     `json:"grammar_point_id"`
+	QuizScore       int        `json:"quiz_score"`
+	CorrectCount    int        `json:"correct_count"`
+	TotalQuestions  int        `json:"total_questions"`
+	AttemptsCount   int        `json:"attempts_count"`
+	IsUnderstood    bool       `json:"is_understood"`
+	UnderstoodAt    *time.Time `json:"understood_at,omitempty"`
+	NextReviewAt    *time.Time `json:"next_review_at,omitempty"`
+	LastAttemptedAt time.Time  `json:"last_attempted_at"`
+}
+
+// SubmitGrammarCheckRequest defines the payload when a user finishes the mini understanding quiz.
+type SubmitGrammarCheckRequest struct {
+	CorrectCount   int `json:"correct_count" binding:"min=0"`
+	TotalQuestions int `json:"total_questions" binding:"required,min=1,max=20"`
+}
+
+// SubmitGrammarCheckResponse returns updated mastery state and total understood count for the learner.
+type SubmitGrammarCheckResponse struct {
+	Progress        UserGrammarProgress `json:"progress"`
+	UnderstoodTotal int                 `json:"understood_total"`
+}
+
 // GrammarPoint represents a normalized syntax rule / tenses / particles (grammar_points table)
 type GrammarPoint struct {
-	ID             string           `json:"id"`
-	LevelID        string           `json:"level_id"`
-	LevelCode      string           `json:"level_code,omitempty"`
-	Code           string           `json:"code"`
-	Category       string           `json:"category"` // tense | conjugation | particle | honorific | sentence_pattern
-	Title          string           `json:"title"`
-	Formula        string           `json:"formula"`
-	FormulaReading string           `json:"formula_reading"`
-	Explanation    string           `json:"explanation"`
-	Examples       []GrammarExample `json:"examples"`
-	OrderIndex     int              `json:"order_index"`
-	CreatedAt      time.Time        `json:"created_at"`
+	ID                  string                `json:"id"`
+	LevelID             string                `json:"level_id"`
+	LevelCode           string                `json:"level_code,omitempty"`
+	Code                string                `json:"code"`
+	Category            string                `json:"category"` // tense | conjugation | particle | honorific | sentence_pattern
+	Title               string                `json:"title"`
+	Formula             string                `json:"formula"`
+	FormulaReading      string                `json:"formula_reading"`
+	Explanation         string                `json:"explanation"`
+	Examples            []GrammarExample      `json:"examples"`
+	LearningGuide       *GrammarLearningGuide `json:"learning_guide,omitempty"`
+	PracticeLessonSlug  string                `json:"practice_lesson_slug,omitempty"`
+	PracticeLessonTitle string                `json:"practice_lesson_title,omitempty"`
+	PracticeUnitOrder   int                   `json:"practice_unit_order,omitempty"`
+	IsUnderstood        bool                  `json:"is_understood"`
+	QuizScore           int                   `json:"quiz_score"`
+	AttemptsCount       int                   `json:"attempts_count"`
+	NextReviewAt        *time.Time            `json:"next_review_at,omitempty"`
+	OrderIndex          int                   `json:"order_index"`
+	CreatedAt           time.Time             `json:"created_at"`
 }
 
 // Unit represents a static curriculum chapter or diagnostic mock module (units table)

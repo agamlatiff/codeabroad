@@ -1,4 +1,8 @@
-import type { KanaScriptType } from '@/features/curriculum/types/curriculum'
+import type {
+  GrammarExample,
+  KanaScriptType,
+  LessonDetailResponse,
+} from '@/features/curriculum/types/curriculum'
 
 export interface LessonIntroItem {
   symbol: string
@@ -8,11 +12,22 @@ export interface LessonIntroItem {
   speakText: string
 }
 
+export interface LessonIntroGrammarSummary {
+  code: string
+  title: string
+  formula: string
+  formulaReading?: string
+  explanation: string
+  examples?: GrammarExample[]
+}
+
 export interface LessonIntroDeck {
   headline: string
   subtitle: string
   kanaLinkScript?: KanaScriptType
   items: LessonIntroItem[]
+  grammarSummary?: LessonIntroGrammarSummary
+  contrastiveTip?: string
 }
 
 const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
@@ -190,6 +205,108 @@ const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
   },
 }
 
+const CHECKPOINT_SLUG_PATTERN = /checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir/i
+
+/**
+ * Returns true if the lesson slug identifies an evaluation Checkpoint or Stage Spiral Test
+ * that should jump straight into testing without pre-quiz study spoilers or cheat drawers.
+ */
+export const isCheckpointLesson = (slug?: string | null): boolean => {
+  if (!slug) return false
+  return CHECKPOINT_SLUG_PATTERN.test(slug)
+}
+
+function detectScriptHint(lesson: LessonDetailResponse): KanaScriptType {
+  const combined = `${lesson.slug ?? ''} ${lesson.title}`.toLowerCase()
+  if (combined.includes('katakana')) return 'katakana'
+  if (combined.includes('kanji')) return 'kanji'
+  return 'hiragana'
+}
+
+function asNonEmptyString(val: unknown): string {
+  return typeof val === 'string' ? val.trim() : ''
+}
+
+function buildIntroItemsFromLesson(lesson: LessonDetailResponse): LessonIntroItem[] {
+  const collected: LessonIntroItem[] = []
+  const seenSymbols = new Set<string>()
+
+  const pushItem = (item: LessonIntroItem) => {
+    const cleanSymbol = item.symbol.trim()
+    if (!cleanSymbol || seenSymbols.has(cleanSymbol) || collected.length >= 6) return
+    seenSymbols.add(cleanSymbol)
+    collected.push({ ...item, symbol: cleanSymbol })
+  }
+
+  for (const ex of lesson.exercises) {
+    const content = ex.content ?? {}
+    const hintText = (ex.hint ?? '').trim() || 'Perhatikan pola bunyi dan konteks penggunaannya.'
+
+    const audioText = asNonEmptyString(content.audio_text)
+    if (audioText) {
+      const firstCorrectOption = Array.isArray(content.options)
+        ? (content.options.find(
+            (opt): opt is { text?: string } =>
+              typeof opt === 'object' && opt !== null && typeof (opt as { text?: unknown }).text === 'string'
+          )?.text ?? '')
+        : ''
+      pushItem({
+        symbol: audioText,
+        reading: asNonEmptyString(content.romaji) || asNonEmptyString(content.reading) || 'Dengarkan audio',
+        meaning: asNonEmptyString(content.translation) || firstCorrectOption || ex.prompt,
+        mnemonic: hintText,
+        speakText: audioText,
+      })
+      continue
+    }
+
+    const tokens = Array.isArray(content.tokens)
+      ? content.tokens.filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
+      : []
+    if (tokens.length > 0) {
+      const sentence = tokens.join(' ')
+      pushItem({
+        symbol: sentence,
+        reading: asNonEmptyString(content.romaji) || 'Susunan kalimat utuh',
+        meaning: asNonEmptyString(content.target_translation) || ex.prompt,
+        mnemonic: hintText,
+        speakText: tokens.join(''),
+      })
+      continue
+    }
+
+    const word =
+      asNonEmptyString(content.word) ||
+      asNonEmptyString(content.japanese) ||
+      asNonEmptyString(content.prompt_jp) ||
+      asNonEmptyString(content.display_text)
+    if (word) {
+      pushItem({
+        symbol: word,
+        reading: asNonEmptyString(content.reading) || asNonEmptyString(content.romaji) || 'Kosakata kunci',
+        meaning: asNonEmptyString(content.translation) || ex.prompt,
+        mnemonic: hintText,
+        speakText: word,
+      })
+    }
+  }
+
+  // Fallback / enrich with grammar point examples so every non-checkpoint lesson has rich preview items
+  for (const gp of lesson.grammar_points) {
+    for (const ex of gp.examples ?? []) {
+      pushItem({
+        symbol: ex.jp,
+        reading: ex.reading,
+        meaning: ex.id,
+        mnemonic: `Contoh pola ${gp.title}`,
+        speakText: ex.jp,
+      })
+    }
+  }
+
+  return collected
+}
+
 /**
  * Returns a Learn-Before-Quiz intro deck for foundational beginner lessons (matched by slug),
  * or null if the lesson proceeds straight to interactive exercises.
@@ -197,4 +314,62 @@ const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
 export const getLessonIntroDeck = (slug?: string): LessonIntroDeck | null => {
   if (!slug) return null
   return LESSON_INTRO_DECKS[slug.trim()] ?? null
+}
+
+/**
+ * Resolves a complete 3-Slide Study Intro deck ("Pahami Materi Dulu") for any non-checkpoint lesson.
+ * Returns null for Checkpoint and Stage Spiral Test lessons so evaluations remain cheat-free.
+ */
+export const buildDynamicLessonIntroDeck = (
+  lesson?: LessonDetailResponse | null
+): LessonIntroDeck | null => {
+  if (!lesson || isCheckpointLesson(lesson.slug)) {
+    return null
+  }
+
+  const staticDeck = getLessonIntroDeck(lesson.slug)
+  const primaryGrammar = lesson.grammar_points[0]
+  const grammarSummary: LessonIntroGrammarSummary | undefined = primaryGrammar
+    ? {
+        code: primaryGrammar.code,
+        title: primaryGrammar.title,
+        formula: primaryGrammar.formula,
+        formulaReading: primaryGrammar.formula_reading,
+        explanation: primaryGrammar.explanation,
+        examples: primaryGrammar.examples,
+      }
+    : undefined
+
+  const firstExerciseHint =
+    lesson.exercises.find((ex) => typeof ex.hint === 'string' && ex.hint.trim().length > 0)?.hint?.trim() ??
+    undefined
+
+  if (staticDeck) {
+    return {
+      ...staticDeck,
+      grammarSummary: staticDeck.grammarSummary ?? grammarSummary,
+      contrastiveTip:
+        staticDeck.contrastiveTip ??
+        firstExerciseHint ??
+        'Perhatikan bentuk huruf kembar & fungsi partikel sebelum memilih jawaban di kuis.',
+    }
+  }
+
+  const items = buildIntroItemsFromLesson(lesson)
+  if (items.length === 0 && !grammarSummary) {
+    return null
+  }
+
+  return {
+    headline: `Pahami Materi Dulu: ${lesson.short_title || lesson.title}`,
+    subtitle:
+      'Pelajari aksara, kosakata kunci, rumus pola kalimat, dan jebakan umum sebelum masuk ke sesi kuis interaktif.',
+    kanaLinkScript: detectScriptHint(lesson),
+    items,
+    grammarSummary,
+    contrastiveTip:
+      firstExerciseHint ??
+      primaryGrammar?.explanation ??
+      'Baca seluruh kalimat sampai akhir untuk memastikan partikel, bentuk sopan/kasual, dan penanda waktunya tepat.',
+  }
 }

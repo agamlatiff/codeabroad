@@ -46,6 +46,94 @@ export interface GrammarExample {
   id: string
 }
 
+export type GrammarRole =
+  | 'topic'
+  | 'subject'
+  | 'object'
+  | 'particle'
+  | 'verb'
+  | 'adjective'
+  | 'noun'
+  | 'predicate'
+  | 'time'
+  | 'place'
+  | 'connector'
+  | 'ending'
+  | string
+
+export interface GrammarFormulaPart {
+  text: string
+  label: string
+  role: GrammarRole
+}
+
+export interface GrammarBreakdownToken {
+  jp: string
+  reading: string
+  meaning: string
+  role: GrammarRole
+}
+
+export interface GrammarExampleBreakdown {
+  tokens: GrammarBreakdownToken[]
+  translation: string
+}
+
+export interface GrammarFormVariation {
+  label: string
+  jp: string
+  reading: string
+  id: string
+}
+
+export interface GrammarCommonMistake {
+  wrong: string
+  right: string
+  why: string
+}
+
+export interface GrammarMiniQuizItem {
+  question: string
+  options: string[]
+  answer: number
+  why: string
+}
+
+export interface GrammarLearningGuide {
+  analogy: string
+  when_to_use: string[]
+  formula_parts: GrammarFormulaPart[]
+  steps: string[]
+  breakdowns: GrammarExampleBreakdown[]
+  forms: GrammarFormVariation[]
+  mistakes: GrammarCommonMistake[]
+  quiz: GrammarMiniQuizItem[]
+}
+
+export interface UserGrammarProgress {
+  id: string
+  user_id: string
+  grammar_point_id: string
+  quiz_score: number
+  correct_count: number
+  total_questions: number
+  attempts_count: number
+  is_understood: boolean
+  understood_at?: string | null
+  next_review_at?: string | null
+  last_attempted_at: string
+}
+
+export interface SubmitGrammarCheckRequest {
+  correct_count: number
+  total_questions: number
+}
+
+export interface SubmitGrammarCheckResponse {
+  progress: UserGrammarProgress
+  understood_total: number
+}
+
 export interface GrammarPoint {
   id: string
   level_id: string
@@ -58,6 +146,14 @@ export interface GrammarPoint {
   formula_reading?: string
   explanation: string
   examples?: GrammarExample[]
+  learning_guide?: GrammarLearningGuide
+  practice_lesson_slug?: string
+  practice_lesson_title?: string
+  practice_unit_order?: number
+  is_understood?: boolean
+  quiz_score?: number
+  attempts_count?: number
+  next_review_at?: string | null
   order_index: number
   created_at: string
 }
@@ -141,7 +237,7 @@ export interface LessonDetailResponse {
   created_at: string
 }
 
-export type KanaScriptType = 'hiragana' | 'katakana'
+export type KanaScriptType = 'hiragana' | 'katakana' | 'kanji'
 
 export interface KanaCharacterItem {
   id: string

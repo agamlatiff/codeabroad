@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useId } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, Sparkle } from '@phosphor-icons/react'
+import { BookOpen, CheckCircle } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
@@ -13,7 +13,7 @@ import {
   GRAMMAR_POINTS_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
-import { formatCategoryLabel, renderCategoryIcon } from '@/features/curriculum/constants/grammarStyles'
+import { formatCategoryLabel } from '@/features/curriculum/constants/grammarStyles'
 import { GrammarEditorialCard } from '@/features/curriculum/components/GrammarEditorialCard'
 import { GrammarHeroIllustration } from '@/features/curriculum/components/GrammarHeroIllustration'
 
@@ -118,6 +118,18 @@ export const GrammarPage = () => {
     return counts
   }, [grammarPoints])
 
+  const levelMasteryStats = useMemo(() => {
+    const matching =
+      levelFilter === 'ALL'
+        ? grammarPoints
+        : grammarPoints.filter((p) => (p.level_code ?? 'N5').toUpperCase() === levelFilter)
+    const understoodCount = matching.filter((p) => p.is_understood).length
+    return {
+      understoodCount,
+      totalInLevel: matching.length,
+    }
+  }, [grammarPoints, levelFilter])
+
   const categoryOptions = useMemo(() => {
     const seen = new Set<string>()
     for (const point of grammarPoints) {
@@ -131,21 +143,6 @@ export const GrammarPage = () => {
       })),
     ]
   }, [grammarPoints])
-
-  const categoryCountsForLevel = useMemo(() => {
-    const counts = new Map<string, number>()
-    for (const point of grammarPoints) {
-      const code = (point.level_code ?? 'N5').toUpperCase()
-      if (levelFilter !== 'ALL' && code !== levelFilter) continue
-      if (!point.category) continue
-      counts.set(point.category, (counts.get(point.category) ?? 0) + 1)
-    }
-    return Array.from(counts.entries()).map(([category, count]) => ({
-      category,
-      label: formatCategoryLabel(category),
-      count,
-    }))
-  }, [grammarPoints, levelFilter])
 
   const filteredPoints = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
@@ -208,87 +205,39 @@ export const GrammarPage = () => {
             <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
           </svg>
 
-          <div className="relative z-10 p-5 sm:p-6 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            {/* Left Info + Quick Category Count Chips */}
-            <div className="flex items-start gap-3.5 min-w-0 flex-1">
+          <div className="relative z-10 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            {/* Left Info */}
+            <div className="flex items-center gap-3.5 min-w-0 flex-1">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_3px_0_0_#1E3A8A] text-white flex items-center justify-center shrink-0">
                 <BookOpen weight="fill" className="w-6 h-6" />
               </div>
 
-              <div className="space-y-2.5 min-w-0 flex-1">
-                <div className="space-y-1">
-                  <div className="flex items-center flex-wrap gap-2">
-                    <span className="text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-blue-100 border border-blue-200 text-blue-800">
-                      Tata Bahasa • JLPT N5–N1
-                    </span>
-                    <span className="text-[11px] font-brand font-black px-2.5 py-0.5 rounded-full bg-white border border-slate-200 text-slate-600">
-                      {levelFilter === 'ALL' ? 'Semua Level' : `JLPT ${levelFilter}`}
-                    </span>
-                  </div>
-
+              <div className="space-y-1.5 min-w-0 flex-1">
+                <div className="flex items-center flex-wrap gap-2">
                   <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 tracking-tight leading-snug">
                     Panduan Grammar
                   </h1>
-
-                  <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
-                    Referensi pola kalimat, partikel, konjugasi, dan keigo lengkap dengan rumus cepat, contoh nyata, dan pelafalan penutur.
-                  </p>
+                  {levelMasteryStats.totalInLevel > 0 && (
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-brand font-black bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
+                      <CheckCircle weight="fill" className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>
+                        {levelMasteryStats.understoodCount}/{levelMasteryStats.totalInLevel} Materi Paham
+                      </span>
+                    </span>
+                  )}
                 </div>
 
-                {/* Interactive Category Quick-Filter Pills for Active Level */}
-                {categoryCountsForLevel.length > 0 && (
-                  <div className="flex items-center flex-wrap gap-1.5 pt-0.5">
-                    {categoryCountsForLevel.map((item) => {
-                      const isActive = categoryFilter === item.category
-                      return (
-                        <button
-                          key={item.category}
-                          type="button"
-                          onClick={() => handleSelectCategory(isActive ? 'ALL' : item.category)}
-                          className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-brand font-bold transition-all cursor-pointer ${
-                            isActive
-                              ? 'bg-[#2563EB] text-white border-[#1D4ED8] shadow-xs'
-                              : 'bg-white/90 text-slate-700 border-slate-200/90 hover:border-blue-300 hover:bg-blue-50/50'
-                          }`}
-                        >
-                          {renderCategoryIcon(item.category, 'w-3 h-3')}
-                          <span>{item.label}</span>
-                          <span
-                            className={`text-[10px] font-mono font-black px-1.5 py-0.5 rounded-md ${
-                              isActive ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'
-                            }`}
-                          >
-                            {item.count}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
+                  Analogi bahasa Indonesia, rumus berwarna, contoh dipecah per kata, dan cek pemahaman 3 soal agar langsung paham.
+                </p>
               </div>
             </div>
 
-            {/* Right: Custom Grammar Syntax & Notebook Illustration + Active Material Stat Box */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 shrink-0">
-              <GrammarHeroIllustration
-                levelLabel={levelFilter === 'ALL' ? 'N5–N1' : levelFilter}
-                className="hidden md:flex shrink-0"
-              />
-
-              <div className="rounded-2xl bg-white/95 border-2 border-blue-200/85 px-4 py-3 flex items-center gap-3 shadow-2xs">
-                <div className="w-9 h-9 rounded-xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_2px_0_0_#1E40AF] text-white flex items-center justify-center shrink-0">
-                  <Sparkle weight="fill" className="w-4.5 h-4.5" />
-                </div>
-                <div className="min-w-0">
-                  <p className="font-brand font-black text-xs text-slate-900 leading-tight whitespace-nowrap">
-                    {filteredPoints.length} Materi
-                  </p>
-                  <p className="text-[11px] font-medium text-slate-500 whitespace-nowrap">
-                    {levelFilter === 'ALL' ? 'Lintas N5–N1' : `Level JLPT ${levelFilter}`}
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* Right: Custom Grammar Syntax & Notebook Illustration */}
+            <GrammarHeroIllustration
+              levelLabel={levelFilter === 'ALL' ? 'N5–N1' : levelFilter}
+              className="hidden md:flex shrink-0"
+            />
           </div>
         </section>
 

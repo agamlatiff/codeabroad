@@ -41,8 +41,13 @@ export const useAppTopBar = (activeTrack: string) => {
   )
 
   const currentTrackConfig: CareerTrackOption =
-    trackOptions.find((t) => t.id === activeTrack || t.slug === activeTrack) ??
-    (activeTrack === '' ? trackOptions.find((t) => t.isActive) : undefined) ?? {
+    trackOptions.find(
+      (t) =>
+        t.id === activeTrack ||
+        t.slug === activeTrack ||
+        t.languageCode === activeTrack
+    ) ??
+    trackOptions.find((t) => t.isActive) ?? {
       id: activeTrack || 'active-track',
       slug: activeTrack,
       title: 'Pilih Bahasa',

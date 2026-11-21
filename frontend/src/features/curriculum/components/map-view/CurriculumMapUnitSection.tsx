@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useId, useMemo } from 'react'
 import type { FC } from 'react'
 import { Check, LockSimple, Sparkle } from '@phosphor-icons/react'
 import type { CurriculumUnitData, PathMapNode } from "@/features/curriculum/types/curriculum"
@@ -9,6 +9,13 @@ import {
 } from "@/features/curriculum/tokens/curriculumTokens"
 import { assembleUnitNodes } from './curriculumMapLayout'
 import { CurriculumPathNode } from './CurriculumPathNode'
+import {
+  UnitBannerIllustration,
+  UnitCanvasAmbientBackdrop,
+  UnitSerpentineLandmarkIsland,
+} from './CurriculumMapIllustrations'
+
+const KANJI_CHAPTER_NUMERALS = ['壱', '弐', '参', '肆', '伍', '陸', '漆', '捌'] as const
 
 export interface CurriculumMapUnitSectionProps {
   unit: CurriculumUnitData
@@ -25,6 +32,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
   onNodeClick,
   onStartLesson,
 }) => {
+  const unitPatternId = `unit-banner-seigaiha-${useId().replace(/:/g, '')}`
   const {
     allNodes,
     coords,
@@ -33,6 +41,11 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
     isUnitCompleted,
     isUnitActive,
   } = useMemo(() => assembleUnitNodes(unit), [unit])
+
+  const completedLessonsCount = unit.parts.filter((p) => p.status === 'completed').length
+  const totalLessonsCount = unit.parts.length
+  const unitProgressPercent =
+    totalLessonsCount > 0 ? Math.round((completedLessonsCount / totalLessonsCount) * 100) : 0
 
   const dashConfig = isUnitCompleted
     ? MAP_TRACK_TOKENS.dash.completed
@@ -44,13 +57,43 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
     <section className="space-y-4">
       {/* ── UNIT BANNER HEADER (Sticky per unit section on scroll) ── */}
       <div
-        className={`sticky top-3 z-20 w-full text-white rounded-2xl px-6 py-4 sm:px-7 sm:py-5 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
+        className={`sticky top-3 z-20 w-full text-white rounded-2xl px-5 py-4 sm:px-6 sm:py-4.5 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
       >
-        {/* Glossy Glass Reflection Highlight */}
+        {/* Subtle Japanese Seigaiha Background Pattern */}
+        <svg
+          className="absolute inset-0 w-full h-full text-white opacity-[0.08] pointer-events-none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <defs>
+            <pattern id={unitPatternId} width="48" height="24" patternUnits="userSpaceOnUse">
+              <path
+                d="M0 24A12 12 0 0 1 24 24M24 24A12 12 0 0 1 48 24M12 12A12 12 0 0 1 36 12"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.2"
+              />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill={`url(#${unitPatternId})`} />
+        </svg>
+
+        {/* Glossy Glass Reflection Highlight + Chapter Kanji Watermark */}
         <div className="absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 via-white/5 to-transparent rounded-t-2xl pointer-events-none" />
         <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-white/10 rounded-full blur-xl pointer-events-none" />
+        <span
+          aria-hidden="true"
+          className="pointer-events-none select-none hidden md:block absolute right-64 -bottom-3 text-7xl font-black text-white/10 leading-none"
+        >
+          {KANJI_CHAPTER_NUMERALS[(Math.max(1, unit.unitNumber) - 1) % KANJI_CHAPTER_NUMERALS.length]}
+        </span>
 
-        <div className="space-y-1 min-w-0 relative z-10">
+        <UnitBannerIllustration
+          unitNumber={unit.unitNumber}
+          className="hidden sm:flex !absolute right-36 bottom-0 !w-[220px] !h-[120px] opacity-60 z-0"
+        />
+
+        <div className="space-y-1 min-w-0 relative z-10 flex-1">
           <div className="flex items-center gap-2">
             <span className="font-brand font-black text-xs sm:text-[13px] uppercase tracking-wider text-white/90">
               UNIT {unit.unitNumber}
@@ -85,9 +128,20 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
           )}
         </div>
 
-        <span className="shrink-0 relative z-10 text-xs font-brand font-black px-3 py-1.5 rounded-full bg-black/20 border border-white/20 text-white whitespace-nowrap">
-          {unit.parts.filter((p) => p.status === 'completed').length}/{unit.parts.length} Pelajaran
-        </span>
+        <div className="flex items-center gap-3 shrink-0 relative z-10">
+
+          <div className="rounded-2xl bg-black/22 border border-white/25 px-3.5 py-2 backdrop-blur-xs min-w-[116px] space-y-1.5">
+            <div className="flex items-center justify-between gap-2 text-xs font-brand font-black text-white whitespace-nowrap tabular-nums">
+              <span>{completedLessonsCount}/{totalLessonsCount} Pelajaran</span>
+            </div>
+            <div className="w-full h-1.5 rounded-full bg-white/20 overflow-hidden">
+              <div
+                className="h-full rounded-full bg-amber-300 transition-all duration-300"
+                style={{ width: `${unitProgressPercent}%` }}
+              />
+            </div>
+          </div>
+        </div>
       </div>
 
       {/* ── SERPENTINE SNAKE PATH ── */}
@@ -108,21 +162,32 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
             }`}
           />
 
-          {/* Decorative Ambient Language Learning Stamps on Margins */}
-          <div className="hidden lg:block absolute right-6 top-28 text-slate-500 font-brand font-extrabold text-xs select-none pointer-events-none bg-white/90 border border-slate-200/90 px-3.5 py-1.5 rounded-xl shadow-xs backdrop-blur-xs">
-            Kosakata & Tata Bahasa
-          </div>
-          <div className="hidden lg:block absolute left-6 bottom-28 text-slate-500 font-brand font-extrabold text-xs select-none pointer-events-none bg-white/90 border border-slate-200/90 px-3.5 py-1.5 rounded-xl shadow-xs backdrop-blur-xs">
-            Latihan Konteks
-          </div>
-          <div className="hidden lg:block absolute right-6 bottom-16 text-slate-400 font-brand font-black text-xl sm:text-2xl select-none pointer-events-none opacity-60">
-            ⚡ +{unit.parts.reduce((sum, p) => sum + p.xpReward, 0)} XP
-          </div>
+          {/* Seamless Background Scenery Backdrop */}
+          <UnitCanvasAmbientBackdrop unitNumber={unit.unitNumber} totalHeight={totalHeight} />
 
           <div
             className="relative w-full max-w-2xl mx-auto overflow-visible"
             style={{ height: `${totalHeight}px` }}
           >
+            {/* ── JAPANESE SCENIC LANDMARK ISLANDS IN OPPOSITE S-CURVE POCKETS ── */}
+            {allNodes.map((node, nIdx) => {
+              const coord = coords[nIdx]
+              if (!coord) return null
+              const isOffCenter = coord.x < 160 || coord.x > 240
+              const hasKodiBesideNode = node.status === 'active' && !node.isChest && !node.isTrophy
+              if (!isOffCenter || hasKodiBesideNode) return null
+
+              const islandSide: 'left' | 'right' = coord.x < 160 ? 'right' : 'left'
+              return (
+                <UnitSerpentineLandmarkIsland
+                  key={`island-${node.id}`}
+                  sceneIndex={(unit.unitNumber - 1) * 3 + nIdx}
+                  side={islandSide}
+                  topPx={coord.y}
+                />
+              )
+            })}
+
             {/* ── CONTINUOUS SERPENTINE SVG TRACK ── */}
             <svg
               className="absolute inset-0 w-full h-full pointer-events-none"

@@ -17,6 +17,7 @@ import {
   computeElapsedSeconds,
   resolveExerciseSpokenText,
 } from '@/features/exercise/utils/exerciseHelpers'
+import { isCheckpointLesson } from '@/features/exercise/constants/lessonIntroCards'
 import type {
   LessonCompletionNavigationState,
   SubmitExerciseAnswerResponse,
@@ -27,9 +28,12 @@ import { audioService } from '@/shared/services/audioService'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
+const MAX_RETRIES_PER_EXERCISE = 2
+
 const lessonDraftSchema = z.object({
   currentIndex: z.number().int().min(0),
   correctExerciseIds: z.array(z.string()),
+  requeuedExerciseIds: z.array(z.string()).optional().default([]),
 })
 
 const getLessonDraftKey = (userId: string, lessonId?: string) =>
@@ -37,18 +41,18 @@ const getLessonDraftKey = (userId: string, lessonId?: string) =>
 
 const loadLessonDraft = (userId: string, lessonId?: string) => {
   const key = getLessonDraftKey(userId, lessonId)
-  if (!key) return { currentIndex: 0, correctExerciseIds: [] as string[] }
+  if (!key) return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
   try {
     const raw = sessionStorage.getItem(key)
-    if (!raw) return { currentIndex: 0, correctExerciseIds: [] as string[] }
+    if (!raw) return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
     const parsed = lessonDraftSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) {
       sessionStorage.removeItem(key)
-      return { currentIndex: 0, correctExerciseIds: [] as string[] }
+      return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
     }
     return parsed.data
   } catch {
-    return { currentIndex: 0, correctExerciseIds: [] as string[] }
+    return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
   }
 }
 
@@ -68,6 +72,9 @@ export const useLearnWorkspace = (id?: string) => {
   const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>(
     initialDraft.correctExerciseIds
   )
+  const [requeuedExerciseIds, setRequeuedExerciseIds] = useState<string[]>(
+    initialDraft.requeuedExerciseIds
+  )
 
   const questionStartedAtRef = useRef<number>(0)
   const submitLockRef = useRef(false)
@@ -81,8 +88,18 @@ export const useLearnWorkspace = (id?: string) => {
   })
 
   const lesson = lessonQuery.data ?? null
-  const exercises = useMemo(() => lesson?.exercises ?? [], [lesson])
+  const isCheckpoint = isCheckpointLesson(lesson?.slug)
+  const baseExercises = useMemo(() => lesson?.exercises ?? [], [lesson])
+  const exercises = useMemo(() => {
+    if (requeuedExerciseIds.length === 0) return baseExercises
+    const byId = new Map(baseExercises.map((ex) => [ex.id, ex]))
+    const retries = requeuedExerciseIds
+      .map((exId) => byId.get(exId))
+      .filter((ex): ex is (typeof baseExercises)[number] => Boolean(ex))
+    return [...baseExercises, ...retries]
+  }, [baseExercises, requeuedExerciseIds])
   const safeIndex = exercises.length > 0 ? Math.min(currentIndex, exercises.length - 1) : 0
+  const isRetryRound = baseExercises.length > 0 && safeIndex >= baseExercises.length
   const currentExercise = exercises[safeIndex] ?? null
   const currentExerciseType = currentExercise?.exercise_type ?? ''
 
@@ -116,12 +133,12 @@ export const useLearnWorkspace = (id?: string) => {
     try {
       sessionStorage.setItem(
         key,
-        JSON.stringify({ currentIndex: safeIndex, correctExerciseIds })
+        JSON.stringify({ currentIndex: safeIndex, correctExerciseIds, requeuedExerciseIds })
       )
     } catch {
       // Ignore storage quota errors
     }
-  }, [correctExerciseIds, id, safeIndex, userId])
+  }, [correctExerciseIds, id, requeuedExerciseIds, safeIndex, userId])
 
   const {
     isSpeakingAudio,
@@ -193,6 +210,7 @@ export const useLearnWorkspace = (id?: string) => {
     resetInputs()
     setCurrentIndex(0)
     setCorrectExerciseIds([])
+    setRequeuedExerciseIds([])
     setSubmittedResult(null)
     setSubmitError(null)
     setIsScoreTooLowError(false)
@@ -243,6 +261,12 @@ export const useLearnWorkspace = (id?: string) => {
       } else {
         triggerHaptic('error')
         audioEngine.playError()
+        if (!isCheckpoint) {
+          setRequeuedExerciseIds((prev) => {
+            const count = prev.filter((exId) => exId === currentExercise.id).length
+            return count < MAX_RETRIES_PER_EXERCISE ? [...prev, currentExercise.id] : prev
+          })
+        }
       }
     } catch (err) {
       if (epoch !== sessionEpochRef.current) return
@@ -258,6 +282,7 @@ export const useLearnWorkspace = (id?: string) => {
     canCheckAnswer,
     currentExercise,
     currentUserAnswer,
+    isCheckpoint,
     isSubmittingAnswer,
     stopMediaSession,
     submitAnswerAsync,
@@ -270,8 +295,8 @@ export const useLearnWorkspace = (id?: string) => {
     const epoch = sessionEpochRef.current
     setSubmitError(null)
     setIsScoreTooLowError(false)
-    const total = Math.max(1, exercises.length)
-    const accuracyPercent = Math.floor((correctExerciseIds.length / total) * 100)
+    const total = Math.max(1, baseExercises.length)
+    const accuracyPercent = Math.min(100, Math.floor((correctExerciseIds.length / total) * 100))
 
     try {
       const previousUser = useAuthStore.getState().user
@@ -315,7 +340,7 @@ export const useLearnWorkspace = (id?: string) => {
       const navState: LessonCompletionNavigationState = {
         completionResult,
         lesson,
-        totalExercises: exercises.length,
+        totalExercises: baseExercises.length,
         correctCount: correctExerciseIds.length,
         totalXpEarned: actualXpEarned,
         accuracyPercent: completionResult.session_score ?? accuracyPercent,
@@ -350,9 +375,9 @@ export const useLearnWorkspace = (id?: string) => {
       submitLockRef.current = false
     }
   }, [
+    baseExercises.length,
     completeLessonAsync,
     correctExerciseIds.length,
-    exercises.length,
     id,
     isCompletingLesson,
     lesson,
@@ -430,6 +455,9 @@ export const useLearnWorkspace = (id?: string) => {
     currentExerciseType,
     parsedContent,
     currentIndex: safeIndex,
+    isCheckpoint,
+    isRetryRound,
+    requeueCount: requeuedExerciseIds.length,
     progressPercent,
     resolvedCorrectAnswer,
     selectedTokenIndices,

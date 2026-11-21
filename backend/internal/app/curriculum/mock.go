@@ -4,12 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math"
 	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"codeabroad/backend/internal/app/user"
+	"codeabroad/backend/internal/shared/apperror"
 )
 
 // MockRepository implements Repository for unit testing
@@ -34,6 +36,7 @@ type MockRepository struct {
 	NextLessonID         *string
 	KanaCatalog          []KanaCharacterItem
 	KanaUserProgress     map[string]map[string]*KanaCharacterItem
+	GrammarUserProgress  map[string]map[string]UserGrammarProgress
 	GetGrammarPointsErr  error
 	GetUnitsErr          error
 	GetUnitByIDErr       error
@@ -843,5 +846,112 @@ func (m *MockRepository) RecordKanaPractice(ctx context.Context, userID string, 
 		}
 	}
 	return updated, masteredTotal, nil
+}
+
+// GetUserGrammarProgressMap returns mock user grammar progress entries keyed by grammar_point_id.
+func (m *MockRepository) GetUserGrammarProgressMap(ctx context.Context, userID string) (map[string]UserGrammarProgress, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	res := make(map[string]UserGrammarProgress)
+	if m.GrammarUserProgress == nil {
+		return res, nil
+	}
+	for gpID, p := range m.GrammarUserProgress[userID] {
+		res[gpID] = p
+	}
+	return res, nil
+}
+
+// RecordGrammarCheck stores mock interactive grammar understanding check results atomically.
+func (m *MockRepository) RecordGrammarCheck(
+	ctx context.Context,
+	userID string,
+	grammarPointIDOrCode string,
+	correctCount int,
+	totalQuestions int,
+) (*SubmitGrammarCheckResponse, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	trimmed := strings.TrimSpace(grammarPointIDOrCode)
+	var gpID string
+	for _, gp := range m.GrammarPoints {
+		if gp == nil {
+			continue
+		}
+		if strings.EqualFold(gp.ID, trimmed) || strings.EqualFold(gp.Code, trimmed) {
+			gpID = gp.ID
+			break
+		}
+	}
+	if gpID == "" {
+		return nil, apperror.ErrNotFound
+	}
+
+	if m.GrammarUserProgress == nil {
+		m.GrammarUserProgress = make(map[string]map[string]UserGrammarProgress)
+	}
+	if m.GrammarUserProgress[userID] == nil {
+		m.GrammarUserProgress[userID] = make(map[string]UserGrammarProgress)
+	}
+
+	now := time.Now().UTC()
+	quizScore := int(math.Round(float64(correctCount) * 100.0 / float64(totalQuestions)))
+	if quizScore < 0 {
+		quizScore = 0
+	} else if quizScore > 100 {
+		quizScore = 100
+	}
+	passedNow := correctCount >= totalQuestions
+
+	prev, exists := m.GrammarUserProgress[userID][gpID]
+	nextReview := now.Add(24 * time.Hour)
+	if exists && prev.IsUnderstood && passedNow {
+		nextReview = now.Add(7 * 24 * time.Hour)
+	} else if passedNow {
+		nextReview = now.Add(3 * 24 * time.Hour)
+	}
+
+	prog := UserGrammarProgress{
+		ID:              fmt.Sprintf("ugp-%s-%s", userID, gpID),
+		UserID:          userID,
+		GrammarPointID:  gpID,
+		QuizScore:       quizScore,
+		CorrectCount:    correctCount,
+		TotalQuestions:  totalQuestions,
+		AttemptsCount:   1,
+		IsUnderstood:    passedNow,
+		NextReviewAt:    &nextReview,
+		LastAttemptedAt: now,
+	}
+	if passedNow {
+		prog.UnderstoodAt = &now
+	}
+	if exists {
+		if prev.QuizScore > prog.QuizScore {
+			prog.QuizScore = prev.QuizScore
+		}
+		if prev.CorrectCount > prog.CorrectCount {
+			prog.CorrectCount = prev.CorrectCount
+		}
+		prog.AttemptsCount = prev.AttemptsCount + 1
+		prog.IsUnderstood = prev.IsUnderstood || passedNow
+		if prev.UnderstoodAt != nil {
+			prog.UnderstoodAt = prev.UnderstoodAt
+		}
+	}
+	m.GrammarUserProgress[userID][gpID] = prog
+
+	understoodTotal := 0
+	for _, p := range m.GrammarUserProgress[userID] {
+		if p.IsUnderstood {
+			understoodTotal++
+		}
+	}
+	return &SubmitGrammarCheckResponse{
+		Progress:        prog,
+		UnderstoodTotal: understoodTotal,
+	}, nil
 }
 

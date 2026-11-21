@@ -526,6 +526,7 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 	query := `
 		WITH active_enrollment AS (
 			SELECT
+				ule.current_level_id,
 				COALESCE(lang.code, 'ja') AS language_code,
 				COALESCE(active_pl.code, 'N5') AS level_code
 			FROM user_language_enrollments ule
@@ -534,6 +535,17 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 			WHERE ule.user_id = $1::uuid
 			  AND ule.is_active = true
 			LIMIT 1
+		),
+		user_curriculum_progress AS (
+			SELECT COUNT(*)::int AS completed_lessons
+			FROM user_lesson_progress ulp
+			INNER JOIN lessons l ON l.id = ulp.lesson_id
+			INNER JOIN units u ON u.id = l.unit_id
+			LEFT JOIN active_enrollment ae ON true
+			WHERE ulp.user_id = $1::uuid
+			  AND ulp.is_completed = true
+			  AND u.unit_type = 'curriculum'
+			  AND (ae.current_level_id IS NULL OR u.level_id = ae.current_level_id)
 		),
 		wib_day AS (
 			SELECT
@@ -571,10 +583,12 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 		INNER JOIN flashcard_decks fd ON fd.id = fc.deck_id
 		CROSS JOIN wib_day
 		LEFT JOIN active_enrollment ae ON true
+		LEFT JOIN user_curriculum_progress ucp ON true
 		LEFT JOIN user_flashcard_progress ufp ON ufp.card_id = fc.id AND ufp.user_id = $1::uuid
 		WHERE fd.language_code = COALESCE(ae.language_code, 'ja')
 		ORDER BY
 			CASE WHEN UPPER(fd.jlpt_level) = UPPER(COALESCE(ae.level_code, 'N5')) THEN 0 ELSE 1 END ASC,
+			CASE WHEN fd.sort_order <= GREATEST(2, COALESCE(ucp.completed_lessons, 0) + 2) THEN 0 ELSE 1 END ASC,
 			CASE
 				WHEN ufp.last_reviewed_at >= wib_day.start_ts THEN 0
 				WHEN ufp.id IS NOT NULL AND (ufp.next_review_at <= wib_day.start_ts + INTERVAL '1 day' OR ufp.repetitions = 0) THEN 0

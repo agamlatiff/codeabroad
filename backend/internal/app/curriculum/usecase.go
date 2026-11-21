@@ -320,6 +320,11 @@ type kanaRepository interface {
 	RecordKanaPractice(ctx context.Context, userID string, results []KanaPracticeItem) (int, int, error)
 }
 
+type grammarProgressRepository interface {
+	GetUserGrammarProgressMap(ctx context.Context, userID string) (map[string]UserGrammarProgress, error)
+	RecordGrammarCheck(ctx context.Context, userID string, grammarPointIDOrCode string, correctCount int, totalQuestions int) (*SubmitGrammarCheckResponse, error)
+}
+
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
 func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error) {
 	if userID == "" {
@@ -716,7 +721,7 @@ func (u *usecase) GetGrammarPoints(ctx context.Context, userID string, levelID s
 	if points == nil {
 		points = []GrammarPoint{}
 	}
-	return points, nil
+	return u.enrichGrammarPointsWithUserProgress(ctx, userID, points), nil
 }
 
 // GetGrammarPointsByLevelFilter retrieves grammar points across all levels (N5..N1) or a specific level code.
@@ -735,7 +740,50 @@ func (u *usecase) GetGrammarPointsByLevelFilter(ctx context.Context, userID stri
 	if points == nil {
 		points = []GrammarPoint{}
 	}
-	return points, nil
+	return u.enrichGrammarPointsWithUserProgress(ctx, userID, points), nil
+}
+
+func (u *usecase) enrichGrammarPointsWithUserProgress(ctx context.Context, userID string, points []GrammarPoint) []GrammarPoint {
+	if len(points) == 0 {
+		return points
+	}
+	progRepo, ok := u.curriculumRepo.(grammarProgressRepository)
+	if !ok {
+		return points
+	}
+	progMap, err := progRepo.GetUserGrammarProgressMap(ctx, userID)
+	if err != nil || len(progMap) == 0 {
+		return points
+	}
+	for i := range points {
+		if st, exists := progMap[points[i].ID]; exists {
+			points[i].IsUnderstood = st.IsUnderstood
+			points[i].QuizScore = st.QuizScore
+			points[i].AttemptsCount = st.AttemptsCount
+			points[i].NextReviewAt = st.NextReviewAt
+		}
+	}
+	return points
+}
+
+// SubmitGrammarCheck saves a user's interactive grammar understanding check score & SRS review schedule.
+func (u *usecase) SubmitGrammarCheck(
+	ctx context.Context,
+	userID string,
+	grammarPointIDOrCode string,
+	req *SubmitGrammarCheckRequest,
+) (*SubmitGrammarCheckResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	if strings.TrimSpace(grammarPointIDOrCode) == "" || req == nil || req.TotalQuestions < 1 || req.CorrectCount < 0 || req.CorrectCount > req.TotalQuestions {
+		return nil, apperror.ErrBadRequest
+	}
+	progRepo, ok := u.curriculumRepo.(grammarProgressRepository)
+	if !ok {
+		return &SubmitGrammarCheckResponse{}, nil
+	}
+	return progRepo.RecordGrammarCheck(ctx, userID, grammarPointIDOrCode, req.CorrectCount, req.TotalQuestions)
 }
 
 // GetKanaChart returns the Hiragana or Katakana Gojuon matrix annotated with user mastery stats.
@@ -747,7 +795,7 @@ func (u *usecase) GetKanaChart(ctx context.Context, userID string, script string
 	if normalized == "all" {
 		normalized = ""
 	}
-	if normalized != "" && normalized != "hiragana" && normalized != "katakana" {
+	if normalized != "" && normalized != "hiragana" && normalized != "katakana" && normalized != "kanji" {
 		return nil, apperror.ErrBadRequest
 	}
 	kRepo, ok := u.curriculumRepo.(kanaRepository)

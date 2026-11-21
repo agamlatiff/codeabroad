@@ -15,6 +15,7 @@ import {
 } from '@phosphor-icons/react'
 import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 import { useDailyLanguageCard } from '@/shared/hooks/layout/right-sidebar/useDailyLanguageCard'
+import { slugifyFlashcardDeckTitle } from '@/features/flashcard/types/flashcard'
 
 export interface DailyLanguageCardProps {
   className?: string
@@ -92,8 +93,9 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
 
   const progressPct =
     totalVocabsCount > 0 ? Math.round((activeStepNumber / totalVocabsCount) * 100) : 0
-  const deckTargetRoute = currentVocab.deckId
-    ? `/flashcards?deck=${encodeURIComponent(currentVocab.deckId)}`
+  const deckParam = slugifyFlashcardDeckTitle(currentVocab.deckTitle) || currentVocab.deckId
+  const deckTargetRoute = deckParam
+    ? `/flashcards?deck=${encodeURIComponent(deckParam)}`
     : '/flashcards'
   const hasAnsweredQuiz = selectedQuizChoice !== null
   const isQuizCorrect =

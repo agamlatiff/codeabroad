@@ -1,6 +1,6 @@
 import type { FC } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, Quotes } from '@phosphor-icons/react'
+import { ArrowRight, CheckCircle, Quotes } from '@phosphor-icons/react'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
 import {
   DEFAULT_LEVEL_ACCENT,
@@ -110,7 +110,9 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
   const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
   const cover = CATEGORY_COVER_THEMES[point.category] ?? DEFAULT_COVER_THEME
   const kodiEmotion = cover.emotions[index % cover.emotions.length]
-  const exampleCount = point.examples?.length ?? 0
+  const exampleCount = point.learning_guide?.breakdowns?.length ?? point.examples?.length ?? 0
+  const hasGuide = Boolean(point.learning_guide?.breakdowns?.length)
+  const previewText = point.learning_guide?.analogy || point.explanation
   const { primary, accentSub } = splitEditorialTitle(point.title, point.category)
 
   return (
@@ -186,6 +188,12 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
                 {renderCategoryIcon(point.category, 'w-3 h-3')}
                 <span>{formatCategoryLabel(point.category)}</span>
               </span>
+              {point.is_understood && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
+                  <span>Paham ✓</span>
+                </span>
+              )}
             </div>
             <span className="text-[11px] font-mono font-black text-slate-400">
               #{String(index + 1).padStart(2, '0')}
@@ -209,9 +217,9 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
             )}
           </div>
 
-          {/* Indonesian explanation */}
+          {/* Indonesian beginner-friendly analogy or explanation */}
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed line-clamp-2">
-            {point.explanation}
+            {previewText}
           </p>
         </div>
 
@@ -219,7 +227,11 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
         <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100">
           <span className="inline-flex items-center gap-1.5 text-[11px] font-brand font-bold text-slate-500">
             <Quotes weight="fill" className="w-3.5 h-3.5 text-blue-400" />
-            <span>{exampleCount} contoh kalimat • Audio 0.6x</span>
+            <span>
+              {hasGuide
+                ? `${exampleCount} contoh pecah kata • Kuis 3 soal • Audio 0.6x`
+                : `${exampleCount} contoh kalimat • Audio 0.6x`}
+            </span>
           </span>
           <span className="inline-flex items-center gap-1 text-xs sm:text-[13px] font-brand font-black text-blue-600 group-hover:gap-1.5 transition-all">
             Pelajari Materi

@@ -5,8 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"strings"
 
 	"codeabroad/backend/infrastructure/postgres"
+	"codeabroad/backend/internal/shared/apperror"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -22,6 +24,7 @@ func NewRepository(db *postgres.PostgresDB) Repository {
 const deckSelectFromClause = `
 		SELECT
 			d.id::text,
+			COALESCE(d.slug, '') AS db_slug,
 			d.language_code,
 			d.title,
 			d.description,
@@ -79,9 +82,11 @@ type rowScanner interface {
 
 func scanDeckRow(scanner rowScanner) (Deck, error) {
 	var d Deck
+	var dbSlug string
 	var sampleCardsRaw []byte
 	err := scanner.Scan(
 		&d.ID,
+		&dbSlug,
 		&d.LanguageCode,
 		&d.Title,
 		&d.Description,
@@ -98,6 +103,11 @@ func scanDeckRow(scanner rowScanner) (Deck, error) {
 		&sampleCardsRaw,
 		&d.CreatedAt,
 	)
+	if strings.TrimSpace(dbSlug) != "" {
+		d.Slug = strings.TrimSpace(dbSlug)
+	} else {
+		d.Slug = SlugifyDeckTitle(d.Title)
+	}
 	d.SampleCards = []SampleCard{}
 	if err == nil && len(sampleCardsRaw) > 0 {
 		_ = json.Unmarshal(sampleCardsRaw, &d.SampleCards)
@@ -133,13 +143,62 @@ func (r *postgresRepository) ListDecks(ctx context.Context, userID string, langu
 	return decks, nil
 }
 
+func (r *postgresRepository) resolveDeckUUID(ctx context.Context, deckIDOrSlug string) (string, error) {
+	trimmed := strings.TrimSpace(deckIDOrSlug)
+	if trimmed == "" {
+		return "", ErrDeckNotFound
+	}
+	if apperror.ValidateEntityUUID(trimmed) == nil {
+		return trimmed, nil
+	}
+
+	normalized := strings.ToLower(trimmed)
+	var directID string
+	err := r.db.Pool.QueryRow(
+		ctx,
+		`SELECT id::text FROM flashcard_decks WHERE LOWER(COALESCE(slug, '')) = $1 LIMIT 1`,
+		normalized,
+	).Scan(&directID)
+	if err == nil && directID != "" {
+		return directID, nil
+	}
+
+	rows, err := r.db.Pool.Query(
+		ctx,
+		`SELECT id::text, title, category FROM flashcard_decks ORDER BY sort_order ASC, created_at ASC`,
+	)
+	if err != nil {
+		return "", fmt.Errorf("resolve flashcard deck slug: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var id, title, category string
+		if scanErr := rows.Scan(&id, &title, &category); scanErr != nil {
+			return "", fmt.Errorf("scan flashcard deck slug row: %w", scanErr)
+		}
+		if SlugifyDeckTitle(title) == normalized || strings.EqualFold(category, normalized) {
+			return id, nil
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return "", fmt.Errorf("iterate flashcard deck slug rows: %w", err)
+	}
+	return "", ErrDeckNotFound
+}
+
 func (r *postgresRepository) GetDeckWithCards(ctx context.Context, userID string, deckID string) (*DeckDetailResponse, error) {
+	resolvedDeckID, err := r.resolveDeckUUID(ctx, deckID)
+	if err != nil {
+		return nil, err
+	}
+
 	deckQuery := deckSelectFromClause + `
 		WHERE d.id = $2::uuid
 		GROUP BY d.id
 	`
 
-	deck, err := scanDeckRow(r.db.Pool.QueryRow(ctx, deckQuery, userID, deckID))
+	deck, err := scanDeckRow(r.db.Pool.QueryRow(ctx, deckQuery, userID, resolvedDeckID))
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrDeckNotFound
@@ -167,7 +226,7 @@ func (r *postgresRepository) GetDeckWithCards(ctx context.Context, userID string
 		ORDER BY c.sort_order ASC, c.created_at ASC
 	`
 
-	rows, err := r.db.Pool.Query(ctx, cardsQuery, userID, deckID)
+	rows, err := r.db.Pool.Query(ctx, cardsQuery, userID, resolvedDeckID)
 	if err != nil {
 		return nil, fmt.Errorf("list deck cards: %w", err)
 	}
@@ -361,5 +420,35 @@ func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *C
 	if err != nil {
 		return fmt.Errorf("upsert flashcard progress: %w", err)
 	}
+
+	// Bidirectional sync: reviewing a pure character card (Hiragana/Katakana/Kanji) updates /kana mastery too.
+	incCorrect := 0
+	initScore := 10
+	scoreDelta := -10
+	if progress.Repetitions > 0 {
+		incCorrect = 1
+		initScore = 50
+		scoreDelta = 35
+	}
+	kanaSyncQuery := `
+		INSERT INTO user_kana_progress (user_id, character, practice_count, correct_count, mastery_score, is_mastered, last_practiced_at)
+		SELECT $1::uuid, kc.character, 1, $3, $4, false, NOW()
+		FROM flashcard_cards fc
+		JOIN flashcard_decks fd ON fd.id = fc.deck_id
+		JOIN kana_characters kc ON kc.character = fc.front_text
+		WHERE fc.id = $2::uuid
+		  AND fd.category IN ('hiragana', 'katakana', 'kanji')
+		ON CONFLICT (user_id, character)
+		DO UPDATE SET
+			practice_count    = user_kana_progress.practice_count + 1,
+			correct_count     = user_kana_progress.correct_count + EXCLUDED.correct_count,
+			mastery_score     = LEAST(100, GREATEST(0, user_kana_progress.mastery_score + $5)),
+			is_mastered       = (
+				LEAST(100, GREATEST(0, user_kana_progress.mastery_score + $5)) >= 70
+				OR (user_kana_progress.correct_count + EXCLUDED.correct_count) >= 2
+			),
+			last_practiced_at = NOW()
+	`
+	_, _ = r.db.Pool.Exec(ctx, kanaSyncQuery, progress.UserID, progress.CardID, incCorrect, initScore, scoreDelta)
 	return nil
 }

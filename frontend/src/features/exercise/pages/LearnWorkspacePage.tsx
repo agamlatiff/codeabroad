@@ -7,8 +7,8 @@ import { ExerciseSessionStatusView } from '@/features/exercise/components/Exerci
 import { LessonFeedbackFooter } from '@/features/exercise/components/LessonFeedbackFooter'
 import { LessonGrammarDrawer } from '@/features/exercise/components/LessonGrammarDrawer'
 import { LessonIntroView } from '@/features/exercise/components/LessonIntroView'
-import { getLessonIntroDeck } from '@/features/exercise/constants/lessonIntroCards'
-import { BookOpen, Sparkle, Translate } from '@phosphor-icons/react'
+import { buildDynamicLessonIntroDeck } from '@/features/exercise/constants/lessonIntroCards'
+import { ArrowsClockwise, BookOpen, ShieldCheck, Sparkle, Translate } from '@phosphor-icons/react'
 
 const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
   const [isIntroOpen, setIsIntroOpen] = useState<boolean | null>(null)
@@ -18,6 +18,8 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     currentExercise,
     parsedContent,
     currentIndex,
+    isCheckpoint,
+    isRetryRound,
     progressPercent,
     resolvedCorrectAnswer,
     selectedTokenIndices,
@@ -97,7 +99,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     )
   }
 
-  const introDeck = getLessonIntroDeck(lesson.slug)
+  const introDeck = isCheckpoint ? null : buildDynamicLessonIntroDeck(lesson)
   const showingIntro = Boolean(introDeck) && (isIntroOpen ?? currentIndex === 0)
 
   if (introDeck && showingIntro) {
@@ -118,7 +120,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         onExit={handleExitToCurriculum}
         exitAriaLabel="Keluar ke Kurikulum"
         progressPercent={progressPercent}
-        progressFillClass="bg-emerald-500"
+        progressFillClass={isRetryRound ? 'bg-amber-500' : 'bg-emerald-500'}
         counterLabel={
           exercises.length > 0
             ? `${Math.min(currentIndex + 1, exercises.length)}/${exercises.length}`
@@ -126,31 +128,48 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         }
         rightSlot={
           <div className="flex items-center gap-2 shrink-0">
+            {isRetryRound && !isCheckpoint && (
+              <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-amber-100 border border-amber-300 text-[11px] font-black text-amber-800">
+                <ArrowsClockwise weight="bold" className="w-3.5 h-3.5" />
+                <span>Latih Ulang Kesalahan</span>
+              </span>
+            )}
+
             <span className="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700">
               <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />
               +{lesson.xp_reward} XP
             </span>
 
-            {introDeck && (
-              <button
-                type="button"
-                onClick={() => setIsIntroOpen(true)}
-                className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-extrabold text-emerald-700 transition-colors cursor-pointer"
-              >
-                <Translate weight="bold" className="w-4 h-4" />
-                <span className="hidden sm:inline">Kenali Huruf</span>
-              </button>
-            )}
+            {isCheckpoint ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-extrabold text-rose-700">
+                <ShieldCheck weight="fill" className="w-4 h-4 text-rose-600" />
+                <span className="hidden sm:inline">Ujian Checkpoint • Tanpa Bantuan</span>
+                <span className="sm:hidden">Ujian</span>
+              </span>
+            ) : (
+              <>
+                {introDeck && (
+                  <button
+                    type="button"
+                    onClick={() => setIsIntroOpen(true)}
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-extrabold text-emerald-700 transition-colors cursor-pointer"
+                  >
+                    <Translate weight="bold" className="w-4 h-4" />
+                    <span className="hidden sm:inline">Kenali Huruf</span>
+                  </button>
+                )}
 
-            {lesson.grammar_points.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setIsGrammarDrawerOpen(true)}
-                className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold text-blue-700 transition-colors cursor-pointer"
-              >
-                <BookOpen weight="bold" className="w-4 h-4" />
-                <span className="hidden sm:inline">Tata Bahasa</span>
-              </button>
+                {lesson.grammar_points.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => setIsGrammarDrawerOpen(true)}
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold text-blue-700 transition-colors cursor-pointer"
+                  >
+                    <BookOpen weight="bold" className="w-4 h-4" />
+                    <span className="hidden sm:inline">Tata Bahasa</span>
+                  </button>
+                )}
+              </>
             )}
           </div>
         }

@@ -71,6 +71,86 @@ export const DEFAULT_LEVEL_ACCENT: LevelAccentTheme = {
   bgSoft: 'bg-slate-50/40',
 }
 
+export interface GrammarRoleStyle {
+  block: string
+  label: string
+  dot: string
+}
+
+const GRAMMAR_ROLE_STYLE_MAP: Record<string, GrammarRoleStyle> = {
+  topic: {
+    block: 'bg-blue-50 border-blue-200 text-blue-950',
+    label: 'text-blue-700',
+    dot: 'bg-blue-500',
+  },
+  subject: {
+    block: 'bg-blue-50 border-blue-200 text-blue-950',
+    label: 'text-blue-700',
+    dot: 'bg-blue-500',
+  },
+  particle: {
+    block: 'bg-amber-50 border-amber-300 text-amber-950',
+    label: 'text-amber-700',
+    dot: 'bg-amber-500',
+  },
+  connector: {
+    block: 'bg-amber-50 border-amber-300 text-amber-950',
+    label: 'text-amber-700',
+    dot: 'bg-amber-500',
+  },
+  predicate: {
+    block: 'bg-emerald-50 border-emerald-200 text-emerald-950',
+    label: 'text-emerald-700',
+    dot: 'bg-emerald-500',
+  },
+  verb: {
+    block: 'bg-emerald-50 border-emerald-200 text-emerald-950',
+    label: 'text-emerald-700',
+    dot: 'bg-emerald-500',
+  },
+  object: {
+    block: 'bg-violet-50 border-violet-200 text-violet-950',
+    label: 'text-violet-700',
+    dot: 'bg-violet-500',
+  },
+  noun: {
+    block: 'bg-violet-50 border-violet-200 text-violet-950',
+    label: 'text-violet-700',
+    dot: 'bg-violet-500',
+  },
+  adjective: {
+    block: 'bg-rose-50 border-rose-200 text-rose-950',
+    label: 'text-rose-700',
+    dot: 'bg-rose-500',
+  },
+  time: {
+    block: 'bg-sky-50 border-sky-200 text-sky-950',
+    label: 'text-sky-700',
+    dot: 'bg-sky-500',
+  },
+  place: {
+    block: 'bg-sky-50 border-sky-200 text-sky-950',
+    label: 'text-sky-700',
+    dot: 'bg-sky-500',
+  },
+  ending: {
+    block: 'bg-indigo-50 border-indigo-200 text-indigo-950',
+    label: 'text-indigo-700',
+    dot: 'bg-indigo-500',
+  },
+}
+
+const DEFAULT_GRAMMAR_ROLE_STYLE: GrammarRoleStyle = {
+  block: 'bg-slate-50 border-slate-200 text-slate-900',
+  label: 'text-slate-600',
+  dot: 'bg-slate-400',
+}
+
+export function getGrammarRoleStyle(role?: string): GrammarRoleStyle {
+  const key = (role ?? '').trim().toLowerCase()
+  return GRAMMAR_ROLE_STYLE_MAP[key] ?? DEFAULT_GRAMMAR_ROLE_STYLE
+}
+
 export function formatCategoryLabel(category: string): string {
   return CATEGORY_LABELS[category] ?? category.replace(/_/g, ' ')
 }

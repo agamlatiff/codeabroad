@@ -64,7 +64,7 @@ export const transformCurriculumToMapUnits = (
             : `Lesson ${lesson.order_index}`
 
       const cleanLessonTitle =
-        lesson.title.replace(/^(?:pelajaran|lesson)\s*\d+\s*[:.\-–—]\s*/i, '').trim() ||
+        lesson.title.replace(/^(?:pelajaran|lesson|node)\s*\d+\s*[:.\-–—]\s*/i, '').trim() ||
         lesson.title
 
       return {
