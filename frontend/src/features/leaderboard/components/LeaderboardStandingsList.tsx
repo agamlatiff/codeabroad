@@ -1,14 +1,18 @@
 import { useNavigate } from 'react-router-dom'
+import { CaretUp } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { triggerHaptic } from '@/shared/utils/haptics'
-import type { DivisionConfig } from '@/features/leaderboard/constants/divisions'
+import type { DivisionConfig, NextDivisionProgress } from '@/features/leaderboard/constants/divisions'
 import type { WeeklyLeaderboardResponse } from '@/features/leaderboard/types/leaderboard'
 import { LeaderboardEntryRow } from './LeaderboardEntryRow'
+import { LeaderboardTopPodium } from './LeaderboardTopPodium'
+import { LeaderboardFewCompetitorsCard } from './LeaderboardIllustrations'
 
 interface LeaderboardStandingsListProps {
   leaderboard: WeeklyLeaderboardResponse | null
   divisionConfig: DivisionConfig
+  nextDivisionProgress?: NextDivisionProgress | null
   isLoading: boolean
   error: string | null
   compact?: boolean
@@ -17,12 +21,13 @@ interface LeaderboardStandingsListProps {
 }
 
 /**
- * Shared standings list (loading, error, empty state, competitor rows, current-user footer)
- * used by LeaderboardPage.
+ * Shared standings list (loading, error, empty state, Top-3 podium, inline Top-3 prize divider,
+ * competitor rows, few-competitors encouragement card, and current-user footer).
  */
 export const LeaderboardStandingsList = ({
   leaderboard,
   divisionConfig,
+  nextDivisionProgress,
   isLoading,
   error,
   compact = false,
@@ -63,17 +68,17 @@ export const LeaderboardStandingsList = ({
   if (!leaderboard?.entries || leaderboard.entries.length === 0) {
     return (
       <div
-        className={`${compact ? 'py-10 px-4' : 'py-16 px-6'} text-center space-y-4 bg-white rounded-3xl border-2 border-dashed border-slate-200`}
+        className={`${compact ? 'py-10 px-4' : 'py-14 px-6'} text-center space-y-4 bg-slate-50/60 rounded-2xl border-2 border-dashed border-slate-200`}
       >
         <div className="flex items-center justify-center mx-auto">
-          <KodiCharacter emotion="thinking" size={compact ? 96 : 110} />
+          <KodiCharacter emotion="thinking" size={compact ? 92 : 104} />
         </div>
         <div className={`space-y-1.5 ${compact ? 'max-w-sm' : 'max-w-md'} mx-auto`}>
           <h3 className="font-brand font-black text-sm sm:text-base text-slate-900">
             Belum Ada Peserta di {divisionConfig.name}
           </h3>
           <p className="text-xs text-slate-500 font-medium leading-relaxed">
-            Musim #{leaderboard?.season_week ?? 1} baru dimulai! Kumpulkan XP ({divisionConfig.xpRange}) dari pelajaran kurikulum dan latihan SRS untuk merebut Peringkat #1 dan hadiah 100 Gems!
+            Capai Total XP ({divisionConfig.xpRange}) untuk masuk {divisionConfig.name}, lalu raih Top 3 mingguan untuk memperebutkan hadiah +100 Gems!
           </p>
         </div>
         <Button3D
@@ -92,23 +97,51 @@ export const LeaderboardStandingsList = ({
     )
   }
 
+  const entries = leaderboard.entries
+  const showPodium = entries.length >= 3
+  const topThree = showPodium ? entries.slice(0, 3) : []
+  const remainingEntries = showPodium ? entries.slice(3) : entries
+
   return (
-    <>
-      {leaderboard.entries.map((entry, idx) => (
+    <div className="space-y-2.5">
+      {showPodium && <LeaderboardTopPodium topThree={topThree} />}
+
+      {showPodium && remainingEntries.length > 0 && (
+        <div className="flex items-center gap-3 py-1.5">
+          <div className="h-[2px] flex-1 bg-gradient-to-r from-transparent via-emerald-300 to-emerald-400 rounded-full" />
+          <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1 rounded-full shrink-0">
+            <CaretUp weight="fill" className="w-3 h-3 text-emerald-600" />
+            <span>Zona Hadiah Top 3 • Gems Mingguan</span>
+          </span>
+          <div className="h-[2px] flex-1 bg-gradient-to-l from-transparent via-emerald-300 to-emerald-400 rounded-full" />
+        </div>
+      )}
+
+      {remainingEntries.map((entry, idx) => (
         <LeaderboardEntryRow
           key={entry.user_id ? `${entry.user_id}-${entry.rank}` : `${entry.username}-${entry.rank}-${idx}`}
           entry={entry}
           compact={compact}
+          index={idx}
         />
       ))}
-      {leaderboard.user_rank && !leaderboard.entries.some((e) => e.is_current_user) && (
+
+      {entries.length < 3 && (
+        <LeaderboardFewCompetitorsCard
+          divisionConfig={divisionConfig}
+          competitorCount={entries.length}
+          nextDivisionProgress={nextDivisionProgress}
+        />
+      )}
+
+      {leaderboard.user_rank && !entries.some((e) => e.is_current_user) && (
         <div className="pt-2 border-t border-dashed border-slate-200 space-y-1.5">
           <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400 px-1">
-            Posisi Anda Saat Ini
+            Posisi Anda Saat Ini ({divisionConfig.name})
           </span>
           <LeaderboardEntryRow entry={leaderboard.user_rank} compact={compact} />
         </div>
       )}
-    </>
+    </div>
   )
 }

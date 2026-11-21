@@ -21,6 +21,7 @@ export interface WeeklyLeaderboardResponse {
   division: LeagueDivision
   division_name: string
   division_tier: string
+  user_division?: LeagueDivision
   season_week: number
   days_remaining: number
   user_rank?: LeaderboardEntry | null

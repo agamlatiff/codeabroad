@@ -127,6 +127,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 	}
 
 	var userRankItem *LeaderboardEntry
+	var userDivision LeagueDivision
 	for i := range entries {
 		rank := i + 1
 		entries[i].Rank = rank
@@ -137,6 +138,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 		if entries[i].IsCurrentUser {
 			copied := entries[i]
 			userRankItem = &copied
+			userDivision = resolvedDivision
 		}
 		// Avoid exposing internal user UUIDs on public unauthenticated responses or non-self rows.
 		if userID == "" {
@@ -144,7 +146,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 		}
 	}
 
-	// If current user is authenticated but not in top 50 of requested division, resolve their standing
+	// If current user is authenticated but not in top 50 of requested division, resolve their standing & actual division
 	if userID != "" && userRankItem == nil {
 		standing := preloadedStanding
 		if standing == nil {
@@ -158,6 +160,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 				divisionXP = standing.WeeklyXP
 			}
 			userDiv := u.helper.DetermineDivision(divisionXP)
+			userDivision = userDiv
 			if userDiv == resolvedDivision {
 				standingCopy := *standing
 				if standingCopy.Rank <= 0 {
@@ -175,6 +178,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 		Division:         resolvedDivision,
 		DivisionName:     cfg.Name,
 		DivisionTier:     cfg.Tier,
+		UserDivision:     userDivision,
 		SeasonWeek:       seasonWeek,
 		DaysRemaining:    daysRemaining,
 		UserRank:         userRankItem,

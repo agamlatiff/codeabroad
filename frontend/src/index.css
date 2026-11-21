@@ -514,3 +514,70 @@ body {
 .k-type-l { animation: kodi-hyper-type-l 0.14s infinite; transform-origin: 65px 125px; }
 .k-type-r { animation: kodi-hyper-type-r 0.14s infinite; transform-origin: 115px 125px; }
 
+/* ── LEADERBOARD MOTION GRAPHICS (60FPS & ACCESSIBILITY SAFE) ── */
+@keyframes lb-shimmer-sweep {
+  0%, 72% { transform: translateX(-140%) skewX(-20deg); opacity: 0; }
+  80% { opacity: 0.65; }
+  100% { transform: translateX(180%) skewX(-20deg); opacity: 0; }
+}
+
+@keyframes lb-podium-rise {
+  0% { opacity: 0; transform: translateY(16px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes lb-row-enter {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes lb-crown-bob {
+  0%, 100% { transform: translateY(0) rotate(-3deg); }
+  50% { transform: translateY(-4px) rotate(3deg); }
+}
+
+@keyframes lb-sparkle-float {
+  0%, 100% { opacity: 0.55; transform: scale(0.92) translateY(0); }
+  50% { opacity: 1; transform: scale(1.12) translateY(-3px); }
+}
+
+@keyframes lb-bar-grow {
+  0% { transform: scaleX(0); }
+  100% { transform: scaleX(1); }
+}
+
+.lb-shimmer-sweep::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.72) 50%,
+    transparent 100%
+  );
+  animation: lb-shimmer-sweep 4.2s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.lb-podium-1 { animation: lb-podium-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) 120ms both; }
+.lb-podium-2 { animation: lb-podium-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) 40ms both; }
+.lb-podium-3 { animation: lb-podium-rise 0.45s cubic-bezier(0.22, 1, 0.36, 1) 200ms both; }
+.lb-row-enter { animation: lb-row-enter 0.34s cubic-bezier(0.22, 1, 0.36, 1) var(--lb-row-delay, 0ms) both; }
+.lb-crown-bob { animation: lb-crown-bob 2.6s ease-in-out infinite; transform-origin: center center; }
+.lb-sparkle-float { animation: lb-sparkle-float 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center center; }
+.lb-bar-grow { animation: lb-bar-grow 0.65s cubic-bezier(0.22, 1, 0.36, 1) both; transform-origin: left center; }
+
+@media (prefers-reduced-motion: reduce) {
+  .lb-shimmer-sweep::after,
+  .lb-podium-1,
+  .lb-podium-2,
+  .lb-podium-3,
+  .lb-row-enter,
+  .lb-crown-bob,
+  .lb-sparkle-float,
+  .lb-bar-grow {
+    animation: none !important;
+  }
+}
+

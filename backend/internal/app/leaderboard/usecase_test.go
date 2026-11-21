@@ -101,6 +101,18 @@ func TestGetWeeklyLeaderboard_UniversalDivisionsAliasesPrivacyAndSundayReset(t *
 		t.Fatalf("expected unauthenticated response to redact UserID, got %+v", aliasRes.Entries)
 	}
 
+	// Peeking at another division preserves UserDivision (Silver) while showing Gold standings
+	peekRes, err := uc.GetWeeklyLeaderboard(context.Background(), "user-1", leaderboard.DivisionGold)
+	if err != nil {
+		t.Fatalf("expected no error when peeking at gold division, got %v", err)
+	}
+	if peekRes.Division != leaderboard.DivisionGold {
+		t.Fatalf("expected viewed division gold, got %q", peekRes.Division)
+	}
+	if peekRes.UserDivision != leaderboard.DivisionSilver {
+		t.Fatalf("expected UserDivision to remain silver when peeking at gold, got %q", peekRes.UserDivision)
+	}
+
 	helper := leaderboard.NewHelper()
 	sunday := time.Date(2026, 11, 15, 10, 0, 0, 0, time.UTC)
 	if days := helper.CalculateDaysUntilSundayReset(sunday); days != 0 {

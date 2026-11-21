@@ -44,6 +44,7 @@ type WeeklyLeaderboardResponse struct {
 	Division         LeagueDivision     `json:"division"`
 	DivisionName     string             `json:"division_name"`
 	DivisionTier     string             `json:"division_tier"`
+	UserDivision     LeagueDivision     `json:"user_division,omitempty"`
 	SeasonWeek       int                `json:"season_week"`
 	DaysRemaining    int                `json:"days_remaining"`
 	UserRank         *LeaderboardEntry  `json:"user_rank,omitempty"`
