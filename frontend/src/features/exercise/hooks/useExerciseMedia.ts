@@ -220,6 +220,7 @@ export const useExerciseMedia = ({
     }
 
     try {
+      stopActiveAudio()
       stopActiveRecognition()
       const sessionId = speechSessionIdRef.current
       setAudioPlaybackError(null)
@@ -267,7 +268,7 @@ export const useExerciseMedia = ({
     } catch {
       setIsRecordingSpeech(false)
     }
-  }, [isRecordingSpeech, speechLocale, stopActiveRecognition])
+  }, [isRecordingSpeech, speechLocale, stopActiveAudio, stopActiveRecognition])
 
   return {
     isSpeakingAudio,

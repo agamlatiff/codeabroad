@@ -54,7 +54,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
       : MAP_TRACK_TOKENS.dash.locked
 
   return (
-    <section className="space-y-4">
+    <section id={`unit-section-${unit.unitNumber}`} className="space-y-4 scroll-mt-6">
       {/* ── UNIT BANNER HEADER (Sticky per unit section on scroll) ── */}
       <div
         className={`sticky top-3 z-20 w-full text-white rounded-2xl px-5 py-4 sm:px-6 sm:py-4.5 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}

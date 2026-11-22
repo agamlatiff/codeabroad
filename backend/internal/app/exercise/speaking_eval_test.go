@@ -112,3 +112,75 @@ func TestParseCorrectAnswerJSON_ExactMatch(t *testing.T) {
 		t.Fatalf("ParseCorrectAnswerJSON = %q, want %q", got, "これは辞書ですか。")
 	}
 }
+
+func TestSanitizeExercises_StripsFillBlankTranslationSpoilers(t *testing.T) {
+	input := []Exercise{
+		{
+			ID:            "fb-exact-option",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "laki-laki",
+			Content: map[string]any{
+				"translation": "Laki-laki",
+				"options":     []any{"laki-laki", "perempuan"},
+			},
+		},
+		{
+			ID:            "fb-romaji-desu",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "です",
+			Content: map[string]any{
+				"translation": "Desu",
+				"options":     []any{"です", "ます"},
+			},
+		},
+		{
+			ID:            "fb-romaji-yokatta",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "よかったです",
+			Content: map[string]any{
+				"translation": "Yokatta",
+				"options":     []any{"よかったです", "よくないです"},
+			},
+		},
+		{
+			ID:            "fb-huruf-prefix",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "る",
+			Content: map[string]any{
+				"translation": "Huruf RU",
+				"options":     []any{"る", "ろ"},
+			},
+		},
+		{
+			ID:            "fb-valid-single-indonesian",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "えき",
+			Content: map[string]any{
+				"translation": "Stasiun",
+				"options":     []any{"えき", "いけ"},
+			},
+		},
+		{
+			ID:            "fb-valid-sentence",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "で",
+			Content: map[string]any{
+				"translation": "Membaca buku di perpustakaan",
+				"options":     []any{"で", "に"},
+			},
+		},
+	}
+
+	got := SanitizeExercises(input)
+	for i := 0; i < 4; i++ {
+		if _, hasTrans := got[i].Content["translation"]; hasTrans {
+			t.Errorf("expected spoiler translation to be stripped for %s, still got %v", got[i].ID, got[i].Content["translation"])
+		}
+	}
+	if got[4].Content["translation"] != "Stasiun" {
+		t.Errorf("expected valid Indonesian cue 'Stasiun' to be preserved, got %v", got[4].Content["translation"])
+	}
+	if got[5].Content["translation"] != "Membaca buku di perpustakaan" {
+		t.Errorf("expected valid sentence translation to be preserved, got %v", got[5].Content["translation"])
+	}
+}

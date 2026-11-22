@@ -123,8 +123,16 @@ export const useLessonCompletePage = () => {
   const handleOpenFlashcards = useCallback(() => {
     triggerHaptic('tap')
     audioEngine.playPop()
-    navigate('/flashcards')
-  }, [navigate])
+    const combined = `${lesson?.slug ?? ''} ${lesson?.title ?? ''}`.toLowerCase()
+    const category = combined.includes('katakana')
+      ? 'katakana'
+      : combined.includes('kanji')
+        ? 'kanji'
+        : combined.includes('hiragana') || combined.includes('vokal')
+          ? 'hiragana'
+          : 'vocab'
+    navigate(`/flashcards?level=N5&category=${category}`)
+  }, [lesson?.slug, lesson?.title, navigate])
 
   return {
     isLoading: !isConfirmedCompleted,

@@ -82,10 +82,11 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
   const currentQuestion = questions[questionIndex]
   const correctCount = answers.filter((a) => a.is_correct).length
   const currentTargetChar = currentQuestion?.target.character ?? ''
+  const currentMode = currentQuestion?.mode
 
-  // Auto-play pronunciation whenever a new Kana drill prompt appears
+  // Auto-play pronunciation ONLY on listening prompts (pick-kana); never spoil reading prompts (pick-romaji)
   useEffect(() => {
-    if (isCompleted || !currentTargetChar) return
+    if (isCompleted || !currentTargetChar || currentMode !== 'pick-kana') return
     const timer = window.setTimeout(() => {
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
@@ -97,7 +98,7 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
       window.clearTimeout(timer)
       audioService.stopSpeech()
     }
-  }, [currentTargetChar, isCompleted, questionIndex])
+  }, [currentMode, currentTargetChar, isCompleted, questionIndex])
 
   const handleSelectOption = (option: KanaCharacterItem) => {
     if (!currentQuestion || selectedChoice !== null) return
@@ -255,14 +256,16 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
               ? `"${currentQuestion.target.romaji.toUpperCase()}"`
               : currentQuestion.target.character}
           </span>
-          <button
-            type="button"
-            onClick={() => audioService.speakJapanese(currentQuestion.target.character)}
-            aria-label="Putar bunyi huruf"
-            className="w-11 h-11 rounded-2xl bg-white border-2 border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs cursor-pointer"
-          >
-            <SpeakerHigh weight="fill" className="w-5 h-5" />
-          </button>
+          {(isPickKana || selectedChoice !== null) && (
+            <button
+              type="button"
+              onClick={() => audioService.speakJapanese(currentQuestion.target.character)}
+              aria-label="Putar bunyi huruf"
+              className="w-11 h-11 rounded-2xl bg-white border-2 border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white flex items-center justify-center transition-colors shadow-2xs cursor-pointer"
+            >
+              <SpeakerHigh weight="fill" className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
 

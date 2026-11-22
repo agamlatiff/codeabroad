@@ -33,6 +33,7 @@ var strippedContentKeys = map[string]bool{
 func SanitizeExercises(exercises []Exercise) []Exercise {
 	sanitized := make([]Exercise, len(exercises))
 	for i, ex := range exercises {
+		rawCorrect := ex.CorrectAnswer
 		ex.CorrectAnswer = ""
 		ex.AcceptableAnswers = nil
 		ex.DiagnosticRubric = nil
@@ -42,6 +43,11 @@ func SanitizeExercises(exercises []Exercise) []Exercise {
 			for k, v := range ex.Content {
 				if !strippedContentKeys[k] {
 					cloned[k] = v
+				}
+			}
+			if ex.ExerciseType == ExerciseTypeFillBlank {
+				if trans, ok := cloned["translation"].(string); ok && isFillBlankTranslationSpoiler(trans, rawCorrect, cloned) {
+					delete(cloned, "translation")
 				}
 			}
 			ex.Content = cloned

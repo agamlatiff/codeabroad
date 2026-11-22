@@ -1,6 +1,8 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
+import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
+import { Button3D } from '@/shared/components/ui/Button3D'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
 import {
   ExerciseSessionHeader,
@@ -30,6 +32,7 @@ import {
 const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
 
 const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
+  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false)
   const {
     lesson,
     exercises,
@@ -255,26 +258,93 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         }).flat()
       : undefined
 
+  const hasSessionProgress =
+    currentIndex > 0 || dismissedStudyBatches.length > 0 || submittedResult !== null
+
+  const requestExitSession = () => {
+    if (hasSessionProgress) {
+      setIsExitConfirmOpen(true)
+      return
+    }
+    handleExitToCurriculum()
+  }
+
+  const exitConfirmModal = (
+    <AccessibleModal
+      isOpen={isExitConfirmOpen}
+      onClose={() => setIsExitConfirmOpen(false)}
+      ariaLabel="Konfirmasi Keluar dari Pelajaran"
+    >
+      <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl">
+        <div className="space-y-1.5">
+          <h2 className="font-brand font-black text-lg text-slate-900">
+            Keluar dari Pelajaran?
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+            Progresmu di sesi ini tersimpan sementara di browser, jadi kamu bisa melanjutkannya
+            saat kembali.
+          </p>
+        </div>
+        <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">
+          <Button3D
+            type="button"
+            variant="white"
+            size="md"
+            fullWidth
+            onClick={() => {
+              setIsExitConfirmOpen(false)
+              handleExitToCurriculum()
+            }}
+          >
+            Keluar ke Peta
+          </Button3D>
+          <Button3D
+            type="button"
+            variant="blue"
+            size="md"
+            fullWidth
+            onClick={() => setIsExitConfirmOpen(false)}
+          >
+            Lanjut Belajar
+          </Button3D>
+        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setIsExitConfirmOpen(false)
+            handleRetryLesson()
+          }}
+          className="w-full text-center text-xs font-brand font-bold text-slate-500 hover:text-rose-600 py-1 transition-colors cursor-pointer"
+        >
+          Mulai Ulang Sesi dari Awal
+        </button>
+      </div>
+    </AccessibleModal>
+  )
+
   if (introDeck && activeStudyBatch) {
     return (
-      <LessonIntroView
-        lessonTitle={lesson.title}
-        xpReward={lesson.xp_reward}
-        deck={introDeck}
-        batch={activeStudyBatch}
-        progressPercent={Math.max(5, unifiedProgressPercent)}
-        counterLabel={`Materi ${activeStudyBatch.batchNumber}/${activeStudyBatch.totalBatches}`}
-        timelineSteps={timelineSteps}
-        onExit={handleExitToCurriculum}
-        onStartQuiz={() => handleDismissStudyBatch(currentIndex)}
-      />
+      <>
+        <LessonIntroView
+          lessonTitle={lesson.title}
+          xpReward={lesson.xp_reward}
+          deck={introDeck}
+          batch={activeStudyBatch}
+          progressPercent={Math.max(5, unifiedProgressPercent)}
+          counterLabel={`Materi ${activeStudyBatch.batchNumber}/${activeStudyBatch.totalBatches}`}
+          timelineSteps={timelineSteps}
+          onExit={requestExitSession}
+          onStartQuiz={() => handleDismissStudyBatch(currentIndex)}
+        />
+        {exitConfirmModal}
+      </>
     )
   }
 
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
       <ExerciseSessionHeader
-        onExit={handleExitToCurriculum}
+        onExit={requestExitSession}
         exitAriaLabel="Keluar ke Kurikulum"
         progressPercent={unifiedProgressPercent}
         progressFillClass={isRetryRound ? 'bg-amber-500' : 'bg-emerald-500'}
@@ -403,6 +473,8 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         grammarPoints={lesson.grammar_points}
         onClose={() => setIsGrammarDrawerOpen(false)}
       />
+
+      {exitConfirmModal}
     </div>
   )
 }

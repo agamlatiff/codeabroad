@@ -82,9 +82,23 @@ const VALID_JLPT_FILTERS: ReadonlySet<JlptFilter> = new Set([
   'N1',
 ])
 
+const VALID_DECK_CATEGORIES: ReadonlySet<DeckCategoryFilter> = new Set([
+  'ALL',
+  'hiragana',
+  'katakana',
+  'kanji',
+  'vocab',
+])
+
 function parseFlashcardLevelParam(raw: string | null): JlptFilter {
   const upper = (raw ?? '').trim().toUpperCase() as JlptFilter
   return VALID_JLPT_FILTERS.has(upper) ? upper : 'N5'
+}
+
+function parseFlashcardCategoryParam(raw: string | null): DeckCategoryFilter {
+  const trimmed = (raw ?? '').trim()
+  const candidate = (trimmed.toUpperCase() === 'ALL' ? 'ALL' : trimmed.toLowerCase()) as DeckCategoryFilter
+  return VALID_DECK_CATEGORIES.has(candidate) ? candidate : 'ALL'
 }
 
 const RATING_OPTIONS: RatingOption[] = [
@@ -137,12 +151,19 @@ export const FlashcardPage = () => {
   const [lobbyLevelMemory, setLobbyLevelMemory] = useState<JlptFilter>(() =>
     parseFlashcardLevelParam(searchParams.get('level'))
   )
+  const [categoryMemory, setCategoryMemory] = useState<DeckCategoryFilter>(() =>
+    parseFlashcardCategoryParam(searchParams.get('category'))
+  )
   const rawLevelParam = searchParams.get('level')
   const levelFilter = useMemo(
     () => (rawLevelParam ? parseFlashcardLevelParam(rawLevelParam) : lobbyLevelMemory),
     [rawLevelParam, lobbyLevelMemory]
   )
-  const [categoryFilter, setCategoryFilter] = useState<DeckCategoryFilter>('ALL')
+  const rawCategoryParam = searchParams.get('category')
+  const categoryFilter = useMemo(
+    () => (rawCategoryParam ? parseFlashcardCategoryParam(rawCategoryParam) : categoryMemory),
+    [rawCategoryParam, categoryMemory]
+  )
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
   const loadMoreSentinelRef = useRef<HTMLDivElement | null>(null)
@@ -295,17 +316,43 @@ export const FlashcardPage = () => {
 
   const handleSelectLevel = (nextLevel: JlptFilter) => {
     setLobbyLevelMemory(nextLevel)
-    setSearchParams({ level: nextLevel }, { replace: true })
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('level', nextLevel)
+        return next
+      },
+      { replace: true }
+    )
   }
 
-  // Canonicalize lobby URL so default N5 reflects explicitly in ?level=N5
+  const handleSelectCategory = (nextCat: DeckCategoryFilter) => {
+    setCategoryMemory(nextCat)
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('level', levelFilter)
+        if (nextCat === 'ALL') {
+          next.delete('category')
+        } else {
+          next.set('category', nextCat)
+        }
+        return next
+      },
+      { replace: true }
+    )
+  }
+
+  // Canonicalize lobby URL so default N5 reflects explicitly in ?level=N5 while preserving ?category=
   useEffect(() => {
     if (mode !== 'lobby') return
     if (searchParams.has('deck') || searchParams.get('mode') === 'review') return
     const currentRaw = searchParams.get('level')
     const normalized = parseFlashcardLevelParam(currentRaw)
     if (!currentRaw || currentRaw.trim().toUpperCase() !== normalized) {
-      setSearchParams({ level: lobbyLevelMemory }, { replace: true })
+      const next = new URLSearchParams(searchParams)
+      next.set('level', lobbyLevelMemory)
+      setSearchParams(next, { replace: true })
     }
   }, [lobbyLevelMemory, mode, searchParams, setSearchParams])
 
@@ -522,7 +569,11 @@ export const FlashcardPage = () => {
     triggerHaptic('tap')
     handledDeckParamRef.current = null
     handledReviewParamRef.current = false
-    setSearchParams({ level: lobbyLevelMemory }, { replace: true })
+    const nextParams: Record<string, string> = { level: lobbyLevelMemory }
+    if (categoryMemory !== 'ALL') {
+      nextParams.category = categoryMemory
+    }
+    setSearchParams(nextParams, { replace: true })
     setMode('lobby')
     setQueue([])
     setCardMap({})
@@ -859,7 +910,7 @@ export const FlashcardPage = () => {
           onSelectLevel={(v) => handleSelectLevel(v as JlptFilter)}
           categoryOptions={DECK_CATEGORY_OPTIONS}
           selectedCategory={categoryFilter}
-          onSelectCategory={(v) => setCategoryFilter(v as DeckCategoryFilter)}
+          onSelectCategory={(v) => handleSelectCategory(v as DeckCategoryFilter)}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
           searchPlaceholder="Cari judul, huruf, atau topik dek..."

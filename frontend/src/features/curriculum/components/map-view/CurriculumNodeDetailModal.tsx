@@ -38,6 +38,7 @@ const resolveMascotEmotion = (node: PathMapNode): KodiEmotion => {
 interface NodePreviewInfo {
   chips: string[]
   kanaScript?: 'hiragana' | 'katakana' | 'kanji'
+  showGrammarLink?: boolean
 }
 
 const KNOWN_NODE_PREVIEWS: Record<string, NodePreviewInfo> = {
@@ -70,10 +71,49 @@ const KNOWN_NODE_PREVIEWS: Record<string, NodePreviewInfo> = {
     kanaScript: 'hiragana',
   },
   'n5-hiragana-deret-r-w-n': {
-    chips: ['ら–ろ', 'わ・を・ん'],
+    chips: ['ら–ろ', 'わ・を・ん', 'よる malam', 'そら langit'],
     kanaScript: 'hiragana',
   },
+  'n5-hiragana-tenten-tsu-yoon': {
+    chips: ['が–ぽ Tenten/Maru', 'っ Sokuon', 'きゃ–ぴょ Yoon'],
+    kanaScript: 'hiragana',
+  },
+  'n5-unit5-kosakata-variasi': {
+    chips: ['きって prangko', 'おちゃ teh', 'きょう hari ini'],
+    kanaScript: 'hiragana',
+  },
+  'n5-katakana-batch1-ato': {
+    chips: ['ア–オ', 'カ–コ', 'サ–ト'],
+    kanaScript: 'katakana',
+  },
+  'n5-angka-besar-harga': {
+    chips: ['百 ratus', '千 ribu', '万 puluh ribu', '円 yen'],
+    kanaScript: 'kanji',
+  },
+  'n5-profesi-kanji-manusia': {
+    chips: ['人 orang', '父 ayah', '母 ibu', '子 anak'],
+    kanaScript: 'kanji',
+  },
 }
+
+const KEYWORD_TOPIC_RULES: Array<{ test: RegExp; chip: string; grammar?: boolean }> = [
+  { test: /partikel|kore|sore|are|\bwa\b|\bga\b|\bwo\b|\bni\b|\bde\b|\bno\b/i, chip: 'Partikel Inti N5', grammar: true },
+  { test: /bentuk[- ]?te|te-form|tekara|kudasai/i, chip: 'Pola Bentuk-TE', grammar: true },
+  { test: /bentuk[- ]?nai|larangan|naide/i, chip: 'Bentuk-NAI & Larangan', grammar: true },
+  { test: /lampau|bentuk[- ]?ta|mashita/i, chip: 'Bentuk Lampau-TA', grammar: true },
+  { test: /kamus|jisho|hobi|koto ga dekimasu|maeni|toki/i, chip: 'Bentuk Kamus & Klausa', grammar: true },
+  { test: /sifat[- ]?i|sifat[- ]?na|kute|naru/i, chip: 'Kata Sifat & Perubahan', grammar: true },
+  { test: /opini|kutipan|kasual|to omoimasu/i, chip: 'Opini & Gaya Santai', grammar: true },
+  { test: /keinginan|tujuan|tai|hoshii|ageru|morau/i, chip: 'Keinginan & Bantuan', grammar: true },
+  { test: /jam|hari|jadwal|waktu|minggu/i, chip: 'Waktu & Jadwal Harian' },
+  { test: /harga|angka|belanja|satuan|counters/i, chip: 'Angka & Satuan Hitung' },
+  { test: /keluarga|profesi|panggilan/i, chip: 'Keluarga & Sapaan Sopan' },
+  { test: /transportasi|kereta|rute|arah|jalan|lokasi/i, chip: 'Arah & Transportasi' },
+  { test: /kafe|makan|minum|menu|dapur/i, chip: 'Kuliner & Pesan Menu' },
+  { test: /cuaca|musim|suasana/i, chip: 'Cuaca & Perbandingan' },
+  { test: /tubuh|klinik|sakit|obat|kewajiban/i, chip: 'Kesehatan & Kewajiban', grammar: true },
+  { test: /simulasi|pemantapan|percakapan/i, chip: 'Latihan Terpadu 4 Pilar', grammar: true },
+]
 
 const resolveNodePreview = (node: PathMapNode): NodePreviewInfo => {
   const routeSlug = node.route.split('/learn/')[1]?.split('?')[0]?.trim() ?? ''
@@ -89,19 +129,38 @@ const resolveNodePreview = (node: PathMapNode): NodePreviewInfo => {
         ? 'hiragana'
         : undefined
 
-  const parenMatch = /\(([^()]{2,50})\)\s*$/.exec(node.title.trim())
+  const chips: string[] = []
+  let showGrammarLink = false
+
+  const parenMatch = /\(([^()]{2,55})\)/.exec(node.title)
   if (parenMatch) {
-    const tokens = parenMatch[1]
-      .split(/[,/•·]/)
-      .map((t) => t.trim())
-      .filter((t) => t.length > 0 && t.length <= 24)
-      .slice(0, 4)
-    if (tokens.length > 0) {
-      return { chips: tokens, kanaScript }
+    for (const rawTok of parenMatch[1].split(/[,/•·]/)) {
+      const clean = rawTok.trim()
+      if (clean.length > 0 && clean.length <= 26 && !chips.includes(clean)) {
+        chips.push(clean)
+      }
+      if (chips.length >= 4) break
     }
   }
 
-  return { chips: [], kanaScript }
+  for (const rule of KEYWORD_TOPIC_RULES) {
+    if (rule.test.test(lower)) {
+      if (rule.grammar) showGrammarLink = true
+      if (!chips.includes(rule.chip) && chips.length < 4) {
+        chips.push(rule.chip)
+      }
+    }
+  }
+
+  if (chips.length === 0 && !node.isChest && !node.isTrophy) {
+    chips.push('Membaca & Mendengar', 'Susun Kalimat & Bicara')
+  }
+
+  return {
+    chips,
+    kanaScript,
+    showGrammarLink: !kanaScript && showGrammarLink,
+  }
 }
 
 export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
@@ -223,7 +282,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
                 : node.subtitle}
         </p>
 
-        {canShowStudyPreview && (nodePreview.chips.length > 0 || nodePreview.kanaScript) && (
+        {canShowStudyPreview && (nodePreview.chips.length > 0 || nodePreview.kanaScript || nodePreview.showGrammarLink) && (
           <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-3 space-y-2">
             {nodePreview.chips.length > 0 && (
               <>
@@ -243,7 +302,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
                 </div>
               </>
             )}
-            {nodePreview.kanaScript && (
+            {nodePreview.kanaScript ? (
               <button
                 type="button"
                 onClick={() => {
@@ -261,7 +320,19 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
                     : 'Hiragana'}{' '}
                 →
               </button>
-            )}
+            ) : nodePreview.showGrammarLink ? (
+              <button
+                type="button"
+                onClick={() => {
+                  onClose()
+                  navigate('/grammar')
+                }}
+                className="text-[11px] font-brand font-black text-blue-700 hover:text-blue-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
+              >
+                <BookOpen weight="bold" className="w-3.5 h-3.5" />
+                Lihat Panduan Grammar →
+              </button>
+            ) : null}
           </div>
         )}
 

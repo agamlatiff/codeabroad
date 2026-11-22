@@ -578,6 +578,54 @@ func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 	return false
 }
 
+func isFillBlankTranslationSpoiler(translation string, correctAnswer string, content map[string]any) bool {
+	trimmedTrans := strings.TrimSpace(translation)
+	if trimmedTrans == "" {
+		return false
+	}
+	if correctAnswer != "" && strings.EqualFold(trimmedTrans, strings.TrimSpace(correctAnswer)) {
+		return true
+	}
+	if content != nil {
+		if rawOpts, ok := content["options"].([]any); ok {
+			for _, rawOpt := range rawOpts {
+				switch opt := rawOpt.(type) {
+				case string:
+					if strings.EqualFold(trimmedTrans, strings.TrimSpace(opt)) {
+						return true
+					}
+				case map[string]any:
+					if optText, ok := opt["text"].(string); ok && strings.EqualFold(trimmedTrans, strings.TrimSpace(optText)) {
+						return true
+					}
+					if optID, ok := opt["id"].(string); ok && strings.EqualFold(trimmedTrans, strings.TrimSpace(optID)) {
+						return true
+					}
+				}
+			}
+		} else if strOpts, ok := content["options"].([]string); ok {
+			for _, opt := range strOpts {
+				if strings.EqualFold(trimmedTrans, strings.TrimSpace(opt)) {
+					return true
+				}
+			}
+		}
+	}
+	if strings.HasPrefix(strings.ToLower(trimmedTrans), "huruf ") {
+		return true
+	}
+	if !strings.Contains(trimmedTrans, " ") && correctAnswer != "" {
+		transPhonetic := normalizeRomajiPhonetics(trimmedTrans)
+		ansPhonetic := normalizeRomajiPhonetics(correctAnswer)
+		if transPhonetic != "" && ansPhonetic != "" {
+			if transPhonetic == ansPhonetic || (len(transPhonetic) >= 4 && strings.HasPrefix(ansPhonetic, transPhonetic)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ExtractDiagnosticFeedback looks up targeted feedback in the diagnostic rubric for exact answers or distractor tokens
 func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer string) *string {
 	if len(rubric) == 0 {
