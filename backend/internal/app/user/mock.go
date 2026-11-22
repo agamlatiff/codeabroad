@@ -202,6 +202,61 @@ func (m *MockRepository) LogActivity(ctx context.Context, log *UserActivityLog) 
 	return nil
 }
 
+func (m *MockRepository) RecordXPActivity(
+	ctx context.Context,
+	userID string,
+	activityType string,
+	baseXP int,
+	applyXPBooster bool,
+	metadata map[string]any,
+) (int, int, int, int, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.LogActivityError != nil {
+		return 0, 0, 0, 0, m.LogActivityError
+	}
+	if m.UpdateGamificationErr != nil {
+		return 0, 0, 0, 0, m.UpdateGamificationErr
+	}
+	u, ok := m.Users[userID]
+	if !ok {
+		return 0, 0, 0, 0, ErrUserNotFound
+	}
+
+	now := time.Now().UTC()
+	xpAwarded := baseXP
+	boosterApplied := false
+	if applyXPBooster && u.XPBoosterExpiresAt != nil && u.XPBoosterExpiresAt.After(now) {
+		xpAwarded *= 2
+		boosterApplied = true
+	}
+
+	if newStreak, changed := progression.EvaluateDailyStreak(u.LastActiveAt, u.Streak, now); changed {
+		u.Streak = newStreak
+	}
+	u.XP += xpAwarded
+	if u.XP < 0 {
+		u.XP = 0
+	}
+	u.CurrentLevel = progression.CalculateLevel(u.XP)
+	u.LastActiveAt = &now
+
+	clonedMeta := make(map[string]any, len(metadata)+1)
+	for k, v := range metadata {
+		clonedMeta[k] = v
+	}
+	clonedMeta["xp_booster_applied"] = boosterApplied
+
+	m.ActivityLogs = append(m.ActivityLogs, UserActivityLog{
+		UserID:       userID,
+		ActivityType: activityType,
+		XPEarned:     xpAwarded,
+		Metadata:     clonedMeta,
+		CreatedAt:    now,
+	})
+	return xpAwarded, u.XP, u.CurrentLevel, u.Streak, nil
+}
+
 func (m *MockRepository) HasActivityInRange(ctx context.Context, userID string, startTime time.Time, endTime time.Time) (bool, error) {
 	m.mu.Lock()
 	defer m.mu.Unlock()

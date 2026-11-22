@@ -46,6 +46,7 @@ import {
   getLanguageEnrollmentsQueryKey,
   getDailyQuestsQueryKey,
   DAILY_VOCABULARIES_QUERY_KEY,
+  LEADERBOARD_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
 import { extractApiErrorMessage } from '@/shared/services/api'
@@ -297,7 +298,7 @@ export const useQuests = () => {
   })
 
   const examResultQuery = useQuery({
-    queryKey: [...EXAM_RESULT_QUERY_KEY, activeLevelId, userId],
+    queryKey: [...EXAM_RESULT_QUERY_KEY, userId, activeLevelId],
     queryFn: async ({ signal }) => {
       try {
         return await exerciseService.getExamResult(activeLevelId, { signal })
@@ -775,10 +776,12 @@ export const useQuests = () => {
   const invalidateGamificationCaches = useCallback(async () => {
     await Promise.all([
       queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, userId] }),
+      queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_BADGES_QUERY_KEY, userId] }),
       queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userId) }),
       queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(userId) }),
       queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(userId) }),
       queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(userId) }),
+      queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY }),
     ])
   }, [queryClient, userId])
 

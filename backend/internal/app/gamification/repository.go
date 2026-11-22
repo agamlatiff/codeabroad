@@ -564,11 +564,13 @@ func (r *PostgresRepository) ActivateShopItem(ctx context.Context, userID string
 	return &expiresUTC, nil
 }
 
-// GetBadges retrieves all registered achievement badges
+// GetBadges retrieves all registered earnable achievement badges
 func (r *PostgresRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, error) {
 	query := `
 		SELECT id, title, description, category, icon, xp_reward, created_at
 		FROM badge_definitions
+		WHERE id <> 'multilingual_explorer'
+		   OR (SELECT COUNT(*) FROM languages WHERE is_active = true) >= 2
 		ORDER BY id ASC
 	`
 	rows, err := r.db.Pool.Query(ctx, query)
@@ -735,6 +737,52 @@ func (r *PostgresRepository) GetDailyChestClaims(ctx context.Context, userID str
 	return claims, nil
 }
 
+func evaluateAndConsumeStreakTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID string,
+	currentStreak int,
+	lastActiveAt *time.Time,
+	now time.Time,
+) (int, error) {
+	var availableFreezes int
+	freezeErr := tx.QueryRow(
+		ctx,
+		`SELECT quantity FROM user_inventories WHERE user_id = $1::uuid AND item_id = 'streak-freeze' FOR UPDATE`,
+		userID,
+	).Scan(&availableFreezes)
+	if freezeErr != nil {
+		if errors.Is(freezeErr, pgx.ErrNoRows) {
+			availableFreezes = 0
+		} else {
+			return 0, fmt.Errorf("failed to inspect streak-freeze inventory: %w", freezeErr)
+		}
+	}
+
+	newStreak, streakChanged, freezesUsed := progression.EvaluateDailyStreakWithFreeze(lastActiveAt, currentStreak, availableFreezes, now)
+	if !streakChanged {
+		newStreak = currentStreak
+	}
+	if freezesUsed > 0 {
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE user_inventories SET quantity = quantity - $2, updated_at = NOW() WHERE user_id = $1::uuid AND item_id = 'streak-freeze' AND quantity >= $2`,
+			userID, freezesUsed,
+		); err != nil {
+			return 0, fmt.Errorf("failed to consume streak-freeze: %w", err)
+		}
+		if _, err := tx.Exec(
+			ctx,
+			`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+			 VALUES ($1::uuid, 'streak_freeze_consumed', 0, jsonb_build_object('freezes_used', $2::int), NOW())`,
+			userID, freezesUsed,
+		); err != nil {
+			return 0, fmt.Errorf("failed to log streak freeze consumption: %w", err)
+		}
+	}
+	return newStreak, nil
+}
+
 // ClaimDailyChest records a milestone chest reward and awards XP/gems atomically using Asia/Jakarta date
 // and ON CONFLICT DO NOTHING so duplicate daily claims cleanly return ErrChestAlreadyClaimed.
 func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, _ int) error {
@@ -747,22 +795,25 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 	}
 	defer progression.RollbackTx(ctx, tx, "gamification.ClaimDailyChest")
 
-	// Serialize concurrent chest claims for this user and verify daily quest completion tier in WIB
-	// using the exact same rotated daily_quest_templates selection as GetDailyQuests.
+	var currentXP, currentStreak int
+	var lastActive *time.Time
+	var dbNow time.Time
+	if err := tx.QueryRow(
+		ctx,
+		`SELECT xp, streak, last_active_at, NOW() FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`,
+		claim.UserID,
+	).Scan(&currentXP, &currentStreak, &lastActive, &dbNow); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return user.ErrUserNotFound
+		}
+		return fmt.Errorf("failed to lock user gamification for daily chest: %w", err)
+	}
+
+	// Verify daily quest completion tier in WIB using the exact same rotated daily_quest_templates selection as GetDailyQuests.
 	var qualifiedQuests int
 	prereqQuery := `
 		WITH ` + dailyQuestMetricsCTE + `,
-		locked_user AS (
-			SELECT xp FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE
-		),
-		selected_templates AS (
-			SELECT DISTINCT ON (t.slot_category)
-				t.id, t.code, t.slot_category, t.metric_type, t.target_value
-			FROM daily_quest_templates t
-			CROSS JOIN wib_day wd
-			WHERE t.is_active = true
-			ORDER BY t.slot_category, md5($1::text || ':' || t.code || ':' || wd.date_key) ASC, t.sort_order ASC
-		)
+		` + selectedDailyQuestTemplatesCTE + `
 		SELECT COALESCE(COUNT(*) FILTER (
 			WHERE (
 				CASE st.metric_type
@@ -781,16 +832,11 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 			)
 			OR (st.slot_category = 'flashcard' AND dm.legacy_vocab_claimed)
 		), 0)::int
-		FROM locked_user lu
-		LEFT JOIN selected_templates st ON true
+		FROM selected_templates st
 		CROSS JOIN wib_day wd
 		CROSS JOIN daily_metrics dm
-		GROUP BY lu.xp
 	`
 	if err := tx.QueryRow(ctx, prereqQuery, claim.UserID).Scan(&qualifiedQuests); err != nil {
-		if errors.Is(err, pgx.ErrNoRows) {
-			return user.ErrUserNotFound
-		}
 		return fmt.Errorf("failed to verify daily chest prerequisites: %w", err)
 	}
 	if qualifiedQuests < claim.Tier {
@@ -814,16 +860,28 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 		return fmt.Errorf("failed to record daily chest claim: %w", err)
 	}
 
+	newStreak, err := evaluateAndConsumeStreakTx(ctx, tx, claim.UserID, currentStreak, lastActive, dbNow)
+	if err != nil {
+		return err
+	}
+
+	newXP := currentXP + claim.XPAwarded
+	if newXP < 0 {
+		newXP = 0
+	}
+	newLevel := progression.CalculateLevel(newXP)
+
 	updateQuery := `
 		UPDATE user_gamification
-		SET xp = GREATEST(0, xp + $2),
-		    current_level = GREATEST(1, (GREATEST(0, xp + $2) / 100) + 1),
-		    gems = GREATEST(0, gems + $3),
+		SET xp = $2,
+		    current_level = $3,
+		    gems = GREATEST(0, gems + $4),
+		    streak = $5,
 		    last_active_at = NOW(),
 		    updated_at = NOW()
-		WHERE user_id = $1
+		WHERE user_id = $1::uuid
 	`
-	tag, err := tx.Exec(ctx, updateQuery, claim.UserID, claim.XPAwarded, claim.GemsAwarded)
+	tag, err := tx.Exec(ctx, updateQuery, claim.UserID, newXP, newLevel, claim.GemsAwarded, newStreak)
 	if err != nil {
 		return fmt.Errorf("failed to update gamification stats for chest: %w", err)
 	}
@@ -884,6 +942,17 @@ const dailyQuestMetricsCTE = `
 	)
 `
 
+const selectedDailyQuestTemplatesCTE = `
+	selected_templates AS (
+		SELECT DISTINCT ON (t.slot_category)
+			t.id, t.code, t.slot_category, t.title, t.chip_label, t.metric_type, t.target_value, t.xp_reward, t.route, t.icon_name
+		FROM daily_quest_templates t
+		CROSS JOIN wib_day wd
+		WHERE t.is_active = true
+		ORDER BY t.slot_category, md5($1::text || ':' || t.code || ':' || wd.date_key) ASC, t.sort_order ASC
+	)
+`
+
 // GetDailyQuests deterministically selects 3 daily rotated quests (1 per slot) for today's WIB date and computes live progress.
 func (r *PostgresRepository) GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error) {
 	if err := validateUserUUID(userID); err != nil {
@@ -892,14 +961,7 @@ func (r *PostgresRepository) GetDailyQuests(ctx context.Context, userID string) 
 
 	query := `
 		WITH ` + dailyQuestMetricsCTE + `,
-		selected_templates AS (
-			SELECT DISTINCT ON (t.slot_category)
-				t.id, t.code, t.slot_category, t.title, t.chip_label, t.metric_type, t.target_value, t.xp_reward, t.route, t.icon_name
-			FROM daily_quest_templates t
-			CROSS JOIN wib_day wd
-			WHERE t.is_active = true
-			ORDER BY t.slot_category, md5($1::text || ':' || t.code || ':' || wd.date_key) ASC, t.sort_order ASC
-		)
+		` + selectedDailyQuestTemplatesCTE + `
 		SELECT
 			st.id::text,
 			st.code,
@@ -1000,13 +1062,14 @@ func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string,
 	var currentXP, currentStreak int
 	var lastActive *time.Time
 	var wibDate string
+	var dbNow time.Time
 	lockQuery := `
-		SELECT xp, streak, last_active_at, TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD')
+		SELECT xp, streak, last_active_at, TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD'), NOW()
 		FROM user_gamification
 		WHERE user_id = $1::uuid
 		FOR UPDATE
 	`
-	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &currentStreak, &lastActive, &wibDate); err != nil {
+	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &currentStreak, &lastActive, &wibDate, &dbNow); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, user.ErrUserNotFound
 		}
@@ -1014,14 +1077,15 @@ func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string,
 	}
 
 	metricQuery := `
-		WITH ` + dailyQuestMetricsCTE + `
+		WITH ` + dailyQuestMetricsCTE + `,
+		` + selectedDailyQuestTemplatesCTE + `
 		SELECT
-			t.id::text,
-			t.code,
-			t.slot_category,
-			t.target_value,
-			t.xp_reward,
-			CASE t.metric_type
+			st.id::text,
+			st.code,
+			st.slot_category,
+			st.target_value,
+			st.xp_reward,
+			CASE st.metric_type
 				WHEN 'lessons_completed' THEN dm.lessons_completed
 				WHEN 'high_accuracy_lesson' THEN dm.high_accuracy_lesson
 				WHEN 'flashcards_reviewed' THEN dm.flashcards_reviewed
@@ -1031,9 +1095,9 @@ func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string,
 				ELSE 0
 			END AS raw_progress,
 			dm.legacy_vocab_claimed
-		FROM daily_quest_templates t
+		FROM selected_templates st
 		CROSS JOIN daily_metrics dm
-		WHERE t.id = $2::uuid AND t.is_active = true
+		WHERE st.id = $2::uuid
 	`
 	var tmplID, code, slotCategory string
 	var targetValue, xpReward, rawProgress int
@@ -1068,43 +1132,11 @@ func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string,
 		return nil, fmt.Errorf("failed to insert daily quest claim: %w", err)
 	}
 
-	now := time.Now().UTC()
-	var availableFreezes int
-	freezeErr := tx.QueryRow(
-		ctx,
-		`SELECT quantity FROM user_inventories WHERE user_id = $1::uuid AND item_id = 'streak-freeze' FOR UPDATE`,
-		userID,
-	).Scan(&availableFreezes)
-	if freezeErr != nil {
-		if errors.Is(freezeErr, pgx.ErrNoRows) {
-			availableFreezes = 0
-		} else {
-			return nil, fmt.Errorf("failed to inspect streak-freeze inventory: %w", freezeErr)
-		}
-	}
-
 	newXP := currentXP + xpReward
 	newLevel := progression.CalculateLevel(newXP)
-	newStreak, streakChanged, freezesUsed := progression.EvaluateDailyStreakWithFreeze(lastActive, currentStreak, availableFreezes, now)
-	if !streakChanged {
-		newStreak = currentStreak
-	}
-	if freezesUsed > 0 {
-		if _, err := tx.Exec(
-			ctx,
-			`UPDATE user_inventories SET quantity = quantity - $2, updated_at = NOW() WHERE user_id = $1::uuid AND item_id = 'streak-freeze' AND quantity >= $2`,
-			userID, freezesUsed,
-		); err != nil {
-			return nil, fmt.Errorf("failed to consume streak-freeze: %w", err)
-		}
-		if _, err := tx.Exec(
-			ctx,
-			`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-			 VALUES ($1::uuid, 'streak_freeze_consumed', 0, jsonb_build_object('freezes_used', $2::int), NOW())`,
-			userID, freezesUsed,
-		); err != nil {
-			return nil, fmt.Errorf("failed to log streak freeze consumption: %w", err)
-		}
+	newStreak, err := evaluateAndConsumeStreakTx(ctx, tx, userID, currentStreak, lastActive, dbNow)
+	if err != nil {
+		return nil, err
 	}
 
 	updateStatsQuery := `

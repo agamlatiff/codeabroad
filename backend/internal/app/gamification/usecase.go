@@ -106,10 +106,36 @@ func (u *usecase) ListBadges(ctx context.Context, userID string) ([]BadgeDefinit
 		return nil, nil, fmt.Errorf("failed to query user badges: %w", err)
 	}
 
+	seen := make(map[string]bool, len(allBadges))
+	for _, b := range allBadges {
+		seen[b.ID] = true
+	}
+	for _, ub := range userBadges {
+		if ub.Badge != nil && !seen[ub.Badge.ID] {
+			allBadges = append(allBadges, *ub.Badge)
+			seen[ub.Badge.ID] = true
+		}
+	}
+
 	return allBadges, userBadges, nil
 }
 
 var wibLocation = time.FixedZone("WIB", 7*60*60)
+
+func (u *usecase) evaluateStreakBadges(ctx context.Context, userID string, streak int, level int) bool {
+	newlyAwarded := false
+	if streak >= 7 {
+		if ub, err := u.gamificationRepo.AwardBadge(ctx, userID, "streak_7", level); err == nil && ub != nil && ub.NewlyAwarded {
+			newlyAwarded = true
+		}
+	}
+	if streak >= 30 {
+		if ub, err := u.gamificationRepo.AwardBadge(ctx, userID, "streak_30", level); err == nil && ub != nil && ub.NewlyAwarded {
+			newlyAwarded = true
+		}
+	}
+	return newlyAwarded
+}
 
 // ClaimDailyChest awards gems and XP for unlocking a milestone chest
 func (u *usecase) ClaimDailyChest(ctx context.Context, userID string, tier int) (*DailyChestClaim, *GamificationStatus, error) {
@@ -139,6 +165,12 @@ func (u *usecase) ClaimDailyChest(ctx context.Context, userID string, tier int) 
 		return nil, nil, fmt.Errorf("failed to fetch updated status: %w", err)
 	}
 
+	if u.evaluateStreakBadges(ctx, userID, status.Streak, status.CurrentLevel) {
+		if refreshed, refErr := u.gamificationRepo.GetStatus(ctx, userID); refErr == nil {
+			status = refreshed
+		}
+	}
+
 	return claim, status, nil
 }
 
@@ -166,7 +198,14 @@ func (u *usecase) ClaimDailyQuest(ctx context.Context, userID string, questID st
 	if trimmedID == "" {
 		return nil, apperror.ErrBadRequest
 	}
-	return u.gamificationRepo.ClaimDailyQuest(ctx, userID, trimmedID)
+	res, err := u.gamificationRepo.ClaimDailyQuest(ctx, userID, trimmedID)
+	if err != nil {
+		return nil, err
+	}
+	if res != nil {
+		u.evaluateStreakBadges(ctx, userID, res.Streak, res.CurrentLevel)
+	}
+	return res, nil
 }
 
 // ClaimMonthlyBadge verifies the monthly goal threshold and awards the monthly challenge honor badge & +150 XP.

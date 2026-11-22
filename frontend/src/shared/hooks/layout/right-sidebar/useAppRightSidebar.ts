@@ -6,6 +6,7 @@ import { triggerHaptic } from "@/shared/utils/haptics"
 import { audioEngine } from "@/shared/utils/audio"
 import {
   gamificationService,
+  GAMIFICATION_BADGES_QUERY_KEY,
   GAMIFICATION_STATUS_QUERY_KEY,
 } from '@/features/gamification/services/gamificationService'
 import {
@@ -13,6 +14,7 @@ import {
   getActivityLogsQueryKey,
   getDailyRewardsQueryKey,
   getDailyQuestsQueryKey,
+  LEADERBOARD_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
 import { GOLDEN_CHEST_REWARD_XP } from './useQuestsSection'
 
@@ -89,6 +91,8 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
       void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: GAMIFICATION_STATUS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: GAMIFICATION_BADGES_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
     },
     onError: () => {
       triggerHaptic('error')
@@ -109,9 +113,11 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
       })
       void queryClient.invalidateQueries({ queryKey: getDailyQuestsQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: GAMIFICATION_STATUS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: GAMIFICATION_BADGES_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(user?.id) })
       void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(user?.id) })
+      void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
     },
     onError: () => {
       triggerHaptic('error')

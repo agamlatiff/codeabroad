@@ -252,3 +252,65 @@ func TestClaimMonthlyBadge_ThresholdAndConflict(t *testing.T) {
 		t.Fatalf("expected ErrMonthlyBadgeAlreadyClaimed on duplicate claim, got %v", err)
 	}
 }
+
+func TestListBadges_RetainsEarnedBadgeOutsideDefaultCatalog(t *testing.T) {
+	repo := setupMockGamificationRepo()
+	repo.Badges["first_step"] = &gamification.BadgeDefinition{
+		ID:       "first_step",
+		Title:    "Langkah Pertama",
+		XPReward: 50,
+	}
+	// Simulate an already-earned badge whose catalog entry was filtered out of GetBadges()
+	repo.UserBadges["user-1"] = []gamification.UserBadge{
+		{
+			ID:       "ub-legacy",
+			UserID:   "user-1",
+			BadgeKey: "multilingual_explorer",
+			Badge: &gamification.BadgeDefinition{
+				ID:       "multilingual_explorer",
+				Title:    "Penjelajah Multibahasa",
+				XPReward: 50,
+			},
+		},
+	}
+
+	uc := gamification.NewUsecase(repo)
+	catalog, userBadges, err := uc.ListBadges(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("expected ListBadges to succeed, got %v", err)
+	}
+	if len(catalog) != 2 || len(userBadges) != 1 {
+		t.Fatalf("expected 2 catalog entries (retained earned badge) and 1 user badge, got catalog=%d user=%d", len(catalog), len(userBadges))
+	}
+}
+
+func TestClaimDailyQuestAndChest_UnlocksStreakBadges(t *testing.T) {
+	repo := setupMockGamificationRepo()
+	repo.Stats["user-1"].Streak = 7
+	repo.Badges["streak_7"] = &gamification.BadgeDefinition{ID: "streak_7", Title: "Konsisten 7 Hari", XPReward: 50}
+	repo.Badges["streak_30"] = &gamification.BadgeDefinition{ID: "streak_30", Title: "Dedikasi 30 Hari", XPReward: 150}
+	repo.DailyQuests["user-1"] = []gamification.DailyQuestItem{
+		{ID: "q-1", Title: "Tuntaskan 1 Pelajaran", XPReward: 20, IsCompleted: true},
+	}
+
+	uc := gamification.NewUsecase(repo)
+	res, err := uc.ClaimDailyQuest(context.Background(), "user-1", "q-1")
+	if err != nil {
+		t.Fatalf("expected ClaimDailyQuest to succeed, got %v", err)
+	}
+	if res.XPAwarded != 20 {
+		t.Fatalf("expected 20 XP from quest, got %d", res.XPAwarded)
+	}
+	if len(repo.UserBadges["user-1"]) != 1 || repo.UserBadges["user-1"][0].BadgeKey != "streak_7" {
+		t.Fatalf("expected streak_7 badge unlocked via ClaimDailyQuest, got %+v", repo.UserBadges["user-1"])
+	}
+
+	repo.Stats["user-1"].Streak = 30
+	_, status, err := uc.ClaimDailyChest(context.Background(), "user-1", 1)
+	if err != nil {
+		t.Fatalf("expected ClaimDailyChest to succeed, got %v", err)
+	}
+	if len(status.Badges) != 2 {
+		t.Fatalf("expected 2 badges including streak_30 in refreshed status, got %d (%+v)", len(status.Badges), status.Badges)
+	}
+}

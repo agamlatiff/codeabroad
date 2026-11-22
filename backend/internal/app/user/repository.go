@@ -421,6 +421,99 @@ func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityL
 	return nil
 }
 
+// RecordXPActivity atomically locks user_gamification, applies 2x XP booster if active,
+// evaluates daily streak (with Streak Freeze consumption), updates XP/level/streak, and logs the activity.
+func (r *PostgresRepository) RecordXPActivity(
+	ctx context.Context,
+	userID string,
+	activityType string,
+	baseXP int,
+	applyXPBooster bool,
+	metadata map[string]any,
+) (xpAwarded int, newXP int, newLevel int, newStreak int, err error) {
+	if err = apperror.ValidateUserUUID(userID); err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to begin record xp activity tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "user.RecordXPActivity")
+
+	var currentXP, currentStreak int
+	var lastActiveAt, boosterExpiresAt *time.Time
+	var dbNow time.Time
+	err = tx.QueryRow(
+		ctx,
+		`SELECT xp, streak, last_active_at, xp_booster_expires_at, NOW() FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`,
+		userID,
+	).Scan(&currentXP, &currentStreak, &lastActiveAt, &boosterExpiresAt, &dbNow)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return 0, 0, 0, 0, ErrUserNotFound
+		}
+		return 0, 0, 0, 0, fmt.Errorf("failed to lock user gamification for xp activity: %w", err)
+	}
+
+	xpAwarded = baseXP
+	boosterApplied := false
+	if applyXPBooster && boosterExpiresAt != nil && boosterExpiresAt.After(dbNow) {
+		xpAwarded *= 2
+		boosterApplied = true
+	}
+
+	newStreak, err = consumeStreakFreezeAndComputeTx(ctx, tx, userID, currentStreak, lastActiveAt, dbNow)
+	if err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	newXP = currentXP + xpAwarded
+	if newXP < 0 {
+		newXP = 0
+	}
+	newLevel = progression.CalculateLevel(newXP)
+
+	if _, err = tx.Exec(
+		ctx,
+		`UPDATE user_gamification
+		 SET xp = $2,
+		     current_level = $3,
+		     streak = $4,
+		     last_active_at = NOW(),
+		     updated_at = NOW()
+		 WHERE user_id = $1::uuid`,
+		userID, newXP, newLevel, newStreak,
+	); err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to update user gamification atomically: %w", err)
+	}
+
+	clonedMeta := make(map[string]any, len(metadata)+1)
+	for k, v := range metadata {
+		clonedMeta[k] = v
+	}
+	clonedMeta["xp_booster_applied"] = boosterApplied
+
+	metaJSON, marshalErr := json.Marshal(clonedMeta)
+	if marshalErr != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to marshal xp activity metadata: %w", marshalErr)
+	}
+
+	if _, err = tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		 VALUES ($1::uuid, $2, $3, $4, NOW())`,
+		userID, activityType, xpAwarded, metaJSON,
+	); err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to insert xp activity log: %w", err)
+	}
+
+	if err = tx.Commit(ctx); err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to commit record xp activity tx: %w", err)
+	}
+	return xpAwarded, newXP, newLevel, newStreak, nil
+}
+
 // HasActivityInRange checks if the user has any logged activity within [startTime, endTime) using SARGable index scan
 func (r *PostgresRepository) HasActivityInRange(
 	ctx context.Context,
