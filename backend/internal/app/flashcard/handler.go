@@ -57,6 +57,37 @@ func (h *Handler) ListDecks(c *gin.Context) {
 
 	lang := c.Query("lang")
 	level := c.Query("level")
+
+	isPaginated := c.Query("paginated") == "1" ||
+		c.Query("paginated") == "true" ||
+		c.Query("cursor") != "" ||
+		c.Query("limit") != "" ||
+		c.Query("category") != "" ||
+		c.Query("q") != ""
+
+	if isPaginated {
+		limit := 0
+		if rawLimit := c.Query("limit"); rawLimit != "" {
+			if parsed, err := strconv.Atoi(rawLimit); err == nil {
+				limit = parsed
+			}
+		}
+		page, err := h.usecase.ListDecksPaginated(c.Request.Context(), userID, DeckListFilter{
+			LanguageCode: lang,
+			JLPTLevel:    level,
+			Category:     c.Query("category"),
+			Search:       c.Query("q"),
+			Cursor:       c.Query("cursor"),
+			Limit:        limit,
+		})
+		if err != nil {
+			response.Error(c, err)
+			return
+		}
+		response.Success(c, http.StatusOK, "flashcard decks page retrieved successfully", page)
+		return
+	}
+
 	decks, err := h.usecase.ListDecks(c.Request.Context(), userID, lang, level)
 	if err != nil {
 		response.Error(c, err)

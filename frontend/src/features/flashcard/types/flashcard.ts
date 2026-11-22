@@ -93,3 +93,20 @@ export interface FlashcardReviewResponse {
   next_review_at: string
   xp_awarded: number
 }
+
+export interface PaginatedFlashcardDecks {
+  items: FlashcardDeck[]
+  next_cursor: string | null
+  has_more: boolean
+  total_count: number
+  level_counts: Record<string, number>
+}
+
+export interface FlashcardDeckPageParams {
+  lang?: string
+  level?: string
+  category?: string
+  q?: string
+  cursor?: string
+  limit?: number
+}

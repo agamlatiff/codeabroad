@@ -120,7 +120,7 @@ func (r *postgresRepository) ListDecks(ctx context.Context, userID string, langu
 		WHERE d.language_code = $2
 		  AND ($3 = '' OR UPPER(d.jlpt_level) = UPPER($3))
 		GROUP BY d.id
-		ORDER BY d.sort_order ASC, d.created_at ASC
+		ORDER BY d.sort_order ASC, d.id ASC
 	`
 
 	rows, err := r.db.Pool.Query(ctx, query, userID, languageCode, jlptLevel)
@@ -141,6 +141,142 @@ func (r *postgresRepository) ListDecks(ctx context.Context, userID string, langu
 		return nil, fmt.Errorf("iterate flashcard decks: %w", err)
 	}
 	return decks, nil
+}
+
+func appendDeckCategoryAndSearchClauses(clauses []string, args []any, filter DeckListFilter) ([]string, []any) {
+	if filter.Category != "" {
+		if filter.Category == "vocab" {
+			clauses = append(clauses, "LOWER(d.category) NOT IN ('hiragana', 'katakana', 'kanji')")
+		} else {
+			args = append(args, filter.Category)
+			clauses = append(clauses, fmt.Sprintf("LOWER(d.category) = $%d", len(args)))
+		}
+	}
+	if filter.Search != "" {
+		args = append(args, "%"+filter.Search+"%")
+		idx := len(args)
+		clauses = append(
+			clauses,
+			fmt.Sprintf("(d.title ILIKE $%d OR d.description ILIKE $%d OR d.jlpt_level ILIKE $%d)", idx, idx, idx),
+		)
+	}
+	return clauses, args
+}
+
+func (r *postgresRepository) queryDeckLevelCounts(ctx context.Context, filter DeckListFilter) (map[string]int, error) {
+	counts := map[string]int{
+		"ALL": 0,
+		"N5":  0,
+		"N4":  0,
+		"N3":  0,
+		"N2":  0,
+		"N1":  0,
+	}
+
+	clauses := []string{"d.language_code = $1"}
+	args := []any{filter.LanguageCode}
+	clauses, args = appendDeckCategoryAndSearchClauses(clauses, args, filter)
+
+	query := `
+		SELECT UPPER(d.jlpt_level) AS lvl, COUNT(*)::int AS cnt
+		FROM flashcard_decks d
+		WHERE ` + strings.Join(clauses, " AND ") + `
+		GROUP BY UPPER(d.jlpt_level)
+	`
+
+	rows, err := r.db.Pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("count flashcard decks by level: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var lvl string
+		var cnt int
+		if err := rows.Scan(&lvl, &cnt); err != nil {
+			return nil, fmt.Errorf("scan flashcard deck level count: %w", err)
+		}
+		counts["ALL"] += cnt
+		if _, ok := counts[lvl]; ok {
+			counts[lvl] = cnt
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate flashcard deck level counts: %w", err)
+	}
+	return counts, nil
+}
+
+func (r *postgresRepository) ListDecksPaginated(ctx context.Context, userID string, filter DeckListFilter) (*PaginatedDecksResponse, error) {
+	levelCounts, err := r.queryDeckLevelCounts(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+
+	totalCount := levelCounts["ALL"]
+	if filter.JLPTLevel != "" {
+		totalCount = levelCounts[strings.ToUpper(filter.JLPTLevel)]
+	}
+
+	clauses := []string{"d.language_code = $2"}
+	args := []any{userID, filter.LanguageCode}
+
+	if filter.JLPTLevel != "" {
+		args = append(args, strings.ToUpper(filter.JLPTLevel))
+		clauses = append(clauses, fmt.Sprintf("d.jlpt_level = $%d", len(args)))
+	}
+	clauses, args = appendDeckCategoryAndSearchClauses(clauses, args, filter)
+
+	if filter.HasCursor {
+		args = append(args, filter.CursorSort, filter.CursorID)
+		sortIdx := len(args) - 1
+		idIdx := len(args)
+		clauses = append(clauses, fmt.Sprintf("(d.sort_order, d.id) > ($%d, $%d::uuid)", sortIdx, idIdx))
+	}
+
+	args = append(args, filter.Limit+1)
+	limitIdx := len(args)
+
+	query := deckSelectFromClause + `
+		WHERE ` + strings.Join(clauses, " AND ") + `
+		GROUP BY d.id
+		ORDER BY d.sort_order ASC, d.id ASC
+		LIMIT $` + fmt.Sprintf("%d", limitIdx)
+
+	rows, err := r.db.Pool.Query(ctx, query, args...)
+	if err != nil {
+		return nil, fmt.Errorf("list paginated flashcard decks: %w", err)
+	}
+	defer rows.Close()
+
+	decks := make([]Deck, 0, filter.Limit)
+	for rows.Next() {
+		d, err := scanDeckRow(rows)
+		if err != nil {
+			return nil, fmt.Errorf("scan paginated flashcard deck: %w", err)
+		}
+		decks = append(decks, d)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("iterate paginated flashcard decks: %w", err)
+	}
+
+	var nextCursor *string
+	hasMore := len(decks) > filter.Limit
+	if hasMore {
+		decks = decks[:filter.Limit]
+		last := decks[len(decks)-1]
+		encoded := EncodeDeckCursor(last.SortOrder, last.ID)
+		nextCursor = &encoded
+	}
+
+	return &PaginatedDecksResponse{
+		Items:       decks,
+		NextCursor:  nextCursor,
+		HasMore:     hasMore,
+		TotalCount:  totalCount,
+		LevelCounts: levelCounts,
+	}, nil
 }
 
 func (r *postgresRepository) resolveDeckUUID(ctx context.Context, deckIDOrSlug string) (string, error) {

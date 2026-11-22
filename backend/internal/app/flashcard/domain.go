@@ -2,8 +2,11 @@ package flashcard
 
 import (
 	"context"
+	"encoding/base64"
+	"fmt"
 	"math"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +27,7 @@ var (
 	ErrDeckNotFound         = apperror.NewNotFoundError("FLASHCARD_DECK_NOT_FOUND", "dek flashcard tidak ditemukan")
 	ErrCardNotFound         = apperror.NewNotFoundError("FLASHCARD_CARD_NOT_FOUND", "kartu flashcard tidak ditemukan")
 	ErrInvalidQualityRating = apperror.NewBadRequestError("INVALID_QUALITY_RATING", "rating ingatan harus antara 0 sampai 5", nil)
+	ErrInvalidCursor        = apperror.NewBadRequestError("INVALID_FLASHCARD_CURSOR", "cursor halaman flashcard tidak valid", nil)
 )
 
 // SampleCard represents a compact preview card bundled with a flashcard deck for fanned UI previews.
@@ -199,9 +203,59 @@ func CalculateSM2(quality int, prevReps int, prevInterval int, prevEase float64,
 	}
 }
 
+// DeckListFilter encapsulates server-side filter & cursor pagination parameters for flashcard decks.
+type DeckListFilter struct {
+	LanguageCode string
+	JLPTLevel    string
+	Category     string
+	Search       string
+	Cursor       string
+	CursorSort   int
+	CursorID     string
+	HasCursor    bool
+	Limit        int
+}
+
+// PaginatedDecksResponse returns a keyset-paginated slice of flashcard decks with level tab counts.
+type PaginatedDecksResponse struct {
+	Items       []Deck         `json:"items"`
+	NextCursor  *string        `json:"next_cursor"`
+	HasMore     bool           `json:"has_more"`
+	TotalCount  int            `json:"total_count"`
+	LevelCounts map[string]int `json:"level_counts"`
+}
+
+// EncodeDeckCursor encodes (sort_order, id) into an opaque URL-safe base64 cursor.
+func EncodeDeckCursor(sortOrder int, id string) string {
+	raw := fmt.Sprintf("%d:%s", sortOrder, strings.TrimSpace(id))
+	return base64.RawURLEncoding.EncodeToString([]byte(raw))
+}
+
+// DecodeDeckCursor decodes an opaque URL-safe base64 cursor into (sort_order, id).
+func DecodeDeckCursor(cursor string) (int, string, error) {
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimSpace(cursor))
+	if err != nil {
+		return 0, "", ErrInvalidCursor
+	}
+	parts := strings.SplitN(string(decoded), ":", 2)
+	if len(parts) != 2 || strings.TrimSpace(parts[1]) == "" {
+		return 0, "", ErrInvalidCursor
+	}
+	sortOrder, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, "", ErrInvalidCursor
+	}
+	id := strings.TrimSpace(parts[1])
+	if !apperror.IsValidUUID(id) {
+		return 0, "", ErrInvalidCursor
+	}
+	return sortOrder, id, nil
+}
+
 // Repository defines persistence operations for flashcard decks, cards, and user progress.
 type Repository interface {
 	ListDecks(ctx context.Context, userID string, languageCode string, jlptLevel string) ([]Deck, error)
+	ListDecksPaginated(ctx context.Context, userID string, filter DeckListFilter) (*PaginatedDecksResponse, error)
 	GetDeckWithCards(ctx context.Context, userID string, deckID string) (*DeckDetailResponse, error)
 	ListDueCards(ctx context.Context, userID string, languageCode string, limit int) (*DueQueueResponse, error)
 	CardExists(ctx context.Context, cardID string) (bool, error)
@@ -212,6 +266,7 @@ type Repository interface {
 // Usecase defines business operations for the hybrid flashcard feature.
 type Usecase interface {
 	ListDecks(ctx context.Context, userID string, languageCode string, jlptLevel string) ([]Deck, error)
+	ListDecksPaginated(ctx context.Context, userID string, filter DeckListFilter) (*PaginatedDecksResponse, error)
 	GetDeck(ctx context.Context, userID string, deckID string) (*DeckDetailResponse, error)
 	GetDueQueue(ctx context.Context, userID string, languageCode string, limit int) (*DueQueueResponse, error)
 	ReviewCard(ctx context.Context, userID string, cardID string, quality int) (*ReviewCardResponse, error)

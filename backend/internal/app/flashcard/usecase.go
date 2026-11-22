@@ -11,9 +11,11 @@ import (
 )
 
 const (
-	defaultLanguageCode = "ja"
-	defaultDueLimit     = 20
-	maxDueLimit         = 50
+	defaultLanguageCode  = "ja"
+	defaultDueLimit      = 20
+	maxDueLimit          = 50
+	defaultDeckPageLimit = 12
+	maxDeckPageLimit     = 30
 )
 
 type usecase struct {
@@ -45,11 +47,70 @@ func normalizeJLPTLevelFilter(level string) string {
 	return trimmed
 }
 
+func normalizeCategoryFilter(category string) string {
+	trimmed := strings.ToLower(strings.TrimSpace(category))
+	if trimmed == "" || trimmed == "all" || trimmed == "semua" {
+		return ""
+	}
+	return trimmed
+}
+
 func (u *usecase) ListDecks(ctx context.Context, userID string, languageCode string, jlptLevel string) ([]Deck, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
 	}
 	return u.repo.ListDecks(ctx, userID, normalizeLanguageCode(languageCode), normalizeJLPTLevelFilter(jlptLevel))
+}
+
+func (u *usecase) ListDecksPaginated(ctx context.Context, userID string, filter DeckListFilter) (*PaginatedDecksResponse, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+
+	limit := filter.Limit
+	if limit <= 0 {
+		limit = defaultDeckPageLimit
+	} else if limit > maxDeckPageLimit {
+		limit = maxDeckPageLimit
+	}
+
+	normalized := DeckListFilter{
+		LanguageCode: normalizeLanguageCode(filter.LanguageCode),
+		JLPTLevel:    normalizeJLPTLevelFilter(filter.JLPTLevel),
+		Category:     normalizeCategoryFilter(filter.Category),
+		Search:       strings.TrimSpace(filter.Search),
+		Cursor:       strings.TrimSpace(filter.Cursor),
+		Limit:        limit,
+	}
+
+	if normalized.Cursor != "" {
+		sortOrder, id, err := DecodeDeckCursor(normalized.Cursor)
+		if err != nil {
+			return nil, err
+		}
+		normalized.CursorSort = sortOrder
+		normalized.CursorID = id
+		normalized.HasCursor = true
+	}
+
+	res, err := u.repo.ListDecksPaginated(ctx, userID, normalized)
+	if err != nil {
+		return nil, err
+	}
+	if res.Items == nil {
+		res.Items = []Deck{}
+	}
+	if res.LevelCounts == nil {
+		res.LevelCounts = map[string]int{
+			"ALL": 0,
+			"N5":  0,
+			"N4":  0,
+			"N3":  0,
+			"N2":  0,
+			"N1":  0,
+		}
+	}
+	return res, nil
 }
 
 func (u *usecase) GetDeck(ctx context.Context, userID string, deckID string) (*DeckDetailResponse, error) {
