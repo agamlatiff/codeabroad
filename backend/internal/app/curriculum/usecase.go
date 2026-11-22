@@ -325,6 +325,10 @@ type grammarProgressRepository interface {
 	RecordGrammarCheck(ctx context.Context, userID string, grammarPointIDOrCode string, correctCount int, totalQuestions int) (*SubmitGrammarCheckResponse, error)
 }
 
+type rawLessonExerciseReader interface {
+	GetRawExercisesByLessonID(ctx context.Context, lessonID string) ([]exercise.Exercise, error)
+}
+
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
 func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error) {
 	if userID == "" {
@@ -379,6 +383,12 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			if !isCheckpointLessonSlug(lesson.Slug) {
+				if rawReader, ok := u.exerciseRepo.(rawLessonExerciseReader); ok {
+					exercises, exErr = rawReader.GetRawExercisesByLessonID(ctx, canonicalLessonID)
+					return
+				}
+			}
 			exercises, exErr = u.exerciseRepo.GetExercisesByLessonID(ctx, canonicalLessonID)
 		}()
 	}

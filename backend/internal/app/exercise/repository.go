@@ -382,6 +382,22 @@ func (r *PostgresRepository) GetExercisesByLessonID(ctx context.Context, lessonI
 	return scanSanitizedExerciseRows(rows, 10, "exercise")
 }
 
+// GetRawExercisesByLessonID retrieves all exercises for a lesson including answer keys
+// strictly for server-side study card & hint generation (callers must sanitize before returning).
+func (r *PostgresRepository) GetRawExercisesByLessonID(ctx context.Context, lessonID string) ([]Exercise, error) {
+	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
+		return nil, err
+	}
+	query := `SELECT ` + exerciseSelectColumns + ` FROM exercises WHERE lesson_id = NULLIF($1, '')::uuid ORDER BY order_index ASC, id ASC`
+	rows, err := r.db.Pool.Query(ctx, query, lessonID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to query raw exercises by lesson id: %w", err)
+	}
+	defer rows.Close()
+
+	return scanExerciseRows(rows, 10, "raw exercise")
+}
+
 // GetExerciseByID retrieves a single exercise by UUID
 func (r *PostgresRepository) GetExerciseByID(ctx context.Context, id string) (*Exercise, error) {
 	if err := apperror.ValidateEntityUUID(id); err != nil {
