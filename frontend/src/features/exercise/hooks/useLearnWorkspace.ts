@@ -258,13 +258,17 @@ export const useLearnWorkspace = (id?: string) => {
     if (key) sessionStorage.removeItem(key)
   }, [id, resetInputs, stopMediaSession, userId])
 
-  const handlePlayAudio = useCallback(() => {
-    if (!parsedContent) return
-    playExerciseAudio(
-      parsedContent.audioUrl,
-      resolveExerciseSpokenText(parsedContent, currentExercise?.prompt)
-    )
-  }, [currentExercise?.prompt, parsedContent, playExerciseAudio])
+  const handlePlayAudio = useCallback(
+    (rate?: number) => {
+      if (!parsedContent) return
+      playExerciseAudio(
+        parsedContent.audioUrl,
+        resolveExerciseSpokenText(parsedContent, currentExercise?.prompt),
+        rate
+      )
+    },
+    [currentExercise?.prompt, parsedContent, playExerciseAudio]
+  )
 
   const handleCheckAnswer = useCallback(async () => {
     if (

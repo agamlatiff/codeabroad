@@ -64,7 +64,7 @@ const readChoiceOptions = (
   return []
 }
 
-const shuffleDeterministically = <T>(
+export const shuffleDeterministically = <T>(
   items: T[],
   seedKey: string,
   getKey: (item: T) => string
@@ -95,10 +95,10 @@ const shuffleDeterministically = <T>(
   return result
 }
 
-const shuffleTokensDeterministically = (tokens: string[], seedKey: string): string[] =>
+export const shuffleTokensDeterministically = (tokens: string[], seedKey: string): string[] =>
   shuffleDeterministically(tokens, seedKey, (token) => token)
 
-const shuffleChoiceOptionsDeterministically = (
+export const shuffleChoiceOptionsDeterministically = (
   options: ExerciseChoiceOption[],
   seedKey: string
 ): ExerciseChoiceOption[] =>
@@ -117,8 +117,8 @@ export const parseExerciseContent = (exercise: CurriculumExercise): ParsedExerci
     sentenceTemplate: readString(raw, 'sentence_template'),
     passage: readString(raw, 'passage'),
     translation: readString(raw, 'translation'),
-    displayText: readString(raw, 'display_text'),
-    audioText: readString(raw, 'audio_text'),
+    displayText: readString(raw, 'display_text') ?? readString(raw, 'phrase'),
+    audioText: readString(raw, 'audio_text') ?? readString(raw, 'phrase'),
     audioUrl: exercise.media_url ?? readString(raw, 'audio_url') ?? readString(raw, 'media_url'),
     romaji: readString(raw, 'romaji'),
     phoneticBreakdown: readStringArray(raw, 'phonetic_breakdown'),

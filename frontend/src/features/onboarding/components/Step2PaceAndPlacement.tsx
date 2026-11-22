@@ -64,7 +64,8 @@ const PLACEMENT_OPTIONS: Array<{
     type: 'placement_test',
     title: 'Tes Penempatan Singkat',
     badge: 'Sudah Punya Dasar',
-    description: 'Kerjakan soal diagnostik singkat. Jika skor ≥ 80%, materi awal otomatis dilewati!',
+    description:
+      'Kerjakan soal diagnostik singkat. Jika skor ≥ 80% dan level lanjutan tersedia, level awal otomatis terbuka.',
     highlight: 'Soal diagnostik • ~2 menit',
   },
 ]

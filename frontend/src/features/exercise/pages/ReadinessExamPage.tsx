@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ExamResultSummary } from '@/features/exercise/components/ExamResultSummary'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
@@ -9,6 +10,7 @@ import { Button3D } from '@/shared/components/ui/Button3D'
 import { ArrowLeft, ArrowRight, Certificate } from '@phosphor-icons/react'
 
 const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
+  const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false)
   const {
     questions,
     answersById,
@@ -121,7 +123,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
       <ExerciseSessionHeader
-        onExit={handleBackToCurriculum}
+        onExit={() => (answeredCount > 0 ? setIsExitConfirmOpen(true) : handleBackToCurriculum())}
         exitAriaLabel="Keluar dari Ujian"
         progressPercent={progressPercent}
         progressFillClass="bg-amber-500"
@@ -174,6 +176,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
               textInput={textInput}
               submittedResult={null}
               showHint={showHint}
+              isCheckpoint={true}
               isSpeakingAudio={isSpeakingAudio}
               isRecordingSpeech={isRecordingSpeech}
               speechRecognitionSupported={speechRecognitionSupported}
@@ -268,15 +271,56 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
             >
               Periksa Lagi
             </Button3D>
+              <Button3D
+                type="button"
+                variant="emerald"
+                size="md"
+                fullWidth
+                loading={isSubmitting}
+                onClick={() => void handleSubmitExam()}
+              >
+                Ya, Kumpulkan
+              </Button3D>
+            </div>
+          </div>
+        </AccessibleModal>
+
+      <AccessibleModal
+        isOpen={isExitConfirmOpen}
+        onClose={() => setIsExitConfirmOpen(false)}
+        ariaLabel="Konfirmasi Keluar dari Ujian Kesiapan"
+      >
+        <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl">
+          <div className="space-y-1.5">
+            <h2 className="font-brand font-black text-lg text-slate-900">
+              Keluar dari Ujian Kesiapan?
+            </h2>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              Semua {answeredCount} jawaban ujian yang sudah diisi akan hilang jika kamu keluar
+              sekarang.
+            </p>
+          </div>
+          <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">
             <Button3D
               type="button"
-              variant="emerald"
+              variant="blue"
               size="md"
               fullWidth
-              loading={isSubmitting}
-              onClick={() => void handleSubmitExam()}
+              onClick={() => setIsExitConfirmOpen(false)}
             >
-              Ya, Kumpulkan
+              Lanjut Ujian
+            </Button3D>
+            <Button3D
+              type="button"
+              variant="rose"
+              size="md"
+              fullWidth
+              onClick={() => {
+                setIsExitConfirmOpen(false)
+                handleBackToCurriculum()
+              }}
+            >
+              Keluar &amp; Hapus Jawaban
             </Button3D>
           </div>
         </div>

@@ -6,6 +6,7 @@ import { useAppRightSidebar } from '@/shared/hooks/layout/right-sidebar/useAppRi
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
 import { StreakSection } from './StreakSection'
 import { QuestsSection } from './QuestsSection'
+import { SrsMistakeReviewCard } from './SrsMistakeReviewCard'
 import { DailyLanguageCard } from './DailyLanguageCard'
 
 export interface AppRightSidebarProps {
@@ -68,7 +69,13 @@ export const AppRightSidebar = ({
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
-      {/* ── 3. KOSAKATA KERJA HARIAN SESUAI DESTINASI (1:1 Hook) ── */}
+      {/* ── 3. ULASAN SOAL YANG PERNAH SALAH (SRS /review) ── */}
+      <SrsMistakeReviewCard />
+
+      {/* ── SUBTLE SECTION DIVIDER ── */}
+      <div className="h-[1px] bg-slate-100" />
+
+      {/* ── 4. KOSAKATA KERJA HARIAN SESUAI DESTINASI (1:1 Hook) ── */}
       <div data-tour="right-daily-card">
         <DailyLanguageCard />
       </div>

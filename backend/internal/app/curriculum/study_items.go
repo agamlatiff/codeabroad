@@ -554,6 +554,9 @@ func extractStudyItemForExercise(idx int, rawEx exercise.Exercise, grammarPoints
 			symbol = contentString(content, "audio_text")
 		}
 		if symbol == "" {
+			symbol = contentString(content, "phrase")
+		}
+		if symbol == "" {
 			symbol = strings.TrimSpace(rawEx.CorrectAnswer)
 		}
 		if symbol == "" {
@@ -626,8 +629,253 @@ func extractStudyItemForExercise(idx int, rawEx exercise.Exercise, grammarPoints
 	}
 }
 
+type furiganaDictEntry struct {
+	kanji string
+	kana  string
+}
+
+// Ordered longest-Kanji-first so multi-character compounds match before individual Kanji glyphs.
+var n5FuriganaEntries = []furiganaDictEntry{
+	// 3+ character N5 compounds
+	{"日本語", "にほんご"},
+	{"図書館", "としょかん"},
+	{"郵便局", "ゆうびんきょく"},
+	{"会社員", "かいしゃいん"},
+	{"お大事に", "おだいじに"},
+	{"一万円", "いちまんえん"},
+	{"飛行機", "ひこうき"},
+	{"新幹線", "しんかんせん"},
+	{"喫茶店", "きっさてん"},
+	{"誕生日", "たんじょうび"},
+	{"日曜日", "にちようび"},
+	{"月曜日", "げつようび"},
+	{"火曜日", "かようび"},
+	{"水曜日", "すいようび"},
+	{"木曜日", "もくようび"},
+	{"金曜日", "きんようび"},
+	{"土曜日", "どようび"},
+	// 2+ character N5 compounds & verb stems
+	{"お土産", "おみやげ"},
+	{"買い物", "かいもの"},
+	{"読みます", "よみます"},
+	{"買います", "かいます"},
+	{"飲みます", "のみます"},
+	{"食べます", "たべます"},
+	{"行きます", "いきます"},
+	{"来ます", "きます"},
+	{"見ます", "みます"},
+	{"書きます", "かきます"},
+	{"聞きます", "ききます"},
+	{"話します", "はなします"},
+	{"休みます", "やすみます"},
+	{"曲がって", "まがって"},
+	{"忘れないで", "わすれないで"},
+	{"寒くない", "さむくない"},
+	{"明るい", "あかるい"},
+	{"友達", "ともだち"},
+	{"先生", "せんせい"},
+	{"学生", "がくせい"},
+	{"時間", "じかん"},
+	{"仕事", "しごと"},
+	{"家族", "かぞく"},
+	{"学校", "がっこう"},
+	{"映画", "えいが"},
+	{"写真", "しゃしん"},
+	{"本屋", "ほんや"},
+	{"部屋", "へや"},
+	{"眼鏡", "めがね"},
+	{"食後", "しょくご"},
+	{"将来", "しょうらい"},
+	{"医者", "いしゃ"},
+	{"京都", "きょうと"},
+	{"東京", "とうきょう"},
+	{"毎朝", "まいあさ"},
+	{"毎日", "まいにち"},
+	{"今朝", "けさ"},
+	{"先週", "せんしゅう"},
+	{"今週", "こんしゅう"},
+	{"来週", "らいしゅう"},
+	{"来年", "らいねん"},
+	{"今年", "ことし"},
+	{"昨日", "きのう"},
+	{"今日", "きょう"},
+	{"明日", "あした"},
+	{"午前", "ごぜん"},
+	{"午後", "ごご"},
+	{"名前", "なまえ"},
+	{"天気", "てんき"},
+	{"元気", "げんき"},
+	{"電話", "でんわ"},
+	{"電車", "でんしゃ"},
+	{"病院", "びょういん"},
+	{"銀行", "ぎんこう"},
+	{"信号", "しんごう"},
+	{"心配", "しんぱい"},
+	{"料理", "りょうり"},
+	{"結婚", "けっこん"},
+	{"旅行", "りょこう"},
+	{"散歩", "さんぽ"},
+	{"勉強", "べんきょう"},
+	{"練習", "れんしゅう"},
+	{"質問", "しつもん"},
+	{"問題", "もんだい"},
+	{"試験", "しけん"},
+	{"一番", "いちばん"},
+	{"大好き", "だいすき"},
+	{"一緒", "いっしょ"},
+	{"一度", "いちど"},
+	{"七時", "しちじ"},
+	{"辞書", "じしょ"},
+	{"音楽", "おんがく"},
+	{"休み", "やすみ"},
+	{"出口", "でぐち"},
+	{"入口", "いりぐち"},
+	{"空港", "くうこう"},
+	{"大学", "だいがく"},
+	{"外国", "がいこく"},
+	{"中国", "ちゅうごく"},
+	{"英語", "えいご"},
+	{"日本", "にほん"},
+	{"会社", "かいしゃ"},
+	{"一人", "ひとり"},
+	{"二人", "ふたり"},
+	{"ご飯", "ごはん"},
+	{"安い", "やすい"},
+	{"高い", "たかい"},
+	{"新しい", "あたらしい"},
+	{"古い", "ふるい"},
+	// Core 68 JLPT N5 single Kanji
+	{"一", "いち"}, {"二", "に"}, {"三", "さん"}, {"四", "よん"}, {"五", "ご"},
+	{"六", "ろく"}, {"七", "なな"}, {"八", "はち"}, {"九", "きゅう"}, {"十", "じゅう"},
+	{"日", "ひ / にち"}, {"月", "つき / げつ"}, {"火", "ひ / か"}, {"水", "みず / すい"},
+	{"木", "き / もく"}, {"金", "かね / きん"}, {"土", "つち / ど"},
+	{"山", "やま"}, {"川", "かわ"}, {"田", "た"},
+	{"人", "ひと / じん"}, {"子", "こ"}, {"女", "おんな"}, {"男", "おとこ"},
+	{"母", "はは"}, {"父", "ちち"}, {"友", "とも"},
+	{"上", "うえ"}, {"下", "した"}, {"中", "なか"}, {"大", "おお"}, {"小", "ちい"},
+	{"学", "がく"}, {"生", "せい"}, {"先", "さき"}, {"年", "とし / ねん"},
+	{"本", "ほん"}, {"国", "くに"}, {"外", "そと"}, {"駅", "えき"},
+	{"店", "みせ"}, {"社", "しゃ"}, {"行", "いく"}, {"来", "くる"},
+	{"食", "たべる"}, {"飲", "のむ"}, {"見", "みる"}, {"聞", "きく"},
+	{"読", "よむ"}, {"書", "かく"}, {"話", "はなす"}, {"休", "やすむ"},
+	{"百", "ひゃく"}, {"千", "せん"}, {"万", "まん"}, {"円", "えん"},
+	{"時", "じ / とき"}, {"分", "ふん"}, {"名", "な"}, {"前", "まえ"},
+	{"後", "うしろ / あと"}, {"右", "みぎ"}, {"左", "ひだり"}, {"校", "こう"},
+	{"高", "たかい"}, {"安", "やすい"}, {"新", "あたらしい"}, {"古", "ふるい"},
+	// Additional frequent single N5 Kanji in exercises
+	{"私", "わたし"}, {"車", "くるま"}, {"手", "て"}, {"雨", "あめ"},
+	{"庭", "にわ"}, {"薬", "くすり"}, {"頭", "あたま"}, {"所", "ところ"},
+	{"熱", "ねつ"}, {"今", "いま"}, {"何", "なに"}, {"犬", "いぬ"},
+	{"猫", "ねこ"}, {"花", "はな"}, {"耳", "みみ"}, {"口", "くち"},
+	{"足", "あし"}, {"体", "からだ"}, {"心", "こころ"}, {"海", "うみ"},
+	{"空", "そら"}, {"冬", "ふゆ"}, {"夏", "なつ"}, {"秋", "あき"},
+	{"春", "はる"}, {"朝", "あさ"}, {"夜", "よる"}, {"週", "しゅう"},
+	{"服", "ふく"}, {"茶", "ちゃ"}, {"肉", "にく"}, {"魚", "さかな"},
+	{"紙", "かみ"}, {"声", "こえ"}, {"顔", "かお"}, {"家", "いえ"},
+	{"歌", "うた"}, {"絵", "え"}, {"色", "いろ"}, {"白", "しろ"},
+	{"赤", "あか"}, {"青", "あお"}, {"黒", "くろ"}, {"好", "すき"},
+	{"買", "かう"}, {"売", "うる"}, {"待", "まつ"}, {"持", "もつ"},
+	{"立", "たつ"}, {"座", "すわる"}, {"入", "はいる"}, {"出", "でる"},
+	{"帰", "かえる"}, {"泳", "およぐ"}, {"撮", "とる"}, {"教", "おしえる"},
+	{"暗", "くらい"}, {"広", "ひろい"}, {"痛", "いたい"}, {"近", "ちかい"},
+	{"遠", "とおい"}, {"早", "はやい"}, {"遅", "おそい"},
+}
+
+func hasFuriganaArray(content map[string]any) bool {
+	if content == nil {
+		return false
+	}
+	raw, ok := content["furigana"]
+	if !ok || raw == nil {
+		return false
+	}
+	switch v := raw.(type) {
+	case []any:
+		return len(v) > 0
+	case []map[string]any:
+		return len(v) > 0
+	case []map[string]string:
+		return len(v) > 0
+	default:
+		return false
+	}
+}
+
+func isKanjiReadingQuestion(prompt string) bool {
+	lower := strings.ToLower(prompt)
+	return strings.Contains(lower, "cara baca") ||
+		strings.Contains(lower, "dibaca") ||
+		strings.Contains(lower, "huruf kanji") ||
+		strings.Contains(lower, "kanji yang berarti") ||
+		strings.Contains(lower, "bacaan kanji")
+}
+
+func collectVisibleExerciseText(rawEx exercise.Exercise) string {
+	content := rawEx.Content
+	parts := []string{
+		rawEx.Prompt,
+		contentString(content, "sentence_template"),
+		contentString(content, "passage"),
+		contentString(content, "display_text"),
+		contentString(content, "phrase"),
+	}
+	if rawEx.ExerciseType == exercise.ExerciseTypeSentenceBuilder {
+		parts = append(parts, contentStringSlice(content, "tokens")...)
+	}
+	return strings.Join(parts, "\n")
+}
+
+func enrichExerciseFurigana(rawEx exercise.Exercise, sanitized *exercise.Exercise) {
+	if sanitized == nil || hasFuriganaArray(sanitized.Content) {
+		return
+	}
+	if isKanjiReadingQuestion(rawEx.Prompt) {
+		return
+	}
+	visibleText := collectVisibleExerciseText(rawEx)
+	if strings.IndexFunc(visibleText, func(r rune) bool { return unicode.In(r, unicode.Han) }) < 0 {
+		return
+	}
+
+	normalizedCorrect := strings.TrimSpace(rawEx.CorrectAnswer)
+	remaining := visibleText
+	seen := make(map[string]bool, 8)
+	items := make([]map[string]string, 0, 8)
+
+	for _, entry := range n5FuriganaEntries {
+		if len(items) >= 8 {
+			break
+		}
+		if seen[entry.kanji] || !strings.Contains(remaining, entry.kanji) {
+			continue
+		}
+		if normalizedCorrect != "" && (strings.EqualFold(entry.kanji, normalizedCorrect) || strings.EqualFold(entry.kana, normalizedCorrect)) {
+			remaining = strings.ReplaceAll(remaining, entry.kanji, " ")
+			continue
+		}
+		seen[entry.kanji] = true
+		items = append(items, map[string]string{
+			"kanji": entry.kanji,
+			"kana":  entry.kana,
+		})
+		// Blank out matched compound so its constituent single Kanji are not duplicated redundantly
+		remaining = strings.ReplaceAll(remaining, entry.kanji, " ")
+	}
+
+	if len(items) == 0 {
+		return
+	}
+
+	cloned := make(map[string]any, len(sanitized.Content)+1)
+	for k, v := range sanitized.Content {
+		cloned[k] = v
+	}
+	cloned["furigana"] = items
+	sanitized.Content = cloned
+}
+
 // buildLessonStudyItemsAndHints builds distractor-free LessonStudyItem cards from unsanitized
-// lesson exercises and populates spoiler-free contextual hints on sanitized exercises for non-checkpoint lessons.
+// lesson exercises and populates spoiler-free contextual hints + furigana on sanitized exercises for non-checkpoint lessons.
 func buildLessonStudyItemsAndHints(
 	slug string,
 	rawExercises []exercise.Exercise,
@@ -650,6 +898,7 @@ func buildLessonStudyItemsAndHints(
 				hintCopy := hint
 				sanitizedExercises[i].Hint = &hintCopy
 			}
+			enrichExerciseFurigana(rawEx, &sanitizedExercises[i])
 		}
 
 		if !ok {

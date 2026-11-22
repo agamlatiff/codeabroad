@@ -133,7 +133,7 @@ export const useExerciseMedia = ({
   }, [stopActiveAudio, stopActiveRecognition])
 
   const handlePlayAudio = useCallback(
-    (audioUrl?: string, spokenText?: string) => {
+    (audioUrl?: string, spokenText?: string, rate?: number) => {
       setAudioPlaybackError(null)
       triggerHaptic('tap')
       stopActiveAudio()
@@ -168,7 +168,8 @@ export const useExerciseMedia = ({
             setAudioPlaybackError(
               'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
             )
-          }
+          },
+          rate
         )
       }
 
@@ -182,6 +183,9 @@ export const useExerciseMedia = ({
 
         const audio = new Audio(audioUrl)
         audio.volume = Math.max(0, Math.min(1, masterVolume))
+        if (typeof rate === 'number' && rate > 0) {
+          audio.playbackRate = rate
+        }
         activeHtmlAudioRef.current = audio
         audio.onended = () => {
           if (sessionId === audioSessionIdRef.current) {

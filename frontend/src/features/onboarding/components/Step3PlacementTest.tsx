@@ -1,10 +1,16 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { CheckCircle, ArrowLeft, ArrowRight, SpeakerHigh, Trash } from '@phosphor-icons/react'
 import type { PlacementQuestionItem, PlacementQuestionOption } from '@/features/onboarding/types/onboarding'
+import {
+  shuffleDeterministically,
+  shuffleTokensDeterministically,
+} from '@/features/exercise/utils/exerciseHelpers'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { audioService } from '@/shared/services/audioService'
 import { resolveSpeechLocale } from '@/shared/utils/speechLocale'
 import { Button3D } from '@/shared/components/ui/Button3D'
+
+const SLOW_SPEECH_RATE = 0.58
 
 interface Step3PlacementTestProps {
   questions: PlacementQuestionItem[]
@@ -60,6 +66,32 @@ export const Step3PlacementTest = ({
     }
   }, [])
 
+  const safeIndex = Math.min(currentIndex, Math.max(0, questions.length - 1))
+  const currentQuestion = questions[safeIndex]
+  const currentQuestionId = currentQuestion?.id ?? ''
+  const rawOptions = currentQuestion?.content?.options
+  const rawTokens = currentQuestion?.content?.tokens
+
+  const options = useMemo(
+    () =>
+      currentQuestionId && Array.isArray(rawOptions)
+        ? shuffleDeterministically(
+            rawOptions,
+            `${currentQuestionId}:placement-options`,
+            (opt) => `${getOptionValue(opt)}\u0000${getOptionLabel(opt)}`
+          )
+        : [],
+    [currentQuestionId, rawOptions]
+  )
+
+  const tokens = useMemo(
+    () =>
+      currentQuestionId && Array.isArray(rawTokens)
+        ? shuffleTokensDeterministically(rawTokens, `${currentQuestionId}:placement-tokens`)
+        : [],
+    [currentQuestionId, rawTokens]
+  )
+
   if (isLoading) {
     return (
       <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-xs">
@@ -68,7 +100,7 @@ export const Step3PlacementTest = ({
     )
   }
 
-  if (questions.length === 0) {
+  if (questions.length === 0 || !currentQuestion) {
     return (
       <div className="w-full max-w-2xl bg-white border border-slate-200 rounded-3xl p-8 text-center shadow-xs space-y-4">
         <p className="text-sm font-semibold text-slate-700">
@@ -81,11 +113,7 @@ export const Step3PlacementTest = ({
     )
   }
 
-  const safeIndex = Math.min(currentIndex, questions.length - 1)
-  const currentQuestion = questions[safeIndex]
   const currentAnswer = answers[currentQuestion.id] ?? ''
-  const options = currentQuestion.content?.options ?? []
-  const tokens = currentQuestion.content?.tokens ?? []
   const isSentenceBuilder = currentQuestion.exercise_type === 'sentence_builder' && tokens.length > 0
   const selectedIndices = selectedTokensByQuestion[currentQuestion.id] ?? []
   const answeredCount = questions.filter((q) => Boolean((answers[q.id] ?? '').trim())).length
@@ -102,11 +130,12 @@ export const Step3PlacementTest = ({
       currentQuestion.skill_pillar.toLowerCase() === 'listening'
   )
 
-  const handlePlayAudio = () => {
-    if (isPlayingAudio) {
+  const handlePlayAudio = (rate?: number) => {
+    if (isPlayingAudio && typeof rate !== 'number') {
       stopAllAudio()
       return
     }
+    stopAllAudio()
     triggerHaptic('tap')
     setIsPlayingAudio(true)
 
@@ -119,12 +148,14 @@ export const Step3PlacementTest = ({
         audioText,
         resolveSpeechLocale(languageCode),
         () => setIsPlayingAudio(false),
-        () => setIsPlayingAudio(false)
+        () => setIsPlayingAudio(false),
+        rate
       )
     }
 
     if (currentQuestion.media_url) {
       const audio = new Audio(currentQuestion.media_url)
+      audio.playbackRate = typeof rate === 'number' && rate > 0 ? rate : 1
       audioRef.current = audio
       audio.onended = () => setIsPlayingAudio(false)
       audio.onerror = () => fallbackSpeech()
@@ -171,19 +202,29 @@ export const Step3PlacementTest = ({
             {currentQuestion.skill_pillar}
           </span>
           {hasAudioPrompt && (
-            <button
-              type="button"
-              onClick={handlePlayAudio}
-              aria-label={isPlayingAudio ? 'Hentikan audio soal' : 'Putar audio soal'}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
-                isPlayingAudio
-                  ? 'bg-blue-600 border-blue-600 text-white'
-                  : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
-              }`}
-            >
-              <SpeakerHigh weight="fill" className="w-4 h-4" />
-              <span>{isPlayingAudio ? 'Memutar...' : 'Dengar Audio'}</span>
-            </button>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => handlePlayAudio()}
+                aria-label={isPlayingAudio ? 'Hentikan audio soal' : 'Putar audio soal'}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                  isPlayingAudio
+                    ? 'bg-blue-600 border-blue-600 text-white'
+                    : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                }`}
+              >
+                <SpeakerHigh weight="fill" className="w-4 h-4" />
+                <span>{isPlayingAudio ? 'Memutar...' : 'Dengar Audio'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => handlePlayAudio(SLOW_SPEECH_RATE)}
+                aria-label="Putar audio soal pelan 0.6x"
+                className="px-2.5 py-1.5 rounded-xl text-xs font-extrabold border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 transition-all cursor-pointer"
+              >
+                0.6x
+              </button>
+            </div>
           )}
         </div>
         <h3 className="text-lg font-extrabold text-slate-900 leading-snug">{currentQuestion.prompt}</h3>

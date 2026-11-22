@@ -23,7 +23,7 @@ const STEP_COPY: Record<
   3: {
     title: 'Tes Penempatan Singkat',
     subtitle:
-      'Jawab soal diagnostik berikut. Skor ≥ 80% akan otomatis membuka level lanjutan!',
+      'Jawab soal diagnostik berikut. Skor ≥ 80% akan otomatis membuka level lanjutan yang sudah tersedia.',
   },
 }
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -220,6 +221,28 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 			return nil, language.ErrProficiencyLevelNotFound
 		}
 		assignedLevel = u.helper.ResolveTargetLevel(levels, "zero_beginner", nil, 0)
+	}
+
+	// Guard: if placement test qualifies for an empty level (e.g. N4 has 0 units yet), keep user on the populated base level (N5).
+	if req.InitialPlacementType == "placement_test" && assignedLevel != nil && u.curriculumRepo != nil && len(levels) > 1 {
+		sortedLevels := make([]language.ProficiencyLevel, len(levels))
+		copy(sortedLevels, levels)
+		sort.Slice(sortedLevels, func(i, j int) bool {
+			if sortedLevels[i].OrderIndex != sortedLevels[j].OrderIndex {
+				return sortedLevels[i].OrderIndex < sortedLevels[j].OrderIndex
+			}
+			return sortedLevels[i].ID < sortedLevels[j].ID
+		})
+		baseLevel := sortedLevels[0]
+		if assignedLevel.ID != baseLevel.ID {
+			targetUnits, targetErr := u.curriculumRepo.GetUnitsByLevelID(ctx, assignedLevel.ID, userID)
+			if targetErr == nil && len(targetUnits) == 0 {
+				baseUnits, baseErr := u.curriculumRepo.GetUnitsByLevelID(ctx, baseLevel.ID, userID)
+				if baseErr == nil && len(baseUnits) > 0 {
+					assignedLevel = &baseLevel
+				}
+			}
+		}
 	}
 
 	if u.store != nil {

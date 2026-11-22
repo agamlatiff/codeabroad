@@ -39,7 +39,7 @@ interface ExercisePromptRendererProps {
   onClearTokens: () => void
   onSelectOption: (value: string) => void
   onSetTextInput: (value: string) => void
-  onPlayAudio: () => void
+  onPlayAudio: (rate?: number) => void
   onToggleRecording: () => void
   onToggleHint: () => void
   onEnterKey?: () => void
@@ -119,6 +119,7 @@ export const ExercisePromptRenderer = ({
 }: ExercisePromptRendererProps) => {
   const [manualTypingExerciseId, setManualTypingExerciseId] = useState<string | null>(null)
   const [romajiShownExerciseId, setRomajiShownExerciseId] = useState<string | null>(null)
+  const [hiddenFuriganaExerciseId, setHiddenFuriganaExerciseId] = useState<string | null>(null)
 
   const exerciseType = exercise.exercise_type
   const pillarMeta = SKILL_PILLAR_LABELS[exercise.skill_pillar] ?? {
@@ -129,6 +130,7 @@ export const ExercisePromptRenderer = ({
   const showManualTyping =
     !speechRecognitionSupported || manualTypingExerciseId === exercise.id
   const showSentenceRomaji = romajiShownExerciseId === exercise.id
+  const showFurigana = hiddenFuriganaExerciseId !== exercise.id
   const effectiveHint = isCheckpoint ? undefined : parsedContent.hint || fallbackHint
   const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
   const selectedChoiceLabel = parsedContent.choiceOptions.find(
@@ -296,13 +298,13 @@ export const ExercisePromptRenderer = ({
         exerciseType === 'speaking_repeat' ||
         Boolean(parsedContent.audioText)) && (
         <div className="p-5 rounded-2xl bg-blue-50/70 border-2 border-blue-200 space-y-3">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Button3D
               type="button"
               variant="blue"
               size="md"
               disableSound
-              onClick={onPlayAudio}
+              onClick={() => onPlayAudio()}
               icon={
                 <SpeakerHigh
                   weight="fill"
@@ -312,6 +314,15 @@ export const ExercisePromptRenderer = ({
             >
               {isSpeakingAudio ? 'Memutar Audio...' : 'Putar Audio Penutur'}
             </Button3D>
+
+            <button
+              type="button"
+              onClick={() => onPlayAudio(0.58)}
+              aria-label="Putar audio pelan 0.6x"
+              className="min-h-[44px] px-3.5 py-2 rounded-xl bg-white hover:bg-blue-100 border-2 border-blue-200 text-xs font-brand font-black text-blue-700 transition-colors cursor-pointer shrink-0"
+            >
+              0.6x Pelan
+            </button>
 
             {parsedContent.romaji && !hideListeningTranscript && (
               <p className="text-sm font-mono text-blue-800 bg-white/80 px-3 py-2 rounded-xl border border-blue-100">
@@ -353,18 +364,38 @@ export const ExercisePromptRenderer = ({
         </div>
       )}
 
-      {/* Furigana Helper Chips */}
-      {parsedContent.furigana.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {parsedContent.furigana.map((item, idx) => (
-            <span
-              key={`${item.kanji}-${idx}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-slate-100 border border-slate-200 text-xs font-bold text-slate-700"
-            >
-              <span className="text-slate-900">{item.kanji}</span>
-              <span className="text-slate-400">({item.kana})</span>
+      {/* Furigana Helper Chips (Non-Checkpoint Only) */}
+      {!isCheckpoint && parsedContent.furigana.length > 0 && (
+        <div className="rounded-2xl bg-slate-50/90 border border-slate-200/90 px-3.5 py-2.5 space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <span className="text-[11px] font-brand font-extrabold uppercase tracking-wider text-slate-500">
+              Bantuan Baca Kanji (Furigana)
             </span>
-          ))}
+            <button
+              type="button"
+              onClick={() =>
+                setHiddenFuriganaExerciseId((prev) =>
+                  prev === exercise.id ? null : exercise.id
+                )
+              }
+              className="text-[11px] font-brand font-bold text-blue-600 hover:text-blue-700 cursor-pointer"
+            >
+              {showFurigana ? 'Sembunyikan' : 'Tampilkan Furigana'}
+            </button>
+          </div>
+          {showFurigana && (
+            <div className="flex flex-wrap gap-2">
+              {parsedContent.furigana.map((item, idx) => (
+                <span
+                  key={`${item.kanji}-${idx}`}
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-700"
+                >
+                  <span className="text-slate-900">{item.kanji}</span>
+                  <span className="text-blue-600">({item.kana})</span>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

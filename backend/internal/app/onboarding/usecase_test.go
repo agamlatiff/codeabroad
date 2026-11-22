@@ -190,3 +190,54 @@ func TestCompleteOnboarding_ManualSelect_InvalidLevel_And_StreakPreservation(t *
 	}
 }
 
+func TestCompleteOnboarding_PlacementTest_FallsBackToBaseLevelWhenNextLevelHasNoUnits(t *testing.T) {
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1"},
+		UserProfile: user.UserProfile{IsOnboarded: false},
+	}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lRepo.Levels["lvl-n4"] = &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-n5-1"] = &curriculum.UnitNodeResponse{
+		ID:         "unit-n5-1",
+		LevelID:    "lvl-n5",
+		Title:      "Hiragana Dasar",
+		UnitType:   "curriculum",
+		OrderIndex: 1,
+	}
+
+	eRepo := exercise.NewMockRepository()
+	eRepo.PlacementExercises["lang-ja"] = []exercise.Exercise{
+		{ID: "q1", CorrectAnswer: "Tokyo"},
+		{ID: "q2", CorrectAnswer: "Arigatou"},
+	}
+	gRepo := gamification.NewMockRepository()
+
+	uc := onboarding.NewUsecase(uRepo, lRepo, cRepo, eRepo, gRepo)
+
+	res, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     15,
+		InitialPlacementType: "placement_test",
+		PlacementAnswers: []onboarding.PlacementAnswer{
+			{ExerciseID: "q1", UserAnswer: "Tokyo"},
+			{ExerciseID: "q2", UserAnswer: "Arigatou"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+
+	if res.PlacementScore == nil || *res.PlacementScore != 100 {
+		t.Fatalf("expected placement score 100%%, got %v", res.PlacementScore)
+	}
+	if res.AssignedLevel.Code != "N5" {
+		t.Errorf("expected fallback to populated base level N5 when N4 has 0 units, got %s", res.AssignedLevel.Code)
+	}
+}
+

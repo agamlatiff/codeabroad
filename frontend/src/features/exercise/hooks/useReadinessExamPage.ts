@@ -256,13 +256,17 @@ export const useReadinessExamPage = (levelId?: string) => {
     [currentExercise, resolvedExamResult]
   )
 
-  const handlePlayAudio = useCallback(() => {
-    if (!currentParsedContent) return
-    playExerciseAudio(
-      currentParsedContent.audioUrl,
-      resolveExerciseSpokenText(currentParsedContent, currentExercise?.prompt)
-    )
-  }, [currentExercise?.prompt, currentParsedContent, playExerciseAudio])
+  const handlePlayAudio = useCallback(
+    (rate?: number) => {
+      if (!currentParsedContent) return
+      playExerciseAudio(
+        currentParsedContent.audioUrl,
+        resolveExerciseSpokenText(currentParsedContent, currentExercise?.prompt),
+        rate
+      )
+    },
+    [currentExercise?.prompt, currentParsedContent, playExerciseAudio]
+  )
 
   // Auto-play listening/speaking prompts on Readiness Exam questions when autoPlayVoice is active
   useEffect(() => {

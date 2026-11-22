@@ -55,7 +55,7 @@ func ParseCorrectAnswerJSON(correctJSON []byte) string {
 
 	var mapAnswer map[string]any
 	if err := json.Unmarshal(correctJSON, &mapAnswer); err == nil {
-		for _, key := range []string{"selected", "selected_id", "expected_transcript", "answer", "correct"} {
+		for _, key := range []string{"selected", "selected_id", "expected_transcript", "exact_match", "answer", "correct"} {
 			if val, ok := mapAnswer[key].(string); ok && strings.TrimSpace(val) != "" {
 				return strings.TrimSpace(val)
 			}

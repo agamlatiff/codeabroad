@@ -56,6 +56,9 @@ const GrammarDetailPage = lazy(() =>
 const KanaPage = lazy(() =>
   import('@/features/curriculum/pages/KanaPage').then((m) => ({ default: m.KanaPage }))
 )
+const SrsReviewPage = lazy(() =>
+  import('@/features/exercise/pages/SrsReviewPage').then((m) => ({ default: m.SrsReviewPage }))
+)
 const NotFoundPage = lazy(() =>
   import('@/shared/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 )
@@ -105,7 +108,7 @@ function App() {
               <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
               <Route path="/flashcards" element={<FlashcardPage />} />
               <Route path="/flashcard" element={<Navigate to="/flashcards" replace />} />
-              <Route path="/review" element={<Navigate to="/flashcards" replace />} />
+              <Route path="/review" element={<SrsReviewPage />} />
               <Route path="/exam/:levelId" element={<ReadinessExamPage />} />
               <Route path="/career" element={<Navigate to="/curriculum" replace />} />
             </Route>

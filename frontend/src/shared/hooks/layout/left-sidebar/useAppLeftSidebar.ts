@@ -108,13 +108,12 @@ export const useAppLeftSidebar = () => {
       isActive:
         location.pathname === item.href ||
         (item.href === '/curriculum' &&
-          location.pathname.startsWith('/curriculum')) ||
+          (location.pathname.startsWith('/curriculum') || location.pathname === '/review')) ||
         (item.href.startsWith('/kana') &&
           location.pathname.startsWith('/kana')) ||
         (item.href === '/grammar' &&
           location.pathname.startsWith('/grammar')) ||
-        (item.href === '/flashcards' &&
-          (location.pathname === '/review' || location.pathname === '/flashcard')),
+        (item.href === '/flashcards' && location.pathname === '/flashcard'),
     }))
   }, [location.pathname, flashcardDueCount])
 

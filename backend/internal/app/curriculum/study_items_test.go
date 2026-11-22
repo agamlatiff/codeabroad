@@ -159,3 +159,79 @@ func TestBuildLessonStudyItemsAndHints_CheckpointHasNoCardsOrHints(t *testing.T)
 		t.Fatalf("expected nil hint for checkpoint lesson, got %q", *sanitized[0].Hint)
 	}
 }
+
+func TestBuildLessonStudyItemsAndHints_PhraseFallbackAndAutoFurigana(t *testing.T) {
+	rawExercises := []exercise.Exercise{
+		{
+			ID:           "phrase-1",
+			ExerciseType: exercise.ExerciseTypeSpeakingRepeat,
+			Prompt:       "Ucapkan kalimat menanyakan kamus:",
+			Content: map[string]any{
+				"phrase": "これは辞書ですか。",
+				"romaji": "Kore wa jisho desu ka.",
+			},
+			CorrectAnswer: "これは辞書ですか。",
+		},
+		{
+			ID:           "kanji-ctx-1",
+			ExerciseType: exercise.ExerciseTypeFillBlank,
+			Prompt:       "Lengkapi kalimat membaca di perpustakaan:",
+			Content: map[string]any{
+				"sentence_template": "図書館 [blank] 本を 読みます。",
+				"translation":       "Membaca buku di perpustakaan",
+				"options":           []any{"で", "に", "を", "へ"},
+			},
+			CorrectAnswer: "で",
+		},
+		{
+			ID:           "listen-secret-1",
+			ExerciseType: exercise.ExerciseTypeListeningChoice,
+			Prompt:       "Dengarkan audio dan pilih arti yang benar:",
+			Content: map[string]any{
+				"audio_text": "先生は親切です",
+				"options": []any{
+					map[string]any{"id": "opt_1", "text": "Guru ramah"},
+					map[string]any{"id": "opt_2", "text": "Teman sibuk"},
+				},
+			},
+			CorrectAnswer: "opt_1",
+		},
+		{
+			ID:           "kanji-quiz-1",
+			ExerciseType: exercise.ExerciseTypeFillBlank,
+			Prompt:       "Pilih cara baca Hiragana yang benar untuk kanji 山:",
+			Content: map[string]any{
+				"options": []any{"やま", "かわ", "うみ", "そら"},
+			},
+			CorrectAnswer: "やま",
+		},
+	}
+
+	sanitized := exercise.SanitizeExercises(rawExercises)
+	items := buildLessonStudyItemsAndHints("n5-unit13-kalimat-de-vs-ni", rawExercises, sanitized, nil)
+
+	if len(items) == 0 || items[0].Symbol != "これは辞書ですか。" {
+		t.Fatalf("expected first study item extracted from content.phrase, got %+v", items)
+	}
+
+	// Speaking & visible fill_blank should receive auto furigana for visible Kanji
+	furi0, ok0 := sanitized[0].Content["furigana"].([]map[string]string)
+	if !ok0 || len(furi0) == 0 || furi0[0]["kanji"] != "辞書" || furi0[0]["kana"] != "じしょ" {
+		t.Fatalf("expected furigana [{辞書 じしょ}] on sanitized[0], got %#v", sanitized[0].Content["furigana"])
+	}
+
+	furi1, ok1 := sanitized[1].Content["furigana"].([]map[string]string)
+	if !ok1 || len(furi1) == 0 {
+		t.Fatalf("expected furigana on sanitized[1], got %#v", sanitized[1].Content["furigana"])
+	}
+
+	// Listening choice must NOT extract furigana from hidden audio_text
+	if _, hasFuri := sanitized[2].Content["furigana"]; hasFuri {
+		t.Fatalf("listening_choice leaked audio_text furigana: %#v", sanitized[2].Content["furigana"])
+	}
+
+	// Kanji-reading quiz must NOT spoil the answer via auto furigana
+	if _, hasFuri := sanitized[3].Content["furigana"]; hasFuri {
+		t.Fatalf("kanji-reading question leaked answer via furigana: %#v", sanitized[3].Content["furigana"])
+	}
+}

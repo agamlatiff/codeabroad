@@ -30,7 +30,11 @@ import { triggerHaptic } from '@/shared/utils/haptics'
 
 const SLOW_SPEECH_RATE = 0.58
 
+type KanaSubTab = 'basic' | 'dakuten' | 'yoon'
+
 const VOWEL_COLUMNS = ['a', 'i', 'u', 'e', 'o'] as const
+const YOON_COLUMNS = ['ya', 'yu', 'yo'] as const
+const YOON_COL_ORDERS = [1, 3, 5] as const
 const KANJI_COLUMNS = ['#1', '#2', '#3', '#4', '#5'] as const
 
 const ROW_LABELS: Record<number, string> = {
@@ -45,6 +49,34 @@ const ROW_LABELS: Record<number, string> = {
   9: 'Baris R (ra–ro)',
   10: 'Baris W (wa / wo)',
   11: 'Konsonan Tunggal N',
+  12: 'Baris G • Tenten (ga–go)',
+  13: 'Baris Z / J • Tenten (za–zo)',
+  14: 'Baris D • Tenten (da–do)',
+  15: 'Baris B • Tenten (ba–bo)',
+  16: 'Baris P • Maru (pa–po)',
+  17: 'Gabungan KY (kya–kyo)',
+  18: 'Gabungan SH (sha–sho)',
+  19: 'Gabungan CH (cha–cho)',
+  20: 'Gabungan NY (nya–nyo)',
+  21: 'Gabungan HY (hya–hyo)',
+  22: 'Gabungan MY (mya–myo)',
+  23: 'Gabungan RY (rya–ryo)',
+  24: 'Gabungan GY (gya–gyo)',
+  25: 'Gabungan J (ja–jo)',
+  26: 'Gabungan BY (bya–byo)',
+  27: 'Gabungan PY (pya–pyo)',
+}
+
+const KANA_SUB_TAB_META: ReadonlyArray<{ key: KanaSubTab; label: string; countLabel: string }> = [
+  { key: 'basic', label: 'Dasar / Gojuon', countLabel: '46' },
+  { key: 'dakuten', label: 'Tenten & Maru', countLabel: '25' },
+  { key: 'yoon', label: 'Gabungan / Yoon', countLabel: '33' },
+]
+
+function resolveSubTabForRowOrder(rowOrder: number): KanaSubTab {
+  if (rowOrder >= 17) return 'yoon'
+  if (rowOrder >= 12) return 'dakuten'
+  return 'basic'
 }
 
 const VALID_KANA_SCRIPTS: ReadonlySet<KanaScriptType> = new Set([
@@ -72,8 +104,8 @@ const SCRIPT_MENU_META: ReadonlyArray<ScriptMenuMeta> = [
     script: 'hiragana',
     title: 'Hiragana',
     glyph: 'あ',
-    countLabel: '46 Huruf',
-    subtitle: 'Huruf dasar kata asli Jepang',
+    countLabel: '104 Huruf',
+    subtitle: 'Dasar, tenten (が) & gabungan (きゃ)',
     activeCardClass:
       'bg-gradient-to-br from-emerald-50 via-white to-teal-50/80 border-emerald-500 shadow-[0_4px_0_0_#10B981] -translate-y-0.5',
     inactiveCardClass:
@@ -87,8 +119,8 @@ const SCRIPT_MENU_META: ReadonlyArray<ScriptMenuMeta> = [
     script: 'katakana',
     title: 'Katakana',
     glyph: 'ア',
-    countLabel: '46 Huruf',
-    subtitle: 'Kata serapan & nama asing',
+    countLabel: '104 Huruf',
+    subtitle: 'Serapan, tenten (ガ) & gabungan (キャ)',
     activeCardClass:
       'bg-gradient-to-br from-sky-50 via-white to-blue-50/80 border-sky-500 shadow-[0_4px_0_0_#0284C7] -translate-y-0.5',
     inactiveCardClass:
@@ -102,7 +134,7 @@ const SCRIPT_MENU_META: ReadonlyArray<ScriptMenuMeta> = [
     script: 'kanji',
     title: 'Kanji',
     glyph: '漢',
-    countLabel: '50 Kanji N5',
+    countLabel: '68 Kanji N5',
     subtitle: 'Karakter inti JLPT N5 & arti',
     activeCardClass:
       'bg-gradient-to-br from-amber-50 via-white to-orange-50/80 border-amber-500 shadow-[0_4px_0_0_#D97706] -translate-y-0.5',
@@ -125,7 +157,7 @@ function getDefaultCharParam(script: KanaScriptType): string {
 }
 
 function getCharQueryKey(item: KanaCharacterItem): string {
-  return item.script === 'kanji' ? item.character : item.romaji
+  return item.character
 }
 
 function renderScriptMenuEmblem(script: KanaScriptType, isActive: boolean): ReactNode {
@@ -320,11 +352,11 @@ export const KanaPage = () => {
   const selectedChar: KanaCharacterItem | null = useMemo(() => {
     if (characters.length === 0) return null
     if (urlCharParam) {
+      const exactCharMatch = characters.find((c) => c.character === urlCharParam)
+      if (exactCharMatch) return exactCharMatch
       const target = urlCharParam.toLowerCase()
-      const found = characters.find(
-        (c) => c.romaji.toLowerCase() === target || c.character === urlCharParam
-      )
-      if (found) return found
+      const romajiMatch = characters.find((c) => c.romaji.toLowerCase() === target)
+      if (romajiMatch) return romajiMatch
     }
     return characters[0]
   }, [characters, urlCharParam])
@@ -351,9 +383,11 @@ export const KanaPage = () => {
         return {
           rowOrder,
           rowKey: sortedItems[0]?.row_group ?? String(rowOrder),
+          subTab: resolveSubTabForRowOrder(rowOrder),
           label,
           items: sortedItems,
           slots: [1, 2, 3, 4, 5].map((col) => colMap.get(col) ?? null),
+          yoonSlots: YOON_COL_ORDERS.map((col) => colMap.get(col) ?? null),
         }
       })
   }, [activeScript, characters])
@@ -367,6 +401,28 @@ export const KanaPage = () => {
       ) ?? null
     )
   }, [groupedRows, urlDrillParam])
+
+  const activeSubTab: KanaSubTab = useMemo(() => {
+    if (activeScript === 'kanji') return 'basic'
+    if (activeDrillRow) return activeDrillRow.subTab
+    if (selectedChar) return resolveSubTabForRowOrder(selectedChar.row_order)
+    return 'basic'
+  }, [activeDrillRow, activeScript, selectedChar])
+
+  const visibleRows = useMemo(() => {
+    if (activeScript === 'kanji') return groupedRows
+    return groupedRows.filter((row) => row.subTab === activeSubTab)
+  }, [activeScript, activeSubTab, groupedRows])
+
+  const handleSelectSubTab = (tab: KanaSubTab) => {
+    if (activeScript === 'kanji') return
+    triggerHaptic('tap')
+    const firstRowInTab = groupedRows.find((row) => row.subTab === tab)
+    const firstChar = firstRowInTab?.items[0]
+    if (firstChar) {
+      setSearchParams({ char: getCharQueryKey(firstChar) }, { replace: true })
+    }
+  }
 
   const lastAutoSpokenKeyRef = useRef<string | null>(null)
 
@@ -432,7 +488,13 @@ export const KanaPage = () => {
     void practiceMutation.mutate([{ character: selectedChar.character, is_correct: true }])
   }
 
-  const columnHeaders = activeScript === 'kanji' ? KANJI_COLUMNS : VOWEL_COLUMNS
+  const isYoonTab = activeScript !== 'kanji' && activeSubTab === 'yoon'
+  const columnHeaders =
+    activeScript === 'kanji'
+      ? KANJI_COLUMNS
+      : isYoonTab
+        ? YOON_COLUMNS
+        : VOWEL_COLUMNS
   const activeBreadcrumbLabel =
     activeScript === 'hiragana'
       ? 'Hiragana'
@@ -584,11 +646,41 @@ export const KanaPage = () => {
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
-            {/* LEFT: Interactive 5-Column Matrix */}
+            {/* LEFT: Interactive 5-Column / 3-Column Matrix */}
             <div className="xl:col-span-7 bg-white rounded-3xl border-2 border-slate-200/90 shadow-sm p-4 sm:p-5 space-y-3">
+              {activeScript !== 'kanji' && groupedRows.some((r) => r.rowOrder >= 12) && (
+                <div className="flex flex-wrap items-center gap-2 pb-2 border-b border-slate-100">
+                  {KANA_SUB_TAB_META.map((tab) => {
+                    const isTabActive = activeSubTab === tab.key
+                    return (
+                      <button
+                        key={tab.key}
+                        type="button"
+                        aria-pressed={isTabActive}
+                        onClick={() => handleSelectSubTab(tab.key)}
+                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-brand font-black transition-all cursor-pointer ${
+                          isTabActive
+                            ? 'bg-blue-600 border-blue-700 text-white shadow-2xs'
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:border-blue-300 hover:text-blue-700'
+                        }`}
+                      >
+                        <span>{tab.label}</span>
+                        <span
+                          className={`px-1.5 py-0.5 rounded-md text-[10px] tabular-nums ${
+                            isTabActive ? 'bg-white/20 text-white' : 'bg-white text-slate-500 border border-slate-200'
+                          }`}
+                        >
+                          {tab.countLabel}
+                        </span>
+                      </button>
+                    )
+                  })}
+                </div>
+              )}
+
               {/* Column Header */}
               <div className="grid grid-cols-[1fr_auto] items-center gap-2 pb-1 border-b border-slate-100">
-                <div className="grid grid-cols-5 gap-2 text-center">
+                <div className={`grid gap-2 text-center ${isYoonTab ? 'grid-cols-3' : 'grid-cols-5'}`}>
                   {columnHeaders.map((col) => (
                     <span
                       key={col}
@@ -604,7 +696,9 @@ export const KanaPage = () => {
               </div>
 
               <div className="space-y-3">
-                {groupedRows.map((row) => (
+                {visibleRows.map((row) => {
+                  const rowSlots = isYoonTab ? row.yoonSlots : row.slots
+                  return (
                   <div key={row.rowOrder} className="space-y-1.5">
                     <div className="flex items-center justify-between gap-2 px-0.5">
                       <span className="text-[11px] font-brand font-extrabold text-slate-500">
@@ -616,8 +710,8 @@ export const KanaPage = () => {
                     </div>
 
                     <div className="grid grid-cols-[1fr_auto] items-center gap-2">
-                      <div className="grid grid-cols-5 gap-2">
-                        {row.slots.map((slot, slotIdx) => {
+                      <div className={`grid gap-2 ${isYoonTab ? 'grid-cols-3' : 'grid-cols-5'}`}>
+                        {rowSlots.map((slot, slotIdx) => {
                           if (!slot) {
                             return (
                               <div
@@ -683,7 +777,8 @@ export const KanaPage = () => {
                       </button>
                     </div>
                   </div>
-                ))}
+                  )
+                })}
               </div>
             </div>
 
@@ -829,6 +924,7 @@ export const KanaPage = () => {
                   <KanaTracingPad
                     key={`${selectedChar.script}-${selectedChar.character}`}
                     character={selectedChar.character}
+                    script={activeScript}
                     isMastered={selectedChar.is_mastered}
                     isSaving={practiceMutation.isPending}
                     onMarkPracticed={handleMarkSelectedPracticed}
