@@ -24,6 +24,10 @@ type BadgeAwarder interface {
 	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*gamification.UserBadge, error)
 }
 
+type atomicXPActivityRecorder interface {
+	RecordXPActivity(ctx context.Context, userID string, activityType string, baseXP int, applyXPBooster bool, metadata map[string]any) (xpAwarded int, newXP int, newLevel int, newStreak int, err error)
+}
+
 type usecase struct {
 	repo         Repository
 	userRepo     user.Repository
@@ -205,21 +209,32 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 		xpAwarded = 2
 	}
 
+	currentStreak := 0
+	currentLevel := 0
 	if u.userRepo != nil {
-		if usr, err := u.userRepo.GetByID(ctx, userID); err == nil && usr != nil {
+		meta := map[string]any{
+			"card_id": trimmedCardID,
+			"quality": quality,
+		}
+		if recorder, ok := u.userRepo.(atomicXPActivityRecorder); ok {
+			awarded, _, lvl, streak, recErr := recorder.RecordXPActivity(ctx, userID, "srs_review_completed", xpAwarded, true, meta)
+			if recErr != nil {
+				return nil, recErr
+			}
+			xpAwarded = awarded
+			currentLevel = lvl
+			currentStreak = streak
+		} else if usr, err := u.userRepo.GetByID(ctx, userID); err == nil && usr != nil {
 			boosterActive := usr.XPBoosterExpiresAt != nil && usr.XPBoosterExpiresAt.After(now)
 			if boosterActive {
 				xpAwarded *= 2
 			}
+			meta["xp_booster_applied"] = boosterActive
 			_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
 				UserID:       userID,
 				ActivityType: "srs_review_completed",
 				XPEarned:     xpAwarded,
-				Metadata: map[string]any{
-					"card_id":            trimmedCardID,
-					"quality":            quality,
-					"xp_booster_applied": boosterActive,
-				},
+				Metadata:     meta,
 			})
 
 			refreshedUser := usr
@@ -230,13 +245,23 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 			}
 			newXP := refreshedUser.XP + xpAwarded
 			newLevel := progression.CalculateLevel(newXP)
+			currentStreak = refreshedUser.Streak
+			currentLevel = newLevel
 			_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, refreshedUser.Streak, &now)
 		}
 	}
 
-	if quality >= 3 && u.badgeAwarder != nil {
-		if masteredCount, countErr := u.repo.CountMasteredCards(ctx, userID); countErr == nil && masteredCount >= 25 {
-			_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", 0)
+	if u.badgeAwarder != nil {
+		if currentStreak >= 7 {
+			_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "streak_7", currentLevel)
+		}
+		if currentStreak >= 30 {
+			_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "streak_30", currentLevel)
+		}
+		if quality >= 3 {
+			if masteredCount, countErr := u.repo.CountMasteredCards(ctx, userID); countErr == nil && masteredCount >= 25 {
+				_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", currentLevel)
+			}
 		}
 	}
 

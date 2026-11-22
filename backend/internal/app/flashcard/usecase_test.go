@@ -225,3 +225,60 @@ func TestReviewCard_XPBoosterAndSRSVeteranBadge(t *testing.T) {
 		t.Fatalf("expected srs_veteran badge awarded, got %+v", awarder.awardedKeys)
 	}
 }
+
+func TestReviewCard_StreakBadgesAndAtomicXPErrorPropagation(t *testing.T) {
+	wib := time.FixedZone("WIB", 7*60*60)
+	yesterdayWIB := time.Now().In(wib).AddDate(0, 0, -1).UTC()
+
+	fcRepo := &stubFlashcardRepo{cardExists: true, masteredCount: 5}
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-7"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-7", Email: "streak7@merantalk.id"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           40,
+			CurrentLevel: 1,
+			Streak:       6,
+			LastActiveAt: &yesterdayWIB,
+		},
+	}
+	uRepo.Users["user-30"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-30", Email: "streak30@merantalk.id"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           500,
+			CurrentLevel: 6,
+			Streak:       29,
+			LastActiveAt: &yesterdayWIB,
+		},
+	}
+
+	awarder := &stubBadgeAwarder{}
+	uc := NewUsecaseWithBadges(fcRepo, uRepo, awarder)
+
+	res7, err := uc.ReviewCard(context.Background(), "user-7", "card-1", 4)
+	if err != nil {
+		t.Fatalf("expected ReviewCard for user-7 to succeed, got %v", err)
+	}
+	if res7.XPAwarded != 5 || uRepo.Users["user-7"].Streak != 7 {
+		t.Fatalf("expected 5 XP and streak 7, got xp=%d streak=%d", res7.XPAwarded, uRepo.Users["user-7"].Streak)
+	}
+	if len(awarder.awardedKeys) != 1 || awarder.awardedKeys[0] != "streak_7" {
+		t.Fatalf("expected streak_7 badge awarded, got %+v", awarder.awardedKeys)
+	}
+
+	awarder.awardedKeys = nil
+	if _, err := uc.ReviewCard(context.Background(), "user-30", "card-1", 4); err != nil {
+		t.Fatalf("expected ReviewCard for user-30 to succeed, got %v", err)
+	}
+	if uRepo.Users["user-30"].Streak != 30 {
+		t.Fatalf("expected streak 30, got %d", uRepo.Users["user-30"].Streak)
+	}
+	if len(awarder.awardedKeys) != 2 || awarder.awardedKeys[0] != "streak_7" || awarder.awardedKeys[1] != "streak_30" {
+		t.Fatalf("expected [streak_7, streak_30], got %+v", awarder.awardedKeys)
+	}
+
+	// Verify atomic XP failure propagates rather than being silently ignored
+	uRepo.UpdateGamificationErr = errors.New("db lock timeout")
+	if _, err := uc.ReviewCard(context.Background(), "user-7", "card-1", 4); err == nil {
+		t.Fatal("expected ReviewCard to return error when RecordXPActivity fails")
+	}
+}

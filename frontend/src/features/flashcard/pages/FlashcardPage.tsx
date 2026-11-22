@@ -2,11 +2,14 @@ import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
+  ArrowRight,
   Cards,
   CheckCircle,
+  ClockCountdown,
   X,
   ArrowsClockwise,
   Fire,
+  WarningCircle,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
@@ -21,7 +24,12 @@ import {
   getDailyRewardsQueryKey,
   getActivityLogsQueryKey,
   DAILY_QUESTS_QUERY_KEY,
+  LEADERBOARD_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
+import {
+  GAMIFICATION_BADGES_QUERY_KEY,
+  GAMIFICATION_STATUS_QUERY_KEY,
+} from '@/features/gamification/services/gamificationService'
 import {
   flashcardService,
   FLASHCARD_DECKS_QUERY_KEY,
@@ -35,9 +43,9 @@ import {
 import { FlashcardFlipCard } from '@/features/flashcard/components/FlashcardFlipCard'
 import {
   previewAnkiIntervals,
-  resetCardForAnkiRequeue,
   type AnkiIntervalPreviews,
 } from '@/features/flashcard/utils/ankiScheduler'
+import { extractApiErrorMessage } from '@/shared/services/api'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
 import { audioEngine } from '@/shared/utils/audio'
@@ -188,6 +196,7 @@ export const FlashcardPage = () => {
   const [reviewedCount, setReviewedCount] = useState(0)
   const [loadingSession, setLoadingSession] = useState(false)
   const [sessionError, setSessionError] = useState<string | null>(null)
+  const [rateError, setRateError] = useState<string | null>(null)
 
   const {
     data: deckPages,
@@ -287,6 +296,9 @@ export const FlashcardPage = () => {
       void queryClient.invalidateQueries({ queryKey: getDailyRewardsQueryKey(userIdKey) })
       void queryClient.invalidateQueries({ queryKey: getActivityLogsQueryKey(userIdKey) })
       void queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: GAMIFICATION_STATUS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: GAMIFICATION_BADGES_QUERY_KEY })
     },
   })
 
@@ -308,6 +320,7 @@ export const FlashcardPage = () => {
       setIsFlipped(false)
       setSessionXp(0)
       setReviewedCount(0)
+      setRateError(null)
       setMode('session')
       audioEngine.playCardSlide()
     },
@@ -440,6 +453,16 @@ export const FlashcardPage = () => {
     }
   }, [dueLoading, dueQueue, initSessionQueue, mode, searchParams])
 
+  const startDueReviewSession = useCallback(() => {
+    if (!dueQueue || dueQueue.cards.length === 0) return
+    triggerHaptic('tap')
+    setSessionError(null)
+    setRateError(null)
+    handledReviewParamRef.current = true
+    setSearchParams({ mode: 'review' }, { replace: true })
+    initSessionQueue(dueQueue.cards, 'Ulasan Terjadwal', null)
+  }, [dueQueue, initSessionQueue, setSearchParams])
+
   const currentCardId = queue[0]
   const currentCard = currentCardId ? cardMap[currentCardId] : undefined
 
@@ -475,9 +498,7 @@ export const FlashcardPage = () => {
     async (quality: number) => {
       if (!currentCard || reviewMutation.isPending) return
 
-      triggerHaptic('tap')
-      playSound(quality >= 3 ? 'zen_bell' : 'node_tap')
-      audioEngine.playCardSlide()
+      setRateError(null)
 
       let updatedCard: FlashcardCard
       try {
@@ -490,9 +511,21 @@ export const FlashcardPage = () => {
           next_review_at: res.next_review_at,
           last_reviewed_at: new Date().toISOString(),
         }
-      } catch {
-        updatedCard = quality < 3 ? resetCardForAnkiRequeue(currentCard) : currentCard
+      } catch (err) {
+        triggerHaptic('error')
+        audioEngine.playError()
+        setRateError(
+          extractApiErrorMessage(
+            err,
+            'Gagal menyimpan progres kartu ke server. Periksa koneksi lalu coba lagi.'
+          )
+        )
+        return
       }
+
+      triggerHaptic('tap')
+      playSound(quality >= 3 ? 'zen_bell' : 'node_tap')
+      audioEngine.playCardSlide()
 
       setCardMap((prev) => ({
         ...prev,
@@ -580,6 +613,7 @@ export const FlashcardPage = () => {
     setRequeuedIds(new Set())
     setCompletedIds(new Set())
     setIsFlipped(false)
+    setRateError(null)
   }
 
   const replayActiveDeck = () => {
@@ -781,7 +815,16 @@ export const FlashcardPage = () => {
           </div>
 
           {/* Action Controls */}
-          <div className="relative z-20 w-full max-w-lg">
+          <div className="relative z-20 w-full max-w-lg space-y-2.5">
+            {rateError && (
+              <div
+                role="alert"
+                className="flex items-start gap-2 rounded-2xl border-2 border-rose-200 bg-rose-50 px-3.5 py-2.5 text-xs font-bold text-rose-700"
+              >
+                <WarningCircle weight="fill" className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{rateError}</span>
+              </div>
+            )}
             {!isFlipped ? (
               <Button3D
                 variant="blue"
@@ -892,6 +935,54 @@ export const FlashcardPage = () => {
             />
           </div>
         </section>
+
+        {/* Scheduled Smart Review Banner */}
+        {!dueLoading && totalDue > 0 && (dueQueue?.cards.length ?? 0) > 0 ? (
+          <section
+            aria-label="Antrean Ulasan Terjadwal SM-2"
+            className="rounded-3xl border-2 border-amber-300/90 border-b-[4px] border-b-amber-400 bg-gradient-to-r from-amber-50 via-orange-50/70 to-yellow-50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
+          >
+            <div className="flex items-start sm:items-center gap-3.5 min-w-0">
+              <div className="w-11 h-11 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_3px_0_0_#B45309] text-white flex items-center justify-center shrink-0">
+                <ClockCountdown weight="fill" className="w-6 h-6" />
+              </div>
+              <div className="space-y-0.5 min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950">
+                    Jatuh Tempo Hari Ini
+                  </span>
+                  <span className="text-xs font-mono font-black text-amber-800">
+                    {totalDue} kartu siap diulas
+                  </span>
+                </div>
+                <h2 className="font-brand font-black text-sm sm:text-base text-slate-900">
+                  Ulasan Terjadwal SM-2 Menunggu!
+                </h2>
+                <p className="text-xs text-slate-600 font-medium leading-relaxed">
+                  Segarkan kembali {totalDue} kartu yang dijadwalkan agar daya ingat jangka panjang tetap terjaga.
+                </p>
+              </div>
+            </div>
+
+            <Button3D
+              variant="amber"
+              size="md"
+              disabled={loadingSession}
+              onClick={startDueReviewSession}
+              icon={<ArrowRight weight="bold" className="w-4 h-4" />}
+              className="shrink-0 w-full sm:w-auto text-xs px-5"
+            >
+              MULAI ULASAN ({Math.min(totalDue, dueQueue?.cards.length ?? totalDue)} KARTU)
+            </Button3D>
+          </section>
+        ) : !dueLoading && totalDue === 0 && totalLearned > 0 ? (
+          <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 flex items-center gap-2.5 text-xs font-semibold text-emerald-800">
+            <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>
+              Semua <strong>{totalLearned}</strong> kartu terjaga — belum ada kartu jatuh tempo saat ini.
+            </span>
+          </div>
+        ) : null}
 
         {sessionError && (
           <div className="p-3.5 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold">

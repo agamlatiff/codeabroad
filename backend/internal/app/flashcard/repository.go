@@ -35,7 +35,7 @@ const deckSelectFromClause = `
 			d.sort_order,
 			COUNT(c.id)::int AS total_cards,
 			GREATEST(COUNT(c.id) - COUNT(p.id), 0)::int AS new_cards,
-			COUNT(p.id)::int AS learned_cards,
+			COUNT(CASE WHEN p.id IS NOT NULL AND p.repetitions >= 1 THEN 1 END)::int AS learned_cards,
 			COUNT(CASE WHEN p.id IS NOT NULL AND p.next_review_at <= NOW() THEN 1 END)::int AS due_cards,
 			COUNT(CASE WHEN p.id IS NOT NULL AND p.next_review_at > NOW() THEN 1 END)::int AS scheduled_cards,
 			COALESCE((
@@ -402,7 +402,7 @@ func (r *postgresRepository) GetDeckWithCards(ctx context.Context, userID string
 func (r *postgresRepository) ListDueCards(ctx context.Context, userID string, languageCode string, limit int) (*DueQueueResponse, error) {
 	statsQuery := `
 		SELECT
-			COUNT(p.id)::int AS total_learned,
+			COUNT(CASE WHEN p.repetitions >= 1 THEN 1 END)::int AS total_learned,
 			COUNT(CASE WHEN p.next_review_at <= NOW() THEN 1 END)::int AS total_due
 		FROM user_flashcard_progress p
 		INNER JOIN flashcard_cards c ON c.id = p.card_id
