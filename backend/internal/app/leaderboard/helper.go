@@ -4,6 +4,8 @@ import (
 	"math"
 	"strings"
 	"time"
+
+	"merantalk/backend/internal/shared/progression"
 )
 
 // Helper encapsulates business rules for global league division thresholds, reset timer, and zones
@@ -108,5 +110,24 @@ func (h *Helper) CalculateDaysUntilSundayReset(now time.Time) int {
 		daysUntilSunday += 7
 	}
 	return daysUntilSunday
+}
+
+// WeeklyPrizeGems returns the Top-3 weekly podium Gem reward for a finishing rank.
+func (h *Helper) WeeklyPrizeGems(rank int) int {
+	switch rank {
+	case 1:
+		return 100
+	case 2:
+		return 50
+	case 3:
+		return 25
+	default:
+		return 0
+	}
+}
+
+// PreviousSeasonISOWeek returns the ISO year and week number for the completed week immediately preceding now in WIB.
+func (h *Helper) PreviousSeasonISOWeek(now time.Time) (int, int) {
+	return now.In(progression.WIBLocation).AddDate(0, 0, -7).ISOWeek()
 }
 

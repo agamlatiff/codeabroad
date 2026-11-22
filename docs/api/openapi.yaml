@@ -1163,10 +1163,32 @@ paths:
             enum: [bronze, silver, gold, diamond, shinjuku, shibuya, akihabara, roppongi]
       responses:
         "200":
-          description: Weekly leaderboard retrieved
+          description: Weekly leaderboard retrieved (includes last_week_reward when an authenticated user placed Top 3 last ISO week)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /leaderboard/weekly/claim:
+    post:
+      tags: [Leaderboard]
+      summary: Claim previous week Top-3 league podium Gems prize
+      security:
+        - BearerAuth: []
+      responses:
+        "200":
+          description: Weekly Top-3 reward claimed and Gems credited
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "409":
+          description: Weekly reward already claimed
         "429":
           $ref: "#/components/responses/TooManyRequestsError"

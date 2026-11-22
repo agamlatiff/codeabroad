@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"time"
 
+	"merantalk/backend/internal/shared/apperror"
 	"merantalk/backend/internal/shared/middleware"
 	"merantalk/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
@@ -50,8 +51,25 @@ func (h *Handler) GetWeeklyLeaderboard(c *gin.Context) {
 	response.Success(c, http.StatusOK, "weekly leaderboard retrieved successfully", result)
 }
 
+// ClaimWeeklyReward handles POST /api/v1/leaderboard/weekly/claim
+func (h *Handler) ClaimWeeklyReward(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	result, err := h.leaderboardUsecase.ClaimWeeklyReward(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "weekly leaderboard reward claimed successfully", result)
+}
+
 // RegisterRoutes registers the leaderboard routes under the provided router group
-func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, optionalAuth gin.HandlerFunc) {
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuth gin.HandlerFunc) {
 	limiter := h.readLimiter
 	if limiter == nil {
 		limiter = middleware.UserOrIPRateLimitMiddleware(DefaultLeaderboardLimit, time.Minute, DefaultLeaderboardMessage)
@@ -62,6 +80,11 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, optionalAuth gin.HandlerFu
 			leaderboard.GET("/weekly", optionalAuth, limiter, h.GetWeeklyLeaderboard)
 		} else {
 			leaderboard.GET("/weekly", limiter, h.GetWeeklyLeaderboard)
+		}
+		if authMiddleware != nil {
+			leaderboard.POST("/weekly/claim", authMiddleware, limiter, h.ClaimWeeklyReward)
+		} else {
+			leaderboard.POST("/weekly/claim", limiter, h.ClaimWeeklyReward)
 		}
 	}
 }

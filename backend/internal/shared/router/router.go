@@ -81,7 +81,7 @@ func SetupRouter(cfg *Config) *gin.Engine {
 			cfg.GamificationHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 		}
 		if cfg.LeaderboardHandler != nil {
-			cfg.LeaderboardHandler.RegisterRoutes(v1, cfg.OptionalAuthMiddleware)
+			cfg.LeaderboardHandler.RegisterRoutes(v1, cfg.AuthMiddleware, cfg.OptionalAuthMiddleware)
 		}
 	}
 	return r

@@ -2,6 +2,7 @@ import { useEffect, useMemo } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   ArrowUpRight,
+  CheckCircle,
   Clock,
   Sparkle,
   Trophy,
@@ -9,6 +10,7 @@ import {
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
+import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
@@ -59,7 +61,12 @@ export const LeaderboardPage = () => {
     error,
     selectDivision,
     refetch,
+    claimWeeklyReward,
+    isClaimingReward,
+    claimRewardError,
   } = useWeeklyLeaderboard({ initialDivision: urlDivision })
+
+  const lastWeekReward = leaderboard?.last_week_reward ?? null
 
   useEffect(() => {
     if (isLoading || !activeDivision) return
@@ -215,6 +222,62 @@ export const LeaderboardPage = () => {
               </div>
             </div>
           </section>
+
+          {/* ── PREVIOUS WEEK PODIUM GEMS REWARD BANNER ── */}
+          {lastWeekReward && (
+            <section
+              aria-label="Hadiah podium mingguan"
+              className={`rounded-2xl border-2 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs ${
+                lastWeekReward.claimed
+                  ? 'bg-emerald-50/85 border-emerald-200 text-emerald-950'
+                  : 'bg-gradient-to-r from-amber-50 via-yellow-50/80 to-emerald-50/70 border-amber-300 text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 rounded-xl bg-white border border-amber-200 flex items-center justify-center shrink-0 shadow-2xs">
+                  {lastWeekReward.rank >= 1 && lastWeekReward.rank <= 3 ? (
+                    <LeaderboardRankMedalIcon
+                      rank={lastWeekReward.rank as 1 | 2 | 3}
+                      className="w-6 h-6"
+                    />
+                  ) : (
+                    <Trophy weight="fill" className="w-5 h-5 text-amber-500" />
+                  )}
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <p className="font-brand font-black text-xs sm:text-sm truncate">
+                    {lastWeekReward.claimed
+                      ? `Hadiah Juara #${lastWeekReward.rank} ${lastWeekReward.division_name} (Musim #${lastWeekReward.season_week}) sudah diklaim`
+                      : `Selamat! Kamu Juara #${lastWeekReward.rank} di ${lastWeekReward.division_name} (Musim #${lastWeekReward.season_week})`}
+                  </p>
+                  <p className="text-[11px] font-medium text-slate-600">
+                    {lastWeekReward.weekly_xp.toLocaleString('id-ID')} XP minggu lalu • Hadiah podium Top 3 sebesar +{lastWeekReward.gems_awarded} Gems
+                  </p>
+                  {claimRewardError && !lastWeekReward.claimed && (
+                    <p className="text-[11px] font-bold text-rose-600">{claimRewardError}</p>
+                  )}
+                </div>
+              </div>
+
+              {lastWeekReward.claimed ? (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-brand font-black shrink-0 self-start sm:self-center">
+                  <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
+                  <span>+{lastWeekReward.gems_awarded} Gems Diklaim</span>
+                </span>
+              ) : (
+                <Button3D
+                  variant="emerald"
+                  size="sm"
+                  loading={isClaimingReward}
+                  onClick={() => void claimWeeklyReward()}
+                  icon={<LeaderboardGemIcon className="w-4 h-4" />}
+                  className="shrink-0 self-start sm:self-center"
+                >
+                  Klaim +{lastWeekReward.gems_awarded} Gems
+                </Button3D>
+              )}
+            </section>
+          )}
 
           {/* ── 4 GLOBAL LEAGUE DIVISION SELECTOR TABS ── */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">

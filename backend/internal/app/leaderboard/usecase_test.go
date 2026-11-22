@@ -120,3 +120,49 @@ func TestGetWeeklyLeaderboard_UniversalDivisionsAliasesPrivacyAndSundayReset(t *
 	}
 }
 
+func TestClaimWeeklyReward_LifecycleAndErrors(t *testing.T) {
+	repo := leaderboard.NewMockRepository()
+	repo.Standings = []leaderboard.LeaderboardEntry{
+		{UserID: "user-1", Username: "mina", TotalXP: 900, WeeklyXP: 120},
+	}
+	repo.PendingRewards["user-1"] = &leaderboard.PendingWeeklyReward{
+		Division:    leaderboard.DivisionGold,
+		Rank:        2,
+		WeeklyXP:    340,
+		GemsAwarded: 50,
+		Claimed:     false,
+	}
+	repo.UserGems["user-1"] = 100
+
+	uc := leaderboard.NewUsecase(repo)
+
+	board, err := uc.GetWeeklyLeaderboard(context.Background(), "user-1", leaderboard.DivisionGold)
+	if err != nil {
+		t.Fatalf("expected leaderboard success, got %v", err)
+	}
+	if board.LastWeekReward == nil || board.LastWeekReward.Claimed || board.LastWeekReward.GemsAwarded != 50 {
+		t.Fatalf("expected unclaimed 50-gem reward on leaderboard, got %+v", board.LastWeekReward)
+	}
+	if board.LastWeekReward.DivisionName != "Liga Emas" {
+		t.Fatalf("expected DivisionName 'Liga Emas', got %q", board.LastWeekReward.DivisionName)
+	}
+
+	claimRes, err := uc.ClaimWeeklyReward(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("expected claim to succeed, got %v", err)
+	}
+	if claimRes.NewGems != 150 || !claimRes.Reward.Claimed || claimRes.Reward.GemsAwarded != 50 {
+		t.Fatalf("unexpected claim response: %+v", claimRes)
+	}
+
+	// Second claim must be rejected as already claimed
+	if _, err := uc.ClaimWeeklyReward(context.Background(), "user-1"); err != leaderboard.ErrWeeklyRewardAlreadyClaimed {
+		t.Fatalf("expected ErrWeeklyRewardAlreadyClaimed, got %v", err)
+	}
+
+	// User without Top-3 reward receives ErrNoPendingWeeklyReward
+	if _, err := uc.ClaimWeeklyReward(context.Background(), "user-no-reward"); err != leaderboard.ErrNoPendingWeeklyReward {
+		t.Fatalf("expected ErrNoPendingWeeklyReward, got %v", err)
+	}
+}
+

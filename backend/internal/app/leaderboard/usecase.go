@@ -9,6 +9,7 @@ import (
 	"time"
 
 	infraRedis "merantalk/backend/infrastructure/redis"
+	"merantalk/backend/internal/shared/apperror"
 	"merantalk/backend/internal/shared/progression"
 	"golang.org/x/sync/singleflight"
 )
@@ -174,6 +175,21 @@ func (u *usecase) GetWeeklyLeaderboard(
 		}
 	}
 
+	var lastWeekReward *PendingWeeklyReward
+	if userID != "" {
+		if rewardReader, ok := u.leaderboardRepo.(WeeklyRewardRepository); ok {
+			prevYear, prevWeek := u.helper.PreviousSeasonISOWeek(wibNow)
+			if status, rErr := rewardReader.GetPreviousWeekRewardStatus(ctx, userID, prevYear, prevWeek); rErr != nil {
+				log.Printf("leaderboard: failed to check last week reward for user %s: %v", userID, rErr)
+			} else if status != nil {
+				divCfg := u.helper.GetDivisionConfig(status.Division)
+				status.Division = divCfg.Division
+				status.DivisionName = divCfg.Name
+				lastWeekReward = status
+			}
+		}
+	}
+
 	return &WeeklyLeaderboardResponse{
 		Division:         resolvedDivision,
 		DivisionName:     cfg.Name,
@@ -182,8 +198,30 @@ func (u *usecase) GetWeeklyLeaderboard(
 		SeasonWeek:       seasonWeek,
 		DaysRemaining:    daysRemaining,
 		UserRank:         userRankItem,
+		LastWeekReward:   lastWeekReward,
 		Entries:          entries,
 		TotalCompetitors: totalCompetitors,
 	}, nil
+}
+
+// ClaimWeeklyReward settles and credits the authenticated user's previous-week Top-3 podium Gems prize once per week.
+func (u *usecase) ClaimWeeklyReward(ctx context.Context, userID string) (*ClaimWeeklyRewardResponse, error) {
+	if strings.TrimSpace(userID) == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	rewardRepo, ok := u.leaderboardRepo.(WeeklyRewardRepository)
+	if !ok {
+		return nil, ErrNoPendingWeeklyReward
+	}
+	wibNow := time.Now().UTC().In(progression.WIBLocation)
+	prevYear, prevWeek := u.helper.PreviousSeasonISOWeek(wibNow)
+	res, err := rewardRepo.ClaimPreviousWeekRewardTx(ctx, userID, prevYear, prevWeek)
+	if err != nil {
+		return nil, err
+	}
+	divCfg := u.helper.GetDivisionConfig(res.Reward.Division)
+	res.Reward.Division = divCfg.Division
+	res.Reward.DivisionName = divCfg.Name
+	return res, nil
 }
 

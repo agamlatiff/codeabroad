@@ -17,6 +17,22 @@ export interface LeaderboardEntry {
   zone: 'promotion' | 'safe' | 'demotion'
 }
 
+export interface PendingWeeklyReward {
+  season_year: number
+  season_week: number
+  division: LeagueDivision
+  division_name: string
+  rank: number
+  weekly_xp: number
+  gems_awarded: number
+  claimed: boolean
+}
+
+export interface ClaimWeeklyRewardResponse {
+  reward: PendingWeeklyReward
+  new_gems: number
+}
+
 export interface WeeklyLeaderboardResponse {
   division: LeagueDivision
   division_name: string
@@ -25,6 +41,7 @@ export interface WeeklyLeaderboardResponse {
   season_week: number
   days_remaining: number
   user_rank?: LeaderboardEntry | null
+  last_week_reward?: PendingWeeklyReward | null
   entries: LeaderboardEntry[]
   total_competitors: number
 }
