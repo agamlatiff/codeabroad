@@ -1,6 +1,11 @@
 package exercise
 
-import "testing"
+import (
+	"context"
+	"strings"
+	"testing"
+	"time"
+)
 
 func TestEvaluateExerciseAnswer_SpeakingRepeat(t *testing.T) {
 	h := NewHelper()
@@ -104,6 +109,79 @@ func TestEvaluateExerciseAnswer_SpeakingRepeat(t *testing.T) {
 			t.Errorf("expected passportEx to accept %q", accepted)
 		}
 	}
+
+	// Readiness Exam #8: Chrome STT writes Kanji 日本/働 even when expected is Hiragana
+	examSpeakingEx := &Exercise{
+		ExerciseType:  ExerciseTypeSpeakingRepeat,
+		CorrectAnswer: "にほんではたらきたいです",
+		Content: map[string]any{
+			"display_text": "にほんではたらきたいです",
+			"romaji":       "Nihon de hatarakitai desu.",
+		},
+	}
+	for _, accepted := range []string{
+		"日本で働きたいです",
+		"にほんではたらきたいです",
+		"nihon de hatarakitai desu",
+	} {
+		if !h.EvaluateExerciseAnswer(examSpeakingEx, accepted) {
+			t.Errorf("expected examSpeakingEx to accept %q", accepted)
+		}
+	}
+
+	// Unspaced Chrome STT particle は/へ sentences
+	tanakaEx := &Exercise{
+		ExerciseType:  ExerciseTypeSpeakingRepeat,
+		CorrectAnswer: "田中さん は 親切で やさしい です",
+		Content: map[string]any{
+			"display_text": "田中さん は 親切で やさしい です",
+			"romaji":       "Tanaka-san wa shinsetsu de yasashii desu",
+		},
+	}
+	if !h.EvaluateExerciseAnswer(tanakaEx, "たなかさんはしんせつでやさしいです") {
+		t.Errorf("expected unspaced Hiragana transcript with particle ha to match Tanaka sentence")
+	}
+
+	noboruEx := &Exercise{
+		ExerciseType:  ExerciseTypeSpeakingRepeat,
+		CorrectAnswer: "日本 へ 行った ことが あります",
+		Content: map[string]any{
+			"display_text": "日本 へ 行った ことが あります",
+			"romaji":       "Nihon e itta koto ga arimasu",
+		},
+	}
+	if !h.EvaluateExerciseAnswer(noboruEx, "にほんへいったことがあります") {
+		t.Errorf("expected unspaced Hiragana transcript with particle he to match Japan sentence")
+	}
+
+	// Hepburn mb/mp/mm normalization: gambarimasu vs がんばります
+	ganbaruEx := &Exercise{
+		ExerciseType:  ExerciseTypeSpeakingRepeat,
+		CorrectAnswer: "一生懸命 頑張ります ので、よろしく お願いします",
+		Content: map[string]any{
+			"display_text": "一生懸命 頑張ります ので、よろしく お願いします",
+			"romaji":       "isshoukenmei gambarimasu node, yoroshiku onegaishimasu",
+		},
+	}
+	if !h.EvaluateExerciseAnswer(ganbaruEx, "いっしょうけんめいがんばりますのでよろしくおねがいします") {
+		t.Errorf("expected unspaced gambarimasu transcript to match")
+	}
+	if !h.EvaluateExerciseAnswer(ganbaruEx, "isshoukenmei gambarimasu node yoroshiku onegaishimasu") {
+		t.Errorf("expected romaji gambarimasu input to match")
+	}
+
+	// Guard against false positives on short words (< 6 phonetic chars) like はな vs わな
+	hanaEx := &Exercise{
+		ExerciseType:  ExerciseTypeSpeakingRepeat,
+		CorrectAnswer: "はな",
+		Content: map[string]any{
+			"display_text": "はな",
+			"romaji":       "hana",
+		},
+	}
+	if h.EvaluateExerciseAnswer(hanaEx, "わな") {
+		t.Errorf("expected short vocab はな to reject わな")
+	}
 }
 
 func TestParseCorrectAnswerJSON_ExactMatch(t *testing.T) {
@@ -152,6 +230,42 @@ func TestSanitizeExercises_StripsFillBlankTranslationSpoilers(t *testing.T) {
 			},
 		},
 		{
+			ID:            "fb-partikel-de",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "で",
+			Content: map[string]any{
+				"translation": "Partikel DE",
+				"options":     []any{"で", "に"},
+			},
+		},
+		{
+			ID:            "fb-partikel-wa",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "は",
+			Content: map[string]any{
+				"translation": "Partikel WA",
+				"options":     []any{"は", "わ"},
+			},
+		},
+		{
+			ID:            "fb-kanji-spoiler",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "語",
+			Content: map[string]any{
+				"translation": "Kanji 語",
+				"options":     []any{"語", "人"},
+			},
+		},
+		{
+			ID:            "fb-valid-kanji-nama",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "名",
+			Content: map[string]any{
+				"translation": "Kanji nama",
+				"options":     []any{"名", "本"},
+			},
+		},
+		{
 			ID:            "fb-valid-single-indonesian",
 			ExerciseType:  ExerciseTypeFillBlank,
 			CorrectAnswer: "えき",
@@ -172,15 +286,120 @@ func TestSanitizeExercises_StripsFillBlankTranslationSpoilers(t *testing.T) {
 	}
 
 	got := SanitizeExercises(input)
-	for i := 0; i < 4; i++ {
+	for i := 0; i < 7; i++ {
 		if _, hasTrans := got[i].Content["translation"]; hasTrans {
 			t.Errorf("expected spoiler translation to be stripped for %s, still got %v", got[i].ID, got[i].Content["translation"])
 		}
 	}
-	if got[4].Content["translation"] != "Stasiun" {
-		t.Errorf("expected valid Indonesian cue 'Stasiun' to be preserved, got %v", got[4].Content["translation"])
+	if got[7].Content["translation"] != "Kanji nama" {
+		t.Errorf("expected non-spoiler translation 'Kanji nama' to be preserved, got %v", got[7].Content["translation"])
 	}
-	if got[5].Content["translation"] != "Membaca buku di perpustakaan" {
-		t.Errorf("expected valid sentence translation to be preserved, got %v", got[5].Content["translation"])
+	if got[8].Content["translation"] != "Stasiun" {
+		t.Errorf("expected valid Indonesian cue 'Stasiun' to be preserved, got %v", got[8].Content["translation"])
+	}
+	if got[9].Content["translation"] != "Membaca buku di perpustakaan" {
+		t.Errorf("expected valid sentence translation to be preserved, got %v", got[9].Content["translation"])
+	}
+}
+
+func TestEnrichExerciseFurigana_CoversExtendedN5Kanji(t *testing.T) {
+	raw := Exercise{
+		ID:            "ex-extended-kanji",
+		ExerciseType:  ExerciseTypeFillBlank,
+		Prompt:        "Lengkapi partikel untuk kalimat tentang Gunung Fuji:",
+		CorrectAnswer: "に",
+		Content: map[string]any{
+			"sentence_template": "富士山 [blank] 登った ことが あります。",
+			"options":           []any{"に", "を", "で", "へ"},
+		},
+	}
+	sanitized := SanitizeExercises([]Exercise{raw})
+	EnrichExerciseFurigana(raw, &sanitized[0])
+
+	furi, ok := sanitized[0].Content["furigana"].([]map[string]string)
+	if !ok || len(furi) == 0 {
+		t.Fatalf("expected furigana entries on sanitized exercise, got %#v", sanitized[0].Content["furigana"])
+	}
+	hasFuji := false
+	hasNobotta := false
+	for _, entry := range furi {
+		if entry["kanji"] == "富士山" && entry["kana"] == "ふじさん" {
+			hasFuji = true
+		}
+		if entry["kanji"] == "登った" && entry["kana"] == "のぼった" {
+			hasNobotta = true
+		}
+	}
+	if !hasFuji || !hasNobotta {
+		t.Fatalf("expected 富士山->ふじさん and 登った->のぼった in furigana, got %#v", furi)
+	}
+}
+
+type stubTotalDueSRSRepo struct {
+	reviews []UserSRSReview
+}
+
+func (s *stubTotalDueSRSRepo) GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error) {
+	return s.reviews, nil
+}
+func (s *stubTotalDueSRSRepo) GetDueReviewsWithTotal(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, int, error) {
+	return s.reviews, len(s.reviews), nil
+}
+func (s *stubTotalDueSRSRepo) GetReview(ctx context.Context, userID string, exerciseID string) (*UserSRSReview, error) {
+	return nil, ErrReviewNotFound
+}
+func (s *stubTotalDueSRSRepo) UpsertReview(ctx context.Context, review *UserSRSReview) error {
+	return nil
+}
+func (s *stubTotalDueSRSRepo) GetDueCount(ctx context.Context, userID string, now time.Time) (int, error) {
+	return len(s.reviews), nil
+}
+
+func TestGetDueReviews_EnrichesFuriganaAndStripsSecrets(t *testing.T) {
+	expl := "Saya belajar bahasa Jepang di perpustakaan."
+	srsRepo := &stubTotalDueSRSRepo{
+		reviews: []UserSRSReview{
+			{
+				ID:         "rev-1",
+				UserID:     "user-1",
+				ExerciseID: "ex-1",
+				Exercise: &Exercise{
+					ID:            "ex-1",
+					ExerciseType:  ExerciseTypeFillBlank,
+					Prompt:        "Lengkapi partikel untuk kalimat membaca di perpustakaan:",
+					CorrectAnswer: "で",
+					Explanation:   &expl,
+					Content: map[string]any{
+						"sentence_template": "図書館 [blank] 本を 読みます。",
+						"translation":       "Partikel DE",
+						"options":           []any{"で", "に", "を", "へ"},
+					},
+				},
+			},
+		},
+	}
+
+	uc := NewUsecase(nil, srsRepo, nil, nil, nil)
+	res, err := uc.GetDueReviews(context.Background(), "user-1", 20)
+	if err != nil {
+		t.Fatalf("GetDueReviews failed: %v", err)
+	}
+	if len(res.Items) != 1 || res.Items[0].Exercise == nil {
+		t.Fatalf("expected 1 review item with exercise, got %+v", res.Items)
+	}
+
+	ex := res.Items[0].Exercise
+	if ex.CorrectAnswer != "" || ex.Explanation != nil {
+		t.Fatalf("expected secrets stripped on SRS exercise, got correct=%q expl=%v", ex.CorrectAnswer, ex.Explanation)
+	}
+	if _, hasSpoilerTrans := ex.Content["translation"]; hasSpoilerTrans {
+		t.Fatalf("expected spoiler translation stripped on SRS exercise, got %v", ex.Content["translation"])
+	}
+	furi, ok := ex.Content["furigana"].([]map[string]string)
+	if !ok || len(furi) == 0 {
+		t.Fatalf("expected dynamic furigana injected on SRS exercise, got %#v", ex.Content["furigana"])
+	}
+	if ex.Hint == nil || strings.TrimSpace(*ex.Hint) == "" {
+		t.Fatalf("expected contextual fallback hint attached on SRS exercise")
 	}
 }

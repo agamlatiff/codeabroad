@@ -235,3 +235,86 @@ func TestBuildLessonStudyItemsAndHints_PhraseFallbackAndAutoFurigana(t *testing.
 		t.Fatalf("kanji-reading question leaked answer via furigana: %#v", sanitized[3].Content["furigana"])
 	}
 }
+
+func TestBuildLessonStudyItemsAndHints_AutoRomajiAndCleanSpeakingMeaning(t *testing.T) {
+	explAisatsu := `Ungkapan ini adalah penutup wajib yang bermakna "Mohon kerja sama dan bimbingan baiknya".`
+	rawExercises := []exercise.Exercise{
+		{
+			ID:           "lc-no-romaji",
+			ExerciseType: exercise.ExerciseTypeListeningChoice,
+			Prompt:       "Dengarkan audio ini:",
+			Content: map[string]any{
+				"audio_text": "あおい",
+				"options": []any{
+					map[string]any{"id": "opt_1", "text": "Biru"},
+					map[string]any{"id": "opt_2", "text": "Merah"},
+				},
+			},
+			CorrectAnswer: "opt_1",
+		},
+		{
+			ID:           "fb-no-romaji",
+			ExerciseType: exercise.ExerciseTypeFillBlank,
+			Prompt:       "Lengkapi kata berikut:",
+			Content: map[string]any{
+				"sentence_template": "お [blank] し",
+				"translation":       "Kue manis",
+				"options":           []any{"か", "き", "く", "け"},
+			},
+			CorrectAnswer: "か",
+		},
+		{
+			ID:           "sr-paren-meaning",
+			ExerciseType: exercise.ExerciseTypeSpeakingRepeat,
+			Prompt:       `Ucapkan dengan lantang kata "やま" (gunung):`,
+			Content: map[string]any{
+				"display_text": "やま",
+				"romaji":       "yama",
+			},
+			CorrectAnswer: "やま",
+		},
+		{
+			ID:           "sr-expl-meaning",
+			ExerciseType: exercise.ExerciseTypeSpeakingRepeat,
+			Prompt:       "Dengarkan dan tirukan ungkapan berikut dengan jelas.",
+			Explanation:  &explAisatsu,
+			Content: map[string]any{
+				"display_text": "どうぞよろしくおねがいします",
+				"romaji":       "Douzo yoroshiku onegaishimasu",
+			},
+			CorrectAnswer: "どうぞよろしくおねがいします",
+		},
+		{
+			ID:           "sr-romaji-paren-guard",
+			ExerciseType: exercise.ExerciseTypeSpeakingRepeat,
+			Prompt:       "Ucapkan salam siang 'こんにちは' (konnichiwa):",
+			Content: map[string]any{
+				"display_text": "こんにちは",
+				"romaji":       "konnichiwa",
+			},
+			CorrectAnswer: "こんにちは",
+		},
+	}
+
+	sanitized := exercise.SanitizeExercises(rawExercises)
+	items := buildLessonStudyItemsAndHints("n5-sample-auto-romaji", rawExercises, sanitized, nil)
+
+	if len(items) != 5 {
+		t.Fatalf("expected 5 study items, got %d: %+v", len(items), items)
+	}
+	if items[0].Reading != "aoi" {
+		t.Errorf("expected auto-generated romaji 'aoi' for listening_choice, got %q", items[0].Reading)
+	}
+	if items[1].Reading != "okashi" {
+		t.Errorf("expected auto-generated romaji 'okashi' for fill_blank, got %q", items[1].Reading)
+	}
+	if items[2].Meaning != "Gunung" {
+		t.Errorf("expected extracted meaning 'Gunung' for やま, got %q", items[2].Meaning)
+	}
+	if items[3].Meaning != "Mohon kerja sama dan bimbingan baiknya" {
+		t.Errorf("expected extracted meaning from explanation, got %q", items[3].Meaning)
+	}
+	if items[4].Meaning == "Konnichiwa" {
+		t.Errorf("expected speaking meaning for こんにちは not to echo romaji 'Konnichiwa'")
+	}
+}

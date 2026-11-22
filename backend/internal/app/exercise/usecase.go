@@ -282,7 +282,14 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 
 	for i := range reviews {
 		if reviews[i].Exercise != nil {
-			sanitized := SanitizeExercises([]Exercise{*reviews[i].Exercise})
+			rawEx := *reviews[i].Exercise
+			sanitized := SanitizeExercises([]Exercise{rawEx})
+			EnrichExerciseFurigana(rawEx, &sanitized[0])
+			if sanitized[0].Hint == nil || strings.TrimSpace(*sanitized[0].Hint) == "" {
+				if hint := BuildFallbackSRSContextualHint(rawEx); hint != "" {
+					sanitized[0].Hint = &hint
+				}
+			}
 			reviews[i].Exercise = &sanitized[0]
 		}
 	}

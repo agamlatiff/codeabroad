@@ -1,12 +1,14 @@
-import { useState, useEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { CheckCircle, ArrowLeft, ArrowRight, SpeakerHigh, Trash } from '@phosphor-icons/react'
 import type { PlacementQuestionItem, PlacementQuestionOption } from '@/features/onboarding/types/onboarding'
 import {
+  SKILL_PILLAR_LABELS,
   shuffleDeterministically,
   shuffleTokensDeterministically,
 } from '@/features/exercise/utils/exerciseHelpers'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { resolveSpeechLocale } from '@/shared/utils/speechLocale'
 import { Button3D } from '@/shared/components/ui/Button3D'
 
@@ -46,7 +48,7 @@ export const Step3PlacementTest = ({
   const [selectedTokensByQuestion, setSelectedTokensByQuestion] = useState<Record<string, number[]>>({})
   const audioRef = useRef<HTMLAudioElement | null>(null)
 
-  const stopAllAudio = () => {
+  const stopAllAudio = useCallback(() => {
     if (audioRef.current) {
       audioRef.current.pause()
       audioRef.current.currentTime = 0
@@ -54,23 +56,93 @@ export const Step3PlacementTest = ({
     }
     audioService.stopSpeech()
     setIsPlayingAudio(false)
-  }
+  }, [])
+
+  const playQuestionAudio = useCallback(
+    (mediaUrl?: string, text?: string, rate?: number, withHaptic = true) => {
+      stopAllAudio()
+      if (withHaptic) {
+        triggerHaptic('tap')
+      }
+      setIsPlayingAudio(true)
+
+      const fallbackSpeech = () => {
+        if (!text) {
+          setIsPlayingAudio(false)
+          return
+        }
+        audioService.speakLanguage(
+          text,
+          resolveSpeechLocale(languageCode),
+          () => setIsPlayingAudio(false),
+          () => setIsPlayingAudio(false),
+          rate
+        )
+      }
+
+      if (mediaUrl) {
+        const audio = new Audio(mediaUrl)
+        audio.playbackRate = typeof rate === 'number' && rate > 0 ? rate : 1
+        audioRef.current = audio
+        audio.onended = () => setIsPlayingAudio(false)
+        audio.onerror = () => fallbackSpeech()
+        audio.play().catch(() => fallbackSpeech())
+        return
+      }
+
+      fallbackSpeech()
+    },
+    [languageCode, stopAllAudio]
+  )
 
   useEffect(() => {
     return () => {
-      if (audioRef.current) {
-        audioRef.current.pause()
-        audioRef.current = null
-      }
-      audioService.stopSpeech()
+      stopAllAudio()
     }
-  }, [])
+  }, [stopAllAudio])
 
   const safeIndex = Math.min(currentIndex, Math.max(0, questions.length - 1))
   const currentQuestion = questions[safeIndex]
   const currentQuestionId = currentQuestion?.id ?? ''
   const rawOptions = currentQuestion?.content?.options
   const rawTokens = currentQuestion?.content?.tokens
+
+  const currentMediaUrl = currentQuestion?.media_url ?? undefined
+  const currentAudioText =
+    currentQuestion?.content?.audio_text ||
+    currentQuestion?.content?.sentence ||
+    currentQuestion?.content?.question ||
+    currentQuestion?.prompt ||
+    ''
+  const hasAudioPrompt = Boolean(
+    currentQuestion &&
+      (currentMediaUrl ||
+        currentQuestion.content?.audio_text ||
+        currentQuestion.skill_pillar.toLowerCase() === 'listening')
+  )
+
+  // Auto-play audio for listening placement questions when autoPlayVoice is enabled
+  useEffect(() => {
+    if (isLoading || !currentQuestionId || !hasAudioPrompt) return
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      playQuestionAudio(currentMediaUrl, currentAudioText, undefined, false)
+    }, 220)
+
+    return () => {
+      window.clearTimeout(timer)
+      stopAllAudio()
+    }
+  }, [
+    currentAudioText,
+    currentMediaUrl,
+    currentQuestionId,
+    hasAudioPrompt,
+    isLoading,
+    playQuestionAudio,
+    stopAllAudio,
+  ])
 
   const options = useMemo(
     () =>
@@ -119,52 +191,15 @@ export const Step3PlacementTest = ({
   const answeredCount = questions.filter((q) => Boolean((answers[q.id] ?? '').trim())).length
   const progressPercent = Math.round(((safeIndex + 1) / questions.length) * 100)
 
-  const audioText =
-    currentQuestion.content?.audio_text ||
-    currentQuestion.content?.sentence ||
-    currentQuestion.content?.question ||
-    currentQuestion.prompt
-  const hasAudioPrompt = Boolean(
-    currentQuestion.media_url ||
-      currentQuestion.content?.audio_text ||
-      currentQuestion.skill_pillar.toLowerCase() === 'listening'
-  )
-
   const handlePlayAudio = (rate?: number) => {
     if (isPlayingAudio && typeof rate !== 'number') {
       stopAllAudio()
       return
     }
-    stopAllAudio()
-    triggerHaptic('tap')
-    setIsPlayingAudio(true)
-
-    const fallbackSpeech = () => {
-      if (!audioText) {
-        setIsPlayingAudio(false)
-        return
-      }
-      audioService.speakLanguage(
-        audioText,
-        resolveSpeechLocale(languageCode),
-        () => setIsPlayingAudio(false),
-        () => setIsPlayingAudio(false),
-        rate
-      )
-    }
-
-    if (currentQuestion.media_url) {
-      const audio = new Audio(currentQuestion.media_url)
-      audio.playbackRate = typeof rate === 'number' && rate > 0 ? rate : 1
-      audioRef.current = audio
-      audio.onended = () => setIsPlayingAudio(false)
-      audio.onerror = () => fallbackSpeech()
-      audio.play().catch(() => fallbackSpeech())
-      return
-    }
-
-    fallbackSpeech()
+    playQuestionAudio(currentMediaUrl, currentAudioText, rate, true)
   }
+
+  const pillarMeta = SKILL_PILLAR_LABELS[currentQuestion.skill_pillar.toLowerCase()]
 
   const updateSelectedTokens = (nextIndices: number[]) => {
     setSelectedTokensByQuestion((prev) => ({
@@ -199,7 +234,7 @@ export const Step3PlacementTest = ({
       <div className="space-y-2">
         <div className="flex items-center justify-between gap-2">
           <span className="inline-block px-2.5 py-0.5 rounded-full bg-blue-50 text-[#2563EB] text-[10px] font-extrabold uppercase tracking-wider">
-            {currentQuestion.skill_pillar}
+            {pillarMeta?.label ?? currentQuestion.skill_pillar}
           </span>
           {hasAudioPrompt && (
             <div className="flex items-center gap-1.5">

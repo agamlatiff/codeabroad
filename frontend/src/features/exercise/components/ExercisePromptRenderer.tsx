@@ -48,6 +48,35 @@ interface ExercisePromptRendererProps {
 const isImeComposing = (event: { isComposing?: boolean; keyCode?: number }) =>
   Boolean(event.isComposing || event.keyCode === 229)
 
+const formatPromptText = (prompt: string): string =>
+  prompt.replaceAll('[blank]', ' ______ ')
+
+const formatSentenceTemplateWithBlank = (
+  template: string,
+  previewValue: string
+): string => {
+  const segments = template.split('[blank]')
+  if (segments.length <= 1) return template
+  const blankCount = segments.length - 1
+  if (!previewValue) {
+    return segments.join(' ______ ')
+  }
+  if (blankCount > 1) {
+    const parts = previewValue
+      .split(/\s*[・/／]\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+    if (parts.length === blankCount) {
+      return segments.reduce(
+        (acc, seg, idx) =>
+          idx < blankCount ? `${acc}${seg} 「${parts[idx]}」 ` : `${acc}${seg}`,
+        ''
+      )
+    }
+  }
+  return segments.join(` 「${previewValue}」 `)
+}
+
 const getChoiceOptionClasses = (
   isSelected: boolean,
   submittedResult: SubmitExerciseAnswerResponse | null,
@@ -246,7 +275,7 @@ export const ExercisePromptRenderer = ({
         </div>
 
         <h1 className="text-xl sm:text-2xl font-brand font-extrabold text-slate-900 leading-snug whitespace-pre-line">
-          {exercise.prompt}
+          {formatPromptText(exercise.prompt)}
         </h1>
 
         {showHint && effectiveHint && (
@@ -280,9 +309,9 @@ export const ExercisePromptRenderer = ({
       {parsedContent.sentenceTemplate && (
         <div className="p-5 rounded-2xl bg-white border-2 border-slate-200 space-y-2 shadow-sm">
           <p className="text-lg sm:text-xl font-bold text-slate-900 leading-relaxed">
-            {parsedContent.sentenceTemplate.replaceAll(
-              '[blank]',
-              blankPreviewValue ? ` 「${blankPreviewValue}」 ` : ' ______ '
+            {formatSentenceTemplateWithBlank(
+              parsedContent.sentenceTemplate,
+              blankPreviewValue
             )}
           </p>
           {parsedContent.translation && (

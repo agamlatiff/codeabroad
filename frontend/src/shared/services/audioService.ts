@@ -464,6 +464,11 @@ class AudioService {
     onError?: () => void,
     rate = 0.88
   ): void {
+    const spokenText = sanitizeTextForSpeech(text, lang)
+    if (!spokenText) {
+      onEnd?.()
+      return
+    }
     if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
       onError?.()
       return
@@ -475,7 +480,7 @@ class AudioService {
 
     try {
       window.speechSynthesis.cancel()
-      const utterance = new SpeechSynthesisUtterance(text)
+      const utterance = new SpeechSynthesisUtterance(spokenText)
       utterance.lang = lang
       utterance.rate = rate
       utterance.pitch = 1.05
@@ -513,6 +518,27 @@ class AudioService {
       window.speechSynthesis.cancel()
     }
   }
+}
+
+/**
+ * Strips parenthetical furigana readings and line-leading speaker labels (e.g. "A:", "B:")
+ * from Japanese TTS strings so speech synthesizers do not read the same word twice.
+ */
+export function sanitizeTextForSpeech(text: string, lang = 'ja-JP'): string {
+  const trimmed = text.trim()
+  if (!trimmed) return ''
+  if (!lang.toLowerCase().startsWith('ja')) {
+    return trimmed
+  }
+  const cleaned = trimmed
+    .replace(/(^|\n)\s*[A-Za-z]\s*[:：]\s*/g, '$1')
+    .replace(/([\u3005\u3040-\u30FF\u4E00-\u9FFF])\s*（[^）]*）/g, '$1')
+    .replace(/([\u3005\u3040-\u30FF\u4E00-\u9FFF])\s*\([^)]*\)/g, '$1')
+    .replace(/([。！？.!?])\s*\n+/g, '$1 ')
+    .replace(/\n+/g, '。 ')
+    .replace(/[ \t]{2,}/g, ' ')
+    .trim()
+  return cleaned || trimmed
 }
 
 export const audioService = new AudioService()

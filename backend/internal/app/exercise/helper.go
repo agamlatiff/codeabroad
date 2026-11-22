@@ -49,32 +49,63 @@ var comparablePunctuationReplacer = strings.NewReplacer(
 var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	// Longer phrases / compounds first
 	"有難うございます", "ありがとうございます",
+	"合格しました", "ごうかくしました",
+	"見せなければ", "みせなければ",
+	"行かなければ", "いかなければ",
+	"一生懸命", "いっしょうけんめい",
+	"頑張ります", "がんばります",
+	"お願いします", "おねがいします",
+	"休みの日", "やすみのひ",
+	"忘れないで", "わすれないで",
+	"吸わないで", "すわないで",
+	"行きましょう", "いきましょう",
 	"お大事に", "おだいじに",
-	"お土産", "おみやげ",
-	"お入り", "おはいり",
-	"買い物", "かいもの",
 	"会社員", "かいしゃいん",
 	"図書館", "としょかん",
 	"郵便局", "ゆうびんきょく",
 	"日本語", "にほんご",
 	"一万円", "いちまんえん",
-	"見せなければ", "みせなければ",
-	"忘れないで", "わすれないで",
-	"行きましょう", "いきましょう",
+	"済みません", "すみません",
+	"働きたい", "はたらきたい",
+	"働きます", "はたらきます",
 	"読みます", "よみます",
 	"買います", "かいます",
 	"飲みます", "のみます",
 	"食べます", "たべます",
 	"行きます", "いきます",
-	"見ます", "みます",
+	"話します", "はなします",
+	"書きます", "かきます",
+	"聞きます", "ききます",
+	"思います", "おもいます",
+	"来ました", "きました",
+	"行ったり", "いったり",
+	"手伝って", "てつだって",
 	"曲がって", "まがって",
 	"明るくて", "あかるくて",
 	"寒くない", "さむくない",
+	"富士山", "ふじさん",
+	"面白い", "おもしろい",
+	"楽しい", "たのしい",
+	"優しい", "やさしい",
+	"お土産", "おみやげ",
+	"お入り", "おはいり",
+	"買い物", "かいもの",
 	"有難う", "ありがとう",
-	"済みません", "すみません",
 	"大好き", "だいすき",
 	"友だち", "ともだち",
 	"友達", "ともだち",
+	"見たい", "みたい",
+	"行きたい", "いきたい",
+	"行った", "いった",
+	"登った", "のぼった",
+	"作った", "つくった",
+	"送って", "おくって",
+	"話して", "はなして",
+	"食べて", "たべて",
+	"書いて", "かいて",
+	"聞いて", "きいて",
+	"読んで", "よんで",
+	"買って", "かって",
 	"先生", "せんせい",
 	"学生", "がくせい",
 	"時間", "じかん",
@@ -127,6 +158,19 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"日本", "にほん",
 	"ご飯", "ごはん",
 	"お菓子", "おかし",
+	"合格", "ごうかく",
+	"掃除", "そうじ",
+	"洗濯", "せんたく",
+	"有名", "ゆうめい",
+	"残業", "ざんぎょう",
+	"上手", "じょうず",
+	"田中", "たなか",
+	"親切", "しんせつ",
+	"便利", "べんり",
+	"一枚", "いちまい",
+	"休み", "やすみ",
+	"来ます", "きます",
+	"見ます", "みます",
 	"青い", "あおい",
 	"赤い", "あかい",
 	"寒い", "さむい",
@@ -144,6 +188,10 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"飲んで", "のんで",
 	"見せて", "みせて",
 	"撮って", "とって",
+	"見て", "みて",
+	"話す", "はなす",
+	"寝る", "ねる",
+	"降る", "ふる",
 	"泳ぐ", "およぐ",
 	"弾く", "ひく",
 	"私", "わたし",
@@ -188,6 +236,47 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"犬", "いぬ",
 	"朝", "あさ",
 	"夜", "よる",
+	"働", "はたら",
+	"人", "ひと",
+	"下", "した",
+	"空", "そら",
+	"足", "あし",
+	"海", "うみ",
+	"暇", "ひま",
+	"町", "まち",
+	"桜", "さくら",
+	"日", "ひ",
+	"来", "き",
+	"行", "い",
+	"見", "み",
+	"書", "か",
+	"話", "はな",
+	"寝", "ね",
+	"作", "つく",
+	"登", "のぼ",
+	"降", "ふ",
+	"送", "おく",
+	"願", "ねが",
+	"思", "おも",
+	"楽", "たの",
+	"休", "やす",
+	"枚", "まい",
+	"中", "なか",
+	"事", "こと",
+	"有", "あ",
+	"気", "き",
+	"生", "せい",
+	"田", "た",
+	"白", "しろ",
+	"者", "もの",
+	"語", "ご",
+	"飲", "の",
+	"食", "た",
+	"読", "よ",
+	"買", "か",
+	"館", "かん",
+	"室", "しつ",
+	"国", "くに",
 )
 
 func containsCJK(s string) bool {
@@ -441,10 +530,56 @@ func kanaToRomaji(raw string) string {
 var romajiPhoneticReplacer = strings.NewReplacer(
 	"ō", "o", "ū", "u", "ā", "a", "ī", "i", "ē", "e",
 	"ou", "o", "oo", "o", "uu", "u", "aa", "a", "ee", "e",
+	"mb", "nb", "mp", "np", "mm", "nm",
 	"si", "shi", "ti", "chi", "tu", "tsu", "hu", "fu",
 	"zi", "ji", "di", "ji", "du", "zu",
 	"wo", "o",
 )
+
+var unspacedParticleReplacer = strings.NewReplacer("ha", "wa", "he", "e")
+
+func containsHan(s string) bool {
+	for _, r := range s {
+		if unicode.In(r, unicode.Han) {
+			return true
+		}
+	}
+	return false
+}
+
+// KanaToRomaji converts Japanese Kana (and known N5 Kanji compounds) into spaced readable Romaji,
+// normalizing standalone particle words ("ha"/"he"/"wo" -> "wa"/"e"/"o"). Returns "" if any Kanji remain unmapped.
+func KanaToRomaji(raw string) string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return ""
+	}
+	folded := foldKatakanaAndKanjiSpeech(trimmed)
+	if containsHan(folded) {
+		return ""
+	}
+	rom := kanaToRomaji(trimmed)
+	rom = comparablePunctuationReplacer.Replace(rom)
+	fields := strings.Fields(rom)
+	if len(fields) == 0 {
+		return ""
+	}
+	for i, f := range fields {
+		switch strings.ToLower(f) {
+		case "ha":
+			fields[i] = "wa"
+		case "he":
+			fields[i] = "e"
+		case "wo":
+			fields[i] = "o"
+		}
+	}
+	out := strings.Join(fields, " ")
+	if containsCJK(out) {
+		return ""
+	}
+	return out
+}
 
 func normalizeRomajiPhonetics(raw string) string {
 	cleaned := strings.TrimSpace(raw)
@@ -570,7 +705,9 @@ func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 				continue
 			}
 			if (utf8.RuneCountInString(uPhonetic) >= 2 && utf8.RuneCountInString(cPhonetic) >= 2 && uPhonetic == cPhonetic) ||
-				(utf8.RuneCountInString(uPhonetic) == 1 && uPhonetic == cPhonetic) {
+				(utf8.RuneCountInString(uPhonetic) == 1 && uPhonetic == cPhonetic) ||
+				(utf8.RuneCountInString(uPhonetic) >= 6 && utf8.RuneCountInString(cPhonetic) >= 6 &&
+					unspacedParticleReplacer.Replace(uPhonetic) == unspacedParticleReplacer.Replace(cPhonetic)) {
 				return true
 			}
 		}
@@ -611,7 +748,17 @@ func isFillBlankTranslationSpoiler(translation string, correctAnswer string, con
 			}
 		}
 	}
-	if strings.HasPrefix(strings.ToLower(trimmedTrans), "huruf ") {
+	lowerTrans := strings.ToLower(trimmedTrans)
+	if strings.HasPrefix(lowerTrans, "huruf ") {
+		return true
+	}
+	if strings.HasPrefix(lowerTrans, "partikel ") {
+		rest := strings.TrimSpace(strings.TrimPrefix(lowerTrans, "partikel "))
+		if rest != "" && !strings.Contains(rest, " ") && len(rest) <= 4 {
+			return true
+		}
+	}
+	if strings.HasPrefix(lowerTrans, "kanji ") && correctAnswer != "" && strings.Contains(trimmedTrans, strings.TrimSpace(correctAnswer)) {
 		return true
 	}
 	if !strings.Contains(trimmedTrans, " ") && correctAnswer != "" {

@@ -720,7 +720,7 @@ func (r *PostgresRepository) GetDueReviewsWithTotal(ctx context.Context, userID 
 	query := `
 		SELECT 
 			r.id, r.user_id, r.exercise_id, r.repetition_count, r.interval_days, r.ease_factor, r.next_review_at, r.last_reviewed_at,
-			` + prefixedSanitizedExerciseSelectColumns + `,
+			` + prefixedExerciseSelectColumns + `,
 			COUNT(*) OVER() AS total_due
 		FROM user_srs_reviews r
 		JOIN exercises e ON r.exercise_id = e.id
@@ -744,7 +744,7 @@ func (r *PostgresRepository) GetDueReviewsWithTotal(ctx context.Context, userID 
 	totalDue := 0
 	for rows.Next() {
 		var rev UserSRSReview
-		var exBuf sanitizedExerciseScanBuf
+		var exBuf exerciseScanBuf
 		var rowTotal int
 		scanArgs := append([]any{
 			&rev.ID, &rev.UserID, &rev.ExerciseID, &rev.RepetitionCount,
