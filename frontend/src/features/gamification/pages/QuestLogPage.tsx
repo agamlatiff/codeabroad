@@ -62,6 +62,10 @@ export const QuestLogPage = () => {
     isMockModalOpen,
     setIsMockModalOpen,
     isPurchasingItemId,
+    isActivatingItemId,
+    isClaimingMonthlyBadge,
+    xpBoosterActive,
+    xpBoosterExpiresAt,
     toastMessage,
     setToastMessage,
     floatingReward,
@@ -96,6 +100,8 @@ export const QuestLogPage = () => {
     handleOpenChest,
     handleConfirmClaimChest,
     handlePurchaseShopItem,
+    handleActivateShopItem,
+    handleClaimMonthlyBadge,
     handleCVSubmitted,
     handleMockScheduled,
   } = useQuests()
@@ -269,6 +275,10 @@ export const QuestLogPage = () => {
                   userGems={userGems}
                   inventory={inventory}
                   isPurchasingItemId={isPurchasingItemId}
+                  xpBoosterActive={xpBoosterActive}
+                  xpBoosterExpiresAt={xpBoosterExpiresAt}
+                  isActivatingItemId={isActivatingItemId}
+                  onActivateItem={(itemId) => void handleActivateShopItem(itemId)}
                   onOpenCVModal={() => {
                     triggerHaptic('tap')
                     setIsCVModalOpen(true)
@@ -380,6 +390,12 @@ export const QuestLogPage = () => {
                           <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600" />
                           <span>LENCANA AKTIF DI PROFIL</span>
                         </span>
+                      ) : isMonthlyUnlocked ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <Sparkle weight="fill" className="w-4 h-4 text-amber-800" />
+                          <span>KLAIM LENCANA (+150 XP)</span>
+                          <ArrowRight weight="bold" className="w-3.5 h-3.5" />
+                        </span>
                       ) : (
                         <span className="inline-flex items-center gap-1.5">
                           <Medal weight="bold" className="w-4 h-4 text-amber-600" />
@@ -444,7 +460,10 @@ export const QuestLogPage = () => {
                     const ItemIcon = item.icon
                     const ownedCount = inventory[item.id] || 0
                     const canTriggerAction =
-                      ownedCount > 0 && (item.id === 'cv-review' || item.id === 'mock-interview')
+                      ownedCount > 0 &&
+                      (item.id === 'cv-review' ||
+                        item.id === 'mock-interview' ||
+                        item.id === 'xp-booster')
 
                     return (
                       <button
@@ -456,6 +475,8 @@ export const QuestLogPage = () => {
                             setIsCVModalOpen(true)
                           } else if (ownedCount > 0 && item.id === 'mock-interview') {
                             setIsMockModalOpen(true)
+                          } else if (ownedCount > 0 && item.id === 'xp-booster') {
+                            void handleActivateShopItem('xp-booster')
                           } else {
                             setActiveTab('shop')
                           }
@@ -477,18 +498,24 @@ export const QuestLogPage = () => {
                           </span>
                           <span
                             className={`text-[10px] font-mono font-bold block ${
-                              canTriggerAction
-                                ? 'text-emerald-700'
-                                : ownedCount > 0
-                                  ? 'text-blue-700'
-                                  : 'text-slate-400'
+                              item.id === 'xp-booster' && xpBoosterActive
+                                ? 'text-purple-700'
+                                : canTriggerAction
+                                  ? 'text-emerald-700'
+                                  : ownedCount > 0
+                                    ? 'text-blue-700'
+                                    : 'text-slate-400'
                             }`}
                           >
-                            {canTriggerAction
-                              ? `${ownedCount}x · Pakai`
-                              : ownedCount > 0
-                                ? `${ownedCount}x Dimiliki`
-                                : '0 Dimiliki'}
+                            {item.id === 'xp-booster' && xpBoosterActive
+                              ? ownedCount > 0
+                                ? `2x XP Aktif · +${ownedCount}x`
+                                : '2x XP Aktif'
+                              : canTriggerAction
+                                ? `${ownedCount}x · ${item.id === 'xp-booster' ? 'Aktifkan' : 'Pakai'}`
+                                : ownedCount > 0
+                                  ? `${ownedCount}x Dimiliki`
+                                  : '0 Dimiliki'}
                           </span>
                         </div>
                       </button>
@@ -532,7 +559,8 @@ export const QuestLogPage = () => {
         completedCount={monthlyCompletedCount}
         targetCount={monthlyTargetCount}
         isClaimed={isMonthlyBadgeClaimed}
-        onClaim={() => setIsMonthlyBadgeModalOpen(false)}
+        isClaiming={isClaimingMonthlyBadge}
+        onClaim={() => void handleClaimMonthlyBadge()}
       />
 
       <CVReviewSubmissionModal

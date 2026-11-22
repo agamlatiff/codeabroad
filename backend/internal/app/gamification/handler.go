@@ -81,6 +81,31 @@ func (h *Handler) BuyShopItem(c *gin.Context) {
 	})
 }
 
+// ActivateShopItem handles POST /api/v1/gamification/shop/activate
+func (h *Handler) ActivateShopItem(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	var req ShopActivateRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid shop activation payload", nil))
+		return
+	}
+
+	status, err := h.gamificationUsecase.ActivateShopItem(c.Request.Context(), userID, req.ItemID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "shop item activated successfully", gin.H{
+		"status": status,
+	})
+}
+
 // ListBadges handles GET /api/v1/gamification/badges
 func (h *Handler) ListBadges(c *gin.Context) {
 	userID := c.GetString("userID")
@@ -162,6 +187,26 @@ func (h *Handler) ClaimDailyQuest(c *gin.Context) {
 	response.Success(c, http.StatusOK, "daily quest claimed successfully", res)
 }
 
+// ClaimMonthlyBadge handles POST /api/v1/gamification/monthly-badge/claim
+func (h *Handler) ClaimMonthlyBadge(c *gin.Context) {
+	userID := c.GetString("userID")
+	if userID == "" {
+		response.Error(c, apperror.ErrUnauthorized)
+		return
+	}
+
+	claim, status, err := h.gamificationUsecase.ClaimMonthlyBadge(c.Request.Context(), userID)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "monthly badge claimed successfully", gin.H{
+		"claim":  claim,
+		"status": status,
+	})
+}
+
 // SubmitCoaching handles POST /api/v1/gamification/coaching
 func (h *Handler) SubmitCoaching(c *gin.Context) {
 	userID := c.GetString("userID")
@@ -202,13 +247,17 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 
 	if h.mutationLimiter != nil {
 		group.POST("/shop/buy", h.mutationLimiter, h.BuyShopItem)
+		group.POST("/shop/activate", h.mutationLimiter, h.ActivateShopItem)
 		group.POST("/chests/claim", h.mutationLimiter, h.ClaimDailyChest)
 		group.POST("/daily-quests/:id/claim", h.mutationLimiter, h.ClaimDailyQuest)
+		group.POST("/monthly-badge/claim", h.mutationLimiter, h.ClaimMonthlyBadge)
 		group.POST("/coaching", h.mutationLimiter, h.SubmitCoaching)
 	} else {
 		group.POST("/shop/buy", h.BuyShopItem)
+		group.POST("/shop/activate", h.ActivateShopItem)
 		group.POST("/chests/claim", h.ClaimDailyChest)
 		group.POST("/daily-quests/:id/claim", h.ClaimDailyQuest)
+		group.POST("/monthly-badge/claim", h.ClaimMonthlyBadge)
 		group.POST("/coaching", h.SubmitCoaching)
 	}
 }

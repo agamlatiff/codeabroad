@@ -33,6 +33,7 @@ export interface UseSettingsModalOptions {
   avatarStyle: AvatarStyle
   onAvatarStyleChange: (style: AvatarStyle) => void
   onProfileUpdated?: () => void
+  onLogout?: () => void
 }
 
 /**

@@ -39,11 +39,30 @@ export interface GamificationStatus {
   current_level?: number
   streak?: number
   gems: number
+  xp_booster_expires_at?: string | null
+  xp_booster_active?: boolean
   inventory: Record<string, number>
   claimed_chests: number[]
   badges?: UserBadge[]
   monthly_badge_claimed?: boolean
   monthly_badge_key?: string
+  monthly_completed_count?: number
+  monthly_target_count?: number
+}
+
+export interface MonthlyBadgeClaim {
+  id: string
+  user_id: string
+  month_key: string
+  badge_key: string
+  completed_count: number
+  xp_awarded: number
+  claimed_at: string
+}
+
+export interface ClaimMonthlyBadgeResponse {
+  claim: MonthlyBadgeClaim
+  status: GamificationStatus
 }
 
 export interface ClaimChestRequest {

@@ -5,6 +5,7 @@ import (
 	"strings"
 	"time"
 
+	"merantalk/backend/internal/app/gamification"
 	"merantalk/backend/internal/app/user"
 	"merantalk/backend/internal/shared/apperror"
 	"merantalk/backend/internal/shared/progression"
@@ -18,9 +19,15 @@ const (
 	maxDeckPageLimit     = 30
 )
 
+// BadgeAwarder is a narrow dependency for unlocking flashcard mastery achievement badges.
+type BadgeAwarder interface {
+	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*gamification.UserBadge, error)
+}
+
 type usecase struct {
-	repo     Repository
-	userRepo user.Repository
+	repo         Repository
+	userRepo     user.Repository
+	badgeAwarder BadgeAwarder
 }
 
 // NewUsecase creates a new flashcard domain usecase.
@@ -28,6 +35,15 @@ func NewUsecase(repo Repository, userRepo user.Repository) Usecase {
 	return &usecase{
 		repo:     repo,
 		userRepo: userRepo,
+	}
+}
+
+// NewUsecaseWithBadges creates a flashcard usecase capable of awarding achievement badges.
+func NewUsecaseWithBadges(repo Repository, userRepo user.Repository, badgeAwarder BadgeAwarder) Usecase {
+	return &usecase{
+		repo:         repo,
+		userRepo:     userRepo,
+		badgeAwarder: badgeAwarder,
 	}
 }
 
@@ -191,19 +207,36 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 
 	if u.userRepo != nil {
 		if usr, err := u.userRepo.GetByID(ctx, userID); err == nil && usr != nil {
-			newXP := usr.XP + xpAwarded
-			newLevel := progression.CalculateLevel(newXP)
-			newStreak, _ := progression.EvaluateDailyStreak(usr.LastActiveAt, usr.Streak, now)
-			_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, newStreak, &now)
+			boosterActive := usr.XPBoosterExpiresAt != nil && usr.XPBoosterExpiresAt.After(now)
+			if boosterActive {
+				xpAwarded *= 2
+			}
 			_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
 				UserID:       userID,
 				ActivityType: "srs_review_completed",
 				XPEarned:     xpAwarded,
 				Metadata: map[string]any{
-					"card_id": trimmedCardID,
-					"quality": quality,
+					"card_id":            trimmedCardID,
+					"quality":            quality,
+					"xp_booster_applied": boosterActive,
 				},
 			})
+
+			refreshedUser := usr
+			if latest, getErr := u.userRepo.GetByID(ctx, userID); getErr == nil && latest != nil {
+				refreshedUser = latest
+			} else {
+				refreshedUser.Streak, _ = progression.EvaluateDailyStreak(usr.LastActiveAt, usr.Streak, now)
+			}
+			newXP := refreshedUser.XP + xpAwarded
+			newLevel := progression.CalculateLevel(newXP)
+			_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, refreshedUser.Streak, &now)
+		}
+	}
+
+	if quality >= 3 && u.badgeAwarder != nil {
+		if masteredCount, countErr := u.repo.CountMasteredCards(ctx, userID); countErr == nil && masteredCount >= 25 {
+			_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", 0)
 		}
 	}
 

@@ -81,7 +81,7 @@ func main() {
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
 	exerciseUsecase := exercise.NewUsecaseFull(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, curriculumRepo, curriculumCache).
 		WithBadgeAwarder(gamificationRepo)
-	flashcardUsecase := flashcard.NewUsecase(flashcardRepo, userRepo)
+	flashcardUsecase := flashcard.NewUsecaseWithBadges(flashcardRepo, userRepo, gamificationRepo)
 	gamificationUsecase := gamification.NewUsecase(gamificationRepo)
 	leaderboardUsecase := leaderboard.NewUsecaseWithCache(leaderboardRepo, rdb)
 

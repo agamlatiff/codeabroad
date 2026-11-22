@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { useEffect, useId, useState } from 'react'
 import {
   FileText,
   Lightning,
@@ -18,6 +18,10 @@ export interface AkihabaraShopSectionProps {
   userGems: number
   inventory: Record<string, number>
   isPurchasingItemId: string | null
+  xpBoosterActive?: boolean
+  xpBoosterExpiresAt?: string | null
+  isActivatingItemId?: string | null
+  onActivateItem?: (itemId: string) => void
   onOpenCVModal: () => void
   onOpenMockModal: () => void
   onPurchaseItem: (item: ShopItem) => void
@@ -37,11 +41,31 @@ export const AkihabaraShopSection = ({
   userGems,
   inventory,
   isPurchasingItemId,
+  xpBoosterActive = false,
+  xpBoosterExpiresAt,
+  isActivatingItemId,
+  onActivateItem,
   onOpenCVModal,
   onOpenMockModal,
   onPurchaseItem,
 }: AkihabaraShopSectionProps) => {
   const patternId = `guild-shop-seigaiha-${useId().replace(/:/g, '')}`
+  const [nowMs, setNowMs] = useState<number>(() => Date.now())
+
+  useEffect(() => {
+    if (!xpBoosterActive) return
+    const timer = setInterval(() => {
+      setNowMs(Date.now())
+    }, 30_000)
+    return () => clearInterval(timer)
+  }, [xpBoosterActive])
+
+  const boosterExpiresMs = xpBoosterExpiresAt ? new Date(xpBoosterExpiresAt).getTime() : 0
+  const isBoosterCurrentlyActive =
+    xpBoosterActive && Number.isFinite(boosterExpiresMs) && boosterExpiresMs > nowMs
+  const boosterRemainingMinutes = isBoosterCurrentlyActive
+    ? Math.max(1, Math.ceil((boosterExpiresMs - nowMs) / 60_000))
+    : 0
   return (
     <div className="space-y-4">
       {/* Japanese Guild Stall Top Banner */}
@@ -177,8 +201,36 @@ export const AkihabaraShopSection = ({
                   </span>
                 </div>
 
-                {/* Action / Active Status Badge if owned */}
-                {ownedCount > 0 && item.id === 'xp-booster' && (
+                {/* Action / Active Status Badge if owned or active */}
+                {item.id === 'xp-booster' && isBoosterCurrentlyActive && (
+                  <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs inline-flex items-center gap-1">
+                    <Lightning weight="fill" className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                    <span>2x XP Aktif • {boosterRemainingMinutes} mnt</span>
+                  </span>
+                )}
+
+                {item.id === 'xp-booster' && ownedCount > 0 && onActivateItem && (
+                  <Button3D
+                    variant="emerald"
+                    size="sm"
+                    onClick={() => onActivateItem(item.id)}
+                    disabled={isActivatingItemId === item.id}
+                    className="text-xs px-3.5 py-2 border-b-emerald-800"
+                  >
+                    <span className="inline-flex items-center gap-1.5">
+                      <Lightning weight="fill" className="w-3.5 h-3.5" />
+                      <span>
+                        {isActivatingItemId === item.id
+                          ? 'MENGAKTIFKAN...'
+                          : isBoosterCurrentlyActive
+                            ? 'PERPANJANG +15m'
+                            : 'AKTIFKAN 2x XP'}
+                      </span>
+                    </span>
+                  </Button3D>
+                )}
+
+                {ownedCount > 0 && item.id === 'xp-booster' && !onActivateItem && !isBoosterCurrentlyActive && (
                   <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs inline-flex items-center gap-1">
                     <Lightning weight="fill" className="w-3.5 h-3.5 text-purple-600" />
                     <span>{ownedCount}x Tersedia</span>

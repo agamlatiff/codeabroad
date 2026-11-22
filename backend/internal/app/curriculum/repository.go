@@ -12,6 +12,7 @@ import (
 	"merantalk/backend/infrastructure/postgres"
 	"merantalk/backend/internal/app/user"
 	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/progression"
 	"github.com/jackc/pgx/v5"
 )
 
@@ -537,14 +538,16 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 
 	// 1. Acquire row-level FOR UPDATE lock on user_gamification first to serialize concurrent completions per user
 	var lockedXP, lockedStreak, lockedGems int
-	var lockedLastActiveAt *time.Time
+	var lockedLastActiveAt, lockedBoosterExpiresAt *time.Time
 	lockGamificationQuery := `
-		SELECT xp, streak, last_active_at, gems
+		SELECT xp, streak, last_active_at, gems, xp_booster_expires_at
 		FROM user_gamification
 		WHERE user_id = $1::uuid
 		FOR UPDATE
 	`
-	err = tx.QueryRow(ctx, lockGamificationQuery, payload.Progress.UserID).Scan(&lockedXP, &lockedStreak, &lockedLastActiveAt, &lockedGems)
+	err = tx.QueryRow(ctx, lockGamificationQuery, payload.Progress.UserID).Scan(
+		&lockedXP, &lockedStreak, &lockedLastActiveAt, &lockedGems, &lockedBoosterExpiresAt,
+	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return user.ErrUserNotFound
@@ -661,6 +664,12 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		payload.XPEarned = lessonXPReward
 	}
 
+	// 2c. Apply 2x XP Booster when an active booster window covers this completion
+	if payload.XPEarned > 0 && lockedBoosterExpiresAt != nil && lockedBoosterExpiresAt.After(dbNow) {
+		payload.XPEarned *= 2
+		payload.Metadata["xp_booster_applied"] = true
+	}
+
 	// 3. Atomic upsert of user_lesson_progress using monotonic DB clock NOW() for initial completion
 	upsertQuery := `
 		INSERT INTO user_lesson_progress (user_id, lesson_id, is_completed, score, is_skipped, completed_at)
@@ -700,8 +709,34 @@ func (r *PostgresRepository) RecordLessonCompletionTx(ctx context.Context, paylo
 		return tx.Commit(ctx)
 	}
 
-	// Recompute streak & level via shared domain helper from locked DB state
-	newStreak, _ := helper.EvaluateDailyStreak(lockedStreak, lockedLastActiveAt, payload.LastActiveAt)
+	// Recompute streak & level via shared domain helper from locked DB state, consuming streak-freeze if needed
+	var availableFreezes int
+	freezeErr := tx.QueryRow(
+		ctx,
+		`SELECT quantity FROM user_inventories WHERE user_id = $1::uuid AND item_id = 'streak-freeze' FOR UPDATE`,
+		payload.Progress.UserID,
+	).Scan(&availableFreezes)
+	if freezeErr != nil {
+		if errors.Is(freezeErr, pgx.ErrNoRows) {
+			availableFreezes = 0
+		} else {
+			return fmt.Errorf("failed to inspect streak-freeze inventory in tx: %w", freezeErr)
+		}
+	}
+
+	newStreak, _, freezesUsed := progression.EvaluateDailyStreakWithFreeze(
+		lockedLastActiveAt, lockedStreak, availableFreezes, payload.LastActiveAt,
+	)
+	if freezesUsed > 0 {
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE user_inventories SET quantity = quantity - $2, updated_at = NOW() WHERE user_id = $1::uuid AND item_id = 'streak-freeze' AND quantity >= $2`,
+			payload.Progress.UserID, freezesUsed,
+		); err != nil {
+			return fmt.Errorf("failed to consume streak-freeze in tx: %w", err)
+		}
+		payload.Metadata["streak_freeze_used"] = freezesUsed
+	}
 	newLevel := helper.CalculateLevel(lockedXP + payload.XPEarned)
 
 	updateGamificationQuery := `

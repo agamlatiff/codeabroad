@@ -3,6 +3,7 @@ package gamification
 import (
 	"context"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -20,37 +21,45 @@ type MockRepository struct {
 	ChestClaims         map[string][]DailyChestClaim
 	DailyQuests         map[string][]DailyQuestItem
 	DailyQuestsDone     map[string]int
+	BoosterExpiresAt    map[string]*time.Time
+	MonthlyCompleted    map[string]int
+	MonthlyClaims       map[string]map[string]MonthlyBadgeClaim
 	CoachingSubmissions []CoachingSubmission
 
-	GetStatusErr        error
-	GetStatsErr         error
-	UpdateStatsErr      error
-	AddXPAndGemsErr     error
-	GetShopItemsErr     error
-	GetShopItemByIDErr  error
-	GetUserInventoryErr error
-	BuyShopItemErr      error
-	GetBadgesErr        error
-	GetUserBadgesErr    error
-	AwardBadgeErr       error
-	GetChestClaimsErr   error
-	ClaimChestErr       error
-	GetDailyQuestsErr   error
-	ClaimDailyQuestErr  error
-	CreateCoachingErr   error
+	GetStatusErr         error
+	GetStatsErr          error
+	UpdateStatsErr       error
+	AddXPAndGemsErr      error
+	GetShopItemsErr      error
+	GetShopItemByIDErr   error
+	GetUserInventoryErr  error
+	BuyShopItemErr       error
+	ActivateShopItemErr  error
+	GetBadgesErr         error
+	GetUserBadgesErr     error
+	AwardBadgeErr        error
+	GetChestClaimsErr    error
+	ClaimChestErr        error
+	GetDailyQuestsErr    error
+	ClaimDailyQuestErr   error
+	ClaimMonthlyBadgeErr error
+	CreateCoachingErr    error
 }
 
 // NewMockRepository creates an in-memory mock gamification Repository
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
-		Stats:           make(map[string]*user.UserGamificationStats),
-		ShopItems:       make(map[string]*ShopItem),
-		Inventory:       make(map[string][]UserInventoryItem),
-		Badges:          make(map[string]*BadgeDefinition),
-		UserBadges:      make(map[string][]UserBadge),
-		ChestClaims:     make(map[string][]DailyChestClaim),
-		DailyQuests:     make(map[string][]DailyQuestItem),
-		DailyQuestsDone: make(map[string]int),
+		Stats:            make(map[string]*user.UserGamificationStats),
+		ShopItems:        make(map[string]*ShopItem),
+		Inventory:        make(map[string][]UserInventoryItem),
+		Badges:           make(map[string]*BadgeDefinition),
+		UserBadges:       make(map[string][]UserBadge),
+		ChestClaims:      make(map[string][]DailyChestClaim),
+		DailyQuests:      make(map[string][]DailyQuestItem),
+		DailyQuestsDone:  make(map[string]int),
+		BoosterExpiresAt: make(map[string]*time.Time),
+		MonthlyCompleted: make(map[string]int),
+		MonthlyClaims:    make(map[string]map[string]MonthlyBadgeClaim),
 	}
 }
 
@@ -86,15 +95,27 @@ func (m *MockRepository) GetStatus(ctx context.Context, userID string) (*Gamific
 		}
 	}
 
+	nowUTC := time.Now().UTC()
+	boosterExp := m.BoosterExpiresAt[userID]
+	boosterActive := boosterExp != nil && boosterExp.After(nowUTC)
+	monthKey := time.Now().In(wibLocation).Format("2006-01")
+	_, monthlyClaimed := m.MonthlyClaims[userID][monthKey]
+
 	return &GamificationStatus{
-		XP:             xp,
-		CurrentLevel:   level,
-		Streak:         streak,
-		Gems:           gems,
-		Inventory:      invMap,
-		InventoryItems: invItems,
-		ClaimedChests:  claimedChests,
-		Badges:         append([]UserBadge(nil), m.UserBadges[userID]...),
+		XP:                    xp,
+		CurrentLevel:          level,
+		Streak:                streak,
+		Gems:                  gems,
+		XPBoosterExpiresAt:    boosterExp,
+		XPBoosterActive:       boosterActive,
+		Inventory:             invMap,
+		InventoryItems:        invItems,
+		ClaimedChests:         claimedChests,
+		Badges:                append([]UserBadge(nil), m.UserBadges[userID]...),
+		MonthlyBadgeClaimed:   monthlyClaimed,
+		MonthlyBadgeKey:       "monthly_" + strings.ReplaceAll(monthKey, "-", "_"),
+		MonthlyCompletedCount: m.MonthlyCompleted[userID],
+		MonthlyTargetCount:    MonthlyBadgeTargetCount,
 	}, nil
 }
 
@@ -275,6 +296,40 @@ func (m *MockRepository) BuyShopItem(ctx context.Context, userID string, itemID 
 	}
 	m.Inventory[userID] = append(m.Inventory[userID], newItem)
 	return &newItem, st.Gems, nil
+}
+
+func (m *MockRepository) ActivateShopItem(ctx context.Context, userID string, itemID string) (*time.Time, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.ActivateShopItemErr != nil {
+		return nil, m.ActivateShopItemErr
+	}
+	if itemID != "xp-booster" {
+		return nil, ErrItemNotActivatable
+	}
+	consumed := false
+	invList := m.Inventory[userID]
+	for i := range invList {
+		if invList[i].ItemID == itemID && invList[i].Quantity > 0 {
+			invList[i].Quantity--
+			consumed = true
+			break
+		}
+	}
+	if !consumed {
+		return nil, ErrItemNotOwned
+	}
+	m.Inventory[userID] = invList
+
+	base := time.Now().UTC()
+	if prev := m.BoosterExpiresAt[userID]; prev != nil && prev.After(base) {
+		base = *prev
+	}
+	exp := base.Add(XPBoosterDuration)
+	m.BoosterExpiresAt[userID] = &exp
+	cp := exp
+	return &cp, nil
 }
 
 func (m *MockRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, error) {
@@ -497,5 +552,44 @@ func (m *MockRepository) ClaimDailyQuest(ctx context.Context, userID string, que
 		}
 	}
 	return nil, ErrDailyQuestNotFound
+}
+
+func (m *MockRepository) ClaimMonthlyBadge(ctx context.Context, userID string) (*MonthlyBadgeClaim, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+
+	if m.ClaimMonthlyBadgeErr != nil {
+		return nil, m.ClaimMonthlyBadgeErr
+	}
+	completed := m.MonthlyCompleted[userID]
+	if completed < MonthlyBadgeTargetCount {
+		return nil, ErrMonthlyBadgeNotUnlocked
+	}
+	monthKey := time.Now().In(wibLocation).Format("2006-01")
+	if m.MonthlyClaims[userID] == nil {
+		m.MonthlyClaims[userID] = make(map[string]MonthlyBadgeClaim)
+	}
+	if _, exists := m.MonthlyClaims[userID][monthKey]; exists {
+		return nil, ErrMonthlyBadgeAlreadyClaimed
+	}
+	claim := MonthlyBadgeClaim{
+		ID:             fmt.Sprintf("mb_%d", len(m.MonthlyClaims[userID])+1),
+		UserID:         userID,
+		MonthKey:       monthKey,
+		BadgeKey:       "monthly_" + strings.ReplaceAll(monthKey, "-", "_"),
+		CompletedCount: completed,
+		XPAwarded:      MonthlyBadgeXPReward,
+		ClaimedAt:      time.Now().UTC(),
+	}
+	m.MonthlyClaims[userID][monthKey] = claim
+
+	st, ok := m.Stats[userID]
+	if !ok {
+		st = &user.UserGamificationStats{CurrentLevel: 1}
+		m.Stats[userID] = st
+	}
+	st.XP += MonthlyBadgeXPReward
+	st.CurrentLevel = (st.XP / 100) + 1
+	return &claim, nil
 }
 

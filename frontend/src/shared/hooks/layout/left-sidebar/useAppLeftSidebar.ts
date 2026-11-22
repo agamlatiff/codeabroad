@@ -13,8 +13,13 @@ import type { Icon } from '@phosphor-icons/react'
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { useLogout } from "@/features/auth/hooks/useLogout"
 import {
+  getDailyQuestsQueryKey,
   getProfileQueryKey,
 } from '@/shared/constants/queryKeys'
+import {
+  gamificationService,
+  GAMIFICATION_STATUS_QUERY_KEY,
+} from '@/features/gamification/services/gamificationService'
 import {
   flashcardService,
   FLASHCARD_DUE_QUERY_KEY,
@@ -53,7 +58,39 @@ export const useAppLeftSidebar = () => {
     retry: false,
   })
 
+  const dailyQuestsQuery = useQuery({
+    queryKey: getDailyQuestsQueryKey(user?.id),
+    queryFn: ({ signal }) => gamificationService.getDailyQuests({ signal }),
+    enabled: Boolean(user),
+    staleTime: 60_000,
+    retry: false,
+  })
+
+  const gamificationStatusQuery = useQuery({
+    queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, user?.id ?? 'anonymous'],
+    queryFn: ({ signal }) => gamificationService.getStatus({ signal }),
+    enabled: Boolean(user),
+    staleTime: 60_000,
+    retry: false,
+  })
+
   const flashcardDueCount = flashcardDueQuery.data?.total_due ?? 0
+
+  const hasQuestsBadge = useMemo(() => {
+    const quests = dailyQuestsQuery.data ?? []
+    const status = gamificationStatusQuery.data
+    const hasClaimableQuest = quests.some((q) => q.is_completed && !q.is_claimed)
+    const dailyDoneCount = quests.filter((q) => q.is_completed).length
+    const claimedChests = status?.claimed_chests ?? []
+    const hasUnclaimedChest = [1, 2, 3].some(
+      (tier) => dailyDoneCount >= tier && !claimedChests.includes(tier)
+    )
+    const hasClaimableMonthly =
+      Boolean(status) &&
+      !status?.monthly_badge_claimed &&
+      (status?.monthly_completed_count ?? 0) >= (status?.monthly_target_count ?? 25)
+    return hasClaimableQuest || hasUnclaimedChest || hasClaimableMonthly
+  }, [dailyQuestsQuery.data, gamificationStatusQuery.data])
 
   const navItems: LeftSidebarNavItem[] = useMemo(() => {
     const rawItems = [
@@ -93,7 +130,7 @@ export const useAppLeftSidebar = () => {
         tooltip: 'Misi • Hadiah Harian & XP',
         href: '/quests',
         icon: Target,
-        hasBadge: true,
+        hasBadge: hasQuestsBadge,
       },
       {
         label: 'Peringkat',
@@ -115,7 +152,7 @@ export const useAppLeftSidebar = () => {
           location.pathname.startsWith('/grammar')) ||
         (item.href === '/flashcards' && location.pathname === '/flashcard'),
     }))
-  }, [location.pathname, flashcardDueCount])
+  }, [location.pathname, flashcardDueCount, hasQuestsBadge])
 
   const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
     saveAvatarStyle(style)

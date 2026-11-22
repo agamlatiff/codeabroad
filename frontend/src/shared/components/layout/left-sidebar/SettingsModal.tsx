@@ -13,6 +13,7 @@ import {
   SpeakerSimpleSlash,
   Shuffle,
   Compass,
+  SignOut,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { UserAvatar } from './UserAvatar'
@@ -32,7 +33,7 @@ export type SettingsModalProps = UseSettingsModalOptions
  * Powered 1:1 by useSettingsModal.
  */
 export const SettingsModal: FC<SettingsModalProps> = (props) => {
-  const { isOpen, onClose, user } = props
+  const { isOpen, onClose, user, onLogout } = props
   const navigate = useNavigate()
 
   const {
@@ -372,6 +373,23 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               <span>Ulangi Panduan Fitur</span>
             </button>
           </div>
+
+          {onLogout && (
+            <div className="md:hidden pt-3 border-t border-slate-200/80">
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  onClose()
+                  onLogout()
+                }}
+                className="w-full py-2.5 px-3.5 rounded-xl border-2 border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-brand font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:translate-y-0.5"
+              >
+                <SignOut weight="bold" className="w-4 h-4" />
+                <span>Keluar Akun</span>
+              </button>
+            </div>
+          )}
 
           {/* Footer Buttons */}
           <div className="pt-2 flex items-center justify-end gap-3">

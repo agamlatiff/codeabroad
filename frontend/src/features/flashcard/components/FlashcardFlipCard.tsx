@@ -20,9 +20,7 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
   isFlipped,
   onToggleFlip,
 }) => {
-  const isCharacterCard =
-    card.part_of_speech.toLowerCase().includes('huruf') ||
-    card.front_text.trim().length <= 2
+  const isCharacterCard = card.part_of_speech.toLowerCase().includes('huruf')
 
   const handleSpeak = (e: MouseEvent<HTMLButtonElement>, text: string, rate?: number) => {
     e.stopPropagation()

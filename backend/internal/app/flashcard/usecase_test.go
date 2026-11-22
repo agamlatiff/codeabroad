@@ -5,13 +5,18 @@ import (
 	"encoding/base64"
 	"errors"
 	"testing"
+	"time"
 
+	"merantalk/backend/internal/app/gamification"
+	"merantalk/backend/internal/app/user"
 	"merantalk/backend/internal/shared/apperror"
 )
 
 type stubFlashcardRepo struct {
-	lastFilter DeckListFilter
-	decks      []Deck
+	lastFilter    DeckListFilter
+	decks         []Deck
+	cardExists    bool
+	masteredCount int
 }
 
 func (s *stubFlashcardRepo) ListDecks(_ context.Context, _ string, _ string, _ string) ([]Deck, error) {
@@ -75,7 +80,7 @@ func (s *stubFlashcardRepo) ListDueCards(_ context.Context, _ string, _ string, 
 }
 
 func (s *stubFlashcardRepo) CardExists(_ context.Context, _ string) (bool, error) {
-	return false, nil
+	return s.cardExists, nil
 }
 
 func (s *stubFlashcardRepo) GetCardProgress(_ context.Context, _ string, _ string) (*CardProgress, error) {
@@ -84,6 +89,19 @@ func (s *stubFlashcardRepo) GetCardProgress(_ context.Context, _ string, _ strin
 
 func (s *stubFlashcardRepo) UpsertCardProgress(_ context.Context, _ *CardProgress) error {
 	return nil
+}
+
+func (s *stubFlashcardRepo) CountMasteredCards(_ context.Context, _ string) (int, error) {
+	return s.masteredCount, nil
+}
+
+type stubBadgeAwarder struct {
+	awardedKeys []string
+}
+
+func (s *stubBadgeAwarder) AwardBadge(_ context.Context, _ string, badgeKey string, _ int) (*gamification.UserBadge, error) {
+	s.awardedKeys = append(s.awardedKeys, badgeKey)
+	return &gamification.UserBadge{BadgeKey: badgeKey, NewlyAwarded: true}, nil
 }
 
 func TestDeckCursorRoundtripAndValidation(t *testing.T) {
@@ -174,5 +192,36 @@ func TestListDecksPaginated_NormalizationClampingAndPaging(t *testing.T) {
 
 	if _, err := uc.ListDecksPaginated(context.Background(), "user-1", DeckListFilter{Cursor: "broken"}); !errors.Is(err, ErrInvalidCursor) {
 		t.Fatalf("expected ErrInvalidCursor on broken cursor, got %v", err)
+	}
+}
+
+func TestReviewCard_XPBoosterAndSRSVeteranBadge(t *testing.T) {
+	fcRepo := &stubFlashcardRepo{cardExists: true, masteredCount: 25}
+	uRepo := user.NewMockRepository()
+	future := time.Now().UTC().Add(10 * time.Minute)
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1", Email: "learner@merantalk.id"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:                 100,
+			CurrentLevel:       2,
+			Streak:             3,
+			XPBoosterExpiresAt: &future,
+		},
+	}
+	awarder := &stubBadgeAwarder{}
+	uc := NewUsecaseWithBadges(fcRepo, uRepo, awarder)
+
+	res, err := uc.ReviewCard(context.Background(), "user-1", "card-1", 4)
+	if err != nil {
+		t.Fatalf("expected ReviewCard to succeed, got %v", err)
+	}
+	if res.XPAwarded != 10 {
+		t.Fatalf("expected 10 XP with active 2x xp-booster, got %d", res.XPAwarded)
+	}
+	if uRepo.Users["user-1"].XP != 110 {
+		t.Fatalf("expected user XP updated to 110, got %d", uRepo.Users["user-1"].XP)
+	}
+	if len(awarder.awardedKeys) != 1 || awarder.awardedKeys[0] != "srs_veteran" {
+		t.Fatalf("expected srs_veteran badge awarded, got %+v", awarder.awardedKeys)
 	}
 }

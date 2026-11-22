@@ -1,13 +1,25 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CaretDown,
   Fire,
   Star,
   Gift,
   Translate,
+  GearSix,
+  SignOut,
+  Lightning,
 } from '@phosphor-icons/react'
 import { LanguageFlagIllustration } from "@/features/onboarding/components/illustrations/FlagIllustrations"
 import { UserAvatar } from "@/shared/components/layout/left-sidebar/UserAvatar"
+import { SettingsModal } from "@/shared/components/layout/left-sidebar/SettingsModal"
+import { useLogout } from "@/features/auth/hooks/useLogout"
+import {
+  gamificationService,
+  GAMIFICATION_STATUS_QUERY_KEY,
+} from "@/features/gamification/services/gamificationService"
+import { getProfileQueryKey } from "@/shared/constants/queryKeys"
+import { saveAvatarStyle, type AvatarStyle } from "@/shared/utils/avatar"
 import { AppBreadcrumb, type BreadcrumbItem } from "@/shared/components/ui/AppBreadcrumb"
 import { GemIcon } from "@/shared/components/ui/GamificationIcons"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
@@ -39,7 +51,7 @@ export const AppTopBar = ({
 }: AppTopBarProps) => {
   const {
     activeUser,
-    avatarStyle,
+    avatarStyle: initialAvatarStyle,
     rawXp,
     userXp,
     userStreak,
@@ -50,18 +62,39 @@ export const AppTopBar = ({
   } = useAppTopBar(activeTrack)
 
   const [showXpPopover, setShowXpPopover] = useState(false)
+  const [showAccountMenu, setShowAccountMenu] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(initialAvatarStyle)
   const xpPopoverRef = useRef<HTMLDivElement>(null)
+  const accountMenuRef = useRef<HTMLDivElement>(null)
+  const queryClient = useQueryClient()
+  const logout = useLogout()
   const xpProgress = computeXpLevelProgress(rawXp, userLevel)
 
+  const gamificationStatusQuery = useQuery({
+    queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, activeUser?.id ?? 'anonymous'],
+    queryFn: ({ signal }) => gamificationService.getStatus({ signal }),
+    enabled: Boolean(activeUser),
+    staleTime: 60_000,
+    retry: false,
+  })
+  const isXpBoosterActive = Boolean(gamificationStatusQuery.data?.xp_booster_active)
+
   useEffect(() => {
-    if (!showXpPopover) return
+    if (!showXpPopover && !showAccountMenu) return
     const handleOutside = (e: MouseEvent) => {
       if (xpPopoverRef.current && !xpPopoverRef.current.contains(e.target as Node)) {
         setShowXpPopover(false)
       }
+      if (accountMenuRef.current && !accountMenuRef.current.contains(e.target as Node)) {
+        setShowAccountMenu(false)
+      }
     }
     const handleKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setShowXpPopover(false)
+      if (e.key === 'Escape') {
+        setShowXpPopover(false)
+        setShowAccountMenu(false)
+      }
     }
     document.addEventListener('mousedown', handleOutside)
     window.addEventListener('keydown', handleKey)
@@ -69,7 +102,7 @@ export const AppTopBar = ({
       document.removeEventListener('mousedown', handleOutside)
       window.removeEventListener('keydown', handleKey)
     }
-  }, [showXpPopover])
+  }, [showXpPopover, showAccountMenu])
 
   const trackLabelContent = (
     <>
@@ -206,6 +239,17 @@ export const AppTopBar = ({
                 </div>
               )}
             </div>
+
+            {/* Active 2x XP Booster Live Pill */}
+            {isXpBoosterActive && (
+              <div
+                className="flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-100 border border-purple-300 text-purple-800 font-brand font-black text-[10px] sm:text-[11px] shrink-0 whitespace-nowrap shadow-2xs"
+                title="2x XP Booster sedang aktif"
+              >
+                <Lightning weight="fill" className="w-3 h-3 text-purple-600 animate-pulse shrink-0" />
+                <span>2x XP</span>
+              </div>
+            )}
           </div>
 
           {/* ── SEPARATE STANDALONE 3D TACTILE GIFT BUTTON ── */}
@@ -228,10 +272,79 @@ export const AppTopBar = ({
             </button>
           )}
 
-          {/* Read-only User Identity Chip */}
+          {/* Mobile (< md) Account Menu Button: Settings & Logout */}
+          {activeUser && (
+            <div className="relative md:hidden" ref={accountMenuRef}>
+              <button
+                type="button"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  setShowAccountMenu((prev) => !prev)
+                }}
+                aria-expanded={showAccountMenu}
+                aria-label="Menu Akun & Pengaturan"
+                title="Pengaturan Akun & Keluar"
+                className="relative flex items-center justify-center p-1 rounded-2xl bg-white border-2 border-slate-200/90 hover:border-blue-400 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 transition-all cursor-pointer"
+              >
+                <UserAvatar
+                  user={activeUser}
+                  size="sm"
+                  style={avatarStyle}
+                  className="ring-2 ring-slate-100 shrink-0"
+                />
+                <span
+                  aria-hidden="true"
+                  className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-slate-800 text-white border border-white flex items-center justify-center shadow-2xs"
+                >
+                  <GearSix weight="fill" className="w-2.5 h-2.5" />
+                </span>
+              </button>
+
+              {showAccountMenu && (
+                <div className="absolute right-0 top-full pt-2 z-50">
+                  <div className="w-52 rounded-2xl bg-white border-2 border-slate-200/90 shadow-xl p-1.5 space-y-1">
+                    <div className="px-3 py-2 border-b border-slate-100">
+                      <p className="text-xs font-brand font-black text-slate-900 truncate">
+                        {activeUser.name || activeUser.username || 'Pembelajar'}
+                      </p>
+                      <p className="text-[11px] text-slate-500 truncate">
+                        {activeUser.email}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic('tap')
+                        setShowAccountMenu(false)
+                        setIsSettingsOpen(true)
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-brand font-bold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                      <GearSix weight="bold" className="w-4 h-4 text-slate-500 shrink-0" />
+                      <span>Pengaturan Akun</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        triggerHaptic('tap')
+                        setShowAccountMenu(false)
+                        void logout()
+                      }}
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-brand font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                    >
+                      <SignOut weight="bold" className="w-4 h-4 shrink-0" />
+                      <span>Keluar Akun</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Read-only User Identity Chip (Desktop md+) */}
           {activeUser && (
             <div
-              className="hidden sm:flex items-center gap-2.5 p-1 pr-3.5 rounded-2xl bg-white border-2 border-slate-200/90 shadow-2xs select-none"
+              className="hidden md:flex items-center gap-2.5 p-1 pr-3.5 rounded-2xl bg-white border-2 border-slate-200/90 shadow-2xs select-none"
               title={activeUser.name || activeUser.username || 'Pembelajar'}
             >
               <UserAvatar
@@ -247,6 +360,24 @@ export const AppTopBar = ({
           )}
         </div>
       </div>
+
+      <SettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        user={activeUser}
+        avatarStyle={avatarStyle}
+        onAvatarStyleChange={(style) => {
+          saveAvatarStyle(style)
+          setAvatarStyle(style)
+        }}
+        onProfileUpdated={() => {
+          void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(activeUser?.id) })
+        }}
+        onLogout={() => {
+          setIsSettingsOpen(false)
+          void logout()
+        }}
+      />
 
       {/* ── ROW 2: LINEAR PROGRESS SUB-BAR (MOBILE & TABLET VIEWPORTS ONLY) ── */}
       {totalCount > 0 && (

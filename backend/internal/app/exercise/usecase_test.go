@@ -1702,8 +1702,33 @@ func TestSubmitExam_AwardsN5MasteryBadgeOnHighScore(t *testing.T) {
 		user.NewMockRepository(),
 	).WithBadgeAwarder(badgeAwarder)
 
-	// 3/5 = 60%: passes exam, but below 80% threshold -> should NOT award n5_mastery
-	res60, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+	// 2/5 = 40%: fails exam -> should NOT award n5_mastery
+	res40, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: lvlID,
+		Answers: []exercise.SubmitExerciseAnswerRequest{
+			{ExerciseID: "q-1", UserAnswer: "A"},
+			{ExerciseID: "q-2", UserAnswer: "A"},
+			{ExerciseID: "q-3", UserAnswer: "B"},
+			{ExerciseID: "q-4", UserAnswer: "B"},
+			{ExerciseID: "q-5", UserAnswer: "B"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected 40%% submission to succeed, got %v", err)
+	}
+	if res40.Attempt.IsPassed || len(res40.AwardedBadges) != 0 || len(badgeAwarder.calls) != 0 {
+		t.Fatalf("expected failed attempt without n5_mastery badge at 40%%, got passed=%v badges=%+v", res40.Attempt.IsPassed, res40.AwardedBadges)
+	}
+
+	// Fresh exam repo for 3/5 = 60%: meets passing threshold -> passes exam and awards n5_mastery
+	uc60 := exercise.NewUsecase(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		langRepo,
+		user.NewMockRepository(),
+	).WithBadgeAwarder(badgeAwarder)
+	res60, err := uc60.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
 		LevelID: lvlID,
 		Answers: []exercise.SubmitExerciseAnswerRequest{
 			{ExerciseID: "q-1", UserAnswer: "A"},
@@ -1716,33 +1741,8 @@ func TestSubmitExam_AwardsN5MasteryBadgeOnHighScore(t *testing.T) {
 	if err != nil {
 		t.Fatalf("expected 60%% submission to succeed, got %v", err)
 	}
-	if !res60.Attempt.IsPassed || len(res60.AwardedBadges) != 0 || len(badgeAwarder.calls) != 0 {
-		t.Fatalf("expected pass without n5_mastery badge at 60%%, got passed=%v badges=%+v", res60.Attempt.IsPassed, res60.AwardedBadges)
-	}
-
-	// Fresh exam repo for 4/5 = 80%: passes exam and awards n5_mastery
-	uc80 := exercise.NewUsecase(
-		eRepo,
-		exercise.NewMockSRSRepository(),
-		exercise.NewMockReadinessExamRepository(),
-		langRepo,
-		user.NewMockRepository(),
-	).WithBadgeAwarder(badgeAwarder)
-	res80, err := uc80.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
-		LevelID: lvlID,
-		Answers: []exercise.SubmitExerciseAnswerRequest{
-			{ExerciseID: "q-1", UserAnswer: "A"},
-			{ExerciseID: "q-2", UserAnswer: "A"},
-			{ExerciseID: "q-3", UserAnswer: "A"},
-			{ExerciseID: "q-4", UserAnswer: "A"},
-			{ExerciseID: "q-5", UserAnswer: "B"},
-		},
-	})
-	if err != nil {
-		t.Fatalf("expected 80%% submission to succeed, got %v", err)
-	}
-	if len(res80.AwardedBadges) != 1 || res80.AwardedBadges[0].ID != "n5_mastery" {
-		t.Fatalf("expected n5_mastery badge at 80%%, got %+v", res80.AwardedBadges)
+	if !res60.Attempt.IsPassed || len(res60.AwardedBadges) != 1 || res60.AwardedBadges[0].ID != "n5_mastery" {
+		t.Fatalf("expected passed attempt with n5_mastery badge at 60%%, got passed=%v badges=%+v", res60.Attempt.IsPassed, res60.AwardedBadges)
 	}
 }
 

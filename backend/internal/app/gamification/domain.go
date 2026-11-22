@@ -18,14 +18,21 @@ var (
 	ErrItemUnavailable        = apperror.NewBadRequestError("ITEM_UNAVAILABLE", "item is currently not available for purchase", nil)
 	ErrInvalidCoachingPayload = apperror.NewBadRequestError("INVALID_COACHING_PAYLOAD", "coaching submission fields are invalid", nil)
 	ErrInsufficientCoupons    = apperror.NewBadRequestError("INSUFFICIENT_COUPONS", "you do not own an active coupon for this coaching service", nil)
-	ErrDailyQuestNotFound     = apperror.NewNotFoundError("DAILY_QUEST_NOT_FOUND", "misi harian tidak ditemukan")
-	ErrDailyQuestNotCompleted = apperror.NewBadRequestError("DAILY_QUEST_NOT_COMPLETED", "target misi harian belum tercapai", nil)
-	ErrDailyQuestAlreadyClaimed = apperror.NewConflictError("DAILY_QUEST_ALREADY_CLAIMED", "hadiah misi harian ini sudah diklaim hari ini")
+	ErrDailyQuestNotFound         = apperror.NewNotFoundError("DAILY_QUEST_NOT_FOUND", "misi harian tidak ditemukan")
+	ErrDailyQuestNotCompleted     = apperror.NewBadRequestError("DAILY_QUEST_NOT_COMPLETED", "target misi harian belum tercapai", nil)
+	ErrDailyQuestAlreadyClaimed   = apperror.NewConflictError("DAILY_QUEST_ALREADY_CLAIMED", "hadiah misi harian ini sudah diklaim hari ini")
+	ErrItemNotOwned               = apperror.NewBadRequestError("ITEM_NOT_OWNED", "kamu belum memiliki item ini di tas", nil)
+	ErrItemNotActivatable         = apperror.NewBadRequestError("ITEM_NOT_ACTIVATABLE", "item ini tidak dapat diaktifkan secara manual", nil)
+	ErrMonthlyBadgeNotUnlocked    = apperror.NewBadRequestError("MONTHLY_BADGE_NOT_UNLOCKED", "selesaikan 25 misi & pelajaran bulan ini untuk membuka lencana bulanan", nil)
+	ErrMonthlyBadgeAlreadyClaimed = apperror.NewConflictError("MONTHLY_BADGE_ALREADY_CLAIMED", "lencana bulanan edisi bulan ini sudah diklaim")
 )
 
 const (
 	DefaultGamificationMutationLimit   = 30
 	DefaultGamificationMutationMessage = "terlalu banyak permintaan, silakan tunggu sebentar"
+	MonthlyBadgeTargetCount            = 25
+	MonthlyBadgeXPReward               = 150
+	XPBoosterDuration                  = 15 * time.Minute
 )
 
 // UserGamification represents high-concurrency game loop progression (user_gamification table)
@@ -121,14 +128,31 @@ type CoachingSubmission struct {
 
 // GamificationStatus represents the full single source of truth gamified state
 type GamificationStatus struct {
-	XP             int                 `json:"xp"`
-	CurrentLevel   int                 `json:"current_level"`
-	Streak         int                 `json:"streak"`
-	Gems           int                 `json:"gems"`
-	Inventory      map[string]int      `json:"inventory"`
-	InventoryItems []UserInventoryItem `json:"inventory_items,omitempty"`
-	ClaimedChests  []int               `json:"claimed_chests"`
-	Badges         []UserBadge         `json:"badges,omitempty"`
+	XP                    int                 `json:"xp"`
+	CurrentLevel          int                 `json:"current_level"`
+	Streak                int                 `json:"streak"`
+	Gems                  int                 `json:"gems"`
+	XPBoosterExpiresAt    *time.Time          `json:"xp_booster_expires_at,omitempty"`
+	XPBoosterActive       bool                `json:"xp_booster_active"`
+	Inventory             map[string]int      `json:"inventory"`
+	InventoryItems        []UserInventoryItem `json:"inventory_items,omitempty"`
+	ClaimedChests         []int               `json:"claimed_chests"`
+	Badges                []UserBadge         `json:"badges,omitempty"`
+	MonthlyBadgeClaimed   bool                `json:"monthly_badge_claimed"`
+	MonthlyBadgeKey       string              `json:"monthly_badge_key,omitempty"`
+	MonthlyCompletedCount int                 `json:"monthly_completed_count"`
+	MonthlyTargetCount    int                 `json:"monthly_target_count"`
+}
+
+// MonthlyBadgeClaim represents a claimed monthly challenge honor badge.
+type MonthlyBadgeClaim struct {
+	ID             string    `json:"id"`
+	UserID         string    `json:"user_id"`
+	MonthKey       string    `json:"month_key"`
+	BadgeKey       string    `json:"badge_key"`
+	CompletedCount int       `json:"completed_count"`
+	XPAwarded      int       `json:"xp_awarded"`
+	ClaimedAt      time.Time `json:"claimed_at"`
 }
 
 // ClaimChestRequest defines the payload to claim a milestone chest
@@ -138,6 +162,11 @@ type ClaimChestRequest struct {
 
 // ShopBuyRequest defines the payload to purchase an Akihabara arcade item
 type ShopBuyRequest struct {
+	ItemID string `json:"item_id" binding:"required,max=100"`
+}
+
+// ShopActivateRequest defines the payload to activate a consumable item from inventory
+type ShopActivateRequest struct {
 	ItemID string `json:"item_id" binding:"required,max=100"`
 }
 
@@ -193,6 +222,7 @@ type Repository interface {
 	GetShopItemByID(ctx context.Context, itemID string) (*ShopItem, error)
 	GetUserInventory(ctx context.Context, userID string) ([]UserInventoryItem, error)
 	BuyShopItem(ctx context.Context, userID string, itemID string, priceGems int) (*UserInventoryItem, int, error)
+	ActivateShopItem(ctx context.Context, userID string, itemID string) (*time.Time, error)
 	GetBadges(ctx context.Context) ([]BadgeDefinition, error)
 	GetUserBadges(ctx context.Context, userID string) ([]UserBadge, error)
 	AwardBadge(ctx context.Context, userID string, badgeKey string, newLevel int) (*UserBadge, error)
@@ -200,6 +230,7 @@ type Repository interface {
 	ClaimDailyChest(ctx context.Context, claim *DailyChestClaim, newLevel int) error
 	GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error)
 	ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error)
+	ClaimMonthlyBadge(ctx context.Context, userID string) (*MonthlyBadgeClaim, error)
 	CreateCoachingSubmission(ctx context.Context, sub *CoachingSubmission) error
 }
 
@@ -208,10 +239,12 @@ type Usecase interface {
 	GetStatus(ctx context.Context, userID string) (*GamificationStatus, error)
 	ListShopItems(ctx context.Context) ([]ShopItem, error)
 	BuyShopItem(ctx context.Context, userID string, itemID string) (*UserInventoryItem, *GamificationStatus, error)
+	ActivateShopItem(ctx context.Context, userID string, itemID string) (*GamificationStatus, error)
 	ListBadges(ctx context.Context, userID string) ([]BadgeDefinition, []UserBadge, error)
 	ClaimDailyChest(ctx context.Context, userID string, tier int) (*DailyChestClaim, *GamificationStatus, error)
 	GetDailyQuests(ctx context.Context, userID string) ([]DailyQuestItem, error)
 	ClaimDailyQuest(ctx context.Context, userID string, questID string) (*ClaimDailyQuestResponse, error)
+	ClaimMonthlyBadge(ctx context.Context, userID string) (*MonthlyBadgeClaim, *GamificationStatus, error)
 	SubmitCoaching(ctx context.Context, userID string, req *CoachingSubmissionRequest) (*CoachingSubmission, *GamificationStatus, error)
 }
 

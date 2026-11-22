@@ -200,3 +200,55 @@ func TestBuyShopItem_InvalidInputAndNotFound(t *testing.T) {
 		t.Errorf("expected ErrShopItemNotFound for unknown item_id, got %v", err)
 	}
 }
+
+func TestActivateShopItem_XPBoosterLifecycle(t *testing.T) {
+	repo := setupMockGamificationRepo()
+	uc := gamification.NewUsecase(repo)
+
+	if _, err := uc.ActivateShopItem(context.Background(), "user-1", "streak-freeze"); !errors.Is(err, gamification.ErrItemNotActivatable) {
+		t.Fatalf("expected ErrItemNotActivatable for non-booster item, got %v", err)
+	}
+	if _, err := uc.ActivateShopItem(context.Background(), "user-1", "xp-booster"); !errors.Is(err, gamification.ErrItemNotOwned) {
+		t.Fatalf("expected ErrItemNotOwned when inventory is empty, got %v", err)
+	}
+
+	repo.Inventory["user-1"] = append(repo.Inventory["user-1"], gamification.UserInventoryItem{
+		UserID: "user-1", ItemID: "xp-booster", Quantity: 1,
+	})
+	status, err := uc.ActivateShopItem(context.Background(), "user-1", "xp-booster")
+	if err != nil {
+		t.Fatalf("expected xp-booster activation to succeed, got %v", err)
+	}
+	if !status.XPBoosterActive || status.XPBoosterExpiresAt == nil {
+		t.Fatalf("expected active xp-booster status, got %+v", status)
+	}
+	if status.Inventory["xp-booster"] != 0 {
+		t.Errorf("expected xp-booster quantity consumed to 0, got %d", status.Inventory["xp-booster"])
+	}
+}
+
+func TestClaimMonthlyBadge_ThresholdAndConflict(t *testing.T) {
+	repo := setupMockGamificationRepo()
+	repo.MonthlyCompleted["user-1"] = 24
+	uc := gamification.NewUsecase(repo)
+
+	if _, _, err := uc.ClaimMonthlyBadge(context.Background(), "user-1"); !errors.Is(err, gamification.ErrMonthlyBadgeNotUnlocked) {
+		t.Fatalf("expected ErrMonthlyBadgeNotUnlocked at 24 completions, got %v", err)
+	}
+
+	repo.MonthlyCompleted["user-1"] = 25
+	claim, status, err := uc.ClaimMonthlyBadge(context.Background(), "user-1")
+	if err != nil {
+		t.Fatalf("expected monthly badge claim to succeed, got %v", err)
+	}
+	if claim.XPAwarded != gamification.MonthlyBadgeXPReward || !status.MonthlyBadgeClaimed {
+		t.Fatalf("expected 150 XP and claimed=true, got claim=%+v status=%+v", claim, status)
+	}
+	if status.XP != 250 || status.CurrentLevel != 3 {
+		t.Errorf("expected XP 250 level 3, got xp=%d lvl=%d", status.XP, status.CurrentLevel)
+	}
+
+	if _, _, err := uc.ClaimMonthlyBadge(context.Background(), "user-1"); !errors.Is(err, gamification.ErrMonthlyBadgeAlreadyClaimed) {
+		t.Fatalf("expected ErrMonthlyBadgeAlreadyClaimed on duplicate claim, got %v", err)
+	}
+}

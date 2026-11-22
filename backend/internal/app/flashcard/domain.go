@@ -261,6 +261,7 @@ type Repository interface {
 	CardExists(ctx context.Context, cardID string) (bool, error)
 	GetCardProgress(ctx context.Context, userID string, cardID string) (*CardProgress, error)
 	UpsertCardProgress(ctx context.Context, progress *CardProgress) error
+	CountMasteredCards(ctx context.Context, userID string) (int, error)
 }
 
 // Usecase defines business operations for the hybrid flashcard feature.

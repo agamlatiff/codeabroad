@@ -40,6 +40,7 @@ const userSelectColumns = `
 	ug.streak, 
 	ug.gems, 
 	ug.last_active_at,
+	ug.xp_booster_expires_at,
 	u.created_at, 
 	u.updated_at
 `
@@ -67,6 +68,7 @@ func scanUser(row pgx.Row, u *User) error {
 		&u.Streak,
 		&u.Gems,
 		&u.LastActiveAt,
+		&u.XPBoosterExpiresAt,
 		&u.CreatedAt,
 		&u.UpdatedAt,
 	)
@@ -202,6 +204,7 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 			ug.streak,
 			ug.gems,
 			ug.last_active_at,
+			ug.xp_booster_expires_at,
 			u.created_at,
 			u.updated_at
 		FROM updated_profile up
@@ -307,16 +310,53 @@ func (r *PostgresRepository) AddGems(ctx context.Context, userID string, gems in
 	return newTotal, nil
 }
 
-const streakCaseExprWIB = `
-	CASE
-		WHEN last_active_at IS NULL THEN 1
-		WHEN (last_active_at AT TIME ZONE 'Asia/Jakarta')::date = ((NOW() AT TIME ZONE 'Asia/Jakarta')::date - INTERVAL '1 day')::date THEN streak + 1
-		WHEN (last_active_at AT TIME ZONE 'Asia/Jakarta')::date = (NOW() AT TIME ZONE 'Asia/Jakarta')::date THEN GREATEST(streak, 1)
-		ELSE 1
-	END
-`
+// consumeStreakFreezeAndComputeTx computes the next streak inside an open transaction
+// (where user_gamification is already locked FOR UPDATE) and deducts consumed streak-freeze items.
+func consumeStreakFreezeAndComputeTx(
+	ctx context.Context,
+	tx pgx.Tx,
+	userID string,
+	currentStreak int,
+	lastActiveAt *time.Time,
+	now time.Time,
+) (int, error) {
+	var availableFreezes int
+	err := tx.QueryRow(
+		ctx,
+		`SELECT quantity FROM user_inventories WHERE user_id = $1::uuid AND item_id = 'streak-freeze' FOR UPDATE`,
+		userID,
+	).Scan(&availableFreezes)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			availableFreezes = 0
+		} else {
+			return 0, fmt.Errorf("failed to inspect streak-freeze inventory: %w", err)
+		}
+	}
 
-// LogActivity inserts a user activity event and atomically updates streak & last_active_at (WIB) in 1 round-trip
+	newStreak, _, freezesUsed := progression.EvaluateDailyStreakWithFreeze(lastActiveAt, currentStreak, availableFreezes, now)
+	if freezesUsed > 0 {
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE user_inventories SET quantity = quantity - $2, updated_at = NOW() WHERE user_id = $1::uuid AND item_id = 'streak-freeze' AND quantity >= $2`,
+			userID, freezesUsed,
+		); err != nil {
+			return 0, fmt.Errorf("failed to consume streak-freeze: %w", err)
+		}
+		if _, err := tx.Exec(
+			ctx,
+			`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+			 VALUES ($1::uuid, 'streak_freeze_consumed', 0, jsonb_build_object('freezes_used', $2::int), NOW())`,
+			userID, freezesUsed,
+		); err != nil {
+			return 0, fmt.Errorf("failed to log streak freeze consumption: %w", err)
+		}
+	}
+	return newStreak, nil
+}
+
+// LogActivity inserts a user activity event and atomically updates streak & last_active_at (WIB),
+// consuming streak-freeze inventory when bridging missed days.
 func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityLog) error {
 	if log == nil {
 		return apperror.ErrBadRequest
@@ -333,19 +373,50 @@ func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityL
 		}
 	}
 
-	query := `
-		WITH inserted_log AS (
-			INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-			VALUES (NULLIF($1, '')::uuid, $2, $3, $4, NOW())
-		)
-		UPDATE user_gamification
-		SET streak = ` + streakCaseExprWIB + `,
-		    last_active_at = NOW(),
-		    updated_at = NOW()
-		WHERE user_id = NULLIF($1, '')::uuid
-	`
-	if _, err := r.db.Pool.Exec(ctx, query, log.UserID, log.ActivityType, log.XPEarned, metaJSON); err != nil {
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin log activity transaction: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "user.LogActivity")
+
+	var currentStreak int
+	var lastActiveAt *time.Time
+	var dbNow time.Time
+	err = tx.QueryRow(
+		ctx,
+		`SELECT streak, last_active_at, NOW() FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`,
+		log.UserID,
+	).Scan(&currentStreak, &lastActiveAt, &dbNow)
+	hasGamificationRow := (err == nil)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return fmt.Errorf("failed to lock user gamification for activity log: %w", err)
+	}
+
+	if hasGamificationRow {
+		newStreak, err := consumeStreakFreezeAndComputeTx(ctx, tx, log.UserID, currentStreak, lastActiveAt, dbNow)
+		if err != nil {
+			return err
+		}
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE user_gamification SET streak = $2, last_active_at = NOW(), updated_at = NOW() WHERE user_id = $1::uuid`,
+			log.UserID, newStreak,
+		); err != nil {
+			return fmt.Errorf("failed to update streak on activity log: %w", err)
+		}
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		 VALUES ($1::uuid, $2, $3, $4, NOW())`,
+		log.UserID, log.ActivityType, log.XPEarned, metaJSON,
+	); err != nil {
 		return fmt.Errorf("failed to log user activity: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit log activity transaction: %w", err)
 	}
 	return nil
 }
@@ -417,18 +488,37 @@ func (r *PostgresRepository) EnsureDailyLogin(
 		return false, fmt.Errorf("failed to marshal daily login metadata: %w", err)
 	}
 
-	insertQuery := `
-		WITH inserted_log AS (
-			INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
-			VALUES ($1::uuid, 'daily_login', 0, $2, NOW())
-		)
-		UPDATE user_gamification
-		SET streak = ` + streakCaseExprWIB + `,
-		    last_active_at = NOW(),
-		    updated_at = NOW()
-		WHERE user_id = $1::uuid
-	`
-	if _, err := tx.Exec(ctx, insertQuery, userID, metaJSON); err != nil {
+	var currentStreak int
+	var lastActiveAt *time.Time
+	var dbNow time.Time
+	err = tx.QueryRow(
+		ctx,
+		`SELECT streak, last_active_at, NOW() FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`,
+		userID,
+	).Scan(&currentStreak, &lastActiveAt, &dbNow)
+	if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+		return false, fmt.Errorf("failed to lock user gamification for daily login: %w", err)
+	}
+	if err == nil {
+		newStreak, err := consumeStreakFreezeAndComputeTx(ctx, tx, userID, currentStreak, lastActiveAt, dbNow)
+		if err != nil {
+			return false, err
+		}
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE user_gamification SET streak = $2, last_active_at = NOW(), updated_at = NOW() WHERE user_id = $1::uuid`,
+			userID, newStreak,
+		); err != nil {
+			return false, fmt.Errorf("failed to update streak on daily login: %w", err)
+		}
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		 VALUES ($1::uuid, 'daily_login', 0, $2, NOW())`,
+		userID, metaJSON,
+	); err != nil {
 		return false, fmt.Errorf("failed to insert daily login activity: %w", err)
 	}
 
@@ -502,14 +592,16 @@ func (r *PostgresRepository) ClaimDailyReward(
 	defer progression.RollbackTx(ctx, tx, "user.ClaimDailyReward")
 
 	var currentXP, streak int
+	var lastActiveAt *time.Time
 	var wibDate string
+	var dbNow time.Time
 	lockQuery := `
-		SELECT xp, streak, TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD')
+		SELECT xp, streak, last_active_at, TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM-DD'), NOW()
 		FROM user_gamification
 		WHERE user_id = $1::uuid
 		FOR UPDATE
 	`
-	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &streak, &wibDate); err != nil {
+	if err := tx.QueryRow(ctx, lockQuery, userID).Scan(&currentXP, &streak, &lastActiveAt, &wibDate, &dbNow); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrUserNotFound
 		}
@@ -565,6 +657,11 @@ func (r *PostgresRepository) ClaimDailyReward(
 		}
 	}
 
+	newStreak, err := consumeStreakFreezeAndComputeTx(ctx, tx, userID, streak, lastActiveAt, dbNow)
+	if err != nil {
+		return nil, err
+	}
+
 	newLevel := CalculateLevel(currentXP + xpAwarded)
 
 	metaJSON, err := json.Marshal(map[string]interface{}{
@@ -583,7 +680,7 @@ func (r *PostgresRepository) ClaimDailyReward(
 			SET xp = xp + $2,
 			    current_level = $3,
 			    gems = GREATEST(0, gems + $4),
-			    streak = ` + streakCaseExprWIB + `,
+			    streak = $7,
 			    last_active_at = NOW(),
 			    updated_at = NOW()
 			WHERE user_id = $1::uuid
@@ -601,7 +698,7 @@ func (r *PostgresRepository) ClaimDailyReward(
 	`
 	var updatedXP, updatedLevel, updatedGems, currentStreak int
 	var claimedAt time.Time
-	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, newLevel, gemsAwarded, activityType, metaJSON).
+	err = tx.QueryRow(ctx, updateQuery, userID, xpAwarded, newLevel, gemsAwarded, activityType, metaJSON, newStreak).
 		Scan(&updatedXP, &updatedLevel, &updatedGems, &currentStreak, &claimedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute atomic daily reward claim: %w", err)

@@ -5,6 +5,7 @@ import type {
   BadgeDefinition,
   ClaimChestResponse,
   ClaimDailyQuestApiResponse,
+  ClaimMonthlyBadgeResponse,
   CoachingSubmissionRequest,
   CoachingSubmissionResponse,
   DailyQuestApiItem,
@@ -57,6 +58,21 @@ export const gamificationService = {
       ApiResponse<{ purchased_item: unknown; status: GamificationStatus }>
     >('/gamification/shop/buy', { item_id: itemId })
     return unwrapApiResponse(response, 'Gagal menukar item di toko.').status
+  },
+
+  async activateShopItem(itemId: string): Promise<GamificationStatus> {
+    const response = await api.post<ApiResponse<{ status: GamificationStatus }>>(
+      '/gamification/shop/activate',
+      { item_id: itemId }
+    )
+    return unwrapApiResponse(response, 'Gagal mengaktifkan item dari tas.').status
+  },
+
+  async claimMonthlyBadge(): Promise<ClaimMonthlyBadgeResponse> {
+    const response = await api.post<ApiResponse<ClaimMonthlyBadgeResponse>>(
+      '/gamification/monthly-badge/claim'
+    )
+    return unwrapApiResponse(response, 'Gagal mengklaim lencana bulanan.')
   },
 
   async submitCoaching(req: CoachingSubmissionRequest): Promise<CoachingSubmissionResponse> {

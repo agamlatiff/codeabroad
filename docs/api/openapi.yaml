@@ -1053,6 +1053,29 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
 
+  /gamification/shop/activate:
+    post:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Activate an owned consumable shop item (e.g. xp-booster)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: Item activated and updated gamification status returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
   /gamification/badges:
     get:
       tags: [Gamification]
@@ -1082,6 +1105,25 @@ paths:
                 $ref: "#/components/schemas/SuccessResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/monthly-badge/claim:
+    post:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Claim monthly challenge honor badge and +150 XP bonus
+      responses:
+        "200":
+          description: Monthly badge claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          description: Monthly badge already claimed
 
   /gamification/coaching:
     post:

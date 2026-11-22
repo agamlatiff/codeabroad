@@ -588,3 +588,19 @@ func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *C
 	_, _ = r.db.Pool.Exec(ctx, kanaSyncQuery, progress.UserID, progress.CardID, incCorrect, initScore, scoreDelta)
 	return nil
 }
+
+func (r *postgresRepository) CountMasteredCards(ctx context.Context, userID string) (int, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return 0, err
+	}
+	var count int
+	err := r.db.Pool.QueryRow(
+		ctx,
+		`SELECT COUNT(*)::int FROM user_flashcard_progress WHERE user_id = $1::uuid AND repetitions >= 1`,
+		userID,
+	).Scan(&count)
+	if err != nil {
+		return 0, fmt.Errorf("count mastered flashcards: %w", err)
+	}
+	return count, nil
+}

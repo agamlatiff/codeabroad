@@ -42,11 +42,12 @@ type UserProfile struct {
 
 // UserGamificationStats represents Pillar 3: High-Concurrency Game Loop Stats (user_gamification table)
 type UserGamificationStats struct {
-	XP           int        `json:"xp"`
-	CurrentLevel int        `json:"current_level"`
-	Streak       int        `json:"streak"`
-	Gems         int        `json:"gems"`
-	LastActiveAt *time.Time `json:"last_active_at"`
+	XP                 int        `json:"xp"`
+	CurrentLevel       int        `json:"current_level"`
+	Streak             int        `json:"streak"`
+	Gems               int        `json:"gems"`
+	LastActiveAt       *time.Time `json:"last_active_at"`
+	XPBoosterExpiresAt *time.Time `json:"xp_booster_expires_at,omitempty"`
 }
 
 // User represents the unified 3-Pillar Aggregate for API responses and system usecases

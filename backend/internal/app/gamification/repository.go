@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"time"
 
@@ -88,33 +89,40 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 		return nil, err
 	}
 	status := &GamificationStatus{
-		Inventory:      make(map[string]int),
-		InventoryItems: make([]UserInventoryItem, 0),
-		ClaimedChests:  make([]int, 0),
-		Badges:         make([]UserBadge, 0),
+		Inventory:          make(map[string]int),
+		InventoryItems:     make([]UserInventoryItem, 0),
+		ClaimedChests:      make([]int, 0),
+		Badges:             make([]UserBadge, 0),
+		MonthlyTargetCount: MonthlyBadgeTargetCount,
 	}
 
+	var boosterExpiresAt *time.Time
 	err := r.db.Pool.QueryRow(
 		ctx,
-		`SELECT xp, current_level, streak, gems FROM user_gamification WHERE user_id = $1`,
+		`SELECT xp, current_level, streak, gems, xp_booster_expires_at FROM user_gamification WHERE user_id = $1`,
 		userID,
-	).Scan(&status.XP, &status.CurrentLevel, &status.Streak, &status.Gems)
+	).Scan(&status.XP, &status.CurrentLevel, &status.Streak, &status.Gems, &boosterExpiresAt)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, user.ErrUserNotFound
 		}
 		return nil, fmt.Errorf("failed to query user gamification stats: %w", err)
 	}
+	status.XPBoosterExpiresAt = boosterExpiresAt
+	status.XPBoosterActive = boosterExpiresAt != nil && boosterExpiresAt.After(time.Now().UTC())
 
 	var (
-		wg               sync.WaitGroup
-		invErr, chErr, bdErr error
-		invItems         []UserInventoryItem
-		invMap           map[string]int
-		claimedChests    []int
-		badges           []UserBadge
+		wg                                  sync.WaitGroup
+		invErr, chErr, bdErr, monthErr      error
+		invItems                            []UserInventoryItem
+		invMap                              map[string]int
+		claimedChests                       []int
+		badges                              []UserBadge
+		monthKey                            string
+		monthlyCompleted                    int
+		monthlyClaimed                      bool
 	)
-	wg.Add(3)
+	wg.Add(4)
 
 	go func() {
 		defer wg.Done()
@@ -183,6 +191,38 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 		badges, bdErr = scanUserBadgeRows(badgeRows)
 	}()
 
+	go func() {
+		defer wg.Done()
+		monthlyQuery := `
+			WITH wib_month AS (
+				SELECT
+					TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM') AS month_key,
+					(DATE_TRUNC('month', NOW() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta') AS month_start_ts
+			)
+			SELECT
+				wm.month_key,
+				(
+					COALESCE((
+						SELECT COUNT(*)::int FROM user_lesson_progress ulp, wib_month wm2
+						WHERE ulp.user_id = $1::uuid AND ulp.is_completed = true AND ulp.is_skipped = false AND ulp.completed_at >= wm2.month_start_ts
+					), 0)
+					+
+					COALESCE((
+						SELECT COUNT(*)::int FROM user_daily_quest_claims udc, wib_month wm3
+						WHERE udc.user_id = $1::uuid AND udc.claim_date_wib LIKE wm3.month_key || '-%'
+					), 0)
+				) AS completed_count,
+				EXISTS (
+					SELECT 1 FROM user_monthly_badge_claims umbc
+					WHERE umbc.user_id = $1::uuid AND umbc.month_key = wm.month_key
+				) AS is_claimed
+			FROM wib_month wm
+		`
+		if qErr := r.db.Pool.QueryRow(ctx, monthlyQuery, userID).Scan(&monthKey, &monthlyCompleted, &monthlyClaimed); qErr != nil {
+			monthErr = fmt.Errorf("failed to query monthly challenge progress: %w", qErr)
+		}
+	}()
+
 	wg.Wait()
 
 	if invErr != nil {
@@ -194,11 +234,19 @@ func (r *PostgresRepository) GetStatus(ctx context.Context, userID string) (*Gam
 	if bdErr != nil {
 		return nil, bdErr
 	}
+	if monthErr != nil {
+		return nil, monthErr
+	}
 
 	status.InventoryItems = invItems
 	status.Inventory = invMap
 	status.ClaimedChests = claimedChests
 	status.Badges = badges
+	status.MonthlyBadgeClaimed = monthlyClaimed
+	status.MonthlyCompletedCount = monthlyCompleted
+	if monthKey != "" {
+		status.MonthlyBadgeKey = "monthly_" + strings.ReplaceAll(monthKey, "-", "_")
+	}
 
 	return status, nil
 }
@@ -447,6 +495,75 @@ func (r *PostgresRepository) BuyShopItem(ctx context.Context, userID string, ite
 	return &inv, remainingGems, nil
 }
 
+// ActivateShopItem consumes 1 unit of an activatable item (e.g. xp-booster) and activates or extends its duration atomically.
+func (r *PostgresRepository) ActivateShopItem(ctx context.Context, userID string, itemID string) (*time.Time, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if itemID != "xp-booster" {
+		return nil, ErrItemNotActivatable
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin activate item tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "gamification.ActivateShopItem")
+
+	var dummyXP int
+	if err := tx.QueryRow(ctx, `SELECT xp FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`, userID).Scan(&dummyXP); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, user.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to lock user gamification for item activation: %w", err)
+	}
+
+	var remainingQty int
+	err = tx.QueryRow(
+		ctx,
+		`UPDATE user_inventories
+		 SET quantity = quantity - 1, updated_at = NOW()
+		 WHERE user_id = $1::uuid AND item_id = $2 AND quantity > 0
+		 RETURNING quantity`,
+		userID, itemID,
+	).Scan(&remainingQty)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrItemNotOwned
+		}
+		return nil, fmt.Errorf("failed to consume activatable item: %w", err)
+	}
+
+	var expiresAt time.Time
+	err = tx.QueryRow(
+		ctx,
+		`UPDATE user_gamification
+		 SET xp_booster_expires_at = GREATEST(COALESCE(xp_booster_expires_at, NOW()), NOW()) + INTERVAL '15 minutes',
+		     updated_at = NOW()
+		 WHERE user_id = $1::uuid
+		 RETURNING xp_booster_expires_at`,
+		userID,
+	).Scan(&expiresAt)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update xp booster expiration: %w", err)
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		 VALUES ($1::uuid, 'xp_booster_activated', 0, jsonb_build_object('item_id', $2::text, 'expires_at', $3::timestamptz), NOW())`,
+		userID, itemID, expiresAt,
+	); err != nil {
+		return nil, fmt.Errorf("failed to log item activation: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit item activation: %w", err)
+	}
+	expiresUTC := expiresAt.UTC()
+	return &expiresUTC, nil
+}
+
 // GetBadges retrieves all registered achievement badges
 func (r *PostgresRepository) GetBadges(ctx context.Context) ([]BadgeDefinition, error) {
 	query := `
@@ -630,32 +747,45 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 	}
 	defer progression.RollbackTx(ctx, tx, "gamification.ClaimDailyChest")
 
-	// Serialize concurrent chest claims for this user and verify daily quest completion tier in WIB.
+	// Serialize concurrent chest claims for this user and verify daily quest completion tier in WIB
+	// using the exact same rotated daily_quest_templates selection as GetDailyQuests.
 	var qualifiedQuests int
 	prereqQuery := `
-		WITH wib_bounds AS (
-			SELECT ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta') AS start_ts
-		),
+		WITH ` + dailyQuestMetricsCTE + `,
 		locked_user AS (
 			SELECT xp FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE
+		),
+		selected_templates AS (
+			SELECT DISTINCT ON (t.slot_category)
+				t.id, t.code, t.slot_category, t.metric_type, t.target_value
+			FROM daily_quest_templates t
+			CROSS JOIN wib_day wd
+			WHERE t.is_active = true
+			ORDER BY t.slot_category, md5($1::text || ':' || t.code || ':' || wd.date_key) ASC, t.sort_order ASC
 		)
-		SELECT (
-			CASE WHEN EXISTS (
-				SELECT 1 FROM user_lesson_progress ulp, wib_bounds wb
-				WHERE ulp.user_id = $1::uuid AND ulp.is_completed = true AND ulp.is_skipped = false AND ulp.completed_at >= wb.start_ts
-			) THEN 1 ELSE 0 END
-			+
-			CASE WHEN EXISTS (
-				SELECT 1 FROM user_activity_logs ual, wib_bounds wb
-				WHERE ual.user_id = $1::uuid AND ual.activity_type IN ('srs_review_completed', 'daily_vocab_quest_claim') AND ual.created_at >= wb.start_ts
-			) THEN 1 ELSE 0 END
-			+
-			CASE WHEN COALESCE((
-				SELECT SUM(ual.xp_earned) FROM user_activity_logs ual, wib_bounds wb
-				WHERE ual.user_id = $1::uuid AND ual.created_at >= wb.start_ts AND ual.activity_type <> 'daily_golden_chest_claim'
-			), 0) >= 50 THEN 1 ELSE 0 END
-		)
-		FROM locked_user
+		SELECT COALESCE(COUNT(*) FILTER (
+			WHERE (
+				CASE st.metric_type
+					WHEN 'lessons_completed' THEN dm.lessons_completed
+					WHEN 'high_accuracy_lesson' THEN dm.high_accuracy_lesson
+					WHEN 'flashcards_reviewed' THEN dm.flashcards_reviewed
+					WHEN 'flashcards_remembered' THEN dm.flashcards_remembered
+					WHEN 'xp_earned' THEN dm.xp_earned
+					WHEN 'correct_exercises' THEN dm.correct_exercises
+					ELSE 0
+				END >= GREATEST(st.target_value, 1)
+			)
+			OR EXISTS (
+				SELECT 1 FROM user_daily_quest_claims udc
+				WHERE udc.user_id = $1::uuid AND udc.quest_template_id = st.id AND udc.claim_date_wib = wd.date_key
+			)
+			OR (st.slot_category = 'flashcard' AND dm.legacy_vocab_claimed)
+		), 0)::int
+		FROM locked_user lu
+		LEFT JOIN selected_templates st ON true
+		CROSS JOIN wib_day wd
+		CROSS JOIN daily_metrics dm
+		GROUP BY lu.xp
 	`
 	if err := tx.QueryRow(ctx, prereqQuery, claim.UserID).Scan(&qualifiedQuests); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -939,11 +1069,42 @@ func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string,
 	}
 
 	now := time.Now().UTC()
+	var availableFreezes int
+	freezeErr := tx.QueryRow(
+		ctx,
+		`SELECT quantity FROM user_inventories WHERE user_id = $1::uuid AND item_id = 'streak-freeze' FOR UPDATE`,
+		userID,
+	).Scan(&availableFreezes)
+	if freezeErr != nil {
+		if errors.Is(freezeErr, pgx.ErrNoRows) {
+			availableFreezes = 0
+		} else {
+			return nil, fmt.Errorf("failed to inspect streak-freeze inventory: %w", freezeErr)
+		}
+	}
+
 	newXP := currentXP + xpReward
 	newLevel := progression.CalculateLevel(newXP)
-	newStreak, streakChanged := progression.EvaluateDailyStreak(lastActive, currentStreak, now)
+	newStreak, streakChanged, freezesUsed := progression.EvaluateDailyStreakWithFreeze(lastActive, currentStreak, availableFreezes, now)
 	if !streakChanged {
 		newStreak = currentStreak
+	}
+	if freezesUsed > 0 {
+		if _, err := tx.Exec(
+			ctx,
+			`UPDATE user_inventories SET quantity = quantity - $2, updated_at = NOW() WHERE user_id = $1::uuid AND item_id = 'streak-freeze' AND quantity >= $2`,
+			userID, freezesUsed,
+		); err != nil {
+			return nil, fmt.Errorf("failed to consume streak-freeze: %w", err)
+		}
+		if _, err := tx.Exec(
+			ctx,
+			`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+			 VALUES ($1::uuid, 'streak_freeze_consumed', 0, jsonb_build_object('freezes_used', $2::int), NOW())`,
+			userID, freezesUsed,
+		); err != nil {
+			return nil, fmt.Errorf("failed to log streak freeze consumption: %w", err)
+		}
 	}
 
 	updateStatsQuery := `
@@ -979,6 +1140,106 @@ func (r *PostgresRepository) ClaimDailyQuest(ctx context.Context, userID string,
 		Streak:       newStreak,
 		ClaimedAt:    claimedAt.UTC().Format(time.RFC3339),
 	}, nil
+}
+
+// ClaimMonthlyBadge verifies 25+ completed lessons & claimed daily quests in the current WIB calendar month
+// and atomically awards the monthly badge and +150 XP bonus.
+func (r *PostgresRepository) ClaimMonthlyBadge(ctx context.Context, userID string) (*MonthlyBadgeClaim, error) {
+	if err := validateUserUUID(userID); err != nil {
+		return nil, err
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to begin monthly badge claim tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "gamification.ClaimMonthlyBadge")
+
+	var currentXP int
+	if err := tx.QueryRow(ctx, `SELECT xp FROM user_gamification WHERE user_id = $1::uuid FOR UPDATE`, userID).Scan(&currentXP); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, user.ErrUserNotFound
+		}
+		return nil, fmt.Errorf("failed to lock user gamification for monthly badge: %w", err)
+	}
+
+	var monthKey string
+	var completedCount int
+	progressQuery := `
+		WITH wib_month AS (
+			SELECT
+				TO_CHAR(NOW() AT TIME ZONE 'Asia/Jakarta', 'YYYY-MM') AS month_key,
+				(DATE_TRUNC('month', NOW() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta') AS month_start_ts
+		)
+		SELECT
+			wm.month_key,
+			(
+				COALESCE((
+					SELECT COUNT(*)::int FROM user_lesson_progress ulp, wib_month wm2
+					WHERE ulp.user_id = $1::uuid AND ulp.is_completed = true AND ulp.is_skipped = false AND ulp.completed_at >= wm2.month_start_ts
+				), 0)
+				+
+				COALESCE((
+					SELECT COUNT(*)::int FROM user_daily_quest_claims udc, wib_month wm3
+					WHERE udc.user_id = $1::uuid AND udc.claim_date_wib LIKE wm3.month_key || '-%'
+				), 0)
+			)::int AS completed_count
+		FROM wib_month wm
+	`
+	if err := tx.QueryRow(ctx, progressQuery, userID).Scan(&monthKey, &completedCount); err != nil {
+		return nil, fmt.Errorf("failed to verify monthly challenge progress: %w", err)
+	}
+	if completedCount < MonthlyBadgeTargetCount {
+		return nil, ErrMonthlyBadgeNotUnlocked
+	}
+
+	badgeKey := "monthly_" + strings.ReplaceAll(monthKey, "-", "_")
+	claim := MonthlyBadgeClaim{
+		UserID:         userID,
+		MonthKey:       monthKey,
+		BadgeKey:       badgeKey,
+		CompletedCount: completedCount,
+		XPAwarded:      MonthlyBadgeXPReward,
+	}
+
+	err = tx.QueryRow(
+		ctx,
+		`INSERT INTO user_monthly_badge_claims (user_id, month_key, badge_key, completed_count, xp_awarded, claimed_at)
+		 VALUES ($1::uuid, $2, $3, $4, $5, NOW())
+		 ON CONFLICT (user_id, month_key) DO NOTHING
+		 RETURNING id::text, claimed_at`,
+		userID, monthKey, badgeKey, completedCount, MonthlyBadgeXPReward,
+	).Scan(&claim.ID, &claim.ClaimedAt)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrMonthlyBadgeAlreadyClaimed
+		}
+		return nil, fmt.Errorf("failed to record monthly badge claim: %w", err)
+	}
+
+	newXP := currentXP + MonthlyBadgeXPReward
+	newLevel := progression.CalculateLevel(newXP)
+	if _, err := tx.Exec(
+		ctx,
+		`UPDATE user_gamification SET xp = $2, current_level = $3, updated_at = NOW() WHERE user_id = $1::uuid`,
+		userID, newXP, newLevel,
+	); err != nil {
+		return nil, fmt.Errorf("failed to award monthly badge xp: %w", err)
+	}
+
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		 VALUES ($1::uuid, 'monthly_badge_claimed', $2, jsonb_build_object('month_key', $3::text, 'badge_key', $4::text), NOW())`,
+		userID, MonthlyBadgeXPReward, monthKey, badgeKey,
+	); err != nil {
+		return nil, fmt.Errorf("failed to log monthly badge claim activity: %w", err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("failed to commit monthly badge claim: %w", err)
+	}
+	return &claim, nil
 }
 
 // CreateCoachingSubmission atomically consumes the required coaching coupon from user_inventories

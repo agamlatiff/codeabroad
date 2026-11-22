@@ -986,8 +986,12 @@ func (u *usecase) awardExamBadges(ctx context.Context, userID string, lvl *langu
 	if u.badgeAwarder == nil || lvl == nil {
 		return nil
 	}
+	passingScore := lvl.PassingScorePercent
+	if passingScore <= 0 {
+		passingScore = 60
+	}
 	var candidates []string
-	if scorePercent >= 80 {
+	if scorePercent >= passingScore {
 		normalizedCode := strings.ToLower(strings.TrimSpace(lvl.Code))
 		if normalizedCode != "" {
 			candidates = append(candidates, normalizedCode+"_mastery")

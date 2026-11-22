@@ -66,6 +66,30 @@ func (u *usecase) BuyShopItem(ctx context.Context, userID string, itemID string)
 	return inv, status, nil
 }
 
+// ActivateShopItem consumes 1 unit of an activatable item (e.g. xp-booster) and activates its bonus window.
+func (u *usecase) ActivateShopItem(ctx context.Context, userID string, itemID string) (*GamificationStatus, error) {
+	if userID == "" {
+		return nil, apperror.ErrUnauthorized
+	}
+	trimmedItemID := strings.TrimSpace(itemID)
+	if trimmedItemID == "" {
+		return nil, apperror.ErrBadRequest
+	}
+	if trimmedItemID != "xp-booster" {
+		return nil, ErrItemNotActivatable
+	}
+
+	if _, err := u.gamificationRepo.ActivateShopItem(ctx, userID, trimmedItemID); err != nil {
+		return nil, err
+	}
+
+	status, err := u.gamificationRepo.GetStatus(ctx, userID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch updated status: %w", err)
+	}
+	return status, nil
+}
+
 // ListBadges returns all achievements in the system and marks which ones the user has unlocked
 func (u *usecase) ListBadges(ctx context.Context, userID string) ([]BadgeDefinition, []UserBadge, error) {
 	if userID == "" {
@@ -143,6 +167,24 @@ func (u *usecase) ClaimDailyQuest(ctx context.Context, userID string, questID st
 		return nil, apperror.ErrBadRequest
 	}
 	return u.gamificationRepo.ClaimDailyQuest(ctx, userID, trimmedID)
+}
+
+// ClaimMonthlyBadge verifies the monthly goal threshold and awards the monthly challenge honor badge & +150 XP.
+func (u *usecase) ClaimMonthlyBadge(ctx context.Context, userID string) (*MonthlyBadgeClaim, *GamificationStatus, error) {
+	if userID == "" {
+		return nil, nil, apperror.ErrUnauthorized
+	}
+
+	claim, err := u.gamificationRepo.ClaimMonthlyBadge(ctx, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	status, err := u.gamificationRepo.GetStatus(ctx, userID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to fetch updated status: %w", err)
+	}
+	return claim, status, nil
 }
 
 // SubmitCoaching creates a mentorship review submission

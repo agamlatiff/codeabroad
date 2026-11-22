@@ -4,7 +4,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useUser } from '@/features/user/hooks/useUser'
-import { useUserActivity } from '@/features/user/hooks/useUserActivity'
 import { languageService } from '@/features/curriculum/services/languageService'
 import {
   curriculumService,
@@ -166,9 +165,6 @@ export const useQuests = () => {
   const userId = user?.id ?? 'anonymous'
 
   useUser()
-  const {
-    data: { activitySummary },
-  } = useUserActivity()
 
   const rawTabParam = searchParams.get('tab')
   const activeTab = useMemo(() => parseQuestTabParam(rawTabParam), [rawTabParam])
@@ -564,22 +560,25 @@ export const useQuests = () => {
           break
         }
         case 'n5_mastery': {
-          description = 'Meraih skor ≥ 80% pada Ujian Kesiapan JLPT N5 (kelulusan level ≥ 60%).'
-          if (isEarned || levelExamSummary?.status === 'passed') {
+          if (isEarned) {
             currentProgress = 1
             targetProgress = 1
-            progressLabel = 'Skor ≥ 80% Tercapai'
+            progressLabel = 'Ujian Lulus • Lencana Diraih'
+          } else if (levelExamSummary?.status === 'passed') {
+            currentProgress = 1
+            targetProgress = 1
+            progressLabel = 'Ujian Lulus • Sinkronisasi Lencana'
           } else if (levelExamSummary && levelExamSummary.totalLessons > 0) {
             currentProgress = levelExamSummary.completedLessons
             targetProgress = levelExamSummary.totalLessons
             progressLabel =
               levelExamSummary.status === 'ready'
-                ? 'Ujian Siap • Butuh ≥ 80%'
+                ? `Ujian Siap • Lulus ≥ ${levelExamSummary.passingScorePercent}%`
                 : `${currentProgress}/${targetProgress} Pelajaran`
           } else {
             progressLabel = 'Selesaikan Unit & Ujian N5'
           }
-          if (!isEarned) {
+          if (!isEarned && levelExamSummary?.status !== 'passed') {
             if (levelExamSummary?.status === 'ready') {
               actionLabel = 'Mulai Ujian N5'
               actionType = 'navigate'
@@ -670,24 +669,18 @@ export const useQuests = () => {
   const dailyDoneCount = dailyQuests.filter((d) => d.isCompleted).length
   const totalDailyTarget = dailyQuests.length
 
-  const totalWeeklyLessons = useMemo(
-    () =>
-      (activitySummary?.weekly_logs ?? []).reduce(
-        (acc, log) => acc + (log.lessons_count || 0),
-        0
-      ),
-    [activitySummary?.weekly_logs]
-  )
-  const monthlyTargetCount = 25
+  const monthlyTargetCount = gamificationStatus?.monthly_target_count ?? 25
   const monthlyCompletedCount = Math.min(
     monthlyTargetCount,
-    Math.max(dailyDoneCount, totalWeeklyLessons + dailyDoneCount)
+    gamificationStatus?.monthly_completed_count ?? 0
   )
   const monthlyProgressPercent = Math.min(
     100,
     Math.round((monthlyCompletedCount / monthlyTargetCount) * 100)
   )
   const isMonthlyBadgeClaimed = Boolean(gamificationStatus?.monthly_badge_claimed)
+  const xpBoosterActive = Boolean(gamificationStatus?.xp_booster_active)
+  const xpBoosterExpiresAt = gamificationStatus?.xp_booster_expires_at ?? null
 
   const userFirstName = formatDisplayFirstName(user?.name)
   const wibHour = getWibHour()
@@ -826,6 +819,16 @@ export const useQuests = () => {
     mutationFn: (itemId: string) => gamificationService.buyShopItem(itemId),
   })
 
+  const activateItemMutation = useMutation({
+    mutationFn: (itemId: string) => gamificationService.activateShopItem(itemId),
+  })
+
+  const claimMonthlyBadgeMutation = useMutation({
+    mutationFn: () => gamificationService.claimMonthlyBadge(),
+  })
+
+  const [isActivatingItemId, setIsActivatingItemId] = useState<string | null>(null)
+
   const handleSelectTrack = useCallback(
     async (languageId: string) => {
       if (!languageId) return
@@ -946,6 +949,50 @@ export const useQuests = () => {
     [buyItemMutation, invalidateGamificationCaches, isPurchasingItemId, showToast, updateUser, userGems]
   )
 
+  const handleActivateShopItem = useCallback(
+    async (itemId: string) => {
+      if (isActivatingItemId || activateItemMutation.isPending) return
+      setIsActivatingItemId(itemId)
+      try {
+        await activateItemMutation.mutateAsync(itemId)
+        triggerHaptic('success')
+        audioEngine.playRewardClaim()
+        await invalidateGamificationCaches()
+        showToast('2x XP Booster aktif selama 15 menit! Semua pelajaran & flashcard mendapat XP ganda.')
+      } catch (err: unknown) {
+        triggerHaptic('error')
+        audioEngine.playError()
+        showToast(extractApiErrorMessage(err, 'Gagal mengaktifkan item dari tas.'))
+      } finally {
+        setIsActivatingItemId(null)
+      }
+    },
+    [activateItemMutation, invalidateGamificationCaches, isActivatingItemId, showToast]
+  )
+
+  const handleClaimMonthlyBadge = useCallback(async () => {
+    if (claimMonthlyBadgeMutation.isPending) return
+    try {
+      const res = await claimMonthlyBadgeMutation.mutateAsync()
+      triggerHaptic('success')
+      audioEngine.playChestClaim()
+      updateUser({
+        ...(typeof res.status.xp === 'number' ? { xp: res.status.xp } : {}),
+        ...(typeof res.status.current_level === 'number'
+          ? { current_level: res.status.current_level }
+          : {}),
+      })
+      await invalidateGamificationCaches()
+      triggerFloatingReward(`+${res.claim.xp_awarded} XP`)
+      showToast(`Lencana Emas Bulanan diklaim! +${res.claim.xp_awarded} XP ditambahkan.`)
+      setIsMonthlyBadgeModalOpen(false)
+    } catch (err: unknown) {
+      triggerHaptic('error')
+      audioEngine.playError()
+      showToast(extractApiErrorMessage(err, 'Gagal mengklaim lencana bulanan.'))
+    }
+  }, [claimMonthlyBadgeMutation, invalidateGamificationCaches, showToast, triggerFloatingReward, updateUser])
+
   const handleCVSubmitted = useCallback(
     async (data: CVReviewSubmissionPayload) => {
       const res = await gamificationService.submitCoaching({
@@ -1022,6 +1069,10 @@ export const useQuests = () => {
     isMockModalOpen,
     setIsMockModalOpen,
     isPurchasingItemId,
+    isActivatingItemId,
+    isClaimingMonthlyBadge: claimMonthlyBadgeMutation.isPending,
+    xpBoosterActive,
+    xpBoosterExpiresAt,
     toastMessage,
     setToastMessage,
     floatingReward,
@@ -1061,6 +1112,8 @@ export const useQuests = () => {
     handleOpenChest,
     handleConfirmClaimChest,
     handlePurchaseShopItem,
+    handleActivateShopItem,
+    handleClaimMonthlyBadge,
     handleCVSubmitted,
     handleMockScheduled,
   }

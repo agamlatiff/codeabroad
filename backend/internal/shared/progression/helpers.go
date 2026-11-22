@@ -48,29 +48,53 @@ func CalculateLevel(xp int) int {
 
 // EvaluateDailyStreak computes the next streak state given the previous active timestamp in WIB.
 func EvaluateDailyStreak(lastActiveAt *time.Time, currentStreak int, now time.Time) (newStreak int, changed bool) {
-	todayStr := TodayWIBDateKey(now)
-	yesterdayStr := TodayWIBDateKey(now.AddDate(0, 0, -1))
+	newStreak, changed, _ = EvaluateDailyStreakWithFreeze(lastActiveAt, currentStreak, 0, now)
+	return newStreak, changed
+}
 
+// EvaluateDailyStreakWithFreeze computes the next streak state in WIB and consumes streak-freeze items
+// when available to bridge missed days without breaking a positive streak.
+func EvaluateDailyStreakWithFreeze(
+	lastActiveAt *time.Time,
+	currentStreak int,
+	availableFreezes int,
+	now time.Time,
+) (newStreak int, changed bool, freezesUsed int) {
 	if lastActiveAt == nil {
 		if currentStreak < 1 {
-			return 1, true
+			return 1, true, 0
 		}
-		return currentStreak, false
+		return currentStreak, false, 0
 	}
 
-	lastDateStr := TodayWIBDateKey(*lastActiveAt)
-	if lastDateStr == todayStr {
+	wibNow := now.In(WIBLocation)
+	wibLast := lastActiveAt.In(WIBLocation)
+
+	// Normalize both WIB calendar dates to UTC midnight so day differences are exact integer 24h multiples.
+	todayDate := time.Date(wibNow.Year(), wibNow.Month(), wibNow.Day(), 0, 0, 0, 0, time.UTC)
+	lastDate := time.Date(wibLast.Year(), wibLast.Month(), wibLast.Day(), 0, 0, 0, 0, time.UTC)
+	daysGap := int(todayDate.Sub(lastDate) / (24 * time.Hour))
+
+	if daysGap <= 0 {
 		if currentStreak < 1 {
-			return 1, true
+			return 1, true, 0
 		}
-		return currentStreak, false
+		return currentStreak, false, 0
 	}
 
-	if lastDateStr == yesterdayStr {
-		return currentStreak + 1, true
+	if daysGap == 1 {
+		if currentStreak < 0 {
+			return 1, true, 0
+		}
+		return currentStreak + 1, true, 0
 	}
 
-	return 1, currentStreak != 1
+	missedDays := daysGap - 1
+	if currentStreak > 0 && availableFreezes >= missedDays {
+		return currentStreak + 1, true, missedDays
+	}
+
+	return 1, currentStreak != 1, 0
 }
 
 // RollbackTx safely rolls back a transaction and logs unexpected rollback errors (ignoring ErrTxClosed).

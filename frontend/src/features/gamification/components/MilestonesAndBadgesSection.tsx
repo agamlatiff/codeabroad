@@ -174,7 +174,7 @@ export const MilestonesAndBadgesSection = ({
                     {examSummary.status === 'passed'
                       ? `Selamat! Evaluasi 4 pilar ${examSummary.languageName} tingkat ${examSummary.levelCode} sudah lulus.`
                       : examSummary.status === 'ready'
-                        ? `Semua ${examSummary.totalLessons} pelajaran tuntas! Raih minimal ${examSummary.passingScorePercent}% untuk naik tingkat, atau ≥ 80% untuk Lencana Mastery.`
+                        ? `Semua ${examSummary.totalLessons} pelajaran tuntas! Raih minimal ${examSummary.passingScorePercent}% untuk naik tingkat & membuka Lencana Mastery.`
                         : `Tuntaskan ${examSummary.totalLessons - examSummary.completedLessons} pelajaran lagi di ${examSummary.languageName} ${examSummary.levelCode} untuk membuka ujian kelulusan level (min. ${examSummary.passingScorePercent}%).`}
                   </p>
                 </div>
@@ -182,7 +182,7 @@ export const MilestonesAndBadgesSection = ({
 
               <span className="inline-flex items-center gap-1 text-[11px] font-brand font-black text-amber-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl shrink-0">
                 <XpBoltIcon className="w-3.5 h-3.5 shrink-0" />
-                <span>+250 XP (Skor ≥ 80%)</span>
+                <span>+250 XP (Skor ≥ {examSummary.passingScorePercent}%)</span>
               </span>
             </div>
 

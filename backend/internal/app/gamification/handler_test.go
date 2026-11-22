@@ -223,3 +223,44 @@ func TestHTTP_GetAndClaimDailyQuests(t *testing.T) {
 		t.Fatalf("expected 409 Conflict on duplicate daily quest claim, got %d: %s", wDup.Code, wDup.Body.String())
 	}
 }
+
+func TestHTTP_ActivateShopItemAndClaimMonthlyBadge(t *testing.T) {
+	r, repo := setupGamificationTestRouter()
+	repo.Inventory["usr-123"] = []gamification.UserInventoryItem{
+		{UserID: "usr-123", ItemID: "xp-booster", Quantity: 1},
+	}
+
+	actBody, _ := json.Marshal(gamification.ShopActivateRequest{ItemID: "xp-booster"})
+	actReq, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/shop/activate", bytes.NewBuffer(actBody))
+	actReq.Header.Set("Content-Type", "application/json")
+	actW := httptest.NewRecorder()
+	r.ServeHTTP(actW, actReq)
+	if actW.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for POST /shop/activate, got %d: %s", actW.Code, actW.Body.String())
+	}
+
+	// Below 25 monthly completions -> 400
+	repo.MonthlyCompleted["usr-123"] = 10
+	mbReqFail, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/monthly-badge/claim", nil)
+	mbWFail := httptest.NewRecorder()
+	r.ServeHTTP(mbWFail, mbReqFail)
+	if mbWFail.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 when below 25 monthly completions, got %d: %s", mbWFail.Code, mbWFail.Body.String())
+	}
+
+	// Reaches 25 -> 200, then 409 on duplicate
+	repo.MonthlyCompleted["usr-123"] = 25
+	mbReqOK, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/monthly-badge/claim", nil)
+	mbWOK := httptest.NewRecorder()
+	r.ServeHTTP(mbWOK, mbReqOK)
+	if mbWOK.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for POST /monthly-badge/claim, got %d: %s", mbWOK.Code, mbWOK.Body.String())
+	}
+
+	mbReqDup, _ := http.NewRequest(http.MethodPost, "/api/v1/gamification/monthly-badge/claim", nil)
+	mbWDup := httptest.NewRecorder()
+	r.ServeHTTP(mbWDup, mbReqDup)
+	if mbWDup.Code != http.StatusConflict {
+		t.Fatalf("expected 409 Conflict on duplicate monthly badge claim, got %d: %s", mbWDup.Code, mbWDup.Body.String())
+	}
+}

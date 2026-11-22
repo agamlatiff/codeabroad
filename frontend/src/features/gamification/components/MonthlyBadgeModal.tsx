@@ -15,6 +15,7 @@ export interface MonthlyBadgeModalProps {
   completedCount: number
   targetCount: number
   isClaimed: boolean
+  isClaiming?: boolean
   onClaim: () => void
 }
 
@@ -26,6 +27,7 @@ export const MonthlyBadgeModal = ({
   completedCount,
   targetCount,
   isClaimed,
+  isClaiming = false,
   onClaim,
 }: MonthlyBadgeModalProps) => {
   if (!isOpen) return null
@@ -82,7 +84,7 @@ export const MonthlyBadgeModal = ({
             {isClaimed
               ? `Lencana kehormatan edisi ${monthYearName} telah resmi terpasang pada profil Merantalk Anda.`
               : isEligible
-              ? `Luar biasa! Anda menuntaskan ${completedCount} aktivitas bulan ini. Lencana emas akan terbuka otomatis di akun Anda.`
+              ? `Luar biasa! Anda menuntaskan ${completedCount} aktivitas bulan ini. Klaim lencana emas beserta bonus +150 XP sekarang.`
               : `Selesaikan ${targetCount - completedCount} misi lagi di bulan ${monthYearName} untuk membuka lencana emas bulanan ini.`}
           </p>
         </div>
@@ -137,11 +139,12 @@ export const MonthlyBadgeModal = ({
               variant="amber"
               size="md"
               fullWidth
+              disabled={isClaiming}
               onClick={handleClaim}
               className="text-xs py-3 shadow-md ring-4 ring-amber-300"
             >
               <Sparkle weight="fill" className="w-4 h-4 mr-1.5 text-amber-950" />
-              TARGET TERCAPAI • LANJUTKAN BELAJAR
+              {isClaiming ? 'MENGKLAIM LENCANA...' : 'KLAIM LENCANA & +150 XP'}
             </Button3D>
           ) : (
             <Button3D
