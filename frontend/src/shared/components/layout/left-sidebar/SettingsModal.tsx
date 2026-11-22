@@ -51,7 +51,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     handleSubmit,
   } = useSettingsModal(props)
 
-  const { audioMode, setAudioMode } = useAudioStore()
+  const { audioMode, setAudioMode, autoPlayVoice, toggleAutoPlayVoice } = useAudioStore()
 
   if (!isOpen) return null
 
@@ -314,6 +314,42 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               >
                 <SpeakerSimpleSlash weight={audioMode === 'muted' ? 'fill' : 'bold'} className="w-4 h-4 text-slate-500" />
                 <span className="text-[10px]">Hening</span>
+              </button>
+            </div>
+
+            {/* Auto-Play TTS Voice Switch */}
+            <div className="flex items-center justify-between gap-3 rounded-2xl border-2 border-slate-200/80 bg-slate-50/70 px-3.5 py-2.5">
+              <div className="min-w-0">
+                <p className="text-xs font-brand font-black text-slate-800">
+                  Putar Suara Otomatis (Auto-Play TTS)
+                </p>
+                <p className="text-[11px] font-medium text-slate-500">
+                  {audioMode === 'muted'
+                    ? 'Nonaktifkan mode Hening terlebih dahulu agar suara terdengar.'
+                    : 'Langsung bacakan pelafalan Jepang saat kartu materi, flashcard, atau soal terbuka.'}
+                </p>
+              </div>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={autoPlayVoice}
+                aria-label="Putar Suara Otomatis"
+                onClick={() => {
+                  triggerHaptic('tap')
+                  toggleAutoPlayVoice()
+                }}
+                className={`relative inline-flex h-7 w-12 shrink-0 items-center rounded-full border-2 transition-colors cursor-pointer ${
+                  autoPlayVoice
+                    ? 'bg-emerald-500 border-emerald-600'
+                    : 'bg-slate-200 border-slate-300'
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className={`inline-block h-5 w-5 rounded-full bg-white shadow-xs transition-transform ${
+                    autoPlayVoice ? 'translate-x-5' : 'translate-x-0.5'
+                  }`}
+                />
               </button>
             </div>
           </div>

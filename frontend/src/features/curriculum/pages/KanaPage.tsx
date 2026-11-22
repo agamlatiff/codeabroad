@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -25,6 +25,7 @@ import { KanaRowDrillCard } from '@/features/curriculum/components/kana/KanaRowD
 import { KanaHeroIllustration } from '@/features/curriculum/components/KanaHeroIllustration'
 import { KANJI_ROW_LABELS } from '@/features/curriculum/constants/kanjiCatalog'
 import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 const SLOW_SPEECH_RATE = 0.58
@@ -367,6 +368,28 @@ export const KanaPage = () => {
     )
   }, [groupedRows, urlDrillParam])
 
+  const lastAutoSpokenKeyRef = useRef<string | null>(null)
+
+  // Auto-play pronunciation when opening a character detail view or switching script tabs
+  useEffect(() => {
+    if (activeDrillRow || !selectedChar) return
+    const charKey = `${activeScript}:${selectedChar.character}`
+    if (lastAutoSpokenKeyRef.current === charKey) return
+
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      lastAutoSpokenKeyRef.current = charKey
+      if (!autoPlayVoice || audioMode === 'muted') return
+      audioService.stopSpeech()
+      audioService.speakJapanese(selectedChar.character)
+    }, 220)
+
+    return () => {
+      window.clearTimeout(timer)
+      audioService.stopSpeech()
+    }
+  }, [activeDrillRow, activeScript, selectedChar])
+
   const handleSelectScript = (nextScript: KanaScriptType) => {
     triggerHaptic('tap')
     const defaultChar = getDefaultCharParam(nextScript)
@@ -375,6 +398,7 @@ export const KanaPage = () => {
 
   const handleSelectCell = (item: KanaCharacterItem) => {
     triggerHaptic('tap')
+    lastAutoSpokenKeyRef.current = `${activeScript}:${item.character}`
     setSearchParams({ char: getCharQueryKey(item) }, { replace: true })
     setPlayingSpeed('normal')
     const clear = () => setPlayingSpeed((prev) => (prev === 'normal' ? null : prev))
@@ -393,12 +417,9 @@ export const KanaPage = () => {
     }
   }
 
-  const handleStartRowDrill = (rowKey: string, firstChar?: KanaCharacterItem) => {
+  const handleStartRowDrill = (rowKey: string) => {
     triggerHaptic('tap')
     setSearchParams({ drill: rowKey }, { replace: true })
-    if (firstChar) {
-      audioService.speakJapanese(firstChar.character)
-    }
   }
 
   const handleFinishDrill = async (results: KanaPracticeItem[]) => {
@@ -650,7 +671,7 @@ export const KanaPage = () => {
 
                       <button
                         type="button"
-                        onClick={() => handleStartRowDrill(row.rowKey, row.items[0])}
+                        onClick={() => handleStartRowDrill(row.rowKey)}
                         className={`w-[74px] h-[60px] rounded-2xl border-2 flex flex-col items-center justify-center gap-0.5 text-[11px] font-brand font-black transition-all cursor-pointer ${
                           activeDrillRow?.rowOrder === row.rowOrder
                             ? 'bg-blue-600 border-blue-700 text-white shadow-[0_4px_0_0_#1D4ED8]'

@@ -405,6 +405,8 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 		lesson.GrammarPoints = []GrammarPoint{}
 	}
 
+	lesson.StudyItems = buildLessonStudyItemsAndHints(lesson.Slug, exercises, lesson.Exercises, lesson.GrammarPoints)
+
 	return lesson, nil
 }
 

@@ -24,6 +24,7 @@ import {
 } from '@/features/exercise/utils/exerciseHelpers'
 import { extractApiErrorMessage } from '@/shared/services/api'
 import type { ApiResponse } from '@/shared/types/api'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
@@ -262,6 +263,34 @@ export const useReadinessExamPage = (levelId?: string) => {
       resolveExerciseSpokenText(currentParsedContent, currentExercise?.prompt)
     )
   }, [currentExercise?.prompt, currentParsedContent, playExerciseAudio])
+
+  // Auto-play listening/speaking prompts on Readiness Exam questions when autoPlayVoice is active
+  useEffect(() => {
+    if (resolvedExamResult !== null || !currentExercise || !currentParsedContent) return
+    if (
+      currentExercise.exercise_type !== 'listening_choice' &&
+      currentExercise.exercise_type !== 'speaking_repeat'
+    ) {
+      return
+    }
+    const spokenTarget = currentParsedContent.audioText ?? currentParsedContent.displayText
+    if (!currentParsedContent.audioUrl && !spokenTarget) return
+
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      playExerciseAudio(currentParsedContent.audioUrl, spokenTarget)
+    }, 220)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [
+    currentExercise,
+    currentParsedContent,
+    playExerciseAudio,
+    resolvedExamResult,
+  ])
 
   const handleToggleHint = useCallback(() => {
     triggerHaptic('tap')

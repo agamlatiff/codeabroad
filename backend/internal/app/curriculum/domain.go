@@ -225,6 +225,16 @@ type CurriculumResponse struct {
 	Units            []UnitNodeResponse        `json:"units"`
 }
 
+// LessonStudyItem represents a sanitized, distractor-free preview card built server-side for the lesson study flow.
+type LessonStudyItem struct {
+	Symbol             string `json:"symbol"`
+	Reading            string `json:"reading"`
+	Meaning            string `json:"meaning"`
+	Mnemonic           string `json:"mnemonic"`
+	SpeakText          string `json:"speak_text"`
+	FirstExerciseIndex int    `json:"first_exercise_index"`
+}
+
 // LessonDetailResponse encapsulates full lesson node details and its child interactive exercises
 type LessonDetailResponse struct {
 	ID            string              `json:"id"`
@@ -244,6 +254,7 @@ type LessonDetailResponse struct {
 	CompletedAt   *time.Time          `json:"completed_at,omitempty"`
 	GrammarPoints []GrammarPoint      `json:"grammar_points"`
 	Exercises     []exercise.Exercise `json:"exercises"`
+	StudyItems    []LessonStudyItem   `json:"study_items,omitempty"`
 	CreatedAt     time.Time           `json:"created_at"`
 }
 

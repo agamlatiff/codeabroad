@@ -32,12 +32,15 @@ if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
 
 export interface AudioState {
   audioMode: AudioPlaybackMode
+  autoPlayVoice: boolean
   masterVolume: number
   bgmVolume: number
   soundscapeTrack: SoundscapeTrack
 
   // Actions
   setAudioMode: (mode: AudioPlaybackMode) => void
+  setAutoPlayVoice: (enabled: boolean) => void
+  toggleAutoPlayVoice: () => boolean
   cycleAudioMode: () => AudioPlaybackMode
   setMasterVolume: (volume: number) => void
   setBgmVolume: (volume: number) => void
@@ -92,6 +95,7 @@ export const useAudioStore = create<AudioState>()(
   persist(
     (set, get) => ({
       audioMode: initial.audioMode,
+      autoPlayVoice: true,
       masterVolume: initial.masterVolume,
       bgmVolume: initial.bgmVolume,
       soundscapeTrack: 'universal',
@@ -99,6 +103,16 @@ export const useAudioStore = create<AudioState>()(
       setAudioMode: (mode) => {
         set({ audioMode: mode })
         audioService.setMode(mode)
+      },
+
+      setAutoPlayVoice: (autoPlayVoice) => {
+        set({ autoPlayVoice })
+      },
+
+      toggleAutoPlayVoice: () => {
+        const next = !get().autoPlayVoice
+        set({ autoPlayVoice: next })
+        return next
       },
 
       cycleAudioMode: () => {
@@ -162,6 +176,14 @@ export const useAudioStore = create<AudioState>()(
     {
       name: AUDIO_STORAGE_KEY,
       storage: createJSONStorage(() => localStorage),
+      merge: (persistedState, currentState) => {
+        const persisted = persistedState as Partial<AudioState> | undefined
+        return {
+          ...currentState,
+          ...persisted,
+          autoPlayVoice: persisted?.autoPlayVoice ?? true,
+        }
+      },
       onRehydrateStorage: () => (state) => {
         if (state) {
           audioService.setMode(state.audioMode)

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
@@ -6,20 +6,37 @@ import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSe
 import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { LessonFeedbackFooter } from '@/features/exercise/components/LessonFeedbackFooter'
 import { LessonGrammarDrawer } from '@/features/exercise/components/LessonGrammarDrawer'
+import { LessonStudyCardsDrawer } from '@/features/exercise/components/LessonStudyCardsDrawer'
 import { LessonIntroView } from '@/features/exercise/components/LessonIntroView'
-import { buildDynamicLessonIntroDeck } from '@/features/exercise/constants/lessonIntroCards'
-import { ArrowsClockwise, BookOpen, ShieldCheck, Sparkle, Translate } from '@phosphor-icons/react'
+import {
+  buildClientFallbackHint,
+  buildDynamicLessonIntroDeck,
+  buildInterleavedStudyBatches,
+  findMatchingStudyItem,
+} from '@/features/exercise/constants/lessonIntroCards'
+import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
+import {
+  ArrowsClockwise,
+  BookOpen,
+  ShieldCheck,
+  Sparkle,
+  Translate,
+} from '@phosphor-icons/react'
+
+const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
 
 const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
-  const [isIntroOpen, setIsIntroOpen] = useState<boolean | null>(null)
   const {
     lesson,
     exercises,
+    baseExercisesCount,
     currentExercise,
     parsedContent,
     currentIndex,
     isCheckpoint,
     isRetryRound,
+    dismissedStudyBatches,
     progressPercent,
     resolvedCorrectAnswer,
     selectedTokenIndices,
@@ -32,6 +49,9 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     showHint,
     isGrammarDrawerOpen,
     setIsGrammarDrawerOpen,
+    isStudyDrawerOpen,
+    setIsStudyDrawerOpen,
+    handleDismissStudyBatch,
     isSpeakingAudio,
     isRecordingSpeech,
     speechRecognitionSupported,
@@ -58,6 +78,103 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     handleExitToCurriculum,
     handleEnterShortcut,
   } = useLearnWorkspace(lessonId)
+
+  const introDeck = useMemo(
+    () => (isCheckpoint || !lesson ? null : buildDynamicLessonIntroDeck(lesson)),
+    [isCheckpoint, lesson]
+  )
+
+  const studyBatches = useMemo(
+    () =>
+      introDeck
+        ? buildInterleavedStudyBatches(introDeck, baseExercisesCount)
+        : new Map(),
+    [baseExercisesCount, introDeck]
+  )
+
+  const activeStudyBatch = useMemo(() => {
+    if (isCheckpoint || isRetryRound) return null
+    if (!studyBatches.has(currentIndex)) return null
+    if (dismissedStudyBatches.includes(currentIndex)) return null
+    return studyBatches.get(currentIndex) ?? null
+  }, [currentIndex, dismissedStudyBatches, isCheckpoint, isRetryRound, studyBatches])
+
+  const hasAutoPlayableQuestionAudio = Boolean(
+    parsedContent?.audioUrl || parsedContent?.audioText || parsedContent?.displayText
+  )
+
+  // Auto-play spoken Japanese question audio when entering an exercise
+  useEffect(() => {
+    if (
+      activeStudyBatch ||
+      isStudyDrawerOpen ||
+      isGrammarDrawerOpen ||
+      !currentExercise ||
+      !hasAutoPlayableQuestionAudio ||
+      submittedResult !== null
+    ) {
+      return
+    }
+
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      handlePlayAudio()
+    }, 220)
+
+    return () => {
+      window.clearTimeout(timer)
+    }
+  }, [
+    activeStudyBatch,
+    currentExercise,
+    handlePlayAudio,
+    hasAutoPlayableQuestionAudio,
+    isGrammarDrawerOpen,
+    isStudyDrawerOpen,
+    submittedResult,
+  ])
+
+  const answerCandidateText =
+    resolvedCorrectAnswer || submittedResult?.correct_answer || ''
+
+  const answerStudyItem = useMemo(() => {
+    if (!introDeck || isCheckpoint) return null
+    return findMatchingStudyItem(
+      introDeck.items,
+      currentIndex,
+      submittedResult && !submittedResult.is_correct ? answerCandidateText : undefined
+    )
+  }, [answerCandidateText, currentIndex, introDeck, isCheckpoint, submittedResult])
+
+  const fallbackHint = useMemo(() => {
+    if (isCheckpoint || !currentExercise || !lesson) return undefined
+    return buildClientFallbackHint(
+      currentExercise,
+      answerStudyItem,
+      lesson.grammar_points[0]
+    )
+  }, [answerStudyItem, currentExercise, isCheckpoint, lesson])
+
+  // Safety Net #3 + Auto-Play: softly pronounce the missed word when an answer is wrong
+  useEffect(() => {
+    if (!submittedResult || submittedResult.is_correct || isCheckpoint) return
+    const speakTarget =
+      answerStudyItem?.speakText ||
+      (JAPANESE_CHAR_REGEX.test(answerCandidateText) ? answerCandidateText : '')
+    if (!speakTarget) return
+
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      audioService.speakJapanese(speakTarget)
+    }, 450)
+
+    return () => {
+      window.clearTimeout(timer)
+      audioService.stopSpeech()
+    }
+  }, [answerCandidateText, answerStudyItem?.speakText, isCheckpoint, submittedResult])
 
   if (isLoading) {
     return (
@@ -99,17 +216,28 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     )
   }
 
-  const introDeck = isCheckpoint ? null : buildDynamicLessonIntroDeck(lesson)
-  const showingIntro = Boolean(introDeck) && (isIntroOpen ?? currentIndex === 0)
+  const totalTimelineSteps = exercises.length + studyBatches.size
+  const completedBatchCount = Array.from(studyBatches.keys()).filter((idx) =>
+    dismissedStudyBatches.includes(idx)
+  ).length
+  const completedTimelineSteps =
+    currentIndex + completedBatchCount + (submittedResult !== null ? 1 : 0)
+  const unifiedProgressPercent =
+    totalTimelineSteps > 0
+      ? Math.min(100, Math.round((completedTimelineSteps / totalTimelineSteps) * 100))
+      : progressPercent
 
-  if (introDeck && showingIntro) {
+  if (introDeck && activeStudyBatch) {
     return (
       <LessonIntroView
         lessonTitle={lesson.title}
         xpReward={lesson.xp_reward}
         deck={introDeck}
+        batch={activeStudyBatch}
+        progressPercent={Math.max(5, unifiedProgressPercent)}
+        counterLabel={`Materi ${activeStudyBatch.batchNumber}/${activeStudyBatch.totalBatches}`}
         onExit={handleExitToCurriculum}
-        onStartQuiz={() => setIsIntroOpen(false)}
+        onStartQuiz={() => handleDismissStudyBatch(currentIndex)}
       />
     )
   }
@@ -119,7 +247,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       <ExerciseSessionHeader
         onExit={handleExitToCurriculum}
         exitAriaLabel="Keluar ke Kurikulum"
-        progressPercent={progressPercent}
+        progressPercent={unifiedProgressPercent}
         progressFillClass={isRetryRound ? 'bg-amber-500' : 'bg-emerald-500'}
         counterLabel={
           exercises.length > 0
@@ -148,14 +276,14 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
               </span>
             ) : (
               <>
-                {introDeck && (
+                {introDeck && introDeck.items.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setIsIntroOpen(true)}
+                    onClick={() => setIsStudyDrawerOpen(true)}
                     className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-extrabold text-emerald-700 transition-colors cursor-pointer"
                   >
                     <Translate weight="bold" className="w-4 h-4" />
-                    <span className="hidden sm:inline">Kenali Huruf</span>
+                    <span className="hidden sm:inline">Intip Materi</span>
                   </button>
                 )}
 
@@ -191,6 +319,13 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
             textInput={textInput}
             submittedResult={submittedResult}
             showHint={showHint}
+            isCheckpoint={isCheckpoint}
+            fallbackHint={fallbackHint}
+            onOpenStudyDrawer={
+              !isCheckpoint && introDeck && introDeck.items.length > 0
+                ? () => setIsStudyDrawerOpen(true)
+                : undefined
+            }
             isSpeakingAudio={isSpeakingAudio}
             isRecordingSpeech={isRecordingSpeech}
             speechRecognitionSupported={speechRecognitionSupported}
@@ -212,6 +347,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       <LessonFeedbackFooter
         submittedResult={submittedResult}
         resolvedCorrectAnswer={resolvedCorrectAnswer}
+        answerStudyItem={isCheckpoint ? null : answerStudyItem}
         submitError={submitError}
         canCheckAnswer={canCheckAnswer}
         isChecking={isChecking}
@@ -221,6 +357,14 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         onCheckAnswer={() => void handleCheckAnswer()}
         onContinue={handleContinue}
         onRetryLesson={handleRetryLesson}
+      />
+
+      {/* Quick Study Cards Drawer (Safety Net #2) */}
+      <LessonStudyCardsDrawer
+        isOpen={isStudyDrawerOpen}
+        items={introDeck?.items ?? []}
+        kanaLinkScript={introDeck?.kanaLinkScript}
+        onClose={() => setIsStudyDrawerOpen(false)}
       />
 
       {/* Grammar Reference Drawer */}

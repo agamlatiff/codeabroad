@@ -34,6 +34,7 @@ const lessonDraftSchema = z.object({
   currentIndex: z.number().int().min(0),
   correctExerciseIds: z.array(z.string()),
   requeuedExerciseIds: z.array(z.string()).optional().default([]),
+  dismissedStudyBatches: z.array(z.number().int().min(0)).optional().default([]),
 })
 
 const getLessonDraftKey = (userId: string, lessonId?: string) =>
@@ -45,7 +46,13 @@ const getLegacyLessonDraftKey = (userId: string, lessonId?: string) =>
 const loadLessonDraft = (userId: string, lessonId?: string) => {
   const key = getLessonDraftKey(userId, lessonId)
   const legacyKey = getLegacyLessonDraftKey(userId, lessonId)
-  if (!key) return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
+  const emptyDraft = {
+    currentIndex: 0,
+    correctExerciseIds: [] as string[],
+    requeuedExerciseIds: [] as string[],
+    dismissedStudyBatches: [] as number[],
+  }
+  if (!key) return emptyDraft
   try {
     let raw = sessionStorage.getItem(key)
     let migratedFromLegacy = false
@@ -53,12 +60,12 @@ const loadLessonDraft = (userId: string, lessonId?: string) => {
       raw = sessionStorage.getItem(legacyKey)
       migratedFromLegacy = Boolean(raw)
     }
-    if (!raw) return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
+    if (!raw) return emptyDraft
     const parsed = lessonDraftSchema.safeParse(JSON.parse(raw))
     if (!parsed.success) {
       sessionStorage.removeItem(key)
       if (legacyKey) sessionStorage.removeItem(legacyKey)
-      return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
+      return emptyDraft
     }
     if (migratedFromLegacy && legacyKey) {
       sessionStorage.setItem(key, raw)
@@ -66,7 +73,7 @@ const loadLessonDraft = (userId: string, lessonId?: string) => {
     }
     return parsed.data
   } catch {
-    return { currentIndex: 0, correctExerciseIds: [] as string[], requeuedExerciseIds: [] as string[] }
+    return emptyDraft
   }
 }
 
@@ -83,11 +90,15 @@ export const useLearnWorkspace = (id?: string) => {
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isScoreTooLowError, setIsScoreTooLowError] = useState(false)
   const [isGrammarDrawerOpen, setIsGrammarDrawerOpen] = useState(false)
+  const [isStudyDrawerOpen, setIsStudyDrawerOpen] = useState(false)
   const [correctExerciseIds, setCorrectExerciseIds] = useState<string[]>(
     initialDraft.correctExerciseIds
   )
   const [requeuedExerciseIds, setRequeuedExerciseIds] = useState<string[]>(
     initialDraft.requeuedExerciseIds
+  )
+  const [dismissedStudyBatches, setDismissedStudyBatches] = useState<number[]>(
+    initialDraft.dismissedStudyBatches
   )
 
   const questionStartedAtRef = useRef<number>(0)
@@ -147,12 +158,17 @@ export const useLearnWorkspace = (id?: string) => {
     try {
       sessionStorage.setItem(
         key,
-        JSON.stringify({ currentIndex: safeIndex, correctExerciseIds, requeuedExerciseIds })
+        JSON.stringify({
+          currentIndex: safeIndex,
+          correctExerciseIds,
+          requeuedExerciseIds,
+          dismissedStudyBatches,
+        })
       )
     } catch {
       // Ignore storage quota errors
     }
-  }, [correctExerciseIds, id, requeuedExerciseIds, safeIndex, userId])
+  }, [correctExerciseIds, dismissedStudyBatches, id, requeuedExerciseIds, safeIndex, userId])
 
   const {
     isSpeakingAudio,
@@ -215,6 +231,13 @@ export const useLearnWorkspace = (id?: string) => {
     questionStartedAtRef.current = Date.now()
   }, [resetInputs, stopMediaSession])
 
+  const handleDismissStudyBatch = useCallback((exerciseIndex: number) => {
+    setDismissedStudyBatches((prev) =>
+      prev.includes(exerciseIndex) ? prev : [...prev, exerciseIndex]
+    )
+    questionStartedAtRef.current = Date.now()
+  }, [])
+
   const handleRetryLesson = useCallback(() => {
     sessionEpochRef.current += 1
     submitLockRef.current = false
@@ -225,6 +248,8 @@ export const useLearnWorkspace = (id?: string) => {
     setCurrentIndex(0)
     setCorrectExerciseIds([])
     setRequeuedExerciseIds([])
+    setDismissedStudyBatches([])
+    setIsStudyDrawerOpen(false)
     setSubmittedResult(null)
     setSubmitError(null)
     setIsScoreTooLowError(false)
@@ -465,6 +490,7 @@ export const useLearnWorkspace = (id?: string) => {
     lessonId: id,
     lesson,
     exercises,
+    baseExercisesCount: baseExercises.length,
     currentExercise,
     currentExerciseType,
     parsedContent,
@@ -472,6 +498,7 @@ export const useLearnWorkspace = (id?: string) => {
     isCheckpoint,
     isRetryRound,
     requeueCount: requeuedExerciseIds.length,
+    dismissedStudyBatches,
     progressPercent,
     resolvedCorrectAnswer,
     selectedTokenIndices,
@@ -484,6 +511,9 @@ export const useLearnWorkspace = (id?: string) => {
     showHint,
     isGrammarDrawerOpen,
     setIsGrammarDrawerOpen,
+    isStudyDrawerOpen,
+    setIsStudyDrawerOpen,
+    handleDismissStudyBatch,
     isSpeakingAudio,
     isRecordingSpeech,
     speechRecognitionSupported,

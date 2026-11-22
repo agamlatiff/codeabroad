@@ -41,6 +41,8 @@ import {
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
 import { audioEngine } from '@/shared/utils/audio'
+import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 
 type SessionMode = 'lobby' | 'session' | 'complete'
 type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
@@ -393,6 +395,26 @@ export const FlashcardPage = () => {
 
   const currentCardId = queue[0]
   const currentCard = currentCardId ? cardMap[currentCardId] : undefined
+
+  // Auto-play front card Japanese pronunciation whenever a card enters active session focus
+  useEffect(() => {
+    if (mode !== 'session' || !currentCard?.front_text) {
+      audioService.stopSpeech()
+      return
+    }
+    const speakTarget = currentCard.front_text
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      audioService.stopSpeech()
+      audioService.speakJapanese(speakTarget)
+    }, 200)
+
+    return () => {
+      window.clearTimeout(timer)
+      audioService.stopSpeech()
+    }
+  }, [currentCard?.front_text, currentCard?.id, mode, reviewedCount])
   const upcomingCards = useMemo(
     () =>
       queue

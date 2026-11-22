@@ -1,8 +1,9 @@
-import { useMemo, useState, type FC } from 'react'
+import { useEffect, useMemo, useState, type FC } from 'react'
 import { CheckCircle, SpeakerHigh, Sparkle, X, XCircle } from '@phosphor-icons/react'
 import type { KanaCharacterItem, KanaPracticeItem } from '@/features/curriculum/types/curriculum'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
 
@@ -80,6 +81,23 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
 
   const currentQuestion = questions[questionIndex]
   const correctCount = answers.filter((a) => a.is_correct).length
+  const currentTargetChar = currentQuestion?.target.character ?? ''
+
+  // Auto-play pronunciation whenever a new Kana drill prompt appears
+  useEffect(() => {
+    if (isCompleted || !currentTargetChar) return
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      audioService.stopSpeech()
+      audioService.speakJapanese(currentTargetChar)
+    }, 180)
+
+    return () => {
+      window.clearTimeout(timer)
+      audioService.stopSpeech()
+    }
+  }, [currentTargetChar, isCompleted, questionIndex])
 
   const handleSelectOption = (option: KanaCharacterItem) => {
     if (!currentQuestion || selectedChoice !== null) return
@@ -104,7 +122,6 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
       const nextIdx = questionIndex + 1
       setQuestionIndex(nextIdx)
       setSelectedChoice(null)
-      audioService.speakJapanese(questions[nextIdx].target.character)
       return
     }
     setIsCompleted(true)
@@ -116,9 +133,6 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
     setSelectedChoice(null)
     setAnswers([])
     setIsCompleted(false)
-    if (questions[0]) {
-      audioService.speakJapanese(questions[0].target.character)
-    }
   }
 
   if (!currentQuestion) {

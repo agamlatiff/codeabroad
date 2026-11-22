@@ -1,4 +1,4 @@
-import { useState, type FC } from 'react'
+import { useEffect, useState, type FC } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -11,11 +11,15 @@ import {
   Translate,
   Warning,
 } from '@phosphor-icons/react'
-import type { LessonIntroDeck } from '@/features/exercise/constants/lessonIntroCards'
+import type {
+  LessonIntroDeck,
+  StudyBatchSegment,
+} from '@/features/exercise/constants/lessonIntroCards'
 import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 const SLOW_SPEECH_RATE = 0.58
@@ -32,18 +36,26 @@ export interface LessonIntroViewProps {
   lessonTitle: string
   xpReward: number
   deck: LessonIntroDeck
+  batch?: StudyBatchSegment | null
+  progressPercent?: number
+  counterLabel?: string
   onExit: () => void
   onStartQuiz: () => void
 }
 
 /**
- * Learn-Before-Quiz introduction stage so zero-beginners recognize characters/phrases
- * with 2-speed audio and visual mnemonics before entering interactive questions.
+ * Learn-Before-Quiz introduction & interleaved mini-batch view (Opsi A):
+ * - In interleaved mode (`batch` provided), presents 2 focused cards before each 2-3 question block
+ *   inside one unified progress bar.
+ * - Automatically pronounces the lead study item on entry when `autoPlayVoice` is enabled.
  */
 export const LessonIntroView: FC<LessonIntroViewProps> = ({
   lessonTitle,
   xpReward,
   deck,
+  batch,
+  progressPercent,
+  counterLabel,
   onExit,
   onStartQuiz,
 }) => {
@@ -64,9 +76,256 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
     }
   }
 
+  const displayedItems = batch ? batch.items : deck.items
+  const batchNumber = batch?.batchNumber ?? 1
+  const leadSpeakText = displayedItems[0]?.speakText ?? ''
+
+  // Auto-play lead card pronunciation when a study batch opens
+  useEffect(() => {
+    if (!leadSpeakText) return
+    const timer = window.setTimeout(() => {
+      const { autoPlayVoice, audioMode } = useAudioStore.getState()
+      if (!autoPlayVoice || audioMode === 'muted') return
+      audioService.stopSpeech()
+      audioService.speakJapanese(leadSpeakText)
+    }, 220)
+
+    return () => {
+      window.clearTimeout(timer)
+      audioService.stopSpeech()
+    }
+  }, [batchNumber, leadSpeakText])
+
+  // Interleaved mini-batch mode (Opsi A)
+  if (batch) {
+    const resolvedProgress = typeof progressPercent === 'number' ? progressPercent : 10
+    const resolvedCounter =
+      counterLabel || `Materi ${batch.batchNumber}/${batch.totalBatches}`
+
+    return (
+      <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
+        <ExerciseSessionHeader
+          onExit={() => {
+            audioService.stopSpeech()
+            onExit()
+          }}
+          exitAriaLabel="Keluar ke Kurikulum"
+          progressPercent={resolvedProgress}
+          progressFillClass="bg-blue-500"
+          counterLabel={resolvedCounter}
+          rightSlot={
+            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700 shrink-0">
+              <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />+{xpReward} XP
+            </span>
+          }
+        />
+
+        <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-7">
+          <div className="max-w-3xl mx-auto space-y-5 pb-6">
+            {/* Compact Batch Header */}
+            <div className="bg-white rounded-3xl border-2 border-blue-200/90 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center gap-4">
+              <KodiCharacter
+                emotion="studying"
+                size={68}
+                interactive={false}
+                className="shrink-0 mx-auto sm:mx-0"
+              />
+              <div className="space-y-1.5 min-w-0 text-center sm:text-left">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[10px] font-brand font-black uppercase tracking-wider text-blue-700">
+                    <Sparkle weight="fill" className="w-3 h-3" />
+                    Tahap Materi {batch.batchNumber}/{batch.totalBatches}
+                  </span>
+                  <span className="text-[11px] font-bold text-slate-500 truncate">
+                    {lessonTitle}
+                  </span>
+                </div>
+                <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 leading-snug">
+                  {batch.batchNumber === 1
+                    ? 'Kenali Dulu Sebelum Latihan'
+                    : 'Materi Baru Untuk Soal Berikutnya'}
+                </h1>
+                <p className="text-xs sm:text-sm font-medium text-slate-600 leading-relaxed">
+                  {displayedItems.length > 0
+                    ? 'Dengarkan pelafalannya (Normal atau 0.6x) lalu langsung praktik pada beberapa soal berikutnya.'
+                    : 'Pahami pola kalimat kunci berikut sebelum langsung mengerjakan soal latihan.'}
+                </p>
+              </div>
+            </div>
+
+            {/* 2-Card Focused Study Grid */}
+            {displayedItems.length > 0 && (
+              <div
+                className={`grid grid-cols-1 ${
+                  displayedItems.length > 1 ? 'sm:grid-cols-2' : ''
+                } gap-4`}
+              >
+                {displayedItems.map((item, idx) => {
+                  const normalKey = `batch-${batchNumber}-normal-${idx}`
+                  const slowKey = `batch-${batchNumber}-slow-${idx}`
+
+                  return (
+                    <div
+                      key={`${item.symbol}-${idx}`}
+                      className="bg-white rounded-3xl border-2 border-slate-200/90 p-4 sm:p-5 shadow-[0_3px_0_0_rgba(15,23,42,0.05)] space-y-3"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0 space-y-1">
+                          <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight break-words">
+                            {item.symbol}
+                          </span>
+                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-brand font-black text-blue-700">
+                            {item.reading}
+                          </span>
+                          <p className="text-xs font-bold text-slate-700 pt-0.5">
+                            {item.meaning}
+                          </p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => handlePlay(normalKey, item.speakText)}
+                            aria-label={`Putar suara ${item.symbol}`}
+                            className={`min-h-[38px] px-2.5 rounded-xl border-2 text-[11px] font-brand font-black inline-flex items-center gap-1 transition-colors cursor-pointer ${
+                              playingKey === normalKey
+                                ? 'bg-blue-600 border-blue-700 text-white'
+                                : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
+                            }`}
+                          >
+                            <SpeakerHigh weight="fill" className="w-3.5 h-3.5" />
+                            Normal
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              handlePlay(slowKey, item.speakText, SLOW_SPEECH_RATE)
+                            }
+                            aria-label={`Putar pelan ${item.symbol}`}
+                            className={`min-h-[38px] px-2 rounded-xl border-2 text-[11px] font-brand font-black transition-colors cursor-pointer ${
+                              playingKey === slowKey
+                                ? 'bg-blue-600 border-blue-700 text-white'
+                                : 'bg-white border-slate-200 text-slate-600 hover:border-blue-300'
+                            }`}
+                          >
+                            0.6x
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-amber-50/75 border border-amber-200/80 px-3 py-2 flex items-start gap-2">
+                        <Lightbulb
+                          weight="fill"
+                          className="w-3.5 h-3.5 text-amber-500 shrink-0 mt-0.5"
+                        />
+                        <p className="text-[11px] font-medium text-amber-950 leading-relaxed">
+                          {item.mnemonic}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            )}
+
+            {/* Compact Grammar Formula Card (shown cleanly on first batch when lesson links grammar) */}
+            {batch.grammarSummary && (
+              <div className="bg-white rounded-3xl border-2 border-blue-200/90 p-5 shadow-xs space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-brand font-black text-blue-700">
+                    <BookOpen weight="bold" className="w-3.5 h-3.5" />
+                    Rumus Pola • {batch.grammarSummary.title}
+                  </span>
+                  <Link
+                    to={`/grammar/${batch.grammarSummary.code}`}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Detail Lengkap →
+                  </Link>
+                </div>
+
+                <div className="rounded-2xl bg-slate-900 text-white px-4 py-3 space-y-0.5">
+                  <p className="text-sm sm:text-base font-black tracking-wide">
+                    {batch.grammarSummary.formula}
+                  </p>
+                  {batch.grammarSummary.formulaReading && (
+                    <p className="text-xs font-semibold text-slate-300">
+                      Cara baca: {batch.grammarSummary.formulaReading}
+                    </p>
+                  )}
+                </div>
+
+                <p className="text-xs font-medium text-slate-600 leading-relaxed">
+                  {batch.grammarSummary.explanation}
+                </p>
+              </div>
+            )}
+
+            {/* Contrastive Warning Tip on Final Batch */}
+            {batch.contrastiveTip && (
+              <div className="bg-amber-50/90 rounded-2xl border-2 border-amber-300/90 px-4 py-3 flex items-start gap-2.5">
+                <Warning weight="fill" className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-xs font-semibold text-amber-950 leading-relaxed">
+                  <span className="font-black">Catatan Penting: </span>
+                  {batch.contrastiveTip}
+                </p>
+              </div>
+            )}
+          </div>
+        </main>
+
+        <footer className="shrink-0 bg-white border-t-2 border-slate-200 px-4 sm:px-6 py-4">
+          <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">
+              {deck.kanaLinkScript ? (
+                <Link
+                  to={`/kana/${deck.kanaLinkScript}`}
+                  className="inline-flex items-center gap-1.5 text-xs font-brand font-black text-emerald-700 hover:text-emerald-800 px-3 py-2 rounded-xl hover:bg-emerald-50 transition-colors"
+                >
+                  <Translate weight="bold" className="w-4 h-4" />
+                  Tabel{' '}
+                  {deck.kanaLinkScript === 'katakana'
+                    ? 'Katakana'
+                    : deck.kanaLinkScript === 'kanji'
+                      ? 'Kanji'
+                      : 'Hiragana'}
+                </Link>
+              ) : (
+                <span className="text-xs font-semibold text-slate-500">
+                  {resolvedCounter}
+                </span>
+              )}
+            </div>
+
+            <Button3D
+              variant="emerald"
+              size="lg"
+              onClick={() => {
+                triggerHaptic('tap')
+                audioService.stopSpeech()
+                onStartQuiz()
+              }}
+              className="w-full sm:w-auto text-sm"
+            >
+              <span>Lanjut ke Soal Latihan</span>
+              <ArrowRight weight="bold" className="w-4 h-4" />
+            </Button3D>
+          </div>
+        </footer>
+      </div>
+    )
+  }
+
+  // Fallback legacy 3-slide layout when invoked without a batch segment
   const currentSlideIndex = SLIDE_TABS.findIndex((t) => t.id === activeSlide)
   const headerProgressPercent =
-    activeSlide === 'vocab' ? 10 : activeSlide === 'grammar' ? 20 : 30
+    typeof progressPercent === 'number'
+      ? progressPercent
+      : activeSlide === 'vocab'
+        ? 10
+        : activeSlide === 'grammar'
+          ? 20
+          : 30
 
   const handlePrevSlide = () => {
     triggerHaptic('tap')
@@ -87,11 +346,14 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
   return (
     <div className="min-h-screen h-screen flex flex-col bg-[#FAFAF9] text-slate-900 font-sans overflow-hidden">
       <ExerciseSessionHeader
-        onExit={onExit}
+        onExit={() => {
+          audioService.stopSpeech()
+          onExit()
+        }}
         exitAriaLabel="Keluar ke Kurikulum"
         progressPercent={headerProgressPercent}
         progressFillClass="bg-blue-500"
-        counterLabel={`Materi ${currentSlideIndex + 1}/3`}
+        counterLabel={counterLabel || `Materi ${currentSlideIndex + 1}/3`}
         rightSlot={
           <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700 shrink-0">
             <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />+{xpReward} XP
@@ -101,7 +363,6 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
 
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-5 sm:py-7">
         <div className="max-w-3xl mx-auto space-y-5 pb-6">
-          {/* Header Banner with Kodi Studying */}
           <div className="bg-white rounded-3xl border-2 border-blue-200/90 p-5 sm:p-6 shadow-xs flex flex-col sm:flex-row sm:items-center gap-4">
             <KodiCharacter
               emotion="studying"
@@ -123,7 +384,6 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
             </div>
           </div>
 
-          {/* 3-Slide Study Tabs */}
           <div className="grid grid-cols-3 gap-2 p-1.5 rounded-2xl bg-slate-200/70 border border-slate-200">
             {SLIDE_TABS.map((tab) => {
               const isSelected = activeSlide === tab.id
@@ -154,7 +414,6 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
             })}
           </div>
 
-          {/* SLIDE 1: AKSARA & KOSAKATA */}
           {activeSlide === 'vocab' && (
             <div className="space-y-4">
               {deck.items.length > 0 ? (
@@ -197,7 +456,9 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                             </button>
                             <button
                               type="button"
-                              onClick={() => handlePlay(slowKey, item.speakText, SLOW_SPEECH_RATE)}
+                              onClick={() =>
+                                handlePlay(slowKey, item.speakText, SLOW_SPEECH_RATE)
+                              }
                               aria-label={`Putar pelan ${item.symbol}`}
                               className={`min-h-[38px] px-2 rounded-xl border-2 text-[11px] font-brand font-black transition-colors cursor-pointer ${
                                 playingKey === slowKey
@@ -233,7 +494,6 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
             </div>
           )}
 
-          {/* SLIDE 2: RUMUS & POLA KALIMAT */}
           {activeSlide === 'grammar' && (
             <div className="bg-white rounded-3xl border-2 border-blue-200/90 p-5 sm:p-6 shadow-xs space-y-4">
               {deck.grammarSummary ? (
@@ -330,7 +590,6 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
             </div>
           )}
 
-          {/* SLIDE 3: JANGAN TERTUKAR & CHECKLIST SIAP KUIS */}
           {activeSlide === 'tips' && (
             <div className="space-y-4">
               <div className="bg-amber-50/90 rounded-3xl border-2 border-amber-300 p-5 sm:p-6 space-y-2.5 shadow-xs">
@@ -370,7 +629,6 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
         </div>
       </main>
 
-      {/* Sticky Footer CTA */}
       <footer className="shrink-0 bg-white border-t-2 border-slate-200 px-4 sm:px-6 py-4">
         <div className="max-w-3xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-start">

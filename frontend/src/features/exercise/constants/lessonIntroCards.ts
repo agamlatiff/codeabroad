@@ -1,5 +1,7 @@
 import type {
+  CurriculumExercise,
   GrammarExample,
+  GrammarPoint,
   KanaScriptType,
   LessonDetailResponse,
 } from '@/features/curriculum/types/curriculum'
@@ -10,6 +12,16 @@ export interface LessonIntroItem {
   meaning: string
   mnemonic: string
   speakText: string
+  firstExerciseIndex?: number
+}
+
+export interface StudyBatchSegment {
+  batchNumber: number
+  totalBatches: number
+  triggerExerciseIndex: number
+  items: LessonIntroItem[]
+  grammarSummary?: LessonIntroGrammarSummary
+  contrastiveTip?: string
 }
 
 export interface LessonIntroGrammarSummary {
@@ -227,50 +239,76 @@ function asNonEmptyString(val: unknown): string {
   return typeof val === 'string' ? val.trim() : ''
 }
 
+const STUDY_BATCH_SIZE = 2
+
+export function normalizeStudySymbolKey(symbol: string): string {
+  return symbol.replace(/[\s。、.!?・]+/g, '').trim()
+}
+
+function extractTrailingParen(raw: string): string {
+  const match = /\(([^()]+)\)\s*$/.exec(raw.trim())
+  if (!match) return ''
+  const inner = match[1].trim()
+  if (inner.includes('=')) {
+    const [, rhs] = inner.split('=').map((part) => part.trim())
+    return rhs ?? ''
+  }
+  return inner
+}
+
 function buildIntroItemsFromLesson(lesson: LessonDetailResponse): LessonIntroItem[] {
   const collected: LessonIntroItem[] = []
-  const seenSymbols = new Set<string>()
+  const seenKeys = new Set<string>()
 
   const pushItem = (item: LessonIntroItem) => {
     const cleanSymbol = item.symbol.trim()
-    if (!cleanSymbol || seenSymbols.has(cleanSymbol) || collected.length >= 6) return
-    seenSymbols.add(cleanSymbol)
+    const normalizedKey = normalizeStudySymbolKey(cleanSymbol)
+    if (!cleanSymbol || !normalizedKey || seenKeys.has(normalizedKey) || collected.length >= 8) {
+      return
+    }
+    seenKeys.add(normalizedKey)
     collected.push({ ...item, symbol: cleanSymbol })
   }
 
-  for (const ex of lesson.exercises) {
+  // Prefer server-curated distractor-free study_items whenever present
+  if (Array.isArray(lesson.study_items) && lesson.study_items.length > 0) {
+    for (const item of lesson.study_items) {
+      pushItem({
+        symbol: item.symbol,
+        reading: item.reading,
+        meaning: item.meaning,
+        mnemonic: item.mnemonic,
+        speakText: item.speak_text || item.symbol,
+        firstExerciseIndex: item.first_exercise_index,
+      })
+    }
+    if (collected.length > 0) {
+      return collected
+    }
+  }
+
+  // Client-side fallback: never join content.tokens blindly because tokens contain distractors
+  for (let i = 0; i < lesson.exercises.length; i++) {
+    const ex = lesson.exercises[i]
     const content = ex.content ?? {}
-    const hintText = (ex.hint ?? '').trim() || 'Perhatikan pola bunyi dan konteks penggunaannya.'
+    const hintText = (ex.hint ?? '').trim()
 
     const audioText = asNonEmptyString(content.audio_text)
     if (audioText) {
-      const firstCorrectOption = Array.isArray(content.options)
-        ? (content.options.find(
-            (opt): opt is { text?: string } =>
-              typeof opt === 'object' && opt !== null && typeof (opt as { text?: unknown }).text === 'string'
-          )?.text ?? '')
-        : ''
+      const meaning = asNonEmptyString(content.translation) || ex.prompt
+      const parenReading = extractTrailingParen(meaning)
       pushItem({
         symbol: audioText,
-        reading: asNonEmptyString(content.romaji) || asNonEmptyString(content.reading) || 'Dengarkan audio',
-        meaning: asNonEmptyString(content.translation) || firstCorrectOption || ex.prompt,
-        mnemonic: hintText,
+        reading:
+          asNonEmptyString(content.romaji) ||
+          asNonEmptyString(content.reading) ||
+          parenReading ||
+          'Pelafalan audio',
+        meaning,
+        mnemonic:
+          hintText || 'Dengarkan audio Normal & 0.6x untuk membedakan suku kata awal dan panjang vokal.',
         speakText: audioText,
-      })
-      continue
-    }
-
-    const tokens = Array.isArray(content.tokens)
-      ? content.tokens.filter((t): t is string => typeof t === 'string' && t.trim().length > 0)
-      : []
-    if (tokens.length > 0) {
-      const sentence = tokens.join(' ')
-      pushItem({
-        symbol: sentence,
-        reading: asNonEmptyString(content.romaji) || 'Susunan kalimat utuh',
-        meaning: asNonEmptyString(content.target_translation) || ex.prompt,
-        mnemonic: hintText,
-        speakText: tokens.join(''),
+        firstExerciseIndex: i,
       })
       continue
     }
@@ -278,15 +316,23 @@ function buildIntroItemsFromLesson(lesson: LessonDetailResponse): LessonIntroIte
     const word =
       asNonEmptyString(content.word) ||
       asNonEmptyString(content.japanese) ||
-      asNonEmptyString(content.prompt_jp) ||
-      asNonEmptyString(content.display_text)
+      asNonEmptyString(content.display_text) ||
+      asNonEmptyString(content.prompt_jp)
     if (word) {
+      const meaning = asNonEmptyString(content.translation) || ex.prompt
+      const parenReading = extractTrailingParen(meaning)
       pushItem({
         symbol: word,
-        reading: asNonEmptyString(content.reading) || asNonEmptyString(content.romaji) || 'Kosakata kunci',
-        meaning: asNonEmptyString(content.translation) || ex.prompt,
-        mnemonic: hintText,
+        reading:
+          asNonEmptyString(content.reading) ||
+          asNonEmptyString(content.romaji) ||
+          parenReading ||
+          'Kosakata kunci',
+        meaning,
+        mnemonic:
+          hintText || 'Perhatikan bentuk tulisan, bacaan romaji, dan artinya sebelum mulai latihan.',
         speakText: word,
+        firstExerciseIndex: i,
       })
     }
   }
@@ -300,11 +346,138 @@ function buildIntroItemsFromLesson(lesson: LessonDetailResponse): LessonIntroIte
         meaning: ex.id,
         mnemonic: `Contoh pola ${gp.title}`,
         speakText: ex.jp,
+        firstExerciseIndex: 0,
       })
     }
   }
 
   return collected
+}
+
+/**
+ * Splits a lesson's study items into focused 2-card mini-batches interleaved with exercises
+ * (Opsi A: 2 Materi -> 2-3 Soal -> 2 Materi -> 2-3 Soal) along a single unified timeline.
+ */
+export const buildInterleavedStudyBatches = (
+  deck: LessonIntroDeck,
+  totalExercises: number
+): Map<number, StudyBatchSegment> => {
+  const batches = new Map<number, StudyBatchSegment>()
+  if (totalExercises <= 0) return batches
+
+  if (deck.items.length === 0) {
+    if (deck.grammarSummary) {
+      batches.set(0, {
+        batchNumber: 1,
+        totalBatches: 1,
+        triggerExerciseIndex: 0,
+        items: [],
+        grammarSummary: deck.grammarSummary,
+        contrastiveTip: deck.contrastiveTip,
+      })
+    }
+    return batches
+  }
+
+  const rawChunks: LessonIntroItem[][] = []
+  for (let i = 0; i < deck.items.length; i += STUDY_BATCH_SIZE) {
+    rawChunks.push(deck.items.slice(i, i + STUDY_BATCH_SIZE))
+  }
+
+  const placed: Array<{ triggerExerciseIndex: number; items: LessonIntroItem[] }> = []
+
+  for (let b = 0; b < rawChunks.length; b++) {
+    const chunk = rawChunks[b]
+    if (b === 0) {
+      placed.push({ triggerExerciseIndex: 0, items: [...chunk] })
+      continue
+    }
+
+    const prevTrigger = placed[placed.length - 1].triggerExerciseIndex
+    const idealSlot = Math.round((b * totalExercises) / rawChunks.length)
+    const explicitIndices = chunk
+      .map((item) => item.firstExerciseIndex)
+      .filter((idx): idx is number => typeof idx === 'number' && idx >= 0 && idx < totalExercises)
+    const earliestExplicit =
+      explicitIndices.length > 0 ? Math.min(...explicitIndices) : idealSlot
+
+    const desiredSlot = Math.min(idealSlot, earliestExplicit)
+    const candidateSlot = Math.max(prevTrigger + 1, desiredSlot)
+
+    if (candidateSlot < totalExercises) {
+      placed.push({ triggerExerciseIndex: candidateSlot, items: [...chunk] })
+    } else {
+      placed[placed.length - 1].items.push(...chunk)
+    }
+  }
+
+  const totalBatches = placed.length
+  for (let i = 0; i < totalBatches; i++) {
+    const segment = placed[i]
+    batches.set(segment.triggerExerciseIndex, {
+      batchNumber: i + 1,
+      totalBatches,
+      triggerExerciseIndex: segment.triggerExerciseIndex,
+      items: segment.items,
+      grammarSummary: i === 0 ? deck.grammarSummary : undefined,
+      contrastiveTip: i === totalBatches - 1 ? deck.contrastiveTip : undefined,
+    })
+  }
+
+  return batches
+}
+
+/**
+ * Matches a study card item to the current exercise or resolved correct answer for mistake recall support.
+ */
+export const findMatchingStudyItem = (
+  items: LessonIntroItem[],
+  exerciseIndex: number,
+  answerText?: string
+): LessonIntroItem | null => {
+  if (items.length === 0) return null
+  const cleanAnswerKey = normalizeStudySymbolKey(answerText ?? '')
+  if (cleanAnswerKey) {
+    const exact = items.find((item) => {
+      const symKey = normalizeStudySymbolKey(item.symbol)
+      return symKey === cleanAnswerKey || symKey.includes(cleanAnswerKey)
+    })
+    if (exact) return exact
+  }
+  return items.find((item) => item.firstExerciseIndex === exerciseIndex) ?? null
+}
+
+/**
+ * Builds a spoiler-free contextual client hint when backend exercise.hint is absent.
+ */
+export const buildClientFallbackHint = (
+  exercise: CurriculumExercise,
+  studyItem: LessonIntroItem | null,
+  grammarPoint?: GrammarPoint
+): string => {
+  if (typeof exercise.hint === 'string' && exercise.hint.trim().length > 0) {
+    return exercise.hint.trim()
+  }
+
+  if (studyItem?.mnemonic) {
+    const sanitized = studyItem.mnemonic.split(studyItem.symbol).join('huruf/kata ini')
+    return sanitized
+  }
+
+  switch (exercise.exercise_type) {
+    case 'sentence_builder':
+      return grammarPoint?.formula
+        ? `Susun potongan sesuai urutan pola ${grammarPoint.formula} (abaikan huruf pengecoh).`
+        : 'Susun potongan yang membentuk kata/kalimat inti dan abaikan huruf pengecoh.'
+    case 'listening_choice':
+      return 'Putar audio satu kali lagi, perhatikan suku kata awal & panjang vokal, atau klik Intip Materi.'
+    case 'speaking_repeat':
+      return 'Dengarkan contoh audio pelan 0.6x di Intip Materi lalu tirukan perlahan per suku kata.'
+    default:
+      return grammarPoint?.title
+        ? `Ingat pola ${grammarPoint.title}, atau klik Intip Kartu Materi di bawah jika lupa.`
+        : 'Perhatikan konteks kalimat atau klik Intip Kartu Materi untuk melihat pengingat bentuk & suara.'
+  }
 }
 
 /**
@@ -340,17 +513,23 @@ export const buildDynamicLessonIntroDeck = (
       }
     : undefined
 
-  const firstExerciseHint =
-    lesson.exercises.find((ex) => typeof ex.hint === 'string' && ex.hint.trim().length > 0)?.hint?.trim() ??
-    undefined
-
   if (staticDeck) {
+    const serverIndexBySymbol = new Map<string, number>()
+    for (const st of lesson.study_items ?? []) {
+      serverIndexBySymbol.set(normalizeStudySymbolKey(st.symbol), st.first_exercise_index)
+    }
+    const enrichedItems = staticDeck.items.map((item) => ({
+      ...item,
+      firstExerciseIndex:
+        item.firstExerciseIndex ??
+        serverIndexBySymbol.get(normalizeStudySymbolKey(item.symbol)),
+    }))
     return {
       ...staticDeck,
+      items: enrichedItems,
       grammarSummary: staticDeck.grammarSummary ?? grammarSummary,
       contrastiveTip:
         staticDeck.contrastiveTip ??
-        firstExerciseHint ??
         'Perhatikan bentuk huruf kembar & fungsi partikel sebelum memilih jawaban di kuis.',
     }
   }
@@ -368,8 +547,7 @@ export const buildDynamicLessonIntroDeck = (
     items,
     grammarSummary,
     contrastiveTip:
-      firstExerciseHint ??
       primaryGrammar?.explanation ??
-      'Baca seluruh kalimat sampai akhir untuk memastikan partikel, bentuk sopan/kasual, dan penanda waktunya tepat.',
+      'Perhatikan bentuk huruf kembar, pelafalan panjang-pendek, serta posisi partikel sebelum menjawab.',
   }
 }

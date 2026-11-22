@@ -218,6 +218,15 @@ export interface CurriculumExercise {
   created_at: string
 }
 
+export interface LessonStudyItem {
+  symbol: string
+  reading: string
+  meaning: string
+  mnemonic: string
+  speak_text: string
+  first_exercise_index: number
+}
+
 export interface LessonDetailResponse {
   id: string
   slug?: string
@@ -234,6 +243,7 @@ export interface LessonDetailResponse {
   completed_at?: string | null
   grammar_points: GrammarPoint[]
   exercises: CurriculumExercise[]
+  study_items?: LessonStudyItem[]
   created_at: string
 }
 

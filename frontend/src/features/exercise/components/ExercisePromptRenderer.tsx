@@ -11,6 +11,7 @@ import {
 import { Button3D } from '@/shared/components/ui/Button3D'
 import {
   ArrowCounterClockwise,
+  BookOpen,
   Lightbulb,
   Microphone,
   SpeakerHigh,
@@ -26,6 +27,9 @@ interface ExercisePromptRendererProps {
   textInput: string
   submittedResult: SubmitExerciseAnswerResponse | null
   showHint: boolean
+  isCheckpoint?: boolean
+  fallbackHint?: string
+  onOpenStudyDrawer?: () => void
   isSpeakingAudio: boolean
   isRecordingSpeech: boolean
   speechRecognitionSupported: boolean
@@ -96,6 +100,9 @@ export const ExercisePromptRenderer = ({
   textInput,
   submittedResult,
   showHint,
+  isCheckpoint = false,
+  fallbackHint,
+  onOpenStudyDrawer,
   isSpeakingAudio,
   isRecordingSpeech,
   speechRecognitionSupported,
@@ -116,6 +123,7 @@ export const ExercisePromptRenderer = ({
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
   }
   const isLocked = submittedResult !== null
+  const effectiveHint = isCheckpoint ? undefined : parsedContent.hint || fallbackHint
   const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
   const selectedChoiceLabel = parsedContent.choiceOptions.find(
     (opt) => opt.id === selectedOptionValue
@@ -217,14 +225,14 @@ export const ExercisePromptRenderer = ({
             {pillarMeta.label}
           </span>
 
-          {parsedContent.hint && (
+          {effectiveHint && (
             <button
               type="button"
               onClick={onToggleHint}
               className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl text-xs font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors cursor-pointer"
             >
               <Lightbulb weight="fill" className="w-4 h-4 text-amber-500" />
-              {showHint ? 'Sembunyikan Petunjuk' : 'Petunjuk'}
+              {showHint ? 'Sembunyikan Petunjuk' : 'Lupa? Petunjuk'}
             </button>
           )}
         </div>
@@ -233,10 +241,22 @@ export const ExercisePromptRenderer = ({
           {exercise.prompt}
         </h1>
 
-        {showHint && parsedContent.hint && (
-          <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-200 text-sm text-amber-900 font-medium">
-            <span className="font-extrabold">Petunjuk: </span>
-            {parsedContent.hint}
+        {showHint && effectiveHint && (
+          <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-200 text-sm text-amber-900 font-medium space-y-2">
+            <div>
+              <span className="font-extrabold">Petunjuk: </span>
+              {effectiveHint}
+            </div>
+            {onOpenStudyDrawer && (
+              <button
+                type="button"
+                onClick={onOpenStudyDrawer}
+                className="inline-flex items-center gap-1.5 text-xs font-brand font-black text-emerald-700 hover:text-emerald-800 hover:underline cursor-pointer"
+              >
+                <BookOpen weight="bold" className="w-3.5 h-3.5" />
+                Masih lupa? Intip Kartu Materi &amp; Suara →
+              </button>
+            )}
           </div>
         )}
       </div>
