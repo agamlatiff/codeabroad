@@ -14,9 +14,14 @@ import {
   DAILY_REWARDS_QUERY_KEY,
   DAILY_VOCABULARIES_QUERY_KEY,
   LANGUAGE_ENROLLMENTS_QUERY_KEY,
+  LEADERBOARD_QUERY_KEY,
   PROFILE_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
+import {
+  GAMIFICATION_BADGES_QUERY_KEY,
+  GAMIFICATION_STATUS_QUERY_KEY,
+} from '@/features/gamification/services/gamificationService'
 
 export interface InvalidateLearningCachesOptions {
   includeLessonDetail?: boolean
@@ -38,6 +43,9 @@ export const invalidateLearningSessionCaches = async (
     queryClient.invalidateQueries({ queryKey: ACTIVITY_LOGS_QUERY_KEY }),
     queryClient.invalidateQueries({ queryKey: DAILY_QUESTS_QUERY_KEY }),
     queryClient.invalidateQueries({ queryKey: DAILY_REWARDS_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: GAMIFICATION_STATUS_QUERY_KEY }),
+    queryClient.invalidateQueries({ queryKey: GAMIFICATION_BADGES_QUERY_KEY }),
   ]
 
   if (options.includeCurriculum) {

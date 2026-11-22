@@ -587,6 +587,7 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 						FROM flashcard_cards d_fc
 						INNER JOIN flashcard_decks d_fd ON d_fd.id = d_fc.deck_id
 						WHERE d_fd.language_code = fd.language_code
+						  AND LOWER(COALESCE(d_fd.category, '')) NOT IN ('hiragana', 'katakana')
 						  AND d_fc.id <> fc.id
 						  AND LOWER(TRIM(d_fc.back_meaning)) <> LOWER(TRIM(fc.back_meaning))
 					) distinct_meanings
@@ -602,9 +603,10 @@ func (r *PostgresRepository) GetDailyVocabularies(ctx context.Context, userID st
 		LEFT JOIN user_curriculum_progress ucp ON true
 		LEFT JOIN user_flashcard_progress ufp ON ufp.card_id = fc.id AND ufp.user_id = $1::uuid
 		WHERE fd.language_code = COALESCE(ae.language_code, 'ja')
+		  AND LOWER(COALESCE(fd.category, '')) NOT IN ('hiragana', 'katakana')
 		ORDER BY
 			CASE WHEN UPPER(fd.jlpt_level) = UPPER(COALESCE(ae.level_code, 'N5')) THEN 0 ELSE 1 END ASC,
-			CASE WHEN fd.sort_order <= GREATEST(2, COALESCE(ucp.completed_lessons, 0) + 2) THEN 0 ELSE 1 END ASC,
+			CASE WHEN fd.sort_order <= GREATEST(8, COALESCE(ucp.completed_lessons, 0) + 6) THEN 0 ELSE 1 END ASC,
 			CASE
 				WHEN ufp.last_reviewed_at >= wib_day.start_ts THEN 0
 				WHEN ufp.id IS NOT NULL AND (ufp.next_review_at <= wib_day.start_ts + INTERVAL '1 day' OR ufp.repetitions = 0) THEN 0

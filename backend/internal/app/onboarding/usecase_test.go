@@ -241,3 +241,41 @@ func TestCompleteOnboarding_PlacementTest_FallsBackToBaseLevelWhenNextLevelHasNo
 	}
 }
 
+func TestCompleteOnboarding_ManualSelect_FallsBackToBaseLevelWhenTargetLevelHasNoUnits(t *testing.T) {
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1"},
+		UserProfile: user.UserProfile{IsOnboarded: false},
+	}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lRepo.Levels["lvl-n4"] = &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+
+	cRepo := curriculum.NewMockRepository()
+	cRepo.Units["unit-n5-1"] = &curriculum.UnitNodeResponse{
+		ID:         "unit-n5-1",
+		LevelID:    "lvl-n5",
+		Title:      "Hiragana Dasar",
+		UnitType:   "curriculum",
+		OrderIndex: 1,
+	}
+
+	uc := onboarding.NewUsecase(uRepo, lRepo, cRepo, exercise.NewMockRepository(), gamification.NewMockRepository())
+
+	manualN4 := "lvl-n4"
+	res, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     15,
+		InitialPlacementType: "manual_select",
+		ManualLevelID:        &manualN4,
+	})
+	if err != nil {
+		t.Fatalf("expected no error, got %v", err)
+	}
+	if res.AssignedLevel.Code != "N5" {
+		t.Errorf("expected fallback to populated base level N5 when manual_select targets empty N4, got %s", res.AssignedLevel.Code)
+	}
+}
+

@@ -110,7 +110,13 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
             className="inline-flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 px-2 py-1 rounded-lg hover:bg-blue-50 transition-colors cursor-pointer"
           >
             {showGuide ? <EyeSlash weight="bold" className="w-3.5 h-3.5" /> : <Eye weight="bold" className="w-3.5 h-3.5" />}
-            {showGuide ? 'Sembunyi Urutan' : 'Panduan Urutan'}
+            {strokeGuide.points.length > 0
+              ? showGuide
+                ? 'Sembunyi Urutan'
+                : 'Panduan Urutan'
+              : showGuide
+                ? 'Sembunyi Aturan'
+                : 'Aturan Goresan'}
           </button>
           <button
             type="button"
@@ -145,7 +151,7 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
         </span>
 
         {/* Stroke-order numbered starting points */}
-        {showGuide && (
+        {showGuide && strokeGuide.points.length > 0 && (
           <div className="absolute inset-0 pointer-events-none select-none" aria-hidden="true">
             {strokeGuide.points.map((pt, idx) => (
               <span

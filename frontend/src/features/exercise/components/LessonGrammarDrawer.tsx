@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
+import { Link } from 'react-router-dom'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
-import { BookOpen, X } from '@phosphor-icons/react'
+import { formatCategoryLabel } from '@/features/curriculum/constants/grammarStyles'
+import { ArrowSquareOut, BookOpen, X } from '@phosphor-icons/react'
 
 interface LessonGrammarDrawerProps {
   isOpen: boolean
@@ -83,16 +85,32 @@ export const LessonGrammarDrawer = ({
                     {gp.code}
                   </span>
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-                    {gp.category}
+                    {formatCategoryLabel(gp.category)}
                   </span>
                 </div>
                 <h3 className="text-sm font-extrabold text-slate-900">{gp.title}</h3>
                 <div className="p-2.5 rounded-xl bg-white border border-slate-200 text-xs font-mono font-bold text-blue-700">
-                  {gp.formula}
+                  <p>{gp.formula}</p>
+                  {gp.formula_reading?.trim() && (
+                    <p className="mt-1 text-[11px] font-sans font-medium italic text-slate-500">
+                      {gp.formula_reading}
+                    </p>
+                  )}
                 </div>
                 <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
                   {gp.explanation}
                 </p>
+                <div className="pt-2 border-t border-slate-200/80 flex justify-end">
+                  <Link
+                    to={`/grammar/${encodeURIComponent(gp.code || gp.id)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs font-brand font-black text-blue-600 hover:text-blue-700 hover:underline"
+                  >
+                    <span>Buka Panduan Lengkap &amp; Contoh</span>
+                    <ArrowSquareOut weight="bold" className="w-3.5 h-3.5" />
+                  </Link>
+                </div>
               </article>
             ))
           )}

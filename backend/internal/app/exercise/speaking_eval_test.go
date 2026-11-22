@@ -403,3 +403,91 @@ func TestGetDueReviews_EnrichesFuriganaAndStripsSecrets(t *testing.T) {
 		t.Fatalf("expected contextual fallback hint attached on SRS exercise")
 	}
 }
+
+func TestEvaluateExerciseAnswer_SpeakingRepeatArabicNumbersAndKanjiSTT(t *testing.T) {
+	h := NewHelper()
+
+	cases := []struct {
+		name     string
+		expected string
+		romaji   string
+		sttInput string
+	}{
+		{"ichiman-en", "一万円です。", "Ichiman-en desu.", "1万円です"},
+		{"hyaku-metoru", "百メートル泳ぐことができます。", "Hyaku meetoru oyogu koto ga dekimasu.", "100メートル泳ぐことができます"},
+		{"shichiji-han", "いま しちじはん です", "ima shichiji-han desu", "今7時半です"},
+		{"ichimai", "東京 まで 一枚 おねがいします", "Toukyou made ichimai onegaishimasu", "東京まで1枚お願いします"},
+		{"ichido", "もう一度 言って ください", "mou ichido itte kudasai", "もう1度言ってください"},
+		{"ichiban", "日本 の 料理 で すし が 一番 好き です", "Nihon no ryouri de sushi ga ichiban suki desu", "日本の料理で寿司が1番好きです"},
+		{"digits-1-5", "いち、に、さん、よん、ご", "ichi, ni, san, yon, go", "12345"},
+		{"digits-6-10", "ろく、なな、はち、きゅう、じゅう", "roku, nana, hachi, kyuu, juu", "678910"},
+		{"digits-0812", "ぜろ はち いち に", "zero hachi ichi ni", "0812"},
+		{"eki-chikaku", "えきのちかくにコンビニがありますか", "Eki no chikaku ni konbini ga arimasu ka.", "駅の近くにコンビニがありますか"},
+		{"kinou-shiken", "きのうのしけんはすこしむずかしかったです", "Kinou no shiken wa sukoshi muzukashikatta desu.", "昨日の試験は少し難しかったです"},
+		{"doyou-nichiyou", "どようびとにちようびはやすみです", "Doyoubi to nichiyoubi wa yasumi desu.", "土曜日と日曜日は休みです"},
+		{"oshiete", "おしえてください", "Oshiete kudasai.", "教えてください"},
+		{"enpitsu", "ノートとえんぴつをかいます", "Nooto to enpitsu o kaimasu.", "ノートと鉛筆を買います"},
+		{"nan-desu-ka", "これ は なん ですか", "kore wa nan desu ka", "これは何ですか"},
+		{"jlpt-n5", "わたし は JLPT N5 に 合格しました！ ありがとう ございました！", "watashi wa JLPT N5 ni goukakushimashita! arigatou gozaimashita!", "わたしはJLPT N5に合格しましたありがとうございました"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ex := &Exercise{
+				ExerciseType:  ExerciseTypeSpeakingRepeat,
+				CorrectAnswer: tc.expected,
+				Content: map[string]any{
+					"display_text": tc.expected,
+					"audio_text":   tc.expected,
+					"romaji":       tc.romaji,
+				},
+			}
+			if !h.EvaluateExerciseAnswer(ex, tc.sttInput) {
+				t.Errorf("expected speaking_repeat %q to accept Chrome STT transcript %q", tc.expected, tc.sttInput)
+			}
+		})
+	}
+}
+
+func TestSanitizeExercises_StripsFillBlankSentenceTemplateSpoilers(t *testing.T) {
+	input := []Exercise{
+		{
+			ID:            "tpl-spoiler-only",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "いそがしい",
+			Content: map[string]any{
+				"sentence_template": "[blank] (sibuk = isogashii)",
+				"options":           []any{"いそがしい", "ひまな"},
+			},
+		},
+		{
+			ID:            "tpl-spoiler-with-context",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "こう",
+			Content: map[string]any{
+				"sentence_template": "くう [blank] (bandara = kuukou)",
+				"options":           []any{"こう", "きょう"},
+			},
+		},
+		{
+			ID:            "tpl-safe-parenthetical",
+			ExerciseType:  ExerciseTypeFillBlank,
+			CorrectAnswer: "dilarang masuk",
+			Content: map[string]any{
+				"sentence_template": "Tanda: 立入禁止 (Tachiiri kinshi) = [blank]",
+				"options":           []any{"dilarang masuk", "dilarang parkir"},
+			},
+		},
+	}
+
+	got := SanitizeExercises(input)
+	if _, exists := got[0].Content["sentence_template"]; exists {
+		t.Errorf("expected blank-only spoiler template to be removed, got %v", got[0].Content["sentence_template"])
+	}
+	if tpl, _ := got[1].Content["sentence_template"].(string); tpl != "くう [blank]" {
+		t.Errorf("expected contextual template cleaned to 'くう [blank]', got %q", tpl)
+	}
+	if tpl, _ := got[2].Content["sentence_template"].(string); tpl != "Tanda: 立入禁止 (Tachiiri kinshi) = [blank]" {
+		t.Errorf("expected non-spoiler parenthetical template preserved, got %q", tpl)
+	}
+}

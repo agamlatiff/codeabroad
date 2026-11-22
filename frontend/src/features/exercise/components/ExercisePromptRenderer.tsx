@@ -162,6 +162,11 @@ export const ExercisePromptRenderer = ({
   const showFurigana = hiddenFuriganaExerciseId !== exercise.id
   const effectiveHint = isCheckpoint ? undefined : parsedContent.hint || fallbackHint
   const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
+  const normalizedDisplayText = parsedContent.displayText?.replace(/\s+/g, ' ').trim() ?? ''
+  const normalizedAudioText = parsedContent.audioText?.replace(/\s+/g, ' ').trim() ?? ''
+  const showSeparateAudioText =
+    Boolean(parsedContent.audioText) &&
+    (!parsedContent.displayText || normalizedAudioText !== normalizedDisplayText)
   const selectedChoiceLabel = parsedContent.choiceOptions.find(
     (opt) => opt.id === selectedOptionValue
   )?.text
@@ -366,7 +371,7 @@ export const ExercisePromptRenderer = ({
             </p>
           )}
 
-          {parsedContent.audioText && !hideListeningTranscript && (
+          {showSeparateAudioText && !hideListeningTranscript && (
             <p className="text-base font-bold text-slate-800">
               {parsedContent.audioText}
             </p>

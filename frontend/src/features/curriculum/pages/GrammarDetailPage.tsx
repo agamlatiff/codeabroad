@@ -1,9 +1,10 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react'
-import { useParams, useNavigate, Link } from 'react-router-dom'
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowLeft,
   ArrowRight,
+  ArrowsClockwise,
   BookOpen,
   Check,
   CheckCircle,
@@ -33,6 +34,7 @@ import {
   LEVEL_ACCENT_STYLES,
   DEFAULT_LEVEL_ACCENT,
   formatCategoryLabel,
+  isGrammarPointDueForReview,
   renderCategoryIcon,
 } from '@/features/curriculum/constants/grammarStyles'
 import { resolveGrammarDidYouKnow } from '@/features/curriculum/constants/grammarDidYouKnow'
@@ -43,6 +45,7 @@ import { GrammarMiniQuizCard } from '@/features/curriculum/components/GrammarMin
 export const GrammarDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const location = useLocation()
   const queryClient = useQueryClient()
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
@@ -208,6 +211,16 @@ export const GrammarDetailPage = () => {
   const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
   const guide = currentPoint?.learning_guide
   const examples = currentPoint?.examples ?? []
+  const isDueForReview = Boolean(currentPoint && isGrammarPointDueForReview(currentPoint))
+
+  useEffect(() => {
+    if (!isLoading && currentPoint && location.hash === '#grammar-mini-quiz') {
+      const target = document.getElementById('grammar-mini-quiz')
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }
+    }
+  }, [currentPoint, isLoading, location.hash])
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -288,6 +301,34 @@ export const GrammarDetailPage = () => {
         {!isLoading && currentPoint && (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
             <article className="xl:col-span-8 min-w-0 space-y-6">
+              {isDueForReview && (
+                <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-50/70 to-orange-50/50 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_3px_0_0_#FDE68A]">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0">
+                      <ArrowsClockwise weight="bold" className="w-4 h-4" />
+                    </span>
+                    <div className="min-w-0">
+                      <p className="font-brand font-black text-xs sm:text-sm text-amber-950">
+                        Waktunya Review SRS Grammar!
+                      </p>
+                      <p className="text-[11px] font-medium text-amber-900/80">
+                        Selesaikan ulang kuis 3 soal di bawah untuk menjadwalkan interval review berikutnya.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      document.getElementById('grammar-mini-quiz')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                    }}
+                    className="px-3.5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-brand font-black transition-colors shrink-0 self-start sm:self-center cursor-pointer"
+                  >
+                    Lompat ke Kuis Review ↓
+                  </button>
+                </div>
+              )}
+
               {/* 1. HERO HEADER CARD: Title + Indonesian Analogy + Color Formula + Steps */}
               <section className="bg-white border-2 border-slate-200/90 rounded-3xl overflow-hidden shadow-[0_6px_0_0_#E2E8F0] relative">
                 <div className={`h-2.5 w-full ${accent.topStrip}`} />

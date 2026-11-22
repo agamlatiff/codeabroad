@@ -47,24 +47,90 @@ var comparablePunctuationReplacer = strings.NewReplacer(
 )
 
 var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
+	// Preserve JLPT N5 token before single-digit Arabic replacements
+	"JLPT N 5", "jlptn5",
+	"JLPT n 5", "jlptn5",
+	"JLPT N5", "jlptn5",
+	"JLPT n5", "jlptn5",
+	"N 5", "n5",
+	"n 5", "n5",
+	"N5", "n5",
+	"n5", "n5",
+
 	// Longer phrases / compounds first
+	"手伝いましょうか", "てつだいましょうか",
 	"有難うございます", "ありがとうございます",
 	"合格しました", "ごうかくしました",
 	"見せなければ", "みせなければ",
 	"行かなければ", "いかなければ",
+	"会いましょう", "あいましょう",
+	"行きましょう", "いきましょう",
+	"難しかった", "むずかしかった",
 	"一生懸命", "いっしょうけんめい",
 	"頑張ります", "がんばります",
 	"お願いします", "おねがいします",
+	"引きました", "ひきました",
+	"見ました", "みました",
+	"違います", "ちがいます",
 	"休みの日", "やすみのひ",
 	"忘れないで", "わすれないで",
 	"吸わないで", "すわないで",
-	"行きましょう", "いきましょう",
 	"お大事に", "おだいじに",
+	"100メートル", "ひゃくめーとる",
+	"百メートル", "ひゃくめーとる",
+	"新幹線", "しんかんせん",
 	"会社員", "かいしゃいん",
+	"銀行員", "ぎんこういん",
 	"図書館", "としょかん",
 	"郵便局", "ゆうびんきょく",
+	"飛行機", "ひこうき",
 	"日本語", "にほんご",
+	"日本人", "にほんじん",
 	"一万円", "いちまんえん",
+	"1万円", "いちまんえん",
+	"三千円", "さんぜんえん",
+	"3,000円", "さんぜんえん",
+	"3000円", "さんぜんえん",
+	"100m", "ひゃくめーとる",
+	"100円", "ひゃくえん",
+	"百円", "ひゃくえん",
+	"678910", "ろくななはちきゅうじゅう",
+	"12345", "いちにさんよんご",
+	"0812", "ぜろはちいちに",
+	"十二時", "じゅうにじ",
+	"12時", "じゅうにじ",
+	"11時", "じゅういちじ",
+	"10時", "じゅうじ",
+	"八時半", "はちじはん",
+	"8時半", "はちじはん",
+	"七時半", "しちじはん",
+	"7時半", "しちじはん",
+	"9時", "くじ",
+	"8時", "はちじ",
+	"7時", "しちじ",
+	"6時", "ろくじ",
+	"5時", "ごじ",
+	"4時", "よじ",
+	"3時", "さんじ",
+	"2時", "にじ",
+	"1時", "いちじ",
+	"1枚", "いちまい",
+	"1度", "いちど",
+	"1番", "いちばん",
+	"1つ", "ひとつ",
+	"2つ", "ふたつ",
+	"何ですか", "なんですか",
+	"何時", "なんじ",
+	"食べ物", "たべもの",
+	"朝ご飯", "あさごはん",
+	"朝ごはん", "あさごはん",
+	"昼ご飯", "ひるごはん",
+	"昼ごはん", "ひるごはん",
+	"土曜日", "どようび",
+	"日曜日", "にちようび",
+	"あの方", "あのかた",
+	"美味しい", "おいしい",
+	"難しい", "むずかしい",
 	"済みません", "すみません",
 	"働きたい", "はたらきたい",
 	"働きます", "はたらきます",
@@ -77,12 +143,20 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"書きます", "かきます",
 	"聞きます", "ききます",
 	"思います", "おもいます",
+	"起きます", "おきます",
+	"着ます", "きます",
 	"来ました", "きました",
 	"行ったり", "いったり",
 	"手伝って", "てつだって",
 	"曲がって", "まがって",
 	"明るくて", "あかるくて",
 	"寒くない", "さむくない",
+	"教えて", "おしえて",
+	"使って", "つかって",
+	"待って", "まって",
+	"住んで", "すんで",
+	"痛くて", "いたくて",
+	"洗って", "あらって",
 	"富士山", "ふじさん",
 	"面白い", "おもしろい",
 	"楽しい", "たのしい",
@@ -108,6 +182,7 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"買って", "かって",
 	"先生", "せんせい",
 	"学生", "がくせい",
+	"会社", "かいしゃ",
 	"時間", "じかん",
 	"仕事", "しごと",
 	"家族", "かぞく",
@@ -117,12 +192,16 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"本屋", "ほんや",
 	"部屋", "へや",
 	"眼鏡", "めがね",
+	"時計", "とけい",
+	"鉛筆", "えんぴつ",
+	"風邪", "かぜ",
 	"食後", "しょくご",
 	"将来", "しょうらい",
 	"医者", "いしゃ",
 	"京都", "きょうと",
 	"東京", "とうきょう",
 	"毎朝", "まいあさ",
+	"毎晩", "まいばん",
 	"毎日", "まいにち",
 	"先週", "せんしゅう",
 	"今週", "こんしゅう",
@@ -153,6 +232,9 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"一番", "いちばん",
 	"一緒", "いっしょ",
 	"一度", "いちど",
+	"一つ", "ひとつ",
+	"二つ", "ふたつ",
+	"六時", "ろくじ",
 	"七時", "しちじ",
 	"辞書", "じしょ",
 	"日本", "にほん",
@@ -168,6 +250,12 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"親切", "しんせつ",
 	"便利", "べんり",
 	"一枚", "いちまい",
+	"近く", "ちかく",
+	"少し", "すこし",
+	"次の", "つぎの",
+	"速い", "はやい",
+	"早い", "はやい",
+	"高い", "たかい",
 	"休み", "やすみ",
 	"来ます", "きます",
 	"見ます", "みます",
@@ -194,6 +282,29 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"降る", "ふる",
 	"泳ぐ", "およぐ",
 	"弾く", "ひく",
+	"椅子", "いす",
+	"100", "ひゃく",
+	"10", "じゅう",
+	"0", "ぜろ",
+	"1", "いち",
+	"2", "に",
+	"3", "さん",
+	"4", "よん",
+	"5", "ご",
+	"6", "ろく",
+	"7", "なな",
+	"8", "はち",
+	"9", "きゅう",
+	"０", "ぜろ",
+	"１", "いち",
+	"２", "に",
+	"３", "さん",
+	"４", "よん",
+	"５", "ご",
+	"６", "ろく",
+	"７", "なな",
+	"８", "はち",
+	"９", "きゅう",
 	"私", "わたし",
 	"父", "ちち",
 	"母", "はは",
@@ -277,6 +388,17 @@ var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
 	"館", "かん",
 	"室", "しつ",
 	"国", "くに",
+	"隣", "となり",
+	"机", "つくえ",
+	"角", "かど",
+	"誰", "だれ",
+	"方", "ほう",
+	"半", "はん",
+	"時", "じ",
+	"万", "まん",
+	"度", "ど",
+	"番", "ばん",
+	"前", "まえ",
 )
 
 func containsCJK(s string) bool {
@@ -771,6 +893,76 @@ func isFillBlankTranslationSpoiler(translation string, correctAnswer string, con
 		}
 	}
 	return false
+}
+
+func isParentheticalEquationSpoiler(parenContent string, trimmedAns string, ansPhonetic string) bool {
+	if !strings.Contains(parenContent, "=") {
+		return false
+	}
+	if trimmedAns == "" {
+		return false
+	}
+	sides := strings.Split(parenContent, "=")
+	for _, rawSide := range sides {
+		side := strings.TrimSpace(rawSide)
+		if side == "" {
+			continue
+		}
+		if strings.EqualFold(side, trimmedAns) {
+			return true
+		}
+		sidePhonetic := normalizeRomajiPhonetics(side)
+		if ansPhonetic != "" && sidePhonetic != "" {
+			if sidePhonetic == ansPhonetic || strings.Contains(sidePhonetic, ansPhonetic) || (len(sidePhonetic) >= 4 && strings.Contains(ansPhonetic, sidePhonetic)) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func sanitizeFillBlankSentenceTemplate(template string, correctAnswer string) string {
+	trimmed := strings.TrimSpace(template)
+	if trimmed == "" {
+		return ""
+	}
+	trimmedAns := strings.TrimSpace(correctAnswer)
+	ansPhonetic := ""
+	if trimmedAns != "" {
+		ansPhonetic = normalizeRomajiPhonetics(trimmedAns)
+	}
+
+	var b strings.Builder
+	b.Grow(len(trimmed))
+	cursor := 0
+	for cursor < len(trimmed) {
+		openIdx := strings.IndexByte(trimmed[cursor:], '(')
+		if openIdx < 0 {
+			b.WriteString(trimmed[cursor:])
+			break
+		}
+		absOpen := cursor + openIdx
+		closeRel := strings.IndexByte(trimmed[absOpen+1:], ')')
+		if closeRel < 0 {
+			b.WriteString(trimmed[cursor:])
+			break
+		}
+		absClose := absOpen + 1 + closeRel
+		inner := trimmed[absOpen+1 : absClose]
+		if isParentheticalEquationSpoiler(inner, trimmedAns, ansPhonetic) {
+			b.WriteString(strings.TrimRight(trimmed[cursor:absOpen], " \t"))
+			cursor = absClose + 1
+			continue
+		}
+		b.WriteString(trimmed[cursor : absClose+1])
+		cursor = absClose + 1
+	}
+
+	cleaned := strings.TrimSpace(strings.Join(strings.Fields(b.String()), " "))
+	if cleaned == "" || cleaned == "[blank]" {
+		return ""
+	}
+	return cleaned
 }
 
 // ExtractDiagnosticFeedback looks up targeted feedback in the diagnostic rubric for exact answers or distractor tokens

@@ -358,11 +358,15 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 	}
 
 	if updatedReview != nil {
-		u.logActivitySafely(ctx, userID, "srs_review_completed", badgeXP, map[string]any{
+		srsMeta := map[string]any{
 			"exercise_id":      exerciseID,
 			"quality":          quality,
 			"repetition_count": updatedReview.RepetitionCount,
-		})
+		}
+		if badgeXP > 0 {
+			srsMeta["badge_xp_awarded"] = badgeXP
+		}
+		u.logActivitySafely(ctx, userID, "srs_review_completed", 0, srsMeta)
 	}
 
 	return updatedReview, nil
@@ -968,12 +972,16 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		}
 	}
 
-	u.logActivitySafely(ctx, userID, "readiness_exam_completed", badgeXP, map[string]any{
+	examMeta := map[string]any{
 		"level_id":      levelID,
 		"attempt_id":    attempt.ID,
 		"score_percent": graded.scorePercent,
 		"is_passed":     graded.isPassed,
-	})
+	}
+	if badgeXP > 0 {
+		examMeta["badge_xp_awarded"] = badgeXP
+	}
+	u.logActivitySafely(ctx, userID, "readiness_exam_completed", 0, examMeta)
 
 	return &ReadinessExamResponse{
 		Attempt:       *attempt,

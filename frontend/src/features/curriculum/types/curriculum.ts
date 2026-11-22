@@ -320,6 +320,7 @@ export interface CurriculumBadgeDefinition {
 
 export interface CompleteLessonResponse {
   progress: UserLessonProgress
+  xp_earned?: number
   gamification: CurriculumGamificationSummary
   unlocked_next_lesson_id?: string | null
   unlocked_next_lesson_slug?: string | null

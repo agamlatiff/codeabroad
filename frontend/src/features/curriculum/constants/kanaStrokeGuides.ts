@@ -176,6 +176,16 @@ const KANJI_STROKE_COUNTS: Record<string, number> = {
   後: 9, 右: 5, 左: 5, 校: 10, 高: 10, 安: 6, 新: 13, 古: 5,
 }
 
+const KANJI_STROKE_POINTS: Record<string, KanaStrokePoint[]> = {
+  一: [p(20, 50, 'right')],
+  二: [p(26, 36, 'right'), p(18, 66, 'right')],
+  三: [p(24, 28, 'right'), p(28, 50, 'right'), p(18, 72, 'right')],
+  十: [p(20, 48, 'right'), p(50, 18, 'down')],
+  人: [p(52, 20, 'down-left'), p(50, 46, 'down-right')],
+  川: [p(28, 24, 'down-left'), p(50, 26, 'down'), p(72, 20, 'down')],
+  大: [p(20, 42, 'right'), p(50, 18, 'down-left'), p(50, 44, 'down-right')],
+}
+
 export function getKanaStrokeGuide(
   character: string,
   script?: KanaScriptType
@@ -229,6 +239,6 @@ export function getKanaStrokeGuide(
   return {
     strokes: kanjiStrokes ?? (script === 'kanji' ? 4 : 2),
     tips: 'Aturan baku Kanji: mulai dari atas ke bawah, kiri ke kanan, kerangka luar dulu, dan tutup kotak paling akhir.',
-    points: [p(26, 24, 'right'), p(48, 22, 'down')],
+    points: KANJI_STROKE_POINTS[ch] ?? [],
   }
 }

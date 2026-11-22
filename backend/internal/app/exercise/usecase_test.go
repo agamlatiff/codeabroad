@@ -2136,11 +2136,17 @@ func TestProcessReviewAndSubmitExam_LogsUserActivities(t *testing.T) {
 	if len(userRepo.ActivityLogs) != 2 {
 		t.Fatalf("expected 2 user activity logs recorded, got %d (%+v)", len(userRepo.ActivityLogs), userRepo.ActivityLogs)
 	}
-	if userRepo.ActivityLogs[0].ActivityType != "srs_review_completed" || userRepo.ActivityLogs[0].XPEarned != 150 {
-		t.Fatalf("unexpected SRS activity log: %+v", userRepo.ActivityLogs[0])
+	if userRepo.ActivityLogs[0].ActivityType != "srs_review_completed" || userRepo.ActivityLogs[0].XPEarned != 0 {
+		t.Fatalf("unexpected SRS activity log (expected XPEarned=0 because AwardBadge already logs badge XP): %+v", userRepo.ActivityLogs[0])
 	}
-	if userRepo.ActivityLogs[1].ActivityType != "readiness_exam_completed" || userRepo.ActivityLogs[1].XPEarned != 150 {
-		t.Fatalf("unexpected readiness exam activity log: %+v", userRepo.ActivityLogs[1])
+	if got, _ := userRepo.ActivityLogs[0].Metadata["badge_xp_awarded"].(int); got != 150 {
+		t.Fatalf("expected SRS activity metadata badge_xp_awarded=150, got %+v", userRepo.ActivityLogs[0].Metadata)
+	}
+	if userRepo.ActivityLogs[1].ActivityType != "readiness_exam_completed" || userRepo.ActivityLogs[1].XPEarned != 0 {
+		t.Fatalf("unexpected readiness exam activity log (expected XPEarned=0 because AwardBadge already logs badge XP): %+v", userRepo.ActivityLogs[1])
+	}
+	if got, _ := userRepo.ActivityLogs[1].Metadata["badge_xp_awarded"].(int); got != 150 {
+		t.Fatalf("expected readiness exam activity metadata badge_xp_awarded=150, got %+v", userRepo.ActivityLogs[1].Metadata)
 	}
 
 	// Best-effort telemetry: LogActivity errors must not fail ProcessReview or SubmitExam

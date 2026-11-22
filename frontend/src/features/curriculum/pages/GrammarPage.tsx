@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo, useId } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { BookOpen, CheckCircle } from '@phosphor-icons/react'
+import { ArrowRight, ArrowsClockwise, BookOpen, CheckCircle } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
@@ -13,7 +13,10 @@ import {
   GRAMMAR_POINTS_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
-import { formatCategoryLabel } from '@/features/curriculum/constants/grammarStyles'
+import {
+  formatCategoryLabel,
+  isGrammarPointDueForReview,
+} from '@/features/curriculum/constants/grammarStyles'
 import { GrammarEditorialCard } from '@/features/curriculum/components/GrammarEditorialCard'
 import { GrammarHeroIllustration } from '@/features/curriculum/components/GrammarHeroIllustration'
 
@@ -56,6 +59,7 @@ export const GrammarPage = () => {
   const rawLevelParam = searchParams.get('level')
   const levelFilter = useMemo(() => parseLevelFilterParam(rawLevelParam), [rawLevelParam])
   const categoryFilter = searchParams.get('category')?.trim() || 'ALL'
+  const reviewFilter = searchParams.get('review')?.trim().toLowerCase() === 'due' ? 'due' : 'all'
   const [searchQuery, setSearchQuery] = useState('')
 
   // Ensure default N5 reflects explicitly in /grammar?level=N5 for consistent sharable URLs
@@ -87,6 +91,22 @@ export const GrammarPage = () => {
           next.delete('category')
         } else {
           next.set('category', nextCat)
+        }
+        return next
+      },
+      { replace: true }
+    )
+  }
+
+  const handleSetReviewFilter = (mode: 'all' | 'due') => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('level', levelFilter)
+        if (mode === 'due') {
+          next.set('review', 'due')
+        } else {
+          next.delete('review')
         }
         return next
       },
@@ -144,12 +164,23 @@ export const GrammarPage = () => {
     ]
   }, [grammarPoints])
 
+  const duePointsInScope = useMemo(
+    () =>
+      grammarPoints.filter((point) => {
+        const levelCode = (point.level_code ?? 'N5').toUpperCase()
+        if (levelFilter !== 'ALL' && levelCode !== levelFilter) return false
+        return isGrammarPointDueForReview(point)
+      }),
+    [grammarPoints, levelFilter]
+  )
+
   const filteredPoints = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return grammarPoints.filter((point: GrammarPoint) => {
       const levelCode = (point.level_code ?? 'N5').toUpperCase()
       if (levelFilter !== 'ALL' && levelCode !== levelFilter) return false
       if (categoryFilter !== 'ALL' && point.category !== categoryFilter) return false
+      if (reviewFilter === 'due' && !isGrammarPointDueForReview(point)) return false
       if (!query) return true
 
       const exampleMatch = (point.examples ?? []).some(
@@ -167,7 +198,7 @@ export const GrammarPage = () => {
         exampleMatch
       )
     })
-  }, [grammarPoints, levelFilter, categoryFilter, searchQuery])
+  }, [grammarPoints, levelFilter, categoryFilter, reviewFilter, searchQuery])
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -258,6 +289,51 @@ export const GrammarPage = () => {
           searchPlaceholder="Cari pola kalimat, partikel, atau contoh..."
         />
 
+        {/* Scheduled SRS Grammar Review Banner */}
+        {!isLoading && duePointsInScope.length > 0 && (
+          <section
+            aria-label="Jadwal Review Grammar SRS"
+            className="rounded-2xl border-2 border-amber-300/90 bg-gradient-to-r from-amber-50 via-yellow-50/70 to-orange-50/60 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_3px_0_0_#FDE68A]"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <span className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0">
+                <ArrowsClockwise weight="bold" className="w-4 h-4" />
+              </span>
+              <div className="min-w-0 space-y-0.5">
+                <p className="font-brand font-black text-xs sm:text-sm text-amber-950">
+                  {duePointsInScope.length} Materi Grammar Jatuh Tempo untuk Diulas
+                </p>
+                <p className="text-[11px] font-medium text-amber-900/80">
+                  Uji kembali ingatanmu agar pola kalimat tetap nempel jangka panjang.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => handleSetReviewFilter(reviewFilter === 'due' ? 'all' : 'due')}
+                className={`px-3 py-1.5 rounded-xl border-2 text-xs font-brand font-black transition-all cursor-pointer ${
+                  reviewFilter === 'due'
+                    ? 'bg-amber-600 border-amber-700 text-white'
+                    : 'bg-white border-amber-300 text-amber-900 hover:bg-amber-100/70'
+                }`}
+              >
+                {reviewFilter === 'due'
+                  ? 'Tampilkan Semua'
+                  : `Filter Perlu Diulas (${duePointsInScope.length})`}
+              </button>
+              <Link
+                to={`/grammar/${encodeURIComponent(duePointsInScope[0].code || duePointsInScope[0].id)}#grammar-mini-quiz`}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-brand font-black transition-colors shadow-2xs"
+              >
+                <span>Mulai Ulas Sekarang</span>
+                <ArrowRight weight="bold" className="w-3.5 h-3.5" />
+              </Link>
+            </div>
+          </section>
+        )}
+
         {/* Horizontal Editorial Grammar Cards (LingoDeer-inspired) */}
         {isLoading ? (
           <div className="space-y-4">
@@ -281,13 +357,14 @@ export const GrammarPage = () => {
                 Coba pilih tingkat JLPT lain atau ubah kata kunci pencarianmu.
               </p>
             </div>
-            {(searchQuery.trim().length > 0 || categoryFilter !== 'ALL') && (
+            {(searchQuery.trim().length > 0 || categoryFilter !== 'ALL' || reviewFilter === 'due') && (
               <Button3D
                 variant="white"
                 size="sm"
                 onClick={() => {
                   setSearchQuery('')
                   handleSelectCategory('ALL')
+                  handleSetReviewFilter('all')
                 }}
                 className="text-xs px-4 py-2 mx-auto"
               >

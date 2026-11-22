@@ -49,6 +49,14 @@ func SanitizeExercises(exercises []Exercise) []Exercise {
 				if trans, ok := cloned["translation"].(string); ok && isFillBlankTranslationSpoiler(trans, rawCorrect, cloned) {
 					delete(cloned, "translation")
 				}
+				if tpl, ok := cloned["sentence_template"].(string); ok {
+					sanitizedTpl := sanitizeFillBlankSentenceTemplate(tpl, rawCorrect)
+					if sanitizedTpl == "" {
+						delete(cloned, "sentence_template")
+					} else if sanitizedTpl != tpl {
+						cloned["sentence_template"] = sanitizedTpl
+					}
+				}
 			}
 			ex.Content = cloned
 		}

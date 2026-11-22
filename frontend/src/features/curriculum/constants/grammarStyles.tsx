@@ -8,6 +8,7 @@ import {
   ClockCounterClockwise,
   CrownSimple,
 } from '@phosphor-icons/react'
+import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
 
 export const CATEGORY_LABELS: Record<string, string> = {
   sentence_pattern: 'Pola Kalimat',
@@ -172,4 +173,14 @@ export function renderCategoryIcon(category: string, className = 'w-3.5 h-3.5'):
     default:
       return <BookOpen weight="bold" className={className} />
   }
+}
+
+/** Returns true when a mastered grammar point has reached or passed its SRS review schedule. */
+export function isGrammarPointDueForReview(
+  point: Pick<GrammarPoint, 'is_understood' | 'next_review_at'>
+): boolean {
+  if (!point.is_understood || !point.next_review_at) return false
+  const dueAt = Date.parse(point.next_review_at)
+  if (Number.isNaN(dueAt)) return false
+  return dueAt <= Date.now()
 }

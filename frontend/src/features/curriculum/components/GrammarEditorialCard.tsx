@@ -1,11 +1,12 @@
 import type { FC } from 'react'
 import { Link } from 'react-router-dom'
-import { ArrowRight, CheckCircle, Quotes } from '@phosphor-icons/react'
+import { ArrowRight, ArrowsClockwise, CheckCircle, Quotes } from '@phosphor-icons/react'
 import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
 import {
   DEFAULT_LEVEL_ACCENT,
   LEVEL_ACCENT_STYLES,
   formatCategoryLabel,
+  isGrammarPointDueForReview,
   renderCategoryIcon,
 } from '@/features/curriculum/constants/grammarStyles'
 import { KodiCharacter, type KodiEmotion } from '@/shared/components/ui/KodiCharacter'
@@ -114,13 +115,16 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
   const hasGuide = Boolean(point.learning_guide?.breakdowns?.length)
   const previewText = point.learning_guide?.analogy || point.explanation
   const { primary, accentSub } = splitEditorialTitle(point.title, point.category)
+  const isDueForReview = isGrammarPointDueForReview(point)
 
   return (
     <Link
-      to={`/grammar/${encodeURIComponent(point.code || point.id)}`}
+      to={`/grammar/${encodeURIComponent(point.code || point.id)}${isDueForReview ? '#grammar-mini-quiz' : ''}`}
       onClick={() => triggerHaptic('tap')}
       aria-label={`Pelajari materi: ${point.title}`}
-      className={`group bg-white border-2 border-slate-200/90 ${accent.hoverBorder} rounded-3xl overflow-hidden shadow-[0_4px_0_0_#E2E8F0] hover:-translate-y-0.5 hover:shadow-[0_7px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-[0_2px_0_0_#E2E8F0] transition-all flex flex-col md:flex-row focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200`}
+      className={`group bg-white border-2 ${
+        isDueForReview ? 'border-amber-300' : 'border-slate-200/90'
+      } ${accent.hoverBorder} rounded-3xl overflow-hidden shadow-[0_4px_0_0_#E2E8F0] hover:-translate-y-0.5 hover:shadow-[0_7px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-[0_2px_0_0_#E2E8F0] transition-all flex flex-col md:flex-row focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-200`}
     >
       {/* ── TACTILE BOOK-SPINE CATEGORY ACCENT BAR ── */}
       <div aria-hidden="true" className={`h-1.5 w-full md:h-auto md:w-2 shrink-0 ${cover.spineBar}`} />
@@ -188,11 +192,18 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
                 {renderCategoryIcon(point.category, 'w-3 h-3')}
                 <span>{formatCategoryLabel(point.category)}</span>
               </span>
-              {point.is_understood && (
-                <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
-                  <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
-                  <span>Paham ✓</span>
+              {isDueForReview ? (
+                <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">
+                  <ArrowsClockwise weight="bold" className="w-3 h-3 text-amber-700" />
+                  <span>Perlu Diulas</span>
                 </span>
+              ) : (
+                point.is_understood && (
+                  <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
+                    <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
+                    <span>Paham ✓</span>
+                  </span>
+                )
               )}
             </div>
             <span className="text-[11px] font-mono font-black text-slate-400">
@@ -233,8 +244,12 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
                 : `${exampleCount} contoh kalimat • Audio 0.6x`}
             </span>
           </span>
-          <span className="inline-flex items-center gap-1 text-xs sm:text-[13px] font-brand font-black text-blue-600 group-hover:gap-1.5 transition-all">
-            Pelajari Materi
+          <span
+            className={`inline-flex items-center gap-1 text-xs sm:text-[13px] font-brand font-black group-hover:gap-1.5 transition-all ${
+              isDueForReview ? 'text-amber-700' : 'text-blue-600'
+            }`}
+          >
+            {isDueForReview ? 'Ulas Sekarang' : 'Pelajari Materi'}
             <ArrowRight weight="bold" className="w-3.5 h-3.5" />
           </span>
         </div>

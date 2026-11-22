@@ -223,8 +223,8 @@ func (u *usecase) CompleteOnboarding(ctx context.Context, userID string, req *On
 		assignedLevel = u.helper.ResolveTargetLevel(levels, "zero_beginner", nil, 0)
 	}
 
-	// Guard: if placement test qualifies for an empty level (e.g. N4 has 0 units yet), keep user on the populated base level (N5).
-	if req.InitialPlacementType == "placement_test" && assignedLevel != nil && u.curriculumRepo != nil && len(levels) > 1 {
+	// Guard: if placement test or manual select targets an empty level (e.g. N4 has 0 units yet), keep user on the populated base level (N5).
+	if (req.InitialPlacementType == "placement_test" || req.InitialPlacementType == "manual_select") && assignedLevel != nil && u.curriculumRepo != nil && len(levels) > 1 {
 		sortedLevels := make([]language.ProficiencyLevel, len(levels))
 		copy(sortedLevels, levels)
 		sort.Slice(sortedLevels, func(i, j int) bool {

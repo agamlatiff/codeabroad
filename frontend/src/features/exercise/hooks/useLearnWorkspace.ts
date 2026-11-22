@@ -366,6 +366,7 @@ export const useLearnWorkspace = (id?: string) => {
       }
 
       const actualXpEarned =
+        completionResult.xp_earned ??
         completionResult.session_xp_earned ??
         (completionResult.gamification && previousUser
           ? Math.max(0, completionResult.gamification.xp - previousUser.xp)
