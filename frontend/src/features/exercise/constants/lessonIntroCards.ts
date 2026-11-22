@@ -130,9 +130,9 @@ const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
     ],
   },
   'n5-konsonan-dasar-hiragana': {
-    headline: 'Kenali Huruf Hiragana Konsonan Dasar',
+    headline: 'Kenali Ungkapan Sapaan & Kata Pendek Baris K',
     subtitle:
-      'Pahami beberapa huruf dari baris K, S, N serta ungkapan sopan penting sebelum mengerjakan soal.',
+      'Pahami kata penting baris K (か, く, あかい) serta frasa sopan sehari-hari sebelum mengerjakan soal.',
     kanaLinkScript: 'hiragana',
     items: [
       {
@@ -143,25 +143,25 @@ const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
         speakText: 'か',
       },
       {
-        symbol: 'さ',
-        reading: 'sa',
-        meaning: 'Suku kata "sa"',
-        mnemonic: 'Satu garis mendatar disilang lalu melengkung seperti senyum sapaan.',
-        speakText: 'さ',
+        symbol: 'く',
+        reading: 'ku',
+        meaning: 'Suku kata "ku"',
+        mnemonic: 'Satu sudut menyiku ke kiri seperti paruh burung kukuk.',
+        speakText: 'く',
       },
       {
-        symbol: 'す',
-        reading: 'su',
-        meaning: 'Suku kata "su"',
-        mnemonic: 'Lingkaran menggantung di batang lurus mirip gulungan sushi.',
-        speakText: 'す',
+        symbol: 'あかい',
+        reading: 'akai',
+        meaning: 'Merah',
+        mnemonic: 'Tersusun dari huruf Unit 1 yang sudah kamu kenal: あ (a) + か (ka) + い (i).',
+        speakText: 'あかい',
       },
       {
-        symbol: 'さかな',
-        reading: 'sakana',
-        meaning: 'Ikan',
-        mnemonic: 'Tersusun dari tiga huruf dasar: さ (sa) + か (ka) + な (na).',
-        speakText: 'さかな',
+        symbol: 'きく',
+        reading: 'kiku',
+        meaning: 'Mendengar',
+        mnemonic: 'Gabungan dua huruf baris K: き (ki) + く (ku).',
+        speakText: 'きく',
       },
       {
         symbol: 'ありがとうございます',

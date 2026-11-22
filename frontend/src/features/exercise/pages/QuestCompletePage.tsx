@@ -8,10 +8,14 @@ import {
   ArrowRight,
   ArrowCounterClockwise,
   MapTrifold,
+  SpeakerHigh,
+  Cards,
 } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { useLessonCompletePage } from '@/features/exercise/hooks/useLessonCompletePage'
+import { audioService } from '@/shared/services/audioService'
+import { triggerHaptic } from '@/shared/utils/haptics'
 import { computeXpLevelProgress } from '@/shared/utils/progression'
 
 function getAccuracyPredicate(accuracyPercent: number): string {
@@ -35,9 +39,11 @@ export const QuestCompletePage = () => {
     accuracyPercent,
     unlockedNextLessonId,
     awardedBadges,
+    learnedItems,
     handleNextLesson,
     handleReplayLesson,
     handleBackToCurriculum,
+    handleOpenFlashcards,
   } = useLessonCompletePage()
 
   if (isLoading) {
@@ -175,6 +181,56 @@ export const QuestCompletePage = () => {
                     <p className="text-[11px] text-slate-600 line-clamp-1">{badge.description}</p>
                   </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Learned Characters & Vocabulary Recap */}
+        {learnedItems.length > 0 && (
+          <div className="space-y-2 text-left">
+            <div className="flex items-center justify-between gap-2 px-0.5">
+              <p className="text-[11px] font-brand font-black uppercase tracking-wider text-slate-500">
+                Aksara &amp; Kosakata yang Dikuasai ({learnedItems.length})
+              </p>
+              <button
+                type="button"
+                onClick={handleOpenFlashcards}
+                className="inline-flex items-center gap-1 text-[11px] font-brand font-black text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+              >
+                <Cards weight="bold" className="w-3.5 h-3.5" />
+                Ulas di Flashcard →
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+              {learnedItems.map((item, idx) => (
+                <button
+                  key={`${item.symbol}-${idx}`}
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    audioService.stopSpeech()
+                    audioService.speakJapanese(item.speakText)
+                  }}
+                  aria-label={`Dengarkan ${item.symbol} (${item.reading})`}
+                  className="rounded-2xl border-2 border-slate-200/90 bg-slate-50/70 hover:bg-blue-50/60 hover:border-blue-200 px-3 py-2 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer"
+                >
+                  <div className="min-w-0">
+                    <p className="text-base font-black text-slate-900 truncate leading-tight">
+                      {item.symbol}
+                    </p>
+                    <p className="text-[10px] font-mono font-bold text-blue-700 truncate">
+                      {item.reading}
+                    </p>
+                    <p className="text-[10px] font-medium text-slate-500 truncate">
+                      {item.meaning}
+                    </p>
+                  </div>
+                  <SpeakerHigh
+                    weight="fill"
+                    className="w-4 h-4 text-blue-500 shrink-0"
+                  />
+                </button>
               ))}
             </div>
           </div>

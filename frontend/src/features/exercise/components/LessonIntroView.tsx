@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from 'react'
+import { useEffect, useRef, useState, type FC } from 'react'
 import { Link } from 'react-router-dom'
 import {
   ArrowLeft,
@@ -15,7 +15,10 @@ import type {
   LessonIntroDeck,
   StudyBatchSegment,
 } from '@/features/exercise/constants/lessonIntroCards'
-import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
+import {
+  ExerciseSessionHeader,
+  type TimelineStepSegment,
+} from '@/features/exercise/components/ExerciseSessionHeader'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { audioService } from '@/shared/services/audioService'
@@ -39,6 +42,7 @@ export interface LessonIntroViewProps {
   batch?: StudyBatchSegment | null
   progressPercent?: number
   counterLabel?: string
+  timelineSteps?: TimelineStepSegment[]
   onExit: () => void
   onStartQuiz: () => void
 }
@@ -47,7 +51,7 @@ export interface LessonIntroViewProps {
  * Learn-Before-Quiz introduction & interleaved mini-batch view (Opsi A):
  * - In interleaved mode (`batch` provided), presents 2 focused cards before each 2-3 question block
  *   inside one unified progress bar.
- * - Automatically pronounces the lead study item on entry when `autoPlayVoice` is enabled.
+ * - Automatically pronounces card 1 then card 2 sequentially when `autoPlayVoice` is enabled.
  */
 export const LessonIntroView: FC<LessonIntroViewProps> = ({
   lessonTitle,
@@ -56,6 +60,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
   batch,
   progressPercent,
   counterLabel,
+  timelineSteps,
   onExit,
   onStartQuiz,
 }) => {
@@ -63,8 +68,10 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
   const [activeSlide, setActiveSlide] = useState<IntroSlideId>(
     deck.items.length > 0 ? 'vocab' : 'grammar'
   )
+  const manualInteractedRef = useRef(false)
 
   const handlePlay = (key: string, text: string, rate?: number) => {
+    manualInteractedRef.current = true
     triggerHaptic('tap')
     audioService.stopSpeech()
     setPlayingKey(key)
@@ -79,22 +86,54 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
   const displayedItems = batch ? batch.items : deck.items
   const batchNumber = batch?.batchNumber ?? 1
   const leadSpeakText = displayedItems[0]?.speakText ?? ''
+  const secondSpeakText = displayedItems[1]?.speakText ?? ''
 
-  // Auto-play lead card pronunciation when a study batch opens
+  // Auto-play card 1 then card 2 sequentially when a study batch opens
   useEffect(() => {
+    manualInteractedRef.current = false
     if (!leadSpeakText) return
-    const timer = window.setTimeout(() => {
+
+    let cancelled = false
+    let followUpTimer: number | null = null
+    const firstKey = batch ? `batch-${batchNumber}-normal-0` : 'normal-0'
+    const secondKey = batch ? `batch-${batchNumber}-normal-1` : 'normal-1'
+
+    const startTimer = window.setTimeout(() => {
+      if (cancelled || manualInteractedRef.current) return
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
+
       audioService.stopSpeech()
-      audioService.speakJapanese(leadSpeakText)
+      setPlayingKey(firstKey)
+
+      const finishFirst = () => {
+        setPlayingKey((prev) => (prev === firstKey ? null : prev))
+        if (cancelled || manualInteractedRef.current || !secondSpeakText || !batch) {
+          return
+        }
+        followUpTimer = window.setTimeout(() => {
+          if (cancelled || manualInteractedRef.current) return
+          const latest = useAudioStore.getState()
+          if (!latest.autoPlayVoice || latest.audioMode === 'muted') return
+          setPlayingKey(secondKey)
+          const clearSecond = () =>
+            setPlayingKey((prev) => (prev === secondKey ? null : prev))
+          audioService.speakJapanese(secondSpeakText, clearSecond, clearSecond)
+        }, 650)
+      }
+
+      audioService.speakJapanese(leadSpeakText, finishFirst, finishFirst)
     }, 220)
 
     return () => {
-      window.clearTimeout(timer)
+      cancelled = true
+      window.clearTimeout(startTimer)
+      if (followUpTimer !== null) {
+        window.clearTimeout(followUpTimer)
+      }
       audioService.stopSpeech()
     }
-  }, [batchNumber, leadSpeakText])
+  }, [batch, batchNumber, leadSpeakText, secondSpeakText])
 
   // Interleaved mini-batch mode (Opsi A)
   if (batch) {
@@ -113,6 +152,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
           progressPercent={resolvedProgress}
           progressFillClass="bg-blue-500"
           counterLabel={resolvedCounter}
+          timelineSteps={timelineSteps}
           rightSlot={
             <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-black text-amber-700 shrink-0">
               <Sparkle weight="fill" className="w-4 h-4 text-amber-500" />+{xpReward} XP
@@ -167,7 +207,11 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                   return (
                     <div
                       key={`${item.symbol}-${idx}`}
-                      className="bg-white rounded-3xl border-2 border-slate-200/90 p-4 sm:p-5 shadow-[0_3px_0_0_rgba(15,23,42,0.05)] space-y-3"
+                      className={`bg-white rounded-3xl border-2 p-4 sm:p-5 shadow-[0_3px_0_0_rgba(15,23,42,0.05)] space-y-3 transition-all ${
+                        playingKey === normalKey || playingKey === slowKey
+                          ? 'border-blue-400 ring-2 ring-blue-100'
+                          : 'border-slate-200/90'
+                      }`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="min-w-0 space-y-1">

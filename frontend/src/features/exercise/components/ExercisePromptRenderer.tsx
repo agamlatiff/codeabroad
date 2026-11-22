@@ -1,4 +1,4 @@
-import { useEffect, useRef, type KeyboardEvent } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type {
   ParsedExerciseContent,
@@ -117,12 +117,18 @@ export const ExercisePromptRenderer = ({
   onToggleHint,
   onEnterKey,
 }: ExercisePromptRendererProps) => {
+  const [manualTypingExerciseId, setManualTypingExerciseId] = useState<string | null>(null)
+  const [romajiShownExerciseId, setRomajiShownExerciseId] = useState<string | null>(null)
+
   const exerciseType = exercise.exercise_type
   const pillarMeta = SKILL_PILLAR_LABELS[exercise.skill_pillar] ?? {
     label: exercise.skill_pillar,
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
   }
   const isLocked = submittedResult !== null
+  const showManualTyping =
+    !speechRecognitionSupported || manualTypingExerciseId === exercise.id
+  const showSentenceRomaji = romajiShownExerciseId === exercise.id
   const effectiveHint = isCheckpoint ? undefined : parsedContent.hint || fallbackHint
   const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
   const selectedChoiceLabel = parsedContent.choiceOptions.find(
@@ -365,10 +371,36 @@ export const ExercisePromptRenderer = ({
       {/* MODE 1: SENTENCE BUILDER */}
       {exerciseType === 'sentence_builder' && (
         <div className="space-y-5">
-          {parsedContent.targetTranslation && (
-            <p className="text-sm font-semibold text-slate-500">
-              Target arti: “{parsedContent.targetTranslation}”
-            </p>
+          {(parsedContent.targetTranslation || (!isCheckpoint && parsedContent.romaji)) && (
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {parsedContent.targetTranslation ? (
+                <p className="text-sm font-semibold text-slate-500">
+                  Target arti: “{parsedContent.targetTranslation}”
+                </p>
+              ) : (
+                <span />
+              )}
+
+              {!isCheckpoint && parsedContent.romaji && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setRomajiShownExerciseId((prev) =>
+                      prev === exercise.id ? null : exercise.id
+                    )
+                  }
+                  className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-[11px] font-brand font-extrabold text-blue-700 transition-colors cursor-pointer"
+                >
+                  {showSentenceRomaji ? 'Sembunyikan Romaji' : 'Tampilkan Bacaan (Romaji)'}
+                </button>
+              )}
+            </div>
+          )}
+
+          {showSentenceRomaji && !isCheckpoint && parsedContent.romaji && (
+            <div className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-xs font-mono font-bold text-blue-800">
+              Cara baca: {parsedContent.romaji}
+            </div>
           )}
 
           {/* Sentence Construction Tray */}
@@ -432,7 +464,7 @@ export const ExercisePromptRenderer = ({
       {/* MODE 2: SPEAKING REPEAT */}
       {exerciseType === 'speaking_repeat' && (
         <div className="space-y-4 p-5 rounded-2xl bg-white border-2 border-slate-200 shadow-sm">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-2.5">
             {speechRecognitionSupported ? (
               <Button3D
                 type="button"
@@ -440,7 +472,10 @@ export const ExercisePromptRenderer = ({
                 size="md"
                 disableSound
                 disabled={isLocked}
-                onClick={onToggleRecording}
+                onClick={() => {
+                  setManualTypingExerciseId(null)
+                  onToggleRecording()
+                }}
                 icon={
                   isRecordingSpeech ? (
                     <Stop weight="fill" className="w-4 h-4" />
@@ -453,47 +488,84 @@ export const ExercisePromptRenderer = ({
               </Button3D>
             ) : (
               <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-bold text-amber-800">
-                Browser ini belum mendukung pengenalan suara (Web Speech API). Gunakan Chrome atau Edge terbaru untuk latihan berbicara.
+                Browser ini belum mendukung mikrofon otomatis — ketik bacaan atau hiragana di bawah agar tetap bisa lanjut.
               </div>
+            )}
+
+            {speechRecognitionSupported && !isLocked && (
+              <button
+                type="button"
+                onClick={() =>
+                  setManualTypingExerciseId((prev) =>
+                    prev === exercise.id ? null : exercise.id
+                  )
+                }
+                className="text-xs font-brand font-bold text-slate-500 hover:text-blue-700 underline underline-offset-2 cursor-pointer"
+              >
+                {showManualTyping
+                  ? 'Gunakan Mikrofon'
+                  : 'Tidak bisa bicara sekarang? Ketik bacaannya'}
+              </button>
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <span
-              id={`speaking-transcript-label-${exercise.id}`}
-              className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
-            >
-              Transkrip Pelafalan Anda
-            </span>
-            <div
-              role="status"
-              aria-labelledby={`speaking-transcript-label-${exercise.id}`}
-              className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 flex items-center justify-between gap-3"
-            >
-              <span
-                className={
-                  textInput.trim().length > 0
-                    ? 'font-bold text-slate-900'
-                    : 'text-sm font-medium text-slate-400'
-                }
+          {showManualTyping ? (
+            <div className="space-y-1.5">
+              <label
+                htmlFor={`speaking-manual-${exercise.id}`}
+                className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
               >
-                {textInput.trim().length > 0
-                  ? textInput
-                  : isRecordingSpeech
-                    ? 'Mendengarkan suaramu...'
-                    : 'Tekan "Rekam Suara" lalu ucapkan kalimat di atas...'}
-              </span>
-              {textInput.trim().length > 0 && !isLocked && (
-                <button
-                  type="button"
-                  onClick={() => onSetTextInput('')}
-                  className="shrink-0 text-xs font-bold text-slate-500 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-200/70 transition-colors cursor-pointer"
-                >
-                  Ulangi Rekam
-                </button>
-              )}
+                Ketik Bacaan (Romaji atau Hiragana)
+              </label>
+              <input
+                id={`speaking-manual-${exercise.id}`}
+                type="text"
+                value={textInput}
+                disabled={isLocked}
+                onChange={(e) => onSetTextInput(e.target.value)}
+                onKeyDown={handleInputKeyDown}
+                placeholder={`Contoh: ${parsedContent.romaji || parsedContent.displayText || 'kao'}`}
+                className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none font-bold text-slate-900 placeholder:text-slate-400 transition-colors"
+              />
             </div>
-          </div>
+          ) : (
+            <div className="space-y-1.5">
+              <span
+                id={`speaking-transcript-label-${exercise.id}`}
+                className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
+              >
+                Transkrip Pelafalan Anda
+              </span>
+              <div
+                role="status"
+                aria-labelledby={`speaking-transcript-label-${exercise.id}`}
+                className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 flex items-center justify-between gap-3"
+              >
+                <span
+                  className={
+                    textInput.trim().length > 0
+                      ? 'font-bold text-slate-900'
+                      : 'text-sm font-medium text-slate-400'
+                  }
+                >
+                  {textInput.trim().length > 0
+                    ? textInput
+                    : isRecordingSpeech
+                      ? 'Mendengarkan suaramu...'
+                      : 'Tekan "Rekam Suara" lalu ucapkan kata di atas...'}
+                </span>
+                {textInput.trim().length > 0 && !isLocked && (
+                  <button
+                    type="button"
+                    onClick={() => onSetTextInput('')}
+                    className="shrink-0 text-xs font-bold text-slate-500 hover:text-slate-700 px-2 py-1 rounded-lg hover:bg-slate-200/70 transition-colors cursor-pointer"
+                  >
+                    Ulangi Rekam
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

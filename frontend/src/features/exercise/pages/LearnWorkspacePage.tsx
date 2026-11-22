@@ -2,7 +2,10 @@ import { useEffect, useMemo } from 'react'
 import { useParams } from 'react-router-dom'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
-import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
+import {
+  ExerciseSessionHeader,
+  type TimelineStepSegment,
+} from '@/features/exercise/components/ExerciseSessionHeader'
 import { ExerciseSessionStatusView } from '@/features/exercise/components/ExerciseSessionStatusView'
 import { LessonFeedbackFooter } from '@/features/exercise/components/LessonFeedbackFooter'
 import { LessonGrammarDrawer } from '@/features/exercise/components/LessonGrammarDrawer'
@@ -227,6 +230,31 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       ? Math.min(100, Math.round((completedTimelineSteps / totalTimelineSteps) * 100))
       : progressPercent
 
+  const timelineSteps: TimelineStepSegment[] | undefined =
+    !isCheckpoint && !isRetryRound && studyBatches.size > 0
+      ? Array.from({ length: exercises.length }, (_, idx) => {
+          const items: TimelineStepSegment[] = []
+          if (studyBatches.has(idx)) {
+            const isDismissed = dismissedStudyBatches.includes(idx)
+            const isActiveBatch = Boolean(activeStudyBatch && currentIndex === idx)
+            items.push({
+              kind: 'study',
+              state: isDismissed || idx < currentIndex ? 'done' : isActiveBatch ? 'current' : 'upcoming',
+            })
+          }
+          const exState: TimelineStepSegment['state'] =
+            idx < currentIndex
+              ? 'done'
+              : idx === currentIndex && !activeStudyBatch
+                ? submittedResult !== null
+                  ? 'done'
+                  : 'current'
+                : 'upcoming'
+          items.push({ kind: 'exercise', state: exState })
+          return items
+        }).flat()
+      : undefined
+
   if (introDeck && activeStudyBatch) {
     return (
       <LessonIntroView
@@ -236,6 +264,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         batch={activeStudyBatch}
         progressPercent={Math.max(5, unifiedProgressPercent)}
         counterLabel={`Materi ${activeStudyBatch.batchNumber}/${activeStudyBatch.totalBatches}`}
+        timelineSteps={timelineSteps}
         onExit={handleExitToCurriculum}
         onStartQuiz={() => handleDismissStudyBatch(currentIndex)}
       />
@@ -254,6 +283,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
             ? `${Math.min(currentIndex + 1, exercises.length)}/${exercises.length}`
             : '0/0'
         }
+        timelineSteps={timelineSteps}
         rightSlot={
           <div className="flex items-center gap-2 shrink-0">
             {isRetryRound && !isCheckpoint && (

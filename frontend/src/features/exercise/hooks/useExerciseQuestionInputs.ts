@@ -7,8 +7,12 @@ import {
   parseExerciseContent,
   resolveSelectedTokens,
 } from '@/features/exercise/utils/exerciseHelpers'
+import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
+
+const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
 
 interface UseExerciseQuestionInputsOptions {
   currentExercise: CurriculumExercise | null
@@ -79,13 +83,22 @@ export const useExerciseQuestionInputs = ({
 
   const handleAddToken = useCallback(
     (tokenIndex: number) => {
+      if (submittedResult !== null) return
+      const tokenText = parsedContent?.tokens[tokenIndex]
       runUnlockedTap(() => {
         setSelectedTokenIndices((prev) =>
           prev.includes(tokenIndex) ? prev : [...prev, tokenIndex]
         )
       })
+      if (tokenText && JAPANESE_CHAR_REGEX.test(tokenText)) {
+        const { autoPlayVoice, audioMode } = useAudioStore.getState()
+        if (autoPlayVoice && audioMode !== 'muted') {
+          audioService.stopSpeech()
+          audioService.speakJapanese(tokenText)
+        }
+      }
     },
-    [runUnlockedTap]
+    [parsedContent?.tokens, runUnlockedTap, submittedResult]
   )
 
   const handleRemoveToken = useCallback(

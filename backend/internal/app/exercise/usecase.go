@@ -187,7 +187,7 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 		return nil, err
 	}
 
-	isCorrect := u.helper.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, req.UserAnswer)
+	isCorrect := u.helper.EvaluateExerciseAnswer(ex, req.UserAnswer)
 	var diagnosticFeedback *string
 	if !isCorrect {
 		diagnosticFeedback = u.helper.ExtractDiagnosticFeedback(ex.DiagnosticRubric, req.UserAnswer)
@@ -576,7 +576,7 @@ func (u *usecase) gradeExamSubmission(
 			pillar = "reading"
 		}
 
-		isCorrect := u.helper.EvaluateAnswer(q.CorrectAnswer, q.AcceptableAnswers, ans.UserAnswer)
+		isCorrect := u.helper.EvaluateExerciseAnswer(&q, ans.UserAnswer)
 		if isCorrect {
 			totalScore++
 			pillarCorrect[pillar]++

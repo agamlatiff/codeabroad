@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useMemo, useRef } from 'react'
 import { useLocation, useNavigate, useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -6,6 +6,10 @@ import {
   curriculumService,
   LESSON_DETAIL_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
+import {
+  buildDynamicLessonIntroDeck,
+  type LessonIntroItem,
+} from '@/features/exercise/constants/lessonIntroCards'
 import type { LessonCompletionNavigationState } from '@/features/exercise/types/exercise'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -74,6 +78,21 @@ export const useLessonCompletePage = () => {
     completionResult?.unlocked_next_lesson_slug || unlockedNextLessonId
   const awardedBadges = completionResult?.awarded_badges ?? []
 
+  const learnedItems: LessonIntroItem[] = useMemo(() => {
+    if (!lesson) return []
+    const deck = buildDynamicLessonIntroDeck(lesson)
+    if (deck?.items && deck.items.length > 0) {
+      return deck.items.slice(0, 6)
+    }
+    return (lesson.study_items ?? []).slice(0, 6).map((item) => ({
+      symbol: item.symbol,
+      reading: item.reading,
+      meaning: item.meaning,
+      mnemonic: item.mnemonic,
+      speakText: item.speak_text || item.symbol,
+    }))
+  }, [lesson])
+
   const handleNextLesson = useCallback(() => {
     triggerHaptic('success')
     audioEngine.playSuccess()
@@ -101,6 +120,12 @@ export const useLessonCompletePage = () => {
     navigate('/curriculum')
   }, [navigate])
 
+  const handleOpenFlashcards = useCallback(() => {
+    triggerHaptic('tap')
+    audioEngine.playPop()
+    navigate('/flashcards')
+  }, [navigate])
+
   return {
     isLoading: !isConfirmedCompleted,
     lessonTitle,
@@ -111,9 +136,11 @@ export const useLessonCompletePage = () => {
     accuracyPercent,
     unlockedNextLessonId,
     awardedBadges,
+    learnedItems,
     handleNextLesson,
     handleReplayLesson,
     handleBackToCurriculum,
+    handleOpenFlashcards,
   }
 }
 

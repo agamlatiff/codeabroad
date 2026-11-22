@@ -46,6 +46,49 @@ var comparablePunctuationReplacer = strings.NewReplacer(
 	"\"", " ",
 )
 
+var kanjiToHiraganaSpeechReplacer = strings.NewReplacer(
+	"有難うございます", "ありがとうございます",
+	"有難う", "ありがとう",
+	"済みません", "すみません",
+	"食べます", "たべます",
+	"飲みます", "のみます",
+	"行きます", "いきます",
+	"見ます", "みます",
+	"毎朝", "まいあさ",
+	"ご飯", "ごはん",
+	"今日", "きょう",
+	"明日", "あした",
+	"日本", "にほん",
+	"先生", "せんせい",
+	"学生", "がくせい",
+	"お菓子", "おかし",
+	"青い", "あおい",
+	"赤い", "あかい",
+	"私", "わたし",
+	"顔", "かお",
+	"家", "いえ",
+	"声", "こえ",
+	"秋", "あき",
+	"青", "あお",
+	"赤", "あか",
+	"池", "いけ",
+	"駅", "えき",
+	"上", "うえ",
+	"愛", "あい",
+	"柿", "かき",
+	"魚", "さかな",
+	"傘", "かさ",
+	"寿司", "すし",
+	"水", "みず",
+	"山", "やま",
+	"花", "はな",
+	"耳", "みみ",
+	"猫", "ねこ",
+	"犬", "いぬ",
+	"朝", "あさ",
+	"夜", "よる",
+)
+
 func containsCJK(s string) bool {
 	for _, r := range s {
 		if unicode.In(r, unicode.Han, unicode.Hiragana, unicode.Katakana) {
@@ -166,6 +209,99 @@ func (h *Helper) EvaluateAnswer(correctAnswer string, acceptableAnswers []string
 	for _, acc := range acceptableAnswers {
 		if answersMatch(acc, userWithSpaces, userCollapsed) {
 			return true
+		}
+	}
+	return false
+}
+
+func foldKatakanaAndKanjiSpeech(raw string) string {
+	replaced := kanjiToHiraganaSpeechReplacer.Replace(strings.TrimSpace(raw))
+	var b strings.Builder
+	b.Grow(len(replaced))
+	for _, r := range replaced {
+		if r >= 0x30A1 && r <= 0x30F6 {
+			b.WriteRune(r - 0x60)
+		} else {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
+}
+
+func normalizeSpeechCandidate(raw string) []string {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" {
+		return nil
+	}
+	folded := foldKatakanaAndKanjiSpeech(trimmed)
+	variants := []string{
+		trimmed,
+		folded,
+		strings.ReplaceAll(trimmed, "-", " "),
+		strings.ReplaceAll(trimmed, "-", ""),
+		strings.ReplaceAll(folded, "-", ""),
+	}
+	if parenIdx := strings.Index(trimmed, "("); parenIdx > 0 {
+		noParen := strings.TrimSpace(trimmed[:parenIdx])
+		if noParen != "" {
+			variants = append(variants, noParen, strings.ReplaceAll(noParen, "-", ""))
+		}
+	}
+	return variants
+}
+
+// EvaluateExerciseAnswer evaluates a user answer using standard grading plus speech-friendly
+// romaji, hyphen, Katakana->Hiragana, and Chrome STT Kanji normalization for speaking_repeat exercises.
+func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
+	if ex == nil {
+		return false
+	}
+	if h.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, userAnswer) {
+		return true
+	}
+	if ex.ExerciseType != ExerciseTypeSpeakingRepeat {
+		return false
+	}
+
+	candidates := make([]string, 0, 12)
+	candidates = append(candidates, normalizeSpeechCandidate(ex.CorrectAnswer)...)
+	for _, acc := range ex.AcceptableAnswers {
+		candidates = append(candidates, normalizeSpeechCandidate(acc)...)
+	}
+	if ex.Content != nil {
+		for _, key := range []string{"display_text", "audio_text", "romaji"} {
+			if s, ok := ex.Content[key].(string); ok {
+				candidates = append(candidates, normalizeSpeechCandidate(s)...)
+			}
+		}
+		if rawBreakdown, ok := ex.Content["phonetic_breakdown"].([]any); ok {
+			parts := make([]string, 0, len(rawBreakdown))
+			for _, item := range rawBreakdown {
+				if s, isStr := item.(string); isStr && strings.TrimSpace(s) != "" {
+					parts = append(parts, strings.TrimSpace(s))
+				}
+			}
+			if len(parts) > 0 {
+				joined := strings.Join(parts, " ")
+				candidates = append(candidates, joined, strings.ReplaceAll(joined, "-", ""))
+				candidates = append(candidates, strings.ReplaceAll(strings.Join(parts, ""), "-", ""))
+			}
+		} else if breakdownSlice, ok := ex.Content["phonetic_breakdown"].([]string); ok && len(breakdownSlice) > 0 {
+			joined := strings.Join(breakdownSlice, " ")
+			candidates = append(candidates, joined, strings.ReplaceAll(joined, "-", ""))
+			candidates = append(candidates, strings.ReplaceAll(strings.Join(breakdownSlice, ""), "-", ""))
+		}
+	}
+
+	for _, userVariant := range normalizeSpeechCandidate(userAnswer) {
+		uSpaces, uCollapsed := normalizeComparableAnswer(userVariant)
+		if uSpaces == "" {
+			continue
+		}
+		for _, cand := range candidates {
+			if answersMatch(cand, uSpaces, uCollapsed) {
+				return true
+			}
 		}
 	}
 	return false
