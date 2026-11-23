@@ -889,6 +889,15 @@ func (r *PostgresRepository) ClaimDailyChest(ctx context.Context, claim *DailyCh
 		return user.ErrUserNotFound
 	}
 
+	if _, err := tx.Exec(
+		ctx,
+		`INSERT INTO user_activity_logs (user_id, activity_type, xp_earned, metadata, created_at)
+		 VALUES ($1::uuid, 'daily_chest_claimed', $2, jsonb_build_object('tier', $3::int, 'gems_awarded', $4::int, 'claim_date', $5::text), NOW())`,
+		claim.UserID, claim.XPAwarded, claim.Tier, claim.GemsAwarded, claim.ClaimDate,
+	); err != nil {
+		return fmt.Errorf("failed to log daily chest claim activity: %w", err)
+	}
+
 	return tx.Commit(ctx)
 }
 
@@ -929,7 +938,7 @@ const dailyQuestMetricsCTE = `
 			), 0) AS flashcards_remembered,
 			COALESCE((
 				SELECT SUM(ual.xp_earned)::int FROM user_activity_logs ual, wib_day wd
-				WHERE ual.user_id = $1::uuid AND ual.activity_type <> 'daily_golden_chest_claim' AND ual.created_at >= wd.start_ts
+				WHERE ual.user_id = $1::uuid AND ual.activity_type NOT IN ('daily_golden_chest_claim', 'daily_chest_claimed') AND ual.created_at >= wd.start_ts
 			), 0) AS xp_earned,
 			COALESCE((
 				SELECT COUNT(*)::int FROM user_exercise_attempts uea, wib_day wd

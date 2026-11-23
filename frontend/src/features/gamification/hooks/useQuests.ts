@@ -501,7 +501,7 @@ export const useQuests = () => {
       const isEarned = earnedBadgeByKey.has(def.id)
       const awardedAt = formatEarnedDate(awardedAtIso)
 
-      let description = def.description
+      const description = def.description
       let currentProgress = isEarned ? 1 : 0
       let targetProgress = 1
       let progressLabel = isEarned ? '1/1 Tercapai' : '0/1 Tercapai'

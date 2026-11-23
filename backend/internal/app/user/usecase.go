@@ -11,15 +11,22 @@ import (
 )
 
 type usecase struct {
-	userRepo Repository
-	helper   *Helper
+	userRepo     Repository
+	badgeAwarder StreakBadgeAwarder
+	helper       *Helper
 }
 
 // NewUsecase creates a new User Usecase instance
 func NewUsecase(userRepo Repository) Usecase {
+	return NewUsecaseWithBadges(userRepo, nil)
+}
+
+// NewUsecaseWithBadges creates a User Usecase instance that also evaluates streak milestone badges on reward claims.
+func NewUsecaseWithBadges(userRepo Repository, badgeAwarder StreakBadgeAwarder) Usecase {
 	return &usecase{
-		userRepo: userRepo,
-		helper:   NewHelper(),
+		userRepo:     userRepo,
+		badgeAwarder: badgeAwarder,
+		helper:       NewHelper(),
 	}
 }
 
@@ -109,7 +116,23 @@ func (u *usecase) ClaimDailyReward(ctx context.Context, userID string, rewardTyp
 		return nil, err
 	}
 
-	return u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded, gemsAwarded)
+	res, err := u.userRepo.ClaimDailyReward(ctx, userID, rewardType, xpAwarded, gemsAwarded)
+	if err != nil {
+		return nil, err
+	}
+	if res != nil && u.badgeAwarder != nil {
+		if res.Streak >= 7 {
+			if bErr := u.badgeAwarder.AwardStreakBadge(ctx, userID, "streak_7", res.CurrentLevel); bErr != nil {
+				log.Printf("[WARN] [user.ClaimDailyReward] failed to award streak_7 badge for user %s: %v", userID, bErr)
+			}
+		}
+		if res.Streak >= 30 {
+			if bErr := u.badgeAwarder.AwardStreakBadge(ctx, userID, "streak_30", res.CurrentLevel); bErr != nil {
+				log.Printf("[WARN] [user.ClaimDailyReward] failed to award streak_30 badge for user %s: %v", userID, bErr)
+			}
+		}
+	}
+	return res, nil
 }
 
 // GetDailyRewardsStatus checks reward claim status for the authenticated user

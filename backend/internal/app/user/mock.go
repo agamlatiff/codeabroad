@@ -351,7 +351,7 @@ func (m *MockRepository) ClaimDailyReward(ctx context.Context, userID string, re
 		}
 		todayXP := 0
 		for _, l := range m.ActivityLogs {
-			if l.UserID == userID && !l.CreatedAt.Before(startOfToday) && l.ActivityType != "daily_golden_chest_claim" {
+			if l.UserID == userID && !l.CreatedAt.Before(startOfToday) && l.ActivityType != "daily_golden_chest_claim" && l.ActivityType != "daily_chest_claimed" {
 				todayXP += l.XPEarned
 			}
 		}

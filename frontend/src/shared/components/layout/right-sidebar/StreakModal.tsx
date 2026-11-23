@@ -18,6 +18,7 @@ export interface StreakModalProps {
   isOpen: boolean
   onClose: () => void
   currentStreak: number
+  streakFreezeCount?: number
   activeDates?: string[]
 }
 
@@ -30,6 +31,7 @@ export const StreakModal: FC<StreakModalProps> = ({
   isOpen,
   onClose,
   currentStreak,
+  streakFreezeCount = 0,
   activeDates = [],
 }) => {
   const {
@@ -127,18 +129,39 @@ export const StreakModal: FC<StreakModalProps> = ({
           </div>
 
           {/* Stat 4: Streak Freeze Shield */}
-          <div className="p-2.5 rounded-2xl bg-cyan-50/70 border border-cyan-200 text-center space-y-0.5 shadow-2xs">
-            <div className="flex items-center justify-center gap-1 text-cyan-600">
+          <div
+            className={`p-2.5 rounded-2xl border text-center space-y-0.5 shadow-2xs ${
+              streakFreezeCount > 0
+                ? 'bg-cyan-50/70 border-cyan-200'
+                : 'bg-slate-50/90 border-slate-200'
+            }`}
+            title={
+              streakFreezeCount > 0
+                ? 'Streak Freeze melindungi streak saat kamu terlewat 1 hari belajar.'
+                : 'Belum ada Streak Freeze aktif. Tukar Permata di halaman Misi jika butuh pelindung.'
+            }
+          >
+            <div
+              className={`flex items-center justify-center gap-1 ${
+                streakFreezeCount > 0 ? 'text-cyan-600' : 'text-slate-500'
+              }`}
+            >
               <Snowflake
                 weight="fill"
-                className="w-4 h-4 text-cyan-500 animate-spin"
-                style={{ animationDuration: '8s' }}
+                className={`w-4 h-4 ${
+                  streakFreezeCount > 0 ? 'text-cyan-500 animate-spin' : 'text-slate-400'
+                }`}
+                style={streakFreezeCount > 0 ? { animationDuration: '8s' } : undefined}
               />
               <span className="font-brand font-black text-base sm:text-lg leading-tight">
-                1 Aktif
+                {streakFreezeCount} Aktif
               </span>
             </div>
-            <p className="text-[9px] font-bold text-cyan-800 uppercase tracking-wider">
+            <p
+              className={`text-[9px] font-bold uppercase tracking-wider ${
+                streakFreezeCount > 0 ? 'text-cyan-800' : 'text-slate-500'
+              }`}
+            >
               Streak Freeze
             </p>
           </div>

@@ -32,6 +32,38 @@ const getWibCalendarToday = () => {
   return { year: y, month: m - 1, day: d, key: wibKey }
 }
 
+const parseDayOrdinal = (dateStr: string): number | null => {
+  const parts = dateStr.split('-')
+  if (parts.length !== 3) return null
+  const [y, m, d] = parts.map(Number)
+  if (!Number.isInteger(y) || !Number.isInteger(m) || !Number.isInteger(d)) return null
+  return Math.floor(Date.UTC(y, m - 1, d) / 86400000)
+}
+
+const computeLongestConsecutiveRun = (dates: ReadonlySet<string>): number => {
+  const ordinals: number[] = []
+  for (const dt of dates) {
+    const ord = parseDayOrdinal(dt)
+    if (ord !== null) ordinals.push(ord)
+  }
+  if (ordinals.length === 0) return 0
+  ordinals.sort((a, b) => a - b)
+
+  let longest = 1
+  let run = 1
+  for (let i = 1; i < ordinals.length; i++) {
+    const diff = ordinals[i] - ordinals[i - 1]
+    if (diff === 0) continue
+    if (diff === 1) {
+      run += 1
+      if (run > longest) longest = run
+    } else {
+      run = 1
+    }
+  }
+  return longest
+}
+
 export interface CalendarDayCell {
   dayNumber: number
   dateStr: string
@@ -64,18 +96,11 @@ export const useStreakModal = ({
 
   const activeDateSet = useMemo(() => {
     const set = new Set<string>()
-    activeDates.forEach((d) => set.add(d))
-    if (currentStreak > 0) {
-      const baseMs = Date.UTC(wibToday.year, wibToday.month, wibToday.day)
-      for (let i = 0; i < currentStreak; i++) {
-        const dt = new Date(baseMs - i * 86400000)
-        set.add(
-          formatYMD(dt.getUTCFullYear(), dt.getUTCMonth(), dt.getUTCDate())
-        )
-      }
-    }
+    activeDates.forEach((d) => {
+      if (d) set.add(d)
+    })
     return set
-  }, [activeDates, currentStreak, wibToday])
+  }, [activeDates])
 
   const { startOffset, daysList } = useMemo(() => {
     const totalDays = new Date(year, month + 1, 0).getDate()
@@ -114,7 +139,10 @@ export const useStreakModal = ({
     [daysList]
   )
 
-  const longestStreak = Math.max(currentStreak, activeDateSet.size)
+  const longestStreak = useMemo(
+    () => Math.max(currentStreak, computeLongestConsecutiveRun(activeDateSet)),
+    [activeDateSet, currentStreak]
+  )
 
   const handlePrevMonth = useCallback(() => {
     triggerHaptic('tap')

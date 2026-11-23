@@ -5,6 +5,7 @@ import (
 	"errors"
 	"strings"
 	"testing"
+	"time"
 
 	"merantalk/backend/internal/app/user"
 )
@@ -184,6 +185,73 @@ func TestGetActivityLogs_IdempotentDailyLogin(t *testing.T) {
 	}
 	if len(repo.ActivityLogs) != 1 {
 		t.Errorf("expected still 1 daily_login activity log on repeat call, got %d", len(repo.ActivityLogs))
+	}
+}
+
+type stubStreakBadgeAwarder struct {
+	awardedKeys []string
+}
+
+func (s *stubStreakBadgeAwarder) AwardStreakBadge(_ context.Context, _ string, badgeKey string, _ int) error {
+	s.awardedKeys = append(s.awardedKeys, badgeKey)
+	return nil
+}
+
+func TestClaimDailyReward_EvaluatesStreakBadges(t *testing.T) {
+	repo := user.NewMockRepository()
+	yesterday := time.Now().UTC().Add(-24 * time.Hour)
+	repo.Users["user-streak"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-streak"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           120,
+			CurrentLevel: 2,
+			Streak:       29,
+			LastActiveAt: &yesterday,
+		},
+	}
+	repo.FlashcardsReviewedToday["user-streak"] = 3
+
+	awarder := &stubStreakBadgeAwarder{}
+	uc := user.NewUsecaseWithBadges(repo, awarder)
+
+	res, err := uc.ClaimDailyReward(context.Background(), "user-streak", "vocab_quest")
+	if err != nil {
+		t.Fatalf("expected ClaimDailyReward to succeed, got %v", err)
+	}
+	if res.Streak != 30 {
+		t.Fatalf("expected streak incremented to 30, got %d", res.Streak)
+	}
+	if len(awarder.awardedKeys) != 2 || awarder.awardedKeys[0] != "streak_7" || awarder.awardedKeys[1] != "streak_30" {
+		t.Fatalf("expected streak_7 and streak_30 badges evaluated, got %#v", awarder.awardedKeys)
+	}
+}
+
+func TestBuildWeeklyActivitySummary_AnchoredYesterdayDoesNotLightToday(t *testing.T) {
+	wib := time.FixedZone("WIB", 7*3600)
+	// Sunday 2026-11-22 10:00 WIB -> todayIndex = 6, yesterday (Saturday) = 5
+	now := time.Date(2026, 11, 22, 10, 0, 0, 0, wib)
+	yesterday := now.AddDate(0, 0, -1)
+
+	summary := user.NewHelper().BuildWeeklyActivitySummary(3, &yesterday, map[string]user.DailyActivityStat{}, now)
+	if len(summary.WeeklyLogs) != 7 {
+		t.Fatalf("expected 7 weekly log entries, got %d", len(summary.WeeklyLogs))
+	}
+	if summary.WeeklyLogs[6].IsToday != true {
+		t.Fatalf("expected Sunday index 6 to be IsToday=true")
+	}
+	if summary.WeeklyLogs[6].IsActive {
+		t.Fatalf("expected today (before any today activity) NOT to be marked active when lastActiveAt was yesterday")
+	}
+	for _, idx := range []int{3, 4, 5} {
+		if !summary.WeeklyLogs[idx].IsActive {
+			t.Errorf("expected anchored streak day index %d (%s) to be active", idx, summary.WeeklyLogs[idx].Date)
+		}
+	}
+	todayStr := now.Format("2006-01-02")
+	for _, dt := range summary.ActiveDates {
+		if dt == todayStr {
+			t.Fatalf("expected ActiveDates not to include %s when lastActiveAt was yesterday and dailyStats has no today row", todayStr)
+		}
 	}
 }
 

@@ -200,7 +200,13 @@ func (h *Helper) BuildWeeklyActivitySummary(
 	}
 
 	yesterdayStr := nowLocal.AddDate(0, 0, -1).Format("2006-01-02")
-	streakAnchoredToPresent := lastActiveAt != nil && (lastActiveAt.In(loc).Format("2006-01-02") == todayStr || lastActiveAt.In(loc).Format("2006-01-02") == yesterdayStr)
+	anchoredYesterday := lastActiveAt != nil && lastActiveAt.In(loc).Format("2006-01-02") == yesterdayStr
+	streakAnchoredToPresent := lastActiveAt != nil && (lastActiveAt.In(loc).Format("2006-01-02") == todayStr || anchoredYesterday)
+
+	anchorOffset := mondayOffset
+	if anchoredYesterday {
+		anchorOffset = mondayOffset - 1
+	}
 
 	for i := 0; i < 7; i++ {
 		dayDate := monday.AddDate(0, 0, i)
@@ -211,8 +217,8 @@ func (h *Helper) BuildWeeklyActivitySummary(
 		isActive := hasLog
 
 		if !isActive && streak > 0 && streakAnchoredToPresent {
-			daysDiffFromToday := mondayOffset - i
-			if daysDiffFromToday >= 0 && daysDiffFromToday < streak {
+			daysDiffFromAnchor := anchorOffset - i
+			if daysDiffFromAnchor >= 0 && daysDiffFromAnchor < streak {
 				isActive = true
 			}
 		}

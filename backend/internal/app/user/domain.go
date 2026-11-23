@@ -170,6 +170,11 @@ type Repository interface {
 	ActivityRepository
 }
 
+// StreakBadgeAwarder awards streak milestone badges without introducing an import cycle with gamification.
+type StreakBadgeAwarder interface {
+	AwardStreakBadge(ctx context.Context, userID string, badgeKey string, currentLevel int) error
+}
+
 // Usecase specifies business operations for profile, activity history, and daily habit claims
 type Usecase interface {
 	GetProfile(ctx context.Context, userID string) (*User, error)

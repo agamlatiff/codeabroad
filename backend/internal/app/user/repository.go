@@ -718,6 +718,24 @@ func (r *PostgresRepository) ClaimDailyReward(
 	}
 
 	if rewardType == "vocab_quest" {
+		var rotatedFlashcardClaimed bool
+		rotatedQuery := `
+			SELECT EXISTS (
+				SELECT 1
+				FROM user_daily_quest_claims udc
+				JOIN daily_quest_templates dqt ON dqt.id = udc.quest_template_id
+				WHERE udc.user_id = $1::uuid
+				  AND udc.claim_date_wib = $2
+				  AND dqt.slot_category = 'flashcard'
+			)
+		`
+		if err := tx.QueryRow(ctx, rotatedQuery, userID, wibDate).Scan(&rotatedFlashcardClaimed); err != nil {
+			return nil, fmt.Errorf("failed to check rotated flashcard quest claim status: %w", err)
+		}
+		if rotatedFlashcardClaimed {
+			return nil, ErrDailyRewardAlreadyClaimed
+		}
+
 		var todayFlashcards int
 		fcQuery := `
 			SELECT COUNT(*)::int
@@ -739,7 +757,7 @@ func (r *PostgresRepository) ClaimDailyReward(
 			SELECT COALESCE(SUM(xp_earned), 0)
 			FROM user_activity_logs
 			WHERE user_id = $1::uuid
-			  AND activity_type <> 'daily_golden_chest_claim'
+			  AND activity_type NOT IN ('daily_golden_chest_claim', 'daily_chest_claimed')
 			  AND created_at >= ((NOW() AT TIME ZONE 'Asia/Jakarta')::date AT TIME ZONE 'Asia/Jakarta')
 		`
 		if err := tx.QueryRow(ctx, xpQuery, userID).Scan(&todayEarnedXP); err != nil {
@@ -826,7 +844,17 @@ func (r *PostgresRepository) GetDailyRewardsStatus(ctx context.Context, userID s
 		),
 		claims AS (
 			SELECT
-				COALESCE(BOOL_OR(activity_type = 'daily_vocab_quest_claim'), false) AS vocab_quest_claimed,
+				(
+					COALESCE(BOOL_OR(activity_type = 'daily_vocab_quest_claim'), false)
+					OR EXISTS (
+						SELECT 1
+						FROM user_daily_quest_claims udc
+						JOIN daily_quest_templates dqt ON dqt.id = udc.quest_template_id, wib_start ws
+						WHERE udc.user_id = $1::uuid
+						  AND udc.claim_date_wib = ws.wib_date
+						  AND dqt.slot_category = 'flashcard'
+					)
+				) AS vocab_quest_claimed,
 				COALESCE(BOOL_OR(activity_type = 'daily_golden_chest_claim'), false) AS golden_chest_claimed
 			FROM user_activity_logs, wib_start
 			WHERE user_id = $1::uuid

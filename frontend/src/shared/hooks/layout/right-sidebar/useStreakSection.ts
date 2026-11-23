@@ -1,6 +1,11 @@
 import { useState, useMemo, useCallback } from 'react'
+import { useQuery } from '@tanstack/react-query'
 import { useUser } from "@/features/user/hooks/useUser"
 import { useUserActivity } from "@/features/user/hooks/useUserActivity"
+import {
+  gamificationService,
+  GAMIFICATION_STATUS_QUERY_KEY,
+} from '@/features/gamification/services/gamificationService'
 import { triggerHaptic } from "@/shared/utils/haptics"
 
 const DEFAULT_WEEKDAY_LABELS = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'] as const
@@ -26,6 +31,15 @@ export const useStreakSection = () => {
 
   const { data: activityData } = useUserActivity()
   const activitySummary = activityData.activitySummary
+
+  const { data: gamificationStatus } = useQuery({
+    queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, user?.id ?? 'anonymous'],
+    queryFn: ({ signal }) => gamificationService.getStatus({ signal }),
+    enabled: Boolean(user?.id),
+    staleTime: 1000 * 60 * 2,
+    retry: false,
+  })
+  const streakFreezeCount = gamificationStatus?.inventory?.['streak-freeze'] ?? 0
 
   const userStreak =
     activitySummary?.current_streak ?? (typeof user?.streak === 'number' ? user.streak : 0)
@@ -84,6 +98,7 @@ export const useStreakSection = () => {
 
   return {
     userStreak,
+    streakFreezeCount,
     weeklyStreakDays,
     calendarActiveDates,
     isStreakModalOpen,

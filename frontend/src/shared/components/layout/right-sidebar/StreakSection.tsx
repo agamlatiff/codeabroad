@@ -11,6 +11,7 @@ import { StreakModal } from './StreakModal'
 export const StreakSection: FC = () => {
   const {
     userStreak,
+    streakFreezeCount,
     weeklyStreakDays,
     calendarActiveDates,
     isStreakModalOpen,
@@ -109,6 +110,7 @@ export const StreakSection: FC = () => {
         isOpen={isStreakModalOpen}
         onClose={handleCloseStreakModal}
         currentStreak={userStreak}
+        streakFreezeCount={streakFreezeCount}
         activeDates={calendarActiveDates}
       />
     </>

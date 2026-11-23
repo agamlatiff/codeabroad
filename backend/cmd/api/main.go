@@ -28,6 +28,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type userStreakBadgeAdapter struct {
+	repo gamification.Repository
+}
+
+func (a *userStreakBadgeAdapter) AwardStreakBadge(ctx context.Context, userID string, badgeKey string, currentLevel int) error {
+	_, err := a.repo.AwardBadge(ctx, userID, badgeKey, currentLevel)
+	return err
+}
+
 func main() {
 	// 1. Load application configuration from .env
 	cfg, err := config.LoadConfig()
@@ -75,7 +84,7 @@ func main() {
 
 	// 5. Initialize Usecases (Business Logic Services)
 	authUsecase := auth.NewUsecase(userRepo, sessionRepo, cfg)
-	userUsecase := user.NewUsecase(userRepo)
+	userUsecase := user.NewUsecaseWithBadges(userRepo, &userStreakBadgeAdapter{repo: gamificationRepo})
 	onboardingUsecase := onboarding.NewUsecaseWithStore(userRepo, langRepo, curriculumRepo, exerciseRepo, gamificationRepo, curriculumCache, onboarding.NewPostgresStore(pg))
 	langUsecase := language.NewUsecaseFull(langRepo, curriculumCache, gamificationRepo)
 	curriculumUsecase := curriculum.NewUsecaseWithCache(curriculumRepo, langRepo, exerciseRepo, userRepo, gamificationRepo, curriculumCache)
