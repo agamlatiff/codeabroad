@@ -70,6 +70,7 @@ function resolveLinkedPracticeTarget(
 
 export const GrammarDetailPage = () => {
   const { id } = useParams<{ id: string }>()
+  const targetId = (id ?? '').trim().toLowerCase()
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
@@ -80,14 +81,30 @@ export const GrammarDetailPage = () => {
   const [playingExampleKey, setPlayingExampleKey] = useState<string | null>(null)
   const [isFormulaCopied, setIsFormulaCopied] = useState(false)
   const [checkError, setCheckError] = useState<string | null>(null)
+  const [prevTargetId, setPrevTargetId] = useState(targetId)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
+  if (targetId !== prevTargetId) {
+    setPrevTargetId(targetId)
+    setPlayingExampleKey(null)
+    setIsFormulaCopied(false)
+    setCheckError(null)
+  }
+
   useEffect(() => {
+    audioService.stopSpeech()
+    if (copyTimerRef.current) {
+      clearTimeout(copyTimerRef.current)
+      copyTimerRef.current = null
+    }
     return () => {
       audioService.stopSpeech()
-      if (copyTimerRef.current) clearTimeout(copyTimerRef.current)
+      if (copyTimerRef.current) {
+        clearTimeout(copyTimerRef.current)
+        copyTimerRef.current = null
+      }
     }
-  }, [])
+  }, [targetId])
 
   // Fetch all grammar points (shared TanStack cache with /grammar)
   const { data: grammarPoints = [], isLoading } = useQuery({
@@ -132,7 +149,6 @@ export const GrammarDetailPage = () => {
   })
 
   // Match point by ID or code (case-insensitive)
-  const targetId = (id ?? '').trim().toLowerCase()
   const currentPointIndex = useMemo(
     () =>
       grammarPoints.findIndex(

@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { persist, createJSONStorage } from 'zustand/middleware'
+import { persist, createJSONStorage, type StateStorage } from 'zustand/middleware'
 import {
   audioService,
   type SoundEffectType,
@@ -51,42 +51,74 @@ export interface AudioState {
   stopBgm: () => void
 }
 
+const safeLocalStorage: StateStorage = {
+  getItem: (name) => {
+    if (typeof window === 'undefined') return null
+    try {
+      return window.localStorage.getItem(name)
+    } catch {
+      return null
+    }
+  },
+  setItem: (name, value) => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(name, value)
+    } catch {
+      // Ignore storage quota/privacy restrictions
+    }
+  },
+  removeItem: (name) => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.removeItem(name)
+    } catch {
+      // Ignore storage quota/privacy restrictions
+    }
+  },
+}
+
 /**
  * Recovers legacy localStorage sound settings for seamless backwards compatibility.
  */
 const getInitialSettings = () => {
-  if (typeof window === 'undefined' || typeof localStorage === 'undefined') {
-    return {
-      audioMode: 'all' as AudioPlaybackMode,
-      masterVolume: DEFAULT_MASTER_VOLUME,
-      bgmVolume: DEFAULT_BGM_VOLUME,
+  const defaults = {
+    audioMode: 'all' as AudioPlaybackMode,
+    masterVolume: DEFAULT_MASTER_VOLUME,
+    bgmVolume: DEFAULT_BGM_VOLUME,
+  }
+  if (typeof window === 'undefined') {
+    return defaults
+  }
+
+  try {
+    let mode: AudioPlaybackMode = 'all'
+    const legacyMode = (window.localStorage.getItem(SOUND_STORAGE_KEYS.audioMode) ||
+      window.localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.audioMode)) as AudioPlaybackMode | null
+    if (legacyMode === 'all' || legacyMode === 'sfx_only' || legacyMode === 'muted') {
+      mode = legacyMode
+    } else if (
+      window.localStorage.getItem(SOUND_STORAGE_KEYS.muted) === 'true' ||
+      window.localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.muted) === 'true'
+    ) {
+      mode = 'muted'
     }
-  }
 
-  let mode: AudioPlaybackMode = 'all'
-  const legacyMode = (localStorage.getItem(SOUND_STORAGE_KEYS.audioMode) ||
-    localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.audioMode)) as AudioPlaybackMode | null
-  if (legacyMode === 'all' || legacyMode === 'sfx_only' || legacyMode === 'muted') {
-    mode = legacyMode
-  } else if (
-    localStorage.getItem(SOUND_STORAGE_KEYS.muted) === 'true' ||
-    localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.muted) === 'true'
-  ) {
-    mode = 'muted'
-  }
-
-  let masterVol = DEFAULT_MASTER_VOLUME
-  const storedVol =
-    localStorage.getItem(SOUND_STORAGE_KEYS.volume) ||
-    localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.volume)
-  if (storedVol !== null) {
-    const parsed = parseFloat(storedVol)
-    if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
-      masterVol = parsed
+    let masterVol = DEFAULT_MASTER_VOLUME
+    const storedVol =
+      window.localStorage.getItem(SOUND_STORAGE_KEYS.volume) ||
+      window.localStorage.getItem(LEGACY_SOUND_STORAGE_KEYS.volume)
+    if (storedVol !== null) {
+      const parsed = parseFloat(storedVol)
+      if (!isNaN(parsed) && parsed >= 0 && parsed <= 1) {
+        masterVol = parsed
+      }
     }
-  }
 
-  return { audioMode: mode, masterVolume: masterVol, bgmVolume: DEFAULT_BGM_VOLUME }
+    return { audioMode: mode, masterVolume: masterVol, bgmVolume: DEFAULT_BGM_VOLUME }
+  } catch {
+    return defaults
+  }
 }
 
 const initial = getInitialSettings()
@@ -175,7 +207,7 @@ export const useAudioStore = create<AudioState>()(
     }),
     {
       name: AUDIO_STORAGE_KEY,
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       merge: (persistedState, currentState) => {
         const persisted = persistedState as Partial<AudioState> | undefined
         return {

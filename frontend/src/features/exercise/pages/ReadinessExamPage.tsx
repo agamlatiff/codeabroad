@@ -247,7 +247,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
 
       <AccessibleModal
         isOpen={isSubmitConfirmOpen}
-        onClose={closeSubmitConfirm}
+        onClose={isSubmitting ? () => undefined : closeSubmitConfirm}
         ariaLabel="Konfirmasi Pengumpulan Ujian Kesiapan"
       >
         <div className="bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-xl">

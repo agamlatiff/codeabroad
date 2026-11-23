@@ -339,9 +339,14 @@ class AudioService {
     }
 
     if (mode === 'all') {
-      this.playBgm(this.activeSoundscapeTrack)
+      if (this.isUnlocked) {
+        this.playBgm(this.activeSoundscapeTrack)
+      }
     } else {
       this.stopBgm()
+      if (mode === 'muted') {
+        this.stopSpeech()
+      }
     }
   }
 
