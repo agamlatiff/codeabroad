@@ -23,7 +23,7 @@ export const ChestModal: FC<ChestModalProps> = ({
   onClaimChest,
 }) => {
   return (
-    <AccessibleModal isOpen={isOpen} onClose={onClose} ariaLabel="Peti Emas Hadiah Harian">
+    <AccessibleModal isOpen={isOpen} onClose={onClose} ariaLabel="Peti Target Harian">
       <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-pop relative">
         <button
           type="button"
@@ -38,20 +38,20 @@ export const ChestModal: FC<ChestModalProps> = ({
         </div>
         <div className="space-y-1">
           <h3 className="font-brand font-black text-xl text-slate-900">
-            Peti Emas Hadiah
+            Peti Target Harian
           </h3>
           <p className="text-xs text-slate-600 font-medium">
             {isChestClaimedToday
               ? 'Hadiah peti hari ini sudah kamu klaim. Kembali lagi besok untuk peti berikutnya!'
               : isChestUnlocked
                 ? `Kerja kerasmu hari ini luar biasa! Kamu telah menuntaskan target ${dailyTargetXp} XP harian.`
-                : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka hadiah permata di peti ini.`}
+                : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka hadiah bonus XP dan permata di peti ini.`}
           </p>
         </div>
         <div className="flex items-center justify-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
           <span className="font-brand font-black text-sm text-amber-900 flex items-center gap-1">
             <Lightning weight="fill" className="w-4 h-4 text-amber-500" />
-            <span>+{dailyTargetXp} XP Harian</span>
+            <span>+{dailyTargetXp} Bonus XP</span>
           </span>
           <span className="text-slate-300">•</span>
           <span className="font-brand font-black text-sm text-amber-900 flex items-center gap-1">

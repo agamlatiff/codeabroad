@@ -34,6 +34,7 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
   const {
     timeLeft,
     dailyTargetXp,
+    dailyGoalMinutes,
     clampedTodayXp,
     extraXp,
     dailyProgressPercent,
@@ -64,7 +65,7 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                 Misi &amp; Target Harian
               </h4>
               <span className="text-[9px] text-slate-400 font-medium">
-                Raih {dailyTargetXp} XP untuk Buka Peti
+                Target {dailyGoalMinutes} mnt ({dailyTargetXp} XP) untuk Buka Peti
               </span>
             </div>
           </div>
@@ -131,13 +132,13 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                     ? 'bg-amber-400 border-amber-500 text-amber-950 ring-2 ring-amber-300/80 shadow-[0_2px_0_0_#B45309] hover:scale-105 active:scale-95'
                     : 'bg-amber-100 border-amber-300 text-amber-800 hover:bg-amber-200 shadow-2xs'
               }`}
-              aria-label="Lihat status Peti Emas Harian"
+              aria-label="Lihat status Peti Target Harian"
               title={
                 isChestClaimedToday
-                  ? 'Hadiah Peti Emas hari ini sudah diklaim'
+                  ? 'Hadiah Peti Target Harian hari ini sudah diklaim'
                   : isChestUnlocked
-                    ? 'Klik untuk membuka Peti Emas Hadiah 50 XP & 20 Permata'
-                    : `Peti Emas Hadiah 50 XP (+20 Permata) - ${remainingXp} XP lagi`
+                    ? 'Klik untuk membuka Peti Target Harian Hadiah 50 Bonus XP & 20 Permata'
+                    : `Peti Target Harian (+50 Bonus XP & +20 Permata) - ${remainingXp} XP lagi`
               }
             >
               {isChestClaimedToday ? (

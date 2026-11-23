@@ -8,6 +8,7 @@ import { languageService } from '@/features/curriculum/services/languageService'
 import {
   curriculumService,
   CURRICULUM_QUERY_KEY,
+  GRAMMAR_POINTS_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
 import {
   contextualizeDailyQuestTarget,
@@ -45,6 +46,7 @@ import {
   getDailyRewardsQueryKey,
   getLanguageEnrollmentsQueryKey,
   getDailyQuestsQueryKey,
+  LANGUAGES_QUERY_KEY,
   DAILY_VOCABULARIES_QUERY_KEY,
   LEADERBOARD_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
@@ -254,7 +256,7 @@ export const useQuests = () => {
   })
 
   const curriculumQuery = useQuery({
-    queryKey: [...CURRICULUM_QUERY_KEY, userId],
+    queryKey: [...CURRICULUM_QUERY_KEY, userId, 'active'],
     queryFn: ({ signal }) => curriculumService.getCurriculum(undefined, { signal }),
     enabled: Boolean(user),
     staleTime: 120_000,
@@ -266,6 +268,17 @@ export const useQuests = () => {
     enabled: Boolean(user),
     staleTime: 120_000,
   })
+
+  const languagesQuery = useQuery({
+    queryKey: LANGUAGES_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.listLanguages({ signal }),
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const activeCatalogLanguageCount = useMemo(
+    () => (languagesQuery.data ?? []).filter((lang) => lang.is_active).length,
+    [languagesQuery.data]
+  )
 
   const activeCurriculum = curriculumQuery.data ?? null
   const activeLevel = activeCurriculum?.level ?? null
@@ -561,10 +574,15 @@ export const useQuests = () => {
           break
         }
         case 'n5_mastery': {
+          const isN5ActiveLevel = (levelExamSummary?.levelCode ?? '').toUpperCase() === 'N5'
           if (isEarned) {
             currentProgress = 1
             targetProgress = 1
             progressLabel = 'Ujian Lulus • Lencana Diraih'
+          } else if (levelExamSummary && !isN5ActiveLevel) {
+            currentProgress = 1
+            targetProgress = 1
+            progressLabel = 'Kurikulum N5 Tuntas'
           } else if (levelExamSummary?.status === 'passed') {
             currentProgress = 1
             targetProgress = 1
@@ -579,7 +597,7 @@ export const useQuests = () => {
           } else {
             progressLabel = 'Selesaikan Unit & Ujian N5'
           }
-          if (!isEarned && levelExamSummary?.status !== 'passed') {
+          if (!isEarned && (!levelExamSummary || isN5ActiveLevel) && levelExamSummary?.status !== 'passed') {
             if (levelExamSummary?.status === 'ready') {
               actionLabel = 'Mulai Ujian N5'
               actionType = 'navigate'
@@ -596,7 +614,7 @@ export const useQuests = () => {
           targetProgress = 2
           currentProgress = isEarned ? 2 : Math.min(2, enrolledLanguageCount)
           progressLabel = `${currentProgress}/2 Bahasa`
-          if (!isEarned) {
+          if (!isEarned && (activeCatalogLanguageCount >= 2 || enrolledLanguageCount >= 2)) {
             actionLabel = 'Tambah Bahasa'
             actionType = 'open_track_switcher'
           }
@@ -646,6 +664,7 @@ export const useQuests = () => {
       return a.xpReward - b.xpReward
     })
   }, [
+    activeCatalogLanguageCount,
     badgesQuery.data?.catalog,
     completedCurriculumLessons,
     currentUserStreak,
@@ -845,7 +864,9 @@ export const useQuests = () => {
         await languageService.switchActiveLanguage(languageId)
         await Promise.all([
           queryClient.invalidateQueries({ queryKey: getLanguageEnrollmentsQueryKey(userId) }),
+          queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userId) }),
           queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
+          queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
           queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_BADGES_QUERY_KEY, userId] }),

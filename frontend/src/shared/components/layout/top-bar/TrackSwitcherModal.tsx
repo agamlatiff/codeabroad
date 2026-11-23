@@ -183,6 +183,12 @@ const TrackSwitcherDialog = ({
               </div>
             </div>
           )}
+
+          {catalogLanguages.length === 0 && enrolledLanguages.length <= 1 && (
+            <p className="text-xs text-slate-500 text-center pt-2 border-t border-slate-100">
+              Bahasa destinasi tambahan sedang disiapkan dan akan segera hadir.
+            </p>
+          )}
         </div>
 
         {/* Footer */}

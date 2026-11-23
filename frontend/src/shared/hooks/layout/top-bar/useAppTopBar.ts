@@ -59,7 +59,7 @@ export const useAppTopBar = (activeTrack: string) => {
       isActive: true,
     }
 
-  const canSwitchLanguage = enrollments.length >= 2
+  const canSwitchLanguage = trackOptions.length >= 2
   const avatarStyle = getSavedAvatarStyle()
 
   return {

@@ -80,7 +80,7 @@ export const useQuestsSection = ({
   })
 
   const { data: curriculumData = null } = useQuery({
-    queryKey: [...CURRICULUM_QUERY_KEY, user?.id],
+    queryKey: [...CURRICULUM_QUERY_KEY, user?.id ?? 'anonymous', 'active'],
     queryFn: ({ signal }) => curriculumService.getCurriculum(undefined, { signal }),
     enabled: Boolean(user),
     staleTime: 120_000,
@@ -173,6 +173,7 @@ export const useQuestsSection = ({
   return {
     timeLeft,
     dailyTargetXp: DAILY_TARGET_XP,
+    dailyGoalMinutes: user?.daily_goal_minutes ?? 15,
     todayEarnedXp,
     clampedTodayXp,
     extraXp,
