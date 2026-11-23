@@ -92,6 +92,9 @@ export interface FlashcardReviewResponse {
   repetitions: number
   next_review_at: string
   xp_awarded: number
+  current_xp?: number
+  current_level?: number
+  streak?: number
 }
 
 export interface PaginatedFlashcardDecks {

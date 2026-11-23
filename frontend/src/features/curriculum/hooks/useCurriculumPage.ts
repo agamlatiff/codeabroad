@@ -257,10 +257,9 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   }, [activeLanguageId, handleSelectLanguage])
 
   const openSwitcher = useCallback(() => {
-    if (enrollments.length < 2) return
     playSound('modal_open')
     setIsSwitcherOpen(true)
-  }, [enrollments.length])
+  }, [])
 
   const closeSwitcher = useCallback(() => {
     playSound('modal_close')

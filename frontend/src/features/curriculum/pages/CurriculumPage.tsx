@@ -181,7 +181,7 @@ export const CurriculumPage = () => {
 
       {/* ── LANGUAGE SWITCHER MODAL ── */}
       <TrackSwitcherModal
-        isOpen={modals.isSwitcherOpen && curriculum.enrollments.length >= 2}
+        isOpen={modals.isSwitcherOpen}
         onClose={actions.closeSwitcher}
         currentTrack={curriculum.currentLanguageId}
         onSelectTrack={actions.handleSelectLanguage}

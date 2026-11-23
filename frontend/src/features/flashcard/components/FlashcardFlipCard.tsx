@@ -9,6 +9,7 @@ const SLOW_SPEECH_RATE = 0.58
 export interface FlashcardFlipCardProps {
   card: FlashcardCard
   isFlipped: boolean
+  speechLocale?: string
   onToggleFlip: () => void
 }
 
@@ -18,6 +19,7 @@ export interface FlashcardFlipCardProps {
 export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
   card,
   isFlipped,
+  speechLocale = 'ja-JP',
   onToggleFlip,
 }) => {
   const isCharacterCard = card.part_of_speech.toLowerCase().includes('huruf')
@@ -25,11 +27,7 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
   const handleSpeak = (e: MouseEvent<HTMLButtonElement>, text: string, rate?: number) => {
     e.stopPropagation()
     triggerHaptic('tap')
-    if (typeof rate === 'number') {
-      audioService.speakLanguage(text, 'ja-JP', undefined, undefined, rate)
-    } else {
-      audioService.speakJapanese(text)
-    }
+    audioService.speakLanguage(text, speechLocale, undefined, undefined, rate)
   }
 
   return (

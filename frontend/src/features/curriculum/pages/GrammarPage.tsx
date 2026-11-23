@@ -8,6 +8,7 @@ import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { useUser } from '@/features/user/hooks/useUser'
+import { useActiveLanguageCode } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import {
   curriculumService,
   GRAMMAR_POINTS_QUERY_KEY,
@@ -53,6 +54,7 @@ function parseLevelFilterParam(raw: string | null): JlptLevelFilter {
 export const GrammarPage = () => {
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
+  const activeLanguageCode = useActiveLanguageCode()
   const heroPatternId = `grammar-hero-seigaiha-${useId().replace(/:/g, '')}`
   const [searchParams, setSearchParams] = useSearchParams()
 
@@ -115,8 +117,9 @@ export const GrammarPage = () => {
   }
 
   const { data: grammarPoints = [], isLoading } = useQuery({
-    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, 'ja'],
-    queryFn: ({ signal }) => curriculumService.getGrammarPointsByFilter('ja', undefined, { signal }),
+    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLanguageCode],
+    queryFn: ({ signal }) =>
+      curriculumService.getGrammarPointsByFilter(activeLanguageCode, undefined, { signal }),
     staleTime: 1000 * 60 * 5,
   })
 

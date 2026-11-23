@@ -40,6 +40,7 @@ export const QuestCompletePage = () => {
     unlockedNextLessonId,
     awardedBadges,
     learnedItems,
+    speechLocale,
     handleNextLesson,
     handleReplayLesson,
     handleBackToCurriculum,
@@ -210,7 +211,7 @@ export const QuestCompletePage = () => {
                   onClick={() => {
                     triggerHaptic('tap')
                     audioService.stopSpeech()
-                    audioService.speakJapanese(item.speakText)
+                    audioService.speakLanguage(item.speakText, speechLocale)
                   }}
                   aria-label={`Dengarkan ${item.symbol} (${item.reading})`}
                   className="rounded-2xl border-2 border-slate-200/90 bg-slate-50/70 hover:bg-blue-50/60 hover:border-blue-200 px-3 py-2 text-left flex items-center justify-between gap-2 transition-colors cursor-pointer"

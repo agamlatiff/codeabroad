@@ -19,6 +19,11 @@ import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { FlashcardHeroIllustration } from '@/features/flashcard/components/FlashcardHeroIllustration'
 import { FlashcardDeckCard } from '@/features/flashcard/components/FlashcardDeckCard'
 import { useUser } from '@/features/user/hooks/useUser'
+import { useAuthStore } from '@/features/auth/store/authStore'
+import {
+  useActiveLanguageCode,
+  useActiveSpeechLocale,
+} from '@/features/exercise/hooks/useActiveSpeechLocale'
 import {
   getProfileQueryKey,
   getDailyRewardsQueryKey,
@@ -152,7 +157,10 @@ export const FlashcardPage = () => {
   const handledDeckParamRef = useRef<string | null>(null)
   const handledReviewParamRef = useRef<boolean>(false)
   const { data: userData } = useUser()
+  const updateUser = useAuthStore((state) => state.updateUser)
   const userIdKey = userData.user?.id ?? 'anonymous'
+  const activeLanguageCode = useActiveLanguageCode()
+  const speechLocale = useActiveSpeechLocale()
   const heroPatternId = `flashcards-hero-seigaiha-${useId().replace(/:/g, '')}`
 
   const [mode, setMode] = useState<SessionMode>('lobby')
@@ -209,7 +217,7 @@ export const FlashcardPage = () => {
       ...FLASHCARD_DECKS_QUERY_KEY,
       'paginated',
       userIdKey,
-      'ja',
+      activeLanguageCode,
       levelFilter,
       categoryFilter,
       debouncedSearch,
@@ -218,7 +226,7 @@ export const FlashcardPage = () => {
     queryFn: ({ pageParam, signal }) =>
       flashcardService.listDecksPage(
         {
-          lang: 'ja',
+          lang: activeLanguageCode,
           level: levelFilter,
           category: categoryFilter,
           q: debouncedSearch,
@@ -233,8 +241,8 @@ export const FlashcardPage = () => {
   })
 
   const { data: dueQueue, isLoading: dueLoading } = useQuery({
-    queryKey: [...FLASHCARD_DUE_QUERY_KEY, userIdKey, 'ja'],
-    queryFn: ({ signal }) => flashcardService.getDueQueue('ja', 20, { signal }),
+    queryKey: [...FLASHCARD_DUE_QUERY_KEY, userIdKey, activeLanguageCode],
+    queryFn: ({ signal }) => flashcardService.getDueQueue(activeLanguageCode, 20, { signal }),
     staleTime: 1000 * 30,
   })
 
@@ -290,6 +298,17 @@ export const FlashcardPage = () => {
     onSuccess: (res) => {
       setSessionXp((prev) => prev + res.xp_awarded)
       setReviewedCount((prev) => prev + 1)
+      if (
+        typeof res.current_xp === 'number' ||
+        typeof res.current_level === 'number' ||
+        typeof res.streak === 'number'
+      ) {
+        updateUser({
+          ...(typeof res.current_xp === 'number' ? { xp: res.current_xp } : {}),
+          ...(typeof res.current_level === 'number' ? { current_level: res.current_level } : {}),
+          ...(typeof res.streak === 'number' ? { streak: res.streak } : {}),
+        })
+      }
       void queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: FLASHCARD_DUE_QUERY_KEY })
       void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) })
@@ -466,7 +485,7 @@ export const FlashcardPage = () => {
   const currentCardId = queue[0]
   const currentCard = currentCardId ? cardMap[currentCardId] : undefined
 
-  // Auto-play front card Japanese pronunciation whenever a card enters active session focus
+  // Auto-play front card pronunciation in the active language whenever a card enters active session focus
   useEffect(() => {
     if (mode !== 'session' || !currentCard?.front_text) {
       audioService.stopSpeech()
@@ -477,14 +496,14 @@ export const FlashcardPage = () => {
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
       audioService.stopSpeech()
-      audioService.speakJapanese(speakTarget)
+      audioService.speakLanguage(speakTarget, speechLocale)
     }, 200)
 
     return () => {
       window.clearTimeout(timer)
       audioService.stopSpeech()
     }
-  }, [currentCard?.front_text, currentCard?.id, mode, reviewedCount])
+  }, [currentCard?.front_text, currentCard?.id, mode, reviewedCount, speechLocale])
   const upcomingCards = useMemo(
     () =>
       queue
@@ -809,6 +828,7 @@ export const FlashcardPage = () => {
                 key={`${currentCard.id}-${reviewedCount}`}
                 card={currentCard}
                 isFlipped={isFlipped}
+                speechLocale={speechLocale}
                 onToggleFlip={() => setIsFlipped((prev) => !prev)}
               />
             </div>

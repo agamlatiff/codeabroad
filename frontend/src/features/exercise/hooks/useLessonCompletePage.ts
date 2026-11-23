@@ -13,6 +13,7 @@ import {
 import type { LessonCompletionNavigationState } from '@/features/exercise/types/exercise'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 
 /**
  * Headless hook powering the lesson completion summary view (/learn/:id/complete).
@@ -22,6 +23,7 @@ export const useLessonCompletePage = () => {
   const location = useLocation()
   const { id } = useParams<{ id: string }>()
   const user = useAuthStore((state) => state.user)
+  const speechLocale = useActiveSpeechLocale()
   const fanfarePlayedRef = useRef(false)
 
   const rawState = (location.state ?? null) as LessonCompletionNavigationState | null
@@ -124,6 +126,8 @@ export const useLessonCompletePage = () => {
     triggerHaptic('tap')
     audioEngine.playPop()
     const combined = `${lesson?.slug ?? ''} ${lesson?.title ?? ''}`.toLowerCase()
+    const levelMatch = combined.match(/\b(n[1-5])\b/i)
+    const targetLevel = levelMatch ? levelMatch[1].toUpperCase() : 'N5'
     const category = combined.includes('katakana')
       ? 'katakana'
       : combined.includes('kanji')
@@ -131,7 +135,7 @@ export const useLessonCompletePage = () => {
         : combined.includes('hiragana') || combined.includes('vokal')
           ? 'hiragana'
           : 'vocab'
-    navigate(`/flashcards?level=N5&category=${category}`)
+    navigate(`/flashcards?level=${targetLevel}&category=${category}`)
   }, [lesson?.slug, lesson?.title, navigate])
 
   return {
@@ -145,6 +149,7 @@ export const useLessonCompletePage = () => {
     unlockedNextLessonId,
     awardedBadges,
     learnedItems,
+    speechLocale,
     handleNextLesson,
     handleReplayLesson,
     handleBackToCurriculum,
