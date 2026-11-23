@@ -620,8 +620,8 @@ func TestRegister_SetSessionFailure_GracefulDegradation(t *testing.T) {
 	if res == nil {
 		t.Fatal("expected non-nil AuthResponse")
 	}
-	if res.AccessToken == "" {
-		t.Fatal("expected AccessToken to be issued")
+	if res.AccessToken != "" {
+		t.Fatalf("expected empty AccessToken when session persistence fails, got: %q", res.AccessToken)
 	}
 	if res.RefreshToken != "" {
 		t.Fatalf("expected empty RefreshToken when session persistence fails, got: %q", res.RefreshToken)
@@ -1043,6 +1043,74 @@ func TestRefreshToken_SingleAtomicRotateWithoutGetSession(t *testing.T) {
 	}
 	if refreshed.AccessToken == "" || refreshed.RefreshToken == "" {
 		t.Fatal("expected rotated token pair")
+	}
+}
+
+type streakFreezeUserRepo struct {
+	*user.MockRepository
+	preservedStreak int
+}
+
+func (m *streakFreezeUserRepo) EnsureDailyLogin(
+	ctx context.Context,
+	userID string,
+	dateStr string,
+	startTime time.Time,
+	endTime time.Time,
+) (bool, error) {
+	u, err := m.GetByID(ctx, userID)
+	if err == nil && u != nil {
+		now := time.Now().UTC()
+		_ = m.UpdateGamification(ctx, userID, u.XP, u.CurrentLevel, m.preservedStreak, &now)
+	}
+	return true, nil
+}
+
+func TestLogin_PreservesStreakFreezeStreakFromRepo(t *testing.T) {
+	cfg := &config.Config{
+		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
+		JWTAccessExpirationMinutes: 15,
+		JWTRefreshExpirationDays:   30,
+	}
+	baseRepo := user.NewMockRepository()
+	repo := &streakFreezeUserRepo{
+		MockRepository:  baseRepo,
+		preservedStreak: 6,
+	}
+	sessionRepo := auth.NewMockSessionRepository()
+	authUc := auth.NewUsecase(repo, sessionRepo, cfg)
+	ctx := context.Background()
+
+	password := "Password123!"
+	hashedPassword, _ := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	twoDaysAgo := time.Now().UTC().Add(-48 * time.Hour)
+
+	u := &user.User{
+		UserAccount: user.UserAccount{
+			ID:           "usr_freeze_login",
+			Email:        "freeze@example.com",
+			PasswordHash: string(hashedPassword),
+		},
+		UserProfile: user.UserProfile{
+			Name:     "Freeze User",
+			Username: "freeze_user",
+		},
+		UserGamificationStats: user.UserGamificationStats{
+			Streak:       5,
+			LastActiveAt: &twoDaysAgo,
+		},
+	}
+	_ = baseRepo.Create(ctx, u)
+
+	res, err := authUc.Login(ctx, &auth.LoginRequest{
+		Email:    u.Email,
+		Password: password,
+	})
+	if err != nil {
+		t.Fatalf("expected Login to succeed, got: %v", err)
+	}
+	if res.User.Streak != 6 {
+		t.Fatalf("expected Login response streak to preserve freeze-saved streak=6, got %d", res.User.Streak)
 	}
 }
 

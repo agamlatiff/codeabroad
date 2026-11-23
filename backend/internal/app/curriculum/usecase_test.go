@@ -2251,3 +2251,39 @@ func TestSubmitGrammarCheck_MasterySRSAndEnrichment(t *testing.T) {
 		t.Fatalf("expected ErrNotFound for unknown code, got %v", err)
 	}
 }
+
+func TestSubmitKanaPractice_RejectsOversizedBatch(t *testing.T) {
+	uc := curriculum.NewUsecase(
+		curriculum.NewMockRepository(),
+		language.NewMockRepository(),
+		exercise.NewMockRepository(),
+		user.NewMockRepository(),
+		nil,
+	)
+
+	kanaUC, ok := uc.(interface {
+		SubmitKanaPractice(context.Context, string, *curriculum.KanaPracticeRequest) (*curriculum.KanaPracticeResponse, error)
+	})
+	if !ok {
+		t.Fatal("expected curriculum usecase to implement SubmitKanaPractice")
+	}
+
+	items := make([]curriculum.KanaPracticeItem, 201)
+	for i := range items {
+		items[i] = curriculum.KanaPracticeItem{Character: "あ", IsCorrect: true}
+	}
+
+	_, err := kanaUC.SubmitKanaPractice(context.Background(), "user-1", &curriculum.KanaPracticeRequest{
+		Results: items,
+	})
+	if err == nil {
+		t.Fatal("expected error for oversized kana practice batch")
+	}
+	var domainErr *apperror.DomainError
+	if !errors.As(err, &domainErr) {
+		t.Fatalf("expected *apperror.DomainError, got %T: %v", err, err)
+	}
+	if domainErr.Type != apperror.ErrorTypeBadRequest || domainErr.Code != "KANA_PRACTICE_BATCH_TOO_LARGE" {
+		t.Fatalf("unexpected DomainError: type=%s code=%s msg=%s", domainErr.Type, domainErr.Code, domainErr.Message)
+	}
+}

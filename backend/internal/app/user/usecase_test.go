@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"merantalk/backend/internal/app/user"
+	"merantalk/backend/internal/shared/apperror"
 )
 
 func TestGetProfile_Success(t *testing.T) {
@@ -251,6 +252,51 @@ func TestBuildWeeklyActivitySummary_AnchoredYesterdayDoesNotLightToday(t *testin
 	for _, dt := range summary.ActiveDates {
 		if dt == todayStr {
 			t.Fatalf("expected ActiveDates not to include %s when lastActiveAt was yesterday and dailyStats has no today row", todayStr)
+		}
+	}
+}
+
+func TestUpdateProfile_AvatarURLValidation(t *testing.T) {
+	repo := user.NewMockRepository()
+	repo.Users["user-123"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-123", Email: "learner@merantalk.id"},
+		UserProfile: user.UserProfile{Name: "Learner", Username: "learner123", DailyGoalMinutes: 15},
+	}
+	uc := user.NewUsecase(repo)
+
+	invalidURLs := []string{
+		"//evil.example/pixel.png",
+		"/\\evil.example/pixel.png",
+		"javascript:alert(1)",
+	}
+	for _, raw := range invalidURLs {
+		avatar := raw
+		_, err := uc.UpdateProfile(context.Background(), "user-123", &user.UpdateProfileRequest{
+			AvatarURL: &avatar,
+		})
+		if err == nil {
+			t.Fatalf("expected invalid avatar_url %q to be rejected", raw)
+		}
+		var domainErr *apperror.DomainError
+		if !errors.As(err, &domainErr) || domainErr.Code != "INVALID_AVATAR_URL" {
+			t.Fatalf("expected INVALID_AVATAR_URL for %q, got: %v", raw, err)
+		}
+	}
+
+	validURLs := []string{
+		"/avatars/default.png",
+		"https://api.dicebear.com/7.x/adventurer/svg?seed=akira",
+	}
+	for _, raw := range validURLs {
+		avatar := raw
+		updated, err := uc.UpdateProfile(context.Background(), "user-123", &user.UpdateProfileRequest{
+			AvatarURL: &avatar,
+		})
+		if err != nil {
+			t.Fatalf("expected valid avatar_url %q to succeed, got: %v", raw, err)
+		}
+		if updated.AvatarURL == nil || *updated.AvatarURL != raw {
+			t.Fatalf("expected AvatarURL %q, got %v", raw, updated.AvatarURL)
 		}
 	}
 }

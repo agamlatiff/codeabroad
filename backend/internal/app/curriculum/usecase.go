@@ -839,6 +839,8 @@ func (u *usecase) GetKanaChart(ctx context.Context, userID string, script string
 	}, nil
 }
 
+const maxKanaPracticeBatch = 200
+
 // SubmitKanaPractice saves one or more Kana tracing or row-drill practice results.
 func (u *usecase) SubmitKanaPractice(ctx context.Context, userID string, req *KanaPracticeRequest) (*KanaPracticeResponse, error) {
 	if userID == "" {
@@ -846,6 +848,13 @@ func (u *usecase) SubmitKanaPractice(ctx context.Context, userID string, req *Ka
 	}
 	if req == nil || len(req.Results) == 0 {
 		return nil, apperror.ErrBadRequest
+	}
+	if len(req.Results) > maxKanaPracticeBatch {
+		return nil, apperror.NewBadRequestError(
+			"KANA_PRACTICE_BATCH_TOO_LARGE",
+			"jumlah hasil latihan kana maksimal 200 item per permintaan",
+			nil,
+		)
 	}
 	kRepo, ok := u.curriculumRepo.(kanaRepository)
 	if !ok {

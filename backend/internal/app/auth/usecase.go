@@ -99,8 +99,10 @@ func (u *usecase) Register(ctx context.Context, req *RegisterRequest) (*AuthResp
 
 	tokenHash := u.helper.HashToken(refreshToken)
 	if err := u.sessionRepo.SetSession(ctx, newUser.ID, sessionID, tokenHash, sessionTTL); err != nil {
-		// User creation has already committed; degrade gracefully instead of returning an ambiguous 500 that causes 409 conflicts on retry.
+		// User creation has already committed; clear both tokens because AuthMiddlewareWithSessionCheck
+		// fails closed without an active Redis session and would reject unstored access tokens with 401.
 		log.Printf("[WARN] [auth.Register] failed to store session for user %s: %v", newUser.ID, err)
+		accessToken = ""
 		refreshToken = ""
 	}
 
@@ -158,13 +160,27 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 		log.Printf("[WARN] [auth.Login] failed to record daily login activity for user %s: %v", usr.ID, loginActErr)
 	}
 
-	// EnsureDailyLogin already atomically updates streak and last_active_at in Postgres without touching XP/level;
-	// update local response copy safely without calling UpdateGamification with stale XP.
-	newStreak, _ := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
-	if loggedNewDay || usr.LastActiveAt == nil {
-		usr.Streak = newStreak
-		usr.LastActiveAt = &now
-	} else {
+	// EnsureDailyLogin already atomically updates streak (including Streak Freeze consumption) and last_active_at
+	// in Postgres without touching XP/level; sync local response copy from authoritative DB state when available.
+	syncedFromRepo := false
+	if loginActErr == nil && (loggedNewDay || usr.LastActiveAt == nil) {
+		if refreshed, refErr := u.userRepo.GetByID(ctx, usr.ID); refErr == nil && refreshed != nil {
+			if refreshed.Streak > 0 || refreshed.LastActiveAt != nil {
+				usr.Streak = refreshed.Streak
+				if refreshed.LastActiveAt != nil {
+					usr.LastActiveAt = refreshed.LastActiveAt
+				} else {
+					usr.LastActiveAt = &now
+				}
+				syncedFromRepo = true
+			}
+		}
+	}
+	if !syncedFromRepo {
+		if loggedNewDay || usr.LastActiveAt == nil {
+			newStreak, _ := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
+			usr.Streak = newStreak
+		}
 		usr.LastActiveAt = &now
 	}
 

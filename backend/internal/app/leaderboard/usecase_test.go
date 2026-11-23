@@ -30,6 +30,12 @@ func TestGetWeeklyLeaderboard_Success(t *testing.T) {
 	if res.Entries[0].Zone != "promotion" {
 		t.Errorf("expected rank 1 zone to be 'promotion', got '%s'", res.Entries[0].Zone)
 	}
+	if res.Entries[0].UserID != "user-1" {
+		t.Errorf("expected self entry UserID 'user-1', got %q", res.Entries[0].UserID)
+	}
+	if res.Entries[1].UserID != "" {
+		t.Errorf("expected non-self entry UserID to be redacted, got %q", res.Entries[1].UserID)
+	}
 	if res.UserRank == nil || res.UserRank.UserID != "user-1" {
 		t.Errorf("expected user rank to match user-1")
 	}

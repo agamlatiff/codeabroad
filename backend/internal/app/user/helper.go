@@ -91,14 +91,23 @@ func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) er
 				nil,
 			)
 		}
-		if trimmed != "" && !strings.HasPrefix(trimmed, "/") {
-			parsed, parseErr := url.ParseRequestURI(trimmed)
-			if parseErr != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+		if trimmed != "" {
+			if strings.ContainsAny(trimmed, "\\\r\n") || strings.HasPrefix(trimmed, "//") {
 				return apperror.NewBadRequestError(
 					"INVALID_AVATAR_URL",
 					"avatar_url harus berupa URL http/https atau path relatif yang valid",
 					nil,
 				)
+			}
+			if !strings.HasPrefix(trimmed, "/") {
+				parsed, parseErr := url.ParseRequestURI(trimmed)
+				if parseErr != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+					return apperror.NewBadRequestError(
+						"INVALID_AVATAR_URL",
+						"avatar_url harus berupa URL http/https atau path relatif yang valid",
+						nil,
+					)
+				}
 			}
 		}
 		*req.AvatarURL = trimmed

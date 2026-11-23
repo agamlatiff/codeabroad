@@ -142,7 +142,7 @@ func (u *usecase) GetWeeklyLeaderboard(
 			userDivision = resolvedDivision
 		}
 		// Avoid exposing internal user UUIDs on public unauthenticated responses or non-self rows.
-		if userID == "" {
+		if !entries[i].IsCurrentUser {
 			entries[i].UserID = ""
 		}
 	}
