@@ -16,6 +16,7 @@ export interface ChestRewardModalProps {
   xpReward?: number
   icon?: string
   isClaimed: boolean
+  isClaiming?: boolean
   onClaim: () => void
 }
 
@@ -27,11 +28,13 @@ export const ChestRewardModal = ({
   gemReward,
   xpReward = 0,
   isClaimed,
+  isClaiming = false,
   onClaim,
 }: ChestRewardModalProps) => {
   if (!isOpen) return null
 
   const handleClaim = () => {
+    if (isClaiming) return
     triggerHaptic('success')
     audioEngine.playChestClaim()
     onClaim()
@@ -58,7 +61,7 @@ export const ChestRewardModal = ({
   return (
     <Modal3D
       isOpen={isOpen}
-      onClose={onClose}
+      onClose={isClaiming ? () => undefined : onClose}
       maxWidth="sm"
       className="text-center"
     >
@@ -137,12 +140,18 @@ export const ChestRewardModal = ({
               variant="amber"
               size="md"
               fullWidth
+              disabled={isClaiming}
+              loading={isClaiming}
               onClick={handleClaim}
               className="text-xs py-3 shadow-md ring-4 ring-amber-200"
             >
               <span className="inline-flex items-center gap-1.5">
                 <Sparkle weight="fill" className="w-4 h-4 text-amber-950" />
-                <span>BUKA PETI SEKARANG (+{gemReward} Gems)</span>
+                <span>
+                  {isClaiming
+                    ? 'MEMBUKA PETI...'
+                    : `BUKA PETI SEKARANG (+${gemReward} Gems)`}
+                </span>
               </span>
             </Button3D>
           )}

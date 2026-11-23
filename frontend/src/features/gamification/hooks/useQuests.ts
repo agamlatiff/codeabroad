@@ -1094,6 +1094,7 @@ export const useQuests = () => {
     setIsMockModalOpen,
     isPurchasingItemId,
     isActivatingItemId,
+    isClaimingChest: claimChestMutation.isPending,
     isClaimingMonthlyBadge: claimMonthlyBadgeMutation.isPending,
     xpBoosterActive,
     xpBoosterExpiresAt,

@@ -63,6 +63,7 @@ export const QuestLogPage = () => {
     setIsMockModalOpen,
     isPurchasingItemId,
     isActivatingItemId,
+    isClaimingChest,
     isClaimingMonthlyBadge,
     xpBoosterActive,
     xpBoosterExpiresAt,
@@ -540,20 +541,25 @@ export const QuestLogPage = () => {
       {selectedChestForModal && (
         <ChestRewardModal
           isOpen={isChestModalOpen}
-          onClose={() => setIsChestModalOpen(false)}
+          onClose={() => {
+            if (!isClaimingChest) setIsChestModalOpen(false)
+          }}
           tier={selectedChestForModal.tier}
           title={selectedChestForModal.label}
           gemReward={selectedChestForModal.gemReward}
           xpReward={selectedChestForModal.xpReward}
           icon={selectedChestForModal.icon}
           isClaimed={!!claimedDailyChests[selectedChestForModal.tier]}
+          isClaiming={isClaimingChest}
           onClaim={() => void handleConfirmClaimChest()}
         />
       )}
 
       <MonthlyBadgeModal
         isOpen={isMonthlyBadgeModalOpen}
-        onClose={() => setIsMonthlyBadgeModalOpen(false)}
+        onClose={() => {
+          if (!isClaimingMonthlyBadge) setIsMonthlyBadgeModalOpen(false)
+        }}
         monthYearName={currentMonthYearName}
         monthShort={currentMonthShort}
         completedCount={monthlyCompletedCount}
