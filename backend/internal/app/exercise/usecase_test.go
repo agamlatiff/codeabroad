@@ -2277,3 +2277,91 @@ func TestExercise_HardenedInvariants(t *testing.T) {
 	})
 }
 
+func TestProcessReviewAndSubmitExam_EvaluatesStreakBadges(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	sRepo := exercise.NewMockSRSRepository()
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+	userRepo := user.NewMockRepository()
+	gRepo := gamification.NewMockRepository()
+
+	gRepo.Badges["streak_7"] = &gamification.BadgeDefinition{ID: "streak_7", Title: "Konsisten 7 Hari", XPReward: 50}
+	gRepo.Badges["streak_30"] = &gamification.BadgeDefinition{ID: "streak_30", Title: "Dedikasi 30 Hari", XPReward: 150}
+
+	yesterday := time.Now().UTC().Add(-24 * time.Hour)
+	userRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1"},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           100,
+			CurrentLevel: 2,
+			Streak:       6,
+			LastActiveAt: &yesterday,
+		},
+	}
+
+	lessonID := "lesson-1"
+	eRepo.Exercises["ex-1"] = &exercise.Exercise{
+		ID:            "ex-1",
+		LessonID:      &lessonID,
+		ExerciseType:  exercise.ExerciseTypeFillBlank,
+		Prompt:        "Prompt",
+		CorrectAnswer: "A",
+	}
+	sRepo.Reviews["user-1:ex-1"] = &exercise.UserSRSReview{
+		ID:           "srs-1",
+		UserID:       "user-1",
+		ExerciseID:   "ex-1",
+		NextReviewAt: time.Now().UTC().Add(-time.Hour),
+	}
+
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, exercise.NewMockLessonAccessChecker(true)).
+		WithBadgeAwarder(gRepo)
+
+	q := 4
+	if _, err := uc.ProcessReview(context.Background(), "user-1", &exercise.SubmitSRSReviewRequest{
+		ExerciseID: "ex-1",
+		Quality:    &q,
+	}); err != nil {
+		t.Fatalf("expected ProcessReview to succeed, got %v", err)
+	}
+	if len(gRepo.UserBadges["user-1"]) != 1 || gRepo.UserBadges["user-1"][0].BadgeKey != "streak_7" {
+		t.Fatalf("expected streak_7 badge awarded on ProcessReview reaching 7-day streak, got %+v", gRepo.UserBadges["user-1"])
+	}
+
+	// Now advance user to streak 29 yesterday -> SubmitExam reaching 30 should award streak_30 in AwardedBadges
+	userRepo.Users["user-1"].Streak = 29
+	userRepo.Users["user-1"].LastActiveAt = &yesterday
+
+	lvlID := "lvl-1"
+	lvl1 := &language.ProficiencyLevel{ID: lvlID, LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	langRepo.Levels[lvlID] = lvl1
+	langRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
+		ID:             "enr-1",
+		UserID:         "user-1",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlID,
+		IsActive:       true,
+		CurrentLevel:   lvl1,
+	}
+	eRepo.ReadinessExamExercises[lvlID] = []exercise.Exercise{
+		{ID: "q-1", SkillPillar: "reading", CorrectAnswer: "A"},
+	}
+
+	examRes, err := uc.SubmitExam(context.Background(), "user-1", &exercise.SubmitReadinessExamRequest{
+		LevelID: lvlID,
+		Answers: []exercise.SubmitExerciseAnswerRequest{{ExerciseID: "q-1", UserAnswer: "A"}},
+	})
+	if err != nil {
+		t.Fatalf("expected SubmitExam to succeed, got %v", err)
+	}
+	foundStreak30 := false
+	for _, b := range examRes.AwardedBadges {
+		if b.ID == "streak_30" {
+			foundStreak30 = true
+		}
+	}
+	if !foundStreak30 {
+		t.Fatalf("expected streak_30 in SubmitExam AwardedBadges, got %+v", examRes.AwardedBadges)
+	}
+}
+

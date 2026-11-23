@@ -238,7 +238,7 @@ export const useSrsReviewPage = () => {
     audioService.stopSpeech()
     audioEngine.playPop()
     if (processedExerciseIdsRef.current.size > 0) {
-      void queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY })
+      void invalidateLearningSessionCaches(queryClient, { includeSrs: true })
     }
     navigate('/curriculum')
   }, [navigate, queryClient, stopMediaSession])

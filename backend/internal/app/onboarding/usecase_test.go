@@ -279,3 +279,88 @@ func TestCompleteOnboarding_ManualSelect_FallsBackToBaseLevelWhenTargetLevelHasN
 	}
 }
 
+func TestPlacementExercises_HydratedGradingAndSanitizedClientQuestions(t *testing.T) {
+	q1 := exercise.Exercise{ID: "p-fill", ExerciseType: exercise.ExerciseTypeFillBlank}
+	exercise.HydrateExerciseJSONFields(
+		&q1,
+		[]byte(`{"options":["あ","い","う","お"]}`),
+		[]byte(`{"selected":"あ"}`),
+		nil,
+		nil,
+	)
+
+	q2 := exercise.Exercise{ID: "p-listen", ExerciseType: exercise.ExerciseTypeListeningChoice}
+	exercise.HydrateExerciseJSONFields(
+		&q2,
+		[]byte(`{"audio_text":"おはようございます","options":[{"id":"opt_1","text":"Selamat pagi"},{"id":"opt_2","text":"Selamat malam"}]}`),
+		[]byte(`{"selected_id":"opt_1"}`),
+		nil,
+		nil,
+	)
+
+	q3 := exercise.Exercise{ID: "p-build", ExerciseType: exercise.ExerciseTypeSentenceBuilder}
+	exercise.HydrateExerciseJSONFields(
+		&q3,
+		[]byte(`{"tokens":["わたし","は","がくせい","です"]}`),
+		[]byte(`["わたし","は","がくせい","です"]`),
+		nil,
+		nil,
+	)
+
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-1"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-1"},
+		UserProfile: user.UserProfile{IsOnboarded: false},
+	}
+
+	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
+	lRepo.Levels["lvl-n4"] = &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+
+	cRepo := curriculum.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	eRepo.PlacementExercises["lang-ja"] = []exercise.Exercise{q1, q2, q3}
+
+	uc := onboarding.NewUsecase(uRepo, lRepo, cRepo, eRepo, gamification.NewMockRepository())
+
+	// 1. Client-facing GetPlacementQuestions must still strip CorrectAnswer & AcceptableAnswers
+	clientResp, err := uc.GetPlacementQuestions(context.Background(), "lang-ja")
+	if err != nil {
+		t.Fatalf("expected GetPlacementQuestions to succeed, got %v", err)
+	}
+	if len(clientResp.Questions) != 3 {
+		t.Fatalf("expected 3 placement questions, got %d", len(clientResp.Questions))
+	}
+	for _, rawQ := range clientResp.Questions {
+		sanitizedQ, ok := rawQ.(exercise.Exercise)
+		if !ok {
+			t.Fatalf("expected exercise.Exercise value, got %T", rawQ)
+		}
+		if sanitizedQ.CorrectAnswer != "" || sanitizedQ.AcceptableAnswers != nil {
+			t.Fatalf("expected sanitized placement question without answer keys, got %+v", sanitizedQ)
+		}
+	}
+
+	// 2. CompleteOnboarding grading uses hydrated CorrectAnswer/AcceptableAnswers (both "opt_1" and object text accepted)
+	res, err := uc.CompleteOnboarding(context.Background(), "user-1", &onboarding.OnboardingRequest{
+		LanguageID:           "lang-ja",
+		DailyGoalMinutes:     15,
+		InitialPlacementType: "placement_test",
+		PlacementAnswers: []onboarding.PlacementAnswer{
+			{ExerciseID: "p-fill", UserAnswer: "あ"},
+			{ExerciseID: "p-listen", UserAnswer: "opt_1"},
+			{ExerciseID: "p-build", UserAnswer: "わたし は がくせい です"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected CompleteOnboarding placement_test to succeed, got %v", err)
+	}
+	if res.PlacementScore == nil || *res.PlacementScore != 100 {
+		t.Fatalf("expected hydrated placement score 100%%, got %v", res.PlacementScore)
+	}
+	if res.AssignedLevel.Code != "N4" {
+		t.Errorf("expected placement score 100%% to assign level N4, got %s", res.AssignedLevel.Code)
+	}
+}
+

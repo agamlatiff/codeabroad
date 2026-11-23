@@ -367,6 +367,7 @@ func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitS
 			srsMeta["badge_xp_awarded"] = badgeXP
 		}
 		u.logActivitySafely(ctx, userID, "srs_review_completed", 0, srsMeta)
+		_ = u.awardStreakBadges(ctx, userID)
 	}
 
 	return updatedReview, nil
@@ -982,12 +983,48 @@ func (u *usecase) SubmitExam(ctx context.Context, userID string, req *SubmitRead
 		examMeta["badge_xp_awarded"] = badgeXP
 	}
 	u.logActivitySafely(ctx, userID, "readiness_exam_completed", 0, examMeta)
+	if streakBadges := u.awardStreakBadges(ctx, userID); len(streakBadges) > 0 {
+		awardedBadges = append(awardedBadges, streakBadges...)
+	}
 
 	return &ReadinessExamResponse{
 		Attempt:       *attempt,
 		Certificate:   cert,
 		AwardedBadges: awardedBadges,
 	}, nil
+}
+
+func (u *usecase) awardStreakBadges(ctx context.Context, userID string) []gamification.BadgeDefinition {
+	if u.badgeAwarder == nil || u.userRepo == nil {
+		return nil
+	}
+	usr, err := u.userRepo.GetByID(ctx, userID)
+	if err != nil || usr == nil {
+		return nil
+	}
+	var awarded []gamification.BadgeDefinition
+	for _, item := range []struct {
+		key       string
+		threshold int
+	}{
+		{key: "streak_7", threshold: 7},
+		{key: "streak_30", threshold: 30},
+	} {
+		if usr.Streak < item.threshold {
+			continue
+		}
+		ub, awardErr := u.badgeAwarder.AwardBadge(ctx, userID, item.key, usr.CurrentLevel)
+		if awardErr != nil {
+			if !errors.Is(awardErr, gamification.ErrBadgeNotFound) {
+				log.Printf("exercise: failed to award %s badge to user %s: %v", item.key, userID, awardErr)
+			}
+			continue
+		}
+		if ub != nil && ub.Badge != nil && ub.NewlyAwarded {
+			awarded = append(awarded, *ub.Badge)
+		}
+	}
+	return awarded
 }
 
 func (u *usecase) awardExamBadges(ctx context.Context, userID string, lvl *language.ProficiencyLevel, scorePercent int) []gamification.BadgeDefinition {

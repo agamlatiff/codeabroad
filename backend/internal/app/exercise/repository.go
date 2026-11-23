@@ -430,7 +430,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 				  AND u.order_index <= 0
 			) AS has_placement
 		)
-		SELECT ` + prefixedSanitizedExerciseSelectColumns + `
+		SELECT ` + prefixedExerciseSelectColumns + `
 		FROM exercises e
 		JOIN lessons l ON e.lesson_id = l.id
 		JOIN units u ON l.unit_id = u.id
@@ -450,7 +450,7 @@ func (r *PostgresRepository) GetPlacementExercises(ctx context.Context, language
 	}
 	defer rows.Close()
 
-	return scanSanitizedExerciseRows(rows, limit, "placement exercise")
+	return scanExerciseRows(rows, limit, "placement exercise")
 }
 
 // GetReadinessExamExercises retrieves all sectional questions for an official mock exam

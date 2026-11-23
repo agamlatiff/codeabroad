@@ -34,6 +34,22 @@ const getOptionLabel = (opt: string | PlacementQuestionOption): string => {
   return opt.text || opt.label || opt.id || ''
 }
 
+const hydrateTokenIndicesFromAnswer = (tokens: string[], savedAnswer: string): number[] => {
+  const trimmed = savedAnswer.trim()
+  if (!trimmed || tokens.length === 0) return []
+  const parts = trimmed.split(/\s+/)
+  const used = new Set<number>()
+  const indices: number[] = []
+  for (const part of parts) {
+    const idx = tokens.findIndex((t, i) => !used.has(i) && t === part)
+    if (idx >= 0) {
+      used.add(idx)
+      indices.push(idx)
+    }
+  }
+  return indices
+}
+
 export const Step3PlacementTest = ({
   questions,
   languageCode,
@@ -187,7 +203,9 @@ export const Step3PlacementTest = ({
 
   const currentAnswer = answers[currentQuestion.id] ?? ''
   const isSentenceBuilder = currentQuestion.exercise_type === 'sentence_builder' && tokens.length > 0
-  const selectedIndices = selectedTokensByQuestion[currentQuestion.id] ?? []
+  const selectedIndices =
+    selectedTokensByQuestion[currentQuestion.id] ??
+    hydrateTokenIndicesFromAnswer(tokens, currentAnswer)
   const answeredCount = questions.filter((q) => Boolean((answers[q.id] ?? '').trim())).length
   const progressPercent = Math.round(((safeIndex + 1) / questions.length) * 100)
 
