@@ -209,6 +209,7 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 		xpAwarded = 2
 	}
 
+	currentXP := 0
 	currentStreak := 0
 	currentLevel := 0
 	if u.userRepo != nil {
@@ -217,11 +218,12 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 			"quality": quality,
 		}
 		if recorder, ok := u.userRepo.(atomicXPActivityRecorder); ok {
-			awarded, _, lvl, streak, recErr := recorder.RecordXPActivity(ctx, userID, "srs_review_completed", xpAwarded, true, meta)
+			awarded, newXP, lvl, streak, recErr := recorder.RecordXPActivity(ctx, userID, "srs_review_completed", xpAwarded, true, meta)
 			if recErr != nil {
 				return nil, recErr
 			}
 			xpAwarded = awarded
+			currentXP = newXP
 			currentLevel = lvl
 			currentStreak = streak
 		} else if usr, err := u.userRepo.GetByID(ctx, userID); err == nil && usr != nil {
@@ -245,6 +247,7 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 			}
 			newXP := refreshedUser.XP + xpAwarded
 			newLevel := progression.CalculateLevel(newXP)
+			currentXP = newXP
 			currentStreak = refreshedUser.Streak
 			currentLevel = newLevel
 			_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, refreshedUser.Streak, &now)
@@ -272,5 +275,8 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 		Repetitions:  sm2.Repetitions,
 		NextReviewAt: sm2.NextReviewAt,
 		XPAwarded:    xpAwarded,
+		CurrentXP:    currentXP,
+		CurrentLevel: currentLevel,
+		Streak:       currentStreak,
 	}, nil
 }

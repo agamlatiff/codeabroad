@@ -134,15 +134,15 @@ func TestHTTP_GetExamQuestions(t *testing.T) {
 	}
 }
 
-func TestHTTP_GetExercisesByLesson_InvalidUUID_Returns400(t *testing.T) {
+func TestHTTP_GetExercisesByLesson_InvalidIdentifier_Returns400(t *testing.T) {
 	r, _, _, _ := setupExerciseTestRouter()
 
-	req, _ := http.NewRequest(http.MethodGet, "/api/v1/exercises/lesson/not-a-valid-uuid", nil)
+	req, _ := http.NewRequest(http.MethodGet, "/api/v1/exercises/lesson/INVALID_SLUG!!", nil)
 	w := httptest.NewRecorder()
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request on invalid lesson uuid, got: %d", w.Code)
+		t.Fatalf("expected 400 Bad Request on invalid lesson identifier, got: %d", w.Code)
 	}
 }
 

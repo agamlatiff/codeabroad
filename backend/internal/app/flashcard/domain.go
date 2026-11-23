@@ -113,6 +113,9 @@ type ReviewCardResponse struct {
 	Repetitions  int       `json:"repetitions"`
 	NextReviewAt time.Time `json:"next_review_at"`
 	XPAwarded    int       `json:"xp_awarded"`
+	CurrentXP    int       `json:"current_xp,omitempty"`
+	CurrentLevel int       `json:"current_level,omitempty"`
+	Streak       int       `json:"streak,omitempty"`
 }
 
 // SM2Result holds the computed SM-2 schedule values.

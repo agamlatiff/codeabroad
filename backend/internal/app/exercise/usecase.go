@@ -81,6 +81,10 @@ func NewUsecase(
 	return NewUsecaseWithAccessChecker(exerciseRepo, srsRepo, examRepo, langRepo, userRepo, nil)
 }
 
+type lessonSlugResolver interface {
+	ResolveLessonID(ctx context.Context, idOrSlug string) (string, error)
+}
+
 func (u *usecase) verifyLessonUnlocked(ctx context.Context, userID string, lessonID string) error {
 	if lessonID == "" {
 		return apperror.ErrForbidden
@@ -126,6 +130,18 @@ func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lesso
 	}
 	if u.exerciseRepo == nil {
 		return nil, fmt.Errorf("exercise repository is not configured: %w", apperror.ErrInternal)
+	}
+	if apperror.ValidateEntityUUID(lessonID) != nil {
+		for _, candidate := range []any{u.accessChecker, u.exerciseRepo} {
+			if resolver, ok := candidate.(lessonSlugResolver); ok {
+				resolvedID, err := resolver.ResolveLessonID(ctx, lessonID)
+				if err != nil {
+					return nil, err
+				}
+				lessonID = resolvedID
+				break
+			}
+		}
 	}
 	if err := u.verifyLessonUnlocked(ctx, userID, lessonID); err != nil {
 		return nil, err

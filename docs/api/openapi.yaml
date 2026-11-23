@@ -287,6 +287,9 @@ paths:
                 bio:
                   type: string
                   maxLength: 500
+                avatar_url:
+                  type: string
+                  maxLength: 500
                 daily_goal_minutes:
                   type: integer
                   enum: [5, 15, 30, 45]
@@ -457,10 +460,6 @@ paths:
           $ref: "#/components/responses/ConflictError"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
-        "400":
-          $ref: "#/components/responses/BadRequestError"
-        "401":
-          $ref: "#/components/responses/UnauthorizedError"
 
   # ==========================================
   # LANGUAGES
@@ -601,9 +600,9 @@ paths:
         - name: id
           in: path
           required: true
+          description: Lesson UUID or ASCII URL slug
           schema:
             type: string
-            format: uuid
       responses:
         "200":
           description: Lesson details retrieved
@@ -637,9 +636,9 @@ paths:
         - name: id
           in: path
           required: true
+          description: Lesson UUID or ASCII URL slug
           schema:
             type: string
-            format: uuid
       requestBody:
         required: true
         content:
@@ -680,7 +679,7 @@ paths:
     get:
       tags: [Curriculum]
       security: [{ BearerAuth: [] }]
-      summary: Get grammar points reference
+      summary: Get grammar points reference by level UUID or language/level filter
       parameters:
         - name: level_id
           in: query
@@ -688,6 +687,18 @@ paths:
           schema:
             type: string
             format: uuid
+        - name: lang
+          in: query
+          required: false
+          description: Target language ISO code (e.g. ja)
+          schema:
+            type: string
+        - name: level_code
+          in: query
+          required: false
+          description: Proficiency level code filter (e.g. N5, N4)
+          schema:
+            type: string
       responses:
         "200":
           description: Grammar points retrieved
@@ -699,6 +710,112 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+
+  /curriculum/grammar-points/{id}/check:
+    post:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Submit grammar point mini-quiz score and schedule SRS review
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Grammar point UUID or canonical code (e.g. GP-JA-N5-001)
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [correct_count, total_questions]
+              properties:
+                correct_count:
+                  type: integer
+                  minimum: 0
+                total_questions:
+                  type: integer
+                  minimum: 1
+                  maximum: 20
+      responses:
+        "200":
+          description: Grammar check recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  /curriculum/kana:
+    get:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Get Kana & Kanji reference chart with user mastery progress
+      parameters:
+        - name: script
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [hiragana, katakana, kanji, all]
+      responses:
+        "200":
+          description: Kana chart retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /curriculum/kana/practice:
+    post:
+      tags: [Curriculum]
+      security: [{ BearerAuth: [] }]
+      summary: Record interactive Kana/Kanji drill results
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [results]
+              properties:
+                results:
+                  type: array
+                  minItems: 1
+                  maxItems: 50
+                  items:
+                    type: object
+                    required: [character, is_correct]
+                    properties:
+                      character:
+                        type: string
+                      is_correct:
+                        type: boolean
+      responses:
+        "200":
+          description: Kana practice recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
 
   # ==========================================
   # EXERCISES
@@ -712,9 +829,9 @@ paths:
         - name: lesson_id
           in: path
           required: true
+          description: Lesson UUID or ASCII URL slug
           schema:
             type: string
-            format: uuid
       responses:
         "200":
           description: Exercises retrieved
@@ -998,6 +1115,157 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
 
   # ==========================================
+  # FLASHCARDS
+  # ==========================================
+  /flashcards/decks:
+    get:
+      tags: [Flashcards]
+      security: [{ BearerAuth: [] }]
+      summary: List flashcard decks (or paginated deck slices with Anki counters)
+      parameters:
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: level
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 30
+        - name: paginated
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: ["1", "true"]
+      responses:
+        "200":
+          description: Flashcard decks retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /flashcards/decks/{id}:
+    get:
+      tags: [Flashcards]
+      security: [{ BearerAuth: [] }]
+      summary: Get a flashcard deck and all ordered cards with SM-2 state
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Deck UUID or URL slug
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Flashcard deck detail retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+
+  /flashcards/due:
+    get:
+      tags: [Flashcards]
+      security: [{ BearerAuth: [] }]
+      summary: Get scheduled due flashcard review queue
+      parameters:
+        - name: lang
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+      responses:
+        "200":
+          description: Due flashcard queue retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /flashcards/cards/{id}/review:
+    post:
+      tags: [Flashcards]
+      security: [{ BearerAuth: [] }]
+      summary: Submit SM-2 quality rating for a flashcard and award XP
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quality]
+              properties:
+                quality:
+                  type: integer
+                  minimum: 0
+                  maximum: 5
+      responses:
+        "200":
+          description: Flashcard review saved (includes SM-2 interval, xp_awarded, current_xp, current_level, streak)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
+  # ==========================================
   # GAMIFICATION
   # ==========================================
   /gamification/status:
@@ -1105,6 +1373,51 @@ paths:
                 $ref: "#/components/schemas/SuccessResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/daily-quests:
+    get:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Get rotating daily quests for the current WIB calendar date
+      responses:
+        "200":
+          description: Daily quests retrieved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+
+  /gamification/daily-quests/{id}/claim:
+    post:
+      tags: [Gamification]
+      security: [{ BearerAuth: [] }]
+      summary: Claim reward for a completed daily quest
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: Daily quest reward claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
 
   /gamification/monthly-badge/claim:
     post:

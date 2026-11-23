@@ -2365,3 +2365,59 @@ func TestProcessReviewAndSubmitExam_EvaluatesStreakBadges(t *testing.T) {
 	}
 }
 
+type stubSlugAccessChecker struct {
+	slugs   map[string]string
+	checked []string
+}
+
+func (s *stubSlugAccessChecker) IsLessonUnlocked(_ context.Context, _ string, lessonID string) (bool, error) {
+	s.checked = append(s.checked, lessonID)
+	return true, nil
+}
+
+func (s *stubSlugAccessChecker) ResolveLessonID(_ context.Context, idOrSlug string) (string, error) {
+	if resolved, ok := s.slugs[idOrSlug]; ok {
+		return resolved, nil
+	}
+	return "", apperror.NewNotFoundError("LESSON_NOT_FOUND", "lesson not found")
+}
+
+func TestGetExercisesByLesson_ResolvesSlug(t *testing.T) {
+	eRepo := exercise.NewMockRepository()
+	sRepo := exercise.NewMockSRSRepository()
+	examRepo := exercise.NewMockReadinessExamRepository()
+	langRepo := language.NewMockRepository()
+	userRepo := user.NewMockRepository()
+
+	const canonicalLessonUUID = "33333333-3333-3333-3333-333333333333"
+	lessonRef := canonicalLessonUUID
+	eRepo.Exercises["ex-slug-1"] = &exercise.Exercise{
+		ID:            "ex-slug-1",
+		LessonID:      &lessonRef,
+		ExerciseType:  exercise.ExerciseTypeFillBlank,
+		Prompt:        "Pilih arti sapaan",
+		Options:       []string{"Halo", "Terima kasih"},
+		CorrectAnswer: "Halo",
+	}
+
+	checker := &stubSlugAccessChecker{
+		slugs: map[string]string{"n5-vokal-dasar": canonicalLessonUUID},
+	}
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, examRepo, langRepo, userRepo, checker)
+
+	list, err := uc.GetExercisesByLesson(context.Background(), "user-1", "n5-vokal-dasar")
+	if err != nil {
+		t.Fatalf("expected slug GetExercisesByLesson to succeed, got %v", err)
+	}
+	if len(list) != 1 || list[0].ID != "ex-slug-1" {
+		t.Fatalf("expected 1 resolved exercise, got %+v", list)
+	}
+	if len(checker.checked) != 1 || checker.checked[0] != canonicalLessonUUID {
+		t.Fatalf("expected IsLessonUnlocked checked with canonical UUID %s, got %+v", canonicalLessonUUID, checker.checked)
+	}
+
+	if _, err := uc.GetExercisesByLesson(context.Background(), "user-1", "unknown-lesson-slug"); err == nil {
+		t.Fatal("expected error for unknown lesson slug")
+	}
+}
+

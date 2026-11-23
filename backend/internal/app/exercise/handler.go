@@ -2,7 +2,9 @@ package exercise
 
 import (
 	"net/http"
+	"regexp"
 	"strconv"
+	"strings"
 	"time"
 
 	"merantalk/backend/internal/shared/apperror"
@@ -10,6 +12,19 @@ import (
 	"merantalk/backend/internal/shared/response"
 	"github.com/gin-gonic/gin"
 )
+
+var exerciseLessonSlugRegex = regexp.MustCompile(`^[a-z0-9]+(?:-[a-z0-9]+)*$`)
+
+func isValidExerciseLessonIdentifier(val string) bool {
+	trimmed := strings.TrimSpace(val)
+	if trimmed == "" || len(trimmed) > 160 {
+		return false
+	}
+	if apperror.ValidateEntityUUID(trimmed) == nil {
+		return true
+	}
+	return len(trimmed) >= 2 && exerciseLessonSlugRegex.MatchString(trimmed)
+}
 
 // Handler handles HTTP requests for exercise interactions, SRS reviews, and diagnostic readiness exams
 type Handler struct {
@@ -103,15 +118,13 @@ func (h *Handler) GetExercisesByLesson(c *gin.Context) {
 		return
 	}
 
-	var uri struct {
-		LessonID string `uri:"lesson_id" binding:"required,uuid"`
-	}
-	if err := c.ShouldBindUri(&uri); err != nil {
-		response.BadRequest(c, "invalid lesson_id parameter format, must be a valid UUID")
+	lessonParam := strings.TrimSpace(c.Param("lesson_id"))
+	if !isValidExerciseLessonIdentifier(lessonParam) {
+		response.BadRequest(c, "invalid lesson_id parameter format, must be a valid UUID or slug")
 		return
 	}
 
-	exercises, err := h.exerciseUsecase.GetExercisesByLesson(c.Request.Context(), userID, uri.LessonID)
+	exercises, err := h.exerciseUsecase.GetExercisesByLesson(c.Request.Context(), userID, lessonParam)
 	if err != nil {
 		response.Error(c, err)
 		return

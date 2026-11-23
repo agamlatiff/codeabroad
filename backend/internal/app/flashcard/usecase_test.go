@@ -218,6 +218,9 @@ func TestReviewCard_XPBoosterAndSRSVeteranBadge(t *testing.T) {
 	if res.XPAwarded != 10 {
 		t.Fatalf("expected 10 XP with active 2x xp-booster, got %d", res.XPAwarded)
 	}
+	if res.CurrentXP != 110 || res.CurrentLevel != 2 || res.Streak != 3 {
+		t.Fatalf("expected synced gamification counters (xp=110, level=2, streak=3), got xp=%d level=%d streak=%d", res.CurrentXP, res.CurrentLevel, res.Streak)
+	}
 	if uRepo.Users["user-1"].XP != 110 {
 		t.Fatalf("expected user XP updated to 110, got %d", uRepo.Users["user-1"].XP)
 	}
