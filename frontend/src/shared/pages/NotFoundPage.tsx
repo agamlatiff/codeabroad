@@ -18,23 +18,23 @@ export const NotFoundPage = () => {
             emotion="thinking"
             size="xl"
             showSpeechBubble
-            speechText="Hmm, radar Mera tidak mendeteksi koordinat ini!"
+            speechText="Hmm, halaman yang kamu cari tidak ketemu nih!"
             interactive
           />
         </div>
 
         {/* 404 Badge */}
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-brand font-black text-xs tracking-wider uppercase mb-3">
-          Error 404 — Koordinat Hilang
+          Error 404 — Halaman Tidak Ditemukan
         </div>
 
         {/* Headline */}
         <h1 className="text-3xl sm:text-4xl font-brand font-black text-white tracking-tight mb-3">
-          Jalur Ini Belum Terpetakan
+          Halaman Tidak Ditemukan
         </h1>
 
         <p className="text-slate-400 text-sm sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
-          Halaman yang kamu tuju sepertinya salah ketik atau telah dipindahkan ke stasiun belajar lain. Yuk, kembali ke jalur karirmu!
+          Tautan yang kamu buka sepertinya salah ketik atau halamannya sudah dipindahkan. Yuk, kembali ke halaman belajar!
         </p>
 
         {/* Actions */}
@@ -56,7 +56,7 @@ export const NotFoundPage = () => {
             onClick={() => navigate('/quests')}
             fullWidth
           >
-            Quest Log
+            Misi Harian
           </Button3D>
         </div>
 

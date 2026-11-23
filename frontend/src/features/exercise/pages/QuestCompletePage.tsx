@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import {
   CheckCircle,
   Lightning,
@@ -10,6 +11,8 @@ import {
   MapTrifold,
   SpeakerHigh,
   Cards,
+  Sparkle,
+  UserPlus,
 } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
@@ -31,6 +34,8 @@ function getAccuracyPredicate(accuracyPercent: number): string {
 export const QuestCompletePage = () => {
   const {
     isLoading,
+    isGuestTrial,
+    guestPendingTotalXp,
     lessonTitle,
     xpEarned,
     totalXp,
@@ -124,34 +129,71 @@ export const QuestCompletePage = () => {
           </div>
         </div>
 
-        {/* Visual XP Level Progress Bar */}
-        <div className="bg-slate-50/90 border-2 border-slate-200/90 rounded-2xl p-3.5 sm:p-4 text-left space-y-2 shadow-[0_3px_0_0_#E2E8F0]">
-          <div className="flex items-center justify-between gap-2">
-            <div className="inline-flex items-center gap-1.5 font-brand font-black text-sm text-slate-900">
-              <Star weight="fill" className="w-4 h-4 text-blue-600" />
-              <span>Level {xpProgress.level}</span>
+        {/* Visual XP Level Progress Bar (Auth) OR Save Progress Conversion Card (Guest Trial) */}
+        {isGuestTrial ? (
+          <div className="rounded-3xl border-2 border-blue-200 bg-gradient-to-br from-blue-50 via-sky-50/70 to-white p-4 sm:p-5 text-left space-y-3 shadow-[0_4px_0_0_#DBEAFE]">
+            <div className="flex items-start justify-between gap-3">
+              <div className="space-y-1">
+                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-100 border border-blue-200 text-blue-700 font-brand font-black text-[10px] uppercase tracking-wider">
+                  <Sparkle weight="fill" className="w-3 h-3 text-blue-600" />
+                  <span>Mode Coba Selesai</span>
+                </span>
+                <h2 className="text-base sm:text-lg font-brand font-black text-slate-900">
+                  Simpan +{guestPendingTotalXp || xpEarned} XP ke Akunmu!
+                </h2>
+                <p className="text-xs text-slate-600 leading-relaxed">
+                  Latihan pertamamu masih tersimpan sementara di perangkat ini. Daftar gratis dalam 10 detik untuk menyimpan progres, menyalakan Streak, dan membuka seluruh unit lanjutan.
+                </p>
+              </div>
             </div>
-            <span className="text-xs font-brand font-bold text-slate-600">
-              {xpProgress.xpInLevel} / {xpProgress.xpForNextLevel} XP • Total{' '}
-              {totalXp.toLocaleString()} XP
-            </span>
-          </div>
 
-          <div className="h-3 w-full rounded-full bg-slate-200/80 overflow-hidden border border-slate-200">
-            <div
-              className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
-              style={{ width: `${Math.max(4, xpProgress.progressPercent)}%` }}
-            />
+            <div className="flex flex-col sm:flex-row gap-2.5">
+              <Link to="/register?from=trial" className="flex-1">
+                <Button3D
+                  variant="blue"
+                  size="md"
+                  fullWidth
+                  icon={<UserPlus weight="bold" className="w-4 h-4" />}
+                >
+                  DAFTAR GRATIS &amp; KLAIM +{guestPendingTotalXp || xpEarned} XP
+                </Button3D>
+              </Link>
+              <Link to="/login?from=trial" className="sm:w-auto">
+                <Button3D variant="white" size="md" fullWidth>
+                  MASUK AKUN
+                </Button3D>
+              </Link>
+            </div>
           </div>
+        ) : (
+          <div className="bg-slate-50/90 border-2 border-slate-200/90 rounded-2xl p-3.5 sm:p-4 text-left space-y-2 shadow-[0_3px_0_0_#E2E8F0]">
+            <div className="flex items-center justify-between gap-2">
+              <div className="inline-flex items-center gap-1.5 font-brand font-black text-sm text-slate-900">
+                <Star weight="fill" className="w-4 h-4 text-blue-600" />
+                <span>Level {xpProgress.level}</span>
+              </div>
+              <span className="text-xs font-brand font-bold text-slate-600">
+                {xpProgress.xpInLevel} / {xpProgress.xpForNextLevel} XP • Total{' '}
+                {totalXp.toLocaleString()} XP
+              </span>
+            </div>
 
-          <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-            <span>
-              Butuh <strong className="text-slate-700">{xpProgress.xpRemaining} XP</strong> lagi ke
-              Level {xpProgress.level + 1}
-            </span>
-            <span>{xpProgress.progressPercent}%</span>
+            <div className="h-3 w-full rounded-full bg-slate-200/80 overflow-hidden border border-slate-200">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-500"
+                style={{ width: `${Math.max(4, xpProgress.progressPercent)}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+              <span>
+                Butuh <strong className="text-slate-700">{xpProgress.xpRemaining} XP</strong> lagi ke
+                Level {xpProgress.level + 1}
+              </span>
+              <span>{xpProgress.progressPercent}%</span>
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Newly Unlocked Badges (3D Tactile Card) */}
         {awardedBadges.length > 0 && (

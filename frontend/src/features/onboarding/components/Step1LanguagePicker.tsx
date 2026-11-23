@@ -1,46 +1,9 @@
 import { LockSimple } from '@phosphor-icons/react'
 import type { OnboardingLanguage } from '@/features/onboarding/types/onboarding'
+import { getLanguageCatalogMeta } from '@/shared/constants/languageCatalog'
 import { LanguageFlagIllustration } from './illustrations/FlagIllustrations'
 import { BadgePill } from './BadgePill'
 import { triggerHaptic } from '@/shared/utils/haptics'
-
-const LANGUAGE_META: Record<string, { countryLabel: string; description: string; examLabel: string }> = {
-  ja: {
-    countryLabel: 'Jepang • JLPT N5 – N1',
-    description: 'Kuasai Kanji, Hiragana, Katakana & percakapan kerja maupun keseharian di Jepang.',
-    examLabel: 'Populer',
-  },
-  de: {
-    countryLabel: 'Jerman • Goethe A1 – C1',
-    description: 'Persiapan bahasa Jerman standar Goethe untuk studi, riset & karier internasional.',
-    examLabel: 'Tersedia',
-  },
-  'en-gb': {
-    countryLabel: 'Inggris (UK) • IELTS / CEFR',
-    description: 'Kuasai bahasa Inggris British untuk studi, beasiswa, dan komunikasi global.',
-    examLabel: 'Tersedia',
-  },
-  'en-us': {
-    countryLabel: 'Inggris (US) • TOEFL / Business',
-    description: 'Bahasa Inggris Amerika untuk presentasi global, interview & kolaborasi internasional.',
-    examLabel: 'Tersedia',
-  },
-  en: {
-    countryLabel: 'Inggris • IELTS / TOEFL',
-    description: 'Bahasa komunikasi global & sertifikasi akademik internasional.',
-    examLabel: 'Tersedia',
-  },
-  zh: {
-    countryLabel: 'Mandarin • HSK 1 – 6',
-    description: 'Penguasaan Hanzi & Pinyin untuk studi, bisnis, dan ekosistem Asia Timur.',
-    examLabel: 'Tersedia',
-  },
-  fr: {
-    countryLabel: 'Prancis • DELF A1 – C1',
-    description: 'Komunikasi profesional dan akademik berbahasa Prancis standar DELF.',
-    examLabel: 'Tersedia',
-  },
-}
 
 interface Step1LanguagePickerProps {
   languages: OnboardingLanguage[]
@@ -59,11 +22,8 @@ export const Step1LanguagePicker = ({
         const code = lang.code?.toLowerCase() || 'ja'
         const isSelected = selectedLanguageId === lang.id
         const isActive = lang.is_active
-        const meta = LANGUAGE_META[code] ?? {
-          countryLabel: lang.name,
-          description: 'Pelajari bahasa ini secara terstruktur dari nol hingga mahir.',
-          examLabel: isActive ? 'Tersedia' : 'Segera Hadir',
-        }
+        const meta = getLanguageCatalogMeta(code, lang.name)
+        const examLabel = isActive ? meta.badgeLabel : 'Segera Hadir'
 
         return (
           <div
@@ -96,7 +56,7 @@ export const Step1LanguagePicker = ({
             <div className="mb-3">
               {isActive ? (
                 <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
-                  {meta.examLabel}
+                  {examLabel}
                 </BadgePill>
               ) : (
                 <BadgePill variant="neutral" size="sm" icon={<LockSimple weight="bold" className="w-3 h-3" />}>

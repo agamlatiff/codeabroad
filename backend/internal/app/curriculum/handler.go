@@ -68,13 +68,9 @@ func NewHandlerWithRateLimiter(curriculumUsecase Usecase, completeRateLimiter gi
 	}
 }
 
-// GetCurriculum handles GET /api/v1/curriculum
+// GetCurriculum handles GET /api/v1/curriculum (supports authenticated learners & unauthenticated guest preview)
 func (h *Handler) GetCurriculum(c *gin.Context) {
 	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
-		return
-	}
 
 	var req GetCurriculumRequest
 	if err := c.ShouldBindQuery(&req); err != nil {
@@ -91,13 +87,9 @@ func (h *Handler) GetCurriculum(c *gin.Context) {
 	response.Success(c, http.StatusOK, "curriculum retrieved successfully", res)
 }
 
-// GetLessonDetail handles GET /api/v1/curriculum/lessons/:id
+// GetLessonDetail handles GET /api/v1/curriculum/lessons/:id (supports Unit-1 trial preview for guests)
 func (h *Handler) GetLessonDetail(c *gin.Context) {
 	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
-		return
-	}
 
 	lessonParam := strings.TrimSpace(c.Param("id"))
 	if !isValidLessonIdentifier(lessonParam) {
@@ -181,10 +173,6 @@ func completeLessonBindErrorMessage(err error) string {
 // GetGrammarPoints handles GET /api/v1/curriculum/grammar-points?level_id=... or ?lang=ja&level_code=N5
 func (h *Handler) GetGrammarPoints(c *gin.Context) {
 	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
-		return
-	}
 
 	rawLevelID := strings.TrimSpace(c.Query("level_id"))
 	if rawLevelID != "" {
@@ -229,10 +217,6 @@ func (h *Handler) GetGrammarPoints(c *gin.Context) {
 // GetKanaChart handles GET /api/v1/curriculum/kana?script=hiragana|katakana|kanji
 func (h *Handler) GetKanaChart(c *gin.Context) {
 	userID := c.GetString("userID")
-	if userID == "" {
-		response.Error(c, apperror.ErrUnauthorized)
-		return
-	}
 	script := strings.TrimSpace(c.Query("script"))
 	if script != "" &&
 		!strings.EqualFold(script, "hiragana") &&
@@ -311,13 +295,11 @@ func (h *Handler) SubmitGrammarCheck(c *gin.Context) {
 	response.Success(c, http.StatusOK, "grammar check recorded successfully", res)
 }
 
-// RegisterRoutes registers curriculum routes under the protected group
-func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+// RegisterRoutes registers curriculum routes with optional-auth read previews and protected progress mutations
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuthMiddleware ...gin.HandlerFunc) {
 	if authMiddleware == nil {
 		panic("curriculum.Handler.RegisterRoutes requires non-nil authMiddleware")
 	}
-	curriculum := rg.Group("/curriculum")
-	curriculum.Use(authMiddleware)
 	completeRateLimiter := h.completeRateLimiter
 	if completeRateLimiter == nil {
 		completeRateLimiter = middleware.UserOrIPRateLimitMiddleware(
@@ -326,14 +308,27 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 			"terlalu banyak percobaan penyelesaian lesson, silakan tunggu sebentar",
 		)
 	}
+
+	readMiddleware := authMiddleware
+	if len(optionalAuthMiddleware) > 0 && optionalAuthMiddleware[0] != nil {
+		readMiddleware = optionalAuthMiddleware[0]
+	}
+
+	curriculumPreview := rg.Group("/curriculum")
+	curriculumPreview.Use(readMiddleware)
 	{
-		curriculum.GET("", h.GetCurriculum)
-		curriculum.GET("/lessons/:id", h.GetLessonDetail)
-		curriculum.POST("/lessons/:id/complete", completeRateLimiter, h.CompleteLesson)
-		curriculum.GET("/grammar-points", h.GetGrammarPoints)
-		curriculum.POST("/grammar-points/:id/check", completeRateLimiter, h.SubmitGrammarCheck)
-		curriculum.GET("/kana", h.GetKanaChart)
-		curriculum.POST("/kana/practice", completeRateLimiter, h.SubmitKanaPractice)
+		curriculumPreview.GET("", h.GetCurriculum)
+		curriculumPreview.GET("/lessons/:id", h.GetLessonDetail)
+		curriculumPreview.GET("/grammar-points", h.GetGrammarPoints)
+		curriculumPreview.GET("/kana", h.GetKanaChart)
+	}
+
+	curriculumProtected := rg.Group("/curriculum")
+	curriculumProtected.Use(authMiddleware)
+	{
+		curriculumProtected.POST("/lessons/:id/complete", completeRateLimiter, h.CompleteLesson)
+		curriculumProtected.POST("/grammar-points/:id/check", completeRateLimiter, h.SubmitGrammarCheck)
+		curriculumProtected.POST("/kana/practice", completeRateLimiter, h.SubmitKanaPractice)
 	}
 }
 

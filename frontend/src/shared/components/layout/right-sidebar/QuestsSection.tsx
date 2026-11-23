@@ -137,8 +137,8 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                 isChestClaimedToday
                   ? 'Hadiah Peti Target Harian hari ini sudah diklaim'
                   : isChestUnlocked
-                    ? 'Klik untuk membuka Peti Target Harian Hadiah 50 Bonus XP & 20 Permata'
-                    : `Peti Target Harian (+50 Bonus XP & +20 Permata) - ${remainingXp} XP lagi`
+                    ? 'Klik untuk membuka Peti Target Harian Hadiah 50 Bonus XP & 20 Gems'
+                    : `Peti Target Harian (+50 Bonus XP & +20 Gems) - ${remainingXp} XP lagi`
               }
             >
               {isChestClaimedToday ? (

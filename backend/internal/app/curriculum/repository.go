@@ -216,6 +216,36 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 	if err := apperror.ValidateEntityUUID(levelID); err != nil {
 		return nil, err
 	}
+	if userID == "" {
+		query := `
+			SELECT 
+				l.id, l.unit_id, l.slug, l.title,
+				COALESCE(NULLIF(l.short_title, ''), l.title) AS short_title,
+				COALESCE(l.icon_name, 'book-open') AS icon_name,
+				l.xp_reward, l.order_index,
+				false AS is_completed,
+				0 AS score,
+				false AS is_skipped,
+				NULL::timestamptz AS completed_at,
+				COALESCE(ex_stats.total_exercises, 0) AS total_exercises,
+				0 AS completed_exercises
+			FROM lessons l
+			JOIN units u ON l.unit_id = u.id
+			LEFT JOIN (
+				SELECT lesson_id, COUNT(*)::int AS total_exercises
+				FROM exercises
+				GROUP BY lesson_id
+			) ex_stats ON ex_stats.lesson_id = l.id
+			WHERE u.level_id = $1::uuid AND u.unit_type = 'curriculum'
+			ORDER BY u.order_index ASC, u.id ASC, l.order_index ASC, l.id ASC
+		`
+		rows, err := r.db.Pool.Query(ctx, query, levelID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to batch query guest lessons by level: %w", err)
+		}
+		defer rows.Close()
+		return scanLessonNodeRows(rows)
+	}
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
@@ -259,7 +289,10 @@ func (r *PostgresRepository) GetLessonsByLevelID(ctx context.Context, levelID st
 		return nil, fmt.Errorf("failed to batch query lessons by level: %w", err)
 	}
 	defer rows.Close()
+	return scanLessonNodeRows(rows)
+}
 
+func scanLessonNodeRows(rows pgx.Rows) ([]LessonNodeResponse, error) {
 	lessons := make([]LessonNodeResponse, 0, 48)
 	for rows.Next() {
 		var l LessonNodeResponse
@@ -319,26 +352,50 @@ func (r *PostgresRepository) GetLessonByID(ctx context.Context, id string, userI
 	if err := apperror.ValidateEntityUUID(id); err != nil {
 		return nil, err
 	}
-	if err := apperror.ValidateUserUUID(userID); err != nil {
-		return nil, err
+	var (
+		lessonQuery string
+		args        []any
+	)
+	if userID == "" {
+		lessonQuery = targetCurriculumLessonCTESQL + `
+			SELECT 
+				l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title,
+				COALESCE(NULLIF(l.short_title, ''), l.title) AS short_title,
+				COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index, l.created_at,
+				false AS is_completed,
+				0 AS score,
+				false AS is_skipped,
+				NULL::timestamptz AS completed_at,
+				` + guestTrialLessonPredicateSQL + ` AS is_unlocked
+			FROM target_lesson tl
+			JOIN lessons l ON l.id = tl.id
+			JOIN units u ON u.id = tl.unit_id
+		`
+		args = []any{id}
+	} else {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return nil, err
+		}
+		lessonQuery = targetCurriculumLessonCTESQL + `
+			SELECT 
+				l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title,
+				COALESCE(NULLIF(l.short_title, ''), l.title) AS short_title,
+				COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index, l.created_at,
+				COALESCE(ulp.is_completed, false) AS is_completed,
+				COALESCE(ulp.score, 0) AS score,
+				COALESCE(ulp.is_skipped, false) AS is_skipped,
+				ulp.completed_at,
+				` + curriculumUnlockPredicateSQL + ` AS is_unlocked
+			FROM target_lesson tl
+			JOIN lessons l ON l.id = tl.id
+			JOIN units u ON u.id = tl.unit_id
+			LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
+		`
+		args = []any{id, userID}
 	}
-	lessonQuery := targetCurriculumLessonCTESQL + `
-		SELECT 
-			l.id, l.unit_id, l.slug, u.level_id, u.unit_type, l.title,
-			COALESCE(NULLIF(l.short_title, ''), l.title) AS short_title,
-			COALESCE(l.icon_name, 'book-open') AS icon_name, l.xp_reward, l.order_index, l.created_at,
-			COALESCE(ulp.is_completed, false) AS is_completed,
-			COALESCE(ulp.score, 0) AS score,
-			COALESCE(ulp.is_skipped, false) AS is_skipped,
-			ulp.completed_at,
-			` + curriculumUnlockPredicateSQL + ` AS is_unlocked
-		FROM target_lesson tl
-		JOIN lessons l ON l.id = tl.id
-		JOIN units u ON u.id = tl.unit_id
-		LEFT JOIN user_lesson_progress ulp ON l.id = ulp.lesson_id AND ulp.user_id = $2::uuid
-	`
+
 	var l LessonDetailResponse
-	err := r.db.Pool.QueryRow(ctx, lessonQuery, id, userID).Scan(
+	err := r.db.Pool.QueryRow(ctx, lessonQuery, args...).Scan(
 		&l.ID, &l.UnitID, &l.Slug, &l.LevelID, &l.UnitType, &l.Title, &l.ShortTitle, &l.IconName, &l.XPReward, &l.OrderIndex, &l.CreatedAt,
 		&l.IsCompleted, &l.Score, &l.IsSkipped, &l.CompletedAt, &l.IsUnlocked,
 	)
@@ -437,20 +494,53 @@ const curriculumUnlockPredicateSQL = `
 	)
 `
 
+const guestTrialLessonPredicateSQL = `
+	EXISTS (
+		SELECT 1
+		FROM languages l
+		WHERE l.id = tl.language_id
+		  AND l.is_active = true
+	)
+	AND tl.level_order = (
+		SELECT MIN(pl2.order_index)
+		FROM proficiency_levels pl2
+		WHERE pl2.language_id = tl.language_id
+	)
+	AND tl.unit_order = (
+		SELECT MIN(u2.order_index)
+		FROM units u2
+		WHERE u2.level_id = tl.level_id
+		  AND u2.unit_type = 'curriculum'
+	)
+`
+
 // IsLessonUnlocked verifies whether a learner has sequentially unlocked a target lesson node
 // and enforces that the lesson belongs to a proficiency level <= the user's enrolled level in that language.
+// For unauthenticated guests (userID == ""), only Unit 1 of the lowest proficiency level in an active language is unlocked.
 func (r *PostgresRepository) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
-	if err := apperror.ValidateUserUUID(userID); err != nil {
-		return false, err
-	}
 	if err := apperror.ValidateEntityUUID(lessonID); err != nil {
 		return false, err
 	}
-	query := targetCurriculumLessonCTESQL + `
-		SELECT COALESCE((SELECT ` + curriculumUnlockPredicateSQL + ` FROM target_lesson tl), false) AS is_unlocked
-	`
+	var (
+		query string
+		args  []any
+	)
+	if userID == "" {
+		query = targetCurriculumLessonCTESQL + `
+			SELECT COALESCE((SELECT ` + guestTrialLessonPredicateSQL + ` FROM target_lesson tl), false) AS is_unlocked
+		`
+		args = []any{lessonID}
+	} else {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return false, err
+		}
+		query = targetCurriculumLessonCTESQL + `
+			SELECT COALESCE((SELECT ` + curriculumUnlockPredicateSQL + ` FROM target_lesson tl), false) AS is_unlocked
+		`
+		args = []any{lessonID, userID}
+	}
 	var isUnlocked bool
-	err := r.db.Pool.QueryRow(ctx, query, lessonID, userID).Scan(&isUnlocked)
+	err := r.db.Pool.QueryRow(ctx, query, args...).Scan(&isUnlocked)
 	if err != nil {
 		return false, fmt.Errorf("failed to verify lesson unlock invariant: %w", err)
 	}
@@ -845,24 +935,45 @@ func scanLessonAttemptSummary(ctx context.Context, q rowQueryer, userID string, 
 
 // ListKanaWithProgress retrieves Hiragana and/or Katakana Gojuon characters merged with user mastery progress.
 func (r *PostgresRepository) ListKanaWithProgress(ctx context.Context, userID string, script string) ([]KanaCharacterItem, error) {
-	if err := apperror.ValidateUserUUID(userID); err != nil {
-		return nil, err
-	}
 	normalizedScript := strings.ToLower(strings.TrimSpace(script))
-	query := `
-		SELECT
-			kc.id, kc.character, kc.script, kc.romaji, kc.row_group, kc.row_order, kc.col_order,
-			kc.mnemonic, kc.example_word, kc.example_reading, kc.example_meaning,
-			COALESCE(ukp.practice_count, 0) AS practice_count,
-			COALESCE(ukp.correct_count, 0) AS correct_count,
-			COALESCE(ukp.mastery_score, 0) AS mastery_score,
-			COALESCE(ukp.is_mastered, false) AS is_mastered
-		FROM kana_characters kc
-		LEFT JOIN user_kana_progress ukp ON kc.character = ukp.character AND ukp.user_id = $1::uuid
-		WHERE ($2 = '' OR kc.script = $2)
-		ORDER BY kc.script ASC, kc.row_order ASC, kc.col_order ASC
-	`
-	rows, err := r.db.Pool.Query(ctx, query, userID, normalizedScript)
+	var (
+		query string
+		args  []any
+	)
+	if userID == "" {
+		query = `
+			SELECT
+				kc.id, kc.character, kc.script, kc.romaji, kc.row_group, kc.row_order, kc.col_order,
+				kc.mnemonic, kc.example_word, kc.example_reading, kc.example_meaning,
+				0 AS practice_count,
+				0 AS correct_count,
+				0 AS mastery_score,
+				false AS is_mastered
+			FROM kana_characters kc
+			WHERE ($1 = '' OR kc.script = $1)
+			ORDER BY kc.script ASC, kc.row_order ASC, kc.col_order ASC
+		`
+		args = []any{normalizedScript}
+	} else {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return nil, err
+		}
+		query = `
+			SELECT
+				kc.id, kc.character, kc.script, kc.romaji, kc.row_group, kc.row_order, kc.col_order,
+				kc.mnemonic, kc.example_word, kc.example_reading, kc.example_meaning,
+				COALESCE(ukp.practice_count, 0) AS practice_count,
+				COALESCE(ukp.correct_count, 0) AS correct_count,
+				COALESCE(ukp.mastery_score, 0) AS mastery_score,
+				COALESCE(ukp.is_mastered, false) AS is_mastered
+			FROM kana_characters kc
+			LEFT JOIN user_kana_progress ukp ON kc.character = ukp.character AND ukp.user_id = $1::uuid
+			WHERE ($2 = '' OR kc.script = $2)
+			ORDER BY kc.script ASC, kc.row_order ASC, kc.col_order ASC
+		`
+		args = []any{userID, normalizedScript}
+	}
+	rows, err := r.db.Pool.Query(ctx, query, args...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to query kana characters: %w", err)
 	}

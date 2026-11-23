@@ -106,7 +106,7 @@ export const DailyQuestsSection = ({
               )}
             </div>
             <p className="text-xs text-slate-500 font-medium">
-              Selesaikan misi harian untuk membuka Peti Emas &amp; menjaga rentetan streak.
+              Selesaikan misi harian untuk membuka Peti Emas &amp; menjaga streak harian.
             </p>
           </div>
         </div>

@@ -119,11 +119,8 @@ func (u *usecase) loadAuthorizedExercise(ctx context.Context, userID string, exe
 	return ex, nil
 }
 
-// GetExercisesByLesson returns sanitized interactive exercises for an unlocked lesson node
+// GetExercisesByLesson returns sanitized interactive exercises for an unlocked lesson node (including Unit-1 trial for guests)
 func (u *usecase) GetExercisesByLesson(ctx context.Context, userID string, lessonID string) ([]Exercise, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	lessonID = strings.TrimSpace(lessonID)
 	if lessonID == "" {
 		return nil, apperror.ErrBadRequest
@@ -182,11 +179,9 @@ func validateSubmittedAnswer(exerciseID string, userAnswer string) error {
 	return nil
 }
 
-// SubmitAnswer evaluates a single exercise response, logs telemetry, and injects into SRS on error
+// SubmitAnswer evaluates a single exercise response, logs telemetry, and injects into SRS on error.
+// For unauthenticated guests (userID == ""), evaluates unlocked Unit-1 trial answers statelessly without DB writes.
 func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitExerciseAnswerRequest) (*SubmitExerciseAnswerResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	if req == nil {
 		return nil, apperror.ErrBadRequest
 	}
@@ -207,6 +202,17 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	var diagnosticFeedback *string
 	if !isCorrect {
 		diagnosticFeedback = u.helper.ExtractDiagnosticFeedback(ex.DiagnosticRubric, req.UserAnswer)
+	}
+
+	if userID == "" {
+		return &SubmitExerciseAnswerResponse{
+			IsCorrect:          isCorrect,
+			CorrectAnswer:      ex.CorrectAnswer,
+			Explanation:        ex.Explanation,
+			DiagnosticFeedback: diagnosticFeedback,
+			XPEarned:           0,
+			StreakBonus:        0,
+		}, nil
 	}
 
 	timeSpent := clampTimeSpentSeconds(req.TimeSpentSeconds)

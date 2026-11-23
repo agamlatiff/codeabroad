@@ -3,6 +3,7 @@ import { Crosshair, ListNumbers } from '@phosphor-icons/react'
 import type { CurriculumResponse } from "@/features/curriculum/types/curriculum"
 import { useCurriculumMapView } from "@/features/curriculum/hooks/useCurriculumMapView"
 import { MAP_STAGE_TOKENS } from "@/features/curriculum/tokens/curriculumTokens"
+import type { GuestLoginPromptReason } from '@/features/auth/components/GuestLoginPromptModal'
 import { CurriculumNodeDetailModal } from './CurriculumNodeDetailModal'
 import { CurriculumMapUnitSection } from './CurriculumMapUnitSection'
 
@@ -11,10 +12,12 @@ export interface CurriculumMapViewProps {
   curriculum?: CurriculumResponse | null
   isLoading?: boolean
   hasError?: boolean
+  isGuest?: boolean
   isViewingInactiveTrack?: boolean
   isActivatingTrack?: boolean
   onActivateTrack?: () => void
   onStartLesson?: (route: string) => void
+  onOpenGuestUnlock?: (reason: GuestLoginPromptReason) => void
 }
 
 /**
@@ -26,10 +29,12 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
   curriculum = null,
   isLoading = false,
   hasError = false,
+  isGuest = false,
   isViewingInactiveTrack = false,
   isActivatingTrack = false,
   onActivateTrack,
   onStartLesson,
+  onOpenGuestUnlock,
 }) => {
   const {
     units,
@@ -96,6 +101,8 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
         node={activeModalNode}
         onClose={handleCloseModal}
         onStartLesson={onStartLesson}
+        isGuest={isGuest}
+        onOpenGuestUnlock={onOpenGuestUnlock}
         isViewingInactiveTrack={isViewingInactiveTrack}
         isActivatingTrack={isActivatingTrack}
         onActivateTrack={onActivateTrack}
@@ -157,7 +164,7 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
                 Kurikulum Bahasa Belum Tersedia
               </h3>
               <p className="text-xs text-slate-500 font-medium">
-                Pilih atau aktifkan bahasa target Anda melalui menu pengalih kurikulum di atas.
+                Pilih atau aktifkan bahasa targetmu lewat pilihan bahasa di atas.
               </p>
             </div>
           ) : (

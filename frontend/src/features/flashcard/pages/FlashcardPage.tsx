@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   ArrowRight,
@@ -9,6 +9,8 @@ import {
   X,
   ArrowsClockwise,
   Fire,
+  Sparkle,
+  UserPlus,
   WarningCircle,
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
@@ -243,6 +245,7 @@ export const FlashcardPage = () => {
   const { data: dueQueue, isLoading: dueLoading } = useQuery({
     queryKey: [...FLASHCARD_DUE_QUERY_KEY, userIdKey, activeLanguageCode],
     queryFn: ({ signal }) => flashcardService.getDueQueue(activeLanguageCode, 20, { signal }),
+    enabled: Boolean(userData.isAuthenticated && userData.user),
     staleTime: 1000 * 30,
   })
 
@@ -520,26 +523,32 @@ export const FlashcardPage = () => {
       setRateError(null)
 
       let updatedCard: FlashcardCard
-      try {
-        const res = await reviewMutation.mutateAsync({ cardId: currentCard.id, quality })
-        updatedCard = {
-          ...currentCard,
-          ease_factor: res.ease_factor,
-          interval_days: res.interval_days,
-          repetitions: res.repetitions,
-          next_review_at: res.next_review_at,
-          last_reviewed_at: new Date().toISOString(),
-        }
-      } catch (err) {
-        triggerHaptic('error')
-        audioEngine.playError()
-        setRateError(
-          extractApiErrorMessage(
-            err,
-            'Gagal menyimpan progres kartu ke server. Periksa koneksi lalu coba lagi.'
+      if (!userData.isAuthenticated) {
+        setSessionXp((prev) => prev + (quality >= 3 ? 5 : 2))
+        setReviewedCount((prev) => prev + 1)
+        updatedCard = currentCard
+      } else {
+        try {
+          const res = await reviewMutation.mutateAsync({ cardId: currentCard.id, quality })
+          updatedCard = {
+            ...currentCard,
+            ease_factor: res.ease_factor,
+            interval_days: res.interval_days,
+            repetitions: res.repetitions,
+            next_review_at: res.next_review_at,
+            last_reviewed_at: new Date().toISOString(),
+          }
+        } catch (err) {
+          triggerHaptic('error')
+          audioEngine.playError()
+          setRateError(
+            extractApiErrorMessage(
+              err,
+              'Gagal menyimpan progres kartu. Periksa koneksi lalu coba lagi.'
+            )
           )
-        )
-        return
+          return
+        }
       }
 
       triggerHaptic('tap')
@@ -592,7 +601,7 @@ export const FlashcardPage = () => {
         setQueue(remaining)
       }
     },
-    [currentCard, queue, reviewMutation]
+    [currentCard, queue, reviewMutation, userData.isAuthenticated]
   )
 
   // Keyboard shortcuts during active flip session (Space to flip, 1-4 to rate when flipped)
@@ -705,14 +714,28 @@ export const FlashcardPage = () => {
               Mantap! {completedIds.size || reviewedCount} Kartu Lulus Diingat
             </h1>
             <p className="text-sm text-slate-600">
-              Total {reviewedCount} peninjauan tersimpan ke jadwal SM-2 agar ingatan jangka panjangmu makin kuat.
+              {userData.isAuthenticated
+                ? `Total ${reviewedCount} kartu yang kamu ulas sudah dicatat dan dijadwalkan ulang secara otomatis.`
+                : `Kamu selesai mencoba ${reviewedCount} kartu di Mode Coba. Buat akun gratis untuk menyalakan jadwal ulang otomatis & menyimpan XP-mu!`}
             </p>
           </div>
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-50 border border-amber-200 text-amber-800 font-brand font-black text-sm">
             <Fire weight="fill" className="w-4 h-4 text-amber-500" />
-            <span>+{sessionXp} XP Didapat</span>
+            <span>+{sessionXp} XP {userData.isAuthenticated ? 'Didapat' : 'Simulasi'}</span>
           </div>
           <div className="flex flex-col gap-2.5 pt-2">
+            {!userData.isAuthenticated && (
+              <Link to="/register?from=guest">
+                <Button3D
+                  variant="emerald"
+                  fullWidth
+                  size="md"
+                  icon={<UserPlus weight="bold" className="w-4 h-4" />}
+                >
+                  DAFTAR GRATIS &amp; SIMPAN PROGRES
+                </Button3D>
+              </Link>
+            )}
             <Button3D variant="blue" fullWidth size="md" onClick={exitToLobby}>
               KEMBALI KE DEK FLASHCARD
             </Button3D>
@@ -956,10 +979,29 @@ export const FlashcardPage = () => {
           </div>
         </section>
 
-        {/* Scheduled Smart Review Banner */}
-        {!dueLoading && totalDue > 0 && (dueQueue?.cards.length ?? 0) > 0 ? (
+        {/* Scheduled Smart Review Banner (Auth) OR Guest Trial Banner */}
+        {!userData.isAuthenticated ? (
+          <div className="rounded-2xl border-2 border-blue-200 bg-blue-50/75 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-start sm:items-center gap-2.5 text-xs text-slate-700 font-medium">
+              <Sparkle weight="fill" className="w-4 h-4 text-blue-600 shrink-0 mt-0.5 sm:mt-0" />
+              <span>
+                <strong>Mode Coba Flashcard:</strong> Seluruh 120+ dek bisa dibalik &amp; didengarkan gratis. Masuk untuk mengaktifkan jadwal ulang otomatis!
+              </span>
+            </div>
+            <Link to="/register?from=guest" className="shrink-0">
+              <Button3D
+                variant="blue"
+                size="sm"
+                icon={<UserPlus weight="bold" className="w-3.5 h-3.5" />}
+                className="text-xs"
+              >
+                Daftar Gratis
+              </Button3D>
+            </Link>
+          </div>
+        ) : !dueLoading && totalDue > 0 && (dueQueue?.cards.length ?? 0) > 0 ? (
           <section
-            aria-label="Antrean Ulasan Terjadwal SM-2"
+            aria-label="Daftar Ulasan Terjadwal"
             className="rounded-3xl border-2 border-amber-300/90 border-b-[4px] border-b-amber-400 bg-gradient-to-r from-amber-50 via-orange-50/70 to-yellow-50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
           >
             <div className="flex items-start sm:items-center gap-3.5 min-w-0">
@@ -969,14 +1011,14 @@ export const FlashcardPage = () => {
               <div className="space-y-0.5 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
                   <span className="text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950">
-                    Jatuh Tempo Hari Ini
+                    Waktunya Diulas Hari Ini
                   </span>
                   <span className="text-xs font-mono font-black text-amber-800">
                     {totalDue} kartu siap diulas
                   </span>
                 </div>
                 <h2 className="font-brand font-black text-sm sm:text-base text-slate-900">
-                  Ulasan Terjadwal SM-2 Menunggu!
+                  Ulasan Terjadwal Menunggu!
                 </h2>
                 <p className="text-xs text-slate-600 font-medium leading-relaxed">
                   Segarkan kembali {totalDue} kartu yang dijadwalkan agar daya ingat jangka panjang tetap terjaga.
@@ -999,7 +1041,7 @@ export const FlashcardPage = () => {
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 flex items-center gap-2.5 text-xs font-semibold text-emerald-800">
             <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>
-              Semua <strong>{totalLearned}</strong> kartu terjaga — belum ada kartu jatuh tempo saat ini.
+              Semua <strong>{totalLearned}</strong> kartu terjaga — belum ada kartu yang perlu diulas saat ini.
             </span>
           </div>
         ) : null}

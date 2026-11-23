@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react'
+import { Link } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CaretDown,
@@ -7,12 +8,17 @@ import {
   Gift,
   Translate,
   GearSix,
+  SignIn,
   SignOut,
   Lightning,
+  Sparkle,
+  UserPlus,
 } from '@phosphor-icons/react'
 import { LanguageFlagIllustration } from "@/features/onboarding/components/illustrations/FlagIllustrations"
 import { UserAvatar } from "@/shared/components/layout/left-sidebar/UserAvatar"
 import { SettingsModal } from "@/shared/components/layout/left-sidebar/SettingsModal"
+import { GuestLoginPromptModal } from "@/features/auth/components/GuestLoginPromptModal"
+import { getGuestTotalXp, useGuestTrialStore } from "@/features/auth/store/guestTrialStore"
 import { useLogout } from "@/features/auth/hooks/useLogout"
 import {
   gamificationService,
@@ -64,7 +70,10 @@ export const AppTopBar = ({
   const [showXpPopover, setShowXpPopover] = useState(false)
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
+  const [isGuestSaveModalOpen, setIsGuestSaveModalOpen] = useState(false)
   const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(initialAvatarStyle)
+  const guestCompletedLessons = useGuestTrialStore((s) => s.completedLessons)
+  const guestXp = getGuestTotalXp(guestCompletedLessons)
   const xpPopoverRef = useRef<HTMLDivElement>(null)
   const accountMenuRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
@@ -161,96 +170,137 @@ export const AppTopBar = ({
           )}
         </div>
 
-        {/* ── RIGHT: GAME STATUS HUD + SEPARATE TACTILE GIFT BUTTON ── */}
+        {/* ── RIGHT: GAME STATUS HUD (AUTH) OR CONVERSION PILLS (GUEST) ── */}
         <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
-          {/* HUD Micro-Chips Container */}
-          <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0">
-            {/* Streak Fire Chip */}
-            <div
-              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-              title={`Rentetan Belajar: ${userStreak} Hari`}
-            >
-              <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 animate-pulse shrink-0" />
-              <span>{userStreak}</span>
-              <span className="hidden sm:inline">&nbsp;Hari</span>
-            </div>
-
-            {/* Gems Diamond Chip */}
-            <div
-              className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-              title={`Saldo Permata Tokyo: ${userGems} Gems`}
-            >
-              <GemIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-              <span>{userGems}</span>
-            </div>
-
-            {/* Unified XP & Level Chip + Hover/Click Progress Popover */}
-            <div
-              className="relative"
-              ref={xpPopoverRef}
-              onMouseEnter={() => setShowXpPopover(true)}
-              onMouseLeave={() => setShowXpPopover(false)}
-            >
-              <button
-                type="button"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  setShowXpPopover((prev) => !prev)
-                }}
-                aria-expanded={showXpPopover}
-                className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/80 text-amber-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-colors cursor-pointer"
-                title={`Total ${userXp} XP • Lv. ${userLevel} (${xpProgress.xpInLevel}/${xpProgress.xpForNextLevel} XP)`}
+          {activeUser ? (
+            <div className="bg-white border-2 border-slate-200/90 rounded-2xl p-1 sm:p-1.5 flex items-center gap-1 sm:gap-1.5 shadow-2xs shrink-0">
+              {/* Streak Fire Chip */}
+              <div
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+                title={`Streak Belajar: ${userStreak} Hari`}
               >
-                <Star weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
-                <span>{userXp} XP</span>
-                <span className="hidden sm:inline text-amber-400">·</span>
-                <span className="hidden sm:inline text-blue-600">Lv. {userLevel}</span>
-              </button>
+                <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 animate-pulse shrink-0" />
+                <span>{userStreak}</span>
+                <span className="hidden sm:inline">&nbsp;Hari</span>
+              </div>
 
-              {showXpPopover && (
-                <div className="absolute right-0 top-full pt-2 z-50">
-                  <div className="w-64 rounded-2xl bg-white border-2 border-slate-200/90 shadow-xl p-4 space-y-2.5">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs font-brand font-black text-slate-900">
-                      Level {xpProgress.level}
-                    </span>
-                    <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                      {xpProgress.totalXp.toLocaleString()} Total XP
-                    </span>
-                  </div>
+              {/* Gems Diamond Chip */}
+              <div
+                className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
+                title={`Saldo Gems: ${userGems} Gems`}
+              >
+                <GemIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
+                <span>{userGems}</span>
+              </div>
 
-                  <div className="space-y-1">
-                    <div className="h-2.5 w-full rounded-full bg-slate-100 border border-slate-200/70 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
-                        style={{ width: `${xpProgress.progressPercent}%` }}
-                      />
+              {/* Unified XP & Level Chip + Hover/Click Progress Popover */}
+              <div
+                className="relative"
+                ref={xpPopoverRef}
+                onMouseEnter={() => setShowXpPopover(true)}
+                onMouseLeave={() => setShowXpPopover(false)}
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setShowXpPopover((prev) => !prev)
+                  }}
+                  aria-expanded={showXpPopover}
+                  className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50/90 hover:bg-amber-100/80 border border-amber-200/80 text-amber-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs transition-colors cursor-pointer"
+                  title={`Total ${userXp} XP • Lv. ${userLevel} (${xpProgress.xpInLevel}/${xpProgress.xpForNextLevel} XP)`}
+                >
+                  <Star weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500 shrink-0" />
+                  <span>{userXp} XP</span>
+                  <span className="hidden sm:inline text-amber-400">·</span>
+                  <span className="hidden sm:inline text-blue-600">Lv. {userLevel}</span>
+                </button>
+
+                {showXpPopover && (
+                  <div className="absolute right-0 top-full pt-2 z-50">
+                    <div className="w-64 rounded-2xl bg-white border-2 border-slate-200/90 shadow-xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-brand font-black text-slate-900">
+                        Level {xpProgress.level}
+                      </span>
+                      <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+                        {xpProgress.totalXp.toLocaleString()} Total XP
+                      </span>
                     </div>
-                    <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
-                      <span>{xpProgress.xpInLevel} / {xpProgress.xpForNextLevel} XP</span>
-                      <span>{xpProgress.progressPercent}%</span>
+
+                    <div className="space-y-1">
+                      <div className="h-2.5 w-full rounded-full bg-slate-100 border border-slate-200/70 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-gradient-to-r from-blue-500 to-indigo-600 transition-all duration-300"
+                          style={{ width: `${xpProgress.progressPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between text-[11px] font-semibold text-slate-500">
+                        <span>{xpProgress.xpInLevel} / {xpProgress.xpForNextLevel} XP</span>
+                        <span>{xpProgress.progressPercent}%</span>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-slate-500 leading-snug">
+                      Butuh <span className="font-bold text-slate-700">{xpProgress.xpRemaining} XP</span> lagi untuk naik ke Lv. {xpProgress.level + 1}.
+                    </p>
                     </div>
                   </div>
+                )}
+              </div>
 
-                  <p className="text-[11px] text-slate-500 leading-snug">
-                    Butuh <span className="font-bold text-slate-700">{xpProgress.xpRemaining} XP</span> lagi untuk naik ke Lv. {xpProgress.level + 1}.
-                  </p>
-                  </div>
+              {/* Active 2x XP Booster Live Pill */}
+              {isXpBoosterActive && (
+                <div
+                  className="flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-100 border border-purple-300 text-purple-800 font-brand font-black text-[10px] sm:text-[11px] shrink-0 whitespace-nowrap shadow-2xs"
+                  title="Bonus 2x XP sedang aktif"
+                >
+                  <Lightning weight="fill" className="w-3 h-3 text-purple-600 animate-pulse shrink-0" />
+                  <span>2x XP</span>
                 </div>
               )}
             </div>
+          ) : (
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {guestXp > 0 ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    triggerHaptic('tap')
+                    setIsGuestSaveModalOpen(true)
+                  }}
+                  className="flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-amber-50 hover:bg-amber-100 border-2 border-amber-200 text-amber-800 font-brand font-black text-[11px] sm:text-xs shadow-[0_2px_0_0_#FDE68A] transition-colors cursor-pointer"
+                  title="Simpan XP percobaan ke akun gratis"
+                >
+                  <Lightning weight="fill" className="w-3.5 h-3.5 text-amber-500 shrink-0" />
+                  <span>+{guestXp} XP</span>
+                </button>
+              ) : (
+                <span className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded-2xl bg-blue-50 border border-blue-200 text-blue-700 font-brand font-black text-[11px]">
+                  <Sparkle weight="fill" className="w-3.5 h-3.5 text-blue-500" />
+                  <span>Mode Coba</span>
+                </span>
+              )}
 
-            {/* Active 2x XP Booster Live Pill */}
-            {isXpBoosterActive && (
-              <div
-                className="flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-100 border border-purple-300 text-purple-800 font-brand font-black text-[10px] sm:text-[11px] shrink-0 whitespace-nowrap shadow-2xs"
-                title="2x XP Booster sedang aktif"
+              <Link
+                to="/login"
+                onClick={() => triggerHaptic('tap')}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-white hover:bg-slate-50 border-2 border-slate-200/90 text-slate-700 font-brand font-black text-[11px] sm:text-xs shadow-[0_2px_0_0_#CBD5E1] active:translate-y-0.5 active:shadow-none transition-all"
               >
-                <Lightning weight="fill" className="w-3 h-3 text-purple-600 animate-pulse shrink-0" />
-                <span>2x XP</span>
-              </div>
-            )}
-          </div>
+                <SignIn weight="bold" className="w-3.5 h-3.5" />
+                <span>Masuk</span>
+              </Link>
+
+              <Link
+                to="/register?from=guest"
+                onClick={() => triggerHaptic('tap')}
+                className="inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 rounded-2xl bg-blue-600 hover:bg-blue-700 border-2 border-blue-700 text-white font-brand font-black text-[11px] sm:text-xs shadow-[0_2px_0_0_#1D4ED8] active:translate-y-0.5 active:shadow-none transition-all"
+              >
+                <UserPlus weight="bold" className="w-3.5 h-3.5" />
+                <span>Daftar</span>
+              </Link>
+            </div>
+          )}
 
           {/* ── SEPARATE STANDALONE 3D TACTILE GIFT BUTTON ── */}
           {onOpenMobileSidebar && (
@@ -261,7 +311,7 @@ export const AppTopBar = ({
                 onOpenMobileSidebar()
               }}
               className="xl:hidden w-9 h-9 sm:w-10 sm:h-10 rounded-2xl bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white shadow-[0_3px_0_0_#B45309] active:shadow-none active:translate-y-0.5 border-2 border-amber-300/90 flex items-center justify-center shrink-0 transition-all cursor-pointer relative group"
-              title="Buka Misi Harian, Rentetan, & Peti Hadiah"
+              title="Buka Misi Harian, Streak, & Peti Hadiah"
               aria-label="Buka Menu Misi & Peti Hadiah"
             >
               <Gift weight="fill" className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-white drop-shadow-xs transition-transform group-hover:scale-110 animate-bounce" />
@@ -361,24 +411,35 @@ export const AppTopBar = ({
         </div>
       </div>
 
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        user={activeUser}
-        avatarStyle={avatarStyle}
-        onAvatarStyleChange={(style) => {
-          saveAvatarStyle(style)
-          setAvatarStyle(style)
-        }}
-        onProfileUpdated={() => {
-          void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(activeUser?.id) })
-          void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
-        }}
-        onLogout={() => {
-          setIsSettingsOpen(false)
-          void logout()
-        }}
-      />
+      {activeUser && (
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          user={activeUser}
+          avatarStyle={avatarStyle}
+          onAvatarStyleChange={(style) => {
+            saveAvatarStyle(style)
+            setAvatarStyle(style)
+          }}
+          onProfileUpdated={() => {
+            void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(activeUser?.id) })
+            void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
+          }}
+          onLogout={() => {
+            setIsSettingsOpen(false)
+            void logout()
+          }}
+        />
+      )}
+
+      {!activeUser && (
+        <GuestLoginPromptModal
+          isOpen={isGuestSaveModalOpen}
+          onClose={() => setIsGuestSaveModalOpen(false)}
+          reason="save_progress"
+          pendingXp={guestXp}
+        />
+      )}
 
       {/* ── ROW 2: LINEAR PROGRESS SUB-BAR (MOBILE & TABLET VIEWPORTS ONLY) ── */}
       {totalCount > 0 && (

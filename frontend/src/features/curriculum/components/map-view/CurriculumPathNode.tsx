@@ -234,7 +234,7 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
           <span className="font-brand font-black text-xs">
             {node.status === 'completed'
               ? `Lulus (+${node.xpReward} XP)`
-              : `Evaluasi Unit (+${node.xpReward} XP)`}
+              : `Ujian Unit (+${node.xpReward} XP)`}
           </span>
         </div>
       ) : node.status !== 'active' ? (

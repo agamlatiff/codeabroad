@@ -3,6 +3,41 @@ import type {
   CareerTrackOption,
   UserLanguageEnrollment,
 } from "@/features/curriculum/types/curriculum"
+import { getLanguageCatalogMeta } from "@/shared/constants/languageCatalog"
+
+/**
+ * Maps active catalog languages into selectable preview options for unauthenticated guests.
+ */
+export const mapGuestLanguagesToTrackOptions = (
+  catalogLanguages: Language[] = [],
+  activeTrack = ''
+): CareerTrackOption[] => {
+  const activeLanguages = catalogLanguages.filter((lang) => lang.is_active)
+  const normalizedTrack = activeTrack.trim().toLowerCase()
+
+  return activeLanguages.map((lang, index) => {
+    const meta = getLanguageCatalogMeta(lang.code, lang.name)
+    const isSelected = normalizedTrack
+      ? lang.id.toLowerCase() === normalizedTrack ||
+        lang.code.toLowerCase() === normalizedTrack
+      : index === 0
+
+    return {
+      id: lang.id,
+      slug: lang.id,
+      languageCode: lang.code,
+      title: `Bahasa ${lang.name}`,
+      shortTitle: meta.shortName,
+      subtitle: `Mode Coba • ${meta.examShort}`,
+      category: 'language',
+      badgeLabel: 'Coba',
+      badgeVariant: isSelected ? 'active' : 'available',
+      isActive: isSelected,
+      isEnrolled: true,
+      group: 'career',
+    }
+  })
+}
 
 /**
  * Maps user language enrollments and catalog languages into selectable track options

@@ -137,7 +137,7 @@ export const LeaderboardStandingsList = ({
       {leaderboard.user_rank && !entries.some((e) => e.is_current_user) && (
         <div className="pt-2 border-t border-dashed border-slate-200 space-y-1.5">
           <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400 px-1">
-            Posisi Anda Saat Ini ({divisionConfig.name})
+            Posisimu Saat Ini ({divisionConfig.name})
           </span>
           <LeaderboardEntryRow entry={leaderboard.user_rank} compact={compact} />
         </div>

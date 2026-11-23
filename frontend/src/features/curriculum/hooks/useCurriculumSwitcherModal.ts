@@ -1,14 +1,17 @@
 import { useCallback, useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { useAuthStore } from "@/features/auth/store/authStore"
+import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   LANGUAGES_QUERY_KEY,
   getLanguageEnrollmentsQueryKey,
-} from "@/shared/constants/queryKeys"
-import { languageService } from "@/features/curriculum/services/languageService"
-import { triggerHaptic } from "@/shared/utils/haptics"
-import type { CareerTrackOption } from "@/features/curriculum/types/curriculum"
-import { mapEnrollmentsToTrackOptions } from "@/features/curriculum/utils/curriculumMapper"
+} from '@/shared/constants/queryKeys'
+import { languageService } from '@/features/curriculum/services/languageService'
+import { triggerHaptic } from '@/shared/utils/haptics'
+import type { CareerTrackOption } from '@/features/curriculum/types/curriculum'
+import {
+  mapEnrollmentsToTrackOptions,
+  mapGuestLanguagesToTrackOptions,
+} from '@/features/curriculum/utils/curriculumMapper'
 
 export interface UseCurriculumSwitcherModalOptions {
   enabled?: boolean
@@ -18,7 +21,7 @@ export interface UseCurriculumSwitcherModalOptions {
 
 /**
  * 1:1 Headless controller hook for Language / Curriculum Switcher Modal.
- * Fetches user enrollments and available destination languages lazily when enabled.
+ * Fetches user enrollments (when signed in) and available destination languages lazily when enabled.
  */
 export const useCurriculumSwitcherModal = ({
   enabled = true,
@@ -30,7 +33,7 @@ export const useCurriculumSwitcherModal = ({
   const { data: enrollments = [] } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userId),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
-    enabled,
+    enabled: enabled && Boolean(userId),
     staleTime: 1000 * 60 * 5,
   })
 
@@ -42,8 +45,11 @@ export const useCurriculumSwitcherModal = ({
   })
 
   const trackOptions: CareerTrackOption[] = useMemo(
-    () => mapEnrollmentsToTrackOptions(enrollments, languages),
-    [enrollments, languages]
+    () =>
+      userId
+        ? mapEnrollmentsToTrackOptions(enrollments, languages)
+        : mapGuestLanguagesToTrackOptions(languages),
+    [enrollments, languages, userId]
   )
 
   const enrolledOptions = useMemo(

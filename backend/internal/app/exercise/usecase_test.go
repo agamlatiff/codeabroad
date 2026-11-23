@@ -2421,3 +2421,78 @@ func TestGetExercisesByLesson_ResolvesSlug(t *testing.T) {
 	}
 }
 
+type mockSelectiveAccessChecker struct {
+	unlocked map[string]bool
+}
+
+func (m *mockSelectiveAccessChecker) IsLessonUnlocked(_ context.Context, _ string, lessonID string) (bool, error) {
+	return m.unlocked[lessonID], nil
+}
+
+func TestGuestMode_TrialEvaluationWithoutDBWritesAndUnit2Locked(t *testing.T) {
+	ctx := context.Background()
+	eRepo := exercise.NewMockRepository()
+	eRepo.CreateAttemptErr = errors.New("must not write guest attempts")
+	sRepo := exercise.NewMockSRSRepository()
+
+	unit1LessonID := "33333333-3333-3333-3333-333333333301"
+	unit2LessonID := "33333333-3333-3333-3333-333333333302"
+
+	expl := "あ dibaca a."
+	eRepo.Exercises["ex-u1"] = &exercise.Exercise{
+		ID:            "ex-u1",
+		LessonID:      &unit1LessonID,
+		ExerciseType:  exercise.ExerciseTypeFillBlank,
+		Prompt:        "Pilih huruf a",
+		Options:       []string{"あ", "い"},
+		CorrectAnswer: "あ",
+		Explanation:   &expl,
+	}
+	eRepo.Exercises["ex-u2"] = &exercise.Exercise{
+		ID:            "ex-u2",
+		LessonID:      &unit2LessonID,
+		ExerciseType:  exercise.ExerciseTypeFillBlank,
+		Prompt:        "Unit 2",
+		Options:       []string{"か"},
+		CorrectAnswer: "か",
+	}
+
+	checker := &mockSelectiveAccessChecker{
+		unlocked: map[string]bool{
+			unit1LessonID: true,
+			unit2LessonID: false,
+		},
+	}
+	uc := exercise.NewUsecaseWithAccessChecker(eRepo, sRepo, exercise.NewMockReadinessExamRepository(), language.NewMockRepository(), user.NewMockRepository(), checker)
+
+	// Guest can fetch and evaluate unlocked Unit 1 exercises without DB writes (CreateAttemptErr would fail if called)
+	exs, err := uc.GetExercisesByLesson(ctx, "", unit1LessonID)
+	if err != nil || len(exs) != 1 {
+		t.Fatalf("expected 1 Unit 1 exercise for guest, got len=%d err=%v", len(exs), err)
+	}
+	res, err := uc.SubmitAnswer(ctx, "", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-u1",
+		UserAnswer: "い",
+	})
+	if err != nil {
+		t.Fatalf("expected guest SubmitAnswer to succeed without DB write, got %v", err)
+	}
+	if res.IsCorrect || res.Explanation == nil || *res.Explanation != "あ dibaca a." || res.NextReviewDue != nil {
+		t.Fatalf("unexpected guest evaluation result: %+v", res)
+	}
+	if len(sRepo.Reviews) != 0 {
+		t.Fatalf("expected zero SRS reviews written for guest, got %d", len(sRepo.Reviews))
+	}
+
+	// Guest is blocked from locked Unit 2 lessons & exercises
+	if _, err := uc.GetExercisesByLesson(ctx, "", unit2LessonID); !errors.Is(err, exercise.ErrExerciseLessonLocked) {
+		t.Fatalf("expected ErrExerciseLessonLocked for guest Unit 2 lesson, got %v", err)
+	}
+	if _, err := uc.SubmitAnswer(ctx, "", &exercise.SubmitExerciseAnswerRequest{
+		ExerciseID: "ex-u2",
+		UserAnswer: "か",
+	}); !errors.Is(err, exercise.ErrExerciseLessonLocked) {
+		t.Fatalf("expected ErrExerciseLessonLocked for guest Unit 2 exercise, got %v", err)
+	}
+}
+

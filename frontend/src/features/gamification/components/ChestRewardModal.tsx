@@ -98,8 +98,8 @@ export const ChestRewardModal = ({
           </h3>
           <p className="text-xs text-slate-600 font-medium max-w-xs mx-auto leading-relaxed">
             {isClaimed
-              ? 'Hadiah dari peti ini sudah berhasil ditambahkan ke saldo akun Anda hari ini.'
-              : 'Target misi harian Anda telah tercapai! Klaim perolehan gems dan XP Anda sekarang.'}
+              ? 'Hadiah dari peti ini sudah berhasil ditambahkan ke saldo akunmu hari ini.'
+              : 'Target misi harianmu sudah tercapai! Klaim hadiah Gems dan XP sekarang.'}
           </p>
         </div>
 

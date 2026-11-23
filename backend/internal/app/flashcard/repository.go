@@ -64,7 +64,7 @@ const deckSelectFromClause = `
 						fc.created_at
 					FROM flashcard_cards fc
 					LEFT JOIN user_flashcard_progress ufp
-						ON ufp.card_id = fc.id AND ufp.user_id = $1::uuid
+						ON ufp.card_id = fc.id AND ufp.user_id = NULLIF($1, '')::uuid
 					WHERE fc.deck_id = d.id
 					ORDER BY fc.sort_order ASC, fc.created_at ASC
 					LIMIT 4
@@ -73,7 +73,7 @@ const deckSelectFromClause = `
 			d.created_at
 		FROM flashcard_decks d
 		LEFT JOIN flashcard_cards c ON c.deck_id = d.id
-		LEFT JOIN user_flashcard_progress p ON p.card_id = c.id AND p.user_id = $1::uuid
+		LEFT JOIN user_flashcard_progress p ON p.card_id = c.id AND p.user_id = NULLIF($1, '')::uuid
 `
 
 type rowScanner interface {
@@ -116,6 +116,11 @@ func scanDeckRow(scanner rowScanner) (Deck, error) {
 }
 
 func (r *postgresRepository) ListDecks(ctx context.Context, userID string, languageCode string, jlptLevel string) ([]Deck, error) {
+	if userID != "" {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return nil, err
+		}
+	}
 	query := deckSelectFromClause + `
 		WHERE d.language_code = $2
 		  AND ($3 = '' OR UPPER(d.jlpt_level) = UPPER($3))
@@ -208,6 +213,11 @@ func (r *postgresRepository) queryDeckLevelCounts(ctx context.Context, filter De
 }
 
 func (r *postgresRepository) ListDecksPaginated(ctx context.Context, userID string, filter DeckListFilter) (*PaginatedDecksResponse, error) {
+	if userID != "" {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return nil, err
+		}
+	}
 	levelCounts, err := r.queryDeckLevelCounts(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -324,6 +334,11 @@ func (r *postgresRepository) resolveDeckUUID(ctx context.Context, deckIDOrSlug s
 }
 
 func (r *postgresRepository) GetDeckWithCards(ctx context.Context, userID string, deckID string) (*DeckDetailResponse, error) {
+	if userID != "" {
+		if err := apperror.ValidateUserUUID(userID); err != nil {
+			return nil, err
+		}
+	}
 	resolvedDeckID, err := r.resolveDeckUUID(ctx, deckID)
 	if err != nil {
 		return nil, err
@@ -357,7 +372,7 @@ func (r *postgresRepository) GetDeckWithCards(ctx context.Context, userID string
 			p.next_review_at,
 			p.last_reviewed_at
 		FROM flashcard_cards c
-		LEFT JOIN user_flashcard_progress p ON p.card_id = c.id AND p.user_id = $1::uuid
+		LEFT JOIN user_flashcard_progress p ON p.card_id = c.id AND p.user_id = NULLIF($1, '')::uuid
 		WHERE c.deck_id = $2::uuid
 		ORDER BY c.sort_order ASC, c.created_at ASC
 	`

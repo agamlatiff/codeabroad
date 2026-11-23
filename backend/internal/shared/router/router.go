@@ -69,13 +69,13 @@ func SetupRouter(cfg *Config) *gin.Engine {
 			cfg.LanguageHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
 		}
 		if cfg.CurriculumHandler != nil {
-			cfg.CurriculumHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+			cfg.CurriculumHandler.RegisterRoutes(v1, cfg.AuthMiddleware, cfg.OptionalAuthMiddleware)
 		}
 		if cfg.ExerciseHandler != nil {
-			cfg.ExerciseHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+			cfg.ExerciseHandler.RegisterRoutes(v1, cfg.AuthMiddleware, cfg.OptionalAuthMiddleware)
 		}
 		if cfg.FlashcardHandler != nil {
-			cfg.FlashcardHandler.RegisterRoutes(v1, cfg.AuthMiddleware)
+			cfg.FlashcardHandler.RegisterRoutes(v1, cfg.AuthMiddleware, cfg.OptionalAuthMiddleware)
 		}
 		if cfg.GamificationHandler != nil {
 			cfg.GamificationHandler.RegisterRoutes(v1, cfg.AuthMiddleware)

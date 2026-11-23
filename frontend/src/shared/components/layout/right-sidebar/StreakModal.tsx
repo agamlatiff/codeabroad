@@ -54,7 +54,7 @@ export const StreakModal: FC<StreakModalProps> = ({
         triggerHaptic('tap')
         onClose()
       }}
-      ariaLabel="Kalender Rentetan Belajar"
+      ariaLabel="Kalender Belajar"
       backdropClassName="bg-slate-900/50 backdrop-blur-xs"
     >
       <div className="bg-white border-2 border-orange-200/90 rounded-3xl p-4 sm:p-6 max-w-lg w-full space-y-4 shadow-2xl animate-pop relative max-h-[92vh] overflow-y-auto">
@@ -66,7 +66,7 @@ export const StreakModal: FC<StreakModalProps> = ({
             </div>
             <div>
               <h3 className="font-brand font-black text-base sm:text-lg text-slate-900 leading-tight">
-                Kalender Rentetan Belajar
+                Kalender Belajar
               </h3>
               <p className="text-[11px] text-slate-500 font-medium">
                 Rekam Jejak Presensi & Konsistensi Harian
@@ -138,7 +138,7 @@ export const StreakModal: FC<StreakModalProps> = ({
             title={
               streakFreezeCount > 0
                 ? 'Streak Freeze melindungi streak saat kamu terlewat 1 hari belajar.'
-                : 'Belum ada Streak Freeze aktif. Tukar Permata di halaman Misi jika butuh pelindung.'
+                : 'Belum ada Streak Freeze aktif. Tukar Gems di halaman Misi jika butuh pelindung.'
             }
           >
             <div

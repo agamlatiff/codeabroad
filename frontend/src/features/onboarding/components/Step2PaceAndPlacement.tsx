@@ -65,8 +65,8 @@ const PLACEMENT_OPTIONS: Array<{
     title: 'Tes Penempatan Singkat',
     badge: 'Sudah Punya Dasar',
     description:
-      'Kerjakan soal diagnostik singkat. Jika skor ≥ 80% dan level lanjutan tersedia, level awal otomatis terbuka.',
-    highlight: 'Soal diagnostik • ~2 menit',
+      'Kerjakan beberapa soal singkat. Jika skor ≥ 80% dan level lanjutan tersedia, level awal otomatis terbuka.',
+    highlight: 'Tes penempatan • ~2 menit',
   },
 ]
 

@@ -2287,3 +2287,72 @@ func TestSubmitKanaPractice_RejectsOversizedBatch(t *testing.T) {
 		t.Fatalf("unexpected DomainError: type=%s code=%s msg=%s", domainErr.Type, domainErr.Code, domainErr.Message)
 	}
 }
+
+func TestGuestPreview_CurriculumUnit1TrialAndReadOnlyEndpoints(t *testing.T) {
+	ctx := context.Background()
+	cRepo := curriculum.NewMockRepository()
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+
+	langID := "11111111-1111-1111-1111-111111111111"
+	lvlN5ID := "22222222-2222-2222-2222-222222222222"
+	unit1ID := "aaaaaaaa-0000-0000-0000-000000000001"
+	unit2ID := "aaaaaaaa-0000-0000-0000-000000000002"
+	l1ID := "33333333-3333-3333-3333-333333333301"
+	l2ID := "33333333-3333-3333-3333-333333333302"
+	l3ID := "33333333-3333-3333-3333-333333333303"
+
+	lRepo.Languages[langID] = &language.Language{ID: langID, Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels[lvlN5ID] = &language.ProficiencyLevel{ID: lvlN5ID, LanguageID: langID, Code: "N5", OrderIndex: 1}
+	cRepo.Units[unit1ID] = &curriculum.UnitNodeResponse{ID: unit1ID, LevelID: lvlN5ID, Title: "Unit 1", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Units[unit2ID] = &curriculum.UnitNodeResponse{ID: unit2ID, LevelID: lvlN5ID, Title: "Unit 2", UnitType: "curriculum", OrderIndex: 2}
+	cRepo.Lessons[l1ID] = &curriculum.LessonNodeResponse{ID: l1ID, UnitID: unit1ID, Title: "Lesson 1.1", OrderIndex: 1, XPReward: 15}
+	cRepo.Lessons[l2ID] = &curriculum.LessonNodeResponse{ID: l2ID, UnitID: unit1ID, Title: "Lesson 1.2", OrderIndex: 2, XPReward: 15}
+	cRepo.Lessons[l3ID] = &curriculum.LessonNodeResponse{ID: l3ID, UnitID: unit2ID, Title: "Lesson 2.1", OrderIndex: 1, XPReward: 20}
+	cRepo.KanaCatalog = []curriculum.KanaCharacterItem{{ID: "kana-a", Character: "あ", Script: "hiragana", Romaji: "a"}}
+	cRepo.GrammarPoints["gp-guest-1"] = &curriculum.GrammarPoint{ID: "gp-guest-1", LevelID: lvlN5ID, LevelCode: "N5", Code: "GP-JA-N5-001", Category: "particle", Title: "Partikel WA"}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	if kanaUC, ok := uc.(interface {
+		GetKanaChart(context.Context, string, string) (*curriculum.KanaChartResponse, error)
+	}); ok {
+		kanaResp, kErr := kanaUC.GetKanaChart(ctx, "", "hiragana")
+		if kErr != nil || kanaResp == nil || len(kanaResp.Characters) != 1 || kanaResp.Characters[0].IsMastered {
+			t.Fatalf("expected guest GetKanaChart with 1 unmastered item, got %+v err=%v", kanaResp, kErr)
+		}
+	}
+	if grammarUC, ok := uc.(interface {
+		GetGrammarPointsByLevelFilter(context.Context, string, string, string) ([]curriculum.GrammarPoint, error)
+	}); ok {
+		gps, gErr := grammarUC.GetGrammarPointsByLevelFilter(ctx, "", "ja", "N5")
+		if gErr != nil || len(gps) != 1 || gps[0].IsUnderstood {
+			t.Fatalf("expected guest GetGrammarPointsByLevelFilter with 1 uncompleted point, got %+v err=%v", gps, gErr)
+		}
+	}
+
+	currResp, err := uc.GetCurriculum(ctx, "", nil)
+	if err != nil {
+		t.Fatalf("expected guest GetCurriculum to succeed, got %v", err)
+	}
+	if len(currResp.Units) != 2 || !currResp.Units[0].IsUnlocked || currResp.Units[1].IsUnlocked {
+		t.Fatalf("expected Unit 1 unlocked and Unit 2 locked for guest, got %+v", currResp.Units)
+	}
+	if len(currResp.Units[0].Lessons) != 2 || !currResp.Units[0].Lessons[0].IsUnlocked || !currResp.Units[0].Lessons[1].IsUnlocked {
+		t.Fatalf("expected all lessons in Unit 1 unlocked for guest, got %+v", currResp.Units[0].Lessons)
+	}
+	if len(currResp.Units[1].Lessons) != 1 || currResp.Units[1].Lessons[0].IsUnlocked {
+		t.Fatalf("expected Unit 2 lessons locked for guest, got %+v", currResp.Units[1].Lessons)
+	}
+
+	if detail, err := uc.GetLessonDetail(ctx, "", l2ID); err != nil || detail == nil || !detail.IsUnlocked {
+		t.Fatalf("expected guest Unit 1 lesson detail unlocked, got detail=%+v err=%v", detail, err)
+	}
+	if _, err := uc.GetLessonDetail(ctx, "", l3ID); !errors.Is(err, curriculum.ErrLessonLocked) {
+		t.Fatalf("expected ErrLessonLocked for Unit 2 lesson in guest mode, got %v", err)
+	}
+	if _, err := uc.CompleteLesson(ctx, "", &curriculum.CompleteLessonRequest{LessonID: l1ID, Score: 100}); !errors.Is(err, apperror.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized for guest CompleteLesson, got %v", err)
+	}
+}

@@ -82,7 +82,7 @@ export const useWeeklyLeaderboard = ({
     error: query.isError
       ? extractApiErrorMessage(
           query.error,
-          'Gagal memuat papan peringkat. Periksa koneksi Anda lalu coba lagi.'
+          'Gagal memuat papan peringkat. Periksa koneksimu lalu coba lagi.'
         )
       : null,
     selectDivision,

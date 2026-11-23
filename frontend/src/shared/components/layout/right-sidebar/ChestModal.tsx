@@ -45,7 +45,7 @@ export const ChestModal: FC<ChestModalProps> = ({
               ? 'Hadiah peti hari ini sudah kamu klaim. Kembali lagi besok untuk peti berikutnya!'
               : isChestUnlocked
                 ? `Kerja kerasmu hari ini luar biasa! Kamu telah menuntaskan target ${dailyTargetXp} XP harian.`
-                : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka hadiah bonus XP dan permata di peti ini.`}
+                : `Kumpulkan ${remainingXp} XP lagi hari ini untuk membuka hadiah bonus XP dan Gems di peti ini.`}
           </p>
         </div>
         <div className="flex items-center justify-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
@@ -56,7 +56,7 @@ export const ChestModal: FC<ChestModalProps> = ({
           <span className="text-slate-300">•</span>
           <span className="font-brand font-black text-sm text-amber-900 flex items-center gap-1">
             <SketchLogo weight="fill" className="w-4 h-4 text-sky-500" />
-            <span>+20 Permata</span>
+            <span>+20 Gems</span>
           </span>
         </div>
         <Button3D

@@ -82,7 +82,7 @@ export const MockInterviewScheduleModal = ({
     })
     if (!validated.success) {
       triggerHaptic('error')
-      setErrorMessage(validated.error.issues[0]?.message ?? 'Periksa kembali isian formulir Anda.')
+      setErrorMessage(validated.error.issues[0]?.message ?? 'Periksa kembali isian formulirmu.')
       return
     }
 
@@ -106,7 +106,7 @@ export const MockInterviewScheduleModal = ({
       setErrorMessage(
         extractApiErrorMessage(
           err,
-          'Gagal menjadwalkan Mock Interview. Pastikan kupon Anda mencukupi.'
+          'Gagal menjadwalkan Simulasi Wawancara. Pastikan kuponmu mencukupi.'
         )
       )
     } finally {
@@ -137,7 +137,7 @@ export const MockInterviewScheduleModal = ({
               </span>
             </div>
             <p className="text-xs text-slate-500 font-medium">
-              Simulasi 1-on-1 wawancara kerja &amp; percakapan profesional dalam bahasa pilihan Anda via Discord Voice.
+              Simulasi 1-on-1 wawancara kerja &amp; percakapan profesional dalam bahasa pilihanmu via Discord Voice.
             </p>
           </div>
         </div>
@@ -201,7 +201,7 @@ export const MockInterviewScheduleModal = ({
             <div className="space-y-1">
               <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
                 <DiscordLogo weight="bold" className="w-4 h-4 text-indigo-600" />
-                <span>Username Discord Anda *</span>
+                <span>Username Discord Kamu *</span>
               </label>
               <input
                 type="text"

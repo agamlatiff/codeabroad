@@ -107,12 +107,9 @@ func requireUserID(c *gin.Context) (string, bool) {
 	return userID, true
 }
 
-// GetExercisesByLesson handles GET /api/v1/exercises/lesson/:lesson_id
+// GetExercisesByLesson handles GET /api/v1/exercises/lesson/:lesson_id (supports Unit-1 guest trial preview)
 func (h *Handler) GetExercisesByLesson(c *gin.Context) {
-	userID, ok := requireUserID(c)
-	if !ok {
-		return
-	}
+	userID := c.GetString("userID")
 	if h.exerciseUsecase == nil {
 		response.Error(c, apperror.ErrInternal)
 		return
@@ -133,12 +130,9 @@ func (h *Handler) GetExercisesByLesson(c *gin.Context) {
 	response.Success(c, http.StatusOK, "lesson exercises retrieved successfully", exercises)
 }
 
-// SubmitAnswer handles POST /api/v1/exercises/submit
+// SubmitAnswer handles POST /api/v1/exercises/submit (supports stateless Unit-1 guest trial evaluation)
 func (h *Handler) SubmitAnswer(c *gin.Context) {
-	userID, ok := requireUserID(c)
-	if !ok {
-		return
-	}
+	userID := c.GetString("userID")
 	if h.exerciseUsecase == nil {
 		response.Error(c, apperror.ErrInternal)
 		return
@@ -330,7 +324,7 @@ func (h *Handler) GetDailyVocabularies(c *gin.Context) {
 }
 
 // RegisterRoutes registers exercise, SRS, and readiness exam endpoints
-func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuthMiddleware ...gin.HandlerFunc) {
 	if authMiddleware == nil {
 		panic("exercise.Handler.RegisterRoutes requires non-nil authMiddleware")
 	}
@@ -350,8 +344,13 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		DefaultExamSubmitMessage,
 	)
 
+	trialMiddleware := authMiddleware
+	if len(optionalAuthMiddleware) > 0 && optionalAuthMiddleware[0] != nil {
+		trialMiddleware = optionalAuthMiddleware[0]
+	}
+
 	exercises := rg.Group("/exercises")
-	exercises.Use(authMiddleware)
+	exercises.Use(trialMiddleware)
 	{
 		exercises.GET("/lesson/:lesson_id", h.GetExercisesByLesson)
 		exercises.POST("/submit", submitRateLimiter, h.SubmitAnswer)

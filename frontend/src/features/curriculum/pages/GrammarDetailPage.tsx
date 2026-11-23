@@ -42,6 +42,8 @@ import { resolveGrammarDidYouKnow } from '@/features/curriculum/constants/gramma
 import { GrammarFormulaVisual } from '@/features/curriculum/components/GrammarFormulaVisual'
 import { GrammarWordBreakdownSection } from '@/features/curriculum/components/GrammarWordBreakdownSection'
 import { GrammarMiniQuizCard } from '@/features/curriculum/components/GrammarMiniQuizCard'
+import { GuestLoginPromptModal } from '@/features/auth/components/GuestLoginPromptModal'
+import { useActiveLanguageCode } from '@/features/exercise/hooks/useActiveSpeechLocale'
 
 function resolveLinkedPracticeTarget(
   point: GrammarPoint | null,
@@ -75,12 +77,15 @@ export const GrammarDetailPage = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { data: userData } = useUser()
+  const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
   const userIdKey = userData.user?.id ?? 'anonymous'
+  const activeLanguageCode = useActiveLanguageCode()
 
   const [showRomaji, setShowRomaji] = useState(true)
   const [playingExampleKey, setPlayingExampleKey] = useState<string | null>(null)
   const [isFormulaCopied, setIsFormulaCopied] = useState(false)
   const [checkError, setCheckError] = useState<string | null>(null)
+  const [isGuestGrammarModalOpen, setIsGuestGrammarModalOpen] = useState(false)
   const [prevTargetId, setPrevTargetId] = useState(targetId)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -108,8 +113,9 @@ export const GrammarDetailPage = () => {
 
   // Fetch all grammar points (shared TanStack cache with /grammar)
   const { data: grammarPoints = [], isLoading } = useQuery({
-    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, 'ja'],
-    queryFn: ({ signal }) => curriculumService.getGrammarPointsByFilter('ja', undefined, { signal }),
+    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLanguageCode],
+    queryFn: ({ signal }) =>
+      curriculumService.getGrammarPointsByFilter(activeLanguageCode, undefined, { signal }),
     staleTime: 1000 * 60 * 5,
   })
 
@@ -143,7 +149,7 @@ export const GrammarDetailPage = () => {
     },
     onError: (err) => {
       setCheckError(
-        extractApiErrorMessage(err, 'Gagal menyimpan hasil cek pemahaman ke server. Coba lagi.')
+        extractApiErrorMessage(err, 'Gagal menyimpan hasil kuis. Coba lagi ya.')
       )
     },
   })
@@ -235,7 +241,6 @@ export const GrammarDetailPage = () => {
       setIsFormulaCopied(false)
       setCheckError(null)
       navigate(`/grammar/${encodeURIComponent(targetPoint.code || targetPoint.id)}`)
-      window.scrollTo({ top: 0, behavior: 'smooth' })
     },
     [navigate]
   )
@@ -342,10 +347,10 @@ export const GrammarDetailPage = () => {
                     </span>
                     <div className="min-w-0">
                       <p className="font-brand font-black text-xs sm:text-sm text-amber-950">
-                        Waktunya Review SRS Grammar!
+                        Waktunya Ulas Kembali Materi Ini!
                       </p>
                       <p className="text-[11px] font-medium text-amber-900/80">
-                        Selesaikan ulang kuis 3 soal di bawah untuk menjadwalkan interval review berikutnya.
+                        Selesaikan ulang kuis 3 soal di bawah untuk memperbarui jadwal ulasan berikutnya.
                       </p>
                     </div>
                   </div>
@@ -614,6 +619,10 @@ export const GrammarDetailPage = () => {
                   isSubmitting={checkMutation.isPending}
                   submitError={checkError}
                   onSubmitResult={(correctCount, totalQuestions) => {
+                    if (!isAuthenticated) {
+                      setIsGuestGrammarModalOpen(true)
+                      return
+                    }
                     checkMutation.mutate({
                       pointKey: currentPoint.code || currentPoint.id,
                       correctCount,
@@ -621,6 +630,10 @@ export const GrammarDetailPage = () => {
                     })
                   }}
                   onRetrySubmit={(correctCount, totalQuestions) => {
+                    if (!isAuthenticated) {
+                      setIsGuestGrammarModalOpen(true)
+                      return
+                    }
                     checkMutation.mutate({
                       pointKey: currentPoint.code || currentPoint.id,
                       correctCount,
@@ -812,6 +825,14 @@ export const GrammarDetailPage = () => {
           </div>
         )}
       </main>
+
+      {!isAuthenticated && (
+        <GuestLoginPromptModal
+          isOpen={isGuestGrammarModalOpen}
+          onClose={() => setIsGuestGrammarModalOpen(false)}
+          reason="grammar_check"
+        />
+      )}
     </div>
   )
 }

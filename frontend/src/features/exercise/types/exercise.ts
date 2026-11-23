@@ -127,11 +127,12 @@ export interface ReadinessExamResponse {
 }
 
 export interface LessonCompletionNavigationState {
-  completionResult: CompleteLessonResponse
+  completionResult?: CompleteLessonResponse
   lesson: LessonDetailResponse
   totalExercises: number
   correctCount: number
   totalXpEarned: number
   accuracyPercent: number
+  isGuestTrial?: boolean
 }
 

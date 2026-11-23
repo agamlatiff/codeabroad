@@ -25,6 +25,8 @@ import {
   flashcardService,
   FLASHCARD_DUE_QUERY_KEY,
 } from '@/features/flashcard/services/flashcardService'
+import { useActiveLanguageCode } from '@/features/exercise/hooks/useActiveSpeechLocale'
+import { supportsKanaBoard } from '@/shared/constants/languageCatalog'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import {
   getSavedAvatarStyle,
@@ -40,20 +42,22 @@ export interface LeftSidebarNavItem {
   hasBadge?: boolean
   isActive: boolean
   tourId?: string
+  requiresAuth?: boolean
 }
 
 export const useAppLeftSidebar = () => {
   const location = useLocation()
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
+  const activeLanguageCode = useActiveLanguageCode()
   const logout = useLogout()
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>(() => getSavedAvatarStyle())
 
   const flashcardDueQuery = useQuery({
-    queryKey: [...FLASHCARD_DUE_QUERY_KEY, user?.id ?? 'anonymous', 'ja', 'sidebar'],
-    queryFn: ({ signal }) => flashcardService.getDueQueue('ja', 20, { signal }),
+    queryKey: [...FLASHCARD_DUE_QUERY_KEY, user?.id ?? 'anonymous', activeLanguageCode, 'sidebar'],
+    queryFn: ({ signal }) => flashcardService.getDueQueue(activeLanguageCode, 20, { signal }),
     enabled: Boolean(user),
     staleTime: 60_000,
     retry: false,
@@ -101,18 +105,22 @@ export const useAppLeftSidebar = () => {
         href: '/curriculum',
         icon: SquaresFour,
       },
-      {
-        label: 'Aksara',
-        tooltip: 'Langkah 1 • Hiragana, Katakana & Kanji',
-        href: '/kana/hiragana',
-        icon: Translate,
-        tourId: 'nav-kana',
-      },
+      ...(supportsKanaBoard(activeLanguageCode)
+        ? [
+            {
+              label: 'Aksara',
+              tooltip: 'Langkah 1 • Hiragana, Katakana & Kanji',
+              href: '/kana/hiragana',
+              icon: Translate,
+              tourId: 'nav-kana',
+            },
+          ]
+        : []),
       {
         label: 'Flashcard',
         tooltip:
           flashcardDueCount > 0
-            ? `Langkah 2 • Flashcard (${flashcardDueCount} kartu jatuh tempo)`
+            ? `Langkah 2 • Flashcard (${flashcardDueCount} kartu siap diulas)`
             : 'Langkah 2 • Kartu Huruf & Kosakata',
         href: '/flashcards',
         icon: Cards,
@@ -128,10 +136,11 @@ export const useAppLeftSidebar = () => {
       },
       {
         label: 'Misi',
-        tooltip: 'Misi • Hadiah Harian & XP',
+        tooltip: user ? 'Misi • Hadiah Harian & XP' : 'Misi • Khusus Akun Gratis',
         href: '/quests',
         icon: Target,
         hasBadge: hasQuestsBadge,
+        requiresAuth: true,
       },
       {
         label: 'Peringkat',
@@ -153,7 +162,7 @@ export const useAppLeftSidebar = () => {
           location.pathname.startsWith('/grammar')) ||
         (item.href === '/flashcards' && location.pathname === '/flashcard'),
     }))
-  }, [location.pathname, flashcardDueCount, hasQuestsBadge])
+  }, [activeLanguageCode, location.pathname, flashcardDueCount, hasQuestsBadge, user])
 
   const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
     saveAvatarStyle(style)

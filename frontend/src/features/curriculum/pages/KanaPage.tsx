@@ -29,6 +29,7 @@ import { KanaTracingPad } from '@/features/curriculum/components/kana/KanaTracin
 import { KanaRowDrillCard } from '@/features/curriculum/components/kana/KanaRowDrillCard'
 import { KanaHeroIllustration } from '@/features/curriculum/components/KanaHeroIllustration'
 import { KANJI_ROW_LABELS } from '@/features/curriculum/constants/kanjiCatalog'
+import { GuestLoginPromptModal } from '@/features/auth/components/GuestLoginPromptModal'
 import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -289,12 +290,14 @@ function renderScriptMenuEmblem(script: KanaScriptType, isActive: boolean): Reac
  */
 export const KanaPage = () => {
   const { data: userData } = useUser()
+  const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
   const userIdKey = userData.user?.id ?? 'anonymous'
   const heroPatternId = `kana-hero-seigaiha-${useId().replace(/:/g, '')}`
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { script: routeScript } = useParams<{ script?: string }>()
   const [searchParams, setSearchParams] = useSearchParams()
+  const [isGuestKanaModalOpen, setIsGuestKanaModalOpen] = useState(false)
 
   const normalizedRouteScript = routeScript?.trim().toLowerCase() ?? ''
   const hasValidRouteScript = VALID_KANA_SCRIPTS.has(normalizedRouteScript as KanaScriptType)
@@ -499,12 +502,20 @@ export const KanaPage = () => {
   }
 
   const handleFinishDrill = async (results: KanaPracticeItem[]) => {
+    if (!isAuthenticated) {
+      setIsGuestKanaModalOpen(true)
+      return
+    }
     await practiceMutation.mutateAsync(results)
   }
 
   const handleMarkSelectedPracticed = () => {
     if (!selectedChar) return
     triggerHaptic('success')
+    if (!isAuthenticated) {
+      setIsGuestKanaModalOpen(true)
+      return
+    }
     void practiceMutation.mutate([{ character: selectedChar.character, is_correct: true }])
   }
 
@@ -964,6 +975,14 @@ export const KanaPage = () => {
           </div>
         )}
       </main>
+
+      {!isAuthenticated && (
+        <GuestLoginPromptModal
+          isOpen={isGuestKanaModalOpen}
+          onClose={() => setIsGuestKanaModalOpen(false)}
+          reason="kana_practice"
+        />
+      )}
     </div>
   )
 }

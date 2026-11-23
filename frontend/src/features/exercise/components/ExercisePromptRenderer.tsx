@@ -599,7 +599,7 @@ export const ExercisePromptRenderer = ({
                 id={`speaking-transcript-label-${exercise.id}`}
                 className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
               >
-                Transkrip Pelafalan Anda
+                Transkrip Pelafalanmu
               </span>
               <div
                 role="status"
@@ -687,7 +687,7 @@ export const ExercisePromptRenderer = ({
               htmlFor={`free-answer-${exercise.id}`}
               className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
             >
-              Jawaban Anda
+              Jawabanmu
             </label>
             <input
               id={`free-answer-${exercise.id}`}
@@ -696,7 +696,7 @@ export const ExercisePromptRenderer = ({
               value={textInput}
               onChange={(e) => onSetTextInput(e.target.value)}
               onKeyDown={handleInputKeyDown}
-              placeholder="Ketik jawaban Anda di sini..."
+              placeholder="Ketik jawabanmu di sini..."
               className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-white border-2 border-slate-200 focus:border-blue-500 outline-none font-bold text-slate-900"
             />
           </div>

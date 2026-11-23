@@ -76,17 +76,10 @@ func normalizeCategoryFilter(category string) string {
 }
 
 func (u *usecase) ListDecks(ctx context.Context, userID string, languageCode string, jlptLevel string) ([]Deck, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	return u.repo.ListDecks(ctx, userID, normalizeLanguageCode(languageCode), normalizeJLPTLevelFilter(jlptLevel))
 }
 
 func (u *usecase) ListDecksPaginated(ctx context.Context, userID string, filter DeckListFilter) (*PaginatedDecksResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
-
 	limit := filter.Limit
 	if limit <= 0 {
 		limit = defaultDeckPageLimit
@@ -134,9 +127,6 @@ func (u *usecase) ListDecksPaginated(ctx context.Context, userID string, filter 
 }
 
 func (u *usecase) GetDeck(ctx context.Context, userID string, deckID string) (*DeckDetailResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	if strings.TrimSpace(deckID) == "" {
 		return nil, apperror.ErrBadRequest
 	}

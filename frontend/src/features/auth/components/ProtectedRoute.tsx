@@ -1,6 +1,38 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from "@/features/auth/store/authStore"
 
+// HomeRoute displays LandingPage to guests and routes authenticated learners to their learning workspace
+export const HomeRoute = () => {
+  const isAuthenticated = useAuthStore((state) =>
+    Boolean(state.isAuthenticated && (state.refreshToken || state.accessToken) && state.user)
+  )
+  const user = useAuthStore((state) => state.user)
+
+  if (isAuthenticated && user) {
+    if (!user.is_onboarded) {
+      return <Navigate to="/onboarding" replace />
+    }
+    return <Navigate to="/curriculum" replace />
+  }
+
+  return <Outlet />
+}
+
+// PreviewableRoute allows both unauthenticated trial guests and fully onboarded learners,
+// while ensuring logged-in users who haven't finished onboarding complete /onboarding first.
+export const PreviewableRoute = () => {
+  const isAuthenticated = useAuthStore((state) =>
+    Boolean(state.isAuthenticated && (state.refreshToken || state.accessToken) && state.user)
+  )
+  const user = useAuthStore((state) => state.user)
+
+  if (isAuthenticated && user && !user.is_onboarded) {
+    return <Navigate to="/onboarding" replace />
+  }
+
+  return <Outlet />
+}
+
 // ProtectedRoute ensures the user is authenticated and has completed onboarding
 export const ProtectedRoute = () => {
   const isAuthenticated = useAuthStore((state) =>

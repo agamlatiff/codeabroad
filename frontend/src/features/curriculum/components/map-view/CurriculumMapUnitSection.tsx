@@ -147,7 +147,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
       {/* ── SERPENTINE SNAKE PATH ── */}
       {allNodes.length === 0 ? (
         <div className="max-w-2xl mx-auto py-8 text-center text-xs font-medium text-slate-500">
-          Belum ada lesson tersedia pada unit ini.
+          Belum ada pelajaran di unit ini.
         </div>
       ) : (
         <div className="relative py-6 sm:py-8 overflow-visible">

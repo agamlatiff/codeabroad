@@ -48,12 +48,9 @@ func requireUserID(c *gin.Context) (string, bool) {
 	return userID, true
 }
 
-// ListDecks handles GET /api/v1/flashcards/decks.
+// ListDecks handles GET /api/v1/flashcards/decks (supports unauthenticated guest preview).
 func (h *Handler) ListDecks(c *gin.Context) {
-	userID, ok := requireUserID(c)
-	if !ok {
-		return
-	}
+	userID := c.GetString("userID")
 
 	lang := c.Query("lang")
 	level := c.Query("level")
@@ -97,12 +94,9 @@ func (h *Handler) ListDecks(c *gin.Context) {
 	response.Success(c, http.StatusOK, "flashcard decks retrieved successfully", decks)
 }
 
-// GetDeck handles GET /api/v1/flashcards/decks/:id.
+// GetDeck handles GET /api/v1/flashcards/decks/:id (supports unauthenticated guest preview).
 func (h *Handler) GetDeck(c *gin.Context) {
-	userID, ok := requireUserID(c)
-	if !ok {
-		return
-	}
+	userID := c.GetString("userID")
 
 	deckID := c.Param("id")
 	detail, err := h.usecase.GetDeck(c.Request.Context(), userID, deckID)
@@ -159,16 +153,26 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 }
 
 // RegisterRoutes mounts flashcard routes onto the v1 router group.
-func (h *Handler) RegisterRoutes(v1 *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+func (h *Handler) RegisterRoutes(v1 *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuthMiddleware ...gin.HandlerFunc) {
 	if authMiddleware == nil {
 		panic("flashcard.Handler.RegisterRoutes requires non-nil authMiddleware")
 	}
-	fc := v1.Group("/flashcards")
-	fc.Use(authMiddleware)
+	previewMiddleware := authMiddleware
+	if len(optionalAuthMiddleware) > 0 && optionalAuthMiddleware[0] != nil {
+		previewMiddleware = optionalAuthMiddleware[0]
+	}
+
+	fcPreview := v1.Group("/flashcards")
+	fcPreview.Use(previewMiddleware)
 	{
-		fc.GET("/decks", h.ListDecks)
-		fc.GET("/decks/:id", h.GetDeck)
-		fc.GET("/due", h.GetDueQueue)
-		fc.POST("/cards/:id/review", h.reviewRateLimiter, h.ReviewCard)
+		fcPreview.GET("/decks", h.ListDecks)
+		fcPreview.GET("/decks/:id", h.GetDeck)
+	}
+
+	fcProtected := v1.Group("/flashcards")
+	fcProtected.Use(authMiddleware)
+	{
+		fcProtected.GET("/due", h.GetDueQueue)
+		fcProtected.POST("/cards/:id/review", h.reviewRateLimiter, h.ReviewCard)
 	}
 }

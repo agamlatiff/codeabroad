@@ -54,7 +54,7 @@ export const MonthlyBadgeModal = ({
         <div className="flex justify-center">
           <span className="text-[11px] font-brand font-black px-4 py-1 rounded-full border border-amber-300 bg-amber-100 text-amber-950 uppercase tracking-wider shadow-2xs flex items-center gap-1.5">
             <Trophy weight="fill" className="w-3.5 h-3.5 text-amber-700" />
-            <span>Tantangan Bulanan • Language Mastery</span>
+            <span>Tantangan Bulanan • Merantalk</span>
           </span>
         </div>
 
@@ -82,9 +82,9 @@ export const MonthlyBadgeModal = ({
           </h3>
           <p className="text-xs text-slate-600 font-medium max-w-sm mx-auto leading-relaxed">
             {isClaimed
-              ? `Lencana kehormatan edisi ${monthYearName} telah resmi terpasang pada profil Merantalk Anda.`
+              ? `Lencana kehormatan edisi ${monthYearName} telah resmi terpasang pada profil Merantalk-mu.`
               : isEligible
-              ? `Luar biasa! Anda menuntaskan ${completedCount} aktivitas bulan ini. Klaim lencana emas beserta bonus +150 XP sekarang.`
+              ? `Luar biasa! Kamu menuntaskan ${completedCount} aktivitas bulan ini. Klaim lencana emas beserta bonus +150 XP sekarang.`
               : `Selesaikan ${targetCount - completedCount} misi lagi di bulan ${monthYearName} untuk membuka lencana emas bulanan ini.`}
           </p>
         </div>

@@ -91,7 +91,7 @@ export const MAP_CATEGORY_TOKENS: Record<MapNodeCategory, MapCategoryStyleTokens
     popoverLabelColor: 'text-amber-700',
     badgeClass: 'bg-amber-50 text-amber-800 border border-amber-200',
     activeButtonVariant: 'amber',
-    activeButtonText: 'MULAI EVALUASI',
+    activeButtonText: 'MULAI UJIAN',
     discCompleted: 'bg-emerald-500 shadow-[0_7px_0_0_#047857]',
     discActive: 'bg-amber-500 shadow-[0_8px_0_0_#B45309] ring-[10px] ring-amber-100',
     modalIconBgActive: 'bg-amber-500 border-amber-600 text-white shadow-[0_3px_0_0_#B45309]',

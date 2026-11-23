@@ -591,3 +591,62 @@ func TestHTTP_GrammarCheckEndpoint(t *testing.T) {
 		}
 	})
 }
+
+func TestHTTP_GuestOptionalAuthPreviewAndProtectedMutations(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	cRepo := curriculum.NewMockRepository()
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+
+	langID := "11111111-1111-1111-1111-111111111111"
+	lvlID := "22222222-2222-2222-2222-222222222222"
+	unit1ID := "aaaaaaaa-0000-0000-0000-000000000001"
+	lessonID := "33333333-3333-3333-3333-333333333333"
+
+	lRepo.Languages[langID] = &language.Language{ID: langID, Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels[lvlID] = &language.ProficiencyLevel{ID: lvlID, LanguageID: langID, Code: "N5", OrderIndex: 1}
+	cRepo.Units[unit1ID] = &curriculum.UnitNodeResponse{ID: unit1ID, LevelID: lvlID, Title: "Unit 1", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Lessons[lessonID] = &curriculum.LessonNodeResponse{ID: lessonID, UnitID: unit1ID, Title: "Lesson 1", OrderIndex: 1}
+	cRepo.KanaCatalog = []curriculum.KanaCharacterItem{{ID: "kana-a", Character: "あ", Script: "hiragana", Romaji: "a"}}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+	h := curriculum.NewHandler(uc)
+
+	requireAuth := func(c *gin.Context) {
+		if c.GetString("userID") == "" {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+		c.Next()
+	}
+	optionalAuth := func(c *gin.Context) {
+		c.Next()
+	}
+
+	r := gin.New()
+	v1 := r.Group("/api/v1")
+	h.RegisterRoutes(v1, requireAuth, optionalAuth)
+
+	for _, path := range []string{
+		"/api/v1/curriculum",
+		"/api/v1/curriculum/lessons/" + lessonID,
+		"/api/v1/curriculum/kana?script=hiragana",
+	} {
+		req, _ := http.NewRequest(http.MethodGet, path, nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		if w.Code != http.StatusOK {
+			t.Fatalf("expected 200 OK for guest GET %s, got %d (%s)", path, w.Code, w.Body.String())
+		}
+	}
+
+	postReq, _ := http.NewRequest(http.MethodPost, "/api/v1/curriculum/lessons/"+lessonID+"/complete", bytes.NewBufferString(`{"score":100}`))
+	postReq.Header.Set("Content-Type", "application/json")
+	postW := httptest.NewRecorder()
+	r.ServeHTTP(postW, postReq)
+	if postW.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 Unauthorized for guest CompleteLesson, got %d", postW.Code)
+	}
+}

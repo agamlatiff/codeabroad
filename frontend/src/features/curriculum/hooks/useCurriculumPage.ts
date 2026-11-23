@@ -10,6 +10,14 @@ import {
 } from "@/shared/constants/queryKeys"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import {
+  getGuestTotalXp,
+  isGuestLessonCompleted,
+  findGuestCompletedLesson,
+  useGuestTrialStore,
+} from "@/features/auth/store/guestTrialStore"
+import { useGuestTrialSync } from "@/features/auth/hooks/useGuestTrialSync"
+import type { GuestLoginPromptReason } from "@/features/auth/components/GuestLoginPromptModal"
+import {
   curriculumService,
   CURRICULUM_QUERY_KEY,
   GRAMMAR_POINTS_QUERY_KEY,
@@ -47,8 +55,16 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
   const { data: userData } = useUser()
   const user = userData.user
+  const isGuest = !user
   const userIdKey = user?.id ?? 'anonymous'
   const updateUser = useAuthStore((s) => s.updateUser)
+
+  const guestCompletedLessons = useGuestTrialStore((s) => s.completedLessons)
+  const guestPendingXp = useMemo(
+    () => getGuestTotalXp(guestCompletedLessons),
+    [guestCompletedLessons]
+  )
+  const { syncedSummary, dismissSyncedSummary } = useGuestTrialSync()
 
   // ── 1. RESOLVE REQUESTED LANGUAGE & ENROLLMENTS ──
   const targetLanguageId = explicitLanguageId || routeLanguageId || ''
@@ -56,12 +72,13 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const { data: enrollments = [] } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userIdKey),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    enabled: Boolean(user),
     staleTime: 1000 * 60 * 5,
   })
 
   // ── 2. FETCH CURRICULUM TREE VIA TANSTACK QUERY (SSOT) ──
   const {
-    data: curriculumData = null,
+    data: rawCurriculumData = null,
     isLoading,
     error: queryError,
     refetch,
@@ -71,6 +88,56 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       curriculumService.getCurriculum(targetLanguageId || undefined, { signal }),
     staleTime: 1000 * 60 * 2,
   })
+
+  // In guest preview mode, overlay locally completed Unit-1 trial lessons onto the map cleanly
+  const curriculumData = useMemo(() => {
+    if (!rawCurriculumData) return null
+    if (!isGuest || guestCompletedLessons.length === 0) {
+      return rawCurriculumData
+    }
+
+    let completedTotal = 0
+    let lessonsTotal = 0
+    let nextActiveLessonId: string | null = null
+    const overlaidUnits = rawCurriculumData.units.map((unit) => {
+      let unitCompleted = 0
+      const overlaidLessons = (unit.lessons ?? []).map((lesson) => {
+        lessonsTotal += 1
+        const matched =
+          findGuestCompletedLesson(guestCompletedLessons, lesson.id) ??
+          findGuestCompletedLesson(guestCompletedLessons, lesson.slug)
+        if (matched || isGuestLessonCompleted(guestCompletedLessons, lesson.id)) {
+          unitCompleted += 1
+          completedTotal += 1
+          return {
+            ...lesson,
+            is_completed: true,
+            score: matched?.accuracyPercent ?? lesson.score,
+            completed_exercises: lesson.total_exercises || lesson.completed_exercises,
+          }
+        }
+        if (lesson.is_unlocked && nextActiveLessonId === null) {
+          nextActiveLessonId = lesson.id
+        }
+        return lesson
+      })
+      return {
+        ...unit,
+        completed_lessons: unitCompleted,
+        lessons: overlaidLessons,
+      }
+    })
+
+    return {
+      ...rawCurriculumData,
+      completed_lessons: completedTotal,
+      total_lessons: lessonsTotal,
+      current_lesson_id: nextActiveLessonId,
+      progress_percent:
+        lessonsTotal > 0 ? Math.round((completedTotal / lessonsTotal) * 100) : 0,
+      units: overlaidUnits,
+    }
+  }, [guestCompletedLessons, isGuest, rawCurriculumData])
 
   const activeLanguageId = curriculumData?.language?.id || targetLanguageId || ''
   const activeLanguageCode = curriculumData?.language?.code || ''
@@ -115,8 +182,10 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   // ── 4. PAGE UI & TOAST STATES ──
   const [isSwitcherOpen, setIsSwitcherOpen] = useState(false)
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false)
-  const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false)
   const [isTourOpen, setIsTourOpen] = useState(false)
+  const [guestPromptReason, setGuestPromptReason] = useState<GuestLoginPromptReason | null>(null)
+  const [isGuestBannerDismissed, setIsGuestBannerDismissed] = useState(false)
+  const [isSwitchingLanguage, setIsSwitchingLanguage] = useState(false)
   const [notification, setNotification] = useState<string | null>(null)
 
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -172,7 +241,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   }, [curriculumData, hasSeenTour, isLoading, searchParams, setSearchParams, tourRequestedViaUrl])
 
   const markTourSeen = useCallback(async () => {
-    if (hasSeenTour !== false || isTourPersistingRef.current) return
+    if (!user || hasSeenTour !== false || isTourPersistingRef.current) return
     isTourPersistingRef.current = true
 
     updateUser({ has_seen_roadmap_tour: true })
@@ -185,7 +254,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     } finally {
       isTourPersistingRef.current = false
     }
-  }, [hasSeenTour, updateUser, queryClient, userIdKey])
+  }, [hasSeenTour, queryClient, updateUser, user, userIdKey])
 
   const completeTour = useCallback(() => {
     setIsTourOpen(false)
@@ -203,6 +272,14 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const handleSelectLanguage = useCallback(
     async (nextLanguageId: string) => {
       if (!nextLanguageId || isSwitchingRef.current) return
+      if (!user) {
+        triggerHaptic('success')
+        playSound('track_change')
+        if (nextLanguageId !== activeLanguageId) {
+          navigate(`/curriculum/${nextLanguageId}`)
+        }
+        return
+      }
       triggerHaptic('success')
       playSound('track_change')
       void markTourSeen()
@@ -247,6 +324,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       navigate,
       queryClient,
       showNotification,
+      user,
       userIdKey,
     ]
   )
@@ -267,13 +345,32 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     void markTourSeen()
   }, [markTourSeen])
 
+  const openGuestPrompt = useCallback((reason: GuestLoginPromptReason = 'locked_unit') => {
+    triggerHaptic('tap')
+    playSound('modal_open')
+    setGuestPromptReason(reason)
+  }, [])
+
+  const closeGuestPrompt = useCallback(() => {
+    playSound('modal_close')
+    setGuestPromptReason(null)
+  }, [])
+
+  const dismissGuestBanner = useCallback(() => {
+    setIsGuestBannerDismissed(true)
+  }, [])
+
   const handleStartLesson = useCallback(
     (route: string) => {
+      if (isGuest && route.startsWith('/exam/')) {
+        openGuestPrompt('exam')
+        return
+      }
       triggerHaptic('success')
       playSound('quest_start')
       navigate(route)
     },
-    [navigate]
+    [isGuest, navigate, openGuestPrompt]
   )
 
   const handleRefetch = useCallback(() => {
@@ -286,6 +383,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       data: curriculumData,
       enrollments,
       isViewingInactiveTrack,
+      guestPendingXp,
       metrics: {
         totalLessonsCount,
         completedLessonsCount,
@@ -294,6 +392,9 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       },
     },
     status: {
+      isGuest,
+      isGuestBannerDismissed,
+      syncedSummary,
       isLoading,
       isSwitchingLanguage,
       error,
@@ -303,6 +404,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       isSwitcherOpen,
       isMobileDrawerOpen,
       isTourOpen,
+      guestPromptReason,
     },
     actions: {
       refetch: handleRefetch,
@@ -314,6 +416,10 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       handleStartLesson,
       completeTour,
       skipTour,
+      openGuestPrompt,
+      closeGuestPrompt,
+      dismissGuestBanner,
+      dismissSyncedSummary,
     },
   }
 }

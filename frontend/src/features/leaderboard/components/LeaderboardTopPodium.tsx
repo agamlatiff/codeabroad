@@ -139,7 +139,7 @@ export const LeaderboardTopPodium: FC<LeaderboardTopPodiumProps> = ({ topThree }
                 </span>
                 {entry.is_current_user && (
                   <span className="bg-blue-600 text-white text-[9px] font-brand font-black px-1.5 py-0.5 rounded-md shrink-0">
-                    ANDA
+                    KAMU
                   </span>
                 )}
               </div>

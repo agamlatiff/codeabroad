@@ -45,10 +45,9 @@ export const transformCurriculumToMapUnits = (
       const isCurrentLesson =
         curriculum.current_lesson_id === lesson.id ||
         (!curriculum.current_lesson_id && !lesson.is_completed && lesson.is_unlocked && !hasAssignedActiveNode)
-      const canBeActive = !hasAssignedActiveNode && (isCurrentLesson || (!lesson.is_completed && lesson.is_unlocked && !curriculum.current_lesson_id))
       const status = resolveLessonStatus(
         lesson.is_completed,
-        lesson.is_unlocked && (canBeActive || !curriculum.current_lesson_id),
+        lesson.is_unlocked,
         isCurrentLesson
       )
       if (status === 'active') {
@@ -101,7 +100,7 @@ export const transformCurriculumToMapUnits = (
         ? {
             id: `exam-${curriculum.level.id}`,
             number: globalLessonCounter,
-            title: `Ujian Evaluasi Kesiapan ${levelCode || langCode}`,
+            title: `Ujian Kesiapan ${levelCode || langCode}`,
             subtitle: allLevelLessonsCompleted
               ? 'Simulasi Ujian Akhir Level • Siap Diuji'
               : 'Selesaikan seluruh pelajaran level ini untuk membuka ujian akhir',

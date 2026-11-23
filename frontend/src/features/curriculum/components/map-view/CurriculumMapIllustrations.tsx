@@ -328,7 +328,7 @@ export const UnitTrailheadBannerGraphic: FC<UnitTrailheadBannerGraphicProps> = (
     'Gerbang Dasar • Fokus Kosakata & Bunyi',
     'Kehidupan Sehari-hari • Latihan Konteks',
     'Navigasi Kota • Pola Kalimat Aktif',
-    'Ekspresi Lanjut • Target Evaluasi Unit',
+    'Ekspresi Lanjut • Target Ujian Unit',
   ]
   const subtitle = unitLabels[(Math.max(1, unitNumber) - 1) % unitLabels.length]
 

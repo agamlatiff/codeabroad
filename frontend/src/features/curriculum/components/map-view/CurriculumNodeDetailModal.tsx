@@ -9,7 +9,9 @@ import {
   CheckCircle,
   Sparkle,
   BookOpen,
+  UserPlus,
 } from '@phosphor-icons/react'
+import type { GuestLoginPromptReason } from '@/features/auth/components/GuestLoginPromptModal'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { KodiCharacter, type KodiEmotion } from "@/shared/components/ui/KodiCharacter"
 import type { PathMapNode } from "@/features/curriculum/types/curriculum"
@@ -23,6 +25,8 @@ export interface CurriculumNodeDetailModalProps {
   node: PathMapNode | null
   onClose: () => void
   onStartLesson?: (route: string) => void
+  isGuest?: boolean
+  onOpenGuestUnlock?: (reason: GuestLoginPromptReason) => void
   isViewingInactiveTrack?: boolean
   isActivatingTrack?: boolean
   onActivateTrack?: () => void
@@ -112,7 +116,7 @@ const KEYWORD_TOPIC_RULES: Array<{ test: RegExp; chip: string; grammar?: boolean
   { test: /kafe|makan|minum|menu|dapur/i, chip: 'Kuliner & Pesan Menu' },
   { test: /cuaca|musim|suasana/i, chip: 'Cuaca & Perbandingan' },
   { test: /tubuh|klinik|sakit|obat|kewajiban/i, chip: 'Kesehatan & Kewajiban', grammar: true },
-  { test: /simulasi|pemantapan|percakapan/i, chip: 'Latihan Terpadu 4 Pilar', grammar: true },
+  { test: /simulasi|pemantapan|percakapan/i, chip: 'Latihan Terpadu', grammar: true },
 ]
 
 const resolveNodePreview = (node: PathMapNode): NodePreviewInfo => {
@@ -167,6 +171,8 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
   node,
   onClose,
   onStartLesson,
+  isGuest = false,
+  onOpenGuestUnlock,
   isViewingInactiveTrack = false,
   isActivatingTrack = false,
   onActivateTrack,
@@ -253,7 +259,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
               <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400">
-                {isLockedPreview ? 'Mode Pratinjau' : MAP_MODAL_TOKENS.statusBadge[node.status]}
+                {isLockedPreview ? 'Mode Lihat' : MAP_MODAL_TOKENS.statusBadge[node.status]}
               </span>
               {node.badgeLabel && (
                 <span
@@ -274,11 +280,11 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
 
         <p className="text-xs text-slate-600 font-medium leading-relaxed">
           {isLockedPreview
-            ? 'Anda sedang mempratinjau kurikulum bahasa non-aktif. Aktifkan bahasa ini terlebih dahulu untuk membuka akses dan mulai belajar.'
+            ? 'Kamu sedang melihat kurikulum bahasa yang belum aktif. Aktifkan bahasa ini dulu untuk membuka akses dan mulai belajar.'
             : node.status === 'locked'
               ? MAP_MODAL_TOKENS.lockedDescription
               : node.isSkipped
-                ? 'Lesson ini telah dilewati otomatis berdasarkan hasil tes penempatan level Anda.'
+                ? 'Pelajaran ini otomatis dilewati berdasarkan hasil tes penempatan levelmu.'
                 : node.subtitle}
         </p>
 
@@ -349,7 +355,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
           ) : typeof node.gemsReward === 'number' && node.gemsReward > 0 ? (
             <span className="flex items-center gap-1 text-cyan-700 font-brand font-black">
               <Diamond weight="fill" className="w-3.5 h-3.5 text-cyan-500" />
-              <span>+{node.gemsReward} Permata</span>
+              <span>+{node.gemsReward} Gems</span>
             </span>
           ) : null}
         </div>
@@ -376,7 +382,32 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
               onClick={onClose}
               className="text-xs py-2"
             >
-              TUTUP PRATINJAU
+              TUTUP
+            </Button3D>
+          </div>
+        ) : node.status === 'locked' && isGuest ? (
+          <div className="space-y-2">
+            <Button3D
+              variant="blue"
+              size="md"
+              fullWidth
+              icon={<UserPlus weight="bold" className="w-4 h-4" />}
+              onClick={() => {
+                onClose()
+                onOpenGuestUnlock?.(node.isTrophy ? 'exam' : 'locked_unit')
+              }}
+              className="text-xs py-2.5"
+            >
+              DAFTAR GRATIS UNTUK BUKA UNIT INI
+            </Button3D>
+            <Button3D
+              variant="white"
+              size="md"
+              fullWidth
+              onClick={onClose}
+              className="text-xs py-2"
+            >
+              TUTUP
             </Button3D>
           </div>
         ) : node.status === 'locked' ? (
@@ -405,10 +436,10 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
           >
             {node.isTrophy
               ? node.status === 'completed'
-                ? 'LIHAT STATUS EVALUASI'
-                : 'IKUTI EVALUASI UNIT'
+                ? 'LIHAT HASIL UJIAN'
+                : 'MULAI UJIAN UNIT'
               : node.status === 'completed'
-                ? 'ULANGI LATIHAN LESSON'
+                ? 'ULANGI PELAJARAN'
                 : `MULAI BELAJAR (+${node.xpReward} XP)`}
           </Button3D>
         )}

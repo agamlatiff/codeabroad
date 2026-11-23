@@ -23,7 +23,7 @@ const STEP_COPY: Record<
   3: {
     title: 'Tes Penempatan Singkat',
     subtitle:
-      'Jawab soal diagnostik berikut. Skor ≥ 80% akan otomatis membuka level lanjutan yang sudah tersedia.',
+      'Jawab beberapa soal singkat berikut. Skor ≥ 80% akan otomatis membuka level lanjutan yang sudah tersedia.',
   },
 }
 
@@ -58,7 +58,7 @@ export function OnboardingPage() {
           </div>
           <div className="inline-flex items-center gap-1.5 rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-700 mb-4">
             <Sparkle className="h-3.5 w-3.5" weight="fill" />
-            <span>Merantalk Language Mastery</span>
+            <span>Belajar Bahasa Bersama Merantalk</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900">
             Halo{user?.name ? `, ${user.name}` : ''}! Siap mulai perjalanan bahasamu?
@@ -76,7 +76,7 @@ export function OnboardingPage() {
               }}
               className="px-8 py-3.5 text-base font-semibold"
             >
-              Mulai Setup Belajar
+              Mulai Atur Belajarmu
               <ArrowRight className="ml-2 inline h-5 w-5" weight="bold" />
             </Button3D>
           </div>

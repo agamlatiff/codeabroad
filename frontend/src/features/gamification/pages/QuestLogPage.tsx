@@ -35,7 +35,7 @@ export type { QuestPageTab }
 const QUEST_TAB_LABELS: Record<QuestPageTab, string> = {
   daily: 'Misi Harian',
   milestones: 'Ujian & Lencana',
-  shop: 'Pasar Guild',
+  shop: 'Toko Hadiah',
 }
 
 export const QuestLogPage = () => {
@@ -181,7 +181,7 @@ export const QuestLogPage = () => {
                     },
                     {
                       id: 'shop' as QuestPageTab,
-                      label: 'Pasar Guild',
+                      label: 'Toko Hadiah',
                       badge: `${shopItems.length}`,
                       Icon: Storefront,
                     },
@@ -226,7 +226,7 @@ export const QuestLogPage = () => {
                       setActiveTab('shop')
                     }}
                     className="hidden sm:inline-flex items-center gap-1.5 bg-sky-50 hover:bg-sky-100/80 border-2 border-sky-200 text-sky-800 rounded-2xl px-3 py-1.5 text-[11px] font-black shadow-2xs transition-colors cursor-pointer shrink-0"
-                    title="Streak Freeze aktif melindungi rentetan belajarmu"
+                    title="Streak Freeze aktif melindungi streak belajarmu"
                   >
                     <Snowflake weight="fill" className="w-3.5 h-3.5 text-sky-500" />
                     <span>{streakFreezeOwned}x Freeze Siap</span>
@@ -450,7 +450,7 @@ export const QuestLogPage = () => {
                       }}
                       className="text-[11px] font-black text-[#2563EB] hover:underline inline-flex items-center gap-1 cursor-pointer"
                     >
-                      <span>Pasar Guild</span>
+                      <span>Toko Hadiah</span>
                       <ArrowRight weight="bold" className="w-3 h-3" />
                     </button>
                   )}

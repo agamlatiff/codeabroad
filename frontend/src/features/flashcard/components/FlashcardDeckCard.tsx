@@ -221,7 +221,7 @@ const FannedDeckCardsPreview = ({
               <span
                 aria-hidden="true"
                 className="absolute top-2.5 right-1.5 w-4 h-4 rounded-full bg-emerald-500 border border-white text-white flex items-center justify-center shadow-2xs"
-                title="Sudah dikuasai (SM-2)"
+                title="Sudah dikuasai"
               >
                 <Check weight="bold" className="w-2.5 h-2.5" />
               </span>
@@ -229,7 +229,7 @@ const FannedDeckCardsPreview = ({
               <span
                 aria-hidden="true"
                 className="absolute top-3 right-2 w-2 h-2 rounded-full bg-amber-400 ring-2 ring-amber-100"
-                title="Jatuh tempo untuk diulas"
+                title="Siap diulas"
               />
             ) : null}
 

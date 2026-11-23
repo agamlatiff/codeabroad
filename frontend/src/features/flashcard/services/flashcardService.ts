@@ -53,7 +53,7 @@ export const flashcardService = {
       params: { lang, limit },
       signal: options?.signal,
     })
-    return unwrapApiResponse(response, 'Gagal memuat antrean ulasan flashcard.')
+    return unwrapApiResponse(response, 'Gagal memuat daftar ulasan flashcard.')
   },
 
   async reviewCard(cardId: string, quality: number): Promise<FlashcardReviewResponse> {

@@ -1,8 +1,10 @@
-import { LockSimple, Sparkle, WarningCircle } from '@phosphor-icons/react'
+import { Link } from 'react-router-dom'
+import { CheckCircle, LockSimple, Sparkle, UserPlus, WarningCircle, X } from '@phosphor-icons/react'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { AppRightSidebar } from "@/shared/components/layout/right-sidebar/AppRightSidebar"
 import { TrackSwitcherModal } from "@/shared/components/layout/top-bar/TrackSwitcherModal"
+import { GuestLoginPromptModal } from "@/features/auth/components/GuestLoginPromptModal"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import {
   SpotlightTourOverlay,
@@ -10,15 +12,16 @@ import {
 } from "@/shared/components/ui/SpotlightTourOverlay"
 import { CurriculumMapView } from "@/features/curriculum/components/map-view/CurriculumMapView"
 import { useCurriculumPage } from "@/features/curriculum/hooks/useCurriculumPage"
+import { formatLevelDisplayLabel } from "@/shared/constants/languageCatalog"
 
 const CURRICULUM_TOUR_STEPS: SpotlightTourStep[] = [
   {
     id: 'active-node',
     targetSelector: '[data-tour="active-lesson-node"]',
     badge: 'Peta Belajar',
-    title: 'Mulai dari Node yang Menyala',
+    title: 'Mulai dari Pelajaran yang Aktif',
     description:
-      'Setiap lingkaran di peta ini adalah satu misi singkat. Klik node yang menyala untuk membaca materi pengantar terlebih dahulu sebelum kuis interaktif.',
+      'Setiap lingkaran di peta ini adalah satu pelajaran singkat. Klik lingkaran yang menyala untuk membaca materi pengantar sebelum mulai latihan.',
     mascotEmotion: 'studying',
     placement: 'bottom',
     padding: 12,
@@ -62,7 +65,7 @@ const CURRICULUM_TOUR_STEPS: SpotlightTourStep[] = [
     badge: 'Target Harian',
     title: 'Jaga Api Streak & Misi Harian',
     description:
-      'Belajar 5–15 menit setiap hari untuk menyalakan rentetan belajar dan menuntaskan Misi Harian agar bonus XP serta Gems cepat terkumpul.',
+      'Belajar 5–15 menit setiap hari untuk menjaga streak harian dan menuntaskan Misi Harian agar bonus XP serta Gems cepat terkumpul.',
     mascotEmotion: 'onFire',
     placement: 'left',
     padding: 10,
@@ -106,15 +109,77 @@ export const CurriculumPage = () => {
             completedCount={curriculum.metrics.completedLessonsCount}
             totalCount={curriculum.metrics.totalLessonsCount}
             progressPercent={curriculum.metrics.overallProgress}
-            unitLabel="Lesson"
+            unitLabel="Pelajaran"
             breadcrumbs={[
               { label: 'Beranda', to: '/curriculum' },
               { label: 'Kurikulum' },
               ...(curriculum.data?.level?.code
-                ? [{ label: `JLPT ${curriculum.data.level.code}` }]
+                ? [{ label: formatLevelDisplayLabel(curriculum.data.level) }]
                 : []),
             ]}
           />
+
+          {/* ── CELEBRATORY TRIAL SYNC BANNER (AFTER LOGIN/REGISTER) ── */}
+          {status.syncedSummary && (
+            <div className="bg-emerald-50 border-2 border-emerald-300 rounded-2xl p-4 flex items-center justify-between gap-3 shadow-xs animate-pop">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <CheckCircle weight="fill" className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="font-brand font-black text-xs sm:text-sm text-emerald-950">
+                    Progres Mode Coba Berhasil Disimpan ke Akunmu!
+                  </p>
+                  <p className="text-xs text-emerald-800 font-medium">
+                    {status.syncedSummary.lessonsCount} pelajaran Unit 1 dan +{status.syncedSummary.xpEarned} XP sudah resmi tercatat di profilmu.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={actions.dismissSyncedSummary}
+                aria-label="Tutup pemberitahuan sinkronisasi"
+                className="w-8 h-8 rounded-xl bg-emerald-100 hover:bg-emerald-200 text-emerald-700 flex items-center justify-center shrink-0 cursor-pointer"
+              >
+                <X weight="bold" className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* ── GUEST PREVIEW MODE WELCOME BANNER ── */}
+          {status.isGuest && !status.isGuestBannerDismissed && (
+            <div className="bg-gradient-to-r from-blue-50 via-sky-50/75 to-white border-2 border-blue-200 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+              <div className="flex items-start gap-2.5 min-w-0">
+                <Sparkle weight="fill" className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+                <div className="min-w-0">
+                  <p className="font-brand font-black text-xs sm:text-sm text-slate-900">
+                    Mode Coba Tanpa Login Aktif — Unit 1 Terbuka Penuh!
+                  </p>
+                  <p className="text-xs text-slate-600 font-medium">
+                    Klik pelajaran Unit 1 di bawah untuk langsung belajar. Daftar akun gratis kapan saja untuk menyimpan XP &amp; membuka seluruh unit lanjutan.
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Link to="/register?from=guest">
+                  <Button3D
+                    variant="blue"
+                    size="sm"
+                    icon={<UserPlus weight="bold" className="w-4 h-4" />}
+                    className="text-xs"
+                  >
+                    Daftar Gratis
+                  </Button3D>
+                </Link>
+                <button
+                  type="button"
+                  onClick={actions.dismissGuestBanner}
+                  aria-label="Tutup banner mode coba"
+                  className="w-8 h-8 rounded-xl bg-white hover:bg-slate-100 border border-slate-200 text-slate-500 flex items-center justify-center cursor-pointer"
+                >
+                  <X weight="bold" className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ── INACTIVE LANGUAGE ACTIVATION BANNER ── */}
           {curriculum.isViewingInactiveTrack && activeLanguage && (
@@ -123,10 +188,10 @@ export const CurriculumPage = () => {
                 <Sparkle weight="fill" className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                 <div className="min-w-0">
                   <p className="font-brand font-black text-xs sm:text-sm text-amber-950">
-                    Sedang Mempratinjau Kurikulum {activeLanguage.name}
+                    Sedang Melihat Kurikulum {activeLanguage.name}
                   </p>
                   <p className="text-xs text-amber-800 font-medium">
-                    Aktifkan bahasa ini untuk membuka akses latihan dan menyimpan progres harian Anda.
+                    Aktifkan bahasa ini untuk membuka akses latihan dan menyimpan progres harianmu.
                   </p>
                 </div>
               </div>
@@ -164,10 +229,12 @@ export const CurriculumPage = () => {
             curriculum={curriculum.data}
             isLoading={status.isLoading}
             hasError={Boolean(status.error)}
+            isGuest={status.isGuest}
             isViewingInactiveTrack={curriculum.isViewingInactiveTrack}
             isActivatingTrack={status.isSwitchingLanguage}
             onActivateTrack={actions.handleActivateCurrentTrack}
             onStartLesson={actions.handleStartLesson}
+            onOpenGuestUnlock={actions.openGuestPrompt}
           />
         </main>
 
@@ -187,6 +254,16 @@ export const CurriculumPage = () => {
         onSelectTrack={actions.handleSelectLanguage}
         trackProgressMap={curriculum.metrics.trackProgressMap}
       />
+
+      {/* ── GUEST CONVERSION PROMPT MODAL ── */}
+      {status.isGuest && (
+        <GuestLoginPromptModal
+          isOpen={modals.guestPromptReason !== null}
+          onClose={actions.closeGuestPrompt}
+          reason={modals.guestPromptReason ?? 'locked_unit'}
+          pendingXp={curriculum.guestPendingXp}
+        />
+      )}
 
       {/* ── TOAST NOTIFICATION ── */}
       {status.notification && (

@@ -30,7 +30,7 @@ export const StreakSection: FC = () => {
             </div>
             <div>
               <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
-                Rentetan Belajar
+                Streak Harian
               </h4>
               <span className="text-[9px] text-slate-400 font-medium">
                 Target Konsistensi 7 Hari
@@ -43,7 +43,7 @@ export const StreakSection: FC = () => {
             type="button"
             onClick={handleOpenStreakModal}
             className="bg-gradient-to-b from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 text-white font-brand font-black text-[10px] px-2.5 py-1 rounded-full shadow-2xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 group/streak"
-            title="Buka Kalender Rentetan Belajar Lengkap"
+            title="Buka Kalender Belajar Lengkap"
           >
             <Fire weight="fill" className="w-3 h-3 text-amber-200" />
             <span>{userStreak} Hari</span>
@@ -59,7 +59,7 @@ export const StreakSection: FC = () => {
           type="button"
           onClick={handleOpenStreakModal}
           className="w-full grid grid-cols-7 gap-1 sm:gap-1.5 text-center bg-orange-50/30 hover:bg-orange-50/60 border border-orange-100/80 hover:border-orange-300 rounded-2xl p-1.5 sm:p-2 shadow-2xs cursor-pointer transition-colors"
-          title="Klik untuk membuka Kalender Kehadiran & Rentetan Lengkap"
+          title="Klik untuk membuka Kalender Belajar Lengkap"
         >
           {weeklyStreakDays.map((item) => (
             <div key={item.label} className="flex flex-col items-center gap-1">

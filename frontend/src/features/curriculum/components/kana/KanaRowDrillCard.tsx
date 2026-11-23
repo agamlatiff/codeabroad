@@ -133,7 +133,7 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
       setIsCompleted(true)
     } catch (err) {
       setSaveError(
-        extractApiErrorMessage(err, 'Gagal menyimpan hasil latihan baris ke server. Coba lagi.')
+        extractApiErrorMessage(err, 'Gagal menyimpan hasil latihan. Coba lagi ya.')
       )
     }
   }

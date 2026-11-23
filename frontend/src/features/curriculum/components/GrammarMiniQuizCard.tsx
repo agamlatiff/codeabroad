@@ -225,7 +225,7 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
                 ) : passedThisRound ? (
                   <>
                     <Sparkle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Paham ✓ • Masuk Review SRS ({correctCount}/{total})</span>
+                    <span>Paham ✓ • Masuk Jadwal Ulasan ({correctCount}/{total})</span>
                   </>
                 ) : (
                   <span>
@@ -237,7 +237,7 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
                 {submitError
                   ? submitError
                   : isSubmitting
-                    ? 'Menyimpan progres ke server...'
+                    ? 'Menyimpan progres...'
                     : passedThisRound
                       ? 'Mantap! Pola ini sudah ditandai selesai di daftar materi.'
                       : 'Jawab benar 3/3 untuk menandai materi ini sebagai Paham ✓.'}

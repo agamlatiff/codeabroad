@@ -5,6 +5,10 @@ import { isAxiosError } from 'axios'
 import { z } from 'zod'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
+  useGuestTrialStore,
+  type GuestTrialAttempt,
+} from '@/features/auth/store/guestTrialStore'
+import {
   LESSON_DETAIL_QUERY_KEY,
   curriculumService,
 } from '@/features/curriculum/services/curriculumService'
@@ -82,7 +86,11 @@ export const useLearnWorkspace = (id?: string) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const updateUser = useAuthStore((state) => state.updateUser)
+  const isAuthenticated = useAuthStore((state) =>
+    Boolean(state.isAuthenticated && state.user)
+  )
   const userId = useAuthStore((state) => state.user?.id ?? 'anonymous')
+  const isGuest = !isAuthenticated
 
   const initialDraft = useMemo(() => loadLessonDraft(userId, id), [userId, id])
   const [currentIndex, setCurrentIndex] = useState(initialDraft.currentIndex)
@@ -105,6 +113,7 @@ export const useLearnWorkspace = (id?: string) => {
   const questionStartedAtRef = useRef<number>(0)
   const submitLockRef = useRef(false)
   const sessionEpochRef = useRef(0)
+  const recordedAttemptsRef = useRef<GuestTrialAttempt[]>([])
 
   const lessonQuery = useQuery({
     queryKey: [...LESSON_DETAIL_QUERY_KEY, userId, id],
@@ -242,6 +251,7 @@ export const useLearnWorkspace = (id?: string) => {
   const handleRetryLesson = useCallback(() => {
     sessionEpochRef.current += 1
     submitLockRef.current = false
+    recordedAttemptsRef.current = []
     stopMediaSession()
     triggerHaptic('tap')
     audioEngine.playPop()
@@ -295,6 +305,14 @@ export const useLearnWorkspace = (id?: string) => {
       })
 
       if (epoch !== sessionEpochRef.current) return
+      recordedAttemptsRef.current = [
+        ...recordedAttemptsRef.current.slice(-29),
+        {
+          exerciseId: currentExercise.id,
+          userAnswer: currentUserAnswer,
+          timeSpentSeconds: elapsedSeconds,
+        },
+      ]
       setSubmittedResult(res)
       if (res.is_correct) {
         triggerHaptic('success')
@@ -341,6 +359,53 @@ export const useLearnWorkspace = (id?: string) => {
     setIsScoreTooLowError(false)
     const total = Math.max(1, baseExercises.length)
     const accuracyPercent = Math.min(100, Math.floor((correctExerciseIds.length / total) * 100))
+
+    if (!isAuthenticated) {
+      if (accuracyPercent < 60) {
+        submitLockRef.current = false
+        setIsScoreTooLowError(true)
+        setSubmitError(
+          `Akurasi sesi kamu ${accuracyPercent}% (minimal 60% untuk lulus). Ulangi latihan untuk melanjutkan.`
+        )
+        triggerHaptic('error')
+        audioEngine.playError()
+        return
+      }
+
+      try {
+        useGuestTrialStore.getState().recordCompletedLesson({
+          lessonId: lesson.id,
+          lessonSlug: lesson.slug,
+          lessonTitle: lesson.title,
+          xpReward: lesson.xp_reward,
+          accuracyPercent,
+          completedAt: new Date().toISOString(),
+          attempts: recordedAttemptsRef.current,
+        })
+
+        const keyById = getLessonDraftKey(userId, lesson.id)
+        if (keyById) sessionStorage.removeItem(keyById)
+        const keyByParam = getLessonDraftKey(userId, id)
+        if (keyByParam && keyByParam !== keyById) sessionStorage.removeItem(keyByParam)
+
+        triggerHaptic('success')
+        const navState: LessonCompletionNavigationState = {
+          lesson,
+          totalExercises: baseExercises.length,
+          correctCount: correctExerciseIds.length,
+          totalXpEarned: lesson.xp_reward,
+          accuracyPercent,
+          isGuestTrial: true,
+        }
+        navigate(`/learn/${lesson.slug || lesson.id}/complete`, {
+          replace: true,
+          state: navState,
+        })
+      } finally {
+        submitLockRef.current = false
+      }
+      return
+    }
 
     try {
       const previousUser = useAuthStore.getState().user
@@ -424,6 +489,7 @@ export const useLearnWorkspace = (id?: string) => {
     completeLessonAsync,
     correctExerciseIds.length,
     id,
+    isAuthenticated,
     isCompletingLesson,
     lesson,
     navigate,
@@ -529,6 +595,14 @@ export const useLearnWorkspace = (id?: string) => {
     isLastExercise: exercises.length > 0 && safeIndex >= exercises.length - 1,
     isLoading: lessonQuery.isLoading,
     isError: lessonQuery.isError,
+    isGuest,
+    isLessonLockedError: Boolean(
+      lessonQuery.isError &&
+        isAxiosError<ApiResponse<unknown>>(lessonQuery.error) &&
+        (lessonQuery.error.response?.status === 403 ||
+          lessonQuery.error.response?.data?.code === 'LESSON_LOCKED' ||
+          lessonQuery.error.response?.data?.code === 'EXERCISE_LESSON_LOCKED')
+    ),
     lessonErrorMessage,
     isChecking: isSubmittingAnswer,
     isCompleting: isCompletingLesson,

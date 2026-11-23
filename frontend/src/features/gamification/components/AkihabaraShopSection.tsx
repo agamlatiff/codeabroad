@@ -30,7 +30,7 @@ export interface AkihabaraShopSectionProps {
 const SHOP_FILTER_OPTIONS: ReadonlyArray<{ id: ShopCategoryFilter; label: string }> = [
   { id: 'all', label: 'Semua' },
   { id: 'protection', label: 'Proteksi' },
-  { id: 'booster', label: 'Booster' },
+  { id: 'booster', label: 'Bonus XP' },
   { id: 'career', label: 'Karier' },
 ]
 
@@ -100,14 +100,14 @@ export const AkihabaraShopSection = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-brand font-black text-base sm:text-lg tracking-tight">
-                  Pasar Hadiah &amp; Perlengkapan Guild
+                  Toko Hadiah &amp; Perlengkapan
                 </h2>
                 <span className="bg-amber-400 text-amber-950 font-black text-[10px] px-2 py-0.5 rounded-full uppercase">
-                  AUTO DISPENSE
+                  LANGSUNG AKTIF
                 </span>
               </div>
               <p className="text-xs text-blue-100 max-w-md font-medium">
-                Tukarkan Gems hasil belajar Anda dengan proteksi streak, koleksi booster, dan kupon bimbingan karier global.
+                Tukarkan Gems hasil belajarmu dengan pelindung streak, bonus XP, dan kupon bimbingan karier global.
               </p>
             </div>
           </div>
@@ -117,7 +117,7 @@ export const AkihabaraShopSection = ({
             <GemIcon className="w-7 h-7 shrink-0" />
             <div>
               <span className="text-[10px] font-black text-blue-200 block uppercase tracking-wider">
-                Saldo Gems Anda
+                Saldo Gems Kamu
               </span>
               <span className="text-base font-brand font-black text-amber-300">
                 {userGems} Gems

@@ -294,7 +294,7 @@ export const useSrsReviewPage = () => {
     isLoading: dueQuery.isLoading,
     isError: dueQuery.isError,
     loadErrorMessage: dueQuery.isError
-      ? extractApiErrorMessage(dueQuery.error, 'Gagal memuat antrean ulasan soal.')
+      ? extractApiErrorMessage(dueQuery.error, 'Gagal memuat daftar ulasan soal.')
       : null,
     isChecking,
     refetchDue: dueQuery.refetch,

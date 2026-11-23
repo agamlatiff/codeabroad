@@ -96,7 +96,7 @@ export const CVReviewSubmissionModal = ({
     })
     if (!validated.success) {
       triggerHaptic('error')
-      setErrorMessage(validated.error.issues[0]?.message ?? 'Periksa kembali isian formulir Anda.')
+      setErrorMessage(validated.error.issues[0]?.message ?? 'Periksa kembali isian formulirmu.')
       return
     }
 
@@ -122,7 +122,7 @@ export const CVReviewSubmissionModal = ({
       setErrorMessage(
         extractApiErrorMessage(
           err,
-          'Gagal mengirim pengajuan Review CV. Pastikan kupon Anda mencukupi.'
+          'Gagal mengirim pengajuan Review CV. Pastikan kuponmu mencukupi.'
         )
       )
     } finally {
@@ -167,7 +167,7 @@ export const CVReviewSubmissionModal = ({
               Berkas Berhasil Dikirim!
             </h4>
             <p className="text-xs text-slate-500 max-w-sm mx-auto">
-              Mentor akan mengulas CV dan berkas lamaran Anda dalam 1-2 hari kerja. Notifikasi hasil audit akan dikirim ke akun Anda.
+              Mentor akan mengulas CV dan berkas lamaranmu dalam 1-2 hari kerja. Notifikasi hasil review akan dikirim ke akunmu.
             </p>
           </div>
         ) : (
@@ -212,7 +212,7 @@ export const CVReviewSubmissionModal = ({
                 disabled={isSubmitting}
                 value={githubUrl}
                 onChange={(e) => setGithubUrl(e.target.value)}
-                placeholder="https://portofolio-anda.com atau Google Drive karya"
+                placeholder="https://portofolio-kamu.com atau Google Drive karya"
                 className="w-full bg-white border-2 border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-800 placeholder:text-slate-400 focus:border-blue-500 focus:outline-none transition-all shadow-2xs disabled:opacity-60"
               />
             </div>

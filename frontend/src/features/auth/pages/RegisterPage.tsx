@@ -14,7 +14,7 @@ export const RegisterPage = () => {
   return (
     <AuthLayout
       title="Daftar Akun Baru"
-      subtitle="Lengkapi data di bawah ini untuk memulai perjalanan penguasaan bahasa globalmu."
+      subtitle="Isi data singkat di bawah untuk mulai belajar bahasa baru."
       heroTitle="Kuasai Bahasa Impianmu Secara Terstruktur"
       heroSubtitle="Bergabung bersama ribuan pembelajar Indonesia untuk menguasai bahasa Jepang, Jerman, dan Inggris standar global."
       heroEmotion="happy"

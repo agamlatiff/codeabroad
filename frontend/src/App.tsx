@@ -1,7 +1,18 @@
 import { lazy, Suspense } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
-import { ProtectedRoute, OnboardingRoute, GuestRoute } from '@/features/auth/components/ProtectedRoute'
+import {
+  ProtectedRoute,
+  OnboardingRoute,
+  GuestRoute,
+  HomeRoute,
+  PreviewableRoute,
+} from '@/features/auth/components/ProtectedRoute'
 import { ErrorBoundary } from '@/shared/components/ui/ErrorBoundary'
+import { ScrollToTop } from '@/shared/components/routing/ScrollToTop'
+
+const LandingPage = lazy(() =>
+  import('@/features/landing/pages/LandingPage').then((m) => ({ default: m.LandingPage }))
+)
 
 const LoginPage = lazy(() =>
   import('@/features/auth/pages/LoginPage').then((m) => ({ default: m.LoginPage }))
@@ -78,6 +89,7 @@ function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
+        <ScrollToTop />
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             {/* Guest Routes (Only accessible when NOT logged in) */}
@@ -91,8 +103,14 @@ function App() {
               <Route path="/onboarding" element={<OnboardingPage />} />
             </Route>
 
-            {/* Protected App Routes (Requires completed onboarding) */}
-            <Route element={<ProtectedRoute />}>
+            {/* Public Landing Page (/ redirects authenticated learners to /curriculum via HomeRoute) */}
+            <Route element={<HomeRoute />}>
+              <Route path="/" element={<LandingPage />} />
+            </Route>
+            <Route path="/welcome" element={<LandingPage />} />
+
+            {/* Previewable App Routes (Accessible to Guests in Trial Mode & Onboarded Users) */}
+            <Route element={<PreviewableRoute />}>
               <Route path="/curriculum" element={<CurriculumPage />} />
               <Route path="/curriculum/:languageId" element={<CurriculumPage />} />
               <Route path="/grammar" element={<GrammarPage />} />
@@ -102,19 +120,22 @@ function App() {
               <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
               <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
               <Route path="/courses" element={<Navigate to="/curriculum" replace />} />
-              <Route path="/quests" element={<QuestLogPage />} />
               <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/learn/:id" element={<LearnWorkspacePage />} />
               <Route path="/learn/:id/complete" element={<QuestCompletePage />} />
               <Route path="/flashcards" element={<FlashcardPage />} />
               <Route path="/flashcard" element={<Navigate to="/flashcards" replace />} />
-              <Route path="/review" element={<SrsReviewPage />} />
-              <Route path="/exam/:levelId" element={<ReadinessExamPage />} />
               <Route path="/career" element={<Navigate to="/curriculum" replace />} />
             </Route>
 
+            {/* Account-Only Protected Routes (Requires Auth + Onboarding) */}
+            <Route element={<ProtectedRoute />}>
+              <Route path="/quests" element={<QuestLogPage />} />
+              <Route path="/review" element={<SrsReviewPage />} />
+              <Route path="/exam/:levelId" element={<ReadinessExamPage />} />
+            </Route>
+
             {/* Default Fallback */}
-            <Route path="/" element={<Navigate to="/curriculum" replace />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
         </Suspense>

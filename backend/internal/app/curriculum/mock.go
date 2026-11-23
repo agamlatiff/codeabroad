@@ -252,6 +252,12 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 		cAt := p.CompletedAt
 		completedAt = &cAt
 	}
+	isUnlocked := l.IsUnlocked
+	if !isUnlocked && userID == "" {
+		if unlocked, uErr := m.isLessonUnlockedLocked(userID, id); uErr == nil {
+			isUnlocked = unlocked
+		}
+	}
 	return &LessonDetailResponse{
 		ID:          l.ID,
 		UnitID:      l.UnitID,
@@ -263,7 +269,7 @@ func (m *MockRepository) GetLessonByID(ctx context.Context, id string, userID st
 		IconName:    l.IconName,
 		XPReward:    l.XPReward,
 		OrderIndex:  l.OrderIndex,
-		IsUnlocked:  l.IsUnlocked,
+		IsUnlocked:  isUnlocked,
 		IsCompleted: isCompleted,
 		Score:       score,
 		IsSkipped:   isSkipped,
@@ -367,6 +373,16 @@ func (m *MockRepository) isLessonUnlockedLocked(userID string, lessonID string) 
 
 	if curUnit == nil {
 		return true, nil
+	}
+
+	if userID == "" {
+		minUnitOrder := curUnit.OrderIndex
+		for _, u := range m.Units {
+			if isCurriculumUnit(u) && u.LevelID == curUnit.LevelID && u.OrderIndex < minUnitOrder {
+				minUnitOrder = u.OrderIndex
+			}
+		}
+		return curUnit.OrderIndex == minUnitOrder, nil
 	}
 
 	for _, l := range m.Lessons {

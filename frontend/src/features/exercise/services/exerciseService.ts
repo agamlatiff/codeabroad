@@ -44,7 +44,7 @@ export const exerciseService = {
       params: { limit },
       signal: options?.signal,
     })
-    return unwrapApiResponse(response, 'Gagal memuat antrean ulasan SRS.')
+    return unwrapApiResponse(response, 'Gagal memuat daftar ulasan soal.')
   },
 
   /**
@@ -57,7 +57,7 @@ export const exerciseService = {
     const response = await api.post<ApiResponse<UserSRSReview>>('/srs/review', payload, {
       signal: options?.signal,
     })
-    return unwrapApiResponse(response, 'Gagal menyimpan hasil ulasan SRS.')
+    return unwrapApiResponse(response, 'Gagal menyimpan hasil ulasan soal.')
   },
 
   /**

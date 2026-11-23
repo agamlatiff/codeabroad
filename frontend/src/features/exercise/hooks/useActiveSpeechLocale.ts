@@ -1,36 +1,63 @@
 import { useMemo } from 'react'
+import { useParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { languageService } from '@/features/curriculum/services/languageService'
-import { getLanguageEnrollmentsQueryKey } from '@/shared/constants/queryKeys'
+import {
+  LANGUAGES_QUERY_KEY,
+  getLanguageEnrollmentsQueryKey,
+} from '@/shared/constants/queryKeys'
 import { resolveSpeechLocale } from '@/features/exercise/utils/exerciseHelpers'
 
 /**
- * Resolves the learner's active enrolled language ISO code (defaults to 'ja' while loading).
+ * Resolves the learner's active language ISO code dynamically for both authenticated learners
+ * (from enrollments) and guests (from URL `:languageId` or active catalog languages).
  */
 export const useActiveLanguageCode = (): string => {
   const userId = useAuthStore((state) => state.user?.id ?? 'anonymous')
+  const { languageId: routeLanguageId } = useParams<{ languageId?: string }>()
+  const isGuest = userId === 'anonymous'
 
   const enrollmentsQuery = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userId),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
-    enabled: userId !== 'anonymous',
+    enabled: !isGuest,
     staleTime: 60_000,
     retry: false,
   })
 
+  const languagesQuery = useQuery({
+    queryKey: LANGUAGES_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.listLanguages({ signal }),
+    enabled: isGuest,
+    staleTime: 1000 * 60 * 10,
+    retry: false,
+  })
+
   return useMemo(() => {
-    const enrollments = enrollmentsQuery.data ?? []
-    const active = enrollments.find((item) => item.is_active) ?? enrollments[0]
-    return active?.language?.code?.trim().toLowerCase() || 'ja'
-  }, [enrollmentsQuery.data])
+    if (!isGuest) {
+      const enrollments = enrollmentsQuery.data ?? []
+      const active = enrollments.find((item) => item.is_active) ?? enrollments[0]
+      return active?.language?.code?.trim().toLowerCase() || 'ja'
+    }
+
+    const languages = languagesQuery.data ?? []
+    const requested = routeLanguageId?.trim().toLowerCase()
+    const matched = requested
+      ? languages.find(
+          (lang) =>
+            lang.id.toLowerCase() === requested || lang.code.toLowerCase() === requested
+        )
+      : undefined
+    const target = matched ?? languages.find((lang) => lang.is_active) ?? languages[0]
+    return target?.code?.trim().toLowerCase() || 'ja'
+  }, [enrollmentsQuery.data, isGuest, languagesQuery.data, routeLanguageId])
 }
 
 /**
- * Resolves the learner's active enrolled language into a BCP-47 speech locale.
+ * Resolves the learner's active language into a BCP-47 speech locale.
  */
 export const useActiveSpeechLocale = () => {
   const activeLanguageCode = useActiveLanguageCode()
   return useMemo(() => resolveSpeechLocale(activeLanguageCode), [activeLanguageCode])
 }
-

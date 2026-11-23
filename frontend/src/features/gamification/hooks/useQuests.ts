@@ -68,7 +68,7 @@ const URGENT_RESET_THRESHOLD_MS = 2 * 60 * 60 * 1000
 const KODI_QUEST_TIPS: ReadonlyArray<{ emotion: KodiEmotion; speech: string }> = [
   {
     emotion: 'idea',
-    speech: 'Tips: Mulai dari misi kilat 5 menit dulu agar Peti Perunggu langsung siap dibuka!',
+    speech: 'Tips: Mulai dari misi singkat 5 menit dulu agar Peti Perunggu langsung siap dibuka!',
   },
   {
     emotion: 'explaining',
@@ -76,7 +76,7 @@ const KODI_QUEST_TIPS: ReadonlyArray<{ emotion: KodiEmotion; speech: string }> =
   },
   {
     emotion: 'curious',
-    speech: 'Kumpulkan Gems dari Peti Harian untuk ditukar Streak Freeze atau Review CV di Pasar Guild.',
+    speech: 'Kumpulkan Gems dari Peti Harian untuk ditukar Streak Freeze atau Review CV di Toko Hadiah.',
   },
   {
     emotion: 'clock',
@@ -485,7 +485,7 @@ export const useQuests = () => {
       levelId: activeLevel.id,
       levelCode: activeLevel.code,
       languageName: activeCurriculum.language?.name || 'Bahasa Target',
-      examName: activeLevel.official_exam_name || `Evaluasi Kesiapan ${activeLevel.code}`,
+      examName: activeLevel.official_exam_name || `Ujian Kesiapan ${activeLevel.code}`,
       passingScorePercent: activeLevel.passing_score_percent || 60,
       completedLessons,
       totalLessons,
@@ -565,7 +565,7 @@ export const useQuests = () => {
           currentProgress = isEarned ? 25 : Math.min(25, learnedFlashcardsCount)
           progressLabel = flashcardDecksQuery.data
             ? `${currentProgress}/25 Kartu`
-            : 'Target: 25 Kartu SRS'
+            : 'Target: 25 Kartu Dikuasai'
           if (!isEarned) {
             actionLabel = 'Latihan Flashcard'
             actionType = 'navigate'
@@ -719,9 +719,9 @@ export const useQuests = () => {
       }
       return {
         emotion: 'idea' as KodiEmotion,
-        badge: 'Pasar Guild Aktif',
+        badge: 'Toko Hadiah',
         badgeBg: 'bg-blue-100 text-blue-900 border-blue-300',
-        speech: `Saldo kamu ${userGems} Gems, ${userFirstName}! Pilih proteksi streak atau kupon karier di etalase guild.`,
+        speech: `Saldo kamu ${userGems} Gems, ${userFirstName}! Pilih proteksi streak atau kupon karier di Toko Hadiah.`,
       }
     }
 
@@ -982,7 +982,7 @@ export const useQuests = () => {
         triggerHaptic('success')
         audioEngine.playRewardClaim()
         await invalidateGamificationCaches()
-        showToast('2x XP Booster aktif selama 15 menit! Semua pelajaran & flashcard mendapat XP ganda.')
+        showToast('Bonus 2x XP aktif selama 15 menit! Semua pelajaran & flashcard mendapat XP ganda.')
       } catch (err: unknown) {
         triggerHaptic('error')
         audioEngine.playError()
@@ -1028,7 +1028,7 @@ export const useQuests = () => {
       })
       updateUser({ gems: res.status.gems })
       await invalidateGamificationCaches()
-      showToast('Kupon Review CV berhasil digunakan. Mentor akan memeriksa berkas Anda!')
+      showToast('Kupon Review CV berhasil digunakan. Mentor akan memeriksa berkasmu!')
     },
     [invalidateGamificationCaches, showToast, updateUser]
   )
@@ -1044,7 +1044,7 @@ export const useQuests = () => {
       })
       updateUser({ gems: res.status.gems })
       await invalidateGamificationCaches()
-      showToast('Pengajuan Mock Interview VIP berhasil dikirim! Silakan periksa Discord Anda.')
+      showToast('Pengajuan Simulasi Wawancara berhasil dikirim! Silakan cek Discord-mu.')
     },
     [invalidateGamificationCaches, showToast, updateUser]
   )

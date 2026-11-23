@@ -38,7 +38,7 @@ export const SrsMistakeReviewCard = () => {
                 Latih Ulang Kesalahan
               </p>
               <p className="text-[11px] font-bold text-rose-700">
-                {totalDue} soal jatuh tempo
+                {totalDue} soal siap diulas
               </p>
             </div>
           </div>
@@ -59,7 +59,7 @@ export const SrsMistakeReviewCard = () => {
       <div className="flex items-center gap-2 min-w-0">
         <CheckCircle weight="fill" className="w-4 h-4 text-emerald-500 shrink-0" />
         <span className="text-[11px] font-brand font-bold text-slate-600 truncate">
-          Ulasan Soal Salah • 0 jatuh tempo
+          Ulasan Soal Salah • 0 perlu diulas
         </span>
       </div>
       <ArrowRight

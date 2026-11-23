@@ -140,18 +140,88 @@ func (u *usecase) resolveEnrollmentForCurriculum(ctx context.Context, userID str
 	return nil, language.ErrEnrollmentNotFound
 }
 
-// GetCurriculum retrieves the full active language curriculum tree with calculated unit unlocks
-func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurriculumRequest) (*CurriculumResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
+func (u *usecase) resolveGuestEnrollment(ctx context.Context, languageID string) (*language.UserLanguageEnrollment, error) {
+	if u.langRepo == nil {
+		return nil, language.ErrLanguageNotFound
+	}
+	var selectedLang *language.Language
+	if languageID != "" {
+		lang, err := u.langRepo.GetLanguageByID(ctx, languageID)
+		if err != nil {
+			return nil, err
+		}
+		if lang == nil {
+			return nil, language.ErrLanguageNotFound
+		}
+		if !lang.IsActive {
+			return nil, language.ErrLanguageNotActive
+		}
+		selectedLang = lang
+	} else {
+		langs, err := u.langRepo.GetAllLanguages(ctx, true)
+		if err != nil {
+			return nil, err
+		}
+		for i := range langs {
+			if strings.EqualFold(langs[i].Code, "ja") {
+				selectedLang = &langs[i]
+				break
+			}
+		}
+		if selectedLang == nil && len(langs) > 0 {
+			selectedLang = &langs[0]
+		}
+		if selectedLang == nil {
+			return nil, language.ErrLanguageNotFound
+		}
 	}
 
+	levels, err := u.langRepo.GetLevelsByLanguageID(ctx, selectedLang.ID)
+	if err != nil {
+		return nil, err
+	}
+	if len(levels) == 0 {
+		return nil, language.ErrProficiencyLevelNotFound
+	}
+	sorted := sortProficiencyLevels(levels)
+	lvl := sorted[0]
+	return &language.UserLanguageEnrollment{
+		LanguageID:     selectedLang.ID,
+		Language:       selectedLang,
+		CurrentLevelID: &lvl.ID,
+		CurrentLevel:   &lvl,
+		IsActive:       true,
+	}, nil
+}
+
+func applyGuestCurriculumUnlocks(units []UnitNodeResponse) *string {
+	var firstLessonID *string
+	for i := range units {
+		isTrialUnit := i == 0
+		units[i].IsUnlocked = isTrialUnit
+		for j := range units[i].Lessons {
+			units[i].Lessons[j].IsUnlocked = isTrialUnit
+			if isTrialUnit && firstLessonID == nil {
+				id := units[i].Lessons[j].ID
+				firstLessonID = &id
+			}
+		}
+	}
+	return firstLessonID
+}
+
+// GetCurriculum retrieves the full active language curriculum tree with calculated unit unlocks
+func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurriculumRequest) (*CurriculumResponse, error) {
 	languageID := ""
 	if req != nil {
 		languageID = req.LanguageID
 	}
 
-	sfKey := fmt.Sprintf("%s:%s", userID, languageID)
+	sfKeyPrefix := userID
+	if sfKeyPrefix == "" {
+		sfKeyPrefix = "guest"
+	}
+	sfKey := fmt.Sprintf("%s:%s", sfKeyPrefix, languageID)
 	val, err, _ := u.sfGroup.Do(sfKey, func() (any, error) {
 		return u.getCurriculumInternal(ctx, userID, languageID)
 	})
@@ -165,11 +235,13 @@ func (u *usecase) GetCurriculum(ctx context.Context, userID string, req *GetCurr
 }
 
 func (u *usecase) getCurriculumInternal(ctx context.Context, userID string, languageID string) (*CurriculumResponse, error) {
+	isGuest := userID == ""
+
 	// Capture cache version epoch BEFORE reading Postgres or checking Redis active_lang cache
 	// so concurrent level-up/completion invalidations cannot let stale data populate the new epoch.
 	cacheVer := ""
 	canCache := false
-	if u.cacheRepo != nil {
+	if !isGuest && u.cacheRepo != nil {
 		ver, verErr := u.cacheRepo.GetCurriculumVersion(ctx, userID)
 		if verErr != nil {
 			log.Printf("curriculum: failed to read curriculum cache version for user %s: %v", userID, verErr)
@@ -198,7 +270,15 @@ func (u *usecase) getCurriculumInternal(ctx context.Context, userID string, lang
 		}
 	}
 
-	enrollment, err := u.resolveEnrollmentForCurriculum(ctx, userID, languageID)
+	var (
+		enrollment *language.UserLanguageEnrollment
+		err        error
+	)
+	if isGuest {
+		enrollment, err = u.resolveGuestEnrollment(ctx, languageID)
+	} else {
+		enrollment, err = u.resolveEnrollmentForCurriculum(ctx, userID, languageID)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -210,7 +290,7 @@ func (u *usecase) getCurriculumInternal(ctx context.Context, userID string, lang
 	}
 
 	// Lookup cached curriculum for active tracks only; preserve the pre-DB cacheVer on miss.
-	if u.cacheRepo != nil && enrollment.IsActive && canCache {
+	if !isGuest && u.cacheRepo != nil && enrollment.IsActive && canCache {
 		cached, _, cacheErr := u.cacheRepo.GetCurriculumWithVersion(ctx, userID, enrollment.Language.ID)
 		if cacheErr != nil {
 			log.Printf("curriculum: failed to read curriculum cache for user %s: %v", userID, cacheErr)
@@ -274,7 +354,9 @@ func (u *usecase) getCurriculumInternal(ctx context.Context, userID string, lang
 	if unlockedUnits == nil {
 		unlockedUnits = []UnitNodeResponse{}
 	}
-	if !enrollment.IsActive {
+	if isGuest {
+		currentLessonID = applyGuestCurriculumUnlocks(unlockedUnits)
+	} else if !enrollment.IsActive {
 		for i := range unlockedUnits {
 			unlockedUnits[i].IsUnlocked = false
 			for j := range unlockedUnits[i].Lessons {
@@ -330,10 +412,8 @@ type rawLessonExerciseReader interface {
 }
 
 // GetLessonDetail retrieves a lesson node and its child exercises for the learn workspace
+// Supports both authenticated users and unauthenticated Unit-1 trial guests (userID == "").
 func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID string) (*LessonDetailResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	if lessonID == "" {
 		return nil, apperror.ErrBadRequest
 	}
@@ -698,11 +778,8 @@ func (u *usecase) maybeAdvanceEnrollmentLevel(ctx context.Context, userID string
 	return nil
 }
 
-// GetGrammarPoints retrieves all grammar points belonging to an unlocked proficiency level
+// GetGrammarPoints retrieves grammar points belonging to an unlocked proficiency level (or active language for guests)
 func (u *usecase) GetGrammarPoints(ctx context.Context, userID string, levelID string) ([]GrammarPoint, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	if levelID == "" {
 		return nil, apperror.ErrBadRequest
 	}
@@ -715,15 +792,25 @@ func (u *usecase) GetGrammarPoints(ctx context.Context, userID string, levelID s
 		return nil, language.ErrProficiencyLevelNotFound
 	}
 
-	enrollment, err := u.resolveEnrollmentForCurriculum(ctx, userID, lvl.LanguageID)
-	if err != nil {
-		if errors.Is(err, language.ErrEnrollmentNotFound) {
+	if userID == "" {
+		lang, lErr := u.langRepo.GetLanguageByID(ctx, lvl.LanguageID)
+		if lErr != nil {
+			return nil, lErr
+		}
+		if lang == nil || !lang.IsActive {
+			return nil, language.ErrLanguageNotActive
+		}
+	} else {
+		enrollment, err := u.resolveEnrollmentForCurriculum(ctx, userID, lvl.LanguageID)
+		if err != nil {
+			if errors.Is(err, language.ErrEnrollmentNotFound) {
+				return nil, apperror.ErrForbidden
+			}
+			return nil, err
+		}
+		if enrollment == nil || enrollment.CurrentLevel == nil || lvl.OrderIndex > enrollment.CurrentLevel.OrderIndex {
 			return nil, apperror.ErrForbidden
 		}
-		return nil, err
-	}
-	if enrollment == nil || enrollment.CurrentLevel == nil || lvl.OrderIndex > enrollment.CurrentLevel.OrderIndex {
-		return nil, apperror.ErrForbidden
 	}
 
 	points, err := u.curriculumRepo.GetGrammarPointsByLevelID(ctx, levelID)
@@ -738,9 +825,6 @@ func (u *usecase) GetGrammarPoints(ctx context.Context, userID string, levelID s
 
 // GetGrammarPointsByLevelFilter retrieves grammar points across all levels (N5..N1) or a specific level code.
 func (u *usecase) GetGrammarPointsByLevelFilter(ctx context.Context, userID string, languageCode string, levelCode string) ([]GrammarPoint, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	filterRepo, ok := u.curriculumRepo.(grammarLevelFilterRepository)
 	if !ok {
 		return []GrammarPoint{}, nil
@@ -756,7 +840,7 @@ func (u *usecase) GetGrammarPointsByLevelFilter(ctx context.Context, userID stri
 }
 
 func (u *usecase) enrichGrammarPointsWithUserProgress(ctx context.Context, userID string, points []GrammarPoint) []GrammarPoint {
-	if len(points) == 0 {
+	if userID == "" || len(points) == 0 {
 		return points
 	}
 	progRepo, ok := u.curriculumRepo.(grammarProgressRepository)
@@ -798,11 +882,8 @@ func (u *usecase) SubmitGrammarCheck(
 	return progRepo.RecordGrammarCheck(ctx, userID, grammarPointIDOrCode, req.CorrectCount, req.TotalQuestions)
 }
 
-// GetKanaChart returns the Hiragana or Katakana Gojuon matrix annotated with user mastery stats.
+// GetKanaChart returns the Hiragana or Katakana Gojuon matrix annotated with user mastery stats (zeroed for guests).
 func (u *usecase) GetKanaChart(ctx context.Context, userID string, script string) (*KanaChartResponse, error) {
-	if userID == "" {
-		return nil, apperror.ErrUnauthorized
-	}
 	normalized := strings.ToLower(strings.TrimSpace(script))
 	if normalized == "all" {
 		normalized = ""

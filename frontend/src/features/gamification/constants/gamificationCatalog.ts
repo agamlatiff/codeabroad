@@ -121,7 +121,7 @@ export const SHOP_ITEMS: ShopItem[] = [
   {
     id: 'streak-freeze',
     title: 'Streak Freeze',
-    subtitle: 'Perlindungan 1 hari penuh dari pemutusan streak saat Anda berhalangan hadir.',
+    subtitle: 'Perlindungan 1 hari penuh agar streak tetap aman saat kamu berhalangan belajar.',
     price: 20,
     badge: 'POPULER',
     badgeColor: 'bg-blue-100 text-blue-700 border-blue-200',
@@ -132,10 +132,10 @@ export const SHOP_ITEMS: ShopItem[] = [
   },
   {
     id: 'xp-booster',
-    title: 'XP Booster Potion',
-    subtitle: 'Bonus perlengkapan koleksi & booster fokus untuk mempercepat progres belajar bahasa.',
+    title: 'Bonus 2x XP',
+    subtitle: 'Gandakan perolehan XP selama 15 menit saat belajar pelajaran maupun flashcard.',
     price: 35,
-    badge: 'BOOSTER',
+    badge: 'BONUS XP',
     badgeColor: 'bg-amber-100 text-amber-800 border-amber-200',
     icon: Flask,
     iconBg: 'bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_3px_0_0_#B45309]',

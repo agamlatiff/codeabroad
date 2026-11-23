@@ -141,8 +141,15 @@ func TestListDecksPaginated_NormalizationClampingAndPaging(t *testing.T) {
 	repo := &stubFlashcardRepo{decks: decks}
 	uc := NewUsecase(repo, nil)
 
-	if _, err := uc.ListDecksPaginated(context.Background(), "", DeckListFilter{}); !errors.Is(err, apperror.ErrUnauthorized) {
-		t.Fatalf("expected ErrUnauthorized for empty userID, got %v", err)
+	guestRes, err := uc.ListDecksPaginated(context.Background(), "", DeckListFilter{})
+	if err != nil || len(guestRes.Items) != 3 {
+		t.Fatalf("expected guest preview ListDecksPaginated to return 3 decks, got len=%d err=%v", len(guestRes.Items), err)
+	}
+	if _, err := uc.GetDueQueue(context.Background(), "", "ja", 10); !errors.Is(err, apperror.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized for guest GetDueQueue, got %v", err)
+	}
+	if _, err := uc.ReviewCard(context.Background(), "", "card-1", 4); !errors.Is(err, apperror.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized for guest ReviewCard, got %v", err)
 	}
 
 	res, err := uc.ListDecksPaginated(context.Background(), "user-1", DeckListFilter{

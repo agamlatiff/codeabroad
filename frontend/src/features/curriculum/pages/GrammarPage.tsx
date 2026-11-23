@@ -295,7 +295,7 @@ export const GrammarPage = () => {
         {/* Scheduled SRS Grammar Review Banner */}
         {!isLoading && duePointsInScope.length > 0 && (
           <section
-            aria-label="Jadwal Review Grammar SRS"
+            aria-label="Jadwal Ulasan Tata Bahasa"
             className="rounded-2xl border-2 border-amber-300/90 bg-gradient-to-r from-amber-50 via-yellow-50/70 to-orange-50/60 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_3px_0_0_#FDE68A]"
           >
             <div className="flex items-center gap-3 min-w-0">
@@ -304,7 +304,7 @@ export const GrammarPage = () => {
               </span>
               <div className="min-w-0 space-y-0.5">
                 <p className="font-brand font-black text-xs sm:text-sm text-amber-950">
-                  {duePointsInScope.length} Materi Grammar Jatuh Tempo untuk Diulas
+                  {duePointsInScope.length} Materi Tata Bahasa Siap Diulas
                 </p>
                 <p className="text-[11px] font-medium text-amber-900/80">
                   Uji kembali ingatanmu agar pola kalimat tetap nempel jangka panjang.

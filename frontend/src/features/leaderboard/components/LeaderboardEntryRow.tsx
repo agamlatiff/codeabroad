@@ -77,7 +77,7 @@ export const LeaderboardEntryRow = ({
             </span>
             {isUser && (
               <span className="bg-blue-600 text-white text-[9px] font-brand font-black px-2 py-0.5 rounded-md shrink-0">
-                ANDA
+                KAMU
               </span>
             )}
             {isTop3 && (

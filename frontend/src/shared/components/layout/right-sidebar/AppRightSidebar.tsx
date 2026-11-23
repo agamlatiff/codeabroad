@@ -4,10 +4,12 @@ import { Gift, Lightning, X } from '@phosphor-icons/react'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { useAppRightSidebar } from '@/shared/hooks/layout/right-sidebar/useAppRightSidebar'
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { StreakSection } from './StreakSection'
 import { QuestsSection } from './QuestsSection'
 import { SrsMistakeReviewCard } from './SrsMistakeReviewCard'
 import { DailyLanguageCard } from './DailyLanguageCard'
+import { GuestConversionSidebarCard } from './GuestConversionSidebarCard'
 
 export interface AppRightSidebarProps {
   className?: string
@@ -27,6 +29,7 @@ export const AppRightSidebar = ({
   onCloseMobileDrawer,
 }: AppRightSidebarProps) => {
   const isDesktopRail = useMediaQuery('(min-width: 1280px)')
+  const isAuthenticated = useAuthStore((s) => Boolean(s.isAuthenticated && s.user))
   const {
     isClosingDrawer,
     floatingRewards,
@@ -48,7 +51,7 @@ export const AppRightSidebar = ({
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [isMobileDrawerOpen, isDesktopRail, handleCloseMobileDrawer])
 
-  const sidebarContent = (
+  const sidebarContent = isAuthenticated ? (
     <>
       <div data-tour="right-streak-quests" className="space-y-3">
         {/* ── 1. 7-DAY STREAK CONSISTENCY TRACKER (1:1 Hook) ── */}
@@ -80,6 +83,8 @@ export const AppRightSidebar = ({
         <DailyLanguageCard />
       </div>
     </>
+  ) : (
+    <GuestConversionSidebarCard />
   )
 
   return (
@@ -126,10 +131,10 @@ export const AppRightSidebar = ({
                   </div>
                   <div>
                     <h3 className="font-brand font-black text-sm text-slate-900 leading-none">
-                      Misi & Hadiah Harian
+                      {isAuthenticated ? 'Misi & Hadiah Harian' : 'Simpan Progres Belajarmu'}
                     </h3>
                     <span className="text-[10px] text-slate-400 font-medium">
-                      Rentetan, target XP & bahasa kerja
+                      {isAuthenticated ? 'Streak, target XP & kosakata harian' : 'Mode Coba • Buat akun gratis'}
                     </span>
                   </div>
                 </div>

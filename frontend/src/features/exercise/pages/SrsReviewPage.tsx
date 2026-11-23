@@ -104,7 +104,7 @@ export const SrsReviewPage = () => {
         mode="status"
         emotion="worried"
         title="Gagal Memuat Ulasan Soal"
-        message={loadErrorMessage ?? 'Terjadi kesalahan saat mengambil antrean SRS.'}
+        message={loadErrorMessage ?? 'Terjadi kesalahan saat mengambil daftar ulasan soal.'}
         primaryLabel="Kembali ke Peta Belajar"
         onPrimary={handleExitToCurriculum}
         secondaryLabel="Coba Lagi"
@@ -119,7 +119,7 @@ export const SrsReviewPage = () => {
         mode="status"
         emotion="celebrate"
         title="Sesi Ulasan Kesalahan Tuntas!"
-        message={`Kamu baru mengulas ${reviewedCount || initialCount} soal dengan ${firstTryCorrectCount} tepat langsung pada percobaan pertama. Jadwal SM-2 sudah diperbarui.`}
+        message={`Kamu baru mengulas ${reviewedCount || initialCount} soal dengan ${firstTryCorrectCount} tepat langsung pada percobaan pertama. Jadwal ulasan berikutnya sudah diperbarui.`}
         primaryLabel="Kembali ke Peta Belajar"
         primaryVariant="emerald"
         onPrimary={handleExitToCurriculum}
@@ -135,7 +135,7 @@ export const SrsReviewPage = () => {
         mode="status"
         emotion="celebrate"
         title="Semua Soal Terkendali!"
-        message="Saat ini belum ada soal salah yang jatuh tempo untuk diulas. Terus lanjutkan pelajaran di peta belajar atau asah hafalan lewat Flashcard."
+        message="Saat ini belum ada soal salah yang perlu diulas. Terus lanjutkan pelajaran di peta belajar atau asah hafalan lewat Flashcard."
         primaryLabel="Kembali ke Peta Belajar"
         primaryVariant="blue"
         onPrimary={handleExitToCurriculum}
@@ -166,7 +166,7 @@ export const SrsReviewPage = () => {
             ) : (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-200 text-xs font-black text-blue-700">
                 <Brain weight="fill" className="w-4 h-4 text-blue-600" />
-                <span className="hidden sm:inline">Ulasan Pintar SRS</span>
+                <span className="hidden sm:inline">Ulasan Soal</span>
                 <span className="sm:hidden">Ulasan</span>
               </span>
             )}
@@ -230,8 +230,8 @@ export const SrsReviewPage = () => {
               Jeda Sesi Ulasan?
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-              Sebanyak {reviewedCount} soal yang sudah diperiksa telah tersimpan ke jadwal SM-2.
-              Sisa soal lainnya tetap menunggu di antrean ulasan.
+              Sebanyak {reviewedCount} soal yang sudah diperiksa telah tersimpan ke jadwal ulasanmu.
+              Sisa soal lainnya tetap tersimpan di daftar ulasanmu.
             </p>
           </div>
           <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">

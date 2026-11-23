@@ -172,9 +172,9 @@ export const MilestonesAndBadgesSection = ({
 
                   <p className="text-xs text-slate-600 font-medium leading-relaxed">
                     {examSummary.status === 'passed'
-                      ? `Selamat! Evaluasi 4 pilar ${examSummary.languageName} tingkat ${examSummary.levelCode} sudah lulus.`
+                      ? `Selamat! Ujian kesiapan ${examSummary.languageName} tingkat ${examSummary.levelCode} sudah lulus.`
                       : examSummary.status === 'ready'
-                        ? `Semua ${examSummary.totalLessons} pelajaran tuntas! Raih minimal ${examSummary.passingScorePercent}% untuk naik tingkat & membuka Lencana Mastery.`
+                        ? `Semua ${examSummary.totalLessons} pelajaran tuntas! Raih minimal ${examSummary.passingScorePercent}% untuk naik tingkat & membuka Lencana Kelulusan.`
                         : `Tuntaskan ${examSummary.totalLessons - examSummary.completedLessons} pelajaran lagi di ${examSummary.languageName} ${examSummary.levelCode} untuk membuka ujian kelulusan level (min. ${examSummary.passingScorePercent}%).`}
                   </p>
                 </div>
@@ -219,7 +219,7 @@ export const MilestonesAndBadgesSection = ({
                       <span className="text-[10px] font-semibold text-slate-500 block">
                         {examSummary.status === 'passed' && typeof pillarScore === 'number'
                           ? `Skor ${pillarScore}%`
-                          : '4 Pilar Uji'}
+                          : 'Bagian Ujian'}
                       </span>
                     </div>
                   </div>
@@ -327,14 +327,14 @@ export const MilestonesAndBadgesSection = ({
             <div>
               <div className="flex items-center gap-2 flex-wrap">
                 <h2 className="font-brand font-black text-base sm:text-lg text-slate-900">
-                  Koleksi Lencana Guild
+                  Koleksi Lencana
                 </h2>
                 <span className="text-[11px] font-mono font-black px-2 py-0.5 rounded-lg bg-amber-50 border border-amber-200 text-amber-800">
                   {earnedBadgeCount}/{totalBadgeCount} Diraih
                 </span>
               </div>
               <p className="text-xs text-slate-500 font-medium">
-                Terbuka otomatis saat mencapai target belajar, rentetan streak, &amp; memori SRS.
+                Terbuka otomatis saat mencapai target belajar, streak harian, &amp; latihan ulang rutin.
               </p>
             </div>
           </div>

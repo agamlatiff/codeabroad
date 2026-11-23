@@ -74,7 +74,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
         mode="status"
         emotion="celebrate"
         title="Ujian Kesiapan Sudah Lulus"
-        message="Kamu sudah lulus evaluasi kesiapan untuk unit ini dan akses ke tingkat berikutnya sudah terbuka."
+        message="Kamu sudah lulus ujian kesiapan untuk unit ini dan akses ke tingkat berikutnya sudah terbuka."
         primaryLabel="Kembali ke Kurikulum"
         primaryVariant="emerald"
         onPrimary={handleBackToCurriculum}
@@ -113,7 +113,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
         mode="status"
         emotion="thinking"
         title="Belum Ada Soal Ujian"
-        message="Soal evaluasi kesiapan untuk level ini belum tersedia."
+        message="Soal ujian kesiapan untuk level ini belum tersedia."
         primaryLabel="Kembali ke Kurikulum"
         onPrimary={handleBackToCurriculum}
       />

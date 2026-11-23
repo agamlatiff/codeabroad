@@ -175,7 +175,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           {saveSuccess && (
             <div className="p-3 bg-emerald-50 border border-emerald-300 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
               <Check weight="bold" className="w-4 h-4 text-emerald-600" />
-              <span>Profil berhasil diperbarui dan tersimpan ke cloud!</span>
+              <span>Profil berhasil diperbarui dan tersimpan!</span>
             </div>
           )}
 

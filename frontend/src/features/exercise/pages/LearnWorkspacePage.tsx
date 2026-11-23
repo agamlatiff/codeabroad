@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
@@ -33,6 +33,7 @@ import {
 const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
 
 const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
+  const navigate = useNavigate()
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false)
   const {
     lesson,
@@ -67,6 +68,8 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     isLastExercise,
     isLoading,
     isError,
+    isGuest,
+    isLessonLockedError,
     lessonErrorMessage,
     isChecking,
     isCompleting,
@@ -193,6 +196,21 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
   }
 
   if (isError || !lesson) {
+    if (isGuest && isLessonLockedError) {
+      return (
+        <ExerciseSessionStatusView
+          mode="status"
+          emotion="thinking"
+          title="Unit Lanjutan Membutuhkan Akun Gratis"
+          message="Di Mode Coba Tanpa Login, kamu bisa mengerjakan seluruh pelajaran Unit 1. Buat akun gratis dalam 10 detik untuk membuka seluruh unit lanjutan dan menyimpan progresmu."
+          primaryLabel="Daftar Gratis & Buka Semua Unit"
+          onPrimary={() => navigate('/register?from=guest')}
+          secondaryLabel="Kembali ke Unit 1"
+          onSecondary={handleExitToCurriculum}
+        />
+      )
+    }
+
     return (
       <ExerciseSessionStatusView
         mode="status"
@@ -282,7 +300,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
             Keluar dari Pelajaran?
           </h2>
           <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-            Progresmu di sesi ini tersimpan sementara di browser, jadi kamu bisa melanjutkannya
+            Progresmu di sesi ini tersimpan sementara di perangkat ini, jadi kamu bisa melanjutkannya
             saat kembali.
           </p>
         </div>
