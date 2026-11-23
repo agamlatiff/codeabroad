@@ -37,7 +37,11 @@ func getEnv(key, fallback string) string {
 	return fallback
 }
 
-const defaultDevJWTSecret = "super-secret-jwt-key-must-be-at-least-32-chars-long"
+const (
+	defaultDevJWTSecret     = "super-secret-jwt-key-must-be-at-least-32-chars-long"
+	defaultDevDBPassword    = "merantalk_secret"
+	defaultDevRedisPassword = "merantalk_redis_secret"
+)
 
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(".env"); err != nil {
@@ -52,9 +56,24 @@ func LoadConfig() (*Config, error) {
 	}
 
 	jwtSecret := getEnv("JWT_SECRET", defaultDevJWTSecret)
+	dbPassword := getEnv("DB_PASSWORD", defaultDevDBPassword)
+	dbSSLMode := strings.ToLower(getEnv("DB_SSLMODE", "disable"))
+	redisPassword := strings.TrimSpace(os.Getenv("REDIS_PASSWORD"))
+
 	isLocalDevOrTest := env == "development" || env == "test"
-	if !isLocalDevOrTest && (jwtSecret == "" || jwtSecret == defaultDevJWTSecret || len(jwtSecret) < 32) {
-		return nil, fmt.Errorf("JWT_SECRET must be set to a non-default value of at least 32 characters in %s", env)
+	if !isLocalDevOrTest {
+		if jwtSecret == "" || jwtSecret == defaultDevJWTSecret || len(jwtSecret) < 32 {
+			return nil, fmt.Errorf("JWT_SECRET must be set to a non-default value of at least 32 characters in %s", env)
+		}
+		if dbPassword == "" || dbPassword == defaultDevDBPassword {
+			return nil, fmt.Errorf("DB_PASSWORD must be set to a non-default value in %s", env)
+		}
+		if dbSSLMode == "" || dbSSLMode == "disable" {
+			return nil, fmt.Errorf("DB_SSLMODE cannot be 'disable' in %s", env)
+		}
+		if redisPassword == "" || redisPassword == defaultDevRedisPassword {
+			return nil, fmt.Errorf("REDIS_PASSWORD must be set to a non-default value in %s", env)
+		}
 	}
 
 	jwtExpMin, err := strconv.Atoi(getEnv("JWT_EXPIRATION_MINUTES", "15"))
@@ -96,12 +115,12 @@ func LoadConfig() (*Config, error) {
 		DBHost:                     getEnv("DB_HOST", "localhost"),
 		DBPort:                     getEnv("DB_PORT", "5432"),
 		DBUser:                     getEnv("DB_USER", "merantalk"),
-		DBPassword:                 getEnv("DB_PASSWORD", "merantalk_secret"),
+		DBPassword:                 dbPassword,
 		DBName:                     getEnv("DB_NAME", "merantalk"),
-		DBSSLMode:                  getEnv("DB_SSLMODE", "disable"),
+		DBSSLMode:                  dbSSLMode,
 		RedisHost:                  getEnv("REDIS_HOST", "localhost"),
 		RedisPort:                  getEnv("REDIS_PORT", "6379"),
-		RedisPassword:              strings.TrimSpace(os.Getenv("REDIS_PASSWORD")),
+		RedisPassword:              redisPassword,
 		JWTSecret:                  jwtSecret,
 		JWTAccessExpirationMinutes: jwtExpMin,
 		JWTRefreshExpirationDays:   jwtRefreshExpDays,

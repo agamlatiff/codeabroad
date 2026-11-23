@@ -220,11 +220,13 @@ func main() {
 
 	// 8. Configure HTTP server
 	srv := &http.Server{
-		Addr:         ":" + cfg.Port,
-		Handler:      appRouter,
-		ReadTimeout:  10 * time.Second,
-		WriteTimeout: 10 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		Addr:              ":" + cfg.Port,
+		Handler:           appRouter,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       10 * time.Second,
+		WriteTimeout:      20 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    1 << 20,
 	}
 
 	// 9. Start server in a background goroutine
