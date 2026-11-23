@@ -45,7 +45,8 @@ export const useSrsReviewPage = () => {
 
   const questionStartedAtRef = useRef<number>(0)
   const submitLockRef = useRef(false)
-  const processedExerciseIdsRef = useRef<Set<string>>(new Set())
+  const statsRecordedIdsRef = useRef<Set<string>>(new Set())
+  const srsSyncedIdsRef = useRef<Set<string>>(new Set())
 
   const dueQuery = useQuery({
     queryKey: [...SRS_DUE_QUERY_KEY, userId, 'session'],
@@ -156,19 +157,24 @@ export const useSrsReviewPage = () => {
 
       setSubmittedResult(res)
 
-      if (!processedExerciseIdsRef.current.has(currentExercise.id)) {
-        processedExerciseIdsRef.current.add(currentExercise.id)
+      if (!statsRecordedIdsRef.current.has(currentExercise.id)) {
+        statsRecordedIdsRef.current.add(currentExercise.id)
         setReviewedCount((prev) => prev + 1)
         if (res.is_correct) {
           setFirstTryCorrectCount((prev) => prev + 1)
         }
+      }
+
+      if (!srsSyncedIdsRef.current.has(currentExercise.id)) {
         try {
           await processReviewAsync({
             exercise_id: currentExercise.id,
             quality: res.is_correct ? 4 : 1,
           })
+          srsSyncedIdsRef.current.add(currentExercise.id)
         } catch {
-          // Keep feedback unblocked even if SRS schedule update fails transiently
+          // Keep feedback unblocked even if SRS schedule update fails transiently;
+          // retry queue items can recover SM-2 sync on a subsequent attempt.
         }
       }
 
@@ -237,7 +243,7 @@ export const useSrsReviewPage = () => {
     stopMediaSession()
     audioService.stopSpeech()
     audioEngine.playPop()
-    if (processedExerciseIdsRef.current.size > 0) {
+    if (statsRecordedIdsRef.current.size > 0 || srsSyncedIdsRef.current.size > 0) {
       void invalidateLearningSessionCaches(queryClient, { includeSrs: true })
     }
     navigate('/curriculum')

@@ -308,7 +308,7 @@ class AudioService {
    */
   public playBgm(track: SoundscapeTrack = 'universal'): void {
     this.activeSoundscapeTrack = track
-    if (this.mode !== 'all' || this.isAuthRoute()) return
+    if (!this.isUnlocked || this.mode !== 'all' || this.isAuthRoute()) return
 
     const ctx = this.getContext()
     if (!ctx || !this.soundscape) return

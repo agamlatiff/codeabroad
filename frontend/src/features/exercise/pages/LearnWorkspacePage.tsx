@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
+import { useAuthStore } from '@/features/auth/store/authStore'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import { Button3D } from '@/shared/components/ui/Button3D'
@@ -484,5 +485,6 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
  */
 export const LearnWorkspacePage = () => {
   const { id } = useParams<{ id: string }>()
-  return <LearnWorkspaceContent key={id ?? 'missing'} lessonId={id} />
+  const userId = useAuthStore((s) => s.user?.id ?? 'anonymous')
+  return <LearnWorkspaceContent key={`${userId}:${id ?? 'missing'}`} lessonId={id} />
 }

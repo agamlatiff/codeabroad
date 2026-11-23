@@ -25,6 +25,7 @@ import type {
 import { extractApiErrorMessage } from '@/shared/services/api'
 import type { ApiResponse } from '@/shared/types/api'
 import { audioService } from '@/shared/services/audioService'
+import { useAudioStore } from '@/shared/store/audioStore'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
@@ -194,7 +195,7 @@ export const useLearnWorkspace = (id?: string) => {
 
   // Ambient soundscape while inside lesson player
   useEffect(() => {
-    audioService.playBgm('universal')
+    audioService.playBgm(useAudioStore.getState().soundscapeTrack)
     return () => {
       audioService.stopBgm()
     }
