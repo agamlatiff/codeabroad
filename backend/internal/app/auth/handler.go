@@ -202,6 +202,10 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 				authProtected.POST("/logout", h.Logout)
 			}
 		}
-		authProtected.POST("/logout-all", h.LogoutAll)
+		if h.rateLimiter != nil {
+			authProtected.POST("/logout-all", h.rateLimiter, h.LogoutAll)
+		} else {
+			authProtected.POST("/logout-all", h.LogoutAll)
+		}
 	}
 }

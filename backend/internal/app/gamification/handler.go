@@ -64,8 +64,7 @@ func (h *Handler) BuyShopItem(c *gin.Context) {
 	}
 
 	var req ShopBuyRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid shop purchase payload", nil))
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -90,8 +89,7 @@ func (h *Handler) ActivateShopItem(c *gin.Context) {
 	}
 
 	var req ShopActivateRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid shop activation payload", nil))
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -135,8 +133,7 @@ func (h *Handler) ClaimDailyChest(c *gin.Context) {
 	}
 
 	var req ClaimChestRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid chest claim payload", nil))
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -216,8 +213,7 @@ func (h *Handler) SubmitCoaching(c *gin.Context) {
 	}
 
 	var req CoachingSubmissionRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.Error(c, apperror.NewBadRequestError("INVALID_REQUEST", "invalid coaching submission payload", nil))
+	if !response.BindJSON(c, &req) {
 		return
 	}
 
@@ -235,10 +231,11 @@ func (h *Handler) SubmitCoaching(c *gin.Context) {
 
 // RegisterRoutes registers gamification endpoints under the protected group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
-	group := rg.Group("/gamification")
-	if authMiddleware != nil {
-		group.Use(authMiddleware)
+	if authMiddleware == nil {
+		panic("gamification.Handler.RegisterRoutes requires non-nil authMiddleware")
 	}
+	group := rg.Group("/gamification")
+	group.Use(authMiddleware)
 
 	group.GET("/status", h.GetStatus)
 	group.GET("/shop", h.ListShopItems)

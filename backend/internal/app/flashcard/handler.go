@@ -140,7 +140,10 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 	}
 
 	var req ReviewCardRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.Quality == nil {
+	if !response.BindJSON(c, &req) {
+		return
+	}
+	if req.Quality == nil {
 		response.Error(c, apperror.ErrBadRequest)
 		return
 	}
@@ -157,6 +160,9 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 
 // RegisterRoutes mounts flashcard routes onto the v1 router group.
 func (h *Handler) RegisterRoutes(v1 *gin.RouterGroup, authMiddleware gin.HandlerFunc) {
+	if authMiddleware == nil {
+		panic("flashcard.Handler.RegisterRoutes requires non-nil authMiddleware")
+	}
 	fc := v1.Group("/flashcards")
 	fc.Use(authMiddleware)
 	{

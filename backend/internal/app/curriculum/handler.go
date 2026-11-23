@@ -266,8 +266,7 @@ func (h *Handler) SubmitKanaPractice(c *gin.Context) {
 		return
 	}
 	var req KanaPracticeRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid kana practice payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 	kanaUC, ok := h.curriculumUsecase.(kanaUsecase)
@@ -296,8 +295,7 @@ func (h *Handler) SubmitGrammarCheck(c *gin.Context) {
 		return
 	}
 	var req SubmitGrammarCheckRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "invalid grammar check payload")
+	if !response.BindJSON(c, &req) {
 		return
 	}
 	checkUC, ok := h.curriculumUsecase.(grammarCheckUsecase)

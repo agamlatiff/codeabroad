@@ -70,6 +70,9 @@ func (h *Handler) ClaimWeeklyReward(c *gin.Context) {
 
 // RegisterRoutes registers the leaderboard routes under the provided router group
 func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.HandlerFunc, optionalAuth gin.HandlerFunc) {
+	if authMiddleware == nil {
+		panic("leaderboard.Handler.RegisterRoutes requires non-nil authMiddleware")
+	}
 	limiter := h.readLimiter
 	if limiter == nil {
 		limiter = middleware.UserOrIPRateLimitMiddleware(DefaultLeaderboardLimit, time.Minute, DefaultLeaderboardMessage)
@@ -81,11 +84,7 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		} else {
 			leaderboard.GET("/weekly", limiter, h.GetWeeklyLeaderboard)
 		}
-		if authMiddleware != nil {
-			leaderboard.POST("/weekly/claim", authMiddleware, limiter, h.ClaimWeeklyReward)
-		} else {
-			leaderboard.POST("/weekly/claim", limiter, h.ClaimWeeklyReward)
-		}
+		leaderboard.POST("/weekly/claim", authMiddleware, limiter, h.ClaimWeeklyReward)
 	}
 }
 
