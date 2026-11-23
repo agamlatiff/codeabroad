@@ -13,11 +13,21 @@ import {
 
 const CLOSE_AFTER_SAVE_MS = 900
 
+export const DAILY_GOAL_MINUTES_OPTIONS = [5, 15, 30, 45] as const
+export type SettingsDailyGoalMinutes = (typeof DAILY_GOAL_MINUTES_OPTIONS)[number]
+
+const normalizeDailyGoalMinutes = (value?: number | null): SettingsDailyGoalMinutes => {
+  if (value === 5 || value === 15 || value === 30 || value === 45) {
+    return value
+  }
+  return 15
+}
+
 const profileSettingsSchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, 'Nama lengkap tidak boleh kosong')
+    .min(2, 'Nama lengkap minimal 2 karakter')
     .max(100, 'Nama lengkap maksimal 100 karakter'),
   bio: z.string().trim().max(500, 'Bio maksimal 500 karakter'),
 })
@@ -52,6 +62,9 @@ export const useSettingsModal = ({
 
   const [name, setName] = useState(user?.name || '')
   const [bio, setBio] = useState(user?.bio || '')
+  const [dailyGoalMinutes, setDailyGoalMinutes] = useState<SettingsDailyGoalMinutes>(() =>
+    normalizeDailyGoalMinutes(user?.daily_goal_minutes)
+  )
   const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(() => getAvatarUrl(user))
   const [avatarOptions, setAvatarOptions] = useState<string[]>(() =>
     AVATAR_PRESET_SEEDS.map(buildAdventurerAvatarUrl)
@@ -69,6 +82,7 @@ export const useSettingsModal = ({
     if (isOpen) {
       setName(user?.name || '')
       setBio(user?.bio || '')
+      setDailyGoalMinutes(normalizeDailyGoalMinutes(user?.daily_goal_minutes))
       setSelectedAvatarUrl(getAvatarUrl(user))
       setSelectedAvatarStyle(avatarStyle)
       setSaveSuccess(false)
@@ -131,6 +145,7 @@ export const useSettingsModal = ({
           name: validation.data.name,
           bio: validation.data.bio,
           avatar_url: selectedAvatarUrl,
+          daily_goal_minutes: dailyGoalMinutes,
         })
         setSaveSuccess(true)
         setErrorMessage(null)
@@ -149,7 +164,7 @@ export const useSettingsModal = ({
         setIsSubmitting(false)
       }
     },
-    [name, bio, selectedAvatarUrl, userActions, onProfileUpdated, onClose]
+    [name, bio, dailyGoalMinutes, selectedAvatarUrl, userActions, onProfileUpdated, onClose]
   )
 
   return {
@@ -157,6 +172,8 @@ export const useSettingsModal = ({
     setName,
     bio,
     setBio,
+    dailyGoalMinutes,
+    setDailyGoalMinutes,
     selectedAvatarUrl,
     avatarOptions,
     selectedAvatarStyle,

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState, type FC } from 'react'
 import { CheckCircle, SpeakerHigh, Sparkle, X, XCircle } from '@phosphor-icons/react'
 import type { KanaCharacterItem, KanaPracticeItem } from '@/features/curriculum/types/curriculum'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { extractApiErrorMessage } from '@/shared/services/api'
 import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -78,6 +79,7 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null)
   const [answers, setAnswers] = useState<KanaPracticeItem[]>([])
   const [isCompleted, setIsCompleted] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   const currentQuestion = questions[questionIndex]
   const correctCount = answers.filter((a) => a.is_correct).length
@@ -119,14 +121,21 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
   }
 
   const handleNext = async () => {
+    setSaveError(null)
     if (questionIndex + 1 < questions.length) {
       const nextIdx = questionIndex + 1
       setQuestionIndex(nextIdx)
       setSelectedChoice(null)
       return
     }
-    setIsCompleted(true)
-    await onFinishDrill(answers)
+    try {
+      await onFinishDrill(answers)
+      setIsCompleted(true)
+    } catch (err) {
+      setSaveError(
+        extractApiErrorMessage(err, 'Gagal menyimpan hasil latihan baris ke server. Coba lagi.')
+      )
+    }
   }
 
   const handleRestart = () => {
@@ -134,6 +143,7 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
     setSelectedChoice(null)
     setAnswers([])
     setIsCompleted(false)
+    setSaveError(null)
   }
 
   if (!currentQuestion) {
@@ -328,6 +338,15 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
             {currentQuestion.target.mnemonic}
           </div>
 
+          {saveError && (
+            <div
+              role="alert"
+              className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700"
+            >
+              {saveError}
+            </div>
+          )}
+
           <Button3D
             variant="blue"
             size="md"
@@ -340,7 +359,9 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
               ? 'Lanjut ke Huruf Berikutnya →'
               : isSubmitting
                 ? 'Menyimpan Progres...'
-                : 'Lihat Hasil Baris'}
+                : saveError
+                  ? 'Coba Simpan Ulang'
+                  : 'Lihat Hasil Baris'}
           </Button3D>
         </div>
       )}

@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from "@/features/auth/store/authStore"
 import { userService } from "@/features/user/services/userService"
-import { getProfileQueryKey } from "@/shared/constants/queryKeys"
+import { getProfileQueryKey, LEADERBOARD_QUERY_KEY } from "@/shared/constants/queryKeys"
 import type { User, UpdateProfilePayload } from "@/shared/types/user"
 
 /**
@@ -49,6 +49,7 @@ export const useUser = () => {
       updateUser(updatedUser)
       queryClient.setQueryData(getProfileQueryKey(updatedUser.id), updatedUser)
       void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(updatedUser.id) })
+      void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
     },
   })
 

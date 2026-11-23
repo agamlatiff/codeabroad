@@ -18,7 +18,7 @@ import {
   gamificationService,
   GAMIFICATION_STATUS_QUERY_KEY,
 } from "@/features/gamification/services/gamificationService"
-import { getProfileQueryKey } from "@/shared/constants/queryKeys"
+import { getProfileQueryKey, LEADERBOARD_QUERY_KEY } from "@/shared/constants/queryKeys"
 import { saveAvatarStyle, type AvatarStyle } from "@/shared/utils/avatar"
 import { AppBreadcrumb, type BreadcrumbItem } from "@/shared/components/ui/AppBreadcrumb"
 import { GemIcon } from "@/shared/components/ui/GamificationIcons"
@@ -372,6 +372,7 @@ export const AppTopBar = ({
         }}
         onProfileUpdated={() => {
           void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(activeUser?.id) })
+          void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
         }}
         onLogout={() => {
           setIsSettingsOpen(false)

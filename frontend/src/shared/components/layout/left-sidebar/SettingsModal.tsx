@@ -14,6 +14,7 @@ import {
   Shuffle,
   Compass,
   SignOut,
+  Clock,
 } from '@phosphor-icons/react'
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { UserAvatar } from './UserAvatar'
@@ -21,6 +22,7 @@ import { triggerHaptic } from "@/shared/utils/haptics"
 import { useAudioStore } from "@/shared/store/audioStore"
 import { computeXpLevelProgress } from "@/shared/utils/progression"
 import {
+  DAILY_GOAL_MINUTES_OPTIONS,
   useSettingsModal,
   type UseSettingsModalOptions,
 } from "@/shared/hooks/layout/left-sidebar/useSettingsModal"
@@ -41,6 +43,8 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     setName,
     bio,
     setBio,
+    dailyGoalMinutes,
+    setDailyGoalMinutes,
     selectedAvatarUrl,
     avatarOptions,
     selectedAvatarStyle,
@@ -151,10 +155,11 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           </div>
           <div className="space-y-0.5">
             <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
-              Tujuan
+              Target Harian
             </span>
-            <div className="font-brand font-black text-sm text-slate-700 flex items-center justify-center gap-1 truncate px-1">
-              <span>🗼 Tokyo, JP</span>
+            <div className="font-brand font-black text-sm text-blue-600 flex items-center justify-center gap-1 truncate px-1">
+              <Clock weight="fill" className="w-3.5 h-3.5 text-blue-500" />
+              <span>{dailyGoalMinutes} mnt/hari</span>
             </div>
           </div>
         </div>
@@ -208,6 +213,41 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               placeholder="Contoh: Sedang menyiapkan sertifikasi bahasa untuk studi dan karir internasional."
               className="w-full bg-white text-xs font-medium p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs resize-none"
             />
+          </div>
+
+          {/* Target Belajar Harian */}
+          <div className="space-y-2">
+            <label className="text-xs font-brand font-black text-slate-700 block">
+              Target Belajar Harian
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {DAILY_GOAL_MINUTES_OPTIONS.map((mins) => {
+                const isSelected = dailyGoalMinutes === mins
+                return (
+                  <button
+                    key={mins}
+                    type="button"
+                    aria-pressed={isSelected}
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      setDailyGoalMinutes(mins)
+                    }}
+                    className={`py-2 px-2 rounded-xl border-2 text-center transition-all cursor-pointer ${
+                      isSelected
+                        ? 'border-blue-600 bg-blue-50 text-blue-700 shadow-xs'
+                        : 'border-slate-200 bg-white text-slate-700 hover:border-blue-300'
+                    }`}
+                  >
+                    <span className="block font-brand font-black text-sm leading-tight">
+                      {mins} mnt
+                    </span>
+                    <span className="block text-[10px] font-semibold text-slate-500">
+                      per hari
+                    </span>
+                  </button>
+                )
+              })}
+            </div>
           </div>
 
           {/* Pilih Foto Profil (Petualang Global) */}

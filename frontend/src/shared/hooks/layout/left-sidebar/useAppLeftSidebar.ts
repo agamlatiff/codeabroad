@@ -15,6 +15,7 @@ import { useLogout } from "@/features/auth/hooks/useLogout"
 import {
   getDailyQuestsQueryKey,
   getProfileQueryKey,
+  LEADERBOARD_QUERY_KEY,
 } from '@/shared/constants/queryKeys'
 import {
   gamificationService,
@@ -170,6 +171,7 @@ export const useAppLeftSidebar = () => {
 
   const handleProfileUpdated = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(user?.id) })
+    void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })
   }, [queryClient, user?.id])
 
   const handleLogout = useCallback(() => {

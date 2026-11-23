@@ -967,7 +967,9 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 		}
 		if tag.RowsAffected() > 0 {
 			updatedCount++
-			_, _ = tx.Exec(ctx, flashcardSyncSQL, userID, ch, res.IsCorrect)
+			if _, syncErr := tx.Exec(ctx, flashcardSyncSQL, userID, ch, res.IsCorrect); syncErr != nil {
+				return 0, 0, fmt.Errorf("failed to sync flashcard progress for %q: %w", ch, syncErr)
+			}
 		}
 	}
 

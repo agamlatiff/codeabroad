@@ -15,6 +15,11 @@ import {
   curriculumService,
   KANA_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
+import {
+  FLASHCARD_DECKS_QUERY_KEY,
+  FLASHCARD_DUE_QUERY_KEY,
+} from '@/features/flashcard/services/flashcardService'
+import { extractApiErrorMessage } from '@/shared/services/api'
 import type {
   KanaCharacterItem,
   KanaPracticeItem,
@@ -301,6 +306,7 @@ export const KanaPage = () => {
     SCRIPT_MENU_META.find((item) => item.script === activeScript) ?? SCRIPT_MENU_META[0]
 
   const [playingSpeed, setPlayingSpeed] = useState<'normal' | 'slow' | 'word' | null>(null)
+  const [practiceError, setPracticeError] = useState<string | null>(null)
 
   const kanaQuery = useQuery({
     queryKey: [...KANA_QUERY_KEY, userIdKey, activeScript],
@@ -310,8 +316,19 @@ export const KanaPage = () => {
 
   const practiceMutation = useMutation({
     mutationFn: (results: KanaPracticeItem[]) => curriculumService.submitKanaPractice(results),
+    onMutate: () => {
+      setPracticeError(null)
+    },
     onSuccess: () => {
+      setPracticeError(null)
       void queryClient.invalidateQueries({ queryKey: KANA_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: FLASHCARD_DUE_QUERY_KEY })
+    },
+    onError: (err) => {
+      setPracticeError(
+        extractApiErrorMessage(err, 'Gagal menyimpan progres latihan huruf. Coba lagi.')
+      )
     },
   })
 
@@ -448,12 +465,14 @@ export const KanaPage = () => {
 
   const handleSelectScript = (nextScript: KanaScriptType) => {
     triggerHaptic('tap')
+    setPracticeError(null)
     const defaultChar = getDefaultCharParam(nextScript)
     navigate(`/kana/${nextScript}?char=${encodeURIComponent(defaultChar)}`, { replace: true })
   }
 
   const handleSelectCell = (item: KanaCharacterItem) => {
     triggerHaptic('tap')
+    setPracticeError(null)
     lastAutoSpokenKeyRef.current = `${activeScript}:${item.character}`
     setSearchParams({ char: getCharQueryKey(item) }, { replace: true })
     setPlayingSpeed('normal')
@@ -475,6 +494,7 @@ export const KanaPage = () => {
 
   const handleStartRowDrill = (rowKey: string) => {
     triggerHaptic('tap')
+    setPracticeError(null)
     setSearchParams({ drill: rowKey }, { replace: true })
   }
 
@@ -917,6 +937,15 @@ export const KanaPage = () => {
                       >
                         <SpeakerHigh weight="fill" className="w-4 h-4" />
                       </button>
+                    </div>
+                  )}
+
+                  {practiceError && (
+                    <div
+                      role="alert"
+                      className="rounded-xl bg-rose-50 border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700"
+                    >
+                      {practiceError}
                     </div>
                   )}
 

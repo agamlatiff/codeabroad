@@ -27,7 +27,8 @@ import {
   CURRICULUM_QUERY_KEY,
   GRAMMAR_POINTS_QUERY_KEY,
 } from '@/features/curriculum/services/curriculumService'
-import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
+import type { GrammarPoint, UnitNodeResponse } from '@/features/curriculum/types/curriculum'
+import { extractApiErrorMessage } from '@/shared/services/api'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import {
@@ -42,6 +43,31 @@ import { GrammarFormulaVisual } from '@/features/curriculum/components/GrammarFo
 import { GrammarWordBreakdownSection } from '@/features/curriculum/components/GrammarWordBreakdownSection'
 import { GrammarMiniQuizCard } from '@/features/curriculum/components/GrammarMiniQuizCard'
 
+function resolveLinkedPracticeTarget(
+  point: GrammarPoint | null,
+  units?: UnitNodeResponse[]
+) {
+  if (!point?.practice_lesson_slug) return null
+  const targetSlug = point.practice_lesson_slug.toLowerCase()
+  for (const unit of units ?? []) {
+    const match = (unit.lessons ?? []).find((l) => l.slug?.toLowerCase() === targetSlug)
+    if (match) {
+      return {
+        lessonSlugOrId: match.slug || match.id,
+        lessonTitle: match.title,
+        unitOrder: unit.order_index,
+        isUnlocked: match.is_unlocked,
+      }
+    }
+  }
+  return {
+    lessonSlugOrId: point.practice_lesson_slug,
+    lessonTitle: point.practice_lesson_title || 'Latihan Terkait',
+    unitOrder: point.practice_unit_order || 0,
+    isUnlocked: false,
+  }
+}
+
 export const GrammarDetailPage = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -53,6 +79,7 @@ export const GrammarDetailPage = () => {
   const [showRomaji, setShowRomaji] = useState(true)
   const [playingExampleKey, setPlayingExampleKey] = useState<string | null>(null)
   const [isFormulaCopied, setIsFormulaCopied] = useState(false)
+  const [checkError, setCheckError] = useState<string | null>(null)
   const copyTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -90,8 +117,17 @@ export const GrammarDetailPage = () => {
         correct_count: correctCount,
         total_questions: totalQuestions,
       }),
+    onMutate: () => {
+      setCheckError(null)
+    },
     onSuccess: () => {
+      setCheckError(null)
       void queryClient.invalidateQueries({ queryKey: [...GRAMMAR_POINTS_QUERY_KEY] })
+    },
+    onError: (err) => {
+      setCheckError(
+        extractApiErrorMessage(err, 'Gagal menyimpan hasil cek pemahaman ke server. Coba lagi.')
+      )
     },
   })
 
@@ -137,27 +173,7 @@ export const GrammarDetailPage = () => {
       : null
 
   // Resolve linked practice lesson status from user's curriculum tree
-  const linkedPracticeTarget = useMemo(() => {
-    if (!currentPoint?.practice_lesson_slug) return null
-    const targetSlug = currentPoint.practice_lesson_slug.toLowerCase()
-    for (const unit of curriculumData?.units ?? []) {
-      const match = (unit.lessons ?? []).find((l) => l.slug?.toLowerCase() === targetSlug)
-      if (match) {
-        return {
-          lessonSlugOrId: match.slug || match.id,
-          lessonTitle: match.title,
-          unitOrder: unit.order_index,
-          isUnlocked: match.is_unlocked,
-        }
-      }
-    }
-    return {
-      lessonSlugOrId: currentPoint.practice_lesson_slug,
-      lessonTitle: currentPoint.practice_lesson_title || 'Latihan Terkait',
-      unitOrder: currentPoint.practice_unit_order || 0,
-      isUnlocked: false,
-    }
-  }, [currentPoint, curriculumData])
+  const linkedPracticeTarget = resolveLinkedPracticeTarget(currentPoint, curriculumData?.units)
 
   const handlePlayExample = useCallback(
     (exampleKey: string, japaneseText: string, rate?: number) => {
@@ -201,6 +217,7 @@ export const GrammarDetailPage = () => {
       audioService.stopSpeech()
       setPlayingExampleKey(null)
       setIsFormulaCopied(false)
+      setCheckError(null)
       navigate(`/grammar/${encodeURIComponent(targetPoint.code || targetPoint.id)}`)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     },
@@ -579,7 +596,15 @@ export const GrammarDetailPage = () => {
                   isAlreadyUnderstood={Boolean(currentPoint.is_understood)}
                   nextReviewAt={currentPoint.next_review_at}
                   isSubmitting={checkMutation.isPending}
+                  submitError={checkError}
                   onSubmitResult={(correctCount, totalQuestions) => {
+                    checkMutation.mutate({
+                      pointKey: currentPoint.code || currentPoint.id,
+                      correctCount,
+                      totalQuestions,
+                    })
+                  }}
+                  onRetrySubmit={(correctCount, totalQuestions) => {
                     checkMutation.mutate({
                       pointKey: currentPoint.code || currentPoint.id,
                       correctCount,

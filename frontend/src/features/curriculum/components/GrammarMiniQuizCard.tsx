@@ -16,7 +16,9 @@ export interface GrammarMiniQuizCardProps {
   isAlreadyUnderstood?: boolean
   nextReviewAt?: string | null
   isSubmitting?: boolean
+  submitError?: string | null
   onSubmitResult: (correctCount: number, totalQuestions: number) => void
+  onRetrySubmit?: (correctCount: number, totalQuestions: number) => void
 }
 
 function formatReviewHint(iso?: string | null): string | null {
@@ -38,7 +40,9 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
   isAlreadyUnderstood = false,
   nextReviewAt,
   isSubmitting = false,
+  submitError = null,
   onSubmitResult,
+  onRetrySubmit,
 }) => {
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number>>({})
   const [submittedThisRound, setSubmittedThisRound] = useState(false)
@@ -85,7 +89,7 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
     <section
       id="grammar-mini-quiz"
       className={`rounded-3xl border-2 p-6 sm:p-8 space-y-5 shadow-[0_6px_0_0_#E2E8F0] transition-colors ${
-        passedThisRound || isAlreadyUnderstood
+        (passedThisRound && !submitError) || isAlreadyUnderstood
           ? 'bg-gradient-to-br from-emerald-50/60 via-white to-white border-emerald-200/90'
           : 'bg-white border-slate-200/90'
       }`}
@@ -198,21 +202,27 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
       {allAnswered && (
         <div
           className={`rounded-2xl border-2 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 ${
-            passedThisRound
-              ? 'bg-emerald-50 border-emerald-300'
-              : 'bg-amber-50/90 border-amber-200'
+            submitError
+              ? 'bg-rose-50/90 border-rose-300'
+              : passedThisRound
+                ? 'bg-emerald-50 border-emerald-300'
+                : 'bg-amber-50/90 border-amber-200'
           }`}
         >
           <div className="flex items-center gap-3.5 min-w-0">
             <KodiCharacter
-              emotion={passedThisRound ? 'cheering' : 'curious'}
+              emotion={submitError ? 'worried' : passedThisRound ? 'cheering' : 'curious'}
               size={60}
               interactive={false}
               className="shrink-0"
             />
             <div className="space-y-0.5 min-w-0">
               <div className="flex items-center gap-1.5 font-brand font-black text-sm sm:text-base text-slate-900">
-                {passedThisRound ? (
+                {submitError ? (
+                  <span className="text-rose-800">
+                    Hasil kuis belum tersimpan ({correctCount}/{total})
+                  </span>
+                ) : passedThisRound ? (
                   <>
                     <Sparkle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
                     <span>Paham ✓ • Masuk Review SRS ({correctCount}/{total})</span>
@@ -223,25 +233,39 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-slate-600 font-medium">
-                {isSubmitting
-                  ? 'Menyimpan progres ke server...'
-                  : passedThisRound
-                    ? 'Mantap! Pola ini sudah ditandai selesai di daftar materi.'
-                    : 'Jawab benar 3/3 untuk menandai materi ini sebagai Paham ✓.'}
+              <p className={`text-xs font-medium ${submitError ? 'text-rose-700 font-bold' : 'text-slate-600'}`}>
+                {submitError
+                  ? submitError
+                  : isSubmitting
+                    ? 'Menyimpan progres ke server...'
+                    : passedThisRound
+                      ? 'Mantap! Pola ini sudah ditandai selesai di daftar materi.'
+                      : 'Jawab benar 3/3 untuk menandai materi ini sebagai Paham ✓.'}
               </p>
             </div>
           </div>
 
-          <Button3D
-            variant={passedThisRound ? 'white' : 'amber'}
-            size="sm"
-            icon={<ArrowsClockwise weight="bold" className="w-4 h-4" />}
-            onClick={handleResetQuiz}
-            className="shrink-0"
-          >
-            Ulangi Kuis
-          </Button3D>
+          <div className="flex items-center gap-2 shrink-0 flex-wrap">
+            {submitError && (
+              <Button3D
+                variant="rose"
+                size="sm"
+                disabled={isSubmitting}
+                onClick={() => (onRetrySubmit ?? onSubmitResult)(correctCount, total)}
+              >
+                {isSubmitting ? 'Menyimpan...' : 'Coba Simpan Lagi'}
+              </Button3D>
+            )}
+            <Button3D
+              variant={submitError ? 'white' : passedThisRound ? 'white' : 'amber'}
+              size="sm"
+              icon={<ArrowsClockwise weight="bold" className="w-4 h-4" />}
+              onClick={handleResetQuiz}
+              className="shrink-0"
+            >
+              Ulangi Kuis
+            </Button3D>
+          </div>
         </div>
       )}
     </section>
