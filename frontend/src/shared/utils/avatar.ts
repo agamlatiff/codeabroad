@@ -26,7 +26,9 @@ export const saveAvatarStyle = (style: AvatarStyle): void => {
 export const isSafeAvatarUrl = (url?: string | null): url is string => {
   if (!url) return false
   const trimmed = url.trim()
-  if (!trimmed) return false
+  if (!trimmed || /[\\\r\n]/.test(trimmed) || trimmed.startsWith('//')) {
+    return false
+  }
   if (trimmed.startsWith('https://') || trimmed.startsWith('/')) {
     return true
   }

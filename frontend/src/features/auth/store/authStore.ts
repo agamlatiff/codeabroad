@@ -147,16 +147,20 @@ const persistSession = (data: AuthSessionData | null, rememberMe: boolean) => {
   const primary = rememberMe ? cachedLocalStorage : cachedSessionStorage
   const secondary = rememberMe ? cachedSessionStorage : cachedLocalStorage
 
-  if (hasActiveTokenAndUser(data) && data) {
-    primary?.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
-    secondary?.removeItem(AUTH_STORAGE_KEY)
-    cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
-    cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
-  } else {
-    cachedLocalStorage?.removeItem(AUTH_STORAGE_KEY)
-    cachedSessionStorage?.removeItem(AUTH_STORAGE_KEY)
-    cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
-    cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+  try {
+    if (hasActiveTokenAndUser(data) && data) {
+      primary?.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
+      secondary?.removeItem(AUTH_STORAGE_KEY)
+      cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+      cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+    } else {
+      cachedLocalStorage?.removeItem(AUTH_STORAGE_KEY)
+      cachedSessionStorage?.removeItem(AUTH_STORAGE_KEY)
+      cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+      cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
+    }
+  } catch {
+    // Ignore storage quota/privacy restrictions
   }
 }
 

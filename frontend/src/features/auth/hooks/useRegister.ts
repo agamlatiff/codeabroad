@@ -46,6 +46,10 @@ export const useRegister = () => {
     mutationFn: (payload: RegisterPayload) => authService.register(payload),
     onSuccess: (data) => {
       queryClient.clear()
+      if (!data.access_token) {
+        navigate('/login', { replace: true })
+        return
+      }
       // Automatically authenticate on successful registration (default persistent session)
       setAuth(data.user, data.access_token, data.refresh_token, true)
       queryClient.setQueryData(getProfileQueryKey(data.user.id), data.user)

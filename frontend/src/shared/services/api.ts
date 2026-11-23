@@ -98,7 +98,8 @@ const isAuthBypassPath = (rawUrl?: string): boolean => {
     cleanPath.endsWith('/auth/login') ||
     cleanPath.endsWith('/auth/register') ||
     cleanPath.endsWith('/auth/refresh') ||
-    cleanPath.endsWith('/auth/logout')
+    cleanPath.endsWith('/auth/logout') ||
+    cleanPath.endsWith('/auth/logout-all')
   )
 }
 

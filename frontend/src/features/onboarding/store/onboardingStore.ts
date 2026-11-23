@@ -52,38 +52,53 @@ const LEGACY_ONBOARDING_STORAGE_KEY = 'codeabroad_onboarding_v3_draft'
 
 const validatedSessionStorage: StateStorage = {
   getItem: (name) => {
-    let raw = sessionStorage.getItem(name)
-    let migratedFromLegacy = false
-    if (!raw) {
-      raw = sessionStorage.getItem(LEGACY_ONBOARDING_STORAGE_KEY)
-      migratedFromLegacy = Boolean(raw)
-    }
-    if (!raw) return null
+    if (typeof window === 'undefined') return null
     try {
-      const parsedJson = JSON.parse(raw)
-      const parsed = persistedOnboardingSchema.safeParse(parsedJson)
-      if (!parsed.success) {
-        sessionStorage.removeItem(name)
-        sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
+      let raw = window.sessionStorage.getItem(name)
+      let migratedFromLegacy = false
+      if (!raw) {
+        raw = window.sessionStorage.getItem(LEGACY_ONBOARDING_STORAGE_KEY)
+        migratedFromLegacy = Boolean(raw)
+      }
+      if (!raw) return null
+      try {
+        const parsedJson = JSON.parse(raw)
+        const parsed = persistedOnboardingSchema.safeParse(parsedJson)
+        if (!parsed.success) {
+          window.sessionStorage.removeItem(name)
+          window.sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
+          return null
+        }
+        const serialized = JSON.stringify(parsed.data)
+        if (migratedFromLegacy) {
+          window.sessionStorage.setItem(name, serialized)
+          window.sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
+        }
+        return serialized
+      } catch {
+        window.sessionStorage.removeItem(name)
+        window.sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
         return null
       }
-      const serialized = JSON.stringify(parsed.data)
-      if (migratedFromLegacy) {
-        sessionStorage.setItem(name, serialized)
-        sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
-      }
-      return serialized
     } catch {
-      sessionStorage.removeItem(name)
-      sessionStorage.removeItem(LEGACY_ONBOARDING_STORAGE_KEY)
       return null
     }
   },
   setItem: (name, value) => {
-    sessionStorage.setItem(name, value)
+    if (typeof window === 'undefined') return
+    try {
+      window.sessionStorage.setItem(name, value)
+    } catch {
+      // Ignore storage quota/privacy restrictions
+    }
   },
   removeItem: (name) => {
-    sessionStorage.removeItem(name)
+    if (typeof window === 'undefined') return
+    try {
+      window.sessionStorage.removeItem(name)
+    } catch {
+      // Ignore storage quota/privacy restrictions
+    }
   },
 }
 
