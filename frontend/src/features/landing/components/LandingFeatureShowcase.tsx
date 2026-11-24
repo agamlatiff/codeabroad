@@ -13,7 +13,6 @@ import {
   CurriculumPathIllustration,
   FlashcardStackIllustration,
   ScriptStrokeIllustration,
-  StudioCardFrame,
 } from '@/features/landing/components/LandingIllustrations'
 import { LandingAnimatedSentenceShowcase } from '@/features/landing/components/LandingAnimatedSentenceShowcase'
 
@@ -52,7 +51,7 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
       'M 68 88 C 118 22, 265 14, 385 36 C 492 56, 540 128, 526 218 C 512 308, 434 362, 310 356 C 186 350, 56 330, 32 248 C 12 180, 26 144, 68 88 Z',
     pillLabel: 'Unit 1 Gratis Tanpa Login',
     pillAccentColor: '#00B2F7',
-    pillPositionClass: '-bottom-3.5 right-4 sm:right-6',
+    pillPositionClass: '-bottom-4 right-4 sm:right-6',
     tiltClass: 'md:-rotate-1',
     renderVisual: () => <CurriculumPathIllustration />,
   },
@@ -70,13 +69,9 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
       'M 96 48 C 194 12, 344 26, 444 68 C 534 106, 546 196, 512 274 C 478 352, 356 364, 238 352 C 122 340, 26 306, 24 214 C 22 126, 36 70, 96 48 Z',
     pillLabel: 'Breakdown Per Kata',
     pillAccentColor: '#10B981',
-    pillPositionClass: '-bottom-3.5 left-4 sm:left-6',
+    pillPositionClass: '-bottom-4 left-4 sm:left-6',
     tiltClass: 'md:rotate-1',
-    renderVisual: () => (
-      <StudioCardFrame className="p-2 sm:p-2.5 [&>div]:rounded-[18px] [&>div]:border-slate-200/80">
-        <LandingAnimatedSentenceShowcase />
-      </StudioCardFrame>
-    ),
+    renderVisual: () => <LandingAnimatedSentenceShowcase />,
   },
   {
     id: 'row-script',
@@ -110,7 +105,7 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
       'M 82 54 C 176 16, 320 18, 428 54 C 520 84, 544 176, 522 258 C 500 340, 388 362, 260 354 C 132 346, 34 316, 26 226 C 18 140, 26 78, 82 54 Z',
     pillLabel: 'Ulasan Terjadwal Otomatis',
     pillAccentColor: '#FF9C28',
-    pillPositionClass: '-bottom-3.5 right-4 sm:right-6',
+    pillPositionClass: '-bottom-4 right-4 sm:right-6',
     tiltClass: 'md:rotate-1',
     renderVisual: () => <FlashcardStackIllustration />,
   },
@@ -148,10 +143,13 @@ const FeatureVisualStage = ({
 
   const blobY = useTransform(scrollYProgress, [0, 1], [-8, 8])
   const cardY = useTransform(scrollYProgress, [0, 1], [14, -14])
-  const pillY = useTransform(scrollYProgress, [0, 1], [22, -20])
+  const pillY = useTransform(scrollYProgress, [0, 1], [18, -18])
 
   return (
-    <div ref={stageRef} className="relative py-4 sm:py-6 px-1 sm:px-5">
+    <div
+      ref={stageRef}
+      className="relative max-w-[560px] mx-auto lg:max-w-none pt-6 pb-5 sm:pt-7 sm:pb-6 px-1.5 sm:px-5"
+    >
       {/* Layer 1: Organic Curved Pastel Blob */}
       <motion.div
         aria-hidden="true"
@@ -174,7 +172,11 @@ const FeatureVisualStage = ({
         className="relative z-10"
       >
         <div
-          className={`transition-transform duration-300 ease-out ${tiltClass} md:hover:rotate-0 md:focus-within:rotate-0`}
+          className={`motion-safe:transition-transform motion-safe:duration-300 motion-safe:ease-out ${
+            shouldReduceMotion
+              ? ''
+              : `${tiltClass} md:hover:rotate-0 md:focus-within:rotate-0`
+          }`}
         >
           {children}
         </div>
@@ -183,9 +185,9 @@ const FeatureVisualStage = ({
       {/* Layer 3: Floating Micro-Pill Tag */}
       <motion.div
         style={{ y: shouldReduceMotion ? 0 : pillY }}
-        className={`pointer-events-none absolute z-20 ${pillPositionClass}`}
+        className={`pointer-events-none select-none absolute z-20 ${pillPositionClass}`}
       >
-        <span className="inline-flex items-center gap-2 bg-white border-2 border-[#E2E8F0] rounded-full px-3.5 py-1.5 shadow-[0_4px_0_0_rgba(45,64,150,0.06)] text-xs font-brand font-black text-[#1E293B] whitespace-nowrap">
+        <span className="inline-flex items-center gap-2 bg-white border-2 border-[#E2E8F0] rounded-full px-3.5 py-1.5 shadow-[0_4px_0_0_rgba(45,64,150,0.08)] text-xs font-brand font-black text-[#1E293B] whitespace-nowrap">
           <span
             aria-hidden="true"
             className="w-2.5 h-2.5 rounded-full shrink-0"
@@ -211,7 +213,7 @@ export const LandingFeatureShowcase = () => {
     <section id="fitur" className="relative bg-white py-16 sm:py-24 overflow-x-clip">
       <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
         {/* Compact Section Intro */}
-        <div className="text-center max-w-2xl mx-auto mb-16 sm:mb-24 space-y-3">
+        <div className="text-center max-w-2xl mx-auto mb-14 sm:mb-20 space-y-3">
           <p className="text-xs font-brand font-black uppercase tracking-widest text-[#2563EB]">
             Modul Pembelajaran
           </p>
@@ -273,7 +275,7 @@ export const LandingFeatureShowcase = () => {
             />
           </svg>
 
-          <div className="relative z-10 space-y-20 sm:space-y-32">
+          <div className="relative z-10 space-y-16 sm:space-y-28">
             {FEATURE_STORY_ROWS.map((row, index) => {
               const isVisualFirstOnDesktop = index % 2 === 1
               const { IconComponent } = row
@@ -281,7 +283,7 @@ export const LandingFeatureShowcase = () => {
               return (
                 <div
                   key={row.id}
-                  className="relative z-10 grid lg:grid-cols-12 gap-10 lg:gap-12 items-center"
+                  className="relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center"
                 >
                   {/* Text Column */}
                   <div
@@ -309,7 +311,7 @@ export const LandingFeatureShowcase = () => {
                         <span>{row.ctaLabel}</span>
                         <ArrowRight
                           weight="bold"
-                          className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                          className="w-4 h-4 group-hover:translate-x-1 transition-transform motion-reduce:transition-none"
                         />
                       </Link>
                     </div>
