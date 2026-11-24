@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { SpeakerHigh } from '@phosphor-icons/react'
-import { SunnyMentorCharacter } from '@/features/landing/components/LandingCharacterCast'
+import { MeraSenseiFigure } from '@/shared/components/ui/MeraShowcaseFigures'
 import { AudioWaveformBars } from '@/features/landing/components/LandingIllustrations'
 import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 import { audioService } from '@/shared/services/audioService'
@@ -233,7 +233,7 @@ function clearPlaybackTimers(
 }
 
 /**
- * Open borderless ClassDojo-style interactive grammar mentor stage with Sunny
+ * Open borderless ClassDojo-style interactive grammar mentor stage with Mera Sensei
  * pointing toward candy-colored tilted squircle word tiles across 4 languages.
  */
 export const LandingAnimatedSentenceShowcase = () => {
@@ -340,7 +340,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                 aria-pressed={isActive}
                 onClick={() => handleSelectLanguage(pack.id)}
                 whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
-                className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-[13px] font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
                   isActive
                     ? 'bg-[#2563EB] text-white shadow-[0_2px_0_0_#1D4ED8]'
                     : 'text-[#475569] hover:text-[#1E293B] hover:bg-slate-100/80'
@@ -348,12 +348,12 @@ export const LandingAnimatedSentenceShowcase = () => {
               >
                 <span
                   aria-hidden="true"
-                  className="w-4 h-3 shrink-0 inline-flex items-center justify-center overflow-hidden rounded-[2px]"
+                  className="w-4.5 h-3.5 shrink-0 inline-flex items-center justify-center overflow-hidden rounded-[2px]"
                 >
                   <LanguageFlagIllustration
                     code={pack.flagCode}
                     compact
-                    className="w-4 h-3 rounded-[2px] shrink-0"
+                    className="w-4.5 h-3.5 rounded-[2px] shrink-0"
                   />
                 </span>
                 <span>{pack.label}</span>
@@ -365,31 +365,15 @@ export const LandingAnimatedSentenceShowcase = () => {
 
       {/* Main Open ClassDojo Stage */}
       <div className="grid sm:grid-cols-12 items-end gap-4 sm:gap-5">
-        {/* Left Hero Mentor Standing on Open Pastel Blob */}
+        {/* Left Hero Mera Sensei Grounded on Open Pastel Blob */}
         <div className="sm:col-span-5 flex items-end justify-center sm:justify-start relative">
-          <motion.div
-            animate={
-              shouldReduceMotion
-                ? undefined
-                : { y: isSpeaking ? [0, -5, 0] : [0, -3, 0] }
-            }
-            transition={
-              shouldReduceMotion
-                ? undefined
-                : {
-                    duration: isSpeaking ? 1.15 : 3.2,
-                    repeat: Infinity,
-                    ease: 'easeInOut',
-                  }
-            }
-            className="relative z-10"
-          >
-            <SunnyMentorCharacter
+          <div className="relative z-10">
+            <MeraSenseiFigure
               mood={isSpeaking ? 'listening' : 'pointing'}
-              size={172}
+              size={196}
               className="max-w-full h-auto"
             />
-          </motion.div>
+          </div>
         </div>
 
         {/* Right Candy-Colored Tilted Squircle Tile Constellation */}
@@ -432,16 +416,16 @@ export const LandingAnimatedSentenceShowcase = () => {
                     }
                     whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.05 }}
                     whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
-                    className={`rounded-[22px] ${tileStyle.surfaceClass} min-w-[84px] sm:min-w-[92px] min-h-[74px] px-3.5 py-2.5 flex flex-col items-center justify-center gap-1 text-center text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
+                    className={`rounded-[22px] ${tileStyle.surfaceClass} min-w-[100px] sm:min-w-[112px] min-h-[84px] px-4 py-3 flex flex-col items-center justify-center gap-1.5 text-center text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
                       isSpotlighted
                         ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(15,23,42,0.16)] scale-[1.04]'
                         : 'hover:brightness-[1.04]'
                     }`}
                   >
-                    <span className="block font-brand font-black text-sm sm:text-base leading-tight tracking-tight [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
+                    <span className="block font-brand font-black text-base sm:text-[17px] leading-tight tracking-tight [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
                       {token.word}
                     </span>
-                    <span className="inline-block rounded-full bg-black/15 px-2 py-0.5 text-[10px] font-mono font-bold text-white/95 leading-none">
+                    <span className="inline-block rounded-full bg-black/15 px-2.5 py-0.5 text-[11px] font-mono font-bold text-white/95 leading-none">
                       {token.role}
                     </span>
                   </motion.button>
@@ -474,7 +458,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                 }
                 whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.05 }}
                 whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
-                className={`rounded-[22px] bg-[#00A8FF] shadow-[0_5px_0_0_#0284C7] min-w-[92px] min-h-[74px] px-3.5 py-2.5 flex flex-col items-center justify-center gap-1.5 text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
+                className={`rounded-[22px] bg-[#00A8FF] shadow-[0_5px_0_0_#0284C7] min-w-[104px] min-h-[84px] px-4 py-3 flex flex-col items-center justify-center gap-1.5 text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
                   isSpeaking
                     ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(2,132,199,0.28)] scale-[1.04]'
                     : 'hover:brightness-[1.04]'
@@ -488,7 +472,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                   />
                   <AudioWaveformBars isPlaying={isSpeaking} />
                 </span>
-                <span className="font-brand font-black text-xs sm:text-sm leading-none tracking-wide [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
+                <span className="font-brand font-black text-sm leading-none tracking-wide [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
                   Dengar
                 </span>
               </motion.button>
@@ -506,11 +490,11 @@ export const LandingAnimatedSentenceShowcase = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
             transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
-            className="rounded-[20px] bg-white border-2 border-[#E2E8F0] shadow-[0_8px_18px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0] px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+            className="w-full rounded-[20px] bg-white border-2 border-[#E2E8F0] shadow-[0_8px_18px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0] px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
           >
-            <div className="min-w-0">
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs font-bold text-[#1E293B]">
-                <span className="font-brand font-black text-sm text-[#0F172A]">
+            <div className="min-w-0 flex-1">
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs sm:text-[13px] font-bold text-[#1E293B]">
+                <span className="font-brand font-black text-sm sm:text-[15px] text-[#0F172A]">
                   {activeToken.word}
                 </span>
                 <span className="font-mono font-semibold text-[#2563EB]">
@@ -519,14 +503,16 @@ export const LandingAnimatedSentenceShowcase = () => {
                 <span aria-hidden="true" className="text-slate-300">
                   &middot;
                 </span>
-                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-brand font-black text-[#475569]">
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2.5 py-0.5 text-[11px] font-brand font-black text-[#475569]">
                   {activeToken.role}
                 </span>
               </div>
-              <p className="text-xs text-[#475569] mt-1 leading-snug">{activeToken.meaning}</p>
+              <p className="text-xs sm:text-[13px] text-[#475569] mt-1 leading-snug">
+                {activeToken.meaning}
+              </p>
             </div>
 
-            <p className="text-[11px] font-medium text-[#64748B] sm:text-right sm:border-l sm:border-slate-200/80 sm:pl-3.5 shrink-0">
+            <p className="text-xs font-medium text-[#64748B] sm:text-right sm:border-l sm:border-slate-200/80 sm:pl-4 sm:max-w-[230px] shrink-0 leading-snug">
               Arti: &ldquo;
               <span className="font-bold text-[#1E293B]">{currentPack.translation}</span>
               &rdquo;

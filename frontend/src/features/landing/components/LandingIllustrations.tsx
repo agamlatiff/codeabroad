@@ -9,11 +9,11 @@ import {
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { ArrowsClockwise, SpeakerHigh, Swap } from '@phosphor-icons/react'
 import {
-  CharacterTrioSquad,
-  CoralBuddyCharacter,
-  SkyFluffyCharacter,
-  type CharacterMood,
-} from '@/features/landing/components/LandingCharacterCast'
+  MeraPolyglotFigure,
+  MeraTimekeeperFigure,
+  MeraTrioSquad,
+  type MeraShowcaseMood,
+} from '@/shared/components/ui/MeraShowcaseFigures'
 import { FloatingStickerCard } from '@/features/landing/components/LandingStickerArt'
 import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 import { QuestChestIllustration } from '@/features/gamification/components/QuestChestIllustration'
@@ -88,7 +88,7 @@ type CurriculumOrbitId = 'intro' | 'greetings' | 'target' | 'audio' | 'chest'
 
 interface CurriculumOrbitNode {
   id: CurriculumOrbitId
-  mood: CharacterMood
+  mood: MeraShowcaseMood
   badgeText: string
   flagCode: 'en-gb' | 'de' | 'fr' | 'ja'
   previewTitle: string
@@ -139,7 +139,7 @@ const CURRICULUM_ORBIT_NODES: ReadonlyArray<CurriculumOrbitNode> = [
 ]
 
 /**
- * Open ClassDojo-style curriculum showcase: central trio squad flanked by
+ * Open ClassDojo-style curriculum showcase: central Mera trio squad flanked by
  * 5 orbiting interactive floating sticker cards and a live preview pill.
  */
 export const CurriculumPathIllustration = () => {
@@ -159,7 +159,7 @@ export const CurriculumPathIllustration = () => {
   const activeItem =
     CURRICULUM_ORBIT_NODES.find((item) => item.id === activeId) ?? CURRICULUM_ORBIT_NODES[2]
 
-  const trioMood: CharacterMood = isSpeaking ? 'listening' : activeItem.mood
+  const trioMood: MeraShowcaseMood = isSpeaking ? 'listening' : activeItem.mood
   const centerBadge =
     activeId === 'chest' && chestOpened ? '+15' : activeItem.badgeText
 
@@ -199,15 +199,15 @@ export const CurriculumPathIllustration = () => {
   }
 
   return (
-    <div className="relative w-full pt-10 pb-4 sm:pt-12 sm:pb-5 min-h-[360px] sm:min-h-[450px] flex flex-col items-center justify-center gap-5 select-none">
-      {/* Centerpiece Character Squad */}
-      <div className="relative z-10 flex flex-col items-center sm:my-10">
-        <CharacterTrioSquad activeMood={trioMood} centerBadge={centerBadge} />
+    <div className="relative w-full pt-8 pb-3 sm:pt-10 sm:pb-4 min-h-[340px] sm:min-h-[390px] flex flex-col items-center justify-center gap-4 select-none">
+      {/* Centerpiece Mera Squad */}
+      <div className="relative z-10 flex flex-col items-center sm:my-7">
+        <MeraTrioSquad activeMood={trioMood} centerBadge={centerBadge} />
       </div>
 
       {/* 5 Orbiting Floating Tilted Sticker Cards (grid on mobile, orbiting on sm+) */}
-      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-9 pt-6 w-full max-w-[380px] sm:pt-0 sm:contents">
-        <div className="sm:absolute sm:top-12 sm:left-1 md:left-3 z-20">
+      <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-10 pt-7 w-full max-w-[440px] sm:pt-0 sm:contents">
+        <div className="sm:absolute sm:top-8 sm:left-0 md:left-1 z-20">
           <FloatingStickerCard
             kind="book"
             label="Kartu Pengantar"
@@ -219,7 +219,7 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:top-3 sm:left-[56%] sm:-translate-x-1/2 z-20">
+        <div className="sm:absolute sm:top-0 sm:left-[52%] sm:-translate-x-1/2 z-20">
           <FloatingStickerCard
             kind="check-medal"
             label="Sapaan Harian"
@@ -231,7 +231,7 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:top-[34%] sm:right-0 md:right-2 z-20">
+        <div className="sm:absolute sm:top-[28%] sm:right-0 md:right-1 z-20">
           <FloatingStickerCard
             kind="star-target"
             label="Unit 1 Aktif"
@@ -243,7 +243,7 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:bottom-[74px] sm:left-1 md:left-4 z-20">
+        <div className="sm:absolute sm:bottom-[78px] sm:left-0 md:left-2 z-20">
           <FloatingStickerCard
             kind="headphones"
             label="Latihan Dengar"
@@ -255,13 +255,13 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:bottom-[74px] sm:right-1 md:right-4 z-20">
+        <div className="sm:absolute sm:bottom-[78px] sm:right-0 md:right-2 z-20">
           <FloatingStickerCard
             customIcon={
               <QuestChestIllustration
                 tier={3}
                 state={chestOpened ? 'claimed' : 'ready'}
-                size={48}
+                size={54}
               />
             }
             label="Peti Hadiah"
@@ -274,8 +274,8 @@ export const CurriculumPathIllustration = () => {
         </div>
       </div>
 
-      {/* Floating Compact Interactive Preview Pill Below Trio */}
-      <div className="relative z-20 w-full max-w-[300px] sm:max-w-[330px] sm:mt-auto">
+      {/* Floating Interactive Preview Bar Below Trio */}
+      <div className="relative z-20 w-full max-w-[440px] sm:mt-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={`${activeItem.id}-${chestOpened ? 'open' : 'closed'}`}
@@ -283,7 +283,7 @@ export const CurriculumPathIllustration = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={shouldReduceMotion ? undefined : { opacity: 0, y: -6 }}
             transition={{ duration: 0.16 }}
-            className="rounded-2xl bg-white/95 border-2 border-blue-100 shadow-[0_4px_12px_rgba(37,99,235,0.1)] px-4 py-2 flex items-center gap-3"
+            className="rounded-2xl bg-white/95 border-2 border-blue-100 shadow-[0_4px_12px_rgba(37,99,235,0.1)] px-4 py-3 flex items-center gap-3"
           >
             <div className="w-8 h-5.5 rounded-md overflow-hidden border border-slate-200 shrink-0">
               <LanguageFlagIllustration
@@ -293,12 +293,12 @@ export const CurriculumPathIllustration = () => {
               />
             </div>
             <div className="min-w-0 flex-1">
-              <p className="font-brand font-black text-xs sm:text-[13px] text-[#1E293B] leading-tight truncate">
+              <p className="font-brand font-black text-xs sm:text-[13px] text-[#1E293B] leading-snug">
                 {activeId === 'chest' && chestOpened
                   ? 'Peti Terbuka! +15 Gems Tersimpan'
                   : activeItem.previewTitle}
               </p>
-              <p className="text-[11px] text-[#475569] leading-snug truncate mt-0.5">
+              <p className="text-[11px] sm:text-xs text-[#475569] whitespace-normal leading-snug mt-0.5">
                 {activeId === 'chest' && chestOpened
                   ? 'Bonus tersimpan ke akun belajarmu setelah latihan.'
                   : activeItem.previewNote}
@@ -418,7 +418,7 @@ const SCRIPT_PACKS: ReadonlyArray<ScriptPack> = [
 
 /**
  * Open ClassDojo-style multi-language script & pronunciation collage:
- * 4 tilted squircle language tiles, Coral buddy cheering beside an animated
+ * 4 tilted squircle language tiles, Mera Polyglot cheering beside an animated
  * stroke-order writing pad, and floating sticker playback controls.
  */
 export const ScriptStrokeIllustration = () => {
@@ -476,12 +476,12 @@ export const ScriptStrokeIllustration = () => {
   const strokeSlot = 0.72 / activeScript.strokes.length
 
   return (
-    <div className="relative w-full py-3 sm:py-5 min-h-[340px] sm:min-h-[400px] flex flex-col items-center justify-center gap-4 sm:gap-5 select-none">
+    <div className="relative w-full py-3 sm:py-4 min-h-[340px] sm:min-h-[385px] flex flex-col items-center justify-center gap-4 sm:gap-5 select-none">
       {/* 4 Colorful Tilted Squircle Script Selector Tiles */}
       <div
         role="group"
         aria-label="Pilih aksara dan tanda baca bahasa"
-        className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full max-w-[460px] z-20"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full max-w-[490px] z-20"
       >
         {SCRIPT_PACKS.map((pack) => {
           const isSelected = pack.id === activeScript.id
@@ -495,7 +495,7 @@ export const ScriptStrokeIllustration = () => {
               whileHover={shouldReduceMotion ? undefined : { y: -3 }}
               whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 320, damping: 20 }}
-              className={`rounded-2xl border-2 px-3 py-2.5 flex items-center gap-2.5 text-left transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+              className={`rounded-2xl border-2 px-2.5 sm:px-3 py-2.5 flex items-center gap-2 text-left transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
                 isSelected
                   ? 'bg-white border-[#2563EB] shadow-[0_6px_0_0_rgba(37,99,235,0.16)] ring-2 ring-blue-100'
                   : `${pack.tileThemeClass} shadow-[0_4px_0_0_rgba(15,23,42,0.08)] opacity-90 hover:opacity-100 ${
@@ -519,10 +519,10 @@ export const ScriptStrokeIllustration = () => {
                 </span>
               </div>
               <div className="min-w-0">
-                <span className="block font-brand font-black text-xs text-[#1E293B] truncate">
+                <span className="block font-brand font-black text-xs text-[#1E293B] leading-tight">
                   {pack.shortLabel}
                 </span>
-                <span className="block text-[10px] font-mono font-semibold text-[#64748B] truncate mt-0.5">
+                <span className="block text-[10px] font-mono font-semibold text-[#64748B] leading-tight mt-0.5">
                   {pack.strokeLabel}
                 </span>
               </div>
@@ -531,18 +531,18 @@ export const ScriptStrokeIllustration = () => {
         })}
       </div>
 
-      {/* Main Open Stage: Coral Character + Animated Writing Pad */}
+      {/* Main Open Stage: Mera Polyglot + Animated Writing Pad */}
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7 w-full">
-        <CoralBuddyCharacter
+        <MeraPolyglotFigure
           mood={isSpeaking ? 'listening' : 'happy'}
-          size={136}
+          size={176}
           badgeText={activeScript.id.toUpperCase()}
           className="shrink-0"
         />
 
         <div className="flex flex-col items-center gap-3">
           {/* Tactile Writing Pad */}
-          <div className="relative w-40 h-40 rounded-[26px] bg-white border-2 border-[#E2E8F0] shadow-[0_10px_24px_rgba(15,23,42,0.08),0_5px_0_0_#CBD5E1] flex items-center justify-center overflow-hidden">
+          <div className="relative w-44 h-44 sm:w-48 sm:h-48 rounded-[28px] bg-white border-2 border-[#E2E8F0] shadow-[0_10px_24px_rgba(15,23,42,0.08),0_5px_0_0_#CBD5E1] flex items-center justify-center overflow-hidden">
             {/* Practice Grid Crosshair */}
             <div
               aria-hidden="true"
@@ -553,14 +553,14 @@ export const ScriptStrokeIllustration = () => {
               className="absolute inset-0 border-b border-dashed border-slate-200/90 h-1/2 pointer-events-none"
             />
 
-            <span className="absolute top-2.5 right-2.5 rounded-full bg-slate-100 border border-slate-200 px-2 py-0.5 text-[10px] font-mono font-bold text-[#475569] z-20">
+            <span className="absolute top-2.5 right-2.5 rounded-full bg-slate-100 border border-slate-200 px-2.5 py-0.5 text-[10px] font-mono font-bold text-[#475569] z-20">
               1-{activeScript.strokes.length}
             </span>
 
             <svg
               key={`${activeScript.id}-${replayCount}`}
               viewBox="0 0 120 120"
-              className="w-28 h-28 relative z-10"
+              className="w-32 h-32 relative z-10"
               fill="none"
               role="img"
               aria-label={`Urutan goresan ${activeScript.title} bahasa ${activeScript.shortLabel}`}
@@ -624,7 +624,7 @@ export const ScriptStrokeIllustration = () => {
             </svg>
           </div>
 
-          {/* Short Guide Pill Below Pad */}
+          {/* Wide Non-Truncating Guide Pill Below Pad */}
           <AnimatePresence mode="wait">
             <motion.div
               key={activeScript.id}
@@ -632,9 +632,9 @@ export const ScriptStrokeIllustration = () => {
               animate={{ opacity: 1, y: 0 }}
               exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
               transition={{ duration: 0.15 }}
-              className="rounded-full bg-white/95 border border-slate-200 px-3.5 py-1.5 shadow-[0_3px_10px_rgba(15,23,42,0.06)] max-w-[290px] text-center"
+              className="rounded-full bg-white/95 border border-slate-200 px-4 py-1.5 shadow-[0_3px_10px_rgba(15,23,42,0.06)] w-full max-w-[320px] text-center"
             >
-              <p className="text-[11px] font-brand font-bold text-[#1E293B]">
+              <p className="text-[11px] font-brand font-bold text-[#1E293B] whitespace-normal leading-snug">
                 {activeScript.note}
               </p>
             </motion.div>
@@ -643,7 +643,7 @@ export const ScriptStrokeIllustration = () => {
       </div>
 
       {/* 2 Floating Tilted Sticker Action Buttons */}
-      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-9 pt-6">
+      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-10 pt-7">
         <FloatingStickerCard
           kind="brush"
           label="Ulangi"
@@ -766,7 +766,7 @@ const RATING_PILLS: ReadonlyArray<{
 ]
 
 /**
- * Open ClassDojo-style flashcard stage: Sky fluffy companion beside a tactile
+ * Open ClassDojo-style flashcard stage: Mera Timekeeper companion beside a tactile
  * 5-language 3D-flipping stacked card deck and 3 floating tilted stickers.
  */
 export const FlashcardStackIllustration = () => {
@@ -834,18 +834,18 @@ export const FlashcardStackIllustration = () => {
   }
 
   return (
-    <div className="relative w-full py-3 sm:py-5 min-h-[350px] sm:min-h-[410px] flex flex-col items-center justify-center gap-5 select-none">
-      {/* Main Open Row: Sky Companion + Stacked 3D-Flipping Deck */}
+    <div className="relative w-full py-3 sm:py-4 min-h-[350px] sm:min-h-[395px] flex flex-col items-center justify-center gap-5 select-none">
+      {/* Main Open Row: Mera Timekeeper + Stacked 3D-Flipping Deck */}
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6 w-full">
-        <SkyFluffyCharacter
+        <MeraTimekeeperFigure
           mood={isFlipped ? 'excited' : isSpeaking ? 'listening' : 'happy'}
-          size={132}
+          size={176}
           badgeText={`${cardIdx + 1}/${FLASHCARDS.length}`}
           className="shrink-0"
         />
 
         {/* Stacked Vibrant Clay Deck */}
-        <div className="group relative w-full max-w-[300px] sm:max-w-[315px] min-h-[214px] flex items-center justify-center">
+        <div className="group relative w-full max-w-[330px] sm:max-w-[355px] min-h-[230px] flex items-center justify-center">
           {/* Back Royal-Blue Clay Card */}
           <div
             aria-hidden="true"
@@ -890,7 +890,7 @@ export const FlashcardStackIllustration = () => {
                       : { type: 'spring', stiffness: 260, damping: 24 }
                   }
                   style={{ transformStyle: 'preserve-3d' }}
-                  className="relative w-full h-[212px] cursor-pointer rounded-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
+                  className="relative w-full h-[228px] cursor-pointer rounded-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
                 >
                   {/* Front Face */}
                   <div
@@ -1003,7 +1003,7 @@ export const FlashcardStackIllustration = () => {
       </div>
 
       {/* 3 Floating Tilted Sticker Assets Around the Deck */}
-      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-3.5 gap-y-9 pt-6">
+      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-10 pt-7">
         <FloatingStickerCard
           kind="clock"
           label="Jadwal SRS"

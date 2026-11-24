@@ -301,13 +301,13 @@ const FeatureVisualStage = ({
   return (
     <div
       ref={stageRef}
-      className="relative max-w-[560px] mx-auto lg:max-w-none min-h-[340px] sm:min-h-[380px] flex items-center justify-center pt-6 pb-5 sm:pt-7 sm:pb-6 px-2 sm:px-6"
+      className="relative max-w-[560px] mx-auto lg:max-w-none min-h-[320px] sm:min-h-[360px] flex items-center justify-center pt-4 pb-4 sm:pt-5 sm:pb-5 px-2 sm:px-5"
     >
       {/* Layer 1: Organic Curved Pastel Blob */}
       <motion.div
         aria-hidden="true"
         style={{ y: shouldReduceMotion ? 0 : blobY }}
-        className="pointer-events-none absolute -inset-x-2 -inset-y-2 sm:-inset-x-5 sm:-inset-y-5 flex items-center justify-center z-0"
+        className="pointer-events-none absolute inset-x-2 inset-y-3 sm:inset-x-5 sm:inset-y-4 flex items-center justify-center z-0"
       >
         <svg
           viewBox="0 0 560 380"
