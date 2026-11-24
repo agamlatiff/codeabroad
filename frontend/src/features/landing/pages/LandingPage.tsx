@@ -1,30 +1,33 @@
 import { MotionConfig } from 'motion/react'
+import { LandingHelloBar } from '@/features/landing/components/LandingHelloBar'
 import { LandingNavbar } from '@/features/landing/components/LandingNavbar'
 import { LandingHero } from '@/features/landing/components/LandingHero'
-import { LandingGreetingMarquee } from '@/features/landing/components/LandingGreetingMarquee'
-import { LandingLanguageTracksSection } from '@/features/landing/components/LandingLanguageTracksSection'
+import { LandingConstellationSection } from '@/features/landing/components/LandingConstellationSection'
 import { LandingFeatureShowcase } from '@/features/landing/components/LandingFeatureShowcase'
 import { LandingInteractiveDemo } from '@/features/landing/components/LandingInteractiveDemo'
+import { LandingPhraseShowcaseBand } from '@/features/landing/components/LandingPhraseShowcaseBand'
+import { LandingMethodTrustSection } from '@/features/landing/components/LandingMethodTrustSection'
+import { LandingBottomCta } from '@/features/landing/components/LandingBottomCta'
 import { LandingFooter } from '@/features/landing/components/LandingFooter'
+import { LandingFloatingCta } from '@/features/landing/components/LandingFloatingCta'
 
-/**
- * Public Landing Page (/) designed with Tactile Learning Studio aesthetics:
- * product-as-hero 3D card deck, subtle multi-language marquee, editorial split
- * feature previews with SVG motion graphics, and friction-free Guest Trial entry.
- */
 export const LandingPage = () => {
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans selection:bg-blue-600/20">
+      <div className="min-h-screen bg-white text-[#1E293B] font-sans selection:bg-blue-600/20">
+        <LandingHelloBar />
         <LandingNavbar />
         <main>
           <LandingHero />
-          <LandingGreetingMarquee />
-          <LandingLanguageTracksSection />
+          <LandingConstellationSection />
           <LandingFeatureShowcase />
           <LandingInteractiveDemo />
+          <LandingPhraseShowcaseBand />
+          <LandingMethodTrustSection />
+          <LandingBottomCta />
         </main>
         <LandingFooter />
+        <LandingFloatingCta />
       </div>
     </MotionConfig>
   )

@@ -1,5 +1,26 @@
+import type { ReactNode } from 'react'
 import { motion } from 'motion/react'
 import { CheckCircle, SpeakerHigh } from '@phosphor-icons/react'
+
+/**
+ * ClassDojo-inspired crisp white tactile studio framing that lifts illustration
+ * cards cleanly above organic pastel blobs.
+ */
+export const StudioCardFrame = ({
+  children,
+  className = '',
+}: {
+  children: ReactNode
+  className?: string
+}) => {
+  return (
+    <div
+      className={`bg-white border-2 border-[#E2E8F0] rounded-[24px] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] ${className}`.trim()}
+    >
+      {children}
+    </div>
+  )
+}
 
 /**
  * Animated vertical soundwave bars that pulse smoothly while speech audio plays.
@@ -43,7 +64,7 @@ export const AudioWaveformBars = ({ isPlaying }: { isPlaying: boolean }) => {
  */
 export const CurriculumPathIllustration = () => {
   return (
-    <div className="relative bg-[#FAFAF9] border border-slate-200/90 rounded-3xl p-5 sm:p-6 overflow-hidden">
+    <StudioCardFrame className="relative p-5 sm:p-6 overflow-hidden">
       <div className="flex items-center justify-between gap-2 mb-4">
         <span className="text-[11px] font-brand font-black uppercase tracking-wider text-slate-500">
           Alur Belajar Terstruktur
@@ -52,7 +73,7 @@ export const CurriculumPathIllustration = () => {
           {['N5', 'A1', 'IELTS'].map((badge) => (
             <span
               key={badge}
-              className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-[10px] font-mono font-bold text-slate-700"
+              className="px-2 py-0.5 rounded-md bg-[#F8FAFC] border border-[#E2E8F0] text-[10px] font-mono font-bold text-slate-700"
             >
               {badge}
             </span>
@@ -96,7 +117,7 @@ export const CurriculumPathIllustration = () => {
             />
           </g>
 
-          {/* Node 2: Completed */}
+          {/* Node 2: Active */}
           <g transform="translate(180, 36)">
             <circle r="20" fill="#2563EB" />
             <circle r="13" fill="#EFF6FF" />
@@ -111,16 +132,16 @@ export const CurriculumPathIllustration = () => {
         </svg>
 
         {/* Bottom Labels */}
-        <div className="absolute inset-x-2 bottom-0 flex items-center justify-between text-[11px] font-bold text-slate-600">
+        <div className="absolute inset-x-1 sm:inset-x-2 bottom-0 flex items-center justify-between gap-1 text-[10px] sm:text-[11px] font-bold text-slate-600">
           <span className="inline-flex items-center gap-1 text-emerald-700">
-            <CheckCircle weight="fill" className="w-3.5 h-3.5" />
+            <CheckCircle weight="fill" className="w-3.5 h-3.5 shrink-0" />
             Unit 1: Dasar
           </span>
           <span className="text-blue-700">Unit 2: Percakapan</span>
           <span className="text-slate-400">Ujian Level</span>
         </div>
       </div>
-    </div>
+    </StudioCardFrame>
   )
 }
 
@@ -129,19 +150,19 @@ export const CurriculumPathIllustration = () => {
  */
 export const ScriptStrokeIllustration = () => {
   return (
-    <div className="bg-[#FAFAF9] border border-slate-200/90 rounded-3xl p-5 sm:p-6 flex items-center justify-between gap-5">
-      <div className="relative w-32 h-32 sm:w-36 sm:h-36 rounded-2xl bg-white border border-slate-200 shrink-0 flex items-center justify-center overflow-hidden shadow-2xs">
+    <StudioCardFrame className="p-5 sm:p-6 flex items-center justify-between gap-4 sm:gap-5">
+      <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-2xl bg-[#FAFAF9] border-2 border-[#E2E8F0] shrink-0 flex items-center justify-center overflow-hidden">
         {/* Stationery Practice Grid Crosshair */}
         <div
           aria-hidden="true"
-          className="absolute inset-0 border-r border-slate-100 w-1/2 pointer-events-none"
+          className="absolute inset-0 border-r border-dashed border-slate-200/90 w-1/2 pointer-events-none"
         />
         <div
           aria-hidden="true"
-          className="absolute inset-0 border-b border-slate-100 h-1/2 pointer-events-none"
+          className="absolute inset-0 border-b border-dashed border-slate-200/90 h-1/2 pointer-events-none"
         />
 
-        <svg viewBox="0 0 120 120" className="w-24 h-24 relative z-10" fill="none">
+        <svg viewBox="0 0 120 120" className="w-22 h-22 sm:w-24 sm:h-24 relative z-10" fill="none">
           {/* Ghost Character Outline */}
           <path
             d="M 28 36 H 90 M 56 22 C 54 48, 52 74, 56 96 M 78 48 C 72 72, 54 90, 34 86 C 24 84, 24 68, 40 60 C 58 51, 86 58, 86 78 C 86 91, 74 98, 60 99"
@@ -154,7 +175,7 @@ export const ScriptStrokeIllustration = () => {
           {/* Stroke 1 */}
           <motion.path
             d="M 28 36 H 90"
-            stroke="#059669"
+            stroke="#F34E47"
             strokeWidth="7"
             strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0.4 }}
@@ -165,7 +186,7 @@ export const ScriptStrokeIllustration = () => {
           {/* Stroke 2 */}
           <motion.path
             d="M 56 22 C 54 48, 52 74, 56 96"
-            stroke="#059669"
+            stroke="#F34E47"
             strokeWidth="7"
             strokeLinecap="round"
             initial={{ pathLength: 0, opacity: 0.4 }}
@@ -176,7 +197,7 @@ export const ScriptStrokeIllustration = () => {
           {/* Stroke 3 */}
           <motion.path
             d="M 78 48 C 72 72, 54 90, 34 86 C 24 84, 24 68, 40 60 C 58 51, 86 58, 86 78 C 86 91, 74 98, 60 99"
-            stroke="#059669"
+            stroke="#F34E47"
             strokeWidth="7"
             strokeLinecap="round"
             strokeLinejoin="round"
@@ -188,8 +209,8 @@ export const ScriptStrokeIllustration = () => {
       </div>
 
       <div className="space-y-2.5 min-w-0 flex-1">
-        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 border border-emerald-200/80 text-emerald-700 font-brand font-black text-[11px]">
-          <SpeakerHigh weight="fill" className="w-3.5 h-3.5" />
+        <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-[#FFF1F2] border border-[#FECDD3] text-[#BE123C] font-brand font-black text-[11px]">
+          <SpeakerHigh weight="fill" className="w-3.5 h-3.5 text-[#F34E47]" />
           <span>Kanvas Latihan &amp; Suara</span>
         </div>
         <p className="font-mono text-sm font-bold text-slate-800">あ / A — Urutan 1 → 3</p>
@@ -198,7 +219,7 @@ export const ScriptStrokeIllustration = () => {
           audio penutur asli.
         </p>
       </div>
-    </div>
+    </StudioCardFrame>
   )
 }
 
@@ -207,7 +228,7 @@ export const ScriptStrokeIllustration = () => {
  */
 export const FlashcardStackIllustration = () => {
   return (
-    <div className="bg-[#FAFAF9] border border-slate-200/90 rounded-3xl p-6 flex items-center justify-center min-h-[196px]">
+    <StudioCardFrame className="p-6 sm:p-7 flex items-center justify-center min-h-[208px]">
       <div className="relative w-full max-w-[300px] h-36 flex items-center justify-center">
         {/* Back Layer Card */}
         <motion.div
@@ -229,7 +250,7 @@ export const FlashcardStackIllustration = () => {
         <motion.div
           whileHover={{ y: -4, scale: 1.02 }}
           transition={{ type: 'spring', stiffness: 320, damping: 22 }}
-          className="relative w-full h-30 rounded-2xl bg-white border-2 border-slate-200/95 shadow-[0_5px_0_0_#E2E8F0] p-4 flex flex-col justify-between"
+          className="relative w-full h-30 rounded-2xl bg-white border-2 border-[#E2E8F0] shadow-[0_5px_0_0_#E2E8F0] p-4 flex flex-col justify-between"
         >
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-brand font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/70">
@@ -247,6 +268,6 @@ export const FlashcardStackIllustration = () => {
           </div>
         </motion.div>
       </div>
-    </div>
+    </StudioCardFrame>
   )
 }

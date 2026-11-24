@@ -581,3 +581,96 @@ body {
   }
 }
 
+/* ── CLASSDOJO-INSPIRED LANDING STUDIO TOKENS & UTILITIES ── */
+:root {
+  --landing-surface: #FFFFFF;
+  --landing-announcement: #FAFAFA;
+  --landing-band-tint: #F4F7FF;
+  --landing-promo-bg: #EBF2FF;
+  --landing-ink-display: #1E293B;
+  --landing-ink-body: #475569;
+  --landing-ink-muted: #64748B;
+  --landing-border-subtle: rgba(0, 0, 0, 0.10);
+  --landing-border-card: #E2E8F0;
+  --landing-trail-dashed: #CBD5E1;
+  --landing-shadow-lip: 0 6px 0 rgba(45, 64, 150, 0.06);
+  --landing-shadow-lip-hover: 0 8px 0 rgba(37, 99, 235, 0.10);
+  --ease-out-quad: cubic-bezier(0.5, 1, 0.89, 1);
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring-pill: cubic-bezier(0, 0.4, 0.57, 1.37);
+}
+
+.landing-card-lip {
+  border: 2px solid var(--landing-border-card);
+  box-shadow: var(--landing-shadow-lip);
+}
+
+.landing-link-sweep {
+  background-image: linear-gradient(currentColor, currentColor);
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 0% 2px;
+  transition: background-size 0.35s cubic-bezier(0.32, 1, 0.16, 1), color 0.2s ease;
+}
+
+.landing-link-sweep:hover,
+.landing-link-sweep:focus-visible {
+  background-size: 100% 2px;
+}
+
+@keyframes landing-marquee-forward {
+  0% {
+    transform: translate3d(-50%, 0, 0);
+  }
+  100% {
+    transform: translate3d(0%, 0, 0);
+  }
+}
+
+@keyframes landing-marquee-reverse {
+  0% {
+    transform: translate3d(0%, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+.animate-landing-marquee-forward {
+  animation: landing-marquee-forward 34s linear infinite;
+  will-change: transform;
+}
+
+.animate-landing-marquee-reverse {
+  animation: landing-marquee-reverse 28s linear infinite;
+  will-change: transform;
+}
+
+.animate-landing-marquee {
+  animation: landing-marquee-reverse 32s linear infinite;
+  will-change: transform;
+}
+
+.landing-marquee-track:hover .animate-landing-marquee-forward,
+.landing-marquee-track:hover .animate-landing-marquee-reverse,
+.landing-marquee-track:hover .animate-landing-marquee,
+.landing-marquee-track:focus-within .animate-landing-marquee-forward,
+.landing-marquee-track:focus-within .animate-landing-marquee-reverse,
+.landing-marquee-track:focus-within .animate-landing-marquee {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-landing-marquee-forward,
+  .animate-landing-marquee-reverse,
+  .animate-landing-marquee {
+    animation: none !important;
+    transform: none !important;
+  }
+
+  .landing-link-sweep {
+    transition: none !important;
+  }
+}
+
