@@ -1,104 +1,130 @@
+import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
+import { motion } from 'motion/react'
+import { ArrowRight } from '@phosphor-icons/react'
 import {
-  ArrowRight,
-  BookOpenText,
-  Cards,
-  SquaresFour,
-  Translate,
-} from '@phosphor-icons/react'
-import { LANDING_FEATURES, type LandingFeatureItem } from '@/features/landing/data/landingContent'
+  CurriculumPathIllustration,
+  FlashcardStackIllustration,
+  ScriptStrokeIllustration,
+} from '@/features/landing/components/LandingIllustrations'
+import { LandingAnimatedSentenceShowcase } from '@/features/landing/components/LandingAnimatedSentenceShowcase'
 
-const ICON_BY_FEATURE_ID = {
-  'feat-curriculum': SquaresFour,
-  'feat-kana': Translate,
-  'feat-flashcards': Cards,
-  'feat-grammar': BookOpenText,
-} as const
-
-const ACCENT_STYLES: Record<
-  LandingFeatureItem['accent'],
-  { badge: string; iconBox: string; link: string }
-> = {
-  blue: {
-    badge: 'bg-blue-50 border-blue-200 text-blue-700',
-    iconBox: 'bg-blue-600 text-white shadow-[0_4px_0_0_#1D4ED8]',
-    link: 'text-blue-600 group-hover:text-blue-700',
-  },
-  emerald: {
-    badge: 'bg-emerald-50 border-emerald-200 text-emerald-700',
-    iconBox: 'bg-emerald-600 text-white shadow-[0_4px_0_0_#047857]',
-    link: 'text-emerald-600 group-hover:text-emerald-700',
-  },
-  sky: {
-    badge: 'bg-sky-50 border-sky-200 text-sky-700',
-    iconBox: 'bg-sky-600 text-white shadow-[0_4px_0_0_#0369A1]',
-    link: 'text-sky-600 group-hover:text-sky-700',
-  },
-  amber: {
-    badge: 'bg-amber-50 border-amber-200 text-amber-700',
-    iconBox: 'bg-amber-500 text-white shadow-[0_4px_0_0_#B45309]',
-    link: 'text-amber-600 group-hover:text-amber-700',
-  },
+interface EditorialFeatureRow {
+  id: string
+  eyebrow: string
+  title: string
+  description: string
+  href: string
+  ctaLabel: string
+  visual: ReactNode
 }
+
+const EDITORIAL_FEATURE_ROWS: ReadonlyArray<EditorialFeatureRow> = [
+  {
+    id: 'row-curriculum',
+    eyebrow: '01 · Peta Kurikulum',
+    title: 'Materi Dipotong Singkat Agar Mudah Mulai Konsisten',
+    description:
+      'Setiap unit diawali kartu pengantar ringkas sebelum masuk soal latihan, sehingga pemula dari nol tidak langsung kaget saat mulai belajar.',
+    href: '/curriculum',
+    ctaLabel: 'Lihat Peta Belajar',
+    visual: <CurriculumPathIllustration />,
+  },
+  {
+    id: 'row-grammar',
+    eyebrow: '02 · Tata Bahasa Visual',
+    title: 'Pahami Pola Kalimat Per Blok Kata yang Jelas',
+    description:
+      'Susunan kalimat dipecah dengan warna penanda peran kata lengkap beserta arti per bagian dan konteks percakapan nyata.',
+    href: '/grammar',
+    ctaLabel: 'Buka Panduan Tata Bahasa',
+    visual: <LandingAnimatedSentenceShowcase />,
+  },
+  {
+    id: 'row-script',
+    eyebrow: '03 · Khusus Bahasa Beraksara (Jepang)',
+    title: 'Latihan Menulis Hiragana, Katakana & Kanji di Layar',
+    description:
+      'Untuk bahasa dengan sistem huruf non-Latin seperti Bahasa Jepang, tersedia papan tulis interaktif, panduan urutan goresan, dan suara native.',
+    href: '/kana/hiragana',
+    ctaLabel: 'Coba Papan Aksara Jepang',
+    visual: <ScriptStrokeIllustration />,
+  },
+  {
+    id: 'row-flashcards',
+    eyebrow: '04 · Kartu Kosakata',
+    title: 'Ulas Kosakata Kapan Saja Lewat Dek Terjadwal',
+    description:
+      'Balik kartu cepat dengan panduan baca dan suara pelafalan. Saat masuk akun gratis, jadwal ulasan otomatis mengikuti progres ingatmu.',
+    href: '/flashcards',
+    ctaLabel: 'Buka Dek Flashcard',
+    visual: <FlashcardStackIllustration />,
+  },
+]
 
 export const LandingFeatureShowcase = () => {
   return (
-    <section id="fitur" className="py-14 sm:py-20">
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
-        <div className="text-center max-w-2xl mx-auto space-y-2.5">
+    <section id="fitur" className="py-14 sm:py-20 bg-white border-y border-slate-200/80">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-14 sm:space-y-18">
+        <div className="max-w-2xl space-y-2.5">
+          <p className="text-xs font-brand font-black uppercase tracking-widest text-blue-600">
+            Isi Pengalaman Belajar
+          </p>
           <h2 className="text-2xl sm:text-4xl font-brand font-black text-slate-900 tracking-tight">
-            Semua Modul Utama Bisa Kamu Cek Dulu
+            Semua Modul Bisa Kamu Sentuh &amp; Cek Dulu
           </h2>
           <p className="text-sm sm:text-base text-slate-600">
-            Klik kartu di bawah untuk langsung masuk ke aplikasi dalam{' '}
-            <strong>Mode Coba Tanpa Login</strong> dan lihat isinya sebelum membuat akun.
+            Bukan sekadar teori — lihat langsung cara kerja setiap modul di dalam Merantalk sebelum
+            membuat akun.
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-5">
-          {LANDING_FEATURES.map((feat) => {
-            const Icon =
-              ICON_BY_FEATURE_ID[feat.id as keyof typeof ICON_BY_FEATURE_ID] ?? SquaresFour
-            const styles = ACCENT_STYLES[feat.accent]
-
+        <div className="space-y-14 sm:space-y-20">
+          {EDITORIAL_FEATURE_ROWS.map((row, index) => {
+            const isVisualFirstOnDesktop = index % 2 === 1
             return (
-              <Link
-                key={feat.id}
-                to={feat.href}
-                className="group bg-white border-2 border-slate-200/95 hover:border-blue-300 rounded-3xl p-6 shadow-[0_6px_0_0_#E2E8F0] hover:shadow-[0_8px_0_0_#CBD5E1] hover:-translate-y-0.5 transition-all flex flex-col justify-between gap-5"
+              <motion.div
+                key={row.id}
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.25 }}
+                transition={{ duration: 0.45, ease: 'easeOut' }}
+                className="grid lg:grid-cols-12 gap-8 lg:gap-12 items-center"
               >
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between gap-3">
-                    <div
-                      className={`w-12 h-12 rounded-2xl flex items-center justify-center ${styles.iconBox}`}
-                    >
-                      <Icon weight="duotone" className="w-6 h-6" />
-                    </div>
-                    <span
-                      className={`px-2.5 py-1 rounded-full border text-[11px] font-brand font-black uppercase tracking-wider ${styles.badge}`}
-                    >
-                      {feat.badge}
-                    </span>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <h3 className="text-lg sm:text-xl font-brand font-black text-slate-900">
-                      {feat.title}
-                    </h3>
-                    <p className="text-sm text-slate-600 leading-relaxed">{feat.description}</p>
-                  </div>
+                <div
+                  className={`lg:col-span-5 space-y-4 ${
+                    isVisualFirstOnDesktop ? 'lg:order-2' : 'lg:order-1'
+                  }`}
+                >
+                  <span className="text-xs font-mono font-bold text-blue-600 block">
+                    {row.eyebrow}
+                  </span>
+                  <h3 className="text-xl sm:text-2xl font-brand font-black text-slate-900 leading-snug">
+                    {row.title}
+                  </h3>
+                  <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
+                    {row.description}
+                  </p>
+                  <Link
+                    to={row.href}
+                    className="group inline-flex items-center gap-1.5 text-sm font-brand font-black text-blue-600 hover:text-blue-700 pt-1"
+                  >
+                    <span>{row.ctaLabel}</span>
+                    <ArrowRight
+                      weight="bold"
+                      className="w-4 h-4 group-hover:translate-x-1 transition-transform"
+                    />
+                  </Link>
                 </div>
 
                 <div
-                  className={`inline-flex items-center gap-1.5 text-sm font-brand font-black ${styles.link}`}
+                  className={`lg:col-span-7 ${
+                    isVisualFirstOnDesktop ? 'lg:order-1' : 'lg:order-2'
+                  }`}
                 >
-                  <span>{feat.ctaLabel}</span>
-                  <ArrowRight
-                    weight="bold"
-                    className="w-4 h-4 group-hover:translate-x-1 transition-transform"
-                  />
+                  {row.visual}
                 </div>
-              </Link>
+              </motion.div>
             )
           })}
         </div>

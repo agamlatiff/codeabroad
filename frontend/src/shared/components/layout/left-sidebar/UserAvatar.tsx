@@ -2,9 +2,12 @@ import { useState, useMemo } from 'react'
 import type { FC } from 'react'
 import { Fire } from '@phosphor-icons/react'
 import {
+  getAvatarPresetGradient,
   getAvatarUrl,
-  getInitials,
   getDeterministicGradient,
+  getInitials,
+  isPresetAvatarUrl,
+  isSafeAvatarUrl,
   type AvatarStyle,
   type AvatarUser,
 } from '@/shared/utils/avatar'
@@ -43,7 +46,15 @@ export const UserAvatar: FC<UserAvatarProps> = ({
     return getAvatarUrl(user, style)
   }, [user, style])
 
-  const imageError = failedAvatarUrl === avatarUrl
+  const presetGradient = useMemo(() => {
+    return getAvatarPresetGradient(user?.avatar_url)
+  }, [user?.avatar_url])
+
+  const hasCustomImage = Boolean(
+    user?.avatar_url && isSafeAvatarUrl(user.avatar_url) && !isPresetAvatarUrl(user.avatar_url)
+  )
+
+  const imageError = Boolean(avatarUrl) && failedAvatarUrl === avatarUrl
 
   const initials = useMemo(() => {
     return getInitials(user?.name, user?.username)
@@ -58,10 +69,10 @@ export const UserAvatar: FC<UserAvatarProps> = ({
 
   return (
     <div
-      className={`relative inline-flex items-center justify-center shrink-0 rounded-full select-none shadow-sm transition-transform duration-200 hover:scale-105 ${containerSize} ${className}`}
+      className={`relative inline-flex items-center justify-center shrink-0 rounded-full select-none shadow-sm transition-colors duration-200 ${containerSize} ${className}`}
       title={user?.name || user?.username || 'User Profile'}
     >
-      {!imageError ? (
+      {hasCustomImage && !imageError ? (
         <img
           key={avatarUrl}
           src={avatarUrl}
@@ -72,7 +83,7 @@ export const UserAvatar: FC<UserAvatarProps> = ({
         />
       ) : (
         <div
-          className={`w-full h-full rounded-full bg-gradient-to-tr ${gradientClass} text-white font-extrabold flex items-center justify-center border-2 border-white shadow-sm ${textSize}`}
+          className={`w-full h-full rounded-full bg-gradient-to-tr ${presetGradient ?? gradientClass} text-white font-extrabold flex items-center justify-center border-2 border-white shadow-sm ${textSize}`}
         >
           {initials}
         </div>

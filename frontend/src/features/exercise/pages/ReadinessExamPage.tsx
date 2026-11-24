@@ -140,7 +140,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 sm:py-8">
         <div className="max-w-2xl mx-auto space-y-6">
           {/* Quick Question Stepper */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          <div className="flex flex-nowrap overflow-x-auto sm:flex-wrap sm:overflow-visible items-center gap-1.5 pb-1 sm:pb-0">
             {questions.map((q, idx) => {
               const isCurrent = idx === currentIndex
               const isAnswered = (answersById[q.id] ?? '').length > 0
@@ -152,7 +152,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
                   onClick={() => handleJumpToQuestion(idx)}
                   aria-label={`Soal ${idx + 1}${isAnswered ? ' (terjawab)' : ' (belum terjawab)'}`}
                   aria-current={isCurrent ? 'step' : undefined}
-                  className={`min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-extrabold border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${
+                  className={`shrink-0 min-w-[44px] min-h-[44px] px-2.5 rounded-xl text-xs font-extrabold border-2 transition-all disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer ${
                     isCurrent
                       ? 'bg-blue-600 border-blue-700 text-white shadow-xs'
                       : isAnswered

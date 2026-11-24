@@ -195,7 +195,7 @@ export const Step3PlacementTest = ({
           Soal tes penempatan belum tersedia untuk bahasa ini. Kamu dapat langsung memulai dari level awal.
         </p>
         <Button3D variant="blue" size="md" onClick={onSubmit} disabled={isSubmitting}>
-          Lanjutkan &amp; Terbitkan Tiket
+          Lanjut ke Kurikulum
         </Button3D>
       </div>
     )
@@ -304,10 +304,10 @@ export const Step3PlacementTest = ({
                   triggerHaptic('tap')
                   onAnswerChange(currentQuestion.id, val)
                 }}
-                className={`rounded-2xl px-4 py-3.5 text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 ${
+                className={`rounded-2xl px-4 py-3.5 text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 border-2 ${
                   isSelected
-                    ? 'bg-blue-50 border-2 border-[#2563EB] text-[#2563EB]'
-                    : 'bg-white border border-slate-200 text-slate-800 hover:border-blue-300'
+                    ? 'bg-blue-50 border-[#2563EB] text-[#2563EB]'
+                    : 'bg-white border-slate-200 text-slate-800 hover:border-blue-300'
                 }`}
               >
                 <span>{label}</span>
@@ -426,7 +426,7 @@ export const Step3PlacementTest = ({
             disabled={isSubmitting}
             icon={<ArrowRight weight="bold" className="w-3.5 h-3.5" />}
           >
-            {isSubmitting ? 'Menilai Jawaban...' : 'Selesai & Terbitkan Tiket'}
+            {isSubmitting ? 'Menilai Jawaban...' : 'Selesai & Mulai Belajar'}
           </Button3D>
         )}
       </div>

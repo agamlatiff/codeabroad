@@ -11,7 +11,6 @@ import {
   SpeakerHigh,
   SpeakerLow,
   SpeakerSimpleSlash,
-  Shuffle,
   Compass,
   SignOut,
   Clock,
@@ -19,6 +18,7 @@ import {
 import { Button3D } from "@/shared/components/ui/Button3D"
 import { UserAvatar } from './UserAvatar'
 import { triggerHaptic } from "@/shared/utils/haptics"
+import { getInitials } from "@/shared/utils/avatar"
 import { useAudioStore } from "@/shared/store/audioStore"
 import { computeXpLevelProgress } from "@/shared/utils/progression"
 import {
@@ -46,13 +46,12 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     dailyGoalMinutes,
     setDailyGoalMinutes,
     selectedAvatarUrl,
-    avatarOptions,
+    avatarPresets,
     selectedAvatarStyle,
     isSubmitting,
     saveSuccess,
     errorMessage,
     handleSelectAvatarUrl,
-    shuffleAvatarOptions,
     handleSubmit,
   } = useSettingsModal(props)
 
@@ -60,9 +59,11 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
   if (!isOpen) return null
 
+  const previewName = name.trim() || user?.name
+  const previewInitials = getInitials(previewName, user?.username)
   const previewUser = user
-    ? { ...user, avatar_url: selectedAvatarUrl }
-    : { name: 'Pembelajar Global', avatar_url: selectedAvatarUrl }
+    ? { ...user, name: previewName, avatar_url: selectedAvatarUrl }
+    : { name: previewName || 'Pembelajar Global', avatar_url: selectedAvatarUrl }
 
   return (
     <AccessibleModal
@@ -179,7 +180,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </div>
           )}
 
-          {/* Nama Pengembang */}
+          {/* Nama Lengkap */}
           <div className="space-y-1">
             <label className="text-xs font-brand font-black text-slate-700 block">
               Nama Lengkap
@@ -250,43 +251,38 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </div>
           </div>
 
-          {/* Pilih Foto Profil (Petualang Global) */}
+          {/* Pilih Warna Avatar Inisial */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between gap-2">
               <label className="text-xs font-brand font-black text-slate-700">
-                Pilih Foto Profil ({avatarOptions.length} Pilihan)
+                Pilih Warna Avatar ({avatarPresets.length} Pilihan)
               </label>
-              <button
-                type="button"
-                onClick={shuffleAvatarOptions}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-blue-50 text-[11px] font-brand font-bold text-slate-600 hover:text-blue-600 border border-slate-200 hover:border-blue-200 transition-colors cursor-pointer select-none"
-              >
-                <Shuffle weight="bold" className="w-3.5 h-3.5" />
-                <span>Acak Pilihan</span>
-              </button>
+              <span className="text-[11px] font-semibold text-slate-400">
+                Inisial {previewInitials}
+              </span>
             </div>
-            <div className="grid grid-cols-5 sm:grid-cols-10 gap-3 justify-items-center py-1">
-              {avatarOptions.map((url, idx) => {
-                const isSelected = selectedAvatarUrl === url
+            <div className="grid grid-cols-4 sm:grid-cols-8 gap-3 justify-items-center py-1">
+              {avatarPresets.map((preset) => {
+                const isSelected = selectedAvatarUrl === preset.url
                 return (
                   <button
-                    key={url}
+                    key={preset.id}
                     type="button"
-                    onClick={() => handleSelectAvatarUrl(url)}
-                    aria-label={`Pilih avatar ${idx + 1}`}
+                    onClick={() => handleSelectAvatarUrl(preset.url)}
+                    aria-label={`Pilih warna avatar ${preset.label}`}
                     aria-pressed={isSelected}
-                    className={`w-12 h-12 sm:w-13 sm:h-13 rounded-full p-0.5 transition-all cursor-pointer relative flex items-center justify-center bg-white select-none ${
+                    title={preset.label}
+                    className={`w-12 h-12 rounded-full p-0.5 transition-colors cursor-pointer relative flex items-center justify-center bg-white select-none ${
                       isSelected
-                        ? 'ring-2 ring-[#2563EB] ring-offset-2 shadow-sm'
+                        ? `ring-2 ${preset.ring} ring-offset-2 shadow-sm`
                         : 'ring-1 ring-slate-200 hover:ring-blue-300'
                     }`}
                   >
-                    <img
-                      src={url}
-                      alt={`Avatar pilihan ${idx + 1}`}
-                      loading="lazy"
-                      className="w-full h-full rounded-full object-cover pointer-events-none"
-                    />
+                    <span
+                      className={`w-full h-full rounded-full bg-gradient-to-tr ${preset.gradient} text-white font-extrabold text-sm flex items-center justify-center border border-white/80 shadow-inner pointer-events-none`}
+                    >
+                      {previewInitials}
+                    </span>
                     {isSelected && (
                       <span
                         aria-hidden="true"
@@ -367,7 +363,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
                 <p className="text-[11px] font-medium text-slate-500">
                   {audioMode === 'muted'
                     ? 'Nonaktifkan mode Hening terlebih dahulu agar suara terdengar.'
-                    : 'Langsung bacakan pelafalan Jepang saat kartu materi, flashcard, atau soal terbuka.'}
+                    : 'Langsung bacakan pelafalan bahasa target saat kartu materi, flashcard, atau soal terbuka.'}
                 </p>
               </div>
               <button

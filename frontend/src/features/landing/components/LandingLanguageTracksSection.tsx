@@ -1,12 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import {
-  ArrowRight,
-  GlobeHemisphereEast,
-  LockSimple,
-  Sparkle,
-  SpeakerHigh,
-} from '@phosphor-icons/react'
+import { motion } from 'motion/react'
+import { ArrowRight, Clock } from '@phosphor-icons/react'
 import { languageService } from '@/features/curriculum/services/languageService'
 import { LANGUAGES_QUERY_KEY } from '@/shared/constants/queryKeys'
 import {
@@ -15,13 +10,12 @@ import {
 } from '@/shared/constants/languageCatalog'
 import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 
-interface TrackCardItem {
+interface TrackItem {
   id: string
   code: string
   name: string
   examTag: string
   description: string
-  badgeLabel: string
   isActive: boolean
 }
 
@@ -33,7 +27,7 @@ export const LandingLanguageTracksSection = () => {
     retry: false,
   })
 
-  const trackItems: TrackCardItem[] =
+  const allTracks: TrackItem[] =
     languages.length > 0
       ? languages.map((lang) => {
           const meta = getLanguageCatalogMeta(lang.code, lang.name)
@@ -43,7 +37,6 @@ export const LandingLanguageTracksSection = () => {
             name: lang.name || meta.name,
             examTag: meta.examTag,
             description: meta.description,
-            badgeLabel: meta.badgeLabel,
             isActive: lang.is_active,
           }
         })
@@ -53,124 +46,130 @@ export const LandingLanguageTracksSection = () => {
           name: meta.name,
           examTag: meta.examTag,
           description: meta.description,
-          badgeLabel: meta.badgeLabel,
           isActive: meta.fallbackActive,
         }))
 
+  const activeTracks = allTracks.filter((item) => item.isActive)
+  const upcomingTracks = allTracks.filter((item) => !item.isActive)
+
   return (
-    <section id="bahasa" className="py-12 sm:py-16">
+    <section id="bahasa" className="py-14 sm:py-20">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-8">
-        <div className="text-center max-w-2xl mx-auto space-y-2.5">
-          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-brand font-black text-xs uppercase tracking-wider">
-            <GlobeHemisphereEast weight="fill" className="w-3.5 h-3.5 text-blue-600" />
-            <span>Multi-Bahasa • Siap Kerja &amp; Studi Global</span>
-          </span>
-          <h2 className="text-2xl sm:text-4xl font-brand font-black text-slate-900 tracking-tight">
-            6 Jalur Bahasa &amp; Sertifikasi Internasional
-          </h2>
-          <p className="text-sm sm:text-base text-slate-600">
-            Dari Asia Timur hingga Eropa — pilih destinasi studimu atau kariermu, pelajari
-            kurikulum terstruktur, dan coba langsung jalurnya sebelum mendaftar.
-          </p>
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+          <div className="space-y-2 max-w-2xl">
+            <p className="text-xs font-brand font-black uppercase tracking-widest text-blue-600">
+              Pilihan Bahasa Target
+            </p>
+            <h2 className="text-2xl sm:text-4xl font-brand font-black text-slate-900 tracking-tight">
+              Fokus pada Jalur yang Siap Dipelajari
+            </h2>
+            <p className="text-sm sm:text-base text-slate-600">
+              Setiap bahasa disusun mengikuti standar ujian resmi internasional. Bahasa aktif di
+              bawah ini bisa langsung kamu buka dan coba Unit 1-nya sekarang.
+            </p>
+          </div>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {trackItems.map((item) => {
-            if (item.isActive) {
-              const targetHref = item.id ? `/curriculum/${item.id}` : '/curriculum'
-              return (
+        {/* Active Tracks (Prominent Interactive Cards) */}
+        <div
+          className={`grid gap-5 ${
+            activeTracks.length === 1
+              ? 'max-w-xl'
+              : activeTracks.length === 2
+                ? 'md:grid-cols-2'
+                : 'sm:grid-cols-2 lg:grid-cols-3'
+          }`}
+        >
+          {activeTracks.map((item, idx) => {
+            const targetHref = item.id ? `/curriculum/${item.id}` : '/curriculum'
+            return (
+              <motion.div
+                key={item.id || item.code}
+                initial={{ opacity: 0, y: 14 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.3 }}
+                transition={{ duration: 0.35, delay: idx * 0.08 }}
+              >
                 <Link
-                  key={item.id || item.code}
                   to={targetHref}
-                  className="group bg-white border-2 border-emerald-300/90 hover:border-blue-400 rounded-3xl p-5 shadow-[0_6px_0_0_#D1FAE5] hover:shadow-[0_8px_0_0_#BFDBFE] hover:-translate-y-0.5 transition-all flex flex-col justify-between gap-4"
+                  className="group h-full bg-white border-2 border-slate-200/95 hover:border-blue-400 rounded-3xl p-6 shadow-[0_6px_0_0_#E2E8F0] hover:-translate-y-0.5 transition-all flex flex-col justify-between gap-5"
                 >
-                  <div className="space-y-3.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="w-16 h-11 rounded-xl border border-slate-200 bg-white overflow-hidden shrink-0">
-                        <LanguageFlagIllustration
-                          code={item.code}
-                          compact
-                          className="w-full h-full object-contain"
-                        />
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="w-14 h-10 rounded-xl border border-slate-200 bg-white overflow-hidden shrink-0">
+                          <LanguageFlagIllustration
+                            code={item.code}
+                            compact
+                            className="w-full h-full object-contain"
+                          />
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-brand font-black text-slate-900 leading-tight">
+                            Bahasa {item.name}
+                          </h3>
+                          <span className="text-xs font-mono font-bold text-blue-600">
+                            {item.examTag}
+                          </span>
+                        </div>
                       </div>
 
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-brand font-black text-[11px]">
-                        <Sparkle weight="fill" className="w-3 h-3 text-emerald-500" />
-                        <span>Aktif • Unit 1 Terbuka</span>
+                      <span className="px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-700 font-brand font-black text-[11px] shrink-0">
+                        Unit 1 Terbuka
                       </span>
                     </div>
 
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <h3 className="text-lg font-brand font-black text-slate-900">
-                          {item.name}
-                        </h3>
-                        <span className="text-[11px] font-bold text-blue-700 bg-blue-50 border border-blue-200/80 px-2 py-0.5 rounded-lg shrink-0">
-                          {item.examTag}
-                        </span>
-                      </div>
-                      <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
+                    <p className="text-sm text-slate-600 leading-relaxed">{item.description}</p>
                   </div>
 
                   <div className="inline-flex items-center gap-1.5 text-sm font-brand font-black text-blue-600 group-hover:text-blue-700">
-                    <span>Coba Unit 1 Tanpa Login</span>
+                    <span>Buka Kurikulum {item.name}</span>
                     <ArrowRight
                       weight="bold"
                       className="w-4 h-4 group-hover:translate-x-1 transition-transform"
                     />
                   </div>
                 </Link>
-              )
-            }
-
-            return (
-              <div
-                key={item.id || item.code}
-                className="bg-slate-50/85 border-2 border-slate-200/90 rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] flex flex-col justify-between gap-4"
-              >
-                <div className="space-y-3.5">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="w-16 h-11 rounded-xl border border-slate-200 bg-white overflow-hidden shrink-0">
-                      <LanguageFlagIllustration
-                        code={item.code}
-                        compact
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
-
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-slate-200/75 border border-slate-300/80 text-slate-600 font-brand font-black text-[11px]">
-                      <LockSimple weight="bold" className="w-3 h-3" />
-                      <span>Segera Hadir</span>
-                    </span>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="text-lg font-brand font-black text-slate-800">{item.name}</h3>
-                      <span className="text-[11px] font-bold text-slate-600 bg-white border border-slate-200 px-2 py-0.5 rounded-lg shrink-0">
-                        {item.examTag}
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
-                      {item.description}
-                    </p>
-                  </div>
-                </div>
-
-                <a
-                  href="#coba-kilat"
-                  className="inline-flex items-center gap-1.5 text-xs font-brand font-black text-slate-600 hover:text-blue-600 transition-colors w-fit"
-                >
-                  <SpeakerHigh weight="fill" className="w-4 h-4 text-blue-500" />
-                  <span>Coba demo audio di bawah</span>
-                </a>
-              </div>
+              </motion.div>
             )
           })}
         </div>
+
+        {/* Upcoming Tracks (Honest, Compact Strip instead of giant locked cards) */}
+        {upcomingTracks.length > 0 && (
+          <div className="rounded-2xl bg-white border border-slate-200/90 px-4 py-3.5 sm:px-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2 text-xs font-brand font-bold text-slate-500 shrink-0">
+              <Clock weight="bold" className="w-4 h-4 text-slate-400" />
+              <span>Sedang Disiapkan:</span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2 flex-1">
+              {upcomingTracks.map((item) => (
+                <span
+                  key={item.id || item.code}
+                  className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#FAFAF9] border border-slate-200/80 text-xs font-semibold text-slate-600"
+                >
+                  <span className="w-4.5 h-3 rounded-xs overflow-hidden border border-slate-200 shrink-0">
+                    <LanguageFlagIllustration
+                      code={item.code}
+                      compact
+                      className="w-full h-full object-contain"
+                    />
+                  </span>
+                  <span>{item.name}</span>
+                  <span className="text-[10px] font-mono text-slate-400">({item.examTag})</span>
+                </span>
+              ))}
+            </div>
+
+            <a
+              href="#coba-kilat"
+              className="text-xs font-brand font-black text-blue-600 hover:text-blue-700 shrink-0"
+            >
+              Coba audio singkat ↓
+            </a>
+          </div>
+        )}
       </div>
     </section>
   )

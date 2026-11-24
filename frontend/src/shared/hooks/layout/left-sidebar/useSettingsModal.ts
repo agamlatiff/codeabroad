@@ -5,11 +5,18 @@ import { triggerHaptic } from "@/shared/utils/haptics"
 import { extractApiErrorMessage } from "@/shared/services/api"
 import type { User } from "@/shared/types/user"
 import {
-  AVATAR_PRESET_SEEDS,
-  buildAdventurerAvatarUrl,
-  getAvatarUrl,
+  AVATAR_COLOR_PRESETS,
+  getDefaultAvatarPresetUrl,
+  isSafeAvatarUrl,
   type AvatarStyle,
 } from "@/shared/utils/avatar"
+
+const resolveInitialAvatarUrl = (user?: User | null): string => {
+  if (isSafeAvatarUrl(user?.avatar_url)) {
+    return user.avatar_url.trim()
+  }
+  return getDefaultAvatarPresetUrl(user?.username || user?.name || 'learner')
+}
 
 const CLOSE_AFTER_SAVE_MS = 900
 
@@ -65,10 +72,7 @@ export const useSettingsModal = ({
   const [dailyGoalMinutes, setDailyGoalMinutes] = useState<SettingsDailyGoalMinutes>(() =>
     normalizeDailyGoalMinutes(user?.daily_goal_minutes)
   )
-  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(() => getAvatarUrl(user))
-  const [avatarOptions, setAvatarOptions] = useState<string[]>(() =>
-    AVATAR_PRESET_SEEDS.map(buildAdventurerAvatarUrl)
-  )
+  const [selectedAvatarUrl, setSelectedAvatarUrl] = useState(() => resolveInitialAvatarUrl(user))
   const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
@@ -83,7 +87,7 @@ export const useSettingsModal = ({
       setName(user?.name || '')
       setBio(user?.bio || '')
       setDailyGoalMinutes(normalizeDailyGoalMinutes(user?.daily_goal_minutes))
-      setSelectedAvatarUrl(getAvatarUrl(user))
+      setSelectedAvatarUrl(resolveInitialAvatarUrl(user))
       setSelectedAvatarStyle(avatarStyle)
       setSaveSuccess(false)
       setErrorMessage(null)
@@ -115,14 +119,6 @@ export const useSettingsModal = ({
   const handleSelectAvatarUrl = useCallback((url: string) => {
     triggerHaptic('tap')
     setSelectedAvatarUrl(url)
-  }, [])
-
-  const shuffleAvatarOptions = useCallback(() => {
-    triggerHaptic('tap')
-    const nonce = Math.random().toString(36).slice(2, 7)
-    setAvatarOptions(
-      AVATAR_PRESET_SEEDS.map((seed, idx) => buildAdventurerAvatarUrl(`${seed}-${nonce}-${idx}`))
-    )
   }, [])
 
   const handleSubmit = useCallback(
@@ -175,14 +171,13 @@ export const useSettingsModal = ({
     dailyGoalMinutes,
     setDailyGoalMinutes,
     selectedAvatarUrl,
-    avatarOptions,
+    avatarPresets: AVATAR_COLOR_PRESETS,
     selectedAvatarStyle,
     avatarStyles: AVATAR_STYLE_OPTIONS,
     isSubmitting: isSubmitting || userStatus.isUpdating,
     saveSuccess,
     errorMessage,
     handleSelectAvatarUrl,
-    shuffleAvatarOptions,
     handleAvatarSelect,
     handleSubmit,
   }

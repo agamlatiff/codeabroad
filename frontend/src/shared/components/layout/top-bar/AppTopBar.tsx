@@ -179,7 +179,7 @@ export const AppTopBar = ({
                 className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-orange-50/90 border border-orange-200/80 text-orange-600 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
                 title={`Streak Belajar: ${userStreak} Hari`}
               >
-                <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 animate-pulse shrink-0" />
+                <Fire weight="fill" className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500 shrink-0" />
                 <span>{userStreak}</span>
                 <span className="hidden sm:inline">&nbsp;Hari</span>
               </div>
@@ -255,7 +255,7 @@ export const AppTopBar = ({
                   className="flex items-center gap-0.5 px-1.5 sm:px-2 py-0.5 sm:py-1 rounded-xl bg-purple-100 border border-purple-300 text-purple-800 font-brand font-black text-[10px] sm:text-[11px] shrink-0 whitespace-nowrap shadow-2xs"
                   title="Bonus 2x XP sedang aktif"
                 >
-                  <Lightning weight="fill" className="w-3 h-3 text-purple-600 animate-pulse shrink-0" />
+                  <Lightning weight="fill" className="w-3 h-3 text-purple-600 shrink-0" />
                   <span>2x XP</span>
                 </div>
               )}
@@ -314,11 +314,11 @@ export const AppTopBar = ({
               title="Buka Misi Harian, Streak, & Peti Hadiah"
               aria-label="Buka Menu Misi & Peti Hadiah"
             >
-              <Gift weight="fill" className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-white drop-shadow-xs transition-transform group-hover:scale-110 animate-bounce" />
-              <span className="absolute -top-1 -right-1 flex h-3 w-3">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75" />
-                <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-2xs" />
-              </span>
+              <Gift weight="fill" className="w-5 h-5 sm:w-5.5 sm:h-5.5 text-white drop-shadow-xs" />
+              <span
+                aria-hidden="true"
+                className="absolute -top-1 -right-1 inline-flex rounded-full h-3 w-3 bg-red-500 border-2 border-white shadow-2xs"
+              />
             </button>
           )}
 

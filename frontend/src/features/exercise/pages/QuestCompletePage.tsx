@@ -66,16 +66,10 @@ export const QuestCompletePage = () => {
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex items-center justify-center p-4 sm:p-6 selection:bg-blue-600/20">
       <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-5 sm:p-7 max-w-2xl w-full text-center space-y-4 sm:space-y-5 shadow-[0_6px_0_0_#E2E8F0] animate-pop">
-        {/* Hero Mascot + Soft Celebration Halo */}
+        {/* Hero Mascot */}
         <div className="flex flex-col items-center gap-2">
-          <div className="relative flex items-center justify-center">
-            <div
-              aria-hidden="true"
-              className="absolute w-28 h-28 rounded-full bg-gradient-to-tr from-amber-200/55 via-sky-200/50 to-emerald-200/55 blur-md"
-            />
-            <div className="relative">
-              <KodiCharacter emotion="celebrate" size={92} />
-            </div>
+          <div className="flex items-center justify-center">
+            <KodiCharacter emotion="celebrate" size={92} />
           </div>
 
           <div className="flex items-center justify-center flex-wrap gap-2">
@@ -303,7 +297,28 @@ export const QuestCompletePage = () => {
             </Button3D>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+          {unlockedNextLessonId ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              <Button3D
+                variant="white"
+                size="md"
+                fullWidth
+                icon={<ArrowCounterClockwise weight="bold" className="w-4 h-4" />}
+                onClick={handleReplayLesson}
+              >
+                ULANGI PELAJARAN
+              </Button3D>
+              <Button3D
+                variant="white"
+                size="md"
+                fullWidth
+                icon={<MapTrifold weight="bold" className="w-4 h-4" />}
+                onClick={handleBackToCurriculum}
+              >
+                PETA KURIKULUM
+              </Button3D>
+            </div>
+          ) : (
             <Button3D
               variant="white"
               size="md"
@@ -313,16 +328,7 @@ export const QuestCompletePage = () => {
             >
               ULANGI PELAJARAN
             </Button3D>
-            <Button3D
-              variant="white"
-              size="md"
-              fullWidth
-              icon={<MapTrifold weight="bold" className="w-4 h-4" />}
-              onClick={handleBackToCurriculum}
-            >
-              PETA KURIKULUM
-            </Button3D>
-          </div>
+          )}
         </div>
       </div>
     </div>

@@ -164,16 +164,7 @@ export const MAP_TRACK_TOKENS = {
 } as const
 
 /**
- * 10. Map Biome Ambient Spotlight Aura
- */
-export const MAP_BIOME_AURA_TOKENS = {
-  completed: 'bg-emerald-400',
-  active: 'bg-blue-400',
-  locked: 'bg-indigo-400',
-} as const
-
-/**
- * 11. Map Milestone 3D Stepping Stone Nodes
+ * 10. Map Milestone 3D Stepping Stone Nodes
  */
 export const MAP_MILESTONE_DISC_TOKENS = {
   chest: {

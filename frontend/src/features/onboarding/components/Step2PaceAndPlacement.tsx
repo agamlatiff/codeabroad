@@ -57,7 +57,7 @@ const PLACEMENT_OPTIONS: Array<{
     type: 'zero_beginner',
     title: 'Mulai dari Nol',
     badge: 'Pemula',
-    description: 'Langsung mulai dari Unit 1 Lesson 1 untuk pengenalan aksara dan kalimat dasar.',
+    description: 'Langsung mulai dari Unit 1 Pelajaran 1 untuk fondasi kosakata dan kalimat dasar.',
     highlight: 'Rute bertahap • Langsung masuk kurikulum',
   },
   {
@@ -104,10 +104,10 @@ export const Step2PaceAndPlacement = ({
                   triggerHaptic('tap')
                   onSelectDailyGoal(opt.minutes)
                 }}
-                className={`rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 ${
+                className={`rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 border-2 ${
                   isSelected
-                    ? 'bg-blue-50/80 border-2 border-[#2563EB] shadow-sm -translate-y-0.5'
-                    : 'bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm'
+                    ? 'bg-blue-50/80 border-[#2563EB] shadow-sm -translate-y-0.5'
+                    : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -173,10 +173,10 @@ export const Step2PaceAndPlacement = ({
                   triggerHaptic('tap')
                   onSelectPlacementType(opt.type)
                 }}
-                className={`rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer flex flex-col gap-3.5 ${
+                className={`rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer flex flex-col gap-3.5 border-2 ${
                   isSelected
-                    ? 'bg-blue-50/80 border-2 border-[#2563EB] shadow-md -translate-y-0.5'
-                    : 'bg-white border border-slate-200 hover:border-blue-300 hover:shadow-sm'
+                    ? 'bg-blue-50/80 border-[#2563EB] shadow-md -translate-y-0.5'
+                    : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">

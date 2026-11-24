@@ -1,44 +1,35 @@
 import { useNavigate } from 'react-router-dom'
 import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import { Button3D } from "@/shared/components/ui/Button3D"
-import { Compass, GameController, ArrowLeft } from '@phosphor-icons/react'
+import { Compass, ArrowLeft } from '@phosphor-icons/react'
 
 export const NotFoundPage = () => {
   const navigate = useNavigate()
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center p-4 relative overflow-hidden">
-      {/* Background radial glow */}
-      <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
-
-      <div className="relative z-10 max-w-lg w-full text-center">
+    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 flex flex-col items-center justify-center p-4 sm:p-6 font-sans">
+      <div className="max-w-lg w-full bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-10 shadow-[0_6px_0_0_#E2E8F0] text-center">
         {/* Mascot */}
-        <div className="flex justify-center mb-6">
-          <KodiCharacter
-            emotion="thinking"
-            size="xl"
-            showSpeechBubble
-            speechText="Hmm, halaman yang kamu cari tidak ketemu nih!"
-            interactive
-          />
+        <div className="flex justify-center mb-5">
+          <KodiCharacter emotion="thinking" size={148} interactive />
         </div>
 
-        {/* 404 Badge */}
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-blue-400 font-brand font-black text-xs tracking-wider uppercase mb-3">
-          Error 404 — Halaman Tidak Ditemukan
-        </div>
+        {/* Eyebrow */}
+        <p className="font-mono text-xs font-bold tracking-[0.2em] uppercase text-blue-600 mb-2">
+          404
+        </p>
 
         {/* Headline */}
-        <h1 className="text-3xl sm:text-4xl font-brand font-black text-white tracking-tight mb-3">
+        <h1 className="text-2xl sm:text-3xl font-brand font-black text-slate-900 tracking-tight mb-3">
           Halaman Tidak Ditemukan
         </h1>
 
-        <p className="text-slate-400 text-sm sm:text-base leading-relaxed mb-8 max-w-md mx-auto">
+        <p className="text-slate-600 text-sm sm:text-base leading-relaxed mb-7 max-w-md mx-auto">
           Tautan yang kamu buka sepertinya salah ketik atau halamannya sudah dipindahkan. Yuk, kembali ke halaman belajar!
         </p>
 
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-sm mx-auto">
+        <div className="flex flex-col items-center gap-3.5 max-w-xs mx-auto">
           <Button3D
             variant="blue"
             size="lg"
@@ -46,28 +37,18 @@ export const NotFoundPage = () => {
             onClick={() => navigate('/curriculum')}
             fullWidth
           >
-            Buka Kurikulum
+            Kembali ke Kurikulum
           </Button3D>
 
-          <Button3D
-            variant="dark"
-            size="lg"
-            icon={<GameController size={20} weight="fill" />}
-            onClick={() => navigate('/quests')}
-            fullWidth
+          <button
+            type="button"
+            onClick={() => navigate(-1)}
+            className="inline-flex items-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-800 font-bold transition-colors cursor-pointer"
           >
-            Misi Harian
-          </Button3D>
+            <ArrowLeft size={14} weight="bold" />
+            <span>Kembali ke halaman sebelumnya</span>
+          </button>
         </div>
-
-        {/* Secondary back button */}
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="mt-6 inline-flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-300 font-bold transition-colors cursor-pointer"
-        >
-          <ArrowLeft size={14} /> Kembali ke halaman sebelumnya
-        </button>
       </div>
     </div>
   )

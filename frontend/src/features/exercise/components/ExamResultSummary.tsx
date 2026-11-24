@@ -27,10 +27,10 @@ export const ExamResultSummary = ({
   const isPassed = attempt.is_passed
 
   const allPillars = [
-    { key: 'reading', label: 'Reading', score: attempt.reading_score, tone: 'bg-sky-50 border-sky-200 text-sky-900' },
-    { key: 'listening', label: 'Listening', score: attempt.listening_score, tone: 'bg-amber-50 border-amber-200 text-amber-900' },
-    { key: 'writing', label: 'Writing', score: attempt.writing_score, tone: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
-    { key: 'speaking', label: 'Speaking', score: attempt.speaking_score, tone: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
+    { key: 'reading', label: 'Membaca', score: attempt.reading_score, tone: 'bg-sky-50 border-sky-200 text-sky-900' },
+    { key: 'listening', label: 'Mendengar', score: attempt.listening_score, tone: 'bg-amber-50 border-amber-200 text-amber-900' },
+    { key: 'writing', label: 'Menulis', score: attempt.writing_score, tone: 'bg-indigo-50 border-indigo-200 text-indigo-900' },
+    { key: 'speaking', label: 'Berbicara', score: attempt.speaking_score, tone: 'bg-emerald-50 border-emerald-200 text-emerald-900' },
   ]
   const assessedSet =
     Array.isArray(attempt.assessed_pillars) && attempt.assessed_pillars.length > 0

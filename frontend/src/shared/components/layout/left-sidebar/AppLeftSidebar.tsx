@@ -80,16 +80,16 @@ export const AppLeftSidebar = () => {
                   to={item.href}
                   data-tour={item.tourId}
                   onClick={(e) => handleNavClick(e, item.requiresAuth)}
-                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative group ${
+                  className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer relative group ${
                     item.isActive
-                      ? 'bg-gradient-to-b from-blue-50 via-blue-100/70 to-blue-100/90 text-blue-600 border-2 border-blue-400 shadow-[0_3px_0_0_#93C5FD] scale-105'
-                      : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100/80 border-2 border-transparent hover:border-slate-200/70 hover:scale-105 active:scale-95'
+                      ? 'bg-gradient-to-b from-blue-50 via-blue-100/70 to-blue-100/90 text-blue-600 border-2 border-blue-400 shadow-[0_3px_0_0_#93C5FD]'
+                      : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100/80 border-2 border-transparent hover:border-slate-200/70'
                   }`}
                 >
                   <Icon
                     weight={item.isActive ? 'duotone' : 'bold'}
-                    className={`w-6 h-6 transition-transform ${
-                      item.isActive ? 'scale-105 text-blue-600' : 'group-hover:scale-110'
+                    className={`w-6 h-6 transition-colors ${
+                      item.isActive ? 'text-blue-600' : ''
                     }`}
                   />
 
@@ -100,10 +100,10 @@ export const AppLeftSidebar = () => {
 
                   {/* Notification Dot for Active Quests or Guest Lock Indicator */}
                   {item.hasBadge && (
-                    <span className="absolute top-1.5 right-1.5 flex h-2.5 w-2.5">
-                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75" />
-                      <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500 border-2 border-white shadow-2xs" />
-                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="absolute top-1.5 right-1.5 inline-flex rounded-full h-2.5 w-2.5 bg-amber-500 border-2 border-white shadow-2xs"
+                    />
                   )}
                   {!user && item.requiresAuth && (
                     <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-slate-800 text-white border border-white flex items-center justify-center shadow-2xs">
@@ -136,7 +136,7 @@ export const AppLeftSidebar = () => {
                 className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-slate-100/80 hover:border-slate-300 text-slate-500 hover:text-slate-800 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
                 title="Pengaturan"
               >
-                <GearSix weight="bold" className="w-4.5 h-4.5 transition-transform group-hover:rotate-45" />
+                <GearSix weight="bold" className="w-4.5 h-4.5 transition-colors" />
 
                 {/* Tooltip */}
                 <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">

@@ -1,4 +1,5 @@
 import type { FC, MouseEvent } from 'react'
+import { MotionConfig, motion } from 'motion/react'
 import { SpeakerHigh, ArrowsClockwise } from '@phosphor-icons/react'
 import type { FlashcardCard } from '@/features/flashcard/types/flashcard'
 import { audioService } from '@/shared/services/audioService'
@@ -31,33 +32,34 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
   }
 
   return (
-    <div
-      className="w-full max-w-lg mx-auto cursor-pointer select-none"
-      style={{ perspective: '1200px' }}
-      onClick={() => {
-        triggerHaptic('tap')
-        audioService.playCardFlip()
-        onToggleFlip()
-      }}
-      role="button"
-      tabIndex={0}
-      aria-label={isFlipped ? 'Balik ke sisi depan kartu' : 'Balik untuk melihat arti kartu'}
-      onKeyDown={(e) => {
-        if (e.key === ' ' || e.key === 'Enter') {
-          e.preventDefault()
+    <MotionConfig reducedMotion="user">
+      <div
+        className="w-full max-w-lg mx-auto cursor-pointer select-none"
+        style={{ perspective: '1200px' }}
+        onClick={() => {
           triggerHaptic('tap')
           audioService.playCardFlip()
           onToggleFlip()
-        }
-      }}
-    >
-      <div
-        className="relative w-full min-h-[340px] sm:min-h-[370px] transition-transform duration-500"
-        style={{
-          transformStyle: 'preserve-3d',
-          transform: isFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)',
+        }}
+        role="button"
+        tabIndex={0}
+        aria-label={isFlipped ? 'Balik ke sisi depan kartu' : 'Balik untuk melihat arti kartu'}
+        onKeyDown={(e) => {
+          if (e.key === ' ' || e.key === 'Enter') {
+            e.preventDefault()
+            triggerHaptic('tap')
+            audioService.playCardFlip()
+            onToggleFlip()
+          }
         }}
       >
+        <motion.div
+          className="relative w-full min-h-[340px] sm:min-h-[370px]"
+          initial={false}
+          animate={{ rotateY: isFlipped ? 180 : 0 }}
+          transition={{ type: 'spring', stiffness: 260, damping: 24, mass: 0.9 }}
+          style={{ transformStyle: 'preserve-3d' }}
+        >
         {/* ── FRONT FACE ── */}
         <div
           className="absolute inset-0 bg-white border-2 border-slate-200/90 rounded-3xl p-6 sm:p-8 shadow-[0_6px_0_0_#E2E8F0] flex flex-col justify-between"
@@ -174,7 +176,8 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
             <span>Pilih seberapa mudah kamu mengingatnya di bawah</span>
           </div>
         </div>
+        </motion.div>
       </div>
-    </div>
+    </MotionConfig>
   )
 }

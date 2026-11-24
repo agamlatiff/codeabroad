@@ -45,12 +45,12 @@ export const Step1LanguagePicker = ({
                 onSelectLanguage(lang.id)
               }
             }}
-            className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
+            className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 border-2 ${
               isActive
                 ? isSelected
-                  ? 'bg-blue-50/70 border-2 border-[#2563EB] shadow-md -translate-y-0.5 cursor-pointer'
-                  : 'bg-white border border-slate-200/90 hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
-                : 'bg-slate-50/80 border border-slate-200/70 opacity-65 cursor-not-allowed'
+                  ? 'bg-blue-50/70 border-[#2563EB] shadow-md -translate-y-0.5 cursor-pointer'
+                  : 'bg-white border-slate-200/90 hover:border-blue-400 hover:shadow-md hover:-translate-y-0.5 cursor-pointer'
+                : 'bg-slate-50/80 border-slate-200/70 opacity-65 cursor-not-allowed'
             }`}
           >
             <div className="mb-3">

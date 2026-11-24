@@ -8,10 +8,8 @@ import {
   Trophy,
   Translate,
 } from '@phosphor-icons/react'
-import { KodiCharacter } from "@/shared/components/ui/KodiCharacter"
 import { Button3D } from "@/shared/components/ui/Button3D"
 import type { PathMapNode } from "@/features/curriculum/types/curriculum"
-import { playSound } from "@/shared/utils/sound"
 import {
   resolveMapCategoryTokens,
   MAP_GEOMETRY,
@@ -63,11 +61,10 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
         left: `${leftPercent}%`,
         top: `${topPx}px`,
       }}
-      onMouseEnter={() => playSound('node_hover')}
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
-        <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center select-none animate-bounce-subtle pointer-events-auto">
+        <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center select-none pointer-events-auto">
           <div
             className={`bg-white border-2 rounded-2xl p-4 shadow-lg text-center w-[288px] sm:w-[304px] space-y-2.5 relative ${catTokens.popoverBorder}`}
           >
@@ -114,23 +111,6 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
               {catTokens.activeButtonText}
             </Button3D>
           </div>
-        </div>
-      )}
-
-      {/* ── LIVING KODI COMPANION BESIDE ACTIVE LESSON ── */}
-      {node.status === 'active' && !node.isChest && !node.isTrophy && (
-        <div
-          className={`absolute ${
-            coord.x > 200 ? '-left-40 sm:-left-44' : '-right-40 sm:-right-44'
-          } -top-5 hidden md:flex flex-col items-center select-none z-20`}
-        >
-          <KodiCharacter
-            emotion="studying"
-            size={96}
-            interactive
-            showSpeechBubble
-            speechText="Ayo lanjut!"
-          />
         </div>
       )}
 

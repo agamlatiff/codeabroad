@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import { useLearnWorkspace } from '@/features/exercise/hooks/useLearnWorkspace'
 import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
@@ -429,36 +430,48 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
             {lesson.title}
           </p>
 
-          <ExercisePromptRenderer
-            exercise={currentExercise}
-            parsedContent={parsedContent}
-            selectedTokenIndices={selectedTokenIndices}
-            selectedTokens={selectedTokens}
-            selectedOptionValue={selectedOptionValue}
-            textInput={textInput}
-            submittedResult={submittedResult}
-            showHint={showHint}
-            isCheckpoint={isCheckpoint}
-            fallbackHint={fallbackHint}
-            onOpenStudyDrawer={
-              !isCheckpoint && introDeck && introDeck.items.length > 0
-                ? () => setIsStudyDrawerOpen(true)
-                : undefined
-            }
-            isSpeakingAudio={isSpeakingAudio}
-            isRecordingSpeech={isRecordingSpeech}
-            speechRecognitionSupported={speechRecognitionSupported}
-            audioPlaybackError={audioPlaybackError}
-            onAddToken={handleAddToken}
-            onRemoveToken={handleRemoveToken}
-            onClearTokens={handleClearTokens}
-            onSelectOption={handleSelectOption}
-            onSetTextInput={handleSetTextInput}
-            onPlayAudio={handlePlayAudio}
-            onToggleRecording={handleToggleRecording}
-            onToggleHint={handleToggleHint}
-            onEnterKey={handleEnterShortcut}
-          />
+          <MotionConfig reducedMotion="user">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentExercise.id}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+              >
+                <ExercisePromptRenderer
+                  exercise={currentExercise}
+                  parsedContent={parsedContent}
+                  selectedTokenIndices={selectedTokenIndices}
+                  selectedTokens={selectedTokens}
+                  selectedOptionValue={selectedOptionValue}
+                  textInput={textInput}
+                  submittedResult={submittedResult}
+                  showHint={showHint}
+                  isCheckpoint={isCheckpoint}
+                  fallbackHint={fallbackHint}
+                  onOpenStudyDrawer={
+                    !isCheckpoint && introDeck && introDeck.items.length > 0
+                      ? () => setIsStudyDrawerOpen(true)
+                      : undefined
+                  }
+                  isSpeakingAudio={isSpeakingAudio}
+                  isRecordingSpeech={isRecordingSpeech}
+                  speechRecognitionSupported={speechRecognitionSupported}
+                  audioPlaybackError={audioPlaybackError}
+                  onAddToken={handleAddToken}
+                  onRemoveToken={handleRemoveToken}
+                  onClearTokens={handleClearTokens}
+                  onSelectOption={handleSelectOption}
+                  onSetTextInput={handleSetTextInput}
+                  onPlayAudio={handlePlayAudio}
+                  onToggleRecording={handleToggleRecording}
+                  onToggleHint={handleToggleHint}
+                  onEnterKey={handleEnterShortcut}
+                />
+              </motion.div>
+            </AnimatePresence>
+          </MotionConfig>
         </div>
       </main>
 

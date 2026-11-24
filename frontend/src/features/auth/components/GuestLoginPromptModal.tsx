@@ -1,9 +1,9 @@
 import { useNavigate } from 'react-router-dom'
 import {
   CheckCircle,
-  Fire,
   Lightning,
   LockSimple,
+  SignIn,
   Sparkle,
   UserPlus,
   X,
@@ -35,12 +35,12 @@ const PROMPT_COPY_BY_REASON: Record<GuestLoginPromptReason, PromptCopyConfig> = 
     badge: 'Unit Lanjutan',
     title: 'Buka Semua Unit Lanjutan Secara Gratis!',
     description:
-      'Kamu sudah lihat alur Unit 1. Buat akun gratis dalam 10 detik untuk lanjut ke unit berikutnya dan simpan progres belajarmu.',
+      'Kamu sudah melihat alur Unit 1. Buat akun gratis untuk membuka unit berikutnya dan menyimpan progres belajarmu.',
     emotion: 'happy',
   },
   save_progress: {
     badge: 'Simpan Progresmu',
-    title: 'Jangan Sampai XP Latihanmu Hilang!',
+    title: 'Simpan Progres & XP Belajarmu',
     description:
       'Daftarkan akun gratis agar XP, riwayat latihan, dan capaianmu tersimpan aman dan bisa diakses dari perangkat mana saja.',
     emotion: 'celebrate',
@@ -148,15 +148,7 @@ export const GuestLoginPromptModal = ({
         </button>
 
         <div className="flex flex-col items-center text-center space-y-3">
-          <div className="relative">
-            <div
-              aria-hidden="true"
-              className="absolute -inset-2 rounded-full bg-gradient-to-tr from-blue-200/60 via-sky-100/60 to-amber-100/60 blur-md"
-            />
-            <div className="relative">
-              <KodiCharacter emotion={copy.emotion} size={84} />
-            </div>
-          </div>
+          <KodiCharacter emotion={copy.emotion} size={84} />
 
           <div className="flex items-center justify-center gap-2 flex-wrap">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 font-brand font-black text-[11px] uppercase tracking-wider">
@@ -212,7 +204,7 @@ export const GuestLoginPromptModal = ({
             variant="white"
             size="sm"
             fullWidth
-            icon={<Fire weight="fill" className="w-4 h-4 text-orange-500" />}
+            icon={<SignIn weight="bold" className="w-4 h-4 text-slate-600" />}
             onClick={handleLogin}
           >
             Sudah Punya Akun? Masuk

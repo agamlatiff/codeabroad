@@ -16,7 +16,7 @@ export const RegisterPage = () => {
       title="Daftar Akun Baru"
       subtitle="Isi data singkat di bawah untuk mulai belajar bahasa baru."
       heroTitle="Kuasai Bahasa Impianmu Secara Terstruktur"
-      heroSubtitle="Bergabung bersama ribuan pembelajar Indonesia untuk menguasai bahasa Jepang, Jerman, dan Inggris standar global."
+      heroSubtitle="Bangun kebiasaan belajar lintas bahasa dengan kurikulum terstruktur, latihan kosakata harian, dan persiapan sertifikasi global."
       heroEmotion="happy"
       speechBubble="Yuk mulai petualangan bahasamu bareng aku! ✨"
       error={status.error}

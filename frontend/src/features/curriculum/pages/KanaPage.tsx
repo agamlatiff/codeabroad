@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -27,7 +27,6 @@ import type {
 } from '@/features/curriculum/types/curriculum'
 import { KanaTracingPad } from '@/features/curriculum/components/kana/KanaTracingPad'
 import { KanaRowDrillCard } from '@/features/curriculum/components/kana/KanaRowDrillCard'
-import { KanaHeroIllustration } from '@/features/curriculum/components/KanaHeroIllustration'
 import { KANJI_ROW_LABELS } from '@/features/curriculum/constants/kanjiCatalog'
 import { GuestLoginPromptModal } from '@/features/auth/components/GuestLoginPromptModal'
 import { audioService } from '@/shared/services/audioService'
@@ -292,7 +291,6 @@ export const KanaPage = () => {
   const { data: userData } = useUser()
   const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
   const userIdKey = userData.user?.id ?? 'anonymous'
-  const heroPatternId = `kana-hero-seigaiha-${useId().replace(/:/g, '')}`
   const queryClient = useQueryClient()
   const navigate = useNavigate()
   const { script: routeScript } = useParams<{ script?: string }>()
@@ -546,36 +544,14 @@ export const KanaPage = () => {
           ]}
         />
 
-        {/* Custom Editorial Aksara Hero Banner with 3-Script Calligraphy & Kodi Illustration */}
-        <section className="relative rounded-3xl border-2 border-slate-200/90 bg-gradient-to-br from-emerald-50/75 via-white to-teal-50/45 shadow-[0_4px_0_0_#E2E8F0] overflow-hidden">
-          <div className="h-1.5 w-full bg-gradient-to-r from-emerald-400 via-teal-500 to-sky-500" />
-
-          {/* Subtle Japanese Seigaiha Background Pattern */}
-          <svg
-            className="absolute inset-0 w-full h-full text-emerald-700 opacity-[0.05] pointer-events-none"
-            xmlns="http://www.w3.org/2000/svg"
-            aria-hidden="true"
-          >
-            <defs>
-              <pattern id={heroPatternId} width="48" height="24" patternUnits="userSpaceOnUse">
-                <path
-                  d="M0 24A12 12 0 0 1 24 24M24 24A12 12 0 0 1 48 24M12 12A12 12 0 0 1 36 12"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.2"
-                />
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
-          </svg>
-
-          <div className="relative z-10 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
-            {/* Left Info */}
+        {/* Tactile Learning Studio Editorial Header */}
+        <section className="rounded-3xl border-2 border-slate-200 bg-white px-5 py-4 sm:px-6 sm:py-5 shadow-[0_4px_0_0_#E2E8F0]">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3.5 min-w-0 flex-1">
               <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-b ${activeScriptMeta.heroTileClass} text-white flex items-center justify-center shrink-0 transition-all`}
+                className={`w-11 h-11 rounded-2xl bg-gradient-to-b ${activeScriptMeta.heroTileClass} text-white flex items-center justify-center shrink-0 transition-all`}
               >
-                <span className="font-brand font-black text-2xl leading-none">
+                <span className="font-brand font-black text-xl leading-none">
                   {activeScriptMeta.glyph}
                 </span>
               </div>
@@ -585,17 +561,15 @@ export const KanaPage = () => {
                   Belajar Huruf Hiragana, Katakana &amp; Kanji
                 </h1>
 
-                <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed font-medium">
                   Kenali bunyi, arti karakter, trik ingat visual, latihan coretan menulis, dan kuis cepat per baris sebelum lanjut ke pelajaran kalimat.
                 </p>
               </div>
             </div>
 
-            {/* Right: Custom 3-Script Calligraphy & Kodi Mascot Illustration */}
-            <KanaHeroIllustration
-              activeScript={activeScript}
-              className="hidden md:flex shrink-0"
-            />
+            <span className="self-start sm:self-center inline-flex items-center px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-brand font-black text-slate-700 shrink-0">
+              {activeScriptMeta.title} • {activeScriptMeta.countLabel}
+            </span>
           </div>
         </section>
 
