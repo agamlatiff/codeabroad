@@ -3,17 +3,26 @@ import {
   motion,
   useReducedMotion,
   useScroll,
+  useSpring,
   useTransform,
   type MotionValue,
 } from 'motion/react'
-import { Clock } from '@phosphor-icons/react'
 import constellationJapanImg from '@/assets/landing/constellation-japan.jpg'
 import constellationUkImg from '@/assets/landing/constellation-uk.jpg'
 import constellationGermanyImg from '@/assets/landing/constellation-germany.jpg'
-import constellationDailyImg from '@/assets/landing/constellation-daily.jpg'
+import constellationUsImg from '@/assets/landing/constellation-us.jpg'
 import constellationChinaImg from '@/assets/landing/constellation-china.jpg'
 import constellationFranceImg from '@/assets/landing/constellation-france.jpg'
+import { LandingConstellationTrails } from '@/features/landing/components/LandingConstellationTrails'
 import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
+
+const SMOOTH_EASE = [0.22, 1, 0.36, 1] as const
+const PARALLAX_SPRING = {
+  stiffness: 90,
+  damping: 28,
+  mass: 0.4,
+  restDelta: 0.001,
+} as const
 
 interface ConstellationCardItem {
   id: string
@@ -21,9 +30,10 @@ interface ConstellationCardItem {
   alt: string
   aspectClass: string
   cardTiltClass: string
+  imgPositionClass?: string
   wrapperClass?: string
   pillText: string
-  flagCode?: 'ja' | 'en-gb' | 'de' | 'zh' | 'fr'
+  flagCode: 'ja' | 'en-gb' | 'en-us' | 'de' | 'zh' | 'fr'
   parallaxKey: 'leftOuter' | 'inner' | 'rightOuter'
 }
 
@@ -31,7 +41,7 @@ const LEFT_CONSTELLATION_CARDS: ReadonlyArray<ConstellationCardItem> = [
   {
     id: 'constellation-japan',
     image: constellationJapanImg,
-    alt: 'Suasana jalanan dan Gunung Fuji di Jepang',
+    alt: 'Pemandangan Gunung Fuji dan alam Jepang di cahaya pagi',
     aspectClass: 'aspect-[4/3]',
     cardTiltClass: 'lg:w-[72%] lg:-rotate-2',
     pillText: 'Jepang · JLPT',
@@ -41,19 +51,20 @@ const LEFT_CONSTELLATION_CARDS: ReadonlyArray<ConstellationCardItem> = [
   {
     id: 'constellation-uk',
     image: constellationUkImg,
-    alt: 'Pemandangan kota London Inggris',
+    alt: 'Pemandangan Big Ben dan Westminster Bridge London',
     aspectClass: 'aspect-[5/4]',
     cardTiltClass: 'lg:w-[64%] lg:ml-6 lg:rotate-2 lg:translate-x-5',
-    pillText: 'Inggris · IELTS',
+    pillText: 'Inggris UK · IELTS',
     flagCode: 'en-gb',
     parallaxKey: 'inner',
   },
   {
     id: 'constellation-germany',
     image: constellationGermanyImg,
-    alt: 'Suasana arsitektur kota di Jerman',
+    alt: 'Suasana kota tua Heidelberg Jerman',
     aspectClass: 'aspect-[16/10]',
     cardTiltClass: 'lg:w-[78%] lg:ml-2 lg:-rotate-1',
+    imgPositionClass: 'object-[50%_58%]',
     wrapperClass: 'col-span-2 lg:col-span-1',
     pillText: 'Jerman · Goethe',
     flagCode: 'de',
@@ -63,18 +74,19 @@ const LEFT_CONSTELLATION_CARDS: ReadonlyArray<ConstellationCardItem> = [
 
 const RIGHT_CONSTELLATION_CARDS: ReadonlyArray<ConstellationCardItem> = [
   {
-    id: 'constellation-daily',
-    image: constellationDailyImg,
-    alt: 'Pelajar belajar santai dengan laptop di kafe',
+    id: 'constellation-us',
+    image: constellationUsImg,
+    alt: 'Pemandangan kota New York Amerika Serikat',
     aspectClass: 'aspect-[4/3]',
     cardTiltClass: 'lg:w-[72%] lg:ml-auto lg:rotate-2',
-    pillText: '5–15 mnt / hari',
+    pillText: 'Inggris US · TOEFL',
+    flagCode: 'en-us',
     parallaxKey: 'rightOuter',
   },
   {
     id: 'constellation-china',
     image: constellationChinaImg,
-    alt: 'Suasana jalanan kota modern Mandarin',
+    alt: 'Suasana jalanan tradisional Tiongkok yang cerah',
     aspectClass: 'aspect-[5/4]',
     cardTiltClass: 'lg:w-[64%] lg:ml-auto lg:mr-6 lg:-rotate-2 lg:-translate-x-5',
     pillText: 'Mandarin · HSK',
@@ -84,9 +96,10 @@ const RIGHT_CONSTELLATION_CARDS: ReadonlyArray<ConstellationCardItem> = [
   {
     id: 'constellation-france',
     image: constellationFranceImg,
-    alt: 'Suasana kafe pagi di Paris Prancis',
+    alt: 'Menara Eiffel Paris di cahaya pagi',
     aspectClass: 'aspect-[16/10]',
     cardTiltClass: 'lg:w-[78%] lg:ml-auto lg:mr-2 lg:rotate-1',
+    imgPositionClass: 'object-[50%_64%]',
     wrapperClass: 'col-span-2 lg:col-span-1',
     pillText: 'Prancis · DELF',
     flagCode: 'fr',
@@ -96,11 +109,15 @@ const RIGHT_CONSTELLATION_CARDS: ReadonlyArray<ConstellationCardItem> = [
 
 interface ConstellationPhotoCardProps {
   card: ConstellationCardItem
+  index: number
+  shouldReduceMotion: boolean
   yMotion: MotionValue<number> | undefined
 }
 
 const ConstellationPhotoCard = ({
   card,
+  index,
+  shouldReduceMotion,
   yMotion,
 }: ConstellationPhotoCardProps) => {
   return (
@@ -108,24 +125,34 @@ const ConstellationPhotoCard = ({
       style={yMotion ? { y: yMotion } : undefined}
       className={card.wrapperClass}
     >
-      <div
-        className={`group relative overflow-hidden rounded-[26px] border-[3px] border-white ring-1 ring-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.08)] bg-slate-100 ${card.aspectClass} ${card.cardTiltClass}`}
+      <motion.div
+        initial={shouldReduceMotion ? false : { opacity: 0, y: 20, scale: 0.97 }}
+        whileInView={{ opacity: 1, y: 0, scale: 1 }}
+        whileHover={
+          shouldReduceMotion
+            ? undefined
+            : { y: -5, transition: { type: 'spring', stiffness: 260, damping: 22 } }
+        }
+        viewport={{ once: true, amount: 0.18 }}
+        transition={{ duration: 0.55, delay: index * 0.07, ease: SMOOTH_EASE }}
       >
-        <img
-          src={card.image}
-          alt={card.alt}
-          loading="lazy"
-          decoding="async"
-          className="w-full h-full object-cover object-center motion-safe:transition-transform duration-500 motion-safe:group-hover:scale-[1.04]"
-        />
-
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/35 via-slate-950/10 to-transparent"
-        />
+          className={`group relative overflow-hidden rounded-[26px] border-[3px] border-white ring-1 ring-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.08)] motion-safe:transition-shadow duration-500 motion-safe:hover:shadow-[0_14px_28px_-8px_rgba(37,99,235,0.16),0_6px_0_0_rgba(45,64,150,0.08)] bg-slate-100 ${card.aspectClass} ${card.cardTiltClass}`}
+        >
+          <img
+            src={card.image}
+            alt={card.alt}
+            loading="lazy"
+            decoding="async"
+            className={`w-full h-full object-cover ${card.imgPositionClass ?? 'object-center'} motion-safe:transition-transform duration-700 ease-[cubic-bezier(0.22,1,0.36,1)] motion-safe:group-hover:scale-[1.05]`}
+          />
 
-        <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200/90 px-3 py-1 shadow-xs text-xs font-brand font-black text-[#1E293B]">
-          {card.flagCode ? (
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/35 via-slate-950/10 to-transparent"
+          />
+
+          <span className="absolute bottom-3 left-3 z-10 inline-flex items-center gap-1.5 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200/90 px-3 py-1 shadow-xs text-xs font-brand font-black text-[#1E293B]">
             <span
               aria-hidden="true"
               className="w-5 h-3.5 rounded-[3px] overflow-hidden shrink-0 inline-flex items-center justify-center"
@@ -136,32 +163,27 @@ const ConstellationPhotoCard = ({
                 className="w-5 h-3.5 rounded-[3px] object-contain shrink-0"
               />
             </span>
-          ) : (
-            <Clock
-              weight="fill"
-              aria-hidden="true"
-              className="w-3.5 h-3.5 text-amber-500 shrink-0"
-            />
-          )}
-          <span>{card.pillText}</span>
-        </span>
-      </div>
+            <span>{card.pillText}</span>
+          </span>
+        </div>
+      </motion.div>
     </motion.div>
   )
 }
 
 export const LandingConstellationSection = () => {
   const containerRef = useRef<HTMLElement>(null)
-  const shouldReduceMotion = useReducedMotion()
+  const shouldReduceMotion = Boolean(useReducedMotion())
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start end', 'end start'],
   })
 
-  const yLeftOuter = useTransform(scrollYProgress, [0, 1], [-12, 12])
-  const yInner = useTransform(scrollYProgress, [0, 1], [16, -16])
-  const yRightOuter = useTransform(scrollYProgress, [0, 1], [-14, 14])
+  const smoothParallax = useSpring(scrollYProgress, PARALLAX_SPRING)
+  const yLeftOuter = useTransform(smoothParallax, [0, 1], [-12, 12])
+  const yInner = useTransform(smoothParallax, [0, 1], [16, -16])
+  const yRightOuter = useTransform(smoothParallax, [0, 1], [-14, 14])
 
   const parallaxByKey: Record<ConstellationCardItem['parallaxKey'], MotionValue<number>> = {
     leftOuter: yLeftOuter,
@@ -174,38 +196,51 @@ export const LandingConstellationSection = () => {
       ref={containerRef}
       className="relative bg-white pt-4 pb-16 sm:pt-6 sm:pb-24 px-4 sm:px-6 overflow-x-clip"
     >
-      <div className="max-w-[1220px] mx-auto grid lg:grid-cols-12 gap-6 lg:gap-8 items-center">
-        {/* Left Editorial Photo Cluster */}
-        <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3.5 sm:gap-4 items-center">
-          {LEFT_CONSTELLATION_CARDS.map((card) => (
-            <ConstellationPhotoCard
-              key={card.id}
-              card={card}
-              yMotion={shouldReduceMotion ? undefined : parallaxByKey[card.parallaxKey]}
-            />
-          ))}
-        </div>
+      <div className="max-w-[1220px] mx-auto relative">
+        <LandingConstellationTrails scrollYProgress={scrollYProgress} />
+        <div className="relative z-10 grid lg:grid-cols-12 gap-6 lg:gap-8 items-center">
+          {/* Left Editorial Photo Cluster */}
+          <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3.5 sm:gap-4 items-center">
+            {LEFT_CONSTELLATION_CARDS.map((card, index) => (
+              <ConstellationPhotoCard
+                key={card.id}
+                card={card}
+                index={index}
+                shouldReduceMotion={shouldReduceMotion}
+                yMotion={shouldReduceMotion ? undefined : parallaxByKey[card.parallaxKey]}
+              />
+            ))}
+          </div>
 
-        {/* Center Headline Centerpiece */}
-        <div className="lg:col-span-4 text-center py-4 lg:py-8 space-y-3">
-          <h2 className="text-2xl sm:text-[32px] font-brand font-black text-[#1E293B] leading-[1.2] tracking-tight">
-            Menghubungkan kosakata, tata bahasa, dan latihan harian.
-          </h2>
-          <p className="text-sm sm:text-base text-[#64748B] max-w-sm mx-auto leading-relaxed">
-            Semua fondasi belajar tersusun rapi dari langkah pertama tanpa tampilan yang
-            membingungkan.
-          </p>
-        </div>
+          {/* Center Headline Centerpiece */}
+          <motion.div
+            className="lg:col-span-4 text-center px-4 py-6 lg:py-8 space-y-3"
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, amount: 0.35 }}
+            transition={{ duration: 0.6, ease: SMOOTH_EASE }}
+          >
+            <h2 className="text-2xl sm:text-[32px] font-brand font-black text-[#1E293B] leading-[1.2] tracking-tight">
+              Menghubungkan kosakata, tata bahasa, dan latihan harian.
+            </h2>
+            <p className="text-sm sm:text-base text-[#64748B] max-w-sm mx-auto leading-relaxed">
+              Semua fondasi belajar tersusun rapi dari langkah pertama tanpa tampilan yang
+              membingungkan.
+            </p>
+          </motion.div>
 
-        {/* Right Editorial Photo Cluster */}
-        <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3.5 sm:gap-4 items-center">
-          {RIGHT_CONSTELLATION_CARDS.map((card) => (
-            <ConstellationPhotoCard
-              key={card.id}
-              card={card}
-              yMotion={shouldReduceMotion ? undefined : parallaxByKey[card.parallaxKey]}
-            />
-          ))}
+          {/* Right Editorial Photo Cluster */}
+          <div className="lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3.5 sm:gap-4 items-center">
+            {RIGHT_CONSTELLATION_CARDS.map((card, index) => (
+              <ConstellationPhotoCard
+                key={card.id}
+                card={card}
+                index={index}
+                shouldReduceMotion={shouldReduceMotion}
+                yMotion={shouldReduceMotion ? undefined : parallaxByKey[card.parallaxKey]}
+              />
+            ))}
+          </div>
         </div>
       </div>
     </section>

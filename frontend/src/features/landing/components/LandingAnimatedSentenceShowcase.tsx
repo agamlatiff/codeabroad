@@ -1,9 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
-import { AnimatePresence, motion } from 'motion/react'
-import { SpeakerHigh, Translate } from '@phosphor-icons/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { SpeakerHigh } from '@phosphor-icons/react'
+import { SunnyMentorCharacter } from '@/features/landing/components/LandingCharacterCast'
 import { AudioWaveformBars } from '@/features/landing/components/LandingIllustrations'
+import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
+
+type SentenceLanguageId = 'en' | 'de' | 'fr' | 'ja'
+type FlagCode = 'en-gb' | 'en-us' | 'de' | 'fr' | 'zh' | 'ja'
 
 interface SentenceBlockToken {
   id: string
@@ -11,11 +16,11 @@ interface SentenceBlockToken {
   reading: string
   role: string
   meaning: string
-  colorClass: string
 }
 
 interface SentenceExamplePack {
-  id: 'ja' | 'de'
+  id: SentenceLanguageId
+  flagCode: FlagCode
   label: string
   speechLocale: string
   fullSentence: string
@@ -23,58 +28,76 @@ interface SentenceExamplePack {
   tokens: ReadonlyArray<SentenceBlockToken>
 }
 
+interface TileVisualStyle {
+  surfaceClass: string
+  tiltClass: string
+}
+
+const TILE_VISUAL_STYLES: ReadonlyArray<TileVisualStyle> = [
+  {
+    surfaceClass: 'bg-[#FF575F] shadow-[0_5px_0_0_#D93843]',
+    tiltClass: '-rotate-3',
+  },
+  {
+    surfaceClass: 'bg-[#6C6CE5] shadow-[0_5px_0_0_#4C4CC2]',
+    tiltClass: 'rotate-3',
+  },
+  {
+    surfaceClass: 'bg-[#2563EB] shadow-[0_5px_0_0_#1D4ED8]',
+    tiltClass: '-rotate-2',
+  },
+  {
+    surfaceClass: 'bg-[#10B981] shadow-[0_5px_0_0_#047857]',
+    tiltClass: 'rotate-2',
+  },
+  {
+    surfaceClass: 'bg-[#F59E0B] shadow-[0_5px_0_0_#D97706]',
+    tiltClass: '-rotate-1',
+  },
+]
+
 const SENTENCE_EXAMPLES: ReadonlyArray<SentenceExamplePack> = [
   {
-    id: 'ja',
-    label: 'Jepang',
-    speechLocale: 'ja-JP',
-    fullSentence: 'わたしは本を読みます',
-    translation: 'Saya membaca buku setiap pagi.',
+    id: 'en',
+    flagCode: 'en-gb',
+    label: 'Inggris',
+    speechLocale: 'en-GB',
+    fullSentence: 'She has been studying abroad',
+    translation: 'Dia telah belajar di luar negeri.',
     tokens: [
       {
-        id: 'ja-watashi',
-        word: 'わたし',
-        reading: 'watashi',
-        role: 'Topik',
-        meaning: 'Saya (pembicara)',
-        colorClass: 'bg-sky-50 border-sky-300 text-sky-900',
+        id: 'en-she',
+        word: 'She',
+        reading: '/ʃiː/',
+        role: 'Subjek',
+        meaning: 'Dia (kata ganti orang ketiga tunggal perempuan)',
       },
       {
-        id: 'ja-wa',
-        word: 'は',
-        reading: 'wa',
-        role: 'Partikel',
-        meaning: 'Penanda topik kalimat',
-        colorClass: 'bg-amber-50 border-amber-300 text-amber-900',
+        id: 'en-has-been',
+        word: 'has been',
+        reading: '/hæz bɪn/',
+        role: 'Auxiliary',
+        meaning: 'Penanda durasi yang dimulai di masa lalu dan masih berlanjut',
       },
       {
-        id: 'ja-hon',
-        word: '本',
-        reading: 'hon',
-        role: 'Objek',
-        meaning: 'Buku (benda yang dibaca)',
-        colorClass: 'bg-emerald-50 border-emerald-300 text-emerald-900',
+        id: 'en-studying',
+        word: 'studying',
+        reading: '/ˈstʌdiɪŋ/',
+        role: 'Verb-ing',
+        meaning: 'Sedang belajar (bentuk aktif berkelanjutan)',
       },
       {
-        id: 'ja-o',
-        word: 'を',
-        reading: 'o',
-        role: 'Partikel',
-        meaning: 'Penanda objek kata kerja',
-        colorClass: 'bg-amber-50 border-amber-300 text-amber-900',
-      },
-      {
-        id: 'ja-yomimasu',
-        word: '読みます',
-        reading: 'yomimasu',
-        role: 'Kata Kerja',
-        meaning: 'Membaca (bentuk sopan)',
-        colorClass: 'bg-indigo-50 border-indigo-300 text-indigo-900',
+        id: 'en-abroad',
+        word: 'abroad',
+        reading: '/əˈbrɔːd/',
+        role: 'Keterangan',
+        meaning: 'Di luar negeri (keterangan tempat)',
       },
     ],
   },
   {
     id: 'de',
+    flagCode: 'de',
     label: 'Jerman',
     speechLocale: 'de-DE',
     fullSentence: 'Morgen gehe ich zur Arbeit',
@@ -85,49 +108,149 @@ const SENTENCE_EXAMPLES: ReadonlyArray<SentenceExamplePack> = [
         word: 'Morgen',
         reading: '/ˈmɔʁɡn̩/',
         role: 'Waktu',
-        meaning: 'Besok (keterangan waktu)',
-        colorClass: 'bg-sky-50 border-sky-300 text-sky-900',
+        meaning: 'Besok (keterangan waktu di awal kalimat)',
       },
       {
         id: 'de-gehe',
         word: 'gehe',
         reading: '/ˈɡeːə/',
-        role: 'Kata Kerja (Posisi-2)',
-        meaning: 'Pergi (selalu di posisi kedua)',
-        colorClass: 'bg-indigo-50 border-indigo-300 text-indigo-900',
+        role: 'Verba #2',
+        meaning: 'Pergi (kata kerja wajib di posisi kedua)',
       },
       {
         id: 'de-ich',
         word: 'ich',
         reading: '/ɪç/',
         role: 'Subjek',
-        meaning: 'Saya (bergeser setelah kata kerja)',
-        colorClass: 'bg-emerald-50 border-emerald-300 text-emerald-900',
+        meaning: 'Saya (bergeser tepat setelah kata kerja)',
       },
       {
         id: 'de-zur',
         word: 'zur Arbeit',
         reading: '/t͡suːɐ̯ ˈaʁbaɪ̯t/',
         role: 'Tujuan',
-        meaning: 'Ke tempat kerja',
-        colorClass: 'bg-amber-50 border-amber-300 text-amber-900',
+        meaning: 'Ke tempat kerja (frasa tujuan)',
+      },
+    ],
+  },
+  {
+    id: 'fr',
+    flagCode: 'fr',
+    label: 'Prancis',
+    speechLocale: 'fr-FR',
+    fullSentence: "Je voudrais un café, s'il vous plaît",
+    translation: 'Saya ingin secangkir kopi, tolong.',
+    tokens: [
+      {
+        id: 'fr-je',
+        word: 'Je',
+        reading: '/ʒə/',
+        role: 'Subjek',
+        meaning: 'Saya (kata ganti orang pertama tunggal)',
+      },
+      {
+        id: 'fr-voudrais',
+        word: 'voudrais',
+        reading: '/vu.dʁɛ/',
+        role: 'Sopan',
+        meaning: 'Ingin (bentuk kondisional sopan saat memesan)',
+      },
+      {
+        id: 'fr-cafe',
+        word: 'un café',
+        reading: '/œ̃ ka.fe/',
+        role: 'Objek',
+        meaning: 'Secangkir kopi (artikel maskulin dan kata benda)',
+      },
+      {
+        id: 'fr-svp',
+        word: "s'il vous plaît",
+        reading: '/sil vu plɛ/',
+        role: 'Ungkapan',
+        meaning: 'Tolong (ungkapan kesopanan standar)',
+      },
+    ],
+  },
+  {
+    id: 'ja',
+    flagCode: 'ja',
+    label: 'Jepang',
+    speechLocale: 'ja-JP',
+    fullSentence: 'わたしは本を読みます',
+    translation: 'Saya membaca buku.',
+    tokens: [
+      {
+        id: 'ja-watashi',
+        word: 'わたし',
+        reading: 'watashi',
+        role: 'Topik',
+        meaning: 'Saya (pembicara)',
+      },
+      {
+        id: 'ja-wa',
+        word: 'は',
+        reading: 'wa',
+        role: 'Partikel',
+        meaning: 'Penanda topik kalimat (dibaca wa)',
+      },
+      {
+        id: 'ja-hon',
+        word: '本',
+        reading: 'hon',
+        role: 'Objek',
+        meaning: 'Buku (benda yang dibaca)',
+      },
+      {
+        id: 'ja-o',
+        word: 'を',
+        reading: 'o',
+        role: 'Partikel',
+        meaning: 'Penanda objek kata kerja',
+      },
+      {
+        id: 'ja-yomimasu',
+        word: '読みます',
+        reading: 'yomimasu',
+        role: 'Verba',
+        meaning: 'Membaca (bentuk sopan)',
       },
     ],
   },
 ]
 
+function clearPlaybackTimers(
+  intervalRef: { current: number | null },
+  timeoutRef: { current: number | null }
+) {
+  if (intervalRef.current !== null) {
+    window.clearInterval(intervalRef.current)
+    intervalRef.current = null
+  }
+  if (timeoutRef.current !== null) {
+    window.clearTimeout(timeoutRef.current)
+    timeoutRef.current = null
+  }
+}
+
 /**
- * Animated interactive color-coded sentence breakdown for the Landing feature showcase.
+ * Open borderless ClassDojo-style interactive grammar mentor stage with Sunny
+ * pointing toward candy-colored tilted squircle word tiles across 4 languages.
  */
 export const LandingAnimatedSentenceShowcase = () => {
-  const [packId, setPackId] = useState<'ja' | 'de'>('ja')
+  const [packId, setPackId] = useState<SentenceLanguageId>('en')
   const [selectedTokenId, setSelectedTokenId] = useState<string>(SENTENCE_EXAMPLES[0].tokens[0].id)
+  const [playingTokenIdx, setPlayingTokenIdx] = useState<number | null>(null)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const shouldReduceMotion = Boolean(useReducedMotion())
+
   const speechRequestIdRef = useRef(0)
+  const spotlightIntervalRef = useRef<number | null>(null)
+  const speechFallbackTimeoutRef = useRef<number | null>(null)
 
   useEffect(() => {
     return () => {
       speechRequestIdRef.current += 1
+      clearPlaybackTimers(spotlightIntervalRef, speechFallbackTimeoutRef)
       audioService.stopSpeech()
     }
   }, [])
@@ -135,14 +258,16 @@ export const LandingAnimatedSentenceShowcase = () => {
   const currentPack =
     SENTENCE_EXAMPLES.find((pack) => pack.id === packId) ?? SENTENCE_EXAMPLES[0]
   const activeToken =
-    currentPack.tokens.find((t) => t.id === selectedTokenId) ?? currentPack.tokens[0]
+    currentPack.tokens.find((token) => token.id === selectedTokenId) ?? currentPack.tokens[0]
 
-  const handleSelectLanguage = (nextId: 'ja' | 'de') => {
+  const handleSelectLanguage = (nextId: SentenceLanguageId) => {
     if (nextId === packId) return
     triggerHaptic('tap')
     speechRequestIdRef.current += 1
+    clearPlaybackTimers(spotlightIntervalRef, speechFallbackTimeoutRef)
     audioService.stopSpeech()
     setIsSpeaking(false)
+    setPlayingTokenIdx(null)
     const nextPack = SENTENCE_EXAMPLES.find((pack) => pack.id === nextId) ?? SENTENCE_EXAMPLES[0]
     setPackId(nextId)
     setSelectedTokenId(nextPack.tokens[0].id)
@@ -150,138 +275,262 @@ export const LandingAnimatedSentenceShowcase = () => {
 
   const handleSpeakSentence = () => {
     triggerHaptic('tap')
+    clearPlaybackTimers(spotlightIntervalRef, speechFallbackTimeoutRef)
+
     const requestId = ++speechRequestIdRef.current
+    const tokenCount = currentPack.tokens.length
+
     setIsSpeaking(true)
+    setPlayingTokenIdx(0)
+
+    let stepIdx = 0
+    spotlightIntervalRef.current = window.setInterval(() => {
+      if (speechRequestIdRef.current !== requestId) {
+        clearPlaybackTimers(spotlightIntervalRef, speechFallbackTimeoutRef)
+        return
+      }
+      stepIdx += 1
+      if (stepIdx < tokenCount) {
+        setPlayingTokenIdx(stepIdx)
+      } else if (spotlightIntervalRef.current !== null) {
+        window.clearInterval(spotlightIntervalRef.current)
+        spotlightIntervalRef.current = null
+      }
+    }, 460)
+
+    speechFallbackTimeoutRef.current = window.setTimeout(() => {
+      if (speechRequestIdRef.current === requestId) {
+        clearPlaybackTimers(spotlightIntervalRef, speechFallbackTimeoutRef)
+        setIsSpeaking(false)
+        setPlayingTokenIdx(null)
+      }
+    }, Math.max(3200, tokenCount * 650 + 1200))
+
+    const finishSpeech = () => {
+      if (speechRequestIdRef.current === requestId) {
+        clearPlaybackTimers(spotlightIntervalRef, speechFallbackTimeoutRef)
+        setIsSpeaking(false)
+        setPlayingTokenIdx(null)
+      }
+    }
+
     audioService.speakLanguage(
       currentPack.fullSentence,
       currentPack.speechLocale,
-      () => {
-        if (speechRequestIdRef.current === requestId) {
-          setIsSpeaking(false)
-        }
-      },
-      () => {
-        if (speechRequestIdRef.current === requestId) {
-          setIsSpeaking(false)
-        }
-      }
+      finishSpeech,
+      finishSpeech
     )
   }
 
   return (
-    <div className="rounded-[26px] bg-white border-2 border-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] overflow-hidden">
-      {/* Top Studio Header Band */}
-      <div className="bg-[#F0FDF4]/85 border-b border-emerald-100 px-5 py-3.5 flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-3 min-w-0">
-          <div className="w-11 h-11 rounded-2xl bg-[#10B981] text-white shadow-[0_3px_0_0_#047857] flex items-center justify-center shrink-0">
-            <Translate weight="fill" className="w-5 h-5" aria-hidden="true" />
-          </div>
-          <div className="min-w-0">
-            <p className="text-[11px] font-brand font-black uppercase tracking-wider text-emerald-700">
-              Tata Bahasa Visual
-            </p>
-            <p className="text-xs sm:text-sm font-bold text-[#1E293B]">
-              Klik kata untuk lihat fungsinya
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            type="button"
-            onClick={handleSpeakSentence}
-            aria-pressed={isSpeaking}
-            aria-label={`Dengarkan kalimat bahasa ${currentPack.label}: ${currentPack.fullSentence}`}
-            className={`inline-flex items-center gap-2 h-[34px] rounded-xl border px-3 text-xs font-brand font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 ${
-              isSpeaking
-                ? 'bg-blue-50 border-[#2563EB] text-[#1D4ED8]'
-                : 'bg-white hover:bg-blue-50/70 border-emerald-200/80 hover:border-[#93C5FD] text-[#1E293B]'
-            }`}
-          >
-            <SpeakerHigh
-              weight="fill"
-              className="w-4 h-4 text-[#2563EB] shrink-0"
-              aria-hidden="true"
-            />
-            <AudioWaveformBars isPlaying={isSpeaking} />
-            <span>Dengar</span>
-          </button>
-
-          <div className="inline-flex rounded-xl bg-white border border-emerald-200/80 p-0.5 shadow-2xs">
-            {SENTENCE_EXAMPLES.map((pack) => (
-              <button
-                key={pack.id}
-                type="button"
-                aria-pressed={packId === pack.id}
-                onClick={() => handleSelectLanguage(pack.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-brand font-bold transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/35 ${
-                  packId === pack.id
-                    ? 'bg-[#2563EB] text-white'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                {pack.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* Interactive Sentence Body */}
-      <div className="p-5 sm:p-6 space-y-4 bg-white">
-        {/* Animated Word Blocks */}
-        <div className="flex flex-wrap items-center gap-2">
-          {currentPack.tokens.map((token, idx) => {
-            const isSelected = token.id === activeToken.id
+    <div className="relative w-full flex flex-col gap-4 py-1">
+      {/* Top Compact Floating Language Switcher */}
+      <div className="flex justify-center sm:justify-end">
+        <div
+          role="group"
+          aria-label="Pilih bahasa contoh pola kalimat"
+          className="inline-flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/95 backdrop-blur-xs border-2 border-[#E2E8F0] p-1 shadow-[0_6px_14px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0]"
+        >
+          {SENTENCE_EXAMPLES.map((pack) => {
+            const isActive = pack.id === packId
             return (
               <motion.button
-                key={token.id}
+                key={pack.id}
                 type="button"
-                onClick={() => {
-                  triggerHaptic('tap')
-                  setSelectedTokenId(token.id)
-                }}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05, duration: 0.25 }}
-                whileHover={{ y: -2 }}
-                whileTap={{ scale: 0.97 }}
-                className={`rounded-2xl border-2 px-3 py-2 text-left transition-shadow cursor-pointer ${
-                  token.colorClass
-                } ${isSelected ? 'ring-2 ring-blue-500/35 shadow-sm' : 'opacity-85 hover:opacity-100'}`}
+                aria-pressed={isActive}
+                onClick={() => handleSelectLanguage(pack.id)}
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
+                className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-full text-xs font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                  isActive
+                    ? 'bg-[#2563EB] text-white shadow-[0_2px_0_0_#1D4ED8]'
+                    : 'text-[#475569] hover:text-[#1E293B] hover:bg-slate-100/80'
+                }`}
               >
-                <span className="block font-brand font-black text-sm leading-tight">
-                  {token.word}
+                <span
+                  aria-hidden="true"
+                  className="w-4 h-3 shrink-0 inline-flex items-center justify-center overflow-hidden rounded-[2px]"
+                >
+                  <LanguageFlagIllustration
+                    code={pack.flagCode}
+                    compact
+                    className="w-4 h-3 rounded-[2px] shrink-0"
+                  />
                 </span>
-                <span className="block text-[10px] font-mono opacity-80 mt-0.5">
-                  {token.role}
-                </span>
+                <span>{pack.label}</span>
               </motion.button>
             )
           })}
         </div>
+      </div>
 
-        {/* Interactive Token Explanation Card */}
+      {/* Main Open ClassDojo Stage */}
+      <div className="grid sm:grid-cols-12 items-end gap-4 sm:gap-5">
+        {/* Left Hero Mentor Standing on Open Pastel Blob */}
+        <div className="sm:col-span-5 flex items-end justify-center sm:justify-start relative">
+          <motion.div
+            animate={
+              shouldReduceMotion
+                ? undefined
+                : { y: isSpeaking ? [0, -5, 0] : [0, -3, 0] }
+            }
+            transition={
+              shouldReduceMotion
+                ? undefined
+                : {
+                    duration: isSpeaking ? 1.15 : 3.2,
+                    repeat: Infinity,
+                    ease: 'easeInOut',
+                  }
+            }
+            className="relative z-10"
+          >
+            <SunnyMentorCharacter
+              mood={isSpeaking ? 'listening' : 'pointing'}
+              size={172}
+              className="max-w-full h-auto"
+            />
+          </motion.div>
+        </div>
+
+        {/* Right Candy-Colored Tilted Squircle Tile Constellation */}
+        <div className="sm:col-span-7 flex items-center justify-center sm:justify-start pb-1">
+          <div
+            key={currentPack.id}
+            className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-3.5"
+          >
+            {currentPack.tokens.map((token, idx) => {
+              const tileStyle = TILE_VISUAL_STYLES[idx % TILE_VISUAL_STYLES.length]
+              const isSelected = token.id === activeToken.id
+              const isSpotlighted =
+                playingTokenIdx !== null ? playingTokenIdx === idx : isSelected
+
+              return (
+                <div key={token.id} className={tileStyle.tiltClass}>
+                  <motion.button
+                    type="button"
+                    onClick={() => {
+                      triggerHaptic('tap')
+                      setSelectedTokenId(token.id)
+                    }}
+                    aria-pressed={isSelected}
+                    aria-label={`${token.word} (${token.role}): ${token.meaning}`}
+                    initial={shouldReduceMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
+                    animate={{
+                      opacity: 1,
+                      y: 0,
+                      scale: isSpotlighted && !shouldReduceMotion ? 1.04 : 1,
+                    }}
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : {
+                            delay: idx * 0.045,
+                            type: 'spring',
+                            stiffness: 360,
+                            damping: 22,
+                          }
+                    }
+                    whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.05 }}
+                    whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
+                    className={`rounded-[22px] ${tileStyle.surfaceClass} min-w-[84px] sm:min-w-[92px] min-h-[74px] px-3.5 py-2.5 flex flex-col items-center justify-center gap-1 text-center text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
+                      isSpotlighted
+                        ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(15,23,42,0.16)] scale-[1.04]'
+                        : 'hover:brightness-[1.04]'
+                    }`}
+                  >
+                    <span className="block font-brand font-black text-sm sm:text-base leading-tight tracking-tight [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
+                      {token.word}
+                    </span>
+                    <span className="inline-block rounded-full bg-black/15 px-2 py-0.5 text-[10px] font-mono font-bold text-white/95 leading-none">
+                      {token.role}
+                    </span>
+                  </motion.button>
+                </div>
+              )
+            })}
+
+            {/* Cyan Audio Squircle Tile */}
+            <div className="rotate-2">
+              <motion.button
+                type="button"
+                onClick={handleSpeakSentence}
+                aria-pressed={isSpeaking}
+                aria-label={`Dengarkan kalimat bahasa ${currentPack.label}: ${currentPack.fullSentence}`}
+                initial={shouldReduceMotion ? false : { opacity: 0, y: 10, scale: 0.94 }}
+                animate={{
+                  opacity: 1,
+                  y: 0,
+                  scale: isSpeaking && !shouldReduceMotion ? 1.04 : 1,
+                }}
+                transition={
+                  shouldReduceMotion
+                    ? { duration: 0 }
+                    : {
+                        delay: currentPack.tokens.length * 0.045,
+                        type: 'spring',
+                        stiffness: 360,
+                        damping: 22,
+                      }
+                }
+                whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.05 }}
+                whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
+                className={`rounded-[22px] bg-[#00A8FF] shadow-[0_5px_0_0_#0284C7] min-w-[92px] min-h-[74px] px-3.5 py-2.5 flex flex-col items-center justify-center gap-1.5 text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
+                  isSpeaking
+                    ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(2,132,199,0.28)] scale-[1.04]'
+                    : 'hover:brightness-[1.04]'
+                }`}
+              >
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-2xs">
+                  <SpeakerHigh
+                    weight="fill"
+                    className="w-3.5 h-3.5 text-[#0284C7] shrink-0"
+                    aria-hidden="true"
+                  />
+                  <AudioWaveformBars isPlaying={isSpeaking} />
+                </span>
+                <span className="font-brand font-black text-xs sm:text-sm leading-none tracking-wide [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
+                  Dengar
+                </span>
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bottom Floating Explanation Callout Pill */}
+      <div className="relative z-10">
         <AnimatePresence mode="wait">
           <motion.div
-            key={activeToken.id}
-            initial={{ opacity: 0, y: 4 }}
+            key={`${currentPack.id}-${activeToken.id}`}
+            initial={shouldReduceMotion ? false : { opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -4 }}
-            transition={{ duration: 0.18 }}
-            className="rounded-2xl bg-[#FAFAF9] border border-slate-200/80 px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2"
+            exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
+            transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
+            className="rounded-[20px] bg-white border-2 border-[#E2E8F0] shadow-[0_8px_18px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0] px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
           >
-            <div>
-              <p className="text-xs font-bold text-slate-900">
-                {activeToken.word}{' '}
-                <span className="font-mono font-normal text-blue-600">({activeToken.reading})</span>{' '}
-                — {activeToken.role}
-              </p>
-              <p className="text-xs text-slate-600 mt-0.5">{activeToken.meaning}</p>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs font-bold text-[#1E293B]">
+                <span className="font-brand font-black text-sm text-[#0F172A]">
+                  {activeToken.word}
+                </span>
+                <span className="font-mono font-semibold text-[#2563EB]">
+                  ({activeToken.reading})
+                </span>
+                <span aria-hidden="true" className="text-slate-300">
+                  &middot;
+                </span>
+                <span className="inline-flex items-center rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-brand font-black text-[#475569]">
+                  {activeToken.role}
+                </span>
+              </div>
+              <p className="text-xs text-[#475569] mt-1 leading-snug">{activeToken.meaning}</p>
             </div>
-            <span className="text-[11px] font-medium text-slate-400 shrink-0">
-              Arti: &ldquo;{currentPack.translation}&rdquo;
-            </span>
+
+            <p className="text-[11px] font-medium text-[#64748B] sm:text-right sm:border-l sm:border-slate-200/80 sm:pl-3.5 shrink-0">
+              Arti: &ldquo;
+              <span className="font-bold text-[#1E293B]">{currentPack.translation}</span>
+              &rdquo;
+            </p>
           </motion.div>
         </AnimatePresence>
       </div>
