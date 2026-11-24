@@ -199,15 +199,15 @@ export const CurriculumPathIllustration = () => {
   }
 
   return (
-    <div className="relative w-full pt-8 pb-3 sm:pt-10 sm:pb-4 min-h-[340px] sm:min-h-[390px] flex flex-col items-center justify-center gap-4 select-none">
+    <div className="relative w-full pt-4 pb-3 sm:pt-14 sm:pb-4 min-h-[380px] sm:min-h-[480px] flex flex-col items-center justify-between sm:justify-center gap-4 select-none">
       {/* Centerpiece Mera Squad */}
-      <div className="relative z-10 flex flex-col items-center sm:my-7">
+      <div className="relative z-10 flex flex-col items-center scale-[0.86] sm:scale-100 origin-bottom sm:mt-24 sm:mb-6">
         <MeraTrioSquad activeMood={trioMood} centerBadge={centerBadge} />
       </div>
 
-      {/* 5 Orbiting Floating Tilted Sticker Cards (grid on mobile, orbiting on sm+) */}
-      <div className="flex flex-wrap items-center justify-center gap-x-3.5 gap-y-10 pt-7 w-full max-w-[440px] sm:pt-0 sm:contents">
-        <div className="sm:absolute sm:top-8 sm:left-0 md:left-1 z-20">
+      {/* 5 Orbiting Floating Tilted Sticker Cards (snap-scroll rail on mobile, collision-free orbit on sm+) */}
+      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pt-10 pb-3 px-2 w-full sm:pt-0 sm:pb-0 sm:px-0 sm:overflow-visible sm:contents [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <div className="snap-center shrink-0 sm:absolute sm:top-4 sm:left-0 md:left-1 z-20">
           <FloatingStickerCard
             kind="book"
             label="Kartu Pengantar"
@@ -219,19 +219,19 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:top-0 sm:left-[52%] sm:-translate-x-1/2 z-20">
+        <div className="snap-center shrink-0 sm:absolute sm:-top-2 sm:left-1/2 sm:-translate-x-1/2 z-20">
           <FloatingStickerCard
             kind="check-medal"
             label="Sapaan Harian"
             sublabel="+20 XP"
             active={activeId === 'greetings'}
             onClick={() => handleSelectNode('greetings')}
-            className="rotate-3"
+            className="rotate-2"
             ariaLabel="Sapaan Harian: tambah 20 XP"
           />
         </div>
 
-        <div className="sm:absolute sm:top-[28%] sm:right-0 md:right-1 z-20">
+        <div className="snap-center shrink-0 sm:absolute sm:top-4 sm:right-0 md:right-1 z-20">
           <FloatingStickerCard
             kind="star-target"
             label="Unit 1 Aktif"
@@ -243,7 +243,7 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:bottom-[78px] sm:left-0 md:left-2 z-20">
+        <div className="snap-center shrink-0 sm:absolute sm:bottom-[94px] sm:left-1 md:left-3 z-20">
           <FloatingStickerCard
             kind="headphones"
             label="Latihan Dengar"
@@ -255,20 +255,20 @@ export const CurriculumPathIllustration = () => {
           />
         </div>
 
-        <div className="sm:absolute sm:bottom-[78px] sm:right-0 md:right-2 z-20">
+        <div className="snap-center shrink-0 sm:absolute sm:bottom-[94px] sm:right-1 md:right-3 z-20">
           <FloatingStickerCard
             customIcon={
               <QuestChestIllustration
                 tier={3}
                 state={chestOpened ? 'claimed' : 'ready'}
-                size={54}
+                size={50}
               />
             }
             label="Peti Hadiah"
             sublabel={chestOpened ? '+15 Gems!' : 'Klik Buka'}
             active={activeId === 'chest'}
             onClick={() => handleSelectNode('chest')}
-            className="rotate-6"
+            className="rotate-4"
             ariaLabel="Peti Hadiah Unit 1: klik untuk membuka peti hadiah"
           />
         </div>
@@ -481,7 +481,7 @@ export const ScriptStrokeIllustration = () => {
       <div
         role="group"
         aria-label="Pilih aksara dan tanda baca bahasa"
-        className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full max-w-[490px] z-20"
+        className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3 w-full max-w-[512px] z-20"
       >
         {SCRIPT_PACKS.map((pack) => {
           const isSelected = pack.id === activeScript.id
@@ -495,7 +495,7 @@ export const ScriptStrokeIllustration = () => {
               whileHover={shouldReduceMotion ? undefined : { y: -3 }}
               whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
               transition={{ type: 'spring', stiffness: 320, damping: 20 }}
-              className={`rounded-2xl border-2 px-2.5 sm:px-3 py-2.5 flex items-center gap-2 text-left transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+              className={`rounded-2xl border-2 px-2.5 py-2.5 flex items-center gap-2 text-left transition-shadow cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
                 isSelected
                   ? 'bg-white border-[#2563EB] shadow-[0_6px_0_0_rgba(37,99,235,0.16)] ring-2 ring-blue-100'
                   : `${pack.tileThemeClass} shadow-[0_4px_0_0_rgba(15,23,42,0.08)] opacity-90 hover:opacity-100 ${
@@ -532,17 +532,18 @@ export const ScriptStrokeIllustration = () => {
       </div>
 
       {/* Main Open Stage: Mera Polyglot + Animated Writing Pad */}
-      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-7 w-full">
-        <MeraPolyglotFigure
-          mood={isSpeaking ? 'listening' : 'happy'}
-          size={176}
-          badgeText={activeScript.id.toUpperCase()}
-          className="shrink-0"
-        />
+      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-7 w-full">
+        <div className="shrink-0 scale-90 sm:scale-100 origin-center">
+          <MeraPolyglotFigure
+            mood={isSpeaking ? 'listening' : 'happy'}
+            size={176}
+            badgeText={activeScript.id.toUpperCase()}
+          />
+        </div>
 
         <div className="flex flex-col items-center gap-3">
           {/* Tactile Writing Pad */}
-          <div className="relative w-44 h-44 sm:w-48 sm:h-48 rounded-[28px] bg-white border-2 border-[#E2E8F0] shadow-[0_10px_24px_rgba(15,23,42,0.08),0_5px_0_0_#CBD5E1] flex items-center justify-center overflow-hidden">
+          <div className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-48 lg:h-48 rounded-[24px] sm:rounded-[28px] bg-white border-2 border-[#E2E8F0] shadow-[0_10px_24px_rgba(15,23,42,0.08),0_5px_0_0_#CBD5E1] flex items-center justify-center overflow-hidden">
             {/* Practice Grid Crosshair */}
             <div
               aria-hidden="true"
@@ -560,7 +561,7 @@ export const ScriptStrokeIllustration = () => {
             <svg
               key={`${activeScript.id}-${replayCount}`}
               viewBox="0 0 120 120"
-              className="w-32 h-32 relative z-10"
+              className="w-24 h-24 sm:w-32 sm:h-32 relative z-10"
               fill="none"
               role="img"
               aria-label={`Urutan goresan ${activeScript.title} bahasa ${activeScript.shortLabel}`}
@@ -643,7 +644,7 @@ export const ScriptStrokeIllustration = () => {
       </div>
 
       {/* 2 Floating Tilted Sticker Action Buttons */}
-      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-10 pt-7">
+      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-3 gap-y-10 sm:gap-4 pt-8">
         <FloatingStickerCard
           kind="brush"
           label="Ulangi"
@@ -836,16 +837,17 @@ export const FlashcardStackIllustration = () => {
   return (
     <div className="relative w-full py-3 sm:py-4 min-h-[350px] sm:min-h-[395px] flex flex-col items-center justify-center gap-5 select-none">
       {/* Main Open Row: Mera Timekeeper + Stacked 3D-Flipping Deck */}
-      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-5 sm:gap-6 w-full">
-        <MeraTimekeeperFigure
-          mood={isFlipped ? 'excited' : isSpeaking ? 'listening' : 'happy'}
-          size={176}
-          badgeText={`${cardIdx + 1}/${FLASHCARDS.length}`}
-          className="shrink-0"
-        />
+      <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full">
+        <div className="shrink-0 scale-90 sm:scale-100 origin-center">
+          <MeraTimekeeperFigure
+            mood={isFlipped ? 'excited' : isSpeaking ? 'listening' : 'happy'}
+            size={176}
+            badgeText={`${cardIdx + 1}/${FLASHCARDS.length}`}
+          />
+        </div>
 
         {/* Stacked Vibrant Clay Deck */}
-        <div className="group relative w-full max-w-[330px] sm:max-w-[355px] min-h-[230px] flex items-center justify-center">
+        <div className="group relative w-full max-w-[290px] sm:max-w-[355px] min-w-0 min-h-[214px] sm:min-h-[230px] flex items-center justify-center">
           {/* Back Royal-Blue Clay Card */}
           <div
             aria-hidden="true"
@@ -890,7 +892,7 @@ export const FlashcardStackIllustration = () => {
                       : { type: 'spring', stiffness: 260, damping: 24 }
                   }
                   style={{ transformStyle: 'preserve-3d' }}
-                  className="relative w-full h-[228px] cursor-pointer rounded-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
+                  className="relative w-full h-[210px] sm:h-[228px] cursor-pointer rounded-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
                 >
                   {/* Front Face */}
                   <div
@@ -1003,7 +1005,7 @@ export const FlashcardStackIllustration = () => {
       </div>
 
       {/* 3 Floating Tilted Sticker Assets Around the Deck */}
-      <div className="relative z-20 flex flex-wrap items-center justify-center gap-x-4 gap-y-10 pt-7">
+      <div className="relative z-20 flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-3 gap-y-10 pt-8">
         <FloatingStickerCard
           kind="clock"
           label="Jadwal SRS"

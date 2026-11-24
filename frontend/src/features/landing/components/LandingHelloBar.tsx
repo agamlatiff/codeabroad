@@ -11,16 +11,20 @@ export const LandingHelloBar = () => {
     <div
       role="region"
       aria-label="Pengumuman"
-      className="min-h-[41px] bg-[#FAFAFA] border-b border-black/10 text-[13px] sm:text-sm text-[#475569] px-4 py-2 relative z-40 flex items-center"
+      className="min-h-[41px] w-full bg-[#FAFAFA] border-b border-black/10 text-xs sm:text-sm text-[#475569] px-3 sm:px-4 py-2 relative z-40 flex items-center"
     >
-      <div className="w-full max-w-[1440px] mx-auto flex items-center justify-center relative pr-8 sm:px-9">
-        <p className="text-center leading-snug">
-          Mode Coba Gratis aktif — uji pelajaran Unit 1, Tata Bahasa, &amp; Flashcard tanpa daftar.
+      <div className="w-full max-w-[1440px] mx-auto flex items-center justify-center relative min-w-0">
+        <p className="min-w-0 flex-1 pr-8 sm:px-9 text-center leading-snug text-xs sm:text-sm">
+          <span className="sm:hidden">Unit 1 &amp; Flashcard gratis tanpa daftar.</span>
+          <span className="hidden sm:inline">
+            Mode Coba Gratis aktif — uji pelajaran Unit 1, Tata Bahasa, &amp; Flashcard tanpa daftar.
+          </span>
           <Link
             to="/curriculum"
             className="ml-1.5 font-brand font-bold text-[#2563EB] hover:text-[#1D4ED8] inline-flex items-center gap-0.5 whitespace-nowrap rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 transition-colors"
           >
-            Coba sekarang ›
+            <span className="sm:hidden">Coba ›</span>
+            <span className="hidden sm:inline">Coba sekarang ›</span>
           </Link>
         </p>
 

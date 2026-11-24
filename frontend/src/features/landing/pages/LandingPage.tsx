@@ -14,7 +14,7 @@ import { LandingFloatingCta } from '@/features/landing/components/LandingFloatin
 export const LandingPage = () => {
   return (
     <MotionConfig reducedMotion="user">
-      <div className="min-h-screen bg-white text-[#1E293B] font-sans selection:bg-blue-600/20">
+      <div className="min-h-screen w-full max-w-full overflow-x-clip bg-white text-[#1E293B] font-sans selection:bg-blue-600/20">
         <LandingHelloBar />
         <LandingNavbar />
         <main>

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { AnimatePresence, motion } from 'motion/react'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import {
   ArrowRight,
   CheckCircle,
@@ -10,7 +10,7 @@ import {
   XCircle,
 } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
-import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
+import { MeraTimekeeperFigure } from '@/shared/components/ui/MeraShowcaseFigures'
 import { AudioWaveformBars } from '@/features/landing/components/LandingIllustrations'
 import {
   LANDING_DEMO_PACKS,
@@ -30,6 +30,7 @@ export const LandingInteractiveDemo = () => {
   const [selectedOptionId, setSelectedOptionId] = useState<string | null>(null)
   const [correctCount, setCorrectCount] = useState(0)
   const [isQuizFinished, setIsQuizFinished] = useState(false)
+  const shouldReduceMotion = Boolean(useReducedMotion())
 
   const { data: languages = [] } = useQuery({
     queryKey: LANGUAGES_QUERY_KEY,
@@ -113,11 +114,15 @@ export const LandingInteractiveDemo = () => {
   }
 
   return (
-    <section id="coba-kilat" className="bg-white py-10 sm:py-16 px-4 sm:px-6">
-      <div className="max-w-[1080px] mx-auto rounded-[32px] bg-[#EBF2FF] border-2 border-[#DBEAFE] p-5 sm:p-9 lg:p-10 space-y-7">
+    <section id="coba-kilat" className="bg-white py-12 sm:py-20 px-4 sm:px-6 overflow-x-clip">
+      <div className="max-w-[1080px] mx-auto rounded-[26px] sm:rounded-[32px] bg-[#EBF2FF] border-2 border-[#DBEAFE] p-4 sm:p-9 lg:p-10 space-y-6 sm:space-y-7">
         {/* Banner Header */}
         <div className="text-center max-w-2xl mx-auto flex flex-col items-center space-y-3">
-          <KodiCharacter emotion="studying" size={68} interactive={false} />
+          <MeraTimekeeperFigure
+            mood="excited"
+            size={64}
+            badgeText={`${Math.min(questionIndex + 1, currentPack.questions.length)}/${currentPack.questions.length}`}
+          />
           <span className="inline-flex items-center rounded-full bg-white/90 border border-blue-200/90 px-3.5 py-1 text-[11px] font-brand font-black uppercase tracking-wider text-[#2563EB]">
             Simulasi Interaktif Tanpa Login
           </span>
@@ -131,53 +136,59 @@ export const LandingInteractiveDemo = () => {
         </div>
 
         {/* 5-Language Tab Switcher */}
-        <div
-          className="flex flex-wrap items-center justify-center gap-2.5"
-          role="tablist"
-          aria-label="Pilih bahasa untuk simulasi"
-        >
-          {LANDING_DEMO_PACKS.map((pack) => {
-            const isSelected = pack.code === currentPack.code
-            return (
-              <button
-                key={pack.code}
-                type="button"
-                role="tab"
-                aria-selected={isSelected}
-                onClick={() => handleSelectDemoLanguage(pack.code)}
-                className={`relative inline-flex items-center gap-2 px-3.5 py-2 rounded-[16px] border text-xs sm:text-sm font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2 ${
-                  isSelected
-                    ? 'border-[#2563EB] text-white'
-                    : 'border-blue-200/80 bg-white/95 hover:bg-white text-[#1E293B] shadow-[0_2px_0_0_rgba(45,64,150,0.06)]'
-                }`}
-              >
-                {isSelected && (
-                  <motion.span
-                    layoutId="demo-active-lang-pill"
-                    transition={{ type: 'spring', stiffness: 420, damping: 32 }}
-                    className="absolute inset-0 rounded-[16px] bg-[#2563EB] shadow-[0_3px_0_0_#1D4ED8]"
-                    aria-hidden="true"
-                  />
-                )}
-                <span className="relative z-10 w-6 h-4 rounded-sm overflow-hidden bg-white border border-slate-200/80 shrink-0 flex items-center justify-center">
-                  <LanguageFlagIllustration
-                    code={pack.code}
-                    compact
-                    className="w-full h-full object-contain"
-                  />
-                </span>
-                <span className="relative z-10 transition-colors">{pack.label}</span>
-              </button>
-            )
-          })}
+        <div className="flex justify-center">
+          <div
+            className="flex flex-wrap sm:inline-flex items-center justify-center gap-1.5 w-full sm:w-auto max-w-full rounded-2xl sm:rounded-full bg-white/85 border-2 border-blue-200/80 p-1.5 shadow-[0_4px_12px_-4px_rgba(37,99,235,0.1)]"
+            role="tablist"
+            aria-label="Pilih bahasa untuk simulasi"
+          >
+            {LANDING_DEMO_PACKS.map((pack) => {
+              const isSelected = pack.code === currentPack.code
+              return (
+                <button
+                  key={pack.code}
+                  type="button"
+                  role="tab"
+                  aria-selected={isSelected}
+                  onClick={() => handleSelectDemoLanguage(pack.code)}
+                  className={`relative inline-flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 py-1.5 rounded-full text-xs sm:text-sm font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-1 ${
+                    isSelected
+                      ? 'text-white'
+                      : 'text-[#1E293B] hover:bg-blue-50/80'
+                  }`}
+                >
+                  {isSelected && (
+                    <motion.span
+                      layoutId="demo-active-lang-pill"
+                      transition={
+                        shouldReduceMotion
+                          ? { duration: 0 }
+                          : { type: 'spring', stiffness: 420, damping: 32 }
+                      }
+                      className="absolute inset-0 rounded-full bg-[#2563EB] shadow-[0_2px_0_0_#1D4ED8]"
+                      aria-hidden="true"
+                    />
+                  )}
+                  <span className="relative z-10 w-5 h-3.5 sm:w-6 sm:h-4 rounded-[3px] overflow-hidden bg-white border border-slate-200/80 shrink-0 flex items-center justify-center">
+                    <LanguageFlagIllustration
+                      code={pack.code}
+                      compact
+                      className="w-full h-full object-contain"
+                    />
+                  </span>
+                  <span className="relative z-10 transition-colors">{pack.label}</span>
+                </button>
+              )
+            })}
+          </div>
         </div>
 
         {/* Inner 2-Column Stage */}
-        <div className="grid lg:grid-cols-12 gap-5 items-stretch">
+        <div className="grid lg:grid-cols-12 gap-4 sm:gap-5 items-stretch">
           {/* Left: Clickable Audio Phrase Cards */}
-          <div className="lg:col-span-6 rounded-[24px] bg-white border-2 border-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between gap-2">
-              <div>
+          <div className="lg:col-span-6 min-w-0 rounded-[22px] sm:rounded-[24px] bg-white border-2 border-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] p-4 sm:p-6 space-y-4">
+            <div className="flex flex-wrap items-start sm:items-center justify-between gap-2">
+              <div className="min-w-0">
                 <h3 className="text-base sm:text-lg font-brand font-black text-[#1E293B]">
                   1. Ketuk untuk Dengar Pelafalan ({currentPack.label})
                 </h3>
@@ -188,7 +199,7 @@ export const LandingInteractiveDemo = () => {
               </span>
             </div>
 
-            <div className="grid sm:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3">
               {currentPack.phrases.map((card) => {
                 const isPlaying = activePhraseId === card.id
                 return (
@@ -197,7 +208,7 @@ export const LandingInteractiveDemo = () => {
                     type="button"
                     aria-pressed={isPlaying}
                     onClick={() => handleSpeakPhrase(card.id, card.nativeText)}
-                    className={`text-left rounded-2xl border-2 p-4 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-1 ${
+                    className={`min-w-0 text-left rounded-2xl border-2 p-3.5 sm:p-4 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-1 ${
                       isPlaying
                         ? 'border-[#2563EB] bg-[#EFF6FF]/80 shadow-[0_4px_0_0_#93C5FD]'
                         : 'border-[#E2E8F0] bg-[#FAFAF9] hover:bg-white hover:border-blue-300 shadow-[0_3px_0_0_#E2E8F0] active:translate-y-0.5 active:shadow-none'
@@ -210,13 +221,13 @@ export const LandingInteractiveDemo = () => {
                       {isPlaying ? (
                         <AudioWaveformBars isPlaying />
                       ) : (
-                        <SpeakerHigh weight="fill" className="w-4 h-4 text-slate-400" />
+                        <SpeakerHigh weight="fill" className="w-4 h-4 text-slate-400 shrink-0" />
                       )}
                     </div>
-                    <p className="text-base sm:text-lg font-brand font-black text-[#1E293B] leading-snug">
+                    <p className="text-base sm:text-lg font-brand font-black text-[#1E293B] leading-snug break-words">
                       {card.nativeText}
                     </p>
-                    <p className="text-xs font-mono font-semibold text-[#2563EB] mt-0.5">
+                    <p className="text-xs font-mono font-semibold text-[#2563EB] mt-0.5 break-words">
                       {card.phonetic}
                     </p>
                     <p className="text-xs text-[#475569] mt-1.5">{card.meaning}</p>
@@ -227,15 +238,15 @@ export const LandingInteractiveDemo = () => {
           </div>
 
           {/* Right: 2-Question Instant Micro-Quiz */}
-          <div className="lg:col-span-6 rounded-[24px] bg-white border-2 border-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] p-5 sm:p-6 flex flex-col justify-between overflow-hidden">
+          <div className="lg:col-span-6 min-w-0 rounded-[22px] sm:rounded-[24px] bg-white border-2 border-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] p-4 sm:p-6 flex flex-col justify-between overflow-hidden">
             <AnimatePresence mode="wait">
               {isQuizFinished ? (
                 <motion.div
                   key={`finished-${currentPack.code}`}
-                  initial={{ opacity: 0, y: 8 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -8 }}
-                  transition={{ duration: 0.22 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, y: -8 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.22 }}
                   className="my-auto py-4 text-center space-y-4"
                 >
                   <div className="w-14 h-14 mx-auto rounded-2xl bg-emerald-100 border-2 border-emerald-200 text-emerald-600 flex items-center justify-center">
@@ -267,10 +278,13 @@ export const LandingInteractiveDemo = () => {
                           ? `/curriculum/${matchedLanguage.id}`
                           : '/curriculum'
                       }
+                      className="w-full sm:w-auto"
                     >
                       <Button3D
                         variant="blue"
                         size="md"
+                        fullWidth
+                        className="sm:w-auto"
                         icon={<ArrowRight weight="bold" className="w-4 h-4" />}
                       >
                         {isPackTrackActive
@@ -278,10 +292,12 @@ export const LandingInteractiveDemo = () => {
                           : 'Coba Jalur Aktif'}
                       </Button3D>
                     </Link>
-                    <Link to="/register">
+                    <Link to="/register" className="w-full sm:w-auto">
                       <Button3D
                         variant="white"
                         size="md"
+                        fullWidth
+                        className="sm:w-auto"
                         icon={<UserPlus weight="bold" className="w-4 h-4 text-[#2563EB]" />}
                       >
                         Daftar Gratis
@@ -300,10 +316,10 @@ export const LandingInteractiveDemo = () => {
               ) : (
                 <motion.div
                   key={`${currentPack.code}-${currentQuestion.id}`}
-                  initial={{ opacity: 0, x: 12 }}
+                  initial={shouldReduceMotion ? false : { opacity: 0, x: 12 }}
                   animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -12 }}
-                  transition={{ duration: 0.2 }}
+                  exit={shouldReduceMotion ? undefined : { opacity: 0, x: -12 }}
+                  transition={{ duration: shouldReduceMotion ? 0 : 0.2 }}
                   className="flex-1 flex flex-col justify-between"
                 >
                   <div className="space-y-4">
@@ -313,10 +329,10 @@ export const LandingInteractiveDemo = () => {
                       </h3>
                     </div>
 
-                    <div className="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-3.5">
+                    <div className="rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] p-3 sm:p-3.5">
                       <p className="text-sm font-bold text-[#1E293B]">{currentQuestion.prompt}</p>
                       <div className="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs">
-                        <span className="font-mono font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-1 rounded-lg border border-blue-200/80">
+                        <span className="font-mono font-bold text-[#2563EB] bg-[#EFF6FF] px-2.5 py-1 rounded-lg border border-blue-200/80 break-words max-w-full">
                           {currentQuestion.sampleText}
                         </span>
                         <span className="text-[#64748B]">{currentQuestion.hint}</span>
@@ -348,13 +364,13 @@ export const LandingInteractiveDemo = () => {
                             type="button"
                             disabled={isAnswered}
                             onClick={() => handleSelectQuizOption(opt.id)}
-                            className={`rounded-2xl border-2 px-3.5 py-3 text-left transition-all cursor-pointer disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-1 ${styleClass}`}
+                            className={`min-w-0 rounded-2xl border-2 px-3 sm:px-3.5 py-2.5 sm:py-3 text-left transition-all cursor-pointer disabled:cursor-default focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-1 ${styleClass}`}
                           >
-                            <div className="font-brand font-black text-sm sm:text-base leading-tight">
+                            <div className="font-brand font-black text-sm sm:text-base leading-tight break-words">
                               {opt.label}
                             </div>
                             {opt.sub && (
-                              <div className="text-[11px] font-medium opacity-80 mt-0.5">
+                              <div className="text-[11px] font-medium opacity-80 mt-0.5 break-words">
                                 {opt.sub}
                               </div>
                             )}
@@ -366,9 +382,10 @@ export const LandingInteractiveDemo = () => {
 
                   {isAnswered ? (
                     <motion.div
-                      initial={{ opacity: 0, y: 6 }}
+                      initial={shouldReduceMotion ? false : { opacity: 0, y: 6 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className={`mt-4 rounded-2xl border-2 p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
+                      transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
+                      className={`mt-4 rounded-2xl border-2 p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
                         isCorrectSelection
                           ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                           : 'bg-rose-50 border-rose-200 text-rose-900'
@@ -390,7 +407,7 @@ export const LandingInteractiveDemo = () => {
                         variant={isCorrectSelection ? 'emerald' : 'blue'}
                         size="sm"
                         onClick={handleNextQuestion}
-                        className="shrink-0"
+                        className="w-full sm:w-auto shrink-0"
                       >
                         {questionIndex + 1 < currentPack.questions.length
                           ? 'Soal Berikutnya'

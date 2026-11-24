@@ -1520,24 +1520,24 @@ export const FloatingStickerCard: FC<FloatingStickerCardProps> = ({
     : 'border-[#E2E8F0] shadow-[0_10px_22px_-6px_rgba(15,23,42,0.12),0_4px_0_0_#E2E8F0]'
 
   const baseClasses =
-    `relative inline-flex flex-col items-center min-w-[128px] sm:min-w-[146px] rounded-[22px] bg-white border-2 px-3.5 sm:px-4 pt-8 pb-3 transition-colors ${stateClasses} ${className}`.trim()
+    `relative inline-flex flex-col items-center min-w-[118px] sm:min-w-[132px] lg:min-w-[140px] rounded-[20px] bg-white border-2 px-3 sm:px-3.5 pt-7 pb-2.5 transition-colors ${stateClasses} ${className}`.trim()
 
   const artworkNode = customIcon ?? (
-    <LandingStickerIcon kind={kind ?? 'star-target'} size={56} />
+    <LandingStickerIcon kind={kind ?? 'star-target'} size={52} />
   )
 
   const innerContent = (
     <>
-      <div className="-mt-11 mb-1.5 flex items-center justify-center rounded-2xl pointer-events-none">
+      <div className="-mt-10 mb-1.5 flex items-center justify-center rounded-2xl pointer-events-none">
         <span className="inline-flex items-center justify-center rounded-2xl bg-white/95 p-1 shadow-[0_4px_10px_rgba(15,23,42,0.08)]">
           {artworkNode}
         </span>
       </div>
-      <span className="font-brand font-black text-[13px] sm:text-sm text-[#1E293B] leading-tight text-center">
+      <span className="font-brand font-black text-xs sm:text-[13px] text-[#1E293B] leading-tight text-center whitespace-nowrap">
         {label}
       </span>
       {sublabel ? (
-        <span className="text-[11px] font-bold text-[#64748B] leading-tight text-center mt-0.5">
+        <span className="text-[10px] sm:text-[11px] font-bold text-[#64748B] leading-tight text-center whitespace-nowrap mt-0.5">
           {sublabel}
         </span>
       ) : null}

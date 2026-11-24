@@ -330,7 +330,7 @@ const FeatureVisualStage = ({
       {/* Layer 3: Floating Micro-Pill Tag */}
       <motion.div
         style={{ y: shouldReduceMotion ? 0 : pillY }}
-        className={`pointer-events-none select-none absolute z-20 ${pillPositionClass}`}
+        className={`hidden sm:block pointer-events-none select-none absolute z-20 ${pillPositionClass}`}
       >
         <span className="inline-flex items-center gap-2 bg-white border-2 border-[#E2E8F0] rounded-full px-3.5 py-1.5 shadow-[0_4px_0_0_rgba(45,64,150,0.08)] text-xs font-brand font-black text-[#1E293B] whitespace-nowrap">
           <span
@@ -349,11 +349,11 @@ export const LandingFeatureShowcase = () => {
   const shouldReduceMotion = Boolean(useReducedMotion())
 
   return (
-    <section id="fitur" className="relative bg-white py-16 sm:py-24 overflow-x-clip">
+    <section id="fitur" className="relative bg-white py-12 sm:py-24 overflow-x-clip">
       <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
         {/* Compact Section Intro */}
         <motion.div
-          className="text-center max-w-2xl mx-auto mb-14 sm:mb-20 space-y-3"
+          className="text-center max-w-2xl mx-auto mb-10 sm:mb-20 space-y-3"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -362,17 +362,17 @@ export const LandingFeatureShowcase = () => {
           <p className="text-xs font-brand font-black uppercase tracking-widest text-[#2563EB]">
             Modul Pembelajaran
           </p>
-          <h2 className="text-3xl sm:text-[42px] font-brand font-black text-[#1E293B] leading-[1.16] tracking-tight">
+          <h2 className="text-[26px] sm:text-[42px] font-brand font-black text-[#1E293B] leading-[1.16] tracking-tight">
             Semua alat bantu belajar yang kamu butuhkan
           </h2>
-          <p className="text-base sm:text-[18px] text-[#475569] leading-[1.45]">
+          <p className="text-sm sm:text-[18px] text-[#475569] leading-[1.45]">
             Sentuh dan lihat alur modul Merantalk secara langsung—dari peta kurikulum bertahap
             hingga kartu ulasan harian.
           </p>
         </motion.div>
 
         {/* Alternating Storytelling Rows + Inter-Row S-Curve Connectors */}
-        <div className="relative z-10 flex flex-col gap-16 sm:gap-24 lg:gap-0">
+        <div className="relative z-10 flex flex-col gap-14 sm:gap-20 lg:gap-0">
           {FEATURE_STORY_ROWS.map((row, index) => {
             const isVisualFirstOnDesktop = index % 2 === 1
             const { IconComponent } = row
@@ -380,7 +380,7 @@ export const LandingFeatureShowcase = () => {
 
             return (
               <Fragment key={row.id}>
-                <div className="relative z-10 grid lg:grid-cols-12 gap-8 lg:gap-12 items-center">
+                <div className="relative z-10 grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
                   {/* Text Column */}
                   <motion.div
                     className={`lg:col-span-5 ${
@@ -391,24 +391,24 @@ export const LandingFeatureShowcase = () => {
                     viewport={{ once: true, amount: 0.25 }}
                     transition={{ duration: 0.58, ease: SMOOTH_EASE }}
                   >
-                    <div className="max-w-[380px] mx-auto lg:mx-0 space-y-4">
+                    <div className="max-w-md mx-auto lg:mx-0 text-center lg:text-left space-y-3.5 sm:space-y-4">
                       <motion.div
                         aria-hidden="true"
                         whileHover={shouldReduceMotion ? undefined : { scale: 1.07, rotate: -4 }}
                         transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-                        className={`w-14 h-14 rounded-full ${row.badgeColorClass} flex items-center justify-center shadow-[0_4px_0_0_rgba(15,23,42,0.08)]`}
+                        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full ${row.badgeColorClass} mx-auto lg:mx-0 flex items-center justify-center shadow-[0_4px_0_0_rgba(15,23,42,0.08)]`}
                       >
-                        <IconComponent weight="fill" className="w-7 h-7 text-white" />
+                        <IconComponent weight="fill" className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
                       </motion.div>
                       <h3 className="text-2xl sm:text-[36px] font-brand font-black text-[#1E293B] leading-[1.16]">
                         {row.title}
                       </h3>
-                      <p className="text-base sm:text-[18px] text-[#475569] leading-[1.48]">
+                      <p className="text-sm sm:text-[18px] text-[#475569] leading-[1.48]">
                         {row.description}
                       </p>
                       <Link
                         to={row.href}
-                        className="group landing-link-sweep inline-flex items-center gap-2 text-[15px] font-brand font-black text-[#2563EB]"
+                        className="group landing-link-sweep inline-flex items-center justify-center lg:justify-start gap-2 text-[15px] font-brand font-black text-[#2563EB]"
                       >
                         <span>{row.ctaLabel}</span>
                         <ArrowRight

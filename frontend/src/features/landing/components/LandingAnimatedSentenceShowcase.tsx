@@ -329,7 +329,7 @@ export const LandingAnimatedSentenceShowcase = () => {
         <div
           role="group"
           aria-label="Pilih bahasa contoh pola kalimat"
-          className="inline-flex flex-wrap items-center justify-center gap-1 rounded-full bg-white/95 backdrop-blur-xs border-2 border-[#E2E8F0] p-1 shadow-[0_6px_14px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0]"
+          className="inline-flex flex-wrap items-center justify-center gap-1 max-w-full rounded-2xl sm:rounded-full bg-white/95 backdrop-blur-xs border-2 border-[#E2E8F0] p-1 shadow-[0_6px_14px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0]"
         >
           {SENTENCE_EXAMPLES.map((pack) => {
             const isActive = pack.id === packId
@@ -340,7 +340,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                 aria-pressed={isActive}
                 onClick={() => handleSelectLanguage(pack.id)}
                 whileTap={shouldReduceMotion ? undefined : { scale: 0.96 }}
-                className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full text-xs sm:text-[13px] font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                className={`inline-flex items-center gap-1.5 px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-full text-[11px] sm:text-[13px] font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
                   isActive
                     ? 'bg-[#2563EB] text-white shadow-[0_2px_0_0_#1D4ED8]'
                     : 'text-[#475569] hover:text-[#1E293B] hover:bg-slate-100/80'
@@ -348,12 +348,12 @@ export const LandingAnimatedSentenceShowcase = () => {
               >
                 <span
                   aria-hidden="true"
-                  className="w-4.5 h-3.5 shrink-0 inline-flex items-center justify-center overflow-hidden rounded-[2px]"
+                  className="w-4 h-3 sm:w-4.5 sm:h-3.5 shrink-0 inline-flex items-center justify-center overflow-hidden rounded-[2px]"
                 >
                   <LanguageFlagIllustration
                     code={pack.flagCode}
                     compact
-                    className="w-4.5 h-3.5 rounded-[2px] shrink-0"
+                    className="w-full h-full rounded-[2px] shrink-0"
                   />
                 </span>
                 <span>{pack.label}</span>
@@ -367,11 +367,11 @@ export const LandingAnimatedSentenceShowcase = () => {
       <div className="grid sm:grid-cols-12 items-end gap-4 sm:gap-5">
         {/* Left Hero Mera Sensei Grounded on Open Pastel Blob */}
         <div className="sm:col-span-5 flex items-end justify-center sm:justify-start relative">
-          <div className="relative z-10">
+          <div className="relative z-10 w-full max-w-[150px] sm:max-w-[196px] mx-auto sm:mx-0">
             <MeraSenseiFigure
               mood={isSpeaking ? 'listening' : 'pointing'}
               size={196}
-              className="max-w-full h-auto"
+              className="w-full h-auto [&_svg]:w-full [&_svg]:h-auto"
             />
           </div>
         </div>
@@ -380,7 +380,7 @@ export const LandingAnimatedSentenceShowcase = () => {
         <div className="sm:col-span-7 flex items-center justify-center sm:justify-start pb-1">
           <div
             key={currentPack.id}
-            className="flex flex-wrap items-center justify-center sm:justify-start gap-3 sm:gap-3.5"
+            className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-3.5"
           >
             {currentPack.tokens.map((token, idx) => {
               const tileStyle = TILE_VISUAL_STYLES[idx % TILE_VISUAL_STYLES.length]
@@ -416,16 +416,16 @@ export const LandingAnimatedSentenceShowcase = () => {
                     }
                     whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.05 }}
                     whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
-                    className={`rounded-[22px] ${tileStyle.surfaceClass} min-w-[100px] sm:min-w-[112px] min-h-[84px] px-4 py-3 flex flex-col items-center justify-center gap-1.5 text-center text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
+                    className={`rounded-[20px] sm:rounded-[22px] ${tileStyle.surfaceClass} min-w-[84px] sm:min-w-[112px] min-h-[70px] sm:min-h-[84px] px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col items-center justify-center gap-1 sm:gap-1.5 text-center text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
                       isSpotlighted
                         ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(15,23,42,0.16)] scale-[1.04]'
                         : 'hover:brightness-[1.04]'
                     }`}
                   >
-                    <span className="block font-brand font-black text-base sm:text-[17px] leading-tight tracking-tight [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
+                    <span className="block font-brand font-black text-sm sm:text-[17px] leading-tight tracking-tight [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
                       {token.word}
                     </span>
-                    <span className="inline-block rounded-full bg-black/15 px-2.5 py-0.5 text-[11px] font-mono font-bold text-white/95 leading-none">
+                    <span className="inline-block rounded-full bg-black/15 px-2 sm:px-2.5 py-0.5 text-[10px] sm:text-[11px] font-mono font-bold text-white/95 leading-none">
                       {token.role}
                     </span>
                   </motion.button>
@@ -458,13 +458,13 @@ export const LandingAnimatedSentenceShowcase = () => {
                 }
                 whileHover={shouldReduceMotion ? undefined : { y: -3, scale: 1.05 }}
                 whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
-                className={`rounded-[22px] bg-[#00A8FF] shadow-[0_5px_0_0_#0284C7] min-w-[104px] min-h-[84px] px-4 py-3 flex flex-col items-center justify-center gap-1.5 text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
+                className={`rounded-[20px] sm:rounded-[22px] bg-[#00A8FF] shadow-[0_5px_0_0_#0284C7] min-w-[84px] sm:min-w-[112px] min-h-[70px] sm:min-h-[84px] px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col items-center justify-center gap-1 sm:gap-1.5 text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
                   isSpeaking
                     ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(2,132,199,0.28)] scale-[1.04]'
                     : 'hover:brightness-[1.04]'
                 }`}
               >
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2.5 py-1 shadow-2xs">
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/95 px-2 sm:px-2.5 py-1 shadow-2xs">
                   <SpeakerHigh
                     weight="fill"
                     className="w-3.5 h-3.5 text-[#0284C7] shrink-0"
@@ -472,7 +472,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                   />
                   <AudioWaveformBars isPlaying={isSpeaking} />
                 </span>
-                <span className="font-brand font-black text-sm leading-none tracking-wide [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
+                <span className="font-brand font-black text-xs sm:text-sm leading-none tracking-wide [text-shadow:0_1px_1px_rgba(0,0,0,0.16)]">
                   Dengar
                 </span>
               </motion.button>
@@ -490,7 +490,7 @@ export const LandingAnimatedSentenceShowcase = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={shouldReduceMotion ? undefined : { opacity: 0, y: -4 }}
             transition={{ duration: shouldReduceMotion ? 0 : 0.18 }}
-            className="w-full rounded-[20px] bg-white border-2 border-[#E2E8F0] shadow-[0_8px_18px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0] px-5 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+            className="w-full rounded-[20px] bg-white border-2 border-[#E2E8F0] shadow-[0_8px_18px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0] px-4 py-3 sm:px-5 sm:py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3"
           >
             <div className="min-w-0 flex-1">
               <div className="flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs sm:text-[13px] font-bold text-[#1E293B]">
