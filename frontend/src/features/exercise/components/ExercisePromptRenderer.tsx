@@ -164,6 +164,22 @@ export const ExercisePromptRenderer = ({
   const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
   const normalizedDisplayText = parsedContent.displayText?.replace(/\s+/g, ' ').trim() ?? ''
   const normalizedAudioText = parsedContent.audioText?.replace(/\s+/g, ' ').trim() ?? ''
+  const isAudioUnavailableError =
+    audioPlaybackError !== null &&
+    audioPlaybackError.length > 0 &&
+    !audioPlaybackError.toLowerCase().includes('hening')
+  const showListeningFallbackTranscript =
+    exerciseType === 'listening_choice' && !isLocked && isAudioUnavailableError
+  const fallbackTranscriptSource = parsedContent.displayText || parsedContent.audioText || ''
+  const optionsMatchAudioText =
+    Boolean(normalizedAudioText) &&
+    parsedContent.choiceOptions.some(
+      (opt) => opt.text.replace(/\s+/g, ' ').trim() === normalizedAudioText
+    )
+  const fallbackTranscriptValue =
+    optionsMatchAudioText && parsedContent.romaji
+      ? parsedContent.romaji
+      : fallbackTranscriptSource || parsedContent.romaji || ''
   const showSeparateAudioText =
     Boolean(parsedContent.audioText) &&
     (!parsedContent.displayText || normalizedAudioText !== normalizedDisplayText)
@@ -394,6 +410,19 @@ export const ExercisePromptRenderer = ({
             <p className="text-xs font-semibold text-amber-700">
               {audioPlaybackError}
             </p>
+          )}
+
+          {showListeningFallbackTranscript && fallbackTranscriptValue && (
+            <div className="rounded-xl bg-white border border-amber-200 px-3.5 py-2.5 text-left space-y-0.5">
+              <p className="text-[11px] font-brand font-extrabold uppercase tracking-wider text-amber-700">
+                {optionsMatchAudioText && parsedContent.romaji
+                  ? 'Pelafalan Cadangan (Audio Tidak Tersedia)'
+                  : 'Transkrip Cadangan (Audio Tidak Tersedia)'}
+              </p>
+              <p className="text-base font-extrabold text-slate-900 break-words">
+                {fallbackTranscriptValue}
+              </p>
+            </div>
           )}
         </div>
       )}

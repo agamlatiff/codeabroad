@@ -469,8 +469,31 @@ export const buildClientFallbackHint = (
       return grammarPoint?.formula
         ? `Susun potongan sesuai urutan pola ${grammarPoint.formula} (abaikan huruf pengecoh).`
         : 'Susun potongan yang membentuk kata/kalimat inti dan abaikan huruf pengecoh.'
-    case 'listening_choice':
-      return 'Putar audio satu kali lagi, perhatikan suku kata awal & panjang vokal, atau klik Intip Materi.'
+    case 'listening_choice': {
+      const promptLower = exercise.prompt.toLowerCase()
+      if (promptLower.includes('siapakah') || promptLower.includes('siapa ') || promptLower.includes('nama')) {
+        return 'Fokus dengarkan nama orang atau subjek yang disebutkan sebelum です atau は pada audio.'
+      }
+      if (promptLower.includes('di mana') || promptLower.includes('dimana') || promptLower.includes('posisi') || promptLower.includes('letak')) {
+        return 'Fokus dengarkan nama tempat dan kata petunjuk posisi (atas, sebelah, dalam, lantai) pada audio.'
+      }
+      if (promptLower.includes('kapan') || promptLower.includes('berapa lama') || promptLower.includes('jam berapa') || promptLower.includes('hari apa')) {
+        return 'Fokus dengarkan keterangan waktu, hari, atau durasi bilangan pada audio (putar 0.6x Pelan bila cepat).'
+      }
+      if (promptLower.includes('mengapa') || promptLower.includes('kenapa') || promptLower.includes('alasan')) {
+        return 'Fokus dengarkan bagian alasan atau sebab yang biasanya ditandai kata hubung から (karena).'
+      }
+      if (promptLower.includes('ajakan') || promptLower.includes('diajak') || promptLower.includes('himbauan') || promptLower.includes('diminta')) {
+        return 'Fokus dengarkan kata kerja utama dan akhiran ajakan atau permintaan di akhir kalimat audio.'
+      }
+      if (promptLower.includes('salam') || promptLower.includes('sapaan') || promptLower.includes('perkenalan')) {
+        return 'Kenali situasi sosial ungkapan pada audio (sapaan waktu, perkenalan, terima kasih, atau maaf).'
+      }
+      if (grammarPoint?.formula) {
+        return `Dengarkan pola ${grammarPoint.formula} pada audio lalu cocokkan dengan arti yang sesuai di Kartu Materi.`
+      }
+      return 'Putar audio 0.6x Pelan, tangkap kata kunci atau huruf pertamanya, lalu hubungkan dengan arti kata di Kartu Materi.'
+    }
     case 'speaking_repeat':
       return 'Dengarkan contoh audio pelan 0.6x di Intip Materi lalu tirukan perlahan per suku kata.'
     default:

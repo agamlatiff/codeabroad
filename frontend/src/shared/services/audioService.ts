@@ -502,7 +502,13 @@ class AudioService {
       }
 
       utterance.onend = () => onEnd?.()
-      utterance.onerror = () => onError?.()
+      utterance.onerror = (event) => {
+        if (event.error === 'canceled' || event.error === 'interrupted') {
+          onEnd?.()
+          return
+        }
+        onError?.()
+      }
 
       window.speechSynthesis.speak(utterance)
     } catch {

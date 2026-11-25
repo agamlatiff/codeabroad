@@ -2,8 +2,14 @@ package exercise
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
+)
+
+var (
+	listeningParenRegex      = regexp.MustCompile(`\s*\([^)]*\)`)
+	listeningParenAsciiRegex = regexp.MustCompile(`\([a-zA-Z][a-zA-Z\s'-]{0,24}\)`)
 )
 
 type furiganaDictEntry struct {
@@ -411,6 +417,221 @@ func EnrichExerciseFurigana(rawEx Exercise, sanitized *Exercise) {
 	sanitized.Content = cloned
 }
 
+func extractListeningOptionTexts(rawEx Exercise) []string {
+	var out []string
+	if rawEx.Content != nil {
+		if rawOpts, ok := rawEx.Content["options"]; ok && rawOpts != nil {
+			switch typed := rawOpts.(type) {
+			case []string:
+				for _, item := range typed {
+					if t := strings.TrimSpace(item); t != "" {
+						out = append(out, t)
+					}
+				}
+			case []any:
+				for _, item := range typed {
+					switch val := item.(type) {
+					case string:
+						if t := strings.TrimSpace(val); t != "" {
+							out = append(out, t)
+						}
+					case map[string]any:
+						if t := contentStringFromMap(val, "text"); t != "" {
+							out = append(out, t)
+						} else if lbl := contentStringFromMap(val, "label"); lbl != "" {
+							out = append(out, lbl)
+						}
+					case map[string]string:
+						if t := strings.TrimSpace(val["text"]); t != "" {
+							out = append(out, t)
+						} else if lbl := strings.TrimSpace(val["label"]); lbl != "" {
+							out = append(out, lbl)
+						}
+					}
+				}
+			}
+		}
+	}
+	if len(out) == 0 && len(rawEx.Options) > 0 {
+		for _, opt := range rawEx.Options {
+			if t := strings.TrimSpace(opt); t != "" {
+				out = append(out, t)
+			}
+		}
+	}
+	return out
+}
+
+func isJapaneseScriptRune(r rune) bool {
+	return unicode.In(r, unicode.Hiragana, unicode.Katakana, unicode.Han) || r == 'ー'
+}
+
+func extractJapaneseScriptRunes(text string) []rune {
+	cleaned := listeningParenRegex.ReplaceAllString(text, "")
+	runes := make([]rune, 0, len(cleaned))
+	for _, r := range cleaned {
+		if isJapaneseScriptRune(r) {
+			runes = append(runes, r)
+		}
+	}
+	return runes
+}
+
+func optionsContainJapanese(optionTexts []string) bool {
+	if len(optionTexts) == 0 {
+		return false
+	}
+	jpCount := 0
+	for _, opt := range optionTexts {
+		if strings.IndexFunc(opt, func(r rune) bool {
+			return unicode.In(r, unicode.Hiragana, unicode.Katakana, unicode.Han)
+		}) >= 0 {
+			jpCount++
+		}
+	}
+	return jpCount*2 >= len(optionTexts)
+}
+
+func optionsContainSubstring(optionTexts []string, sub string) bool {
+	needle := strings.ToLower(strings.TrimSpace(sub))
+	if needle == "" {
+		return false
+	}
+	for _, opt := range optionTexts {
+		if strings.Contains(strings.ToLower(opt), needle) {
+			return true
+		}
+	}
+	return false
+}
+
+func optionsHaveParenRomaji(optionTexts []string) bool {
+	for _, opt := range optionTexts {
+		if listeningParenAsciiRegex.MatchString(opt) {
+			return true
+		}
+	}
+	return false
+}
+
+func resolveListeningComprehensionHint(promptLower string) string {
+	switch {
+	case strings.Contains(promptLower, "angka berapa") || strings.Contains(promptLower, "nomor berapa"):
+		return "Fokus dengarkan penyebutan angka pada audio (gunakan 0.6x Pelan bila cepat), lalu cocokkan dengan bilangan di pilihan."
+	case strings.Contains(promptLower, "siapakah") ||
+		strings.Contains(promptLower, "siapa ") ||
+		strings.Contains(promptLower, "nama pembicara") ||
+		strings.Contains(promptLower, "nama orang"):
+		return "Fokus dengarkan nama orang atau subjek pada audio (biasanya disebut sebelum partikel は atau です)."
+	case strings.Contains(promptLower, "di mana") ||
+		strings.Contains(promptLower, "dimana") ||
+		strings.Contains(promptLower, "letak") ||
+		strings.Contains(promptLower, "posisi"):
+		return "Fokus dengarkan nama tempat dan kata penunjuk posisi (misalnya sebelah, dalam, atas, atau lantai) pada audio."
+	case strings.Contains(promptLower, "kapan") ||
+		strings.Contains(promptLower, "berapa lama") ||
+		strings.Contains(promptLower, "jam berapa") ||
+		strings.Contains(promptLower, "pukul berapa") ||
+		strings.Contains(promptLower, "hari apa"):
+		return "Fokus dengarkan keterangan waktu, hari, atau durasi bilangan (seperti jam, menit, atau besok) pada audio."
+	case strings.Contains(promptLower, "mengapa") ||
+		strings.Contains(promptLower, "kenapa") ||
+		strings.Contains(promptLower, "alasan"):
+		return "Fokus dengarkan bagian sebab-akibat yang sering ditandai kata penghubung alasan seperti から (karena) pada audio."
+	case strings.Contains(promptLower, "ajakan") ||
+		strings.Contains(promptLower, "diajak") ||
+		strings.Contains(promptLower, "himbauan") ||
+		strings.Contains(promptLower, "diminta") ||
+		strings.Contains(promptLower, "permintaan"):
+		return "Fokus dengarkan kata kerja utama dan akhiran ajakan/permintaan di akhir kalimat audio (mis. ～ませんか atau ～てください)."
+	case strings.Contains(promptLower, "setelah") ||
+		strings.Contains(promptLower, "urutan") ||
+		strings.Contains(promptLower, "sedang dilakukan") ||
+		strings.Contains(promptLower, "dilakukan"):
+		return "Fokus dengarkan urutan kata kerja pada audio (bentuk ～て menandai kegiatan pertama diikuti aksi berikutnya)."
+	case strings.Contains(promptLower, "pendapat") ||
+		strings.Contains(promptLower, "penilaian") ||
+		strings.Contains(promptLower, "perbandingan") ||
+		strings.Contains(promptLower, "bagaimana"):
+		return "Fokus dengarkan kata sifat utama atau dua hal yang dibandingkan pembicara pada audio."
+	default:
+		return ""
+	}
+}
+
+// BuildListeningContextualHint generates a spoiler-free, context-aware hint tailored to
+// listening question comprehension focus, script choices, or vocabulary meaning guesses.
+func BuildListeningContextualHint(
+	rawEx Exercise,
+	_ string,
+	kanaMnemonic string,
+	grammarTitle string,
+	grammarFormula string,
+) string {
+	promptLower := strings.ToLower(strings.TrimSpace(rawEx.Prompt))
+	optionTexts := extractListeningOptionTexts(rawEx)
+	audioText := contentStringFromMap(rawEx.Content, "audio_text")
+	cleanJapaneseRunes := extractJapaneseScriptRunes(audioText)
+
+	// Priority 1: Prompt-driven comprehension cues (siapa / di mana / kapan / alasan / urutan / pendapat / ajakan / angka)
+	if cue := resolveListeningComprehensionHint(promptLower); cue != "" {
+		if strings.TrimSpace(grammarFormula) != "" {
+			return fmt.Sprintf("%s Perhatikan pola: %s.", cue, strings.TrimSpace(grammarFormula))
+		}
+		return cue
+	}
+
+	// Priority 2: Script/kana choice questions (options are written in Japanese script)
+	if optionsContainJapanese(optionTexts) {
+		if trimmedMnemonic := strings.TrimSpace(kanaMnemonic); trimmedMnemonic != "" {
+			safeMnemonic := trimmedMnemonic
+			if trimmedAudio := strings.TrimSpace(audioText); trimmedAudio != "" {
+				safeMnemonic = strings.ReplaceAll(safeMnemonic, trimmedAudio, "huruf ini")
+			}
+			return fmt.Sprintf("Ingat ciri huruf yang terdengar di audio: %s", safeMnemonic)
+		}
+		if len(cleanJapaneseRunes) == 1 {
+			return "Dengarkan bunyi huruf pada audio (putar 0.6x Pelan bila perlu), lalu cocokkan dengan aksara yang tepat."
+		}
+		if len(cleanJapaneseRunes) > 1 {
+			return fmt.Sprintf("Dengarkan %d suku kata pada audio (putar 0.6x Pelan bila perlu), lalu cocokkan dengan aksara yang tepat.", len(cleanJapaneseRunes))
+		}
+		return "Dengarkan bunyi kata pada audio (putar 0.6x Pelan bila perlu), lalu cocokkan dengan penulisan aksaranya."
+	}
+
+	// Priority 3: Meaning / translation choices (options in Indonesian)
+	if strings.TrimSpace(grammarTitle) != "" && strings.TrimSpace(grammarFormula) != "" {
+		return fmt.Sprintf("Perhatikan pola %s (%s) yang terdengar pada kalimat audio, lalu cocokkan dengan artinya di pilihan.", strings.TrimSpace(grammarTitle), strings.TrimSpace(grammarFormula))
+	}
+
+	if len(cleanJapaneseRunes) >= 1 && len(cleanJapaneseRunes) <= 6 {
+		firstChar := string(cleanJapaneseRunes[0])
+		firstReading := KanaToRomaji(firstChar)
+		if !optionsContainSubstring(optionTexts, firstChar) &&
+			!optionsHaveParenRomaji(optionTexts) &&
+			firstReading != "" &&
+			!optionsContainSubstring(optionTexts, firstReading) {
+			return fmt.Sprintf("Kata pada audio terdiri dari %d huruf diawali 「%s」 (bunyi awal %q) — hubungkan bunyi kata tersebut dengan artinya di Kartu Materi.", len(cleanJapaneseRunes), firstChar, firstReading)
+		}
+		if !optionsContainSubstring(optionTexts, firstChar) {
+			return fmt.Sprintf("Kata pada audio terdiri dari %d huruf diawali 「%s」 — cocokkan kata yang terdengar dengan artinya yang sesuai di pilihan.", len(cleanJapaneseRunes), firstChar)
+		}
+		return fmt.Sprintf("Kata pada audio terdiri dari %d suku kata — putar 0.6x Pelan lalu cocokkan maknanya dengan Kartu Materi.", len(cleanJapaneseRunes))
+	}
+
+	if strings.Contains(promptLower, "salam") ||
+		strings.Contains(promptLower, "sapaan") ||
+		strings.Contains(promptLower, "terima kasih") ||
+		strings.Contains(promptLower, "perkenalan") ||
+		strings.Contains(promptLower, "ungkapan") ||
+		strings.Contains(promptLower, "permisi") ||
+		strings.Contains(promptLower, "maaf") {
+		return "Kenali situasi sosial ungkapan pada audio (sapaan waktu, perkenalan, terima kasih, atau maaf), lalu pilih padanan artinya yang tepat."
+	}
+
+	return "Tangkap kata kunci utama (subjek, objek, atau kata kerja di akhir kalimat) pada audio untuk memilih makna yang paling sesuai."
+}
+
 // BuildFallbackSRSContextualHint generates a spoiler-free hint for exercises reviewed inside /review
 // when no custom hint is stored on the row.
 func BuildFallbackSRSContextualHint(rawEx Exercise) string {
@@ -444,7 +665,7 @@ func BuildFallbackSRSContextualHint(rawEx Exercise) string {
 		return "Susun kata-kata inti sesuai urutan tata bahasa Jepang."
 
 	case ExerciseTypeListeningChoice:
-		return "Dengarkan suku kata awal dan panjang bunyi pada audio (gunakan tombol 0.6x Pelan bila perlu)."
+		return BuildListeningContextualHint(rawEx, contentStringFromMap(content, "romaji"), "", "", "")
 
 	case ExerciseTypeSpeakingRepeat:
 		breakdown := contentStringSliceFromMap(content, "phonetic_breakdown")

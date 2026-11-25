@@ -318,3 +318,67 @@ func TestBuildLessonStudyItemsAndHints_AutoRomajiAndCleanSpeakingMeaning(t *test
 		t.Errorf("expected speaking meaning for こんにちは not to echo romaji 'Konnichiwa'")
 	}
 }
+
+func TestBuildLessonStudyItemsAndHints_ContextualListeningHints(t *testing.T) {
+	rawExercises := []exercise.Exercise{
+		{
+			ID:           "lc-word-meaning",
+			ExerciseType: exercise.ExerciseTypeListeningChoice,
+			Prompt:       "Dengarkan kata yang tersusun dari huruf あ–こ ini:",
+			Content: map[string]any{
+				"audio_text": "かお",
+				"options": []any{
+					map[string]any{"id": "opt_1", "text": "Wajah"},
+					map[string]any{"id": "opt_2", "text": "Biru"},
+					map[string]any{"id": "opt_3", "text": "Musim gugur"},
+					map[string]any{"id": "opt_4", "text": "Atas"},
+				},
+			},
+			CorrectAnswer: "opt_1",
+		},
+		{
+			ID:           "lc-duration-dialogue",
+			ExerciseType: exercise.ExerciseTypeListeningChoice,
+			Prompt:       "Dengarkan keterangan perjalanan berikut. Berapa lama waktu naik kereta ke Shinjuku?",
+			Content: map[string]any{
+				"audio_text": "しんじゅくまで さんじゅっぷん かかります。",
+				"options": []any{
+					map[string]any{"id": "opt_1", "text": "30 menit"},
+					map[string]any{"id": "opt_2", "text": "15 menit"},
+				},
+			},
+			CorrectAnswer: "opt_1",
+		},
+		{
+			ID:           "lc-script-kana",
+			ExerciseType: exercise.ExerciseTypeListeningChoice,
+			Prompt:       "Dengarkan bunyi huruf berikut dan pilih aksara yang benar:",
+			Content: map[string]any{
+				"audio_text": "あ",
+				"options":    []any{"あ", "い", "う", "お"},
+			},
+			CorrectAnswer: "opt_1",
+		},
+	}
+
+	sanitized := exercise.SanitizeExercises(rawExercises)
+	_ = buildLessonStudyItemsAndHints("n5-unit1-kosakata-dasar", rawExercises, sanitized, nil)
+
+	hint0 := *sanitized[0].Hint
+	if !strings.Contains(hint0, "2 huruf") || !strings.Contains(hint0, "「か」") || !strings.Contains(hint0, `"ka"`) {
+		t.Errorf("expected structural meaning hint mentioning 2 huruf, 「か」, and \"ka\", got %q", hint0)
+	}
+	if strings.Contains(hint0, "Wajah") {
+		t.Errorf("expected meaning hint not to spoil answer 'Wajah', got %q", hint0)
+	}
+
+	hint1 := *sanitized[1].Hint
+	if !strings.Contains(hint1, "waktu") || !strings.Contains(hint1, "durasi") {
+		t.Errorf("expected duration/waktu comprehension hint, got %q", hint1)
+	}
+
+	hint2 := *sanitized[2].Hint
+	if !strings.Contains(hint2, "Ingat ciri huruf yang terdengar di audio") || strings.Contains(hint2, "あ") {
+		t.Errorf("expected spoiler-free kana mnemonic hint without leaking 'あ', got %q", hint2)
+	}
+}

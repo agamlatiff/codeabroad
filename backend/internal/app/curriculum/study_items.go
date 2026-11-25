@@ -405,7 +405,18 @@ func buildContextualHint(rawEx exercise.Exercise, romaji string, grammarPoints [
 		return "Susun kata-kata inti sesuai urutan tata bahasa Jepang."
 
 	case exercise.ExerciseTypeListeningChoice:
-		return "Dengarkan suku kata awal dan panjang bunyi pada audio, lalu cocokkan dengan artinya (gunakan tombol 0.6x Pelan jika audio terlalu cepat)."
+		audioText := contentString(content, "audio_text")
+		kanaMnemonic := ""
+		if info, ok := kanaMnemonicMap[audioText]; ok {
+			kanaMnemonic = info.Mnemonic
+		}
+		grammarTitle := ""
+		grammarFormula := ""
+		if len(grammarPoints) > 0 {
+			grammarTitle = strings.TrimSpace(grammarPoints[0].Title)
+			grammarFormula = strings.TrimSpace(grammarPoints[0].Formula)
+		}
+		return exercise.BuildListeningContextualHint(rawEx, romaji, kanaMnemonic, grammarTitle, grammarFormula)
 
 	case exercise.ExerciseTypeSpeakingRepeat:
 		breakdown := contentStringSlice(content, "phonetic_breakdown")
