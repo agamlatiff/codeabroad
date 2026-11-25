@@ -8,6 +8,8 @@ RUN npm ci
 COPY . .
 
 ENV VITE_API_URL=/api/v1
+ARG VITE_GOOGLE_CLIENT_ID=""
+ENV VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID}
 RUN npm run build
 
 FROM nginxinc/nginx-unprivileged:1.27-alpine

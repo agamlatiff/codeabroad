@@ -61,6 +61,11 @@ export const registerSchema = z.object({
 
 export type RegisterPayload = z.infer<typeof registerSchema>
 
+export interface GoogleAuthPayload {
+  code: string
+  remember_me?: boolean
+}
+
 export interface RefreshTokenPayload {
   refresh_token: string
 }

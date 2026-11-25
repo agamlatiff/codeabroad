@@ -95,6 +95,22 @@ func (h *Handler) Login(c *gin.Context) {
 	response.Success(c, http.StatusOK, "login successful", res)
 }
 
+// GoogleAuth handles POST /api/v1/auth/google
+func (h *Handler) GoogleAuth(c *gin.Context) {
+	var req GoogleAuthRequest
+	if !bindAuthJSON(c, &req) {
+		return
+	}
+
+	res, err := h.authUsecase.GoogleAuth(c.Request.Context(), &req)
+	if err != nil {
+		response.Error(c, err)
+		return
+	}
+
+	response.Success(c, http.StatusOK, "google authentication successful", res)
+}
+
 // RefreshToken handles POST /api/v1/auth/refresh
 func (h *Handler) RefreshToken(c *gin.Context) {
 	var req RefreshTokenRequest
@@ -171,10 +187,12 @@ func (h *Handler) RegisterRoutes(rg *gin.RouterGroup, authMiddleware gin.Handler
 		if h.rateLimiter != nil {
 			authPublic.POST("/register", h.rateLimiter, h.Register)
 			authPublic.POST("/login", h.rateLimiter, h.Login)
+			authPublic.POST("/google", h.rateLimiter, h.GoogleAuth)
 			authPublic.POST("/refresh", h.rateLimiter, h.RefreshToken)
 		} else {
 			authPublic.POST("/register", h.Register)
 			authPublic.POST("/login", h.Login)
+			authPublic.POST("/google", h.GoogleAuth)
 			authPublic.POST("/refresh", h.RefreshToken)
 		}
 

@@ -185,6 +185,38 @@ paths:
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
 
+  /auth/google:
+    post:
+      tags: [Authentication]
+      summary: Exchange Google OAuth 2.0 authorization code and issue JWT tokens
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [code]
+              properties:
+                code:
+                  type: string
+                remember_me:
+                  type: boolean
+      responses:
+        "200":
+          description: Google authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
+        "401":
+          $ref: "#/components/responses/UnauthorizedError"
+        "409":
+          $ref: "#/components/responses/ConflictError"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
+
   /auth/refresh:
     post:
       tags: [Authentication]

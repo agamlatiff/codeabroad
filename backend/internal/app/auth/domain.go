@@ -16,8 +16,11 @@ var (
 	ErrInvalidUsername    = apperror.NewBadRequestError("INVALID_USERNAME", "username can only contain letters, numbers, underscores, and hyphens (3-30 characters)", nil)
 	ErrInvalidName        = apperror.NewBadRequestError("INVALID_NAME", "name must be at least 2 characters", nil)
 	ErrInvalidEmail       = apperror.NewBadRequestError("INVALID_EMAIL", "email is required", nil)
-	ErrInvalidPassword    = apperror.NewBadRequestError("INVALID_PASSWORD", "password cannot be empty or whitespace only", nil)
-	ErrPasswordTooLong    = apperror.NewBadRequestError("PASSWORD_TOO_LONG", "password must not exceed 72 bytes", nil)
+	ErrInvalidPassword          = apperror.NewBadRequestError("INVALID_PASSWORD", "password cannot be empty or whitespace only", nil)
+	ErrPasswordTooLong          = apperror.NewBadRequestError("PASSWORD_TOO_LONG", "password must not exceed 72 bytes", nil)
+	ErrGoogleOAuthNotConfigured = apperror.NewBadRequestError("GOOGLE_OAUTH_NOT_CONFIGURED", "masuk dengan Google belum diaktifkan pada server", nil)
+	ErrGoogleAuthFailed         = apperror.NewUnauthorizedError("GOOGLE_AUTH_FAILED", "gagal memverifikasi akun Google, silakan coba lagi")
+	ErrGoogleEmailNotVerified   = apperror.NewUnauthorizedError("GOOGLE_EMAIL_NOT_VERIFIED", "email pada akun Google belum terverifikasi")
 )
 
 // Token type identifiers embedded in JWT claims to prevent cross-token misuse
@@ -57,6 +60,12 @@ type RefreshTokenRequest struct {
 	RefreshToken string `json:"refresh_token" binding:"required"`
 }
 
+// GoogleAuthRequest defines the input payload for Google OAuth 2.0 authorization-code exchange
+type GoogleAuthRequest struct {
+	Code       string `json:"code" binding:"required"`
+	RememberMe bool   `json:"remember_me"`
+}
+
 // AuthResponse defines the payload returned upon successful authentication
 type AuthResponse struct {
 	AccessToken  string    `json:"access_token"`
@@ -77,6 +86,7 @@ type SessionRepository interface {
 type Usecase interface {
 	Register(ctx context.Context, req *RegisterRequest) (*AuthResponse, error)
 	Login(ctx context.Context, req *LoginRequest) (*AuthResponse, error)
+	GoogleAuth(ctx context.Context, req *GoogleAuthRequest) (*AuthResponse, error)
 	RefreshToken(ctx context.Context, refreshToken string) (*AuthResponse, error)
 	Logout(ctx context.Context, userID string, sessionID string) error
 	LogoutAll(ctx context.Context, userID string) error

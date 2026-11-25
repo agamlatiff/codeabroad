@@ -1,7 +1,9 @@
+import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
 import { useWatch } from 'react-hook-form'
 import { useRegister } from "@/features/auth/hooks/useRegister"
 import { AuthLayout } from "@/features/auth/components/AuthLayout"
+import { GoogleAuthButton } from "@/features/auth/components/GoogleAuthButton"
 import { Input } from "@/shared/components/ui/Input"
 import { PasswordStrengthMeter } from "@/features/auth/components/PasswordStrengthMeter"
 import { Button3D } from "@/shared/components/ui/Button3D"
@@ -9,20 +11,36 @@ import { User, At, EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const RegisterPage = () => {
   const { register, control, errors, status, actions } = useRegister()
+  const [googleError, setGoogleError] = useState<string | null>(null)
   const password = useWatch({ control, name: 'password', defaultValue: '' }) ?? ''
+
+  const handleSubmit = (event: FormEvent) => {
+    setGoogleError(null)
+    actions.submit(event)
+  }
 
   return (
     <AuthLayout
+      mode="register"
       title="Daftar Akun Baru"
       subtitle="Isi data singkat di bawah untuk mulai belajar bahasa baru."
       heroTitle="Kuasai Bahasa Impianmu Secara Terstruktur"
       heroSubtitle="Bangun kebiasaan belajar lintas bahasa dengan kurikulum terstruktur, latihan kosakata harian, dan persiapan sertifikasi global."
       heroEmotion="happy"
-      speechBubble="Yuk mulai petualangan bahasamu bareng aku! ✨"
-      error={status.error}
+      speechBubble="Yuk mulai petualangan bahasa barumu bareng Mera!"
+      helperBanner="Progres Unit 1 yang sudah kamu coba tanpa login akan tersimpan otomatis."
+      error={status.error || googleError}
     >
-      {/* ── 1. REGISTRATION FORM (FIRST) ── */}
-      <form onSubmit={actions.submit} noValidate className="space-y-2 sm:space-y-2.5">
+      {/* ── 1. GOOGLE OAUTH CUSTOM BUTTON ── */}
+      <GoogleAuthButton
+        mode="register"
+        disabled={status.loading}
+        onStart={status.clearError}
+        onError={setGoogleError}
+      />
+
+      {/* ── 2. REGISTRATION FORM ── */}
+      <form onSubmit={handleSubmit} noValidate className="space-y-2 sm:space-y-2.5">
         <Input
           id="name"
           label="Nama Lengkap"

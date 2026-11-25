@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net/url"
 	"regexp"
 	"strings"
 	"time"
@@ -164,8 +165,107 @@ func (h *Helper) BuildNewUser(req *RegisterRequest, hashedPassword string) *user
 			PasswordHash: hashedPassword,
 		},
 		UserProfile: user.UserProfile{
-			Name:                 req.Name,
-			Username:             req.Username,
+			Name:             req.Name,
+			Username:         req.Username,
+			DailyGoalMinutes: 15,
+			IsOnboarded:      false,
+		},
+		UserGamificationStats: user.UserGamificationStats{
+			XP:           0,
+			CurrentLevel: 1,
+			Streak:       0,
+		},
+	}
+}
+
+// SanitizeOAuthName normalizes an OAuth display name and provides a safe fallback from email when empty or too short.
+func (h *Helper) SanitizeOAuthName(name, email string) string {
+	trimmed := strings.TrimSpace(name)
+	if utf8.RuneCountInString(trimmed) < 2 {
+		if atIdx := strings.IndexByte(email, '@'); atIdx > 0 {
+			trimmed = strings.TrimSpace(email[:atIdx])
+		}
+	}
+	if utf8.RuneCountInString(trimmed) < 2 {
+		trimmed = "Pelajar Merantalk"
+	}
+	runes := []rune(trimmed)
+	if len(runes) > user.MaxProfileNameLength {
+		trimmed = string(runes[:user.MaxProfileNameLength])
+	}
+	return trimmed
+}
+
+// BuildOAuthUsernameBase derives a valid lowercase username base (3-22 chars) for OAuth registration.
+func (h *Helper) BuildOAuthUsernameBase(email, name string) string {
+	source := email
+	if atIdx := strings.IndexByte(email, '@'); atIdx > 0 {
+		source = email[:atIdx]
+	}
+	if strings.TrimSpace(source) == "" {
+		source = name
+	}
+	source = strings.ToLower(strings.TrimSpace(source))
+
+	var b strings.Builder
+	lastUnderscore := false
+	for _, r := range source {
+		isAlphaNum := (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
+		if isAlphaNum || r == '-' {
+			b.WriteRune(r)
+			lastUnderscore = false
+			continue
+		}
+		if !lastUnderscore {
+			b.WriteByte('_')
+			lastUnderscore = true
+		}
+	}
+
+	cleaned := strings.Trim(b.String(), "_-")
+	if len(cleaned) > 22 {
+		cleaned = strings.Trim(cleaned[:22], "_-")
+	}
+	if len(cleaned) < 3 {
+		return "learner"
+	}
+	return cleaned
+}
+
+// GenerateOAuthUsernameSuffix returns a short random hex suffix for resolving username collisions.
+func (h *Helper) GenerateOAuthUsernameSuffix() string {
+	var b [2]byte
+	_, _ = rand.Read(b[:])
+	return hex.EncodeToString(b[:])
+}
+
+// SanitizeOAuthAvatarURL validates that an external OAuth avatar URL is HTTPS and within safe length limits.
+func (h *Helper) SanitizeOAuthAvatarURL(picture string) *string {
+	trimmed := strings.TrimSpace(picture)
+	if trimmed == "" || utf8.RuneCountInString(trimmed) > user.MaxAvatarURLLength {
+		return nil
+	}
+	if strings.ContainsAny(trimmed, "\\\r\n") || strings.HasPrefix(trimmed, "//") {
+		return nil
+	}
+	parsed, err := url.ParseRequestURI(trimmed)
+	if err != nil || parsed.Scheme != "https" || parsed.Host == "" {
+		return nil
+	}
+	return &trimmed
+}
+
+// BuildNewOAuthUser constructs an initial 3-Pillar User entity for OAuth registration without a password.
+func (h *Helper) BuildNewOAuthUser(email, name, username string, avatarURL *string) *user.User {
+	return &user.User{
+		UserAccount: user.UserAccount{
+			Email:        email,
+			PasswordHash: "",
+		},
+		UserProfile: user.UserProfile{
+			Name:             name,
+			Username:         username,
+			AvatarURL:        avatarURL,
 			DailyGoalMinutes: 15,
 			IsOnboarded:      false,
 		},

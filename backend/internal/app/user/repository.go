@@ -29,7 +29,7 @@ const userSelectColumns = `
 	up.name, 
 	up.username, 
 	u.email, 
-	u.password_hash, 
+	COALESCE(u.password_hash, ''), 
 	up.bio, 
 	up.avatar_url,
 	up.daily_goal_minutes,
@@ -79,7 +79,7 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 	query := `
 		WITH new_user AS (
 			INSERT INTO users (email, password_hash)
-			VALUES ($1, $2)
+			VALUES ($1, NULLIF($2, ''))
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
@@ -167,6 +167,142 @@ func (r *PostgresRepository) GetByID(ctx context.Context, id string) (*User, err
 	return &u, nil
 }
 
+// GetByOAuthProvider retrieves a user linked to an external OAuth provider account.
+func (r *PostgresRepository) GetByOAuthProvider(ctx context.Context, provider string, providerUserID string) (*User, error) {
+	query := `SELECT ` + userSelectColumns + userFromClause + `
+		JOIN user_oauth_accounts uoa ON u.id = uoa.user_id
+		WHERE uoa.provider = $1 AND uoa.provider_user_id = $2`
+	var u User
+	err := scanUser(r.db.Pool.QueryRow(ctx, query, provider, providerUserID), &u)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get user by oauth provider: %w", err)
+	}
+	return &u, nil
+}
+
+// CreateWithOAuth atomically creates a 3-pillar user account together with its linked OAuth identity.
+func (r *PostgresRepository) CreateWithOAuth(ctx context.Context, u *User, oauth *OAuthAccount) error {
+	if u == nil || oauth == nil {
+		return apperror.ErrBadRequest
+	}
+	query := `
+		WITH new_user AS (
+			INSERT INTO users (email, password_hash)
+			VALUES ($1, NULLIF($2, ''))
+			RETURNING id, created_at, updated_at
+		),
+		new_profile AS (
+			INSERT INTO user_profiles (user_id, name, username, avatar_url, is_onboarded, daily_goal_minutes)
+			SELECT id, $3, $4, $5, $6, $7 FROM new_user
+		),
+		new_gamification AS (
+			INSERT INTO user_gamification (user_id, xp, current_level, streak, gems)
+			SELECT id, $8, $9, $10, $11 FROM new_user
+		),
+		new_oauth AS (
+			INSERT INTO user_oauth_accounts (user_id, provider, provider_user_id, email)
+			SELECT id, $12, $13, $14 FROM new_user
+			RETURNING id, created_at, updated_at
+		)
+		SELECT nu.id, nu.created_at, nu.updated_at, no.id, no.created_at, no.updated_at
+		FROM new_user nu
+		CROSS JOIN new_oauth no
+	`
+	err := r.db.Pool.QueryRow(
+		ctx,
+		query,
+		u.Email,
+		u.PasswordHash,
+		u.Name,
+		u.Username,
+		u.AvatarURL,
+		u.IsOnboarded,
+		u.DailyGoalMinutes,
+		u.XP,
+		u.CurrentLevel,
+		u.Streak,
+		u.Gems,
+		oauth.Provider,
+		oauth.ProviderUserID,
+		oauth.Email,
+	).Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt, &oauth.ID, &oauth.CreatedAt, &oauth.UpdatedAt)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "users_email_key":
+				return ErrEmailAlreadyExists
+			case "user_profiles_username_key":
+				return ErrUsernameTaken
+			case "uq_user_oauth_provider_uid", "uq_user_oauth_user_provider":
+				return ErrOAuthAccountConflict
+			}
+		}
+		return fmt.Errorf("failed to create 3-pillar oauth user account: %w", err)
+	}
+	oauth.UserID = u.ID
+	return nil
+}
+
+// LinkOAuthAccount attaches an OAuth provider identity to an existing user account idempotently.
+func (r *PostgresRepository) LinkOAuthAccount(ctx context.Context, oauth *OAuthAccount) error {
+	if oauth == nil {
+		return apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(oauth.UserID); err != nil {
+		return err
+	}
+	query := `
+		INSERT INTO user_oauth_accounts (user_id, provider, provider_user_id, email)
+		VALUES ($1::uuid, $2, $3, $4)
+		RETURNING id, created_at, updated_at
+	`
+	err := r.db.Pool.QueryRow(
+		ctx,
+		query,
+		oauth.UserID,
+		oauth.Provider,
+		oauth.ProviderUserID,
+		oauth.Email,
+	).Scan(&oauth.ID, &oauth.CreatedAt, &oauth.UpdatedAt)
+	if err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			switch pgErr.ConstraintName {
+			case "uq_user_oauth_provider_uid":
+				var existingUserID string
+				lookupErr := r.db.Pool.QueryRow(
+					ctx,
+					`SELECT user_id::text FROM user_oauth_accounts WHERE provider = $1 AND provider_user_id = $2`,
+					oauth.Provider,
+					oauth.ProviderUserID,
+				).Scan(&existingUserID)
+				if lookupErr == nil && existingUserID == oauth.UserID {
+					return nil
+				}
+				return ErrOAuthAccountConflict
+			case "uq_user_oauth_user_provider":
+				var existingProviderUID string
+				lookupErr := r.db.Pool.QueryRow(
+					ctx,
+					`SELECT provider_user_id FROM user_oauth_accounts WHERE user_id = $1::uuid AND provider = $2`,
+					oauth.UserID,
+					oauth.Provider,
+				).Scan(&existingProviderUID)
+				if lookupErr == nil && existingProviderUID == oauth.ProviderUserID {
+					return nil
+				}
+				return ErrOAuthAccountConflict
+			}
+		}
+		return fmt.Errorf("failed to link oauth account: %w", err)
+	}
+	return nil
+}
+
 // UpdateProfile updates user profile preferences and returns the updated aggregate in a single CTE round-trip.
 func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
@@ -193,7 +329,7 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 			up.name,
 			up.username,
 			u.email,
-			u.password_hash,
+			COALESCE(u.password_hash, ''),
 			up.bio,
 			up.avatar_url,
 			up.daily_goal_minutes,

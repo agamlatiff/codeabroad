@@ -1,9 +1,11 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { GoogleOAuthProvider } from '@react-oauth/google'
 import axios from 'axios'
 import './index.css'
 import App from './App.tsx'
+import { GOOGLE_CLIENT_ID } from '@/features/auth/hooks/authHelpers'
 import '@/features/auth/store/authStore'
 import '@/features/onboarding/store/onboardingStore'
 
@@ -28,7 +30,13 @@ const queryClient = new QueryClient({
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
-      <App />
+      {GOOGLE_CLIENT_ID ? (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <App />
+        </GoogleOAuthProvider>
+      ) : (
+        <App />
+      )}
     </QueryClientProvider>
   </StrictMode>,
 )

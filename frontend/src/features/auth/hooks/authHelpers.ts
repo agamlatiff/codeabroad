@@ -161,3 +161,38 @@ export const resolveRegisterErrorMessage = (err: unknown): RegisterErrorResult =
 
   return { type: 'general', message: 'Pendaftaran gagal. Periksa kembali kelengkapan formulir kamu.' }
 }
+
+export const GOOGLE_CLIENT_ID =
+  (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() ?? ''
+
+export const GOOGLE_AUTH_ERROR_MAP: Record<string, string> = {
+  GOOGLE_OAUTH_NOT_CONFIGURED: 'Masuk dengan Google belum diaktifkan pada server.',
+  GOOGLE_AUTH_FAILED: 'Verifikasi akun Google gagal atau kedaluwarsa. Silakan coba lagi.',
+  GOOGLE_EMAIL_NOT_VERIFIED:
+    'Email pada akun Google belum terverifikasi. Gunakan akun Google terverifikasi.',
+  OAUTH_ACCOUNT_CONFLICT: 'Email ini sudah terhubung dengan akun Google lain.',
+  EMAIL_ALREADY_EXISTS: 'Email ini sudah terdaftar dengan akun berbeda.',
+}
+
+/** Pure error resolver for Google OAuth exchange & login errors. */
+export const resolveGoogleAuthErrorMessage = (err: unknown): string => {
+  const { status, code, rawError, isNetworkError } = parseAuthError(err)
+
+  if (isNetworkError) return NETWORK_ERROR_MESSAGE
+  if (status === 429) return rateLimitMessage('masuk')
+  if (status === 413) return PAYLOAD_TOO_LARGE_MESSAGE
+  if (status !== undefined && status >= 500) return SERVER_ERROR_MESSAGE
+
+  if (code && GOOGLE_AUTH_ERROR_MAP[code]) {
+    return GOOGLE_AUTH_ERROR_MAP[code]
+  }
+
+  if (rawError.includes('verified')) {
+    return GOOGLE_AUTH_ERROR_MAP.GOOGLE_EMAIL_NOT_VERIFIED
+  }
+  if (rawError.includes('not configured') || rawError.includes('belum diaktifkan')) {
+    return GOOGLE_AUTH_ERROR_MAP.GOOGLE_OAUTH_NOT_CONFIGURED
+  }
+
+  return 'Gagal masuk dengan Google. Silakan coba beberapa saat lagi.'
+}

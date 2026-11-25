@@ -328,5 +328,67 @@ func TestHTTP_Logout_ViaRefreshTokenBody_SuccessWithoutAccessToken(t *testing.T)
 	}
 }
 
+func setupGoogleAuthTestRouter(verifier auth.GoogleOAuthVerifier) *gin.Engine {
+	gin.SetMode(gin.TestMode)
+	cfg := &config.Config{
+		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
+		JWTAccessExpirationMinutes: 15,
+		JWTRefreshExpirationDays:   30,
+	}
+	userRepo := user.NewMockRepository()
+	sessionRepo := auth.NewMockSessionRepository()
+	authUc := auth.NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, verifier)
+	authHandler := auth.NewHandlerWithRateLimiter(authUc, nil)
+	authHandler.SetHelper(auth.NewHelper(cfg))
+	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
+	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
+
+	r := gin.New()
+	v1 := r.Group("/api/v1")
+	authHandler.RegisterRoutes(v1, authMiddleware, optionalAuth)
+	return r
+}
+
+func TestHTTP_GoogleAuth_ValidationError(t *testing.T) {
+	router := setupGoogleAuthTestRouter(&auth.MockGoogleOAuthVerifier{})
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/google", bytes.NewBufferString(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for missing code, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_GoogleAuth_Success(t *testing.T) {
+	router := setupGoogleAuthTestRouter(&auth.MockGoogleOAuthVerifier{
+		Identity: &auth.GoogleIdentity{
+			Subject:       "http-google-sub-1",
+			Email:         "rina@gmail.com",
+			EmailVerified: true,
+			Name:          "Rina Wijaya",
+			Picture:       "https://lh3.googleusercontent.com/a/rina",
+		},
+	})
+
+	body, _ := json.Marshal(auth.GoogleAuthRequest{
+		Code:       "http-code-123",
+		RememberMe: true,
+	})
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/google", bytes.NewBuffer(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusOK {
+		t.Fatalf("expected 200 OK for valid Google auth, got: %d, body: %s", w.Code, w.Body.String())
+	}
+	if !strings.Contains(w.Body.String(), `"access_token"`) || !strings.Contains(w.Body.String(), `"rina@gmail.com"`) {
+		t.Fatalf("expected response to include access_token and user email, got: %s", w.Body.String())
+	}
+}
+
 
 

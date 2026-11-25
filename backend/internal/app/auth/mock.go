@@ -8,6 +8,27 @@ import (
 	"time"
 )
 
+// MockGoogleOAuthVerifier implements GoogleOAuthVerifier for unit and HTTP tests.
+type MockGoogleOAuthVerifier struct {
+	Identity *GoogleIdentity
+	Err      error
+	LastCode string
+}
+
+var _ GoogleOAuthVerifier = (*MockGoogleOAuthVerifier)(nil)
+
+func (m *MockGoogleOAuthVerifier) ExchangeAndVerify(_ context.Context, code string) (*GoogleIdentity, error) {
+	m.LastCode = code
+	if m.Err != nil {
+		return nil, m.Err
+	}
+	if m.Identity == nil {
+		return nil, ErrGoogleAuthFailed
+	}
+	cp := *m.Identity
+	return &cp, nil
+}
+
 type sessionEntry struct {
 	token     string
 	expiresAt time.Time

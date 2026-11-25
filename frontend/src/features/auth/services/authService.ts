@@ -2,6 +2,7 @@ import { api, unwrapApiResponse, sanitizeAxiosErrorMessage, type RequestOptions 
 import type { ApiResponse } from "@/shared/types/api"
 import type {
   AuthResponse,
+  GoogleAuthPayload,
   LoginPayload,
   RegisterPayload,
 } from "@/features/auth/types/auth"
@@ -29,6 +30,16 @@ export const authService = {
       signal: options?.signal,
     })
     return unwrapApiResponse(response, 'Pendaftaran gagal. Silakan coba lagi.')
+  },
+
+  /**
+   * Exchanges a Google OAuth 2.0 authorization code for Merantalk session tokens.
+   */
+  async googleAuth(payload: GoogleAuthPayload, options?: RequestOptions): Promise<AuthResponse> {
+    const response = await api.post<ApiResponse<AuthResponse>>('/auth/google', payload, {
+      signal: options?.signal,
+    })
+    return unwrapApiResponse(response, 'Gagal masuk dengan Google. Silakan coba lagi.')
   },
 
   /**

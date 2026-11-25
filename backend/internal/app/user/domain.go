@@ -14,7 +14,19 @@ var (
 	ErrDailyRewardNotUnlocked    = apperror.NewBadRequestError("DAILY_REWARD_NOT_UNLOCKED", "syarat misi harian belum terpenuhi untuk mengklaim hadiah ini", nil)
 	ErrEmailAlreadyExists        = apperror.NewConflictError("EMAIL_ALREADY_EXISTS", "email sudah terdaftar")
 	ErrUsernameTaken             = apperror.NewConflictError("USERNAME_TAKEN", "username sudah digunakan")
+	ErrOAuthAccountConflict      = apperror.NewConflictError("OAUTH_ACCOUNT_CONFLICT", "akun ini sudah terhubung dengan akun OAuth lain")
 )
+
+// OAuthAccount links an external identity provider (e.g., Google) to a Merantalk user account.
+type OAuthAccount struct {
+	ID             string    `json:"id"`
+	UserID         string    `json:"user_id"`
+	Provider       string    `json:"provider"`
+	ProviderUserID string    `json:"provider_user_id"`
+	Email          string    `json:"email"`
+	CreatedAt      time.Time `json:"created_at"`
+	UpdatedAt      time.Time `json:"updated_at"`
+}
 
 // ----------------------------------------------------------------------------
 // 3-PILLAR NORMALIZED DOMAIN ENTITIES
@@ -143,6 +155,9 @@ type AccountRepository interface {
 	GetByEmail(ctx context.Context, email string) (*User, error)
 	GetByUsername(ctx context.Context, username string) (*User, error)
 	GetByID(ctx context.Context, id string) (*User, error)
+	GetByOAuthProvider(ctx context.Context, provider string, providerUserID string) (*User, error)
+	CreateWithOAuth(ctx context.Context, user *User, oauth *OAuthAccount) error
+	LinkOAuthAccount(ctx context.Context, oauth *OAuthAccount) error
 	UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error)
 	SetOnboarded(ctx context.Context, userID string, dailyGoalMinutes int) error
 }

@@ -24,6 +24,8 @@ type Config struct {
 	JWTSecret                  string
 	JWTAccessExpirationMinutes int
 	JWTRefreshExpirationDays   int
+	GoogleClientID             string
+	GoogleClientSecret         string
 	CORSAllowedOrigins         []string
 	TrustedProxies             []string
 }
@@ -124,6 +126,8 @@ func LoadConfig() (*Config, error) {
 		JWTSecret:                  jwtSecret,
 		JWTAccessExpirationMinutes: jwtExpMin,
 		JWTRefreshExpirationDays:   jwtRefreshExpDays,
+		GoogleClientID:             getEnv("GOOGLE_CLIENT_ID", ""),
+		GoogleClientSecret:         getEnv("GOOGLE_CLIENT_SECRET", ""),
 		CORSAllowedOrigins:         corsOrigins,
 		TrustedProxies:             trustedProxies,
 	}, nil

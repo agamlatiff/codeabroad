@@ -1114,4 +1114,202 @@ func TestLogin_PreservesStreakFreezeStreakFromRepo(t *testing.T) {
 	}
 }
 
+func setupGoogleTestUsecase(verifier auth.GoogleOAuthVerifier) (auth.Usecase, *user.MockRepository, *auth.MockSessionRepository) {
+	cfg := &config.Config{
+		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
+		JWTAccessExpirationMinutes: 15,
+		JWTRefreshExpirationDays:   30,
+	}
+	userRepo := user.NewMockRepository()
+	sessionRepo := auth.NewMockSessionRepository()
+	authUc := auth.NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, verifier)
+	return authUc, userRepo, sessionRepo
+}
+
+func TestGoogleAuth_CreatesNewUserAndSession(t *testing.T) {
+	verifier := &auth.MockGoogleOAuthVerifier{
+		Identity: &auth.GoogleIdentity{
+			Subject:       "google-sub-12345",
+			Email:         "Nadia.Putri@gmail.com",
+			EmailVerified: true,
+			Name:          "  Nadia Putri  ",
+			Picture:       "https://lh3.googleusercontent.com/a/avatar-nadia",
+		},
+	}
+	authUc, userRepo, sessionRepo := setupGoogleTestUsecase(verifier)
+	ctx := context.Background()
+
+	res, err := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{
+		Code:       "auth-code-xyz",
+		RememberMe: true,
+	})
+	if err != nil {
+		t.Fatalf("expected GoogleAuth to succeed, got: %v", err)
+	}
+	if verifier.LastCode != "auth-code-xyz" {
+		t.Fatalf("expected verifier to receive code auth-code-xyz, got %q", verifier.LastCode)
+	}
+	if res.AccessToken == "" || res.RefreshToken == "" {
+		t.Fatal("expected access and refresh tokens to be issued")
+	}
+	if res.User.Email != "nadia.putri@gmail.com" {
+		t.Fatalf("expected normalized lowercase email, got %s", res.User.Email)
+	}
+	if res.User.Name != "Nadia Putri" {
+		t.Fatalf("expected sanitized name Nadia Putri, got %s", res.User.Name)
+	}
+	if res.User.Username != "nadia_putri" {
+		t.Fatalf("expected clean username nadia_putri, got %s", res.User.Username)
+	}
+	if res.User.AvatarURL == nil || *res.User.AvatarURL != "https://lh3.googleusercontent.com/a/avatar-nadia" {
+		t.Fatalf("expected HTTPS Google avatar URL to be persisted, got %v", res.User.AvatarURL)
+	}
+	if res.User.IsOnboarded {
+		t.Fatal("expected new Google user IsOnboarded=false")
+	}
+	if len(sessionRepo.Sessions) != 1 {
+		t.Fatalf("expected 1 active Redis session, got %d", len(sessionRepo.Sessions))
+	}
+
+	linkedUsr, err := userRepo.GetByOAuthProvider(ctx, auth.OAuthProviderGoogle, "google-sub-12345")
+	if err != nil || linkedUsr == nil || linkedUsr.ID != res.User.ID {
+		t.Fatalf("expected OAuth link persisted for user %s, got %+v err=%v", res.User.ID, linkedUsr, err)
+	}
+}
+
+func TestGoogleAuth_ReturningOAuthUser(t *testing.T) {
+	verifier := &auth.MockGoogleOAuthVerifier{
+		Identity: &auth.GoogleIdentity{
+			Subject:       "google-sub-return",
+			Email:         "return@gmail.com",
+			EmailVerified: true,
+			Name:          "Return Learner",
+			Picture:       "http://insecure-should-be-ignored.example.com/a.png",
+		},
+	}
+	authUc, userRepo, _ := setupGoogleTestUsecase(verifier)
+	ctx := context.Background()
+
+	firstRes, err := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-1"})
+	if err != nil {
+		t.Fatalf("expected first GoogleAuth to succeed, got: %v", err)
+	}
+	if firstRes.User.AvatarURL != nil {
+		t.Fatalf("expected non-HTTPS picture to be rejected, got %v", *firstRes.User.AvatarURL)
+	}
+
+	_ = userRepo.SetOnboarded(ctx, firstRes.User.ID, 30)
+	secondRes, err := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-2"})
+	if err != nil {
+		t.Fatalf("expected returning GoogleAuth to succeed, got: %v", err)
+	}
+	if secondRes.User.ID != firstRes.User.ID {
+		t.Fatalf("expected same user ID %s, got %s", firstRes.User.ID, secondRes.User.ID)
+	}
+	if !secondRes.User.IsOnboarded {
+		t.Fatal("expected returning user onboarding status to remain true")
+	}
+}
+
+func TestGoogleAuth_LinksExistingEmailAccountAndBlocksPasswordlessLogin(t *testing.T) {
+	verifier := &auth.MockGoogleOAuthVerifier{
+		Identity: &auth.GoogleIdentity{
+			Subject:       "google-sub-link-1",
+			Email:         "existing@example.com",
+			EmailVerified: true,
+			Name:          "Existing User",
+		},
+	}
+	authUc, userRepo, _ := setupGoogleTestUsecase(verifier)
+	ctx := context.Background()
+
+	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
+		Name:     "Existing User",
+		Username: "existinguser",
+		Email:    "existing@example.com",
+		Password: "Password123!",
+	})
+	if err != nil {
+		t.Fatalf("expected Register to succeed, got: %v", err)
+	}
+
+	googleRes, err := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-link"})
+	if err != nil {
+		t.Fatalf("expected GoogleAuth auto-link to succeed, got: %v", err)
+	}
+	if googleRes.User.ID != regRes.User.ID {
+		t.Fatalf("expected linked existing user %s, got %s", regRes.User.ID, googleRes.User.ID)
+	}
+
+	// Verify conflicting second Google subject cannot hijack the already linked account.
+	verifier.Identity.Subject = "google-sub-other"
+	_, err = authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-conflict"})
+	if !errors.Is(err, user.ErrOAuthAccountConflict) {
+		t.Fatalf("expected ErrOAuthAccountConflict, got: %v", err)
+	}
+
+	// Verify OAuth-only account (empty PasswordHash) cleanly rejects password login without bcrypt error leakage.
+	_ = userRepo.CreateWithOAuth(ctx, &user.User{
+		UserAccount: user.UserAccount{Email: "oauthonly@example.com", PasswordHash: ""},
+		UserProfile: user.UserProfile{Name: "OAuth Only", Username: "oauthonly"},
+	}, &user.OAuthAccount{
+		Provider:       auth.OAuthProviderGoogle,
+		ProviderUserID: "google-sub-only",
+		Email:          "oauthonly@example.com",
+	})
+	_, loginErr := authUc.Login(ctx, &auth.LoginRequest{
+		Email:    "oauthonly@example.com",
+		Password: "AnyPassword123!",
+	})
+	if !errors.Is(loginErr, auth.ErrInvalidCredentials) {
+		t.Fatalf("expected ErrInvalidCredentials for OAuth-only user password login, got: %v", loginErr)
+	}
+}
+
+func TestGoogleAuth_HandlesUsernameCollisionAndValidationErrors(t *testing.T) {
+	verifier := &auth.MockGoogleOAuthVerifier{
+		Identity: &auth.GoogleIdentity{
+			Subject:       "google-sub-collide",
+			Email:         "budi@gmail.com",
+			EmailVerified: true,
+			Name:          "Budi Google",
+		},
+	}
+	authUc, userRepo, _ := setupGoogleTestUsecase(verifier)
+	ctx := context.Background()
+
+	// Seed an existing user holding username "budi" with a different email.
+	_ = userRepo.Create(ctx, &user.User{
+		UserAccount: user.UserAccount{Email: "otherbudi@example.com", PasswordHash: "hashed"},
+		UserProfile: user.UserProfile{Name: "Other Budi", Username: "budi"},
+	})
+
+	res, err := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-collide"})
+	if err != nil {
+		t.Fatalf("expected GoogleAuth to retry username suffix cleanly, got: %v", err)
+	}
+	if !strings.HasPrefix(res.User.Username, "budi_") || len(res.User.Username) != 9 {
+		t.Fatalf("expected collided username budi_xxxx, got %s", res.User.Username)
+	}
+
+	// Unverified Google email must be rejected.
+	verifier.Identity = &auth.GoogleIdentity{
+		Subject:       "google-sub-unverified",
+		Email:         "unverified@gmail.com",
+		EmailVerified: false,
+	}
+	_, err = authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-unverified"})
+	if !errors.Is(err, auth.ErrGoogleEmailNotVerified) {
+		t.Fatalf("expected ErrGoogleEmailNotVerified, got: %v", err)
+	}
+
+	// Unconfigured verifier must return ErrGoogleOAuthNotConfigured.
+	unconfiguredUc, _, _ := setupGoogleTestUsecase(nil)
+	_, err = unconfiguredUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "some-code"})
+	if !errors.Is(err, auth.ErrGoogleOAuthNotConfigured) {
+		t.Fatalf("expected ErrGoogleOAuthNotConfigured, got: %v", err)
+	}
+}
+
+
 

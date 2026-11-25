@@ -16,9 +16,10 @@ import (
 )
 
 type usecase struct {
-	userRepo    user.Repository
-	sessionRepo SessionRepository
-	helper      *Helper
+	userRepo       user.Repository
+	sessionRepo    SessionRepository
+	helper         *Helper
+	googleVerifier GoogleOAuthVerifier
 }
 
 // NewUsecase creates a new Auth Usecase instance
@@ -27,10 +28,25 @@ func NewUsecase(
 	sessionRepo SessionRepository,
 	cfg *config.Config,
 ) Usecase {
+	var googleVerifier GoogleOAuthVerifier
+	if cfg != nil {
+		googleVerifier = NewGoogleOAuthVerifier(cfg.GoogleClientID, cfg.GoogleClientSecret)
+	}
+	return NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, googleVerifier)
+}
+
+// NewUsecaseWithGoogle creates an Auth Usecase instance with an explicit Google OAuth verifier (useful for testing).
+func NewUsecaseWithGoogle(
+	userRepo user.Repository,
+	sessionRepo SessionRepository,
+	cfg *config.Config,
+	googleVerifier GoogleOAuthVerifier,
+) Usecase {
 	return &usecase{
-		userRepo:    userRepo,
-		sessionRepo: sessionRepo,
-		helper:      NewHelper(cfg),
+		userRepo:       userRepo,
+		sessionRepo:    sessionRepo,
+		helper:         NewHelper(cfg),
+		googleVerifier: googleVerifier,
 	}
 }
 
@@ -135,13 +151,142 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 		return nil, ErrInvalidCredentials
 	}
 
+	if strings.TrimSpace(usr.PasswordHash) == "" {
+		// OAuth-only account has no local password; perform dummy bcrypt check to equalize timing.
+		u.helper.PerformDummyPasswordCheck(req.Password)
+		return nil, ErrInvalidCredentials
+	}
+
 	if err := u.helper.VerifyPassword(usr.PasswordHash, req.Password); err != nil {
 		return nil, err
 	}
 
-	sessionTTL := u.helper.ResolveSessionTTL(req.RememberMe)
+	return u.issueSessionForUser(ctx, usr, req.RememberMe, true)
+}
+
+// GoogleAuth exchanges a Google authorization code, links or provisions the user account, and issues session tokens.
+func (u *usecase) GoogleAuth(ctx context.Context, req *GoogleAuthRequest) (*AuthResponse, error) {
+	if req == nil {
+		return nil, apperror.NewBadRequestError("INVALID_REQUEST", "google authentication request cannot be nil", nil)
+	}
+
+	code := strings.TrimSpace(req.Code)
+	if code == "" || len(code) > 2048 {
+		return nil, ErrGoogleAuthFailed
+	}
+
+	if u.googleVerifier == nil {
+		return nil, ErrGoogleOAuthNotConfigured
+	}
+
+	identity, err := u.googleVerifier.ExchangeAndVerify(ctx, code)
+	if err != nil {
+		return nil, err
+	}
+	if identity == nil || strings.TrimSpace(identity.Subject) == "" || strings.TrimSpace(identity.Email) == "" {
+		return nil, ErrGoogleAuthFailed
+	}
+	if !identity.EmailVerified {
+		return nil, ErrGoogleEmailNotVerified
+	}
+
+	subject := strings.TrimSpace(identity.Subject)
+	email := strings.ToLower(strings.TrimSpace(identity.Email))
+
+	// 1. Existing OAuth link
+	usr, err := u.userRepo.GetByOAuthProvider(ctx, OAuthProviderGoogle, subject)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup google oauth account: %w", err)
+	}
+	if usr != nil {
+		return u.issueSessionForUser(ctx, usr, req.RememberMe, true)
+	}
+
+	// 2. Existing user with matching verified email -> auto-link Google account
+	usr, err = u.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		return nil, fmt.Errorf("failed to lookup user by google email: %w", err)
+	}
+	if usr != nil {
+		oauthAcc := &user.OAuthAccount{
+			UserID:         usr.ID,
+			Provider:       OAuthProviderGoogle,
+			ProviderUserID: subject,
+			Email:          email,
+		}
+		if linkErr := u.userRepo.LinkOAuthAccount(ctx, oauthAcc); linkErr != nil {
+			if errors.Is(linkErr, user.ErrOAuthAccountConflict) {
+				return nil, linkErr
+			}
+			return nil, fmt.Errorf("failed to link google oauth account: %w", linkErr)
+		}
+		return u.issueSessionForUser(ctx, usr, req.RememberMe, true)
+	}
+
+	// 3. New user provisioning with collision-safe username generation
+	displayName := u.helper.SanitizeOAuthName(identity.Name, email)
+	avatarURL := u.helper.SanitizeOAuthAvatarURL(identity.Picture)
+	baseUsername := u.helper.BuildOAuthUsernameBase(email, displayName)
+
+	for attempt := 0; attempt < 5; attempt++ {
+		candidateUsername := baseUsername
+		if attempt > 0 {
+			candidateUsername = fmt.Sprintf("%s_%s", baseUsername, u.helper.GenerateOAuthUsernameSuffix())
+		}
+
+		newUser := u.helper.BuildNewOAuthUser(email, displayName, candidateUsername, avatarURL)
+		oauthAcc := &user.OAuthAccount{
+			Provider:       OAuthProviderGoogle,
+			ProviderUserID: subject,
+			Email:          email,
+		}
+
+		createErr := u.userRepo.CreateWithOAuth(ctx, newUser, oauthAcc)
+		if createErr == nil {
+			return u.issueSessionForUser(ctx, newUser, req.RememberMe, true)
+		}
+		if errors.Is(createErr, user.ErrUsernameTaken) {
+			continue
+		}
+		if errors.Is(createErr, user.ErrEmailAlreadyExists) {
+			existingUsr, lookupErr := u.userRepo.GetByEmail(ctx, email)
+			if lookupErr != nil {
+				return nil, fmt.Errorf("failed to reload existing user after conflict: %w", lookupErr)
+			}
+			if existingUsr != nil {
+				linkAcc := &user.OAuthAccount{
+					UserID:         existingUsr.ID,
+					Provider:       OAuthProviderGoogle,
+					ProviderUserID: subject,
+					Email:          email,
+				}
+				if linkErr := u.userRepo.LinkOAuthAccount(ctx, linkAcc); linkErr != nil {
+					if errors.Is(linkErr, user.ErrOAuthAccountConflict) {
+						return nil, linkErr
+					}
+					return nil, fmt.Errorf("failed to link concurrent google oauth account: %w", linkErr)
+				}
+				return u.issueSessionForUser(ctx, existingUsr, req.RememberMe, true)
+			}
+			return nil, createErr
+		}
+		if errors.Is(createErr, user.ErrOAuthAccountConflict) {
+			existingOAuthUsr, lookupErr := u.userRepo.GetByOAuthProvider(ctx, OAuthProviderGoogle, subject)
+			if lookupErr == nil && existingOAuthUsr != nil {
+				return u.issueSessionForUser(ctx, existingOAuthUsr, req.RememberMe, true)
+			}
+			return nil, createErr
+		}
+		return nil, fmt.Errorf("failed to create google oauth user: %w", createErr)
+	}
+
+	return nil, user.ErrUsernameTaken
+}
+
+func (u *usecase) issueSessionForUser(ctx context.Context, usr *user.User, rememberMe bool, recordDailyLogin bool) (*AuthResponse, error) {
+	sessionTTL := u.helper.ResolveSessionTTL(rememberMe)
 	sessionID := u.helper.GenerateSessionID()
-	accessToken, refreshToken, err := u.helper.GenerateTokenPair(usr, sessionID, sessionTTL, req.RememberMe)
+	accessToken, refreshToken, err := u.helper.GenerateTokenPair(usr, sessionID, sessionTTL, rememberMe)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate auth tokens: %w", err)
 	}
@@ -151,37 +296,39 @@ func (u *usecase) Login(ctx context.Context, req *LoginRequest) (*AuthResponse, 
 		return nil, fmt.Errorf("failed to store session: %w", err)
 	}
 
-	now := time.Now().UTC()
-	todayStr := progression.TodayWIBDateKey(now)
-	startOfToday, startOfTomorrow := progression.WIBDayBounds(now)
+	if recordDailyLogin {
+		now := time.Now().UTC()
+		todayStr := progression.TodayWIBDateKey(now)
+		startOfToday, startOfTomorrow := progression.WIBDayBounds(now)
 
-	loggedNewDay, loginActErr := u.userRepo.EnsureDailyLogin(ctx, usr.ID, todayStr, startOfToday, startOfTomorrow)
-	if loginActErr != nil {
-		log.Printf("[WARN] [auth.Login] failed to record daily login activity for user %s: %v", usr.ID, loginActErr)
-	}
+		loggedNewDay, loginActErr := u.userRepo.EnsureDailyLogin(ctx, usr.ID, todayStr, startOfToday, startOfTomorrow)
+		if loginActErr != nil {
+			log.Printf("[WARN] [auth.issueSession] failed to record daily login activity for user %s: %v", usr.ID, loginActErr)
+		}
 
-	// EnsureDailyLogin already atomically updates streak (including Streak Freeze consumption) and last_active_at
-	// in Postgres without touching XP/level; sync local response copy from authoritative DB state when available.
-	syncedFromRepo := false
-	if loginActErr == nil && (loggedNewDay || usr.LastActiveAt == nil) {
-		if refreshed, refErr := u.userRepo.GetByID(ctx, usr.ID); refErr == nil && refreshed != nil {
-			if refreshed.Streak > 0 || refreshed.LastActiveAt != nil {
-				usr.Streak = refreshed.Streak
-				if refreshed.LastActiveAt != nil {
-					usr.LastActiveAt = refreshed.LastActiveAt
-				} else {
-					usr.LastActiveAt = &now
+		// EnsureDailyLogin already atomically updates streak (including Streak Freeze consumption) and last_active_at
+		// in Postgres without touching XP/level; sync local response copy from authoritative DB state when available.
+		syncedFromRepo := false
+		if loginActErr == nil && (loggedNewDay || usr.LastActiveAt == nil) {
+			if refreshed, refErr := u.userRepo.GetByID(ctx, usr.ID); refErr == nil && refreshed != nil {
+				if refreshed.Streak > 0 || refreshed.LastActiveAt != nil {
+					usr.Streak = refreshed.Streak
+					if refreshed.LastActiveAt != nil {
+						usr.LastActiveAt = refreshed.LastActiveAt
+					} else {
+						usr.LastActiveAt = &now
+					}
+					syncedFromRepo = true
 				}
-				syncedFromRepo = true
 			}
 		}
-	}
-	if !syncedFromRepo {
-		if loggedNewDay || usr.LastActiveAt == nil {
-			newStreak, _ := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
-			usr.Streak = newStreak
+		if !syncedFromRepo {
+			if loggedNewDay || usr.LastActiveAt == nil {
+				newStreak, _ := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
+				usr.Streak = newStreak
+			}
+			usr.LastActiveAt = &now
 		}
-		usr.LastActiveAt = &now
 	}
 
 	return &AuthResponse{

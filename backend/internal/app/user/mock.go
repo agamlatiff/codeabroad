@@ -14,6 +14,7 @@ import (
 type MockRepository struct {
 	mu                      sync.Mutex
 	Users                   map[string]*User
+	OAuthAccounts           map[string]*OAuthAccount // key: provider:providerUserID
 	ActivityLogs            []UserActivityLog
 	DailyRewardsStatus      map[string]*DailyRewardsStatusResponse
 	FlashcardsReviewedToday map[string]int
@@ -21,6 +22,8 @@ type MockRepository struct {
 	GetByIDError            error
 	GetByEmailError         error
 	GetByUsernameError      error
+	GetByOAuthError         error
+	LinkOAuthError          error
 	UpdateProfileError      error
 	SetOnboardedError       error
 	UpdateGamificationErr   error
@@ -33,6 +36,7 @@ type MockRepository struct {
 func NewMockRepository() *MockRepository {
 	return &MockRepository{
 		Users:                   make(map[string]*User),
+		OAuthAccounts:           make(map[string]*OAuthAccount),
 		DailyRewardsStatus:      make(map[string]*DailyRewardsStatusResponse),
 		FlashcardsReviewedToday: make(map[string]int),
 	}
@@ -95,6 +99,107 @@ func (m *MockRepository) GetByID(ctx context.Context, id string) (*User, error) 
 	}
 	cp := *u
 	return &cp, nil
+}
+
+func oauthKey(provider, providerUserID string) string {
+	return provider + ":" + providerUserID
+}
+
+func (m *MockRepository) GetByOAuthProvider(ctx context.Context, provider string, providerUserID string) (*User, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.GetByOAuthError != nil {
+		return nil, m.GetByOAuthError
+	}
+	if m.OAuthAccounts == nil {
+		return nil, nil
+	}
+	acc, ok := m.OAuthAccounts[oauthKey(provider, providerUserID)]
+	if !ok {
+		return nil, nil
+	}
+	u, exists := m.Users[acc.UserID]
+	if !exists {
+		return nil, nil
+	}
+	cp := *u
+	return &cp, nil
+}
+
+func (m *MockRepository) CreateWithOAuth(ctx context.Context, u *User, oauth *OAuthAccount) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.CreateError != nil {
+		return m.CreateError
+	}
+	if m.OAuthAccounts == nil {
+		m.OAuthAccounts = make(map[string]*OAuthAccount)
+	}
+	if oauth != nil {
+		if _, exists := m.OAuthAccounts[oauthKey(oauth.Provider, oauth.ProviderUserID)]; exists {
+			return ErrOAuthAccountConflict
+		}
+	}
+	for _, existing := range m.Users {
+		if existing.Email == u.Email {
+			return ErrEmailAlreadyExists
+		}
+		if existing.Username == u.Username {
+			return ErrUsernameTaken
+		}
+	}
+	if u.ID == "" {
+		u.ID = fmt.Sprintf("usr_%d", len(m.Users)+1)
+	}
+	now := time.Now().UTC()
+	if u.CreatedAt.IsZero() {
+		u.CreatedAt = now
+	}
+	if u.UpdatedAt.IsZero() {
+		u.UpdatedAt = now
+	}
+	cpUser := *u
+	m.Users[u.ID] = &cpUser
+	if oauth != nil {
+		cpOAuth := *oauth
+		cpOAuth.UserID = u.ID
+		if cpOAuth.ID == "" {
+			cpOAuth.ID = fmt.Sprintf("oauth_%d", len(m.OAuthAccounts)+1)
+		}
+		m.OAuthAccounts[oauthKey(cpOAuth.Provider, cpOAuth.ProviderUserID)] = &cpOAuth
+	}
+	return nil
+}
+
+func (m *MockRepository) LinkOAuthAccount(ctx context.Context, oauth *OAuthAccount) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if m.LinkOAuthError != nil {
+		return m.LinkOAuthError
+	}
+	if oauth == nil {
+		return apperror.ErrBadRequest
+	}
+	if m.OAuthAccounts == nil {
+		m.OAuthAccounts = make(map[string]*OAuthAccount)
+	}
+	if existing, ok := m.OAuthAccounts[oauthKey(oauth.Provider, oauth.ProviderUserID)]; ok {
+		if existing.UserID == oauth.UserID {
+			return nil
+		}
+		return ErrOAuthAccountConflict
+	}
+	for _, acc := range m.OAuthAccounts {
+		if acc.UserID == oauth.UserID && acc.Provider == oauth.Provider {
+			return ErrOAuthAccountConflict
+		}
+	}
+	cp := *oauth
+	if cp.ID == "" {
+		cp.ID = fmt.Sprintf("oauth_%d", len(m.OAuthAccounts)+1)
+	}
+	m.OAuthAccounts[oauthKey(cp.Provider, cp.ProviderUserID)] = &cp
+	return nil
 }
 
 func (m *MockRepository) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
