@@ -323,13 +323,13 @@ export const LandingAnimatedSentenceShowcase = () => {
   }
 
   return (
-    <div className="relative w-full flex flex-col gap-4 py-1">
+    <div className="relative w-full min-w-0 max-w-full flex flex-col gap-4 py-1">
       {/* Top Compact Floating Language Switcher */}
       <div className="flex justify-center sm:justify-end">
         <div
           role="group"
           aria-label="Pilih bahasa contoh pola kalimat"
-          className="inline-flex flex-wrap items-center justify-center gap-1 max-w-full rounded-2xl sm:rounded-full bg-white/95 backdrop-blur-xs border-2 border-[#E2E8F0] p-1 shadow-[0_6px_14px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0]"
+          className="inline-flex flex-wrap items-center justify-center gap-1 max-w-full rounded-2xl sm:rounded-full bg-white/95 border-2 border-[#E2E8F0] p-1 shadow-[0_6px_14px_-4px_rgba(15,23,42,0.08),0_3px_0_0_#E2E8F0]"
         >
           {SENTENCE_EXAMPLES.map((pack) => {
             const isActive = pack.id === packId
@@ -364,9 +364,9 @@ export const LandingAnimatedSentenceShowcase = () => {
       </div>
 
       {/* Main Open ClassDojo Stage */}
-      <div className="grid sm:grid-cols-12 items-end gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-12 items-end gap-4 sm:gap-5">
         {/* Left Hero Mera Sensei Grounded on Open Pastel Blob */}
-        <div className="sm:col-span-5 flex items-end justify-center sm:justify-start relative">
+        <div className="min-w-0 sm:col-span-5 flex items-end justify-center sm:justify-start relative">
           <div className="relative z-10 w-full max-w-[150px] sm:max-w-[196px] mx-auto sm:mx-0">
             <MeraSenseiFigure
               mood={isSpeaking ? 'listening' : 'pointing'}
@@ -377,7 +377,7 @@ export const LandingAnimatedSentenceShowcase = () => {
         </div>
 
         {/* Right Candy-Colored Tilted Squircle Tile Constellation */}
-        <div className="sm:col-span-7 flex items-center justify-center sm:justify-start pb-1">
+        <div className="min-w-0 sm:col-span-7 flex items-center justify-center sm:justify-start pb-1">
           <div
             key={currentPack.id}
             className="flex flex-wrap items-center justify-center sm:justify-start gap-2.5 sm:gap-3.5"

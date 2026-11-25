@@ -163,10 +163,10 @@ export const LandingLanguageTracksSection = () => {
             </div>
 
             <a
-              href="#coba-kilat"
+              href="#rute-belajar"
               className="text-xs font-brand font-black text-blue-600 hover:text-blue-700 shrink-0"
             >
-              Coba audio singkat ↓
+              Lihat rute belajar ↓
             </a>
           </div>
         )}

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
+import { useInView } from 'motion/react'
 import { ArrowRight, GlobeHemisphereWest, SpeakerHigh } from '@phosphor-icons/react'
 import { AudioWaveformBars } from '@/features/landing/components/LandingIllustrations'
 import {
@@ -369,7 +370,9 @@ const ROW_2_ITEMS: ReadonlyArray<ShowcaseMarqueeItem> = [
 
 export const LandingPhraseShowcaseBand = () => {
   const [activeScenarioId, setActiveScenarioId] = useState<string | null>(null)
+  const bandRef = useRef<HTMLElement>(null)
   const speechRequestIdRef = useRef(0)
+  const isBandInView = useInView(bandRef, { amount: 0.05 })
 
   useEffect(() => {
     return () => {
@@ -421,7 +424,7 @@ export const LandingPhraseShowcaseBand = () => {
         <article
           key={cardKey}
           aria-hidden={isDuplicate || undefined}
-          className={`w-[290px] sm:w-[310px] rounded-[28px] border-2 ${accentStyle.card} shadow-[0_6px_0_0_rgba(45,64,150,0.06)] p-5 flex flex-col justify-between gap-3.5 shrink-0 transition-transform hover:-translate-y-1`}
+          className={`w-[265px] sm:w-[310px] rounded-[28px] border-2 ${accentStyle.card} shadow-[0_6px_0_0_rgba(45,64,150,0.06)] p-5 flex flex-col justify-between gap-3.5 shrink-0 transition-transform hover:-translate-y-1 [contain:layout_style_paint]`}
         >
           <div className="flex items-start justify-between gap-2.5">
             <div className="flex flex-col items-start gap-1.5 min-w-0">
@@ -448,6 +451,7 @@ export const LandingPhraseShowcaseBand = () => {
             <LandingStickerIcon
               kind="certificate"
               size={44}
+              shadow={false}
               className="shrink-0 -mt-1"
             />
           </div>
@@ -510,7 +514,7 @@ export const LandingPhraseShowcaseBand = () => {
         key={cardKey}
         aria-hidden={isDuplicate || undefined}
         onClick={() => handleSpeak(item.id, item.keyPhrase, track.speechLocale)}
-        className={`w-[320px] sm:w-[350px] rounded-[28px] bg-white border-2 p-5 flex flex-col justify-between gap-3.5 shrink-0 transition-all hover:-translate-y-1 cursor-pointer ${
+        className={`w-[280px] sm:w-[350px] rounded-[28px] bg-white border-2 p-5 flex flex-col justify-between gap-3.5 shrink-0 transition-all hover:-translate-y-1 cursor-pointer [contain:layout_style_paint] ${
           isPlaying
             ? 'border-[#2563EB] shadow-[0_6px_0_0_rgba(37,99,235,0.18)]'
             : 'border-[#E2E8F0] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] hover:border-blue-300'
@@ -539,6 +543,7 @@ export const LandingPhraseShowcaseBand = () => {
           <LandingStickerIcon
             kind={item.stickerKind}
             size={42}
+            shadow={false}
             className="shrink-0 -mt-1"
           />
         </div>
@@ -598,7 +603,8 @@ export const LandingPhraseShowcaseBand = () => {
 
   return (
     <section
-      className="relative bg-white overflow-hidden"
+      ref={bandRef}
+      className="landing-cv-section relative bg-white overflow-hidden"
       aria-label="Etalase skenario dunia nyata dan target sertifikasi enam bahasa"
     >
       {/* Top Curved SVG Seam */}
@@ -629,7 +635,11 @@ export const LandingPhraseShowcaseBand = () => {
         </div>
 
         {/* Dual-Row Counter-Scrolling Marquee */}
-        <div className="max-w-[1920px] mx-auto relative overflow-hidden space-y-5 landing-marquee-track py-2">
+        <div
+          className={`max-w-[1920px] mx-auto relative overflow-hidden space-y-5 landing-marquee-track py-2 ${
+            isBandInView ? '' : 'landing-marquee-paused'
+          }`.trim()}
+        >
           <div
             aria-hidden="true"
             className="hidden sm:block pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-[#F4F7FF] to-transparent z-10"

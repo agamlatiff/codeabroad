@@ -814,7 +814,7 @@ export const MeraTrioSquad: FC<{
 
   return (
     <div
-      className={`w-[290px] sm:w-[340px] flex items-end justify-center relative select-none ${className}`.trim()}
+      className={`w-full max-w-[290px] sm:max-w-[340px] flex items-end justify-center relative select-none ${className}`.trim()}
       aria-hidden="true"
     >
       {/* Shared wide soft elliptical floor shadow */}

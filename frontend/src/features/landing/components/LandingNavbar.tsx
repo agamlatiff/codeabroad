@@ -8,7 +8,7 @@ import { useAuthStore } from '@/features/auth/store/authStore'
 const NAV_LINKS = [
   { href: '#bahasa', label: 'Bahasa' },
   { href: '#fitur', label: 'Fitur' },
-  { href: '#coba-kilat', label: 'Coba Live' },
+  { href: '#rute-belajar', label: 'Rute Belajar' },
   { href: '#metode', label: 'Metode' },
 ] as const
 

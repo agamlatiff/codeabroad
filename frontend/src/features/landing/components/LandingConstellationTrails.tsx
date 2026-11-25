@@ -1,5 +1,5 @@
-import { useId } from 'react'
-import { motion, useReducedMotion, useSpring, useTransform, type MotionValue } from 'motion/react'
+import { useId, useRef } from 'react'
+import { motion, useInView, useReducedMotion } from 'motion/react'
 
 interface ConstellationTrailSpec {
   id: string
@@ -68,33 +68,19 @@ const CONSTELLATION_TRAILS: ReadonlyArray<ConstellationTrailSpec> = [
   },
 ]
 
-const TRAIL_SPRING = {
-  stiffness: 75,
-  damping: 24,
-  mass: 0.45,
-  restDelta: 0.001,
-} as const
-
-export interface LandingConstellationTrailsProps {
-  scrollYProgress: MotionValue<number>
-}
+const SMOOTH_EASE = [0.22, 1, 0.36, 1] as const
 
 /**
  * Desktop-only radial cubic Bézier SVG trail backdrop connecting the center
  * constellation headline zone to all six surrounding destination cards.
+ * Uses a one-shot intersection reveal so SVG masks cost 0% CPU during scroll.
  */
-export const LandingConstellationTrails = ({
-  scrollYProgress,
-}: LandingConstellationTrailsProps) => {
+export const LandingConstellationTrails = () => {
+  const svgRef = useRef<SVGSVGElement>(null)
   const rawId = useId()
   const idPrefix = rawId.replace(/[^a-zA-Z0-9_-]/g, '') || 'trail'
-  const shouldReduceMotion = useReducedMotion()
-
-  const smoothScroll = useSpring(scrollYProgress, TRAIL_SPRING)
-  const topDraw = useTransform(smoothScroll, [0.08, 0.44], [0, 1])
-  const midDraw = useTransform(smoothScroll, [0.14, 0.5], [0, 1])
-  const bottomDraw = useTransform(smoothScroll, [0.2, 0.56], [0, 1])
-  const drawByRow = [topDraw, midDraw, bottomDraw] as const
+  const shouldReduceMotion = Boolean(useReducedMotion())
+  const isInView = useInView(svgRef, { once: true, amount: 0.25 })
 
   const getMaskId = (trailId: string) => `constellation-mask-${idPrefix}-${trailId}`
   const getGuideGradId = (trailId: string) => `constellation-guide-${idPrefix}-${trailId}`
@@ -102,6 +88,7 @@ export const LandingConstellationTrails = ({
 
   return (
     <svg
+      ref={svgRef}
       className="hidden lg:block pointer-events-none absolute inset-0 w-full h-full z-0 overflow-visible"
       viewBox="0 0 1220 640"
       preserveAspectRatio="none"
@@ -157,8 +144,17 @@ export const LandingConstellationTrails = ({
               strokeWidth="16"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
-              style={shouldReduceMotion ? undefined : { pathLength: drawByRow[trail.rowIndex] }}
-              initial={shouldReduceMotion ? { pathLength: 1 } : undefined}
+              initial={{ pathLength: shouldReduceMotion ? 1 : 0 }}
+              animate={{ pathLength: shouldReduceMotion || isInView ? 1 : 0 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0 }
+                  : {
+                      duration: 0.85,
+                      delay: trail.rowIndex * 0.14,
+                      ease: SMOOTH_EASE,
+                    }
+              }
             />
           </mask>
         ))}
@@ -180,25 +176,7 @@ export const LandingConstellationTrails = ({
         ))}
       </g>
 
-      {/* Layer 2: Soft ambient halo under scroll-drawn active path */}
-      <g>
-        {CONSTELLATION_TRAILS.map((trail) => (
-          <path
-            key={trail.id}
-            d={trail.d}
-            fill="none"
-            stroke={`url(#${getActiveGradId(trail.id)})`}
-            strokeWidth={6}
-            strokeDasharray="6 8"
-            strokeLinecap="round"
-            opacity={0.14}
-            vectorEffect="non-scaling-stroke"
-            mask={`url(#${getMaskId(trail.id)})`}
-          />
-        ))}
-      </g>
-
-      {/* Layer 3: Crisp spring-smoothed blue dashed progress trail */}
+      {/* Layer 2: Crisp one-shot drawn blue dashed progress trail */}
       <g>
         {CONSTELLATION_TRAILS.map((trail) => (
           <path

@@ -1,6 +1,6 @@
 import { Fragment, useId, useRef, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react'
+import { motion, useInView, useReducedMotion } from 'motion/react'
 import {
   ArrowRight,
   Cards,
@@ -17,18 +17,6 @@ import {
 import { LandingAnimatedSentenceShowcase } from '@/features/landing/components/LandingAnimatedSentenceShowcase'
 
 const SMOOTH_EASE = [0.22, 1, 0.36, 1] as const
-const SCROLL_SPRING = {
-  stiffness: 75,
-  damping: 24,
-  mass: 0.4,
-  restDelta: 0.001,
-} as const
-const PARALLAX_SPRING = {
-  stiffness: 90,
-  damping: 28,
-  mass: 0.4,
-  restDelta: 0.001,
-} as const
 
 const CONNECTOR_COLORS = [
   { from: '#38BDF8', to: '#34D399' },
@@ -142,13 +130,8 @@ const InterRowConnector = ({ direction, fromColor, toColor }: InterRowConnectorP
   const connectorRef = useRef<HTMLDivElement>(null)
   const rawId = useId()
   const idPrefix = rawId.replace(/[^a-zA-Z0-9_-]/g, '') || 'connector'
-  const shouldReduceMotion = useReducedMotion()
-
-  const { scrollYProgress } = useScroll({
-    target: connectorRef,
-    offset: ['start 88%', 'end 44%'],
-  })
-  const smoothDraw = useSpring(scrollYProgress, SCROLL_SPRING)
+  const shouldReduceMotion = Boolean(useReducedMotion())
+  const isInView = useInView(connectorRef, { once: true, amount: 0.35 })
 
   const isRtl = direction === 'right-to-left'
   const d = isRtl
@@ -218,8 +201,13 @@ const InterRowConnector = ({ direction, fromColor, toColor }: InterRowConnectorP
               strokeWidth="16"
               strokeLinecap="round"
               vectorEffect="non-scaling-stroke"
-              style={shouldReduceMotion ? undefined : { pathLength: smoothDraw }}
-              initial={shouldReduceMotion ? { pathLength: 1 } : undefined}
+              initial={{ pathLength: shouldReduceMotion ? 1 : 0 }}
+              animate={{ pathLength: shouldReduceMotion || isInView ? 1 : 0 }}
+              transition={
+                shouldReduceMotion
+                  ? { duration: 0 }
+                  : { duration: 0.85, ease: SMOOTH_EASE }
+              }
             />
           </mask>
         </defs>
@@ -235,20 +223,7 @@ const InterRowConnector = ({ direction, fromColor, toColor }: InterRowConnectorP
           vectorEffect="non-scaling-stroke"
         />
 
-        {/* Layer 2: Soft accent halo */}
-        <path
-          d={d}
-          fill="none"
-          stroke={`url(#${activeGradId})`}
-          strokeWidth={6}
-          strokeDasharray="7 9"
-          strokeLinecap="round"
-          opacity={0.14}
-          vectorEffect="non-scaling-stroke"
-          mask={`url(#${maskId})`}
-        />
-
-        {/* Layer 3: Crisp scroll-drawn active colored trail */}
+        {/* Layer 2: Crisp one-shot drawn active colored trail */}
         <path
           d={d}
           fill="none"
@@ -275,7 +250,7 @@ interface FeatureVisualStageProps {
 }
 
 /**
- * Three-layer scroll-driven parallax stage: generous organic pastel blob,
+ * Three-layer open stage: generous organic pastel blob,
  * grounded open character stage, and floating stationery pill tag.
  */
 const FeatureVisualStage = ({
@@ -286,27 +261,11 @@ const FeatureVisualStage = ({
   pillPositionClass,
   children,
 }: FeatureVisualStageProps) => {
-  const stageRef = useRef<HTMLDivElement>(null)
-  const shouldReduceMotion = useReducedMotion()
-  const { scrollYProgress } = useScroll({
-    target: stageRef,
-    offset: ['start end', 'end start'],
-  })
-
-  const smoothScroll = useSpring(scrollYProgress, PARALLAX_SPRING)
-  const blobY = useTransform(smoothScroll, [0, 1], [-8, 8])
-  const cardY = useTransform(smoothScroll, [0, 1], [14, -14])
-  const pillY = useTransform(smoothScroll, [0, 1], [18, -18])
-
   return (
-    <div
-      ref={stageRef}
-      className="relative max-w-[560px] mx-auto lg:max-w-none min-h-[320px] sm:min-h-[360px] flex items-center justify-center pt-4 pb-4 sm:pt-5 sm:pb-5 px-2 sm:px-5"
-    >
+    <div className="relative w-full min-w-0 max-w-[560px] mx-auto lg:max-w-none min-h-[320px] sm:min-h-[360px] flex items-center justify-center pt-4 pb-4 sm:pt-5 sm:pb-5 px-2 sm:px-5">
       {/* Layer 1: Organic Curved Pastel Blob */}
-      <motion.div
+      <div
         aria-hidden="true"
-        style={{ y: shouldReduceMotion ? 0 : blobY }}
         className="pointer-events-none absolute inset-x-2 inset-y-3 sm:inset-x-5 sm:inset-y-4 flex items-center justify-center z-0"
       >
         <svg
@@ -317,19 +276,13 @@ const FeatureVisualStage = ({
         >
           <path d={blobPath} fill={blobColor} />
         </svg>
-      </motion.div>
+      </div>
 
       {/* Layer 2: Foreground Open Stage */}
-      <motion.div
-        style={{ y: shouldReduceMotion ? 0 : cardY }}
-        className="relative z-10 w-full"
-      >
-        {children}
-      </motion.div>
+      <div className="relative z-10 w-full min-w-0">{children}</div>
 
       {/* Layer 3: Floating Micro-Pill Tag */}
-      <motion.div
-        style={{ y: shouldReduceMotion ? 0 : pillY }}
+      <div
         className={`hidden sm:block pointer-events-none select-none absolute z-20 ${pillPositionClass}`}
       >
         <span className="inline-flex items-center gap-2 bg-white border-2 border-[#E2E8F0] rounded-full px-3.5 py-1.5 shadow-[0_4px_0_0_rgba(45,64,150,0.08)] text-xs font-brand font-black text-[#1E293B] whitespace-nowrap">
@@ -340,7 +293,7 @@ const FeatureVisualStage = ({
           />
           <span>{pillLabel}</span>
         </span>
-      </motion.div>
+      </div>
     </div>
   )
 }
@@ -353,7 +306,7 @@ export const LandingFeatureShowcase = () => {
       <div className="max-w-[1140px] mx-auto px-4 sm:px-6">
         {/* Compact Section Intro */}
         <motion.div
-          className="text-center max-w-2xl mx-auto mb-10 sm:mb-20 space-y-3"
+          className="text-center max-w-2xl mx-auto mb-6 sm:mb-14 lg:mb-20 space-y-3"
           initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, amount: 0.3 }}
@@ -372,7 +325,7 @@ export const LandingFeatureShowcase = () => {
         </motion.div>
 
         {/* Alternating Storytelling Rows + Inter-Row S-Curve Connectors */}
-        <div className="relative z-10 flex flex-col gap-14 sm:gap-20 lg:gap-0">
+        <div className="relative z-10 flex flex-col gap-16 sm:gap-20 lg:gap-0">
           {FEATURE_STORY_ROWS.map((row, index) => {
             const isVisualFirstOnDesktop = index % 2 === 1
             const { IconComponent } = row
@@ -380,10 +333,10 @@ export const LandingFeatureShowcase = () => {
 
             return (
               <Fragment key={row.id}>
-                <div className="relative z-10 grid lg:grid-cols-12 gap-6 sm:gap-8 lg:gap-12 items-center">
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-8 lg:gap-12 items-center">
                   {/* Text Column */}
                   <motion.div
-                    className={`lg:col-span-5 ${
+                    className={`order-2 min-w-0 w-full lg:col-span-5 ${
                       isVisualFirstOnDesktop ? 'lg:order-2' : 'lg:order-1'
                     }`}
                     initial={shouldReduceMotion ? false : { opacity: 0, y: 20 }}
@@ -396,11 +349,11 @@ export const LandingFeatureShowcase = () => {
                         aria-hidden="true"
                         whileHover={shouldReduceMotion ? undefined : { scale: 1.07, rotate: -4 }}
                         transition={{ type: 'spring', stiffness: 320, damping: 18 }}
-                        className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full ${row.badgeColorClass} mx-auto lg:mx-0 flex items-center justify-center shadow-[0_4px_0_0_rgba(15,23,42,0.08)]`}
+                        className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full ${row.badgeColorClass} mx-auto lg:mx-0 flex items-center justify-center shadow-[0_4px_0_0_rgba(15,23,42,0.08)]`}
                       >
-                        <IconComponent weight="fill" className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
+                        <IconComponent weight="fill" className="w-5 h-5 sm:w-7 sm:h-7 text-white" />
                       </motion.div>
-                      <h3 className="text-2xl sm:text-[36px] font-brand font-black text-[#1E293B] leading-[1.16]">
+                      <h3 className="text-xl sm:text-2xl lg:text-[36px] font-brand font-black text-[#1E293B] leading-[1.18]">
                         {row.title}
                       </h3>
                       <p className="text-sm sm:text-[18px] text-[#475569] leading-[1.48]">
@@ -421,7 +374,7 @@ export const LandingFeatureShowcase = () => {
 
                   {/* Visual Stage Column */}
                   <motion.div
-                    className={`lg:col-span-7 ${
+                    className={`order-1 min-w-0 w-full lg:col-span-7 ${
                       isVisualFirstOnDesktop ? 'lg:order-1' : 'lg:order-2'
                     }`}
                     initial={shouldReduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }}

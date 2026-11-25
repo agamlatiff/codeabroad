@@ -21,6 +21,7 @@ export interface StickerArtProps {
   kind: StickerArtKind
   size?: number
   className?: string
+  shadow?: boolean
 }
 
 function sanitizeSvgId(rawId: string): string {
@@ -36,6 +37,7 @@ export const LandingStickerIcon: FC<StickerArtProps> = ({
   kind,
   size = 56,
   className = '',
+  shadow = true,
 }) => {
   const rawId = useId()
   const uid = sanitizeSvgId(rawId)
@@ -1480,7 +1482,7 @@ export const LandingStickerIcon: FC<StickerArtProps> = ({
       viewBox="0 0 64 64"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
-      className={`overflow-visible shrink-0 select-none drop-shadow-[0_3px_5px_rgba(15,23,42,0.16)] ${className}`.trim()}
+      className={`overflow-visible shrink-0 select-none ${shadow ? 'drop-shadow-[0_3px_5px_rgba(15,23,42,0.16)]' : ''} ${className}`.trim()}
       aria-hidden="true"
     >
       {renderArtwork()}

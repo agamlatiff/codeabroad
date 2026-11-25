@@ -28,7 +28,7 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
     links: [
       { label: 'Pilihan Bahasa', to: '#bahasa', isHash: true },
       { label: 'Fitur Utama', to: '#fitur', isHash: true },
-      { label: 'Coba Live', to: '#coba-kilat', isHash: true },
+      { label: 'Rute Belajar', to: '#rute-belajar', isHash: true },
       { label: 'Metode Belajar', to: '#metode', isHash: true },
     ],
   },
@@ -43,10 +43,10 @@ const FOOTER_COLUMNS: readonly FooterColumn[] = [
 
 export const LandingFooter = () => {
   return (
-    <footer className="bg-white border-t border-black/10 overflow-x-clip">
+    <footer className="landing-cv-section bg-white border-t border-black/10 overflow-x-clip">
       <div className="max-w-[1440px] mx-auto px-4 sm:px-8 pt-10 pb-8 sm:pt-14 sm:pb-10 space-y-8 sm:space-y-10">
-        <div className="grid lg:grid-cols-12 gap-8 lg:gap-10 items-start">
-          <div className="lg:col-span-5 space-y-3.5 sm:space-y-4">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
+          <div className="min-w-0 lg:col-span-5 space-y-3.5 sm:space-y-4">
             <Logo size="sm" variant="blue" linkTo="/" />
             <p className="text-sm text-[#475569] leading-relaxed max-w-sm">
               Misi Merantalk adalah membantu pembelajar Indonesia menguasai bahasa asing secara
@@ -59,7 +59,7 @@ export const LandingFooter = () => {
             </span>
           </div>
 
-          <div className="lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
+          <div className="min-w-0 lg:col-span-7 grid grid-cols-2 sm:grid-cols-3 gap-6 sm:gap-8">
             {FOOTER_COLUMNS.map((column, index) => {
               const isThirdColumn = index === 2
               return (

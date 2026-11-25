@@ -6,7 +6,7 @@ import {
   type MouseEvent,
   type ReactNode,
 } from 'react'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react'
 import { ArrowsClockwise, SpeakerHigh, Swap } from '@phosphor-icons/react'
 import {
   MeraPolyglotFigure,
@@ -199,14 +199,14 @@ export const CurriculumPathIllustration = () => {
   }
 
   return (
-    <div className="relative w-full pt-4 pb-3 sm:pt-14 sm:pb-4 min-h-[380px] sm:min-h-[480px] flex flex-col items-center justify-between sm:justify-center gap-4 select-none">
+    <div className="relative w-full min-w-0 max-w-full pt-4 pb-3 sm:pt-14 sm:pb-4 min-h-[380px] sm:min-h-[480px] flex flex-col items-center justify-between sm:justify-center gap-4 select-none">
       {/* Centerpiece Mera Squad */}
-      <div className="relative z-10 flex flex-col items-center scale-[0.86] sm:scale-100 origin-bottom sm:mt-24 sm:mb-6">
+      <div className="relative z-10 w-full max-w-full flex flex-col items-center scale-[0.86] sm:scale-100 origin-bottom sm:mt-24 sm:mb-6">
         <MeraTrioSquad activeMood={trioMood} centerBadge={centerBadge} />
       </div>
 
       {/* 5 Orbiting Floating Tilted Sticker Cards (snap-scroll rail on mobile, collision-free orbit on sm+) */}
-      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pt-10 pb-3 px-2 w-full sm:pt-0 sm:pb-0 sm:px-0 sm:overflow-visible sm:contents [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex overflow-x-auto snap-x snap-mandatory gap-3 pt-10 pb-3 px-2 w-full max-w-full min-w-0 sm:pt-0 sm:pb-0 sm:px-0 sm:overflow-visible sm:contents [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         <div className="snap-center shrink-0 sm:absolute sm:top-4 sm:left-0 md:left-1 z-20">
           <FloatingStickerCard
             kind="book"
@@ -425,8 +425,11 @@ export const ScriptStrokeIllustration = () => {
   const [scriptId, setScriptId] = useState<ScriptPackId>('ja')
   const [replayCount, setReplayCount] = useState(0)
   const [isSpeaking, setIsSpeaking] = useState(false)
+  const padRef = useRef<HTMLDivElement>(null)
   const speechRequestIdRef = useRef(0)
-  const shouldReduceMotion = useReducedMotion()
+  const shouldReduceMotion = Boolean(useReducedMotion())
+  const isPadInView = useInView(padRef, { amount: 0.15 })
+  const shouldAnimateStrokes = !shouldReduceMotion && isPadInView
 
   useEffect(() => {
     return () => {
@@ -476,7 +479,7 @@ export const ScriptStrokeIllustration = () => {
   const strokeSlot = 0.72 / activeScript.strokes.length
 
   return (
-    <div className="relative w-full py-3 sm:py-4 min-h-[340px] sm:min-h-[385px] flex flex-col items-center justify-center gap-4 sm:gap-5 select-none">
+    <div className="relative w-full min-w-0 max-w-full py-3 sm:py-4 min-h-[340px] sm:min-h-[385px] flex flex-col items-center justify-center gap-4 sm:gap-5 select-none">
       {/* 4 Colorful Tilted Squircle Script Selector Tiles */}
       <div
         role="group"
@@ -543,7 +546,10 @@ export const ScriptStrokeIllustration = () => {
 
         <div className="flex flex-col items-center gap-3">
           {/* Tactile Writing Pad */}
-          <div className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-48 lg:h-48 rounded-[24px] sm:rounded-[28px] bg-white border-2 border-[#E2E8F0] shadow-[0_10px_24px_rgba(15,23,42,0.08),0_5px_0_0_#CBD5E1] flex items-center justify-center overflow-hidden">
+          <div
+            ref={padRef}
+            className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-48 lg:h-48 rounded-[24px] sm:rounded-[28px] bg-white border-2 border-[#E2E8F0] shadow-[0_10px_24px_rgba(15,23,42,0.08),0_5px_0_0_#CBD5E1] flex items-center justify-center overflow-hidden"
+          >
             {/* Practice Grid Crosshair */}
             <div
               aria-hidden="true"
@@ -590,14 +596,13 @@ export const ScriptStrokeIllustration = () => {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     initial={
-                      shouldReduceMotion
-                        ? { pathLength: 1, opacity: 1 }
-                        : { pathLength: 0, opacity: isFirstStroke ? 0.35 : 0.25 }
+                      shouldAnimateStrokes
+                        ? { pathLength: 0, opacity: isFirstStroke ? 0.35 : 0.25 }
+                        : { pathLength: 1, opacity: 1 }
                     }
                     animate={
-                      shouldReduceMotion
-                        ? { pathLength: 1, opacity: 1 }
-                        : isFirstStroke
+                      shouldAnimateStrokes
+                        ? isFirstStroke
                           ? {
                               pathLength: [0, 1, 1, 0],
                               opacity: [0.35, 1, 1, 0.25],
@@ -606,11 +611,11 @@ export const ScriptStrokeIllustration = () => {
                               pathLength: [0, 0, 1, 1, 0],
                               opacity: [0.25, 0.25, 1, 1, 0.25],
                             }
+                        : { pathLength: 1, opacity: 1 }
                     }
                     transition={
-                      shouldReduceMotion
-                        ? undefined
-                        : {
+                      shouldAnimateStrokes
+                        ? {
                             duration: 3.8,
                             times: isFirstStroke
                               ? [0, drawEnd, 0.88, 1]
@@ -618,6 +623,7 @@ export const ScriptStrokeIllustration = () => {
                             repeat: Infinity,
                             ease: 'easeInOut',
                           }
+                        : { duration: 0.2 }
                     }
                   />
                 )
@@ -835,7 +841,7 @@ export const FlashcardStackIllustration = () => {
   }
 
   return (
-    <div className="relative w-full py-3 sm:py-4 min-h-[350px] sm:min-h-[395px] flex flex-col items-center justify-center gap-5 select-none">
+    <div className="relative w-full min-w-0 max-w-full py-3 sm:py-4 min-h-[350px] sm:min-h-[395px] flex flex-col items-center justify-center gap-5 select-none">
       {/* Main Open Row: Mera Timekeeper + Stacked 3D-Flipping Deck */}
       <div className="relative z-10 flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-6 w-full">
         <div className="shrink-0 scale-90 sm:scale-100 origin-center">

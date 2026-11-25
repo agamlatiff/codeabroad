@@ -6,6 +6,7 @@ import { useAuthStore } from '@/features/auth/store/authStore'
 
 export const LandingFloatingCta = () => {
   const [heroPassed, setHeroPassed] = useState(false)
+  const [roadmapVisible, setRoadmapVisible] = useState(false)
   const [bottomVisible, setBottomVisible] = useState(false)
   const shouldReduceMotion = useReducedMotion()
 
@@ -18,6 +19,7 @@ export const LandingFloatingCta = () => {
     }
 
     const heroEl = document.getElementById('hero-section')
+    const roadmapEl = document.getElementById('rute-belajar')
     const bottomEl = document.getElementById('landing-bottom-cta')
 
     const heroObserver = new IntersectionObserver(
@@ -26,6 +28,14 @@ export const LandingFloatingCta = () => {
         setHeroPassed(!heroEntry.isIntersecting && heroEntry.boundingClientRect.top < 0)
       },
       { threshold: 0 }
+    )
+
+    const roadmapObserver = new IntersectionObserver(
+      ([roadmapEntry]) => {
+        if (!roadmapEntry) return
+        setRoadmapVisible(roadmapEntry.isIntersecting)
+      },
+      { threshold: 0.15 }
     )
 
     const bottomObserver = new IntersectionObserver(
@@ -37,10 +47,12 @@ export const LandingFloatingCta = () => {
     )
 
     if (heroEl) heroObserver.observe(heroEl)
+    if (roadmapEl) roadmapObserver.observe(roadmapEl)
     if (bottomEl) bottomObserver.observe(bottomEl)
 
     return () => {
       heroObserver.disconnect()
+      roadmapObserver.disconnect()
       bottomObserver.disconnect()
     }
   }, [])
@@ -52,7 +64,7 @@ export const LandingFloatingCta = () => {
 
   return (
     <AnimatePresence>
-      {heroPassed && !bottomVisible && (
+      {heroPassed && !roadmapVisible && !bottomVisible && (
         <motion.div
           key="landing-floating-cta"
           initial={shouldReduceMotion ? { opacity: 0 } : { y: 80, opacity: 0, scale: 0.94 }}

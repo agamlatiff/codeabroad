@@ -7,12 +7,12 @@ import {
   useTransform,
   type MotionValue,
 } from 'motion/react'
-import constellationJapanImg from '@/assets/landing/constellation-japan.jpg'
-import constellationUkImg from '@/assets/landing/constellation-uk.jpg'
-import constellationGermanyImg from '@/assets/landing/constellation-germany.jpg'
-import constellationUsImg from '@/assets/landing/constellation-us.jpg'
-import constellationChinaImg from '@/assets/landing/constellation-china.jpg'
-import constellationFranceImg from '@/assets/landing/constellation-france.jpg'
+import constellationJapanImg from '@/assets/landing/constellation-japan.webp'
+import constellationUkImg from '@/assets/landing/constellation-uk.webp'
+import constellationGermanyImg from '@/assets/landing/constellation-germany.webp'
+import constellationUsImg from '@/assets/landing/constellation-us.webp'
+import constellationChinaImg from '@/assets/landing/constellation-china.webp'
+import constellationFranceImg from '@/assets/landing/constellation-france.webp'
 import { LandingConstellationTrails } from '@/features/landing/components/LandingConstellationTrails'
 import { LanguageFlagIllustration } from '@/features/onboarding/components/illustrations/FlagIllustrations'
 
@@ -123,7 +123,7 @@ const ConstellationPhotoCard = ({
   return (
     <motion.div
       style={yMotion ? { y: yMotion } : undefined}
-      className={card.wrapperClass}
+      className={`${card.wrapperClass ?? ''} ${yMotion ? 'will-change-transform' : ''}`.trim()}
     >
       <motion.div
         initial={shouldReduceMotion ? false : { opacity: 0, y: 20, scale: 0.97 }}
@@ -152,7 +152,7 @@ const ConstellationPhotoCard = ({
             className="pointer-events-none absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-slate-950/35 via-slate-950/10 to-transparent"
           />
 
-          <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10 inline-flex items-center gap-1 sm:gap-1.5 rounded-full bg-white/95 backdrop-blur-xs border border-slate-200/90 px-2 sm:px-3 py-0.5 sm:py-1 shadow-xs text-[10px] sm:text-xs font-brand font-black text-[#1E293B] max-w-[calc(100%-1rem)] sm:max-w-[calc(100%-1.5rem)] truncate">
+          <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 z-10 inline-flex items-center gap-1 sm:gap-1.5 rounded-full bg-white/95 border border-slate-200/90 px-2 sm:px-3 py-0.5 sm:py-1 shadow-xs text-[10px] sm:text-xs font-brand font-black text-[#1E293B] max-w-[calc(100%-1rem)] sm:max-w-[calc(100%-1.5rem)] truncate">
             <span
               aria-hidden="true"
               className="w-4 h-2.5 sm:w-5 sm:h-3.5 rounded-[2px] sm:rounded-[3px] overflow-hidden shrink-0 inline-flex items-center justify-center"
@@ -197,10 +197,10 @@ export const LandingConstellationSection = () => {
       className="relative bg-white pt-4 pb-12 sm:pt-6 sm:pb-24 px-4 sm:px-6 overflow-x-clip"
     >
       <div className="max-w-[1220px] mx-auto relative">
-        <LandingConstellationTrails scrollYProgress={scrollYProgress} />
-        <div className="relative z-10 grid lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-center">
+        <LandingConstellationTrails />
+        <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-8 items-center">
           {/* Left Editorial Photo Cluster */}
-          <div className="order-2 lg:order-1 lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 items-center">
+          <div className="order-2 lg:order-1 min-w-0 lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 items-center">
             {LEFT_CONSTELLATION_CARDS.map((card, index) => (
               <ConstellationPhotoCard
                 key={card.id}
@@ -214,7 +214,7 @@ export const LandingConstellationSection = () => {
 
           {/* Center Headline Centerpiece */}
           <motion.div
-            className="order-1 lg:order-2 lg:col-span-4 text-center px-3 sm:px-4 py-2 lg:py-8 space-y-3"
+            className="order-1 lg:order-2 min-w-0 lg:col-span-4 text-center px-3 sm:px-4 py-2 lg:py-8 space-y-3"
             initial={shouldReduceMotion ? false : { opacity: 0, y: 16 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.35 }}
@@ -230,7 +230,7 @@ export const LandingConstellationSection = () => {
           </motion.div>
 
           {/* Right Editorial Photo Cluster */}
-          <div className="order-3 lg:order-3 lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 items-center">
+          <div className="order-3 lg:order-3 min-w-0 lg:col-span-4 grid grid-cols-2 lg:grid-cols-1 gap-3 sm:gap-4 items-center">
             {RIGHT_CONSTELLATION_CARDS.map((card, index) => (
               <ConstellationPhotoCard
                 key={card.id}

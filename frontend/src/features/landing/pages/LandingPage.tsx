@@ -4,7 +4,7 @@ import { LandingNavbar } from '@/features/landing/components/LandingNavbar'
 import { LandingHero } from '@/features/landing/components/LandingHero'
 import { LandingConstellationSection } from '@/features/landing/components/LandingConstellationSection'
 import { LandingFeatureShowcase } from '@/features/landing/components/LandingFeatureShowcase'
-import { LandingInteractiveDemo } from '@/features/landing/components/LandingInteractiveDemo'
+import { LandingGoalRoadmapSection } from '@/features/landing/components/LandingGoalRoadmapSection'
 import { LandingPhraseShowcaseBand } from '@/features/landing/components/LandingPhraseShowcaseBand'
 import { LandingMethodTrustSection } from '@/features/landing/components/LandingMethodTrustSection'
 import { LandingBottomCta } from '@/features/landing/components/LandingBottomCta'
@@ -21,7 +21,7 @@ export const LandingPage = () => {
           <LandingHero />
           <LandingConstellationSection />
           <LandingFeatureShowcase />
-          <LandingInteractiveDemo />
+          <LandingGoalRoadmapSection />
           <LandingPhraseShowcaseBand />
           <LandingMethodTrustSection />
           <LandingBottomCta />

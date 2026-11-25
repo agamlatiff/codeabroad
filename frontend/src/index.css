@@ -657,8 +657,16 @@ body {
 .landing-marquee-track:hover .animate-landing-marquee,
 .landing-marquee-track:focus-within .animate-landing-marquee-forward,
 .landing-marquee-track:focus-within .animate-landing-marquee-reverse,
-.landing-marquee-track:focus-within .animate-landing-marquee {
-  animation-play-state: paused;
+.landing-marquee-track:focus-within .animate-landing-marquee,
+.landing-marquee-paused .animate-landing-marquee-forward,
+.landing-marquee-paused .animate-landing-marquee-reverse,
+.landing-marquee-paused .animate-landing-marquee {
+  animation-play-state: paused !important;
+}
+
+.landing-cv-section {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 680px;
 }
 
 @media (prefers-reduced-motion: reduce) {

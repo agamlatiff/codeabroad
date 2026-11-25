@@ -66,11 +66,11 @@ export const LandingMethodTrustSection = () => {
     <section
       id="metode"
       aria-labelledby="metode-heading"
-      className="bg-white py-14 sm:py-24 px-4 sm:px-6 overflow-x-clip scroll-mt-20"
+      className="landing-cv-section bg-white py-14 sm:py-24 px-4 sm:px-6 overflow-x-clip scroll-mt-20"
     >
-      <div className="max-w-[1120px] mx-auto grid lg:grid-cols-12 gap-10 lg:gap-12 items-center">
+      <div className="max-w-[1120px] mx-auto grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12 items-center">
         {/* Left Copy Column */}
-        <div className="lg:col-span-5 text-center lg:text-left space-y-5">
+        <div className="min-w-0 lg:col-span-5 text-center lg:text-left space-y-5">
           <div className="flex justify-center lg:justify-start">
             <span className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3.5 py-1 text-xs font-brand font-black uppercase tracking-wider text-emerald-700">
               <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" aria-hidden="true" />
@@ -103,7 +103,7 @@ export const LandingMethodTrustSection = () => {
         </div>
 
         {/* Right Tactile Trust Showcase Stage */}
-        <div className="lg:col-span-7 relative py-4 sm:py-6 px-2 sm:px-5">
+        <div className="min-w-0 lg:col-span-7 relative py-4 sm:py-6 px-2 sm:px-5">
           {/* Organic Pastel Blob Backdrop */}
           <div
             aria-hidden="true"
