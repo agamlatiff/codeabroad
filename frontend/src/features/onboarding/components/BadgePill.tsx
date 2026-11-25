@@ -29,14 +29,14 @@ export const BadgePill = ({
   }[variant]
 
   const sizeStyles = {
-    sm: 'px-2 py-0.5 text-[10px]',
+    sm: 'px-2 py-0.5 text-[9px] sm:text-[10px] leading-tight',
     md: 'px-3 py-1 text-xs',
     lg: 'px-3.5 py-1.5 text-sm',
   }[size]
 
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border font-black tracking-wide uppercase select-none ${sizeStyles} ${variantStyles} ${className}`}
+      className={`inline-flex max-w-full items-center gap-1.5 rounded-full border font-black tracking-wide uppercase select-none ${sizeStyles} ${variantStyles} ${className}`}
     >
       {icon && <span className="shrink-0">{icon}</span>}
       <span>{children}</span>

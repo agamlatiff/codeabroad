@@ -14,7 +14,7 @@ export const DailyPaceIllustration = ({ minutes, active }: PaceIllustrationProps
 
   if (minutes === 5) {
     return (
-      <svg viewBox="0 0 80 56" className="w-16 h-11 shrink-0" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 80 56" className="w-12 h-9 sm:w-16 sm:h-11 shrink-0" fill="none" aria-hidden="true">
         <circle cx="40" cy="28" r="22" fill={bgCircle} />
         <path d="M40 6 A22 22 0 0 1 62 28" stroke={arcColor} strokeWidth="4" strokeLinecap="round" />
         <rect x="28" y="24" width="20" height="15" rx="4" fill={fgPrimary} />
@@ -31,7 +31,7 @@ export const DailyPaceIllustration = ({ minutes, active }: PaceIllustrationProps
 
   if (minutes === 15) {
     return (
-      <svg viewBox="0 0 80 56" className="w-16 h-11 shrink-0" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 80 56" className="w-12 h-9 sm:w-16 sm:h-11 shrink-0" fill="none" aria-hidden="true">
         <circle cx="40" cy="28" r="22" fill={bgCircle} />
         <path d="M40 6 A22 22 0 0 1 40 50" stroke={arcColor} strokeWidth="4" strokeLinecap="round" />
         <circle cx="40" cy="28" r="9" fill={fgPrimary} />
@@ -43,7 +43,7 @@ export const DailyPaceIllustration = ({ minutes, active }: PaceIllustrationProps
 
   if (minutes === 30) {
     return (
-      <svg viewBox="0 0 80 56" className="w-16 h-11 shrink-0" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 80 56" className="w-12 h-9 sm:w-16 sm:h-11 shrink-0" fill="none" aria-hidden="true">
         <circle cx="40" cy="28" r="22" fill={bgCircle} />
         <path d="M40 6 A22 22 0 1 1 18 28" stroke={arcColor} strokeWidth="4" strokeLinecap="round" />
         <path
@@ -56,7 +56,7 @@ export const DailyPaceIllustration = ({ minutes, active }: PaceIllustrationProps
   }
 
   return (
-    <svg viewBox="0 0 80 56" className="w-16 h-11 shrink-0" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 80 56" className="w-12 h-9 sm:w-16 sm:h-11 shrink-0" fill="none" aria-hidden="true">
       <circle cx="40" cy="28" r="22" fill={bgCircle} stroke={arcColor} strokeWidth="4" />
       <path d="M40 13c5 4 7 10 7 16l-7 5-7-5c0-6 2-12 7-16z" fill={fgPrimary} />
       <circle cx="40" cy="24" r="2.5" fill="#FFFFFF" />
@@ -81,7 +81,7 @@ export const PlacementPathIllustration = ({ type, active }: PlacementIllustratio
   if (type === 'zero_beginner') {
     // Ascending steps from the first character (あ) upward
     return (
-      <svg viewBox="0 0 80 56" className="w-24 h-[68px] shrink-0" fill="none" aria-hidden="true">
+      <svg viewBox="0 0 80 56" className="w-16 h-12 sm:w-24 sm:h-[68px] shrink-0" fill="none" aria-hidden="true">
         <circle cx="40" cy="28" r="22" fill={bgCircle} />
         <path d="M40 6 A22 22 0 0 1 62 28" stroke={arcColor} strokeWidth="4" strokeLinecap="round" />
         <rect x="27" y="34" width="8" height="8" rx="2" fill={fgSecondary} />
@@ -94,7 +94,7 @@ export const PlacementPathIllustration = ({ type, active }: PlacementIllustratio
 
   // Leap arc skipping basics, landing on a check
   return (
-    <svg viewBox="0 0 80 56" className="w-24 h-[68px] shrink-0" fill="none" aria-hidden="true">
+    <svg viewBox="0 0 80 56" className="w-16 h-12 sm:w-24 sm:h-[68px] shrink-0" fill="none" aria-hidden="true">
       <circle cx="40" cy="28" r="22" fill={bgCircle} />
       <path d="M40 6 A22 22 0 1 1 18 28" stroke={arcColor} strokeWidth="4" strokeLinecap="round" />
       <circle cx="30" cy="38" r="2.5" fill={fgSecondary} />

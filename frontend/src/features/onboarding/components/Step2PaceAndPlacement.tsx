@@ -84,7 +84,7 @@ export const Step2PaceAndPlacement = ({
   onSelectPlacementType,
 }: Step2PaceAndPlacementProps) => {
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-6">
+    <div className="w-full min-w-0 max-w-4xl mx-auto space-y-5 sm:space-y-6">
       {/* 1. Komitmen Belajar Harian */}
       <section className="space-y-3">
         <div className="flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-slate-500">
@@ -92,7 +92,7 @@ export const Step2PaceAndPlacement = ({
           <span>1. Komitmen Belajar Harian</span>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 w-full min-w-0">
           {DAILY_GOAL_OPTIONS.map((opt) => {
             const isSelected = dailyGoalMinutes === opt.minutes
             return (
@@ -104,29 +104,33 @@ export const Step2PaceAndPlacement = ({
                   triggerHaptic('tap')
                   onSelectDailyGoal(opt.minutes)
                 }}
-                className={`rounded-2xl p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2.5 border-2 ${
+                className={`rounded-2xl p-3 sm:p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 sm:gap-2.5 border-2 min-w-0 w-full overflow-hidden ${
                   isSelected
                     ? 'bg-blue-50/80 border-[#2563EB] shadow-sm -translate-y-0.5'
                     : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex items-start justify-between gap-1.5 w-full">
                   <DailyPaceIllustration minutes={opt.minutes} active={isSelected} />
-                  <div className="flex items-center gap-1">
-                    {opt.badge && (
+                  {isSelected && (
+                    <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />
+                  )}
+                </div>
+
+                <div className="min-w-0 space-y-1">
+                  {opt.badge && (
+                    <div className="mb-1">
                       <BadgePill variant="blue" size="sm">
                         {opt.badge}
                       </BadgePill>
-                    )}
-                    {isSelected && (
-                      <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0" />
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <span className="block text-sm font-extrabold text-slate-900">{opt.title}</span>
-                  <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{opt.subtitle}</p>
+                    </div>
+                  )}
+                  <span className="block text-[13px] sm:text-sm font-extrabold text-slate-900 leading-tight break-words">
+                    {opt.title}
+                  </span>
+                  <p className="text-[11px] text-slate-500 leading-snug break-words">
+                    {opt.subtitle}
+                  </p>
                 </div>
 
                 <div className="space-y-1 pt-0.5">
@@ -144,7 +148,7 @@ export const Step2PaceAndPlacement = ({
                       />
                     ))}
                   </div>
-                  <span className="block text-[11px] font-semibold text-slate-500">
+                  <span className="block text-[10px] sm:text-[11px] font-semibold text-slate-500">
                     {opt.paceEstimate}
                   </span>
                 </div>
@@ -161,7 +165,7 @@ export const Step2PaceAndPlacement = ({
           <span>2. Jalur Penempatan Awal</span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 w-full min-w-0">
           {PLACEMENT_OPTIONS.map((opt) => {
             const isSelected = initialPlacementType === opt.type
             return (
@@ -173,15 +177,15 @@ export const Step2PaceAndPlacement = ({
                   triggerHaptic('tap')
                   onSelectPlacementType(opt.type)
                 }}
-                className={`rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer flex flex-col gap-3.5 border-2 ${
+                className={`rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer flex flex-col gap-3 sm:gap-3.5 border-2 min-w-0 w-full ${
                   isSelected
                     ? 'bg-blue-50/80 border-[#2563EB] shadow-md -translate-y-0.5'
                     : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'
                 }`}
               >
-                <div className="flex items-start justify-between gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-2 w-full">
                   <PlacementPathIllustration type={opt.type} active={isSelected} />
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1.5 min-w-0">
                     <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
                       {opt.badge}
                     </BadgePill>
@@ -191,14 +195,18 @@ export const Step2PaceAndPlacement = ({
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col justify-between gap-2">
-                  <div>
-                    <h3 className="text-base font-extrabold text-slate-900 mb-1">{opt.title}</h3>
-                    <p className="text-xs text-slate-600 leading-relaxed">{opt.description}</p>
+                <div className="flex-1 flex flex-col justify-between gap-2 min-w-0">
+                  <div className="min-w-0">
+                    <h3 className="text-base font-extrabold text-slate-900 mb-1 break-words">
+                      {opt.title}
+                    </h3>
+                    <p className="text-xs text-slate-600 leading-relaxed break-words">
+                      {opt.description}
+                    </p>
                   </div>
 
                   <span
-                    className={`text-[11px] font-semibold ${
+                    className={`text-[11px] font-semibold break-words ${
                       isSelected ? 'text-[#2563EB]' : 'text-slate-400'
                     }`}
                   >

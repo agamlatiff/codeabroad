@@ -17,7 +17,7 @@ export const Step1LanguagePicker = ({
   onSelectLanguage,
 }: Step1LanguagePickerProps) => {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 sm:gap-6 max-w-5xl w-full justify-items-center">
+    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-6 max-w-5xl w-full min-w-0">
       {languages.map((lang) => {
         const code = lang.code?.toLowerCase() || 'ja'
         const isSelected = selectedLanguageId === lang.id
@@ -45,7 +45,7 @@ export const Step1LanguagePicker = ({
                 onSelectLanguage(lang.id)
               }
             }}
-            className={`rounded-3xl p-6 sm:p-7 flex flex-col items-center text-center transition-all duration-200 max-w-[340px] w-full relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 border-2 ${
+            className={`rounded-2xl sm:rounded-3xl p-3.5 sm:p-6 flex flex-col items-center text-center transition-all duration-200 w-full min-w-0 relative focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 border-2 ${
               isActive
                 ? isSelected
                   ? 'bg-blue-50/70 border-[#2563EB] shadow-md -translate-y-0.5 cursor-pointer'
@@ -53,7 +53,7 @@ export const Step1LanguagePicker = ({
                 : 'bg-slate-50/80 border-slate-200/70 opacity-65 cursor-not-allowed'
             }`}
           >
-            <div className="mb-3">
+            <div className="mb-2 sm:mb-3 max-w-full">
               {isActive ? (
                 <BadgePill variant={isSelected ? 'blue' : 'neutral'} size="sm">
                   {examLabel}
@@ -65,13 +65,13 @@ export const Step1LanguagePicker = ({
               )}
             </div>
 
-            <div className="w-24 h-20 mb-4 flex items-center justify-center">
+            <div className="w-14 h-10 sm:w-24 sm:h-20 mb-2.5 sm:mb-4 flex items-center justify-center shrink-0">
               <LanguageFlagIllustration code={code} className="w-full h-full object-contain drop-shadow-xs" />
             </div>
 
-            <h3 className="text-lg font-extrabold text-slate-900">{lang.name}</h3>
-            <p className="text-xs font-bold text-[#2563EB] mt-0.5">{meta.countryLabel}</p>
-            <p className="text-xs text-slate-500 mt-2 leading-relaxed">{meta.description}</p>
+            <h3 className="text-sm sm:text-lg font-brand font-black text-slate-900 leading-snug break-words">{lang.name}</h3>
+            <p className="text-[11px] sm:text-xs font-bold text-[#2563EB] mt-0.5 leading-snug break-words">{meta.countryLabel}</p>
+            <p className="hidden sm:block text-xs text-slate-500 mt-2 leading-relaxed">{meta.description}</p>
           </div>
         )
       })}
