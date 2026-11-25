@@ -52,13 +52,13 @@ export const AppLeftSidebar = () => {
           <Link
             to={user ? '/curriculum' : '/welcome'}
             onClick={() => triggerHaptic('tap')}
-            className="w-12 h-12 rounded-2xl bg-slate-100 hover:bg-slate-200/80 border-2 border-slate-200/90 shadow-[0_3px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer relative group"
+            className="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
             title={user ? 'Merantalk Hub' : 'Kembali ke Beranda Merantalk'}
           >
             <img
               src="/favicon.svg"
               alt="Merantalk Mera"
-              className="w-9 h-9 object-contain drop-shadow-xs transition-transform group-hover:scale-110"
+              className="w-10 h-10 object-contain transition-transform group-hover:scale-105 group-hover:-rotate-3"
             />
 
             {/* Brand Tooltip */}
