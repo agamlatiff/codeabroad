@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
@@ -19,6 +19,7 @@ import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
+import { FlashcardHeroIllustration } from '@/features/flashcard/components/FlashcardHeroIllustration'
 import { FlashcardDeckCard } from '@/features/flashcard/components/FlashcardDeckCard'
 import { useUser } from '@/features/user/hooks/useUser'
 import { useAuthStore } from '@/features/auth/store/authStore'
@@ -163,6 +164,7 @@ export const FlashcardPage = () => {
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
   const speechLocale = useActiveSpeechLocale()
+  const heroPatternId = `flashcards-hero-seigaiha-${useId().replace(/:/g, '')}`
 
   const [mode, setMode] = useState<SessionMode>('lobby')
   const [lobbyLevelMemory, setLobbyLevelMemory] = useState<JlptFilter>(() =>
@@ -935,12 +937,34 @@ export const FlashcardPage = () => {
           ]}
         />
 
-        {/* Tactile Learning Studio Editorial Header */}
-        <section className="rounded-3xl border-2 border-slate-200 bg-white px-5 py-4 sm:px-6 sm:py-5 shadow-[0_4px_0_0_#E2E8F0]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Custom Editorial Flashcard Hero Banner with Kodi & Fanned Vector Cards */}
+        <section className="relative rounded-3xl border-2 border-slate-200/90 bg-gradient-to-br from-sky-50/75 via-white to-blue-50/45 shadow-[0_4px_0_0_#E2E8F0] overflow-hidden">
+          <div className="h-1.5 w-full bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500" />
+
+          {/* Subtle Japanese Seigaiha Background Pattern */}
+          <svg
+            className="absolute inset-0 w-full h-full text-sky-700 opacity-[0.055] pointer-events-none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <pattern id={heroPatternId} width="48" height="24" patternUnits="userSpaceOnUse">
+                <path
+                  d="M0 24A12 12 0 0 1 24 24M24 24A12 12 0 0 1 48 24M12 12A12 12 0 0 1 36 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
+          </svg>
+
+          <div className="relative z-10 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            {/* Left Info */}
             <div className="flex items-center gap-3.5 min-w-0 flex-1">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8] text-white flex items-center justify-center shrink-0">
-                <Cards weight="fill" className="w-5 h-5" />
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-sky-400 to-blue-600 shadow-[0_3px_0_0_#1D4ED8] text-white flex items-center justify-center shrink-0">
+                <Cards weight="fill" className="w-6 h-6" />
               </div>
 
               <div className="space-y-1 min-w-0 flex-1">
@@ -948,26 +972,18 @@ export const FlashcardPage = () => {
                   Belajar &amp; Ulas Flashcard
                 </h1>
 
-                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
                   Hafalkan kosakata lewat kartu flip kapan saja lintas tingkat JLPT N5 hingga N1.
                 </p>
               </div>
             </div>
 
-            {userData.isAuthenticated && (totalDue > 0 || totalLearned > 0) && (
-              <div className="flex items-center flex-wrap gap-2 shrink-0">
-                {totalDue > 0 && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-xl bg-amber-50 border border-amber-200 text-xs font-brand font-black text-amber-800 tabular-nums">
-                    {totalDue} Perlu Ulas
-                  </span>
-                )}
-                {totalLearned > 0 && (
-                  <span className="inline-flex items-center px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-brand font-black text-emerald-700 tabular-nums">
-                    {totalLearned} Dipelajari
-                  </span>
-                )}
-              </div>
-            )}
+            {/* Right: Custom Floating Card Mascot Illustration */}
+            <FlashcardHeroIllustration
+              totalDue={totalDue}
+              totalLearned={totalLearned}
+              className="hidden md:flex shrink-0"
+            />
           </div>
         </section>
 
@@ -1075,7 +1091,7 @@ export const FlashcardPage = () => {
               )}
             </div>
             <span className="text-xs font-semibold text-slate-500">
-              Klik dek untuk mulai belajar
+              Arahkan kursor ke kartu untuk mengintip kata, klik dek untuk mulai
             </span>
           </div>
 

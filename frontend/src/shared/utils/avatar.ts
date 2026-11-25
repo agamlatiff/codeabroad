@@ -66,98 +66,7 @@ export const getDeterministicGradient = (seed: string): string => {
   return gradients[Math.abs(hash) % gradients.length]
 }
 
-export interface AvatarColorPreset {
-  id: string
-  url: string
-  label: string
-  gradient: string
-  ring: string
-}
-
-export const AVATAR_PRESET_PREFIX = '/avatar/preset/'
-
-export const AVATAR_COLOR_PRESETS: readonly AvatarColorPreset[] = [
-  {
-    id: 'blue',
-    url: `${AVATAR_PRESET_PREFIX}blue`,
-    label: 'Biru Laut',
-    gradient: 'from-blue-600 to-sky-400',
-    ring: 'ring-blue-500',
-  },
-  {
-    id: 'emerald',
-    url: `${AVATAR_PRESET_PREFIX}emerald`,
-    label: 'Zamrud',
-    gradient: 'from-emerald-600 to-teal-400',
-    ring: 'ring-emerald-500',
-  },
-  {
-    id: 'amber',
-    url: `${AVATAR_PRESET_PREFIX}amber`,
-    label: 'Kuning Amber',
-    gradient: 'from-amber-500 to-orange-400',
-    ring: 'ring-amber-500',
-  },
-  {
-    id: 'rose',
-    url: `${AVATAR_PRESET_PREFIX}rose`,
-    label: 'Mawar',
-    gradient: 'from-rose-500 to-pink-400',
-    ring: 'ring-rose-500',
-  },
-  {
-    id: 'violet',
-    url: `${AVATAR_PRESET_PREFIX}violet`,
-    label: 'Violet',
-    gradient: 'from-violet-600 to-purple-400',
-    ring: 'ring-violet-500',
-  },
-  {
-    id: 'cyan',
-    url: `${AVATAR_PRESET_PREFIX}cyan`,
-    label: 'Sian',
-    gradient: 'from-cyan-600 to-sky-400',
-    ring: 'ring-cyan-500',
-  },
-  {
-    id: 'indigo',
-    url: `${AVATAR_PRESET_PREFIX}indigo`,
-    label: 'Indigo',
-    gradient: 'from-indigo-600 to-blue-400',
-    ring: 'ring-indigo-500',
-  },
-  {
-    id: 'slate',
-    url: `${AVATAR_PRESET_PREFIX}slate`,
-    label: 'Grafit',
-    gradient: 'from-slate-700 to-slate-500',
-    ring: 'ring-slate-600',
-  },
-] as const
-
-export const isPresetAvatarUrl = (url?: string | null): boolean => {
-  if (!url) return false
-  return url.trim().startsWith(AVATAR_PRESET_PREFIX)
-}
-
-export const getAvatarPresetGradient = (avatarUrl?: string | null): string | null => {
-  if (!avatarUrl) return null
-  const trimmed = avatarUrl.trim()
-  if (!trimmed.startsWith(AVATAR_PRESET_PREFIX)) return null
-  const presetId = trimmed.slice(AVATAR_PRESET_PREFIX.length)
-  const matched = AVATAR_COLOR_PRESETS.find((preset) => preset.id === presetId || preset.url === trimmed)
-  return matched?.gradient ?? null
-}
-
-export const getDefaultAvatarPresetUrl = (seed: string): string => {
-  const cleanSeed = seed.trim() || 'learner'
-  let hash = 0
-  for (let i = 0; i < cleanSeed.length; i++) {
-    hash = cleanSeed.charCodeAt(i) + ((hash << 5) - hash)
-  }
-  return AVATAR_COLOR_PRESETS[Math.abs(hash) % AVATAR_COLOR_PRESETS.length].url
-}
-
+const LEGACY_AVATAR_PRESET_PREFIX = '/avatar/preset/'
 const ADVENTURER_BG_COLORS = 'b6e3f4,c0aede,d1d4f9,ffd5dc,ffdfbf'
 
 export const AVATAR_PRESET_SEEDS = [
@@ -178,8 +87,11 @@ export const getAvatarUrl = (
 ): string => {
   void _style
   if (isSafeAvatarUrl(user?.avatar_url)) {
-    return user.avatar_url.trim()
+    const trimmed = user.avatar_url.trim()
+    if (!trimmed.startsWith(LEGACY_AVATAR_PRESET_PREFIX)) {
+      return trimmed
+    }
   }
 
-  return ''
+  return buildAdventurerAvatarUrl(user?.username || user?.name || 'learner')
 }

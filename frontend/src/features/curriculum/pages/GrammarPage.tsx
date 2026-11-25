@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useId } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, ArrowsClockwise, BookOpen, CheckCircle } from '@phosphor-icons/react'
@@ -19,6 +19,7 @@ import {
   isGrammarPointDueForReview,
 } from '@/features/curriculum/constants/grammarStyles'
 import { GrammarEditorialCard } from '@/features/curriculum/components/GrammarEditorialCard'
+import { GrammarHeroIllustration } from '@/features/curriculum/components/GrammarHeroIllustration'
 
 type JlptLevelFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 
@@ -54,6 +55,7 @@ export const GrammarPage = () => {
   const { data: userData } = useUser()
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
+  const heroPatternId = `grammar-hero-seigaiha-${useId().replace(/:/g, '')}`
   const [searchParams, setSearchParams] = useSearchParams()
 
   const rawLevelParam = searchParams.get('level')
@@ -214,21 +216,43 @@ export const GrammarPage = () => {
           ]}
         />
 
-        {/* Tactile Learning Studio Editorial Header */}
-        <section className="rounded-3xl border-2 border-slate-200 bg-white px-5 py-4 sm:px-6 sm:py-5 shadow-[0_4px_0_0_#E2E8F0]">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        {/* Custom Editorial Grammar Hero Banner with Kodi & Syntax Blocks Illustration */}
+        <section className="relative rounded-3xl border-2 border-slate-200/90 bg-gradient-to-br from-blue-50/75 via-white to-indigo-50/45 shadow-[0_4px_0_0_#E2E8F0] overflow-hidden">
+          <div className="h-1.5 w-full bg-gradient-to-r from-blue-500 via-indigo-500 to-sky-500" />
+
+          {/* Subtle Japanese Seigaiha Background Pattern */}
+          <svg
+            className="absolute inset-0 w-full h-full text-blue-700 opacity-[0.05] pointer-events-none"
+            xmlns="http://www.w3.org/2000/svg"
+            aria-hidden="true"
+          >
+            <defs>
+              <pattern id={heroPatternId} width="48" height="24" patternUnits="userSpaceOnUse">
+                <path
+                  d="M0 24A12 12 0 0 1 24 24M24 24A12 12 0 0 1 48 24M12 12A12 12 0 0 1 36 12"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.2"
+                />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill={`url(#${heroPatternId})`} />
+          </svg>
+
+          <div className="relative z-10 p-5 sm:p-6 flex flex-col md:flex-row md:items-center justify-between gap-5">
+            {/* Left Info */}
             <div className="flex items-center gap-3.5 min-w-0 flex-1">
-              <div className="w-11 h-11 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_3px_0_0_#1E3A8A] text-white flex items-center justify-center shrink-0">
-                <BookOpen weight="fill" className="w-5 h-5" />
+              <div className="w-12 h-12 rounded-2xl bg-gradient-to-b from-blue-500 to-indigo-600 shadow-[0_3px_0_0_#1E3A8A] text-white flex items-center justify-center shrink-0">
+                <BookOpen weight="fill" className="w-6 h-6" />
               </div>
 
-              <div className="space-y-1 min-w-0 flex-1">
+              <div className="space-y-1.5 min-w-0 flex-1">
                 <div className="flex items-center flex-wrap gap-2">
                   <h1 className="text-lg sm:text-xl font-brand font-black text-slate-900 tracking-tight leading-snug">
                     Panduan Grammar
                   </h1>
                   {levelMasteryStats.totalInLevel > 0 && (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-brand font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-brand font-black bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-2xs">
                       <CheckCircle weight="fill" className="w-3.5 h-3.5 text-emerald-600" />
                       <span>
                         {levelMasteryStats.understoodCount}/{levelMasteryStats.totalInLevel} Materi Paham
@@ -237,15 +261,17 @@ export const GrammarPage = () => {
                   )}
                 </div>
 
-                <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed font-medium">
+                <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
                   Analogi bahasa Indonesia, rumus berwarna, contoh dipecah per kata, dan cek pemahaman 3 soal agar langsung paham.
                 </p>
               </div>
             </div>
 
-            <span className="self-start sm:self-center inline-flex items-center px-3 py-1 rounded-xl bg-slate-50 border border-slate-200 text-xs font-brand font-black text-slate-700 shrink-0">
-              {levelFilter === 'ALL' ? 'Semua Level' : `Level ${levelFilter}`}
-            </span>
+            {/* Right: Custom Grammar Syntax & Notebook Illustration */}
+            <GrammarHeroIllustration
+              levelLabel={levelFilter === 'ALL' ? 'N5–N1' : levelFilter}
+              className="hidden md:flex shrink-0"
+            />
           </div>
         </section>
 
