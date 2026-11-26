@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
-import { ArrowRight, CheckCircle, SpeakerHigh } from '@phosphor-icons/react'
+import { ArrowRight, CheckCircle, LockSimple, SpeakerHigh } from '@phosphor-icons/react'
 import { AudioWaveformBars } from '@/features/landing/components/LandingIllustrations'
 import {
   LANDING_DEMO_PACKS,
@@ -33,6 +33,15 @@ function findMatchedLanguage(
   )
 }
 
+function isPackTrackActive(
+  languages: Language[],
+  packCode: DemoLanguageCode
+): boolean {
+  const matched = findMatchedLanguage(languages, packCode)
+  if (matched) return Boolean(matched.is_active)
+  return packCode === 'ja'
+}
+
 export const LandingHero = () => {
   const [selectedCode, setSelectedCode] = useState<DemoLanguageCode>('ja')
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
@@ -56,7 +65,7 @@ export const LandingHero = () => {
   const selectedPack =
     LANDING_DEMO_PACKS.find((pack) => pack.code === selectedCode) ?? LANDING_DEMO_PACKS[0]
   const matchedLang = findMatchedLanguage(languages, selectedPack.code)
-  const isActiveTrack = Boolean(matchedLang?.is_active)
+  const isActiveTrack = isPackTrackActive(languages, selectedPack.code)
   const targetRoute =
     isActiveTrack && matchedLang?.id ? `/curriculum/${matchedLang.id}` : '/curriculum'
   const leadPhrase = selectedPack.phrases[0]
@@ -120,8 +129,7 @@ export const LandingHero = () => {
         >
           {LANDING_DEMO_PACKS.map((pack, idx) => {
             const isSelected = pack.code === selectedCode
-            const packLang = findMatchedLanguage(languages, pack.code)
-            const isPackActive = Boolean(packLang?.is_active)
+            const isPackActive = isPackTrackActive(languages, pack.code)
             const isLastCard = idx === LANDING_DEMO_PACKS.length - 1
 
             return (
@@ -137,12 +145,14 @@ export const LandingHero = () => {
                     ? { duration: 0.01 }
                     : { type: 'spring', stiffness: 420, damping: 24 }
                 }
-                className={`min-h-[124px] sm:min-h-[168px] rounded-[20px] sm:rounded-[24px] bg-white border-2 p-3 sm:p-4 flex flex-col items-center justify-between text-center cursor-pointer relative transition-colors shadow-[0_6px_0_0_rgba(45,64,150,0.06)] hover:shadow-[0_8px_0_0_rgba(37,99,235,0.12)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
+                className={`min-h-[124px] sm:min-h-[168px] rounded-[20px] sm:rounded-[24px] border-2 p-3 sm:p-4 flex flex-col items-center justify-between text-center cursor-pointer relative transition-colors shadow-[0_6px_0_0_rgba(45,64,150,0.06)] hover:shadow-[0_8px_0_0_rgba(37,99,235,0.12)] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20 ${
                   isLastCard ? 'col-span-2 sm:col-span-1' : ''
                 } ${
                   isSelected
-                    ? 'border-transparent'
-                    : 'border-[#E2E8F0] hover:border-[#93C5FD]'
+                    ? 'bg-white border-transparent'
+                    : isPackActive
+                      ? 'bg-white border-[#E2E8F0] hover:border-[#93C5FD]'
+                      : 'bg-slate-50/75 border-[#E2E8F0] hover:border-slate-300 opacity-85'
                 }`}
               >
                 {isSelected && (
@@ -154,7 +164,11 @@ export const LandingHero = () => {
                         ? { duration: 0.01 }
                         : { type: 'spring', stiffness: 380, damping: 30 }
                     }
-                    className="pointer-events-none absolute -inset-[2px] rounded-[20px] sm:rounded-[24px] border-2 border-[#2563EB] bg-blue-50/35"
+                    className={`pointer-events-none absolute -inset-[2px] rounded-[20px] sm:rounded-[24px] border-2 ${
+                      isPackActive
+                        ? 'border-[#2563EB] bg-blue-50/35'
+                        : 'border-slate-400 bg-slate-100/45'
+                    }`}
                   />
                 )}
 
@@ -172,20 +186,27 @@ export const LandingHero = () => {
                   </span>
 
                   <div className="w-full flex items-center justify-center gap-1.5 text-[10px] sm:text-[11px] font-mono font-bold text-[#64748B]">
-                    <span className="truncate">{pack.examLabel}</span>
-                    {isSelected ? (
-                      <span
-                        aria-hidden="true"
-                        className={`w-2 h-2 rounded-full shrink-0 ${
-                          isPackActive ? 'bg-emerald-500' : 'bg-[#2563EB]'
-                        }`}
-                      />
+                    {isPackActive ? (
+                      <>
+                        <span className="truncate">{pack.examLabel}</span>
+                        {isSelected ? (
+                          <span
+                            aria-hidden="true"
+                            className="w-2 h-2 rounded-full shrink-0 bg-emerald-500"
+                          />
+                        ) : (
+                          <ArrowRight
+                            weight="bold"
+                            className="w-3 h-3 text-slate-400 shrink-0"
+                            aria-hidden="true"
+                          />
+                        )}
+                      </>
                     ) : (
-                      <ArrowRight
-                        weight="bold"
-                        className="w-3 h-3 text-slate-400 shrink-0"
-                        aria-hidden="true"
-                      />
+                      <span className="inline-flex items-center gap-1 rounded-full bg-slate-100 border border-slate-200/90 px-2 py-0.5 font-brand text-[10px] font-bold text-slate-500">
+                        <LockSimple weight="bold" className="w-2.5 h-2.5 shrink-0" aria-hidden="true" />
+                        <span>Segera Hadir</span>
+                      </span>
                     )}
                   </div>
                 </div>
@@ -205,13 +226,34 @@ export const LandingHero = () => {
               transition={{ duration: shouldReduceMotion ? 0.08 : 0.18 }}
               className="w-full flex flex-col items-center gap-3.5"
             >
-              <Link
-                to={targetRoute}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 min-[360px]:px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-brand font-black shadow-[0_5px_0_0_#1D4ED8] active:translate-y-0.5 active:shadow-none transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/30"
-              >
-                <span>Coba Unit 1 {selectedPack.label} Gratis</span>
-                <ArrowRight weight="bold" className="w-4 h-4 shrink-0" aria-hidden="true" />
-              </Link>
+              {isActiveTrack ? (
+                <Link
+                  to={targetRoute}
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-[#2563EB] hover:bg-[#1D4ED8] text-white px-5 min-[360px]:px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-brand font-black shadow-[0_5px_0_0_#1D4ED8] active:translate-y-0.5 active:shadow-none transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/30"
+                >
+                  <span>Coba Unit 1 {selectedPack.label} Gratis</span>
+                  <ArrowRight weight="bold" className="w-4 h-4 shrink-0" aria-hidden="true" />
+                </Link>
+              ) : (
+                <div className="w-full flex flex-col items-center gap-2">
+                  <button
+                    type="button"
+                    disabled
+                    aria-disabled="true"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-full bg-slate-100 border-2 border-slate-200 text-slate-500 px-5 min-[360px]:px-7 py-3.5 sm:px-8 sm:py-4 text-sm sm:text-base font-brand font-black cursor-not-allowed whitespace-nowrap"
+                  >
+                    <LockSimple weight="bold" className="w-4 h-4 shrink-0" aria-hidden="true" />
+                    <span>Kurikulum {selectedPack.label} Segera Hadir</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSelectLanguage('ja')}
+                    className="text-xs sm:text-sm font-brand font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer"
+                  >
+                    Saat ini baru Bahasa Jepang (N5–N1) yang aktif — pilih Jepang untuk mulai gratis
+                  </button>
+                </div>
+              )}
 
               {leadPhrase && (
                 <button
