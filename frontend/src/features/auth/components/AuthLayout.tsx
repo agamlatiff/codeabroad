@@ -215,15 +215,13 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               )}
 
               {/* Tactile Masuk / Daftar Route Switcher */}
-              <div
-                role="tablist"
+              <nav
                 aria-label="Pilih halaman autentikasi"
                 className="bg-slate-100 p-1 rounded-2xl border border-slate-200/80 grid grid-cols-2 gap-1 mb-4 sm:mb-5"
               >
                 <Link
                   to="/login"
-                  role="tab"
-                  aria-selected={activeMode === 'login'}
+                  aria-current={activeMode === 'login' ? 'page' : undefined}
                   className={`text-center py-2 px-3 rounded-xl text-xs sm:text-sm font-brand font-black transition-all ${
                     activeMode === 'login'
                       ? 'bg-white text-[#2563EB] shadow-[0_2px_0_0_rgba(15,23,42,0.08)] border border-slate-200/70'
@@ -234,8 +232,7 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
                 </Link>
                 <Link
                   to="/register"
-                  role="tab"
-                  aria-selected={activeMode === 'register'}
+                  aria-current={activeMode === 'register' ? 'page' : undefined}
                   className={`text-center py-2 px-3 rounded-xl text-xs sm:text-sm font-brand font-black transition-all ${
                     activeMode === 'register'
                       ? 'bg-white text-[#2563EB] shadow-[0_2px_0_0_rgba(15,23,42,0.08)] border border-slate-200/70'
@@ -244,7 +241,7 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
                 >
                   Daftar Gratis
                 </Link>
-              </div>
+              </nav>
 
               <div className="mb-3.5 sm:mb-4 text-left">
                 <h1 className="font-brand font-black text-2xl sm:text-[28px] text-[#1E293B] tracking-tight leading-tight">

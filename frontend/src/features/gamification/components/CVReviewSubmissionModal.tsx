@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { FileText, Link as LinkIcon, LinkedinLogo, CheckCircle, PaperPlaneTilt } from '@phosphor-icons/react'
 import { z } from 'zod'
 import { Modal3D } from './Modal3D'
@@ -50,6 +50,7 @@ export const CVReviewSubmissionModal = ({
   onClose,
   onSubmitted,
 }: CVReviewSubmissionModalProps) => {
+  const formId = useId()
   const [githubUrl, setGithubUrl] = useState('')
   const [resumeUrl, setResumeUrl] = useState('')
   const [targetRole, setTargetRole] = useState('Persiapan Kerja Jepang (JLPT N4–N2)')
@@ -160,7 +161,7 @@ export const CVReviewSubmissionModal = ({
 
         {isSuccess ? (
           <div className="py-8 text-center space-y-3">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto text-3xl shadow-sm animate-bounce">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 border-2 border-emerald-300 text-emerald-600 flex items-center justify-center mx-auto text-3xl shadow-sm animate-pop">
               <CheckCircle weight="fill" className="w-9 h-9" />
             </div>
             <h4 className="font-brand font-black text-lg text-slate-900">
@@ -183,10 +184,11 @@ export const CVReviewSubmissionModal = ({
 
             {/* Target Role Field */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 block">
+              <label htmlFor={`${formId}-target-role`} className="text-xs font-brand font-black text-slate-700 block">
                 Target Sertifikasi / Tujuan Bahasa
               </label>
               <select
+                id={`${formId}-target-role`}
                 value={targetRole}
                 disabled={isSubmitting}
                 onChange={(e) => setTargetRole(e.target.value)}
@@ -203,11 +205,12 @@ export const CVReviewSubmissionModal = ({
 
             {/* Portfolio URL (Optional) */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
+              <label htmlFor={`${formId}-github-url`} className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
                 <LinkIcon weight="bold" className="w-4 h-4 text-slate-700" />
                 <span>Link Portofolio / Karya Tambahan (Opsional)</span>
               </label>
               <input
+                id={`${formId}-github-url`}
                 type="url"
                 disabled={isSubmitting}
                 value={githubUrl}
@@ -219,11 +222,12 @@ export const CVReviewSubmissionModal = ({
 
             {/* Resume URL */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
+              <label htmlFor={`${formId}-resume-url`} className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
                 <LinkedinLogo weight="bold" className="w-4 h-4 text-blue-600" />
                 <span>Link Resume / LinkedIn / Google Drive PDF *</span>
               </label>
               <input
+                id={`${formId}-resume-url`}
                 type="url"
                 required
                 disabled={isSubmitting}
@@ -236,10 +240,11 @@ export const CVReviewSubmissionModal = ({
 
             {/* Notes */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 block">
+              <label htmlFor={`${formId}-notes`} className="text-xs font-brand font-black text-slate-700 block">
                 Catatan Tambahan untuk Mentor (Opsional)
               </label>
               <textarea
+                id={`${formId}-notes`}
                 rows={2}
                 disabled={isSubmitting}
                 maxLength={600}

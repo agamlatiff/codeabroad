@@ -36,6 +36,16 @@ export const useWeeklyLeaderboard = ({
   const [selectedDivision, setSelectedDivision] = useState<LeagueDivision | undefined>(
     initialDivision
   )
+  const [prevInitialDivision, setPrevInitialDivision] = useState<LeagueDivision | undefined>(
+    initialDivision
+  )
+
+  if (initialDivision !== prevInitialDivision) {
+    setPrevInitialDivision(initialDivision)
+    if (initialDivision) {
+      setSelectedDivision(initialDivision)
+    }
+  }
 
   const query = useQuery({
     queryKey: [...LEADERBOARD_QUERY_KEY, userId, selectedDivision ?? 'auto'],

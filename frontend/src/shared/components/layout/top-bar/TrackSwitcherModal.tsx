@@ -29,13 +29,18 @@ const TrackSwitcherDialog = ({
   const [selectedTrack, setSelectedTrack] = useState<string>(currentTrack)
 
   useEffect(() => {
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [onClose])
 
   const handleConfirm = () => {
@@ -67,6 +72,7 @@ const TrackSwitcherDialog = ({
       <button
         key={track.id}
         type="button"
+        aria-pressed={isSelected}
         onClick={() => {
           triggerHaptic('tap')
           setSelectedTrack(track.id)
@@ -130,7 +136,7 @@ const TrackSwitcherDialog = ({
       role="dialog"
       aria-modal="true"
       aria-label="Ganti Bahasa"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fade-in select-none"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fadeIn select-none"
     >
       <div className="absolute inset-0" onClick={onClose} />
 

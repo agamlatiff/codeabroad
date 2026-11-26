@@ -927,7 +927,7 @@ export const useQuests = () => {
 
       const gemsAwarded = res.claim.gems_awarded
       const xpAwarded = res.claim.xp_awarded
-      triggerFloatingReward(`+${xpAwarded > 0 ? `${xpAwarded} XP • ` : ''}+${gemsAwarded} 💎`)
+      triggerFloatingReward(`+${xpAwarded > 0 ? `${xpAwarded} XP • ` : ''}+${gemsAwarded} Gems`)
       showToast(`${chestLabel} berhasil dibuka! +${gemsAwarded} Gems ditambahkan.`)
       setIsChestModalOpen(false)
     } catch (err: unknown) {

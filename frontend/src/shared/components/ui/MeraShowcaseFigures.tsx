@@ -986,35 +986,39 @@ export const MeraSenseiFigure: FC<MeraFigureProps> = ({
         </g>
 
         {/* Optional crisp lapel/board tag if badgeText provided */}
-        {badgeText ? (
-          <g transform="translate(24, 108)">
-            <rect
-              x="0"
-              y="0"
-              width="42"
-              height="26"
-              rx="7"
-              fill="#EFF6FF"
-              stroke="#2563EB"
-              strokeWidth="2.4"
-            />
-            <text
-              x="21"
-              y="13.5"
-              textAnchor="middle"
-              dominantBaseline="central"
-              fill="#1E40AF"
-              fontFamily="'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif"
-              fontWeight="800"
-              fontSize={badgeText.length > 3 ? '10' : '12'}
-            >
-              {badgeText}
-            </text>
-          </g>
-        ) : null}
+        {badgeText ? (() => {
+          const pillW = Math.max(42, Math.min(64, Math.round(badgeText.length * 7.2 + 12)))
+          const offsetX = Math.max(4, 58 - pillW)
+          return (
+            <g transform={`translate(${offsetX}, 100)`}>
+              <rect
+                x="0"
+                y="0"
+                width={pillW}
+                height="25"
+                rx="7"
+                fill="#EFF6FF"
+                stroke="#2563EB"
+                strokeWidth="2.4"
+              />
+              <text
+                x={pillW / 2}
+                y="13"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#1E40AF"
+                fontFamily="'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif"
+                fontWeight="800"
+                fontSize={badgeText.length > 5 ? '9.5' : badgeText.length > 3 ? '10' : '12'}
+              >
+                {badgeText}
+              </text>
+            </g>
+          )
+        })() : null}
 
-        {/* Left resting paw */}
-        <ellipse cx="64" cy="126" rx="7.5" ry="6.5" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
+        {/* Left resting paw (positioned cleanly clear of badge text) */}
+        <ellipse cx="68" cy="132" rx="7.2" ry="6" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
 
         {/* Slim warm-wood pointer wand with golden star & coral tip angled upper-right */}
         <g>
@@ -1158,32 +1162,38 @@ export const MeraPolyglotFigure: FC<MeraFigureProps> = ({
         </g>
 
         {/* Tilted cream script card in left paw */}
-        <g transform="translate(26, 108) rotate(-7)">
-          <rect
-            x="0"
-            y="0"
-            width="46"
-            height="34"
-            rx="6"
-            fill="#FFFBEB"
-            stroke="#0F172A"
-            strokeWidth="2.5"
-          />
-          <rect x="4" y="4" width="38" height="4" rx="2" fill="#10B981" fillOpacity="0.25" />
-          <text
-            x="23"
-            y="20.5"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#047857"
-            fontFamily="'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif"
-            fontWeight="800"
-            fontSize={badgeText.length > 3 ? '12' : '15'}
-          >
-            {badgeText}
-          </text>
-        </g>
-        <ellipse cx="64" cy="127" rx="7.5" ry="6.2" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
+        {(() => {
+          const cardW = Math.max(46, Math.min(60, Math.round(badgeText.length * 7.2 + 12)))
+          const offsetX = Math.max(4, 58 - cardW)
+          return (
+            <g transform={`translate(${offsetX}, 100) rotate(-6)`}>
+              <rect
+                x="0"
+                y="0"
+                width={cardW}
+                height="32"
+                rx="6"
+                fill="#FFFBEB"
+                stroke="#0F172A"
+                strokeWidth="2.5"
+              />
+              <rect x="4" y="4" width={cardW - 8} height="4" rx="2" fill="#10B981" fillOpacity="0.25" />
+              <text
+                x={cardW / 2}
+                y="18.5"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#047857"
+                fontFamily="'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif"
+                fontWeight="800"
+                fontSize={badgeText.length > 5 ? '10' : badgeText.length > 3 ? '11.5' : '15'}
+              >
+                {badgeText}
+              </text>
+            </g>
+          )
+        })()}
+        <ellipse cx="64" cy="134" rx="7.2" ry="5.8" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
 
         {/* Sleek calligraphy fountain pen in right paw */}
         <g transform="translate(126, 92) rotate(22)">
@@ -1281,42 +1291,48 @@ export const MeraTimekeeperFigure: FC<MeraFigureProps> = ({
         </g>
 
         {/* Miniature deck card corner showing badgeText (left paw) */}
-        <g transform="translate(30, 114) rotate(-6)">
-          <rect
-            x="4"
-            y="-4"
-            width="42"
-            height="32"
-            rx="6"
-            fill="#DBEAFE"
-            stroke="#0F172A"
-            strokeWidth="2.2"
-          />
-          <rect
-            x="0"
-            y="0"
-            width="42"
-            height="32"
-            rx="6"
-            fill="#FFFFFF"
-            stroke="#0F172A"
-            strokeWidth="2.5"
-          />
-          <rect x="0" y="0" width="42" height="8" rx="4" fill="#2563EB" />
-          <text
-            x="21"
-            y="21"
-            textAnchor="middle"
-            dominantBaseline="central"
-            fill="#0F172A"
-            fontFamily="'JetBrains Mono', monospace"
-            fontWeight="800"
-            fontSize={badgeText.length > 4 ? '10' : '12'}
-          >
-            {badgeText}
-          </text>
-        </g>
-        <ellipse cx="64" cy="130" rx="7.5" ry="6.2" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
+        {(() => {
+          const deckW = Math.max(42, Math.min(58, Math.round(badgeText.length * 7.2 + 12)))
+          const offsetX = Math.max(6, 56 - deckW)
+          return (
+            <g transform={`translate(${offsetX}, 106) rotate(-6)`}>
+              <rect
+                x="4"
+                y="-4"
+                width={deckW}
+                height="30"
+                rx="6"
+                fill="#DBEAFE"
+                stroke="#0F172A"
+                strokeWidth="2.2"
+              />
+              <rect
+                x="0"
+                y="0"
+                width={deckW}
+                height="30"
+                rx="6"
+                fill="#FFFFFF"
+                stroke="#0F172A"
+                strokeWidth="2.5"
+              />
+              <rect x="0" y="0" width={deckW} height="8" rx="4" fill="#2563EB" />
+              <text
+                x={deckW / 2}
+                y="19.5"
+                textAnchor="middle"
+                dominantBaseline="central"
+                fill="#0F172A"
+                fontFamily="'JetBrains Mono', monospace"
+                fontWeight="800"
+                fontSize={badgeText.length > 5 ? '9.5' : badgeText.length > 3 ? '10.5' : '12'}
+              >
+                {badgeText}
+              </text>
+            </g>
+          )
+        })()}
+        <ellipse cx="63" cy="136" rx="7.2" ry="5.8" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
 
         {/* Gleaming cel-shaded golden pocket watch (right paw) */}
         <g transform="translate(106, 106)">

@@ -47,7 +47,6 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
     setDailyGoalMinutes,
     selectedAvatarUrl,
     avatarOptions,
-    selectedAvatarStyle,
     isSubmitting,
     saveSuccess,
     errorMessage,
@@ -85,6 +84,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           }}
           className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer transition-colors"
           title="Tutup"
+          aria-label="Tutup pengaturan"
         >
           <X weight="bold" className="w-4 h-4" />
         </button>
@@ -96,7 +96,6 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               <UserAvatar
                 user={previewUser}
                 size="lg"
-                style={selectedAvatarStyle}
                 className="w-14 h-14"
               />
             </div>
@@ -137,7 +136,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
         {/* ── 2. QUICK STATS SUMMARY ── */}
         <div className="grid grid-cols-3 gap-2.5 p-3 bg-slate-50 border border-slate-200/80 rounded-2xl text-center">
           <div className="space-y-0.5">
-            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">
               Streak
             </span>
             <div className="font-brand font-black text-sm text-orange-600 flex items-center justify-center gap-1">
@@ -146,7 +145,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </div>
           </div>
           <div className="space-y-0.5 border-x border-slate-200/80">
-            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">
               Total XP
             </span>
             <div className="font-brand font-black text-sm text-amber-600 flex items-center justify-center gap-1">
@@ -155,7 +154,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </div>
           </div>
           <div className="space-y-0.5">
-            <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+            <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">
               Target Harian
             </span>
             <div className="font-brand font-black text-sm text-blue-600 flex items-center justify-center gap-1 truncate px-1">
@@ -182,7 +181,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
           {/* Nama Lengkap */}
           <div className="space-y-1">
-            <label className="text-xs font-brand font-black text-slate-700 block">
+            <label htmlFor="settings-name-input" className="text-xs font-brand font-black text-slate-700 block">
               Nama Lengkap
             </label>
             <div className="relative">
@@ -191,6 +190,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
                 className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400"
               />
               <input
+                id="settings-name-input"
                 type="text"
                 maxLength={100}
                 value={name}
@@ -203,10 +203,11 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
           {/* Bio Profil */}
           <div className="space-y-1">
-            <label className="text-xs font-brand font-black text-slate-700 block">
+            <label htmlFor="settings-bio-input" className="text-xs font-brand font-black text-slate-700 block">
               Bio Profil Singkat
             </label>
             <textarea
+              id="settings-bio-input"
               rows={2}
               maxLength={500}
               value={bio}
@@ -218,9 +219,9 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
           {/* Target Belajar Harian */}
           <div className="space-y-2">
-            <label className="text-xs font-brand font-black text-slate-700 block">
+            <p className="text-xs font-brand font-black text-slate-700">
               Target Belajar Harian
-            </label>
+            </p>
             <div className="grid grid-cols-4 gap-2">
               {DAILY_GOAL_MINUTES_OPTIONS.map((mins) => {
                 const isSelected = dailyGoalMinutes === mins
@@ -254,9 +255,9 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
           {/* Pilih Foto Profil (20 Karakter Petualang DiceBear) */}
           <div className="space-y-2.5">
             <div className="flex items-center justify-between gap-2">
-              <label className="text-xs font-brand font-black text-slate-700">
+              <p className="text-xs font-brand font-black text-slate-700">
                 Pilih Foto Profil ({avatarOptions.length} Pilihan)
-              </label>
+              </p>
               <button
                 type="button"
                 onClick={shuffleAvatarOptions}
@@ -304,14 +305,15 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
           {/* ── AUDIO & SOUNDSCAPE PREFERENCES ── */}
           <div className="space-y-2.5 pt-3 border-t border-slate-200/80">
-            <label className="block text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
+            <p className="text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
               Suara & Musik Latar
-            </label>
+            </p>
 
             {/* Audio Mode 3D Segmented Control */}
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
+                aria-pressed={audioMode === 'all'}
                 onClick={() => {
                   triggerHaptic('tap')
                   setAudioMode('all')
@@ -328,6 +330,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
               <button
                 type="button"
+                aria-pressed={audioMode === 'sfx_only'}
                 onClick={() => {
                   triggerHaptic('tap')
                   setAudioMode('sfx_only')
@@ -344,6 +347,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
               <button
                 type="button"
+                aria-pressed={audioMode === 'muted'}
                 onClick={() => {
                   triggerHaptic('tap')
                   setAudioMode('muted')
@@ -398,9 +402,9 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
 
           {/* ── PANDUAN FITUR ── */}
           <div className="space-y-2 pt-3 border-t border-slate-200/80">
-            <label className="block text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
+            <p className="text-xs font-brand font-black uppercase text-slate-700 tracking-wider">
               Panduan Fitur
-            </label>
+            </p>
             <button
               type="button"
               onClick={() => {

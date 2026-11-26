@@ -4,6 +4,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   BookOpenText,
   Cards,
+  Crown,
   SquaresFour,
   Target,
   Translate,
@@ -28,11 +29,6 @@ import {
 import { useActiveLanguageCode } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { supportsKanaBoard } from '@/shared/constants/languageCatalog'
 import { triggerHaptic } from '@/shared/utils/haptics'
-import {
-  getSavedAvatarStyle,
-  saveAvatarStyle,
-  type AvatarStyle,
-} from '@/shared/utils/avatar'
 
 export interface LeftSidebarNavItem {
   label: string
@@ -53,7 +49,6 @@ export const useAppLeftSidebar = () => {
   const logout = useLogout()
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
-  const [avatarStyle, setAvatarStyleState] = useState<AvatarStyle>(() => getSavedAvatarStyle())
 
   const flashcardDueQuery = useQuery({
     queryKey: [...FLASHCARD_DUE_QUERY_KEY, user?.id ?? 'anonymous', activeLanguageCode, 'sidebar'],
@@ -148,6 +143,12 @@ export const useAppLeftSidebar = () => {
         href: '/leaderboard',
         icon: Trophy,
       },
+      {
+        label: 'Pro',
+        tooltip: 'Merantalk Pro • Buka JLPT N2 & N1',
+        href: '/pricing',
+        icon: Crown,
+      },
     ]
 
     return rawItems.map((item) => ({
@@ -163,11 +164,6 @@ export const useAppLeftSidebar = () => {
         (item.href === '/flashcards' && location.pathname === '/flashcard'),
     }))
   }, [activeLanguageCode, location.pathname, flashcardDueCount, hasQuestsBadge, user])
-
-  const handleAvatarStyleChange = useCallback((style: AvatarStyle) => {
-    saveAvatarStyle(style)
-    setAvatarStyleState(style)
-  }, [])
 
   const handleOpenSettings = useCallback(() => {
     triggerHaptic('tap')
@@ -191,9 +187,7 @@ export const useAppLeftSidebar = () => {
   return {
     user,
     navItems,
-    avatarStyle,
     isSettingsOpen,
-    handleAvatarStyleChange,
     handleOpenSettings,
     handleCloseSettings,
     handleProfileUpdated,

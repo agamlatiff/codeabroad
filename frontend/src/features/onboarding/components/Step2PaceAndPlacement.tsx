@@ -207,7 +207,7 @@ export const Step2PaceAndPlacement = ({
 
                   <span
                     className={`text-[11px] font-semibold break-words ${
-                      isSelected ? 'text-[#2563EB]' : 'text-slate-400'
+                      isSelected ? 'text-[#2563EB]' : 'text-slate-500'
                     }`}
                   >
                     {opt.highlight}

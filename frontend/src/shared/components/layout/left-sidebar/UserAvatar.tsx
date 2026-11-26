@@ -5,7 +5,6 @@ import {
   getAvatarUrl,
   getDeterministicGradient,
   getInitials,
-  type AvatarStyle,
   type AvatarUser,
 } from '@/shared/utils/avatar'
 
@@ -14,7 +13,6 @@ export type AvatarSize = 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl'
 export interface UserAvatarProps {
   user?: AvatarUser | null
   size?: AvatarSize
-  style?: AvatarStyle
   showBadge?: boolean
   badgeColor?: 'online' | 'streak'
   className?: string
@@ -32,7 +30,6 @@ const sizeClasses: Record<AvatarSize, { container: string; text: string; badge: 
 export const UserAvatar: FC<UserAvatarProps> = ({
   user,
   size = 'md',
-  style = 'adventurer',
   showBadge = false,
   badgeColor = 'online',
   className = '',
@@ -40,8 +37,8 @@ export const UserAvatar: FC<UserAvatarProps> = ({
   const [failedAvatarUrl, setFailedAvatarUrl] = useState<string | null>(null)
 
   const avatarUrl = useMemo(() => {
-    return getAvatarUrl(user, style)
-  }, [user, style])
+    return getAvatarUrl(user)
+  }, [user])
 
   const imageError = !avatarUrl || failedAvatarUrl === avatarUrl
 
@@ -59,7 +56,7 @@ export const UserAvatar: FC<UserAvatarProps> = ({
   return (
     <div
       className={`relative inline-flex items-center justify-center shrink-0 rounded-full select-none shadow-sm transition-transform duration-200 hover:scale-105 ${containerSize} ${className}`}
-      title={user?.name || user?.username || 'User Profile'}
+      title={user?.name || user?.username || 'Profil Pengguna'}
     >
       {!imageError ? (
         <img

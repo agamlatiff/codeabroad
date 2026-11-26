@@ -118,7 +118,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
             <h4 className="font-brand font-black text-xs text-slate-900 leading-tight truncate">
               {languageMeta.languageTitle}
             </h4>
-            <span className="text-[9px] text-slate-400 font-bold tracking-wide block truncate">
+            <span className="text-[9px] text-slate-500 font-bold tracking-wide block truncate">
               {currentVocab.level}
             </span>
           </div>
@@ -144,6 +144,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
         <div className="inline-flex items-center p-0.5 rounded-xl bg-slate-100 border border-slate-200/80">
           <button
             type="button"
+            aria-pressed={cardMode === 'study'}
             onClick={() => handleSetCardMode('study')}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-brand font-black transition-all cursor-pointer ${
               cardMode === 'study'
@@ -156,6 +157,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
           </button>
           <button
             type="button"
+            aria-pressed={cardMode === 'quiz'}
             onClick={() => handleSetCardMode('quiz')}
             className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] font-brand font-black transition-all cursor-pointer ${
               cardMode === 'quiz'
@@ -404,6 +406,7 @@ export const DailyLanguageCard: FC<DailyLanguageCardProps> = ({
                 onClick={() => handleSpeak('normal', currentVocab.contoh)}
                 className="shrink-0 p-1.5 rounded-lg bg-white border border-slate-200 hover:border-rose-400 text-slate-500 hover:text-rose-600 transition-colors cursor-pointer shadow-2xs active:translate-y-0.5"
                 title="Dengarkan Contoh Kalimat Percakapan"
+                aria-label="Dengarkan Contoh Kalimat Percakapan"
               >
                 <SpeakerHigh weight="bold" className="w-3.5 h-3.5" />
               </button>

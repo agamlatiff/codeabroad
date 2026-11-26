@@ -47,7 +47,7 @@ export const AccessibleModal = ({
       role="dialog"
       aria-modal="true"
       aria-label={ariaLabel}
-      className={`fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-3 sm:p-4 animate-fade-in ${backdropClassName}`}
+      className={`fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-3 sm:p-4 animate-fadeIn ${backdropClassName}`}
     >
       <div className="absolute inset-0" onClick={onClose} />
       <div className="relative z-10 w-full flex justify-center pointer-events-none">

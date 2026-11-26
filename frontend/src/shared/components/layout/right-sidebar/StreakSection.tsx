@@ -32,7 +32,7 @@ export const StreakSection: FC = () => {
               <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
                 Streak Harian
               </h4>
-              <span className="text-[9px] text-slate-400 font-medium">
+              <span className="text-[9px] text-slate-500 font-medium">
                 Target Konsistensi 7 Hari
               </span>
             </div>
@@ -69,7 +69,7 @@ export const StreakSection: FC = () => {
                     ? 'text-orange-600 font-black'
                     : item.isToday
                       ? 'text-orange-500 font-black underline decoration-orange-400 decoration-2 underline-offset-2'
-                      : 'text-slate-400 font-bold'
+                      : 'text-slate-500 font-bold'
                 }`}
               >
                 {item.label}
@@ -78,7 +78,7 @@ export const StreakSection: FC = () => {
               {item.isCompleted ? (
                 <div
                   className="w-7 h-7 rounded-xl bg-gradient-to-b from-amber-400 via-orange-400 to-orange-500 shadow-[0_2px_0_0_#C2410C] flex items-center justify-center text-white transition-transform hover:scale-105 active:scale-95 group/token cursor-default"
-                  title={`${item.label}: Hari Aktif Belajar 🔥`}
+                  title={`${item.label}: Hari Aktif Belajar`}
                 >
                   <Fire
                     weight="fill"

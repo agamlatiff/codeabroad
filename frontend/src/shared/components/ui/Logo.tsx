@@ -180,7 +180,7 @@ export const Logo: FC<LogoProps> = ({
     return (
       <Link
         to={linkTo}
-        className="inline-block outline-none focus:outline-none focus:ring-0 focus-visible:outline-none active:outline-none border-none select-none"
+        className="inline-block rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2 select-none"
       >
         {content}
       </Link>

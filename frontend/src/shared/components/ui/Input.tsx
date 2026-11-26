@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import type { InputHTMLAttributes, ReactNode } from 'react'
 import { Eye, EyeSlash, WarningCircle } from '@phosphor-icons/react'
 import { FORM_TOKENS, resolveFormInputClassName } from "@/shared/tokens/layoutTokens"
@@ -24,15 +24,17 @@ export const Input = ({
   className = '',
   ...props
 }: InputProps) => {
+  const generatedId = useId()
+  const inputId = id ?? generatedId
   const [showPassword, setShowPassword] = useState(false)
   const inputType = isPassword ? (showPassword ? 'text' : 'password') : type
-  const errorId = error && id ? `${id}-error` : undefined
+  const errorId = error ? `${inputId}-error` : undefined
   const toggleLabel = showPassword ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'
 
   return (
     <div className={`${fullWidth ? 'w-full' : ''} space-y-1.5 text-left`}>
       {label && (
-        <label htmlFor={id} className={FORM_TOKENS.labelClass}>
+        <label htmlFor={inputId} className={FORM_TOKENS.labelClass}>
           {label}
         </label>
       )}
@@ -42,7 +44,7 @@ export const Input = ({
         {icon && <div className={FORM_TOKENS.iconWrapperClass}>{icon}</div>}
 
         <input
-          id={id}
+          id={inputId}
           type={inputType}
           aria-invalid={Boolean(error)}
           aria-describedby={errorId}
@@ -61,9 +63,9 @@ export const Input = ({
             type="button"
             onClick={() => setShowPassword((prev) => !prev)}
             className={FORM_TOKENS.passwordToggleClass}
-            tabIndex={-1}
             title={toggleLabel}
             aria-label={toggleLabel}
+            aria-pressed={showPassword}
           >
             {showPassword ? <EyeSlash weight="bold" className="w-4 h-4" /> : <Eye weight="bold" className="w-4 h-4" />}
           </button>

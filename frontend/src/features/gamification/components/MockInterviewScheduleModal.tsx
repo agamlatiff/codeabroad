@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useId } from 'react'
 import { Microphone, CheckCircle, CalendarBlank, DiscordLogo, Translate } from '@phosphor-icons/react'
 import { z } from 'zod'
 import { Modal3D } from './Modal3D'
@@ -36,6 +36,7 @@ export const MockInterviewScheduleModal = ({
   onClose,
   onScheduled,
 }: MockInterviewScheduleModalProps) => {
+  const formId = useId()
   const [language, setLanguage] = useState<'english' | 'nihongo' | 'german' | 'mandarin' | 'french' | 'bilingual'>('bilingual')
   const [discordHandle, setDiscordHandle] = useState('')
   const [focusTopic, setFocusTopic] = useState('Global Bilingual Interview')
@@ -144,7 +145,7 @@ export const MockInterviewScheduleModal = ({
 
         {isSuccess ? (
           <div className="py-8 text-center space-y-3">
-            <div className="w-14 h-14 rounded-full bg-purple-100 border-2 border-purple-300 text-purple-600 flex items-center justify-center mx-auto text-3xl shadow-sm animate-bounce">
+            <div className="w-14 h-14 rounded-full bg-purple-100 border-2 border-purple-300 text-purple-600 flex items-center justify-center mx-auto text-3xl shadow-sm animate-pop">
               <CheckCircle weight="fill" className="w-9 h-9" />
             </div>
             <h4 className="font-brand font-black text-lg text-slate-900">
@@ -167,11 +168,11 @@ export const MockInterviewScheduleModal = ({
 
             {/* Preferred Language */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
+              <span id={`${formId}-lang-label`} className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
                 <Translate weight="bold" className="w-4 h-4 text-purple-600" />
                 <span>Bahasa Wawancara</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2">
+              </span>
+              <div role="group" aria-labelledby={`${formId}-lang-label`} className="grid grid-cols-3 gap-2">
                 {[
                   { id: 'bilingual' as const, label: 'Bilingual' },
                   { id: 'english' as const, label: 'Inggris' },
@@ -183,6 +184,7 @@ export const MockInterviewScheduleModal = ({
                   <button
                     key={item.id}
                     type="button"
+                    aria-pressed={language === item.id}
                     disabled={isSubmitting}
                     onClick={() => setLanguage(item.id)}
                     className={`py-2 px-2.5 rounded-xl border-2 text-[11px] font-black transition-all cursor-pointer text-center disabled:opacity-60 ${
@@ -199,11 +201,12 @@ export const MockInterviewScheduleModal = ({
 
             {/* Discord Username */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
+              <label htmlFor={`${formId}-discord`} className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
                 <DiscordLogo weight="bold" className="w-4 h-4 text-indigo-600" />
                 <span>Username Discord Kamu *</span>
               </label>
               <input
+                id={`${formId}-discord`}
                 type="text"
                 required
                 maxLength={64}
@@ -217,10 +220,11 @@ export const MockInterviewScheduleModal = ({
 
             {/* Focus Topic */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 block">
+              <label htmlFor={`${formId}-focus-topic`} className="text-xs font-brand font-black text-slate-700 block">
                 Fokus Topik Simulasi
               </label>
               <select
+                id={`${formId}-focus-topic`}
                 value={focusTopic}
                 disabled={isSubmitting}
                 onChange={(e) => setFocusTopic(e.target.value)}
@@ -235,11 +239,12 @@ export const MockInterviewScheduleModal = ({
 
             {/* Preferred Time */}
             <div className="space-y-1">
-              <label className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
+              <label htmlFor={`${formId}-preferred-time`} className="text-xs font-brand font-black text-slate-700 flex items-center gap-1.5">
                 <CalendarBlank weight="bold" className="w-4 h-4 text-slate-500" />
                 <span>Preferensi Waktu Sesi</span>
               </label>
               <select
+                id={`${formId}-preferred-time`}
                 value={preferredTime}
                 disabled={isSubmitting}
                 onChange={(e) => setPreferredTime(e.target.value)}

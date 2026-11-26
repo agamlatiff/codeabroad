@@ -5,8 +5,14 @@ import { GoogleOAuthProvider } from '@react-oauth/google'
 import axios from 'axios'
 import './index.css'
 import App from './App.tsx'
-import { GOOGLE_CLIENT_ID } from '@/features/auth/hooks/authHelpers'
+import {
+  GOOGLE_CLIENT_ID,
+  reportGoogleScriptLoadError,
+  resetGoogleScriptLoadError,
+} from '@/features/auth/hooks/authHelpers'
+import { registerQueryCacheResetHandler } from '@/shared/services/sessionCleanup'
 import '@/features/auth/store/authStore'
+import '@/features/auth/store/guestTrialStore'
 import '@/features/onboarding/store/onboardingStore'
 
 const NON_RETRYABLE_STATUS = new Set([400, 401, 403, 404, 409, 413, 422, 429])
@@ -27,11 +33,19 @@ const queryClient = new QueryClient({
   },
 })
 
+registerQueryCacheResetHandler(() => {
+  queryClient.clear()
+})
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <QueryClientProvider client={queryClient}>
       {GOOGLE_CLIENT_ID ? (
-        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+        <GoogleOAuthProvider
+          clientId={GOOGLE_CLIENT_ID}
+          onScriptLoadSuccess={resetGoogleScriptLoadError}
+          onScriptLoadError={reportGoogleScriptLoadError}
+        >
           <App />
         </GoogleOAuthProvider>
       ) : (

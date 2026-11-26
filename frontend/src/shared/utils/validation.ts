@@ -31,14 +31,14 @@ const PASSWORD_STRENGTH_MAP: Record<PasswordStrengthScore, PasswordStrengthInfo>
     score: 1,
     label: 'Lemah',
     hint: `Gunakan minimal ${PASSWORD_MIN_LENGTH} karakter`,
-    textColor: 'text-rose-500',
+    textColor: 'text-rose-600',
     barColor: 'bg-rose-500',
   },
   2: {
     score: 2,
     label: 'Cukup',
     hint: 'Tambahkan huruf besar & angka',
-    textColor: 'text-amber-500',
+    textColor: 'text-amber-700',
     barColor: 'bg-amber-500',
   },
   3: {
@@ -51,7 +51,7 @@ const PASSWORD_STRENGTH_MAP: Record<PasswordStrengthScore, PasswordStrengthInfo>
   4: {
     score: 4,
     label: 'Sangat Kuat',
-    hint: 'Kata sandi sangat aman & terlindungi 🛡️',
+    hint: 'Kata sandi sangat aman & terlindungi',
     textColor: 'text-blue-600',
     barColor: 'bg-blue-600',
   },

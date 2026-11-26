@@ -347,6 +347,7 @@ export const MilestonesAndBadgesSection = ({
                 <button
                   key={option.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => {
                     triggerHaptic('tap')
                     onChangeBadgeFilter(option.id)

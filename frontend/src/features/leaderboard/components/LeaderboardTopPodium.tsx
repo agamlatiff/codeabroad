@@ -111,7 +111,7 @@ export const LeaderboardTopPodium: FC<LeaderboardTopPodiumProps> = ({ topThree }
             {/* Top rank indicator */}
             <div className="flex flex-col items-center gap-1.5 w-full">
               {isFirst && (
-                <div className="w-7 h-7 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center lb-crown-bob">
+                <div className="w-7 h-7 rounded-full bg-amber-100 border border-amber-300 flex items-center justify-center">
                   <Crown weight="fill" className="w-4 h-4 text-amber-600" />
                 </div>
               )}
@@ -143,10 +143,10 @@ export const LeaderboardTopPodium: FC<LeaderboardTopPodiumProps> = ({ topThree }
                   </span>
                 )}
               </div>
-              <div className="flex items-center justify-center gap-2 text-[10px] font-mono font-bold text-slate-400">
+              <div className="flex items-center justify-center gap-2 text-[10px] font-mono font-bold text-slate-500">
                 <span>Lv. {entry.current_level}</span>
                 <span>•</span>
-                <span className="inline-flex items-center gap-0.5 text-amber-600">
+                <span className="inline-flex items-center gap-0.5 text-amber-700">
                   <Flame weight="fill" className="w-3 h-3 text-amber-500" />
                   <span>{entry.streak}h</span>
                 </span>
@@ -159,7 +159,7 @@ export const LeaderboardTopPodium: FC<LeaderboardTopPodiumProps> = ({ topThree }
                 <span className="font-brand font-black text-base text-slate-900 tabular-nums">
                   <AnimatedWeeklyXP target={entry.weekly_xp} /> XP
                 </span>
-                <span className="text-[10px] font-semibold text-slate-400">Minggu ini</span>
+                <span className="text-[10px] font-semibold text-slate-500">Minggu ini</span>
               </div>
               <span className="inline-flex items-center gap-1 text-[10px] font-mono font-bold px-2.5 py-0.5 rounded-full bg-sky-50 text-sky-800 border border-sky-200">
                 <LeaderboardGemIcon className="w-3 h-3" />

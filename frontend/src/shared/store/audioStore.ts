@@ -176,9 +176,7 @@ export const useAudioStore = create<AudioState>()(
 
       setSoundscapeTrack: (track) => {
         set({ soundscapeTrack: track })
-        if (get().audioMode === 'all') {
-          audioService.playBgm(track)
-        }
+        audioService.playBgm(track)
       },
 
       toggleMute: () => {
@@ -196,9 +194,7 @@ export const useAudioStore = create<AudioState>()(
       playBgm: (track) => {
         const targetTrack = track || get().soundscapeTrack
         set({ soundscapeTrack: targetTrack })
-        if (get().audioMode === 'all') {
-          audioService.playBgm(targetTrack)
-        }
+        audioService.playBgm(targetTrack)
       },
 
       stopBgm: () => {

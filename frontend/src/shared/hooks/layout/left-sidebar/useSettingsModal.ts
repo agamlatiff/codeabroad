@@ -8,7 +8,6 @@ import {
   AVATAR_PRESET_SEEDS,
   buildAdventurerAvatarUrl,
   getAvatarUrl,
-  type AvatarStyle,
 } from "@/shared/utils/avatar"
 
 const resolveInitialAvatarUrl = (user?: User | null): string => getAvatarUrl(user)
@@ -42,30 +41,22 @@ const profileSettingsSchema = z.object({
   bio: z.string().trim().max(500, 'Bio maksimal 500 karakter'),
 })
 
-export const AVATAR_STYLE_OPTIONS: { id: AvatarStyle; label: string; desc: string }[] = [
-  { id: 'adventurer', label: 'Petualang Global', desc: 'Gaya modern kasual' },
-]
-
 export interface UseSettingsModalOptions {
   isOpen: boolean
   onClose: () => void
   user?: User | null
-  avatarStyle: AvatarStyle
-  onAvatarStyleChange: (style: AvatarStyle) => void
   onProfileUpdated?: () => void
   onLogout?: () => void
 }
 
 /**
  * 1:1 Headless controller hook for SettingsModal in AppLeftSidebar.
- * Manages profile update mutation via SSOT useUser hook and avatar style selection.
+ * Manages profile update mutation via SSOT useUser hook and avatar selection.
  */
 export const useSettingsModal = ({
   isOpen,
   onClose,
   user,
-  avatarStyle,
-  onAvatarStyleChange,
   onProfileUpdated,
 }: UseSettingsModalOptions) => {
   const { actions: userActions, status: userStatus } = useUser()
@@ -79,7 +70,6 @@ export const useSettingsModal = ({
   const [avatarOptions, setAvatarOptions] = useState<string[]>(() =>
     buildInitialAvatarOptions(resolveInitialAvatarUrl(user))
   )
-  const [selectedAvatarStyle, setSelectedAvatarStyle] = useState<AvatarStyle>(avatarStyle)
   const [saveSuccess, setSaveSuccess] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -96,7 +86,6 @@ export const useSettingsModal = ({
       setDailyGoalMinutes(normalizeDailyGoalMinutes(user?.daily_goal_minutes))
       setSelectedAvatarUrl(nextInitialUrl)
       setAvatarOptions(buildInitialAvatarOptions(nextInitialUrl))
-      setSelectedAvatarStyle(avatarStyle)
       setSaveSuccess(false)
       setErrorMessage(null)
     }
@@ -114,15 +103,6 @@ export const useSettingsModal = ({
       }
     }
   }, [isOpen])
-
-  const handleAvatarSelect = useCallback(
-    (style: AvatarStyle) => {
-      triggerHaptic('tap')
-      setSelectedAvatarStyle(style)
-      onAvatarStyleChange(style)
-    },
-    [onAvatarStyleChange]
-  )
 
   const handleSelectAvatarUrl = useCallback((url: string) => {
     triggerHaptic('tap')
@@ -188,14 +168,11 @@ export const useSettingsModal = ({
     setDailyGoalMinutes,
     selectedAvatarUrl,
     avatarOptions,
-    selectedAvatarStyle,
-    avatarStyles: AVATAR_STYLE_OPTIONS,
     isSubmitting: isSubmitting || userStatus.isUpdating,
     saveSuccess,
     errorMessage,
     handleSelectAvatarUrl,
     shuffleAvatarOptions,
-    handleAvatarSelect,
     handleSubmit,
   }
 }

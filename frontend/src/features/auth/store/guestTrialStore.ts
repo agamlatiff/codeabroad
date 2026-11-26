@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { z } from 'zod'
+import { registerSessionResetHandler } from '@/shared/services/sessionCleanup'
 
 export const GUEST_TRIAL_STORAGE_KEY = 'merantalk_guest_trial_v1'
 const MAX_STORED_TRIAL_LESSONS = 5
@@ -33,6 +34,7 @@ type GuestTrialPersistedState = z.infer<typeof guestTrialPersistedSchema>
 
 export interface GuestTrialState extends GuestTrialPersistedState {
   recordCompletedLesson: (entry: GuestCompletedLesson) => void
+  removeCompletedLessons: (lessonIds: ReadonlyArray<string>) => void
   markDemoCompleted: () => void
   incrementPromptDismissed: () => void
   clearGuestTrial: () => void
@@ -164,6 +166,37 @@ export const useGuestTrialStore = create<GuestTrialState>((set, get) => ({
     set({ promptDismissedCount: nextCount })
   },
 
+  removeCompletedLessons: (lessonIds) => {
+    if (lessonIds.length === 0) return
+    const dropSet = new Set(lessonIds.map((id) => id.toLowerCase()))
+    const current = get()
+    const nextLessons = current.completedLessons.filter(
+      (item) => !dropSet.has(item.lessonId.toLowerCase())
+    )
+    if (nextLessons.length === current.completedLessons.length) return
+    const nextPersisted: GuestTrialPersistedState = {
+      completedLessons: nextLessons,
+      demoCompleted: current.demoCompleted,
+      promptDismissedCount: current.promptDismissedCount,
+    }
+    if (
+      nextPersisted.completedLessons.length === 0 &&
+      !nextPersisted.demoCompleted &&
+      nextPersisted.promptDismissedCount === 0
+    ) {
+      if (cachedStorage) {
+        try {
+          cachedStorage.removeItem(GUEST_TRIAL_STORAGE_KEY)
+        } catch {
+          // Ignore storage errors
+        }
+      }
+    } else {
+      savePersistedGuestTrial(nextPersisted)
+    }
+    set({ completedLessons: nextLessons })
+  },
+
   clearGuestTrial: () => {
     if (cachedStorage) {
       try {
@@ -175,3 +208,7 @@ export const useGuestTrialStore = create<GuestTrialState>((set, get) => ({
     set(EMPTY_PERSISTED_STATE)
   },
 }))
+
+registerSessionResetHandler(() => {
+  useGuestTrialStore.getState().clearGuestTrial()
+})

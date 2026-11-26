@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import axios from 'axios'
 import { useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
@@ -20,6 +21,8 @@ async function replayGuestTrialLessons(
   lessons: ReadonlyArray<GuestCompletedLesson>
 ): Promise<{
   lessonsCount: number
+  syncedLessonIds: string[]
+  obsoleteLessonIds: string[]
   xpEarned: number
   latestGamification: {
     xp: number
@@ -31,6 +34,8 @@ async function replayGuestTrialLessons(
 }> {
   let syncedCount = 0
   let earnedXp = 0
+  const syncedLessonIds: string[] = []
+  const obsoleteLessonIds: string[] = []
   let latestGamification: {
     xp: number
     current_level: number
@@ -43,7 +48,10 @@ async function replayGuestTrialLessons(
   const chronological = [...lessons].reverse()
 
   for (const lesson of chronological) {
-    if (lesson.attempts.length === 0) continue
+    if (lesson.attempts.length === 0) {
+      obsoleteLessonIds.push(lesson.lessonId)
+      continue
+    }
 
     let anyAttemptAccepted = false
     for (const attempt of lesson.attempts) {
@@ -67,6 +75,7 @@ async function replayGuestTrialLessons(
         score: lesson.accuracyPercent,
       })
       syncedCount += 1
+      syncedLessonIds.push(lesson.lessonId)
       earnedXp += completion.xp_earned ?? completion.session_xp_earned ?? lesson.xpReward
       if (completion.gamification) {
         latestGamification = {
@@ -77,13 +86,18 @@ async function replayGuestTrialLessons(
           last_active_at: completion.gamification.last_active_at,
         }
       }
-    } catch {
-      // Lesson may already be completed or scored below passing threshold — keep other lessons syncing
+    } catch (completeErr) {
+      // Remove lesson only when server confirms conflict (already completed), retaining transient failures for retry
+      if (axios.isAxiosError(completeErr) && completeErr.response?.status === 409) {
+        obsoleteLessonIds.push(lesson.lessonId)
+      }
     }
   }
 
   return {
     lessonsCount: syncedCount,
+    syncedLessonIds,
+    obsoleteLessonIds,
     xpEarned: earnedXp,
     latestGamification,
   }
@@ -99,30 +113,40 @@ export const useGuestTrialSync = () => {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated)
   const updateUser = useAuthStore((s) => s.updateUser)
   const completedLessons = useGuestTrialStore((s) => s.completedLessons)
-  const clearGuestTrial = useGuestTrialStore((s) => s.clearGuestTrial)
+  const removeCompletedLessons = useGuestTrialStore((s) => s.removeCompletedLessons)
 
   const [syncedSummary, setSyncedSummary] = useState<GuestTrialSyncedSummary | null>(null)
+  const attemptedLessonIdsRef = useRef<Set<string>>(new Set())
 
   const dismissSyncedSummary = useCallback(() => {
     setSyncedSummary(null)
   }, [])
 
   useEffect(() => {
-    if (!isAuthenticated || !user?.is_onboarded || completedLessons.length === 0) {
+    if (!isAuthenticated) {
+      attemptedLessonIdsRef.current.clear()
       return
     }
-    if (activeSyncPromise) {
+    if (!user?.is_onboarded || completedLessons.length === 0) {
+      return
+    }
+
+    const pendingLessons = useGuestTrialStore
+      .getState()
+      .completedLessons.filter((lesson) => !attemptedLessonIdsRef.current.has(lesson.lessonId))
+    if (pendingLessons.length === 0 && !activeSyncPromise) {
       return
     }
 
     let isMounted = true
 
-    const runSync = async (): Promise<GuestTrialSyncedSummary | null> => {
-      const snapshot = useGuestTrialStore.getState().completedLessons
+    const runSync = async (
+      snapshot: ReadonlyArray<GuestCompletedLesson>
+    ): Promise<GuestTrialSyncedSummary | null> => {
       if (snapshot.length === 0) return null
 
       const result = await replayGuestTrialLessons(snapshot)
-      clearGuestTrial()
+      removeCompletedLessons([...result.syncedLessonIds, ...result.obsoleteLessonIds])
 
       if (result.latestGamification) {
         updateUser(result.latestGamification)
@@ -143,22 +167,35 @@ export const useGuestTrialSync = () => {
       return null
     }
 
-    activeSyncPromise = runSync()
-      .then((summary) => {
-        if (isMounted && summary) {
-          setSyncedSummary(summary)
-        }
-        return summary
-      })
-      .catch(() => null)
-      .finally(() => {
-        activeSyncPromise = null
-      })
+    if (!activeSyncPromise) {
+      for (const lesson of pendingLessons) {
+        attemptedLessonIdsRef.current.add(lesson.lessonId)
+      }
+      activeSyncPromise = runSync(pendingLessons)
+        .catch(() => null)
+        .finally(() => {
+          activeSyncPromise = null
+        })
+    }
+
+    void activeSyncPromise.then((summary) => {
+      if (isMounted && summary) {
+        setSyncedSummary(summary)
+      }
+    })
 
     return () => {
       isMounted = false
     }
-  }, [clearGuestTrial, completedLessons.length, isAuthenticated, queryClient, updateUser, user?.id, user?.is_onboarded])
+  }, [
+    completedLessons.length,
+    isAuthenticated,
+    queryClient,
+    removeCompletedLessons,
+    updateUser,
+    user?.id,
+    user?.is_onboarded,
+  ])
 
   return {
     syncedSummary,

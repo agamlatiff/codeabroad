@@ -60,7 +60,7 @@ export const MonthlyBadgeModal = ({
 
         {/* Kodi with Japanese Golden Medallion Emblem */}
         <div className="relative flex items-center justify-center my-3">
-          <div className="absolute w-44 h-44 bg-gradient-to-tr from-amber-300/40 via-yellow-200/30 to-blue-300/30 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute w-44 h-44 bg-gradient-to-tr from-amber-300/40 via-yellow-200/30 to-blue-300/30 rounded-full blur-2xl" />
 
           <div className="relative z-10 flex items-center justify-center">
             <KodiCharacter emotion="celebrate" size={120} interactive />

@@ -12,6 +12,7 @@ import { User, At, EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 export const RegisterPage = () => {
   const { register, control, errors, status, actions } = useRegister()
   const [googleError, setGoogleError] = useState<string | null>(null)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const password = useWatch({ control, name: 'password', defaultValue: '' }) ?? ''
 
   const handleSubmit = (event: FormEvent) => {
@@ -34,7 +35,9 @@ export const RegisterPage = () => {
       {/* ── 1. GOOGLE OAUTH CUSTOM BUTTON ── */}
       <GoogleAuthButton
         mode="register"
+        rememberMe={true}
         disabled={status.loading}
+        onLoadingChange={setGoogleLoading}
         onStart={status.clearError}
         onError={setGoogleError}
       />
@@ -96,6 +99,7 @@ export const RegisterPage = () => {
           size="md"
           fullWidth
           loading={status.loading}
+          disabled={googleLoading}
           className="mt-2.5 text-sm"
         >
           Daftar Sekarang

@@ -25,7 +25,6 @@ import {
   GAMIFICATION_STATUS_QUERY_KEY,
 } from "@/features/gamification/services/gamificationService"
 import { getProfileQueryKey, LEADERBOARD_QUERY_KEY } from "@/shared/constants/queryKeys"
-import { saveAvatarStyle, type AvatarStyle } from "@/shared/utils/avatar"
 import { AppBreadcrumb, type BreadcrumbItem } from "@/shared/components/ui/AppBreadcrumb"
 import { GemIcon } from "@/shared/components/ui/GamificationIcons"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
@@ -34,6 +33,7 @@ import { computeXpLevelProgress } from "@/shared/utils/progression"
 
 export interface AppTopBarProps {
   activeTrack?: string
+  activeLevelCode?: string
   onOpenCourseSwitcher?: () => void
   onOpenMobileSidebar?: () => void
   completedCount?: number
@@ -46,6 +46,7 @@ export interface AppTopBarProps {
 
 export const AppTopBar = ({
   activeTrack = '',
+  activeLevelCode,
   onOpenCourseSwitcher,
   onOpenMobileSidebar,
   completedCount = 0,
@@ -57,7 +58,6 @@ export const AppTopBar = ({
 }: AppTopBarProps) => {
   const {
     activeUser,
-    avatarStyle: initialAvatarStyle,
     rawXp,
     userXp,
     userStreak,
@@ -71,7 +71,6 @@ export const AppTopBar = ({
   const [showAccountMenu, setShowAccountMenu] = useState(false)
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [isGuestSaveModalOpen, setIsGuestSaveModalOpen] = useState(false)
-  const [avatarStyle, setAvatarStyle] = useState<AvatarStyle>(initialAvatarStyle)
   const guestCompletedLessons = useGuestTrialStore((s) => s.completedLessons)
   const guestXp = getGuestTotalXp(guestCompletedLessons)
   const xpPopoverRef = useRef<HTMLDivElement>(null)
@@ -113,6 +112,18 @@ export const AppTopBar = ({
     }
   }, [showXpPopover, showAccountMenu])
 
+  const normalizedLevelCode = activeLevelCode?.trim() || ''
+  const displayTrackTitle = normalizedLevelCode
+    ? currentTrackConfig.title.includes('•')
+      ? `${currentTrackConfig.title.split('•')[0].trim()} • ${normalizedLevelCode}`
+      : `${currentTrackConfig.title} • ${normalizedLevelCode}`
+    : currentTrackConfig.title
+  const displayTrackShortTitle = normalizedLevelCode
+    ? currentTrackConfig.title.includes('•')
+      ? `${currentTrackConfig.title.split('•')[0].trim()} ${normalizedLevelCode}`
+      : `${currentTrackConfig.shortTitle} ${normalizedLevelCode}`
+    : currentTrackConfig.shortTitle
+
   const trackLabelContent = (
     <>
       <div className="w-6 h-4 rounded-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
@@ -123,14 +134,14 @@ export const AppTopBar = ({
         )}
       </div>
       <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
-        <span className="sm:hidden">{currentTrackConfig.shortTitle}</span>
-        <span className="hidden sm:inline">{currentTrackConfig.title}</span>
+        <span className="sm:hidden">{displayTrackShortTitle}</span>
+        <span className="hidden sm:inline">{displayTrackTitle}</span>
       </span>
     </>
   )
 
   return (
-    <div className="flex flex-col gap-2.5 sm:gap-3">
+    <div className="flex flex-col gap-2.5 sm:gap-3 min-w-0 w-full">
       {/* ── TOP / MAIN ROW: TRACK SWITCHER (LEFT) & GAME HUD CHIPS (RIGHT) ── */}
       <div className="flex items-center justify-between gap-2 min-w-0 w-full">
         {/* Left: Track Switcher Pill (interactive only when 2+ languages & handler passed) & Optional Progress (XL) */}
@@ -156,8 +167,8 @@ export const AppTopBar = ({
 
           {/* Track Linear Progress Bar (Inline on Desktop XL Only) */}
           {totalCount > 0 && (
-            <div className="hidden xl:flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
-              <div className="w-24 2xl:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
+            <div className="hidden xl:flex items-center gap-2 bg-white border-2 border-slate-200/80 rounded-2xl px-2.5 2xl:px-3 py-1.5 shadow-2xs shrink-0 whitespace-nowrap">
+              <div className="w-20 2xl:w-28 h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60 p-0.5 shrink-0">
                 <div
                   className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-500 shadow-[0_1px_0_0_#1D4ED8]"
                   style={{ width: `${progressPercent}%` }}
@@ -339,7 +350,6 @@ export const AppTopBar = ({
                 <UserAvatar
                   user={activeUser}
                   size="sm"
-                  style={avatarStyle}
                   className="ring-2 ring-slate-100 shrink-0"
                 />
                 <span
@@ -400,10 +410,9 @@ export const AppTopBar = ({
               <UserAvatar
                 user={activeUser}
                 size="md"
-                style={avatarStyle}
                 className="ring-2 ring-slate-100 shrink-0"
               />
-              <span className="text-xs sm:text-[13px] font-brand font-black text-slate-700 max-w-[130px] truncate">
+              <span className="text-xs sm:text-[13px] font-brand font-black text-slate-700 max-w-[96px] xl:max-w-[110px] 2xl:max-w-[130px] truncate">
                 {activeUser.name || activeUser.username || 'Pembelajar'}
               </span>
             </div>
@@ -416,11 +425,6 @@ export const AppTopBar = ({
           isOpen={isSettingsOpen}
           onClose={() => setIsSettingsOpen(false)}
           user={activeUser}
-          avatarStyle={avatarStyle}
-          onAvatarStyleChange={(style) => {
-            saveAvatarStyle(style)
-            setAvatarStyle(style)
-          }}
           onProfileUpdated={() => {
             void queryClient.invalidateQueries({ queryKey: getProfileQueryKey(activeUser?.id) })
             void queryClient.invalidateQueries({ queryKey: LEADERBOARD_QUERY_KEY })

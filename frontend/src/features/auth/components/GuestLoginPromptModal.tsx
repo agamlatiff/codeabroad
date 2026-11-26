@@ -213,7 +213,7 @@ export const GuestLoginPromptModal = ({
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-1.5 text-xs font-bold text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+            className="w-full py-1.5 text-xs font-bold text-slate-500 hover:text-slate-700 transition-colors cursor-pointer"
           >
             Nanti dulu, lanjut coba materi terbuka
           </button>

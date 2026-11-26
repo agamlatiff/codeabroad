@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import {
@@ -59,6 +59,8 @@ import { playSound } from '@/shared/utils/sound'
 import { audioEngine } from '@/shared/utils/audio'
 import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
+import { TierUpgradeBanner } from '@/shared/components/ui/TierUpgradeBanner'
+import { checkLevelAccess, isUserPro } from '@/shared/utils/levelAccess'
 
 type SessionMode = 'lobby' | 'session' | 'complete'
 type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
@@ -155,11 +157,15 @@ const RATING_OPTIONS: RatingOption[] = [
  *   and Anki intra-session re-queueing when `Ulangi` is pressed.
  */
 export const FlashcardPage = () => {
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [searchParams, setSearchParams] = useSearchParams()
   const handledDeckParamRef = useRef<string | null>(null)
   const handledReviewParamRef = useRef<boolean>(false)
+  const replayRequestTokenRef = useRef(0)
   const { data: userData } = useUser()
+  const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
+  const isPro = isUserPro(userData.user)
   const updateUser = useAuthStore((state) => state.updateUser)
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
@@ -177,6 +183,10 @@ export const FlashcardPage = () => {
   const levelFilter = useMemo(
     () => (rawLevelParam ? parseFlashcardLevelParam(rawLevelParam) : lobbyLevelMemory),
     [rawLevelParam, lobbyLevelMemory]
+  )
+  const levelAccess = useMemo(
+    () => checkLevelAccess(levelFilter, { isAuthenticated, isPro }),
+    [levelFilter, isAuthenticated, isPro]
   )
   const rawCategoryParam = searchParams.get('category')
   const categoryFilter = useMemo(
@@ -256,6 +266,9 @@ export const FlashcardPage = () => {
     const result: FlashcardDeck[] = []
     for (const page of deckPages.pages) {
       for (const deck of page.items) {
+        if (levelFilter === 'ALL' && !checkLevelAccess(deck.jlpt_level, { isAuthenticated, isPro }).allowed) {
+          continue
+        }
         if (!seen.has(deck.id)) {
           seen.add(deck.id)
           result.push(deck)
@@ -263,7 +276,7 @@ export const FlashcardPage = () => {
       }
     }
     return result
-  }, [deckPages])
+  }, [deckPages, levelFilter, isAuthenticated, isPro])
 
   const levelCounts = useMemo<Record<JlptFilter, number>>(() => {
     const raw = deckPages?.pages[0]?.level_counts
@@ -352,9 +365,13 @@ export const FlashcardPage = () => {
 
   const handleSelectLevel = (nextLevel: JlptFilter) => {
     setLobbyLevelMemory(nextLevel)
+    handledDeckParamRef.current = null
+    handledReviewParamRef.current = false
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
+        next.delete('deck')
+        next.delete('mode')
         next.set('level', nextLevel)
         return next
       },
@@ -364,9 +381,13 @@ export const FlashcardPage = () => {
 
   const handleSelectCategory = (nextCat: DeckCategoryFilter) => {
     setCategoryMemory(nextCat)
+    handledDeckParamRef.current = null
+    handledReviewParamRef.current = false
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
+        next.delete('deck')
+        next.delete('mode')
         next.set('level', levelFilter)
         if (nextCat === 'ALL') {
           next.delete('category')
@@ -403,11 +424,29 @@ export const FlashcardPage = () => {
       try {
         const detail = await flashcardService.getDeck(deck.id)
         if (detail.cards.length === 0) {
+          handledDeckParamRef.current = null
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev)
+              next.delete('deck')
+              return next
+            },
+            { replace: true }
+          )
           setSessionError('Dek ini belum memiliki kartu.')
           return
         }
         initSessionQueue(detail.cards, deck.title, deck.id)
       } catch {
+        handledDeckParamRef.current = null
+        setSearchParams(
+          (prev) => {
+            const next = new URLSearchParams(prev)
+            next.delete('deck')
+            return next
+          },
+          { replace: true }
+        )
         setSessionError('Gagal memuat kartu dek. Coba lagi sebentar.')
       } finally {
         setLoadingSession(false)
@@ -429,33 +468,59 @@ export const FlashcardPage = () => {
     if (!requestedDeckParam) return
     if (handledDeckParamRef.current === requestedDeckParam) return
 
-    handledDeckParamRef.current = requestedDeckParam
     let cancelled = false
+    let started = false
+    handledDeckParamRef.current = requestedDeckParam
+    setLoadingSession(true)
 
     flashcardService
       .getDeck(requestedDeckParam)
       .then((detail) => {
         if (cancelled) return
+        setLoadingSession(false)
         const canonicalSlug = getFlashcardDeckSlug(detail.deck)
+        if (detail.cards.length === 0) {
+          handledDeckParamRef.current = null
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev)
+              next.delete('deck')
+              return next
+            },
+            { replace: true }
+          )
+          setSessionError('Dek ini belum memiliki kartu.')
+          return
+        }
+        started = true
         handledDeckParamRef.current = canonicalSlug
         if (requestedDeckParam !== canonicalSlug) {
           setSearchParams({ deck: canonicalSlug }, { replace: true })
-        }
-        if (detail.cards.length === 0) {
-          setSessionError('Dek ini belum memiliki kartu.')
-          return
         }
         initSessionQueue(detail.cards, detail.deck.title, detail.deck.id)
       })
       .catch(() => {
         if (!cancelled) {
+          setLoadingSession(false)
           handledDeckParamRef.current = null
+          setSearchParams(
+            (prev) => {
+              const next = new URLSearchParams(prev)
+              next.delete('deck')
+              return next
+            },
+            { replace: true }
+          )
           setSessionError('Dek flashcard tidak ditemukan atau gagal dimuat.')
         }
       })
 
     return () => {
       cancelled = true
+      if (!started && handledDeckParamRef.current === requestedDeckParam) {
+        handledDeckParamRef.current = null
+        setLoadingSession(false)
+      }
     }
   }, [initSessionQueue, searchParams, setSearchParams])
 
@@ -464,10 +529,10 @@ export const FlashcardPage = () => {
     if (searchParams.get('mode') !== 'review') return
     if (handledReviewParamRef.current || mode !== 'lobby') return
     if (dueLoading || !dueQueue || dueQueue.cards.length === 0) return
-    handledReviewParamRef.current = true
     let cancelled = false
     Promise.resolve(dueQueue.cards).then((cards) => {
       if (!cancelled) {
+        handledReviewParamRef.current = true
         initSessionQueue(cards, 'Ulasan Terjadwal', null)
       }
     })
@@ -609,7 +674,13 @@ export const FlashcardPage = () => {
   useEffect(() => {
     if (mode !== 'session') return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return
+      if (e.defaultPrevented) return
+      if (
+        e.target instanceof HTMLElement &&
+        e.target.closest('button, a, input, textarea, select, [role="button"]')
+      ) {
+        return
+      }
       if (!isFlipped && (e.key === ' ' || e.key === 'Enter')) {
         e.preventDefault()
         triggerHaptic('tap')
@@ -629,6 +700,7 @@ export const FlashcardPage = () => {
 
   const exitToLobby = () => {
     triggerHaptic('tap')
+    replayRequestTokenRef.current += 1
     handledDeckParamRef.current = null
     handledReviewParamRef.current = false
     const nextParams: Record<string, string> = { level: lobbyLevelMemory }
@@ -646,6 +718,7 @@ export const FlashcardPage = () => {
   }
 
   const replayActiveDeck = () => {
+    if (loadingSession) return
     if (!activeDeckId) {
       exitToLobby()
       return
@@ -655,10 +728,12 @@ export const FlashcardPage = () => {
       void startDeckSession(deck)
       return
     }
+    const token = ++replayRequestTokenRef.current
     setLoadingSession(true)
     flashcardService
       .getDeck(activeDeckId)
       .then((detail) => {
+        if (token !== replayRequestTokenRef.current) return
         if (detail.cards.length === 0) {
           setSessionError('Dek ini belum memiliki kartu.')
           exitToLobby()
@@ -667,10 +742,15 @@ export const FlashcardPage = () => {
         initSessionQueue(detail.cards, detail.deck.title, detail.deck.id)
       })
       .catch(() => {
+        if (token !== replayRequestTokenRef.current) return
         setSessionError('Gagal mengulang dek. Coba lagi sebentar.')
         exitToLobby()
       })
-      .finally(() => setLoadingSession(false))
+      .finally(() => {
+        if (token === replayRequestTokenRef.current) {
+          setLoadingSession(false)
+        }
+      })
   }
 
   const sessionStats = useMemo(() => {
@@ -726,22 +806,27 @@ export const FlashcardPage = () => {
           </div>
           <div className="flex flex-col gap-2.5 pt-2">
             {!userData.isAuthenticated && (
-              <Link to="/register?from=guest">
-                <Button3D
-                  variant="emerald"
-                  fullWidth
-                  size="md"
-                  icon={<UserPlus weight="bold" className="w-4 h-4" />}
-                >
-                  DAFTAR GRATIS &amp; SIMPAN PROGRES
-                </Button3D>
-              </Link>
+              <Button3D
+                variant="emerald"
+                fullWidth
+                size="md"
+                onClick={() => navigate('/register?from=guest')}
+                icon={<UserPlus weight="bold" className="w-4 h-4" />}
+              >
+                DAFTAR GRATIS &amp; SIMPAN PROGRES
+              </Button3D>
             )}
             <Button3D variant="blue" fullWidth size="md" onClick={exitToLobby}>
               KEMBALI KE DEK FLASHCARD
             </Button3D>
             {activeDeckId && (
-              <Button3D variant="white" fullWidth size="md" onClick={replayActiveDeck}>
+              <Button3D
+                variant="white"
+                fullWidth
+                size="md"
+                disabled={loadingSession}
+                onClick={replayActiveDeck}
+              >
                 ULANGI DEK INI
               </Button3D>
             )}
@@ -774,9 +859,9 @@ export const FlashcardPage = () => {
             </button>
 
             <div className="flex-1 min-w-0 space-y-1.5">
-              <div className="flex items-center justify-between gap-2 text-xs font-brand font-bold text-slate-600">
-                <span className="truncate">{sessionTitle}</span>
-                <div className="flex items-center gap-1.5 shrink-0 text-[11px]">
+              <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:items-center sm:justify-between text-xs font-brand font-bold text-slate-600">
+                <span className="truncate max-w-full">{sessionTitle}</span>
+                <div className="flex flex-wrap items-center gap-1.5 shrink-0 text-[11px]">
                   <span
                     className="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 border border-blue-200/80 font-extrabold"
                     title="Kartu baru tersisa"
@@ -996,16 +1081,15 @@ export const FlashcardPage = () => {
                 <strong>Mode Coba Flashcard:</strong> Seluruh 120+ dek bisa dibalik &amp; didengarkan gratis. Masuk untuk mengaktifkan jadwal ulang otomatis!
               </span>
             </div>
-            <Link to="/register?from=guest" className="shrink-0">
-              <Button3D
-                variant="blue"
-                size="sm"
-                icon={<UserPlus weight="bold" className="w-3.5 h-3.5" />}
-                className="text-xs"
-              >
-                Daftar Gratis
-              </Button3D>
-            </Link>
+            <Button3D
+              variant="blue"
+              size="sm"
+              onClick={() => navigate('/register?from=guest')}
+              icon={<UserPlus weight="bold" className="w-3.5 h-3.5" />}
+              className="text-xs shrink-0"
+            >
+              Daftar Gratis
+            </Button3D>
           </div>
         ) : !dueLoading && totalDue > 0 && (dueQueue?.cards.length ?? 0) > 0 ? (
           <section
@@ -1095,7 +1179,14 @@ export const FlashcardPage = () => {
             </span>
           </div>
 
-          {decksLoading ? (
+          {!levelAccess.allowed && levelAccess.reason !== 'ok' ? (
+            <TierUpgradeBanner
+              levelCode={levelFilter}
+              reason={levelAccess.reason}
+              featureLabel="Flashcard"
+              onSelectFreeLevel={() => handleSelectLevel('N5')}
+            />
+          ) : decksLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {Array.from({ length: 6 }).map((_, idx) => (
                 <div
@@ -1161,7 +1252,7 @@ export const FlashcardPage = () => {
                   </Button3D>
                 ) : (
                   loadedDecks.length > 0 && (
-                    <p className="text-xs font-semibold text-slate-400">
+                    <p className="text-xs font-semibold text-slate-500">
                       Semua {totalFilteredCount} dek telah ditampilkan
                     </p>
                   )

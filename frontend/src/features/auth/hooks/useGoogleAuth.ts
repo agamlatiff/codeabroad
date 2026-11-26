@@ -9,6 +9,7 @@ import {
 } from '@/features/auth/hooks/authHelpers'
 
 export interface UseGoogleAuthOptions {
+  rememberMe?: boolean
   onError?: (message: string) => void
 }
 
@@ -19,16 +20,17 @@ export const useGoogleAuth = (options?: UseGoogleAuthOptions) => {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const setAuth = useAuthStore((state) => state.setAuth)
+  const rememberMe = options?.rememberMe ?? false
 
   const googleAuthMutation = useMutation({
-    mutationFn: (code: string) => authService.googleAuth({ code, remember_me: true }),
+    mutationFn: (code: string) => authService.googleAuth({ code, remember_me: rememberMe }),
     onSuccess: (data) => {
       queryClient.clear()
       if (!data.access_token) {
         options?.onError?.('Sesi Google berhasil dibuat, tetapi token akses tidak diterima.')
         return
       }
-      setAuth(data.user, data.access_token, data.refresh_token, true)
+      setAuth(data.user, data.access_token, data.refresh_token, rememberMe)
       queryClient.setQueryData(getProfileQueryKey(data.user.id), data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },

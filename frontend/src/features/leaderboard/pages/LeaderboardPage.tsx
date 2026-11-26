@@ -289,6 +289,7 @@ export const LeaderboardPage = () => {
                 <button
                   key={div.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => handleSelectDivision(div.id)}
                   className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 relative ${
                     isSelected
@@ -324,7 +325,7 @@ export const LeaderboardPage = () => {
                     >
                       {div.xpRange}
                     </span>
-                    <span className="text-[10px] font-brand font-bold text-slate-400">
+                    <span className="text-[10px] font-brand font-bold text-slate-500">
                       {div.levelLabel}
                     </span>
                   </div>

@@ -88,7 +88,7 @@ export const FlashcardHeroIllustration: FC<FlashcardHeroIllustrationProps> = ({
           <rect x="53" y="62" width="26" height="3.5" rx="1.75" fill="#BAE6FD" />
         </g>
 
-        {/* Right Card: ★ (Emerald Mastery) */}
+        {/* Right Card: Star (Emerald Mastery) */}
         <g transform="rotate(10 92 60)">
           <rect
             x="72"

@@ -44,7 +44,7 @@ export const CountdownBadge = ({ className = '' }: CountdownBadgeProps) => {
       } ${className}`.trim()}
     >
       {countdown.isUrgent ? (
-        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse shrink-0" />
+        <span className="w-2 h-2 rounded-full bg-rose-600 shrink-0" />
       ) : null}
       <Clock weight="bold" className="w-3.5 h-3.5 shrink-0" />
       <span className="whitespace-nowrap">Reset dalam: {countdown.timeLeft}</span>

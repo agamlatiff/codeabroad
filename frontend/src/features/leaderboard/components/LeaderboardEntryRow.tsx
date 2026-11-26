@@ -87,10 +87,10 @@ export const LeaderboardEntryRow = ({
               </span>
             )}
           </div>
-          <div className="flex items-center gap-2 text-[10px] text-slate-400 font-mono font-bold">
+          <div className="flex items-center gap-2 text-[10px] text-slate-500 font-mono font-bold">
             <span>Lv. {entry.current_level}</span>
             <span>•</span>
-            <span className="flex items-center gap-0.5 text-amber-600">
+            <span className="flex items-center gap-0.5 text-amber-700">
               <Flame weight="fill" className={`${compact ? 'w-3 h-3' : 'w-3.5 h-3.5'} text-amber-500`} />
               <span>{compact ? `${entry.streak}h streak` : `${entry.streak} hari streak`}</span>
             </span>
@@ -110,7 +110,7 @@ export const LeaderboardEntryRow = ({
             <span>{entry.weekly_xp.toLocaleString('id-ID')}</span>
             <span className="text-[10px] font-mono text-slate-500">XP</span>
           </div>
-          <span className="text-[10px] font-semibold text-slate-400">Minggu ini</span>
+          <span className="text-[10px] font-semibold text-slate-500">Minggu ini</span>
         </div>
         {isTop3 && (
           <span

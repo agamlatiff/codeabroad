@@ -25,6 +25,7 @@ export const useLogin = () => {
   // 1. React Hook Form + Zod Schema Resolver
   const {
     register,
+    control,
     handleSubmit: rhfHandleSubmit,
     setValue,
     clearErrors,
@@ -71,6 +72,7 @@ export const useLogin = () => {
   return {
     // React Hook Form primitives
     register,
+    control,
     handleSubmit: rhfHandleSubmit,
     errors,
     setValue,

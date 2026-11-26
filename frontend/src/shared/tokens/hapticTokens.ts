@@ -1,7 +1,6 @@
 /**
- * [DOMAIN: HAPTIC VIBRATION & TACTILE MOTION]
- * Single Source of Truth untuk pola getaran hardware sentuh (navigator.vibrate)
- * dan kurva timing animasi mikrotaktil tombol (spring easing & keyframes).
+ * [DOMAIN: HAPTIC VIBRATION]
+ * Single Source of Truth untuk pola getaran hardware sentuh (navigator.vibrate).
  *
  * NOTE:
  * - Efek suara audio synthesizer berada di soundTokens.ts
@@ -17,18 +16,3 @@ export const HAPTIC_PATTERNS = {
 } as const
 
 export type HapticType = keyof typeof HAPTIC_PATTERNS
-
-export const ANIMATION_TOKENS = {
-  pressTransform: 'translateY(4px)',
-  pressTiming: 'all 150ms cubic-bezier(0.4, 0, 0.2, 1)',
-  springEase: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
-  floatDuration: '4s ease-in-out infinite',
-  pulseDuration: '3s ease-in-out infinite',
-} as const
-
-export const MICRO_INTERACTION_TOKENS = {
-  stampSlam: 'stamp-slam 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
-  flamePulse: 'flame-pulse 2s ease-in-out infinite',
-  pop: 'pop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
-  wobble: 'wobble 0.4s ease-in-out',
-} as const

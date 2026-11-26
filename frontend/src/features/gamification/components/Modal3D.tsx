@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react'
-import { useEffect } from 'react'
+import { useEffect, useId } from 'react'
 import { X } from '@phosphor-icons/react'
 
 export interface Modal3DProps {
@@ -28,19 +28,22 @@ export const Modal3D = ({
   maxWidth = 'md',
   className = '',
 }: Modal3DProps) => {
-  // Handle ESC key to close
+  const titleId = useId()
+
+  // Handle ESC key to close and lock background scroll safely
   useEffect(() => {
+    if (!isOpen) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      if (e.key === 'Escape') {
         onClose()
       }
     }
-    if (isOpen) {
-      document.body.style.overflow = 'hidden'
-      window.addEventListener('keydown', handleKeyDown)
-    }
+    window.addEventListener('keydown', handleKeyDown)
     return () => {
-      document.body.style.overflow = ''
+      document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isOpen, onClose])
@@ -58,20 +61,22 @@ export const Modal3D = ({
     <div
       role="dialog"
       aria-modal="true"
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-in fade-in duration-200"
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={title ? undefined : 'Dialog'}
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fadeIn"
     >
       {/* Click outside to close backdrop */}
       <div className="absolute inset-0" onClick={onClose} />
 
       {/* Modal Card Stage */}
       <div
-        className={`relative w-full ${maxWidthClasses} bg-white border-2 border-slate-200/90 rounded-3xl shadow-[0_25px_50px_-12px_rgba(15,23,42,0.18)] p-6 sm:p-7 z-10 animate-in zoom-in-95 duration-200 ${className}`}
+        className={`relative w-full ${maxWidthClasses} max-h-[90vh] overflow-y-auto bg-white border-2 border-slate-200/90 rounded-3xl shadow-[0_25px_50px_-12px_rgba(15,23,42,0.18)] p-6 sm:p-7 z-10 animate-pop ${className}`}
       >
         {/* Close Button */}
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-4 right-4 w-9 h-9 rounded-2xl border-2 border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+          className="absolute top-4 right-4 w-9 h-9 rounded-2xl border-2 border-slate-200 hover:bg-slate-100 flex items-center justify-center text-slate-500 hover:text-slate-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
           aria-label="Tutup"
         >
           <X weight="bold" className="w-4 h-4" />
@@ -81,7 +86,7 @@ export const Modal3D = ({
         {(title || subtitle) && (
           <div className="mb-4 pr-8 text-left">
             {title && (
-              <h3 className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
+              <h3 id={titleId} className="text-lg sm:text-xl font-extrabold text-slate-900 tracking-tight">
                 {title}
               </h3>
             )}

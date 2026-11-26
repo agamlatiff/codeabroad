@@ -120,10 +120,11 @@ export const FilterToolbar: FC<FilterToolbarProps> = ({
       <div className="relative w-full lg:w-72 xl:w-80 shrink-0">
         <MagnifyingGlass
           weight="bold"
-          className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
+          className="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"
         />
         <input
           type="text"
+          aria-label={searchPlaceholder || 'Cari materi'}
           value={searchValue}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder={searchPlaceholder}
@@ -134,7 +135,7 @@ export const FilterToolbar: FC<FilterToolbarProps> = ({
             type="button"
             onClick={() => onSearchChange('')}
             aria-label="Hapus pencarian"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-400 flex items-center justify-center cursor-pointer"
+            className="absolute right-2.5 top-1/2 -translate-y-1/2 w-6 h-6 rounded-lg hover:bg-slate-100 text-slate-500 flex items-center justify-center cursor-pointer"
           >
             <X weight="bold" className="w-3.5 h-3.5" />
           </button>

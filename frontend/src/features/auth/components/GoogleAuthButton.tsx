@@ -1,13 +1,19 @@
-import type { FC } from 'react'
-import { useGoogleLogin } from '@react-oauth/google'
+import { useEffect, useSyncExternalStore, type FC } from 'react'
+import { useGoogleLogin, useGoogleOAuth } from '@react-oauth/google'
 import { CircleNotch } from '@phosphor-icons/react'
-import { GOOGLE_CLIENT_ID } from '@/features/auth/hooks/authHelpers'
+import {
+  getGoogleScriptLoadError,
+  GOOGLE_CLIENT_ID,
+  subscribeGoogleScriptLoadError,
+} from '@/features/auth/hooks/authHelpers'
 import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 export interface GoogleAuthButtonProps {
   mode: 'login' | 'register'
+  rememberMe?: boolean
   disabled?: boolean
+  onLoadingChange?: (loading: boolean) => void
   onStart?: () => void
   onError: (message: string | null) => void
 }
@@ -16,6 +22,7 @@ interface GoogleButtonShellProps {
   mode: 'login' | 'register'
   loading?: boolean
   disabled?: boolean
+  scriptError?: boolean
   onClick: () => void
 }
 
@@ -48,6 +55,7 @@ const GoogleAuthButtonShell: FC<GoogleButtonShellProps> = ({
   mode,
   loading = false,
   disabled = false,
+  scriptError = false,
   onClick,
 }) => (
   <div>
@@ -74,9 +82,18 @@ const GoogleAuthButtonShell: FC<GoogleButtonShellProps> = ({
       )}
     </button>
 
+    {scriptError && (
+      <p
+        role="status"
+        className="mt-2 text-center text-[11px] font-medium text-amber-700 leading-snug"
+      >
+        Layanan Google Sign-In gagal dimuat. Periksa koneksi atau nonaktifkan pemblokir skrip, lalu muat ulang halaman.
+      </p>
+    )}
+
     <div className="relative my-3.5 sm:my-4 flex items-center" aria-hidden="true">
       <div className="flex-1 border-t border-slate-200/90" />
-      <span className="px-3 text-[11px] font-semibold text-slate-400">
+      <span className="px-3 text-[11px] font-semibold text-slate-500">
         {mode === 'register' ? 'atau daftar dengan email' : 'atau masuk dengan email'}
       </span>
       <div className="flex-1 border-t border-slate-200/90" />
@@ -86,13 +103,29 @@ const GoogleAuthButtonShell: FC<GoogleButtonShellProps> = ({
 
 const GoogleAuthConfiguredButton: FC<GoogleAuthButtonProps> = ({
   mode,
+  rememberMe = false,
   disabled = false,
+  onLoadingChange,
   onStart,
   onError,
 }) => {
+  const { scriptLoadedSuccessfully } = useGoogleOAuth()
+  const hasScriptError = useSyncExternalStore(
+    subscribeGoogleScriptLoadError,
+    getGoogleScriptLoadError,
+    () => false
+  )
   const { authenticateWithCode, loading } = useGoogleAuth({
+    rememberMe,
     onError: (msg) => onError(msg),
   })
+
+  useEffect(() => {
+    onLoadingChange?.(loading)
+    return () => {
+      onLoadingChange?.(false)
+    }
+  }, [loading, onLoadingChange])
 
   const openGooglePopup = useGoogleLogin({
     flow: 'auth-code',
@@ -129,6 +162,16 @@ const GoogleAuthConfiguredButton: FC<GoogleAuthButtonProps> = ({
     triggerHaptic('tap')
     onError(null)
     onStart?.()
+    if (hasScriptError) {
+      onError(
+        'Skrip Google Sign-In gagal dimuat. Periksa koneksi atau nonaktifkan pemblokir iklan lalu muat ulang halaman.'
+      )
+      return
+    }
+    if (!scriptLoadedSuccessfully) {
+      onError('Layanan masuk Google masih dimuat, silakan tunggu sebentar lalu coba lagi.')
+      return
+    }
     openGooglePopup()
   }
 
@@ -137,6 +180,7 @@ const GoogleAuthConfiguredButton: FC<GoogleAuthButtonProps> = ({
       mode={mode}
       loading={loading}
       disabled={disabled}
+      scriptError={hasScriptError}
       onClick={handleClick}
     />
   )

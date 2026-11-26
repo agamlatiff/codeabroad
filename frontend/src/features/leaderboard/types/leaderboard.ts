@@ -1,8 +1,5 @@
 export type LeagueDivision = 'bronze' | 'silver' | 'gold' | 'diamond'
 
-/** Transitional alias preserved for compatibility. */
-export type TokyoDivision = LeagueDivision
-
 export interface LeaderboardEntry {
   rank: number
   user_id?: string

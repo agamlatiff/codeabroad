@@ -62,7 +62,7 @@ export const StreakModal: FC<StreakModalProps> = ({
         <div className="flex items-center justify-between pb-2 border-b border-slate-100">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-b from-amber-400 to-orange-500 shadow-[0_2.5px_0_0_#C2410C] flex items-center justify-center text-white shrink-0">
-              <Fire weight="fill" className="w-5 h-5 text-amber-100 animate-pulse" />
+              <Fire weight="fill" className="w-5 h-5 text-amber-100" />
             </div>
             <div>
               <h3 className="font-brand font-black text-base sm:text-lg text-slate-900 leading-tight">
@@ -82,6 +82,7 @@ export const StreakModal: FC<StreakModalProps> = ({
             }}
             className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer transition-colors shadow-2xs"
             title="Tutup Kalender"
+            aria-label="Tutup Kalender"
           >
             <X weight="bold" className="w-4 h-4" />
           </button>
@@ -149,9 +150,8 @@ export const StreakModal: FC<StreakModalProps> = ({
               <Snowflake
                 weight="fill"
                 className={`w-4 h-4 ${
-                  streakFreezeCount > 0 ? 'text-cyan-500 animate-spin' : 'text-slate-400'
+                  streakFreezeCount > 0 ? 'text-cyan-500' : 'text-slate-500'
                 }`}
-                style={streakFreezeCount > 0 ? { animationDuration: '8s' } : undefined}
               />
               <span className="font-brand font-black text-base sm:text-lg leading-tight">
                 {streakFreezeCount} Aktif
@@ -174,6 +174,7 @@ export const StreakModal: FC<StreakModalProps> = ({
             onClick={handlePrevMonth}
             className="w-7 h-7 rounded-xl bg-white border border-slate-200 hover:border-orange-400 text-slate-700 hover:text-orange-600 flex items-center justify-center shadow-2xs transition-all cursor-pointer active:scale-95"
             title="Bulan Sebelumnya"
+            aria-label="Bulan Sebelumnya"
           >
             <CaretLeft weight="bold" className="w-3.5 h-3.5" />
           </button>
@@ -190,10 +191,10 @@ export const StreakModal: FC<StreakModalProps> = ({
               <button
                 type="button"
                 onClick={handleResetToToday}
-                className="text-[9px] font-brand font-black text-orange-600 bg-orange-100 hover:bg-orange-200 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
+                className="text-[9px] font-brand font-black text-orange-700 bg-orange-100 hover:bg-orange-200 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
                 title="Kembali ke bulan saat ini"
               >
-                ↩ Ke Bulan Ini
+                Ke Bulan Ini
               </button>
             )}
           </div>
@@ -203,6 +204,7 @@ export const StreakModal: FC<StreakModalProps> = ({
             onClick={handleNextMonth}
             className="w-7 h-7 rounded-xl bg-white border border-slate-200 hover:border-orange-400 text-slate-700 hover:text-orange-600 flex items-center justify-center shadow-2xs transition-all cursor-pointer active:scale-95"
             title="Bulan Berikutnya"
+            aria-label="Bulan Berikutnya"
           >
             <CaretRight weight="bold" className="w-3.5 h-3.5" />
           </button>
@@ -215,7 +217,7 @@ export const StreakModal: FC<StreakModalProps> = ({
               <span
                 key={lbl}
                 className={`text-[10px] font-brand font-black ${
-                  idx >= 5 ? 'text-rose-500' : 'text-slate-400'
+                  idx >= 5 ? 'text-rose-600' : 'text-slate-500'
                 }`}
               >
                 {lbl}
@@ -236,9 +238,9 @@ export const StreakModal: FC<StreakModalProps> = ({
                 {item.isActive ? (
                   <div
                     className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-b from-amber-400 via-orange-400 to-orange-500 shadow-[0_2.5px_0_0_#C2410C] flex flex-col items-center justify-center text-white transition-transform hover:scale-110 active:scale-95 cursor-default ${
-                      item.isToday ? 'ring-2 ring-orange-400 ring-offset-1 animate-pulse' : ''
+                      item.isToday ? 'ring-2 ring-orange-400 ring-offset-1' : ''
                     }`}
-                    title={`${item.dateStr}: Presensi Hadir Aktif 🔥`}
+                    title={`${item.dateStr}: Presensi Hadir Aktif`}
                   >
                     <Fire
                       weight="fill"
@@ -260,7 +262,7 @@ export const StreakModal: FC<StreakModalProps> = ({
                   </div>
                 ) : item.isPast ? (
                   <div
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-400"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-center text-slate-500"
                     title={`${item.dateStr}: Tidak Hadir`}
                   >
                     <span className="text-[11px] font-brand font-medium">
@@ -269,7 +271,7 @@ export const StreakModal: FC<StreakModalProps> = ({
                   </div>
                 ) : (
                   <div
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-300"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl flex items-center justify-center text-slate-500"
                     title={`${item.dateStr}: Mendatang`}
                   >
                     <span className="text-[11px] font-brand font-medium">

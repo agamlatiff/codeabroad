@@ -170,5 +170,3 @@ export const normalizeLeagueDivision = (division?: string | null): LeagueDivisio
       return 'bronze'
   }
 }
-
-export const TOKYO_DIVISIONS = LEAGUE_DIVISIONS

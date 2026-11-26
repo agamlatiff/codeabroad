@@ -79,7 +79,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 1. CURIOUS: Pondering paw on chin + floating warm question badge ("Tahukah Kamu?") */
     case 'curious':
       return (
-        <g className="k-floaty">
+        <g>
           <KodiMochiBaseBody bodyRotateDeg={4} />
           {/* Floating Amber Question Bubble */}
           <g transform="translate(120, 12)">
@@ -110,7 +110,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 2. READING: Round glasses reading an open book + warm ocha tea cup */
     case 'reading':
       return (
-        <g className="k-floaty">
+        <g>
           <KodiMochiBaseBody />
           <KodiClassicFace eyeY={82} mouthMode="cat" />
           {/* Cute Round Reading Glasses */}
@@ -140,7 +140,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 3. IDEA: Glowing lightbulb above head + starry "Aha!" expression */
     case 'idea':
       return (
-        <g className="k-floaty">
+        <g>
           {/* Glowing Lightbulb */}
           <g transform="translate(76, 6)">
             <circle cx="14" cy="14" r="12" fill="#FEF08A" stroke="#EAB308" strokeWidth="2.5" />
@@ -172,7 +172,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 4. POLITE: Neat bow tie, folded ojigi paws & drifting sakura petals (Keigo/Sopan) */
     case 'polite':
       return (
-        <g className="k-floaty">
+        <g>
           {/* Drifting Sakura Petals */}
           <path d="M32,46 Q38,38 42,46 Q36,52 32,46 Z" fill="#F9A8D4" />
           <path d="M142,38 Q149,30 152,39 Q145,45 142,38 Z" fill="#F472B6" />
@@ -199,7 +199,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 5. EXPLAINING: Kodi Sensei with pointer wand & mini particle board */
     case 'explaining':
       return (
-        <g className="k-floaty">
+        <g>
           <KodiMochiBaseBody />
           {/* Sensei Ribbon Headband */}
           <path d="M53,58 Q90,48 127,58" stroke="#0EA5E9" strokeWidth="5.5" fill="none" strokeLinecap="round" />
@@ -217,10 +217,10 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
         </g>
       )
 
-    /* 6. LISTENING: Headphones + musical sound notes (Audio / Pelafalan) */
+    /* 6. LISTENING: Headphones + vector musical sound notes (Audio / Pelafalan) */
     case 'listening':
       return (
-        <g className="k-floaty">
+        <g>
           {/* Headphone Band Behind/Over Head */}
           <path d="M40,86 C40,30 140,30 140,86" stroke="#2563EB" strokeWidth="7" fill="none" strokeLinecap="round" />
           <KodiMochiBaseBody />
@@ -233,9 +233,16 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
           <ellipse cx="60" cy="95" rx="7.5" ry="4.5" fill="#FB7185" opacity="0.72" />
           <ellipse cx="120" cy="95" rx="7.5" ry="4.5" fill="#FB7185" opacity="0.72" />
           <path d="M84,97 Q90,104 96,97" stroke="#0F172A" strokeWidth="2.4" fill="none" strokeLinecap="round" />
-          {/* Musical Notes Floating */}
-          <text x="20" y="54" fontSize="18" fontWeight="900" fill="#F43F5E">♪</text>
-          <text x="148" y="48" fontSize="16" fontWeight="900" fill="#3B82F6">♫</text>
+          {/* Vector Musical Notes */}
+          <g fill="#F43F5E" stroke="#F43F5E" strokeLinecap="round" strokeLinejoin="round">
+            <ellipse cx="22" cy="52" rx="3.4" ry="2.5" transform="rotate(-18 22 52)" stroke="none" />
+            <path d="M25 51 L25 38 L31 41" fill="none" strokeWidth="2.2" />
+          </g>
+          <g fill="#3B82F6" stroke="#3B82F6" strokeLinecap="round" strokeLinejoin="round">
+            <ellipse cx="149" cy="48" rx="3" ry="2.2" transform="rotate(-15 149 48)" stroke="none" />
+            <ellipse cx="159" cy="45" rx="3" ry="2.2" transform="rotate(-15 159 45)" stroke="none" />
+            <path d="M152 47 L152 35 L162 32 L162 44" fill="none" strokeWidth="2" />
+          </g>
           <ellipse cx="62" cy="126" rx="7.5" ry="6.5" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
           <ellipse cx="118" cy="126" rx="7.5" ry="6.5" fill="#FFFFFF" stroke="#0F172A" strokeWidth="2.5" />
         </g>
@@ -244,7 +251,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 7. WRITING: Artist beret + calligraphy brush (fude) + washi card "の" */
     case 'writing':
       return (
-        <g className="k-floaty">
+        <g>
           <KodiMochiBaseBody />
           {/* Cute Emerald Writer Beret */}
           <ellipse cx="90" cy="44" rx="34" ry="12" fill="#10B981" stroke="#0F172A" strokeWidth="2.5" transform="rotate(-8 90 44)" />
@@ -268,7 +275,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 8. CHATTING: Warm waving pose + Japanese greeting bubble */
     case 'chatting':
       return (
-        <g className="k-floaty">
+        <g>
           {/* Greeting Bubble */}
           <g transform="translate(114, 14)">
             <rect x="0" y="0" width="54" height="24" rx="12" fill="#E0F2FE" stroke="#0284C7" strokeWidth="2.2" />
@@ -288,7 +295,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     /* 9. CLOCK: Cheerful pose holding pocket clock + Today tag (Tense & Waktu) */
     case 'clock':
       return (
-        <g className="k-floaty">
+        <g>
           <KodiMochiBaseBody />
           <KodiClassicFace eyeY={82} mouthMode="o" />
           {/* Golden Pocket Clock Held in Front */}
@@ -308,7 +315,7 @@ export const KodiStudyExpressionSvg: FC<{ emotion: KodiStudyEmotion }> = ({ emot
     case 'cheering':
     default:
       return (
-        <g className="k-floaty">
+        <g>
           <polygon points="30,36 33,43 40,43 34,47 36,54 30,50 24,54 26,47 20,43 27,43" fill="#FBBF24" />
           <circle cx="144" cy="30" r="3.5" fill="#38BDF8" />
           <KodiMochiBaseBody />

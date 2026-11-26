@@ -77,7 +77,7 @@ export const ChestRewardModal = ({
 
         {/* Kodi Mascot & Custom 3D Vector Chest Display */}
         <div className="relative flex items-center justify-center my-2">
-          <div className="absolute w-36 h-36 bg-amber-300/30 rounded-full blur-2xl animate-pulse" />
+          <div className="absolute w-36 h-36 bg-amber-300/30 rounded-full blur-2xl" />
 
           <div className="relative z-10 flex items-center justify-center">
             <KodiCharacter emotion="celebrate" size={110} interactive />

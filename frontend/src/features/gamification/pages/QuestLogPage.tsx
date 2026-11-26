@@ -136,7 +136,7 @@ export const QuestLogPage = () => {
 
           {/* Toast Notification Banner */}
           {toastMessage && (
-            <div className="p-3.5 bg-slate-900 text-white rounded-2xl text-xs font-bold flex items-center justify-between shadow-lg animate-in fade-in slide-in-from-top-2 duration-200">
+            <div role="status" className="p-3.5 bg-slate-900 text-white rounded-2xl text-xs font-bold flex items-center justify-between shadow-lg animate-fadeIn">
               <span>{toastMessage}</span>
               <button
                 type="button"
@@ -151,7 +151,7 @@ export const QuestLogPage = () => {
 
           {/* Floating Reward Particle Toast */}
           {floatingReward && (
-            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-bounce">
+            <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 pointer-events-none animate-pop">
               <div className="bg-gradient-to-r from-amber-400 to-yellow-400 text-amber-950 font-black text-sm px-4 py-2 rounded-full shadow-lg border-2 border-white ring-4 ring-amber-300/50 flex items-center gap-2">
                 <Sparkle weight="fill" className="w-4 h-4 text-amber-900" />
                 <span>{floatingReward}</span>
@@ -192,6 +192,7 @@ export const QuestLogPage = () => {
                       <button
                         key={tab.id}
                         type="button"
+                        aria-pressed={isActive}
                         onClick={() => {
                           triggerHaptic('tap')
                           setActiveTab(tab.id)
@@ -417,16 +418,17 @@ export const QuestLogPage = () => {
                     <button
                       type="button"
                       onClick={handleCycleKodiTip}
+                      aria-label="Klik Mera untuk tips belajar"
                       title="Klik Mera untuk tips belajar"
-                      className="group flex flex-col items-center gap-1 cursor-pointer focus:outline-none"
+                      className="group flex flex-col items-center gap-1 cursor-pointer rounded-2xl p-1 outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
                     >
                       <div className="relative flex items-center justify-center">
                         <div className="absolute inset-0 bg-amber-300/25 rounded-full blur-xl group-hover:scale-110 transition-transform" />
                         <div className="relative z-10 drop-shadow-sm transform group-hover:scale-105 active:scale-95 transition-transform">
-                          <KodiCharacter emotion={displayedKodiEmotion} size={86} interactive />
+                          <KodiCharacter emotion={displayedKodiEmotion} size={86} interactive={false} />
                         </div>
                       </div>
-                      <span className="text-[10px] font-bold text-amber-800/80 group-hover:text-amber-900 transition-colors">
+                      <span className="text-[10px] font-bold text-amber-800/90 group-hover:text-amber-950 transition-colors">
                         Klik Mera untuk tips belajar
                       </span>
                     </button>
@@ -505,7 +507,7 @@ export const QuestLogPage = () => {
                                   ? 'text-emerald-700'
                                   : ownedCount > 0
                                     ? 'text-blue-700'
-                                    : 'text-slate-400'
+                                    : 'text-slate-500'
                             }`}
                           >
                             {item.id === 'xp-booster' && xpBoosterActive

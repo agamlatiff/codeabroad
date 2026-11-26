@@ -12,6 +12,7 @@ const PRESERVED_LOCAL_KEYS = new Set<string>([
 
 type CleanupCallback = () => void
 const cleanupCallbacks = new Set<CleanupCallback>()
+const queryCacheResetCallbacks = new Set<CleanupCallback>()
 
 /**
  * Allows feature stores (e.g., authStore, onboardingStore) to register
@@ -22,6 +23,26 @@ export const registerSessionResetHandler = (fn: CleanupCallback): (() => void) =
   return () => {
     cleanupCallbacks.delete(fn)
   }
+}
+
+/**
+ * Registers a callback (such as TanStack Query cache clear) invoked on cross-tab account switches or logout.
+ */
+export const registerQueryCacheResetHandler = (fn: CleanupCallback): (() => void) => {
+  queryCacheResetCallbacks.add(fn)
+  return () => {
+    queryCacheResetCallbacks.delete(fn)
+  }
+}
+
+export const notifyCrossTabAuthChange = (): void => {
+  queryCacheResetCallbacks.forEach((fn) => {
+    try {
+      fn()
+    } catch {
+      // Best-effort query cache invalidation
+    }
+  })
 }
 
 /**
@@ -39,6 +60,8 @@ export const clearClientSession = (queryClient?: QueryClient | null): void => {
 
   if (queryClient) {
     queryClient.clear()
+  } else {
+    notifyCrossTabAuthChange()
   }
 
   if (typeof window !== 'undefined') {

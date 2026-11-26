@@ -7,7 +7,7 @@ import {
   Sparkle,
   UserPlus,
 } from '@phosphor-icons/react'
-import { Button3D } from '@/shared/components/ui/Button3D'
+import { BUTTON_3D_TOKENS } from '@/shared/tokens/elevationTokens'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { getGuestTotalXp, useGuestTrialStore } from '@/features/auth/store/guestTrialStore'
 
@@ -85,25 +85,19 @@ export const GuestConversionSidebarCard = () => {
         </div>
 
         <div className="space-y-2 pt-1">
-          <Link to="/register?from=guest" className="block">
-            <Button3D
-              variant="blue"
-              size="md"
-              fullWidth
-              icon={<UserPlus weight="bold" className="w-4 h-4" />}
-            >
-              {guestXp > 0 ? `Daftar & Klaim +${guestXp} XP` : 'Daftar Gratis (10 Detik)'}
-            </Button3D>
+          <Link
+            to="/register?from=guest"
+            className={`w-full ${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants.blue} ${BUTTON_3D_TOKENS.sizes.md}`}
+          >
+            <UserPlus weight="bold" className="w-4 h-4 shrink-0" />
+            <span>{guestXp > 0 ? `Daftar & Klaim +${guestXp} XP` : 'Daftar Gratis (10 Detik)'}</span>
           </Link>
-          <Link to="/login?from=guest" className="block">
-            <Button3D
-              variant="white"
-              size="sm"
-              fullWidth
-              icon={<SignIn weight="bold" className="w-4 h-4" />}
-            >
-              Sudah Punya Akun? Masuk
-            </Button3D>
+          <Link
+            to="/login?from=guest"
+            className={`w-full ${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants.white} ${BUTTON_3D_TOKENS.sizes.sm}`}
+          >
+            <SignIn weight="bold" className="w-4 h-4 shrink-0" />
+            <span>Sudah Punya Akun? Masuk</span>
           </Link>
         </div>
       </div>

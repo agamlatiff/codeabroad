@@ -135,6 +135,7 @@ export const AkihabaraShopSection = ({
             <button
               key={option.id}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => {
                 triggerHaptic('tap')
                 onChangeCategory(option.id)
@@ -193,7 +194,7 @@ export const AkihabaraShopSection = ({
               {/* Right: Stock Counter & Purchase/Action Buttons */}
               <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-slate-100 flex-wrap">
                 <div className="text-left sm:text-right">
-                  <span className="text-[10px] font-bold text-slate-400 block uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-slate-500 block uppercase tracking-wider">
                     Stok Tas
                   </span>
                   <span className="font-mono font-black text-xs text-slate-700">
@@ -204,7 +205,7 @@ export const AkihabaraShopSection = ({
                 {/* Action / Active Status Badge if owned or active */}
                 {item.id === 'xp-booster' && isBoosterCurrentlyActive && (
                   <span className="text-[11px] font-mono font-black bg-purple-100 text-purple-800 border border-purple-300 px-3 py-1.5 rounded-xl shadow-2xs inline-flex items-center gap-1">
-                    <Lightning weight="fill" className="w-3.5 h-3.5 text-purple-600 animate-pulse" />
+                    <Lightning weight="fill" className="w-3.5 h-3.5 text-purple-600" />
                     <span>2x XP Aktif • {boosterRemainingMinutes} mnt</span>
                   </span>
                 )}

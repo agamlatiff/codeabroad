@@ -5,6 +5,9 @@
 export interface UserAccount {
   id: string
   email: string
+  email_verified?: boolean
+  subscription_tier?: 'free' | 'pro'
+  subscription_expires_at?: string | null
   created_at: string
   updated_at?: string
 }

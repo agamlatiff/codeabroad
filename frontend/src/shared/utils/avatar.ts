@@ -1,26 +1,11 @@
 /**
- * Utility functions for user avatar generation, safe URL validation, and style persistence.
+ * Utility functions for user avatar generation and safe URL validation.
  */
-
-export type AvatarStyle = 'adventurer'
-
-export const AVATAR_STYLE_STORAGE_KEY = 'merantalk_avatar_style'
 
 export interface AvatarUser {
   avatar_url?: string | null
   username?: string
   name?: string
-}
-
-export const getSavedAvatarStyle = (): AvatarStyle => 'adventurer'
-
-export const saveAvatarStyle = (style: AvatarStyle): void => {
-  if (typeof window === 'undefined') return
-  try {
-    window.localStorage.setItem(AVATAR_STYLE_STORAGE_KEY, style)
-  } catch {
-    // Ignore storage access failures
-  }
 }
 
 export const isSafeAvatarUrl = (url?: string | null): url is string => {
@@ -82,10 +67,8 @@ export const buildAdventurerAvatarUrl = (seed: string): string => {
 }
 
 export const getAvatarUrl = (
-  user?: AvatarUser | null,
-  _style: AvatarStyle = 'adventurer'
+  user?: AvatarUser | null
 ): string => {
-  void _style
   if (isSafeAvatarUrl(user?.avatar_url)) {
     const trimmed = user.avatar_url.trim()
     if (!trimmed.startsWith(LEGACY_AVATAR_PRESET_PREFIX)) {

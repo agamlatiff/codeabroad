@@ -85,12 +85,10 @@ export const LeaderboardHeroScenery: FC<{ division: LeagueDivision }> = ({ divis
           <path
             d="M214 34L217 41L224 44L217 47L214 54L211 47L204 44L211 41L214 34Z"
             fill="#FDE047"
-            className="lb-sparkle-float"
           />
           <path
             d="M326 30L328 35L333 37L328 39L326 44L324 39L319 37L324 35L326 30Z"
             fill="#67E8F9"
-            className="lb-sparkle-float"
           />
         </g>
       )}

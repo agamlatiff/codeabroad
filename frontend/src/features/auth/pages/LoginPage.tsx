@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useWatch } from 'react-hook-form'
 import { useLogin } from "@/features/auth/hooks/useLogin"
 import { AuthLayout } from "@/features/auth/components/AuthLayout"
 import { GoogleAuthButton } from "@/features/auth/components/GoogleAuthButton"
@@ -9,8 +10,10 @@ import { Button3D } from "@/shared/components/ui/Button3D"
 import { EnvelopeSimple, LockSimple } from '@phosphor-icons/react'
 
 export const LoginPage = () => {
-  const { register, errors, status, actions } = useLogin()
+  const { register, control, errors, status, actions } = useLogin()
   const [googleError, setGoogleError] = useState<string | null>(null)
+  const [googleLoading, setGoogleLoading] = useState(false)
+  const rememberMe = useWatch({ control, name: 'remember_me', defaultValue: false }) ?? false
 
   const handleSubmit = (event: FormEvent) => {
     setGoogleError(null)
@@ -31,7 +34,9 @@ export const LoginPage = () => {
       {/* ── 1. GOOGLE OAUTH CUSTOM BUTTON ── */}
       <GoogleAuthButton
         mode="login"
+        rememberMe={rememberMe}
         disabled={status.loading}
+        onLoadingChange={setGoogleLoading}
         onStart={status.clearError}
         onError={setGoogleError}
       />
@@ -76,6 +81,7 @@ export const LoginPage = () => {
           size="md"
           fullWidth
           loading={status.loading}
+          disabled={googleLoading}
           className="mt-2 text-sm"
         >
           Masuk Sekarang

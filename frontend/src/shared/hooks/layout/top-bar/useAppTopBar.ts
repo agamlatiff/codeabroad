@@ -12,7 +12,6 @@ import {
   mapEnrollmentsToTrackOptions,
   mapGuestLanguagesToTrackOptions,
 } from '@/features/curriculum/utils/curriculumMapper'
-import { getSavedAvatarStyle } from '@/shared/utils/avatar'
 
 export const useAppTopBar = (activeTrack: string) => {
   const { data } = useUser()
@@ -96,11 +95,9 @@ export const useAppTopBar = (activeTrack: string) => {
     })()
 
   const canSwitchLanguage = trackOptions.length >= 2
-  const avatarStyle = getSavedAvatarStyle()
 
   return {
     activeUser,
-    avatarStyle,
     rawXp,
     userXp,
     userStreak,

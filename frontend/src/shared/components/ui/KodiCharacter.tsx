@@ -114,7 +114,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
         style={{ width: `${sizePixel}px`, height: `${sizePixel * 1.1}px` }}
         className={`relative flex items-center justify-center transition-transform duration-300 ${
           isJumping
-            ? 'animate-bounce'
+            ? '-translate-y-1.5 scale-105'
             : interactive
             ? 'group-hover:scale-105 group-active:scale-95'
             : ''
@@ -128,7 +128,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               EMOTION 1: WELCOME / IDLE (COMPANION NODE ROADMAP)
           ══════════════════════════════════════════════════════════════════ */}
           {normalizedEmotion === 'welcome' && (
-            <g className="k-floaty">
+            <g>
               <ellipse cx="90" cy="164" rx="44" ry="7" fill="rgba(15,23,42,0.12)" />
               {/* Swishing Tail */}
               <path
@@ -186,7 +186,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               EMOTION 2: CELEBRATE (AIRBORNE LEAP & GOLDEN TROPHY)
           ══════════════════════════════════════════════════════════════════ */}
           {normalizedEmotion === 'celebrate' && (
-            <g className="k-jump">
+            <g>
               <ellipse cx="90" cy="168" rx="28" ry="5" fill="rgba(15,23,42,0.18)" />
               {/* Joyful High Tail */}
               <path
@@ -241,7 +241,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               EMOTION 3: CODING (SPEEDRUN HACKER WITH AFTERIMAGE PAWS)
           ══════════════════════════════════════════════════════════════════ */}
           {normalizedEmotion === 'coding' && (
-            <g className="k-floaty">
+            <g>
               <ellipse cx="90" cy="164" rx="44" ry="7" fill="rgba(15,23,42,0.12)" />
               {/* Rhythmic Tap Tail */}
               <path
@@ -286,7 +286,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               EMOTION 3B: STUDYING (WARM JAPANESE NOTEBOOK & PENCIL)
           ══════════════════════════════════════════════════════════════════ */}
           {normalizedEmotion === 'studying' && (
-            <g className="k-floaty">
+            <g>
               <ellipse cx="90" cy="164" rx="44" ry="7" fill="rgba(15,23,42,0.12)" />
               {/* Happy Swishing Tail */}
               <path
@@ -367,7 +367,7 @@ export const KodiCharacter: FC<KodiCharacterProps> = ({
               EMOTION 4: THINKING (BRAIN OVERHEAT & SPIRAL EYES)
           ══════════════════════════════════════════════════════════════════ */}
           {normalizedEmotion === 'thinking' && (
-            <g className="k-floaty">
+            <g>
               <ellipse cx="90" cy="164" rx="44" ry="7" fill="rgba(15,23,42,0.12)" />
               {/* Question Mark Tail */}
               <path

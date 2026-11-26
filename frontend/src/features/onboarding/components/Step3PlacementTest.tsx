@@ -63,9 +63,13 @@ export const Step3PlacementTest = ({
   const [isPlayingAudio, setIsPlayingAudio] = useState(false)
   const [selectedTokensByQuestion, setSelectedTokensByQuestion] = useState<Record<string, number[]>>({})
   const audioRef = useRef<HTMLAudioElement | null>(null)
+  const audioSessionIdRef = useRef(0)
 
   const stopAllAudio = useCallback(() => {
+    audioSessionIdRef.current += 1
     if (audioRef.current) {
+      audioRef.current.onended = null
+      audioRef.current.onerror = null
       audioRef.current.pause()
       audioRef.current.currentTime = 0
       audioRef.current = null
@@ -77,12 +81,17 @@ export const Step3PlacementTest = ({
   const playQuestionAudio = useCallback(
     (mediaUrl?: string, text?: string, rate?: number, withHaptic = true) => {
       stopAllAudio()
+      const { audioMode, masterVolume } = useAudioStore.getState()
+      if (audioMode === 'muted') return
+
+      const sessionId = audioSessionIdRef.current
       if (withHaptic) {
         triggerHaptic('tap')
       }
       setIsPlayingAudio(true)
 
       const fallbackSpeech = () => {
+        if (sessionId !== audioSessionIdRef.current) return
         if (!text) {
           setIsPlayingAudio(false)
           return
@@ -90,17 +99,30 @@ export const Step3PlacementTest = ({
         audioService.speakLanguage(
           text,
           resolveSpeechLocale(languageCode),
-          () => setIsPlayingAudio(false),
-          () => setIsPlayingAudio(false),
+          () => {
+            if (sessionId === audioSessionIdRef.current) {
+              setIsPlayingAudio(false)
+            }
+          },
+          () => {
+            if (sessionId === audioSessionIdRef.current) {
+              setIsPlayingAudio(false)
+            }
+          },
           rate
         )
       }
 
       if (mediaUrl) {
         const audio = new Audio(mediaUrl)
+        audio.volume = Math.max(0, Math.min(1, masterVolume))
         audio.playbackRate = typeof rate === 'number' && rate > 0 ? rate : 1
         audioRef.current = audio
-        audio.onended = () => setIsPlayingAudio(false)
+        audio.onended = () => {
+          if (sessionId === audioSessionIdRef.current) {
+            setIsPlayingAudio(false)
+          }
+        }
         audio.onerror = () => fallbackSpeech()
         audio.play().catch(() => fallbackSpeech())
         return
@@ -337,7 +359,7 @@ export const Step3PlacementTest = ({
                   </button>
                 ))
               ) : (
-                <span className="text-xs font-semibold text-slate-400 break-words">
+                <span className="text-xs font-semibold text-slate-500 break-words">
                   Ketuk kata di bawah untuk menyusun kalimat...
                 </span>
               )}
@@ -347,7 +369,7 @@ export const Step3PlacementTest = ({
                 type="button"
                 onClick={() => updateSelectedTokens([])}
                 aria-label="Hapus susunan kata"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 cursor-pointer shrink-0"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 cursor-pointer shrink-0"
               >
                 <Trash weight="bold" className="w-4 h-4" />
               </button>

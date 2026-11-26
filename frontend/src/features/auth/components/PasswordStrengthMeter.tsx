@@ -34,7 +34,7 @@ export const PasswordStrengthMeter: FC<PasswordStrengthMeterProps> = ({ password
         <span className={`font-semibold ${strength.textColor}`}>
           Kekuatan: {strength.label}
         </span>
-        <span className="text-slate-400 font-normal">{strength.hint}</span>
+        <span className="text-slate-500 font-normal">{strength.hint}</span>
       </div>
     </div>
   )

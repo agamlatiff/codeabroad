@@ -2,7 +2,11 @@ import { create } from 'zustand'
 import { z } from 'zod'
 import type { User } from "@/shared/types/user"
 import { registerAuthInterceptorBridge } from "@/shared/services/api"
-import { registerSessionResetHandler } from "@/shared/services/sessionCleanup"
+import {
+  clearClientSession,
+  notifyCrossTabAuthChange,
+  registerSessionResetHandler,
+} from "@/shared/services/sessionCleanup"
 
 export const AUTH_STORAGE_KEY = 'merantalk_auth_session'
 const LEGACY_AUTH_STORAGE_KEY = 'codeabroad_auth_session'
@@ -10,6 +14,9 @@ const LEGACY_AUTH_STORAGE_KEY = 'codeabroad_auth_session'
 const persistedUserSchema = z.object({
   id: z.string().min(1),
   email: z.string().min(1),
+  email_verified: z.boolean().optional(),
+  subscription_tier: z.enum(['free', 'pro']).optional(),
+  subscription_expires_at: z.string().nullable().optional(),
   name: z.string(),
   username: z.string(),
   created_at: z.string().optional().default(''),
@@ -143,14 +150,20 @@ const loadInitialSession = (): AuthSessionData => {
   }
 }
 
-const persistSession = (data: AuthSessionData | null, rememberMe: boolean) => {
+const persistSession = (
+  data: AuthSessionData | null,
+  rememberMe: boolean,
+  clearOppositeStorage = false
+) => {
   const primary = rememberMe ? cachedLocalStorage : cachedSessionStorage
   const secondary = rememberMe ? cachedSessionStorage : cachedLocalStorage
 
   try {
     if (hasActiveTokenAndUser(data) && data) {
       primary?.setItem(AUTH_STORAGE_KEY, JSON.stringify(data))
-      secondary?.removeItem(AUTH_STORAGE_KEY)
+      if (clearOppositeStorage && secondary?.getItem(AUTH_STORAGE_KEY)) {
+        secondary.removeItem(AUTH_STORAGE_KEY)
+      }
       cachedLocalStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
       cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
     } else {
@@ -180,7 +193,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       refreshToken,
       rememberMe,
     }
-    persistSession(sessionData, rememberMe)
+    persistSession(sessionData, rememberMe, true)
     set({
       ...sessionData,
       isAuthenticated: hasActiveTokenAndUser(sessionData),
@@ -244,7 +257,7 @@ registerAuthInterceptorBridge({
   getRefreshToken: () => useAuthStore.getState().refreshToken,
   setTokens: (accessToken, refreshToken) => useAuthStore.getState().setTokens(accessToken, refreshToken),
   updateUser: (updatedFields) => useAuthStore.getState().updateUser(updatedFields),
-  clearSession: () => useAuthStore.getState().logout(),
+  clearSession: () => clearClientSession(),
 })
 
 registerSessionResetHandler(() => {
@@ -257,10 +270,12 @@ if (typeof window !== 'undefined') {
     if (event.storageArea !== cachedLocalStorage) {
       return
     }
+    const currentState = useAuthStore.getState()
     if (event.key === null) {
       const tabSession = safeParseSession(cachedSessionStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
       if (!hasActiveTokenAndUser(tabSession)) {
-        useAuthStore.getState().logout()
+        currentState.logout()
+        notifyCrossTabAuthChange()
       }
       return
     }
@@ -270,6 +285,9 @@ if (typeof window !== 'undefined') {
 
     const parsed = safeParseSession(event.newValue)
     if (hasActiveTokenAndUser(parsed) && parsed) {
+      const prevUserId = currentState.user?.id
+      cachedSessionStorage?.removeItem(AUTH_STORAGE_KEY)
+      cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
       useAuthStore.setState({
         user: parsed.user,
         accessToken: parsed.accessToken,
@@ -277,15 +295,20 @@ if (typeof window !== 'undefined') {
         rememberMe: parsed.rememberMe,
         isAuthenticated: true,
       })
+      if (prevUserId !== parsed.user?.id) {
+        notifyCrossTabAuthChange()
+      }
       return
     }
 
-    // Preserve active tab session if it is backed by sessionStorage (rememberMe: false)
+    // Preserve active tab session if this tab explicitly runs a tab-scoped session (rememberMe: false)
     const tabSession = safeParseSession(cachedSessionStorage?.getItem(AUTH_STORAGE_KEY) ?? null)
-    if (hasActiveTokenAndUser(tabSession)) {
+    if (!currentState.rememberMe && hasActiveTokenAndUser(tabSession)) {
       return
     }
 
+    cachedSessionStorage?.removeItem(AUTH_STORAGE_KEY)
+    cachedSessionStorage?.removeItem(LEGACY_AUTH_STORAGE_KEY)
     useAuthStore.setState({
       user: null,
       accessToken: null,
@@ -293,5 +316,6 @@ if (typeof window !== 'undefined') {
       rememberMe: false,
       isAuthenticated: false,
     })
+    notifyCrossTabAuthChange()
   })
 }

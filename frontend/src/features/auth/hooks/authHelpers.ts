@@ -170,6 +170,8 @@ export const GOOGLE_AUTH_ERROR_MAP: Record<string, string> = {
   GOOGLE_AUTH_FAILED: 'Verifikasi akun Google gagal atau kedaluwarsa. Silakan coba lagi.',
   GOOGLE_EMAIL_NOT_VERIFIED:
     'Email pada akun Google belum terverifikasi. Gunakan akun Google terverifikasi.',
+  LOCAL_ACCOUNT_UNVERIFIED:
+    'Email ini sudah terdaftar secara lokal dan belum terverifikasi. Silakan masuk menggunakan kata sandi terlebih dahulu.',
   OAUTH_ACCOUNT_CONFLICT: 'Email ini sudah terhubung dengan akun Google lain.',
   EMAIL_ALREADY_EXISTS: 'Email ini sudah terdaftar dengan akun berbeda.',
 }
@@ -195,4 +197,28 @@ export const resolveGoogleAuthErrorMessage = (err: unknown): string => {
   }
 
   return 'Gagal masuk dengan Google. Silakan coba beberapa saat lagi.'
+}
+
+let googleScriptLoadFailed = false
+const googleScriptListeners = new Set<() => void>()
+
+export const reportGoogleScriptLoadError = (): void => {
+  if (googleScriptLoadFailed) return
+  googleScriptLoadFailed = true
+  googleScriptListeners.forEach((listener) => listener())
+}
+
+export const resetGoogleScriptLoadError = (): void => {
+  if (!googleScriptLoadFailed) return
+  googleScriptLoadFailed = false
+  googleScriptListeners.forEach((listener) => listener())
+}
+
+export const getGoogleScriptLoadError = (): boolean => googleScriptLoadFailed
+
+export const subscribeGoogleScriptLoadError = (listener: () => void): (() => void) => {
+  googleScriptListeners.add(listener)
+  return () => {
+    googleScriptListeners.delete(listener)
+  }
 }

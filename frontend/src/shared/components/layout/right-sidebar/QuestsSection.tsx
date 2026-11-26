@@ -64,7 +64,7 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
               <h4 className="font-brand font-black text-xs text-slate-900 leading-none">
                 Misi &amp; Target Harian
               </h4>
-              <span className="text-[9px] text-slate-400 font-medium">
+              <span className="text-[9px] text-slate-500 font-medium">
                 Target {dailyGoalMinutes} mnt ({dailyTargetXp} XP) untuk Buka Peti
               </span>
             </div>
@@ -183,7 +183,7 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
                       <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider bg-slate-100 border border-slate-200/60 px-1.5 py-0.5 rounded">
                         {quest.chipLabel}
                       </span>
-                      <span className="text-[9px] font-mono font-bold text-slate-400 px-0.5">
+                      <span className="text-[9px] font-mono font-bold text-slate-500 px-0.5">
                         {quest.progressText}
                       </span>
                     </div>

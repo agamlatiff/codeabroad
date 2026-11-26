@@ -127,13 +127,13 @@ export const AppRightSidebar = ({
               <div className="flex items-center justify-between px-4 py-3.5 border-b border-slate-200/90 bg-white shrink-0">
                 <div className="flex items-center gap-2">
                   <div className="w-7 h-7 rounded-xl bg-orange-100/80 text-orange-600 flex items-center justify-center font-bold">
-                    <Gift weight="fill" className="w-4 h-4 text-orange-500 animate-bounce" />
+                    <Gift weight="fill" className="w-4 h-4 text-orange-500" />
                   </div>
                   <div>
                     <h3 className="font-brand font-black text-sm text-slate-900 leading-none">
                       {isAuthenticated ? 'Misi & Hadiah Harian' : 'Simpan Progres Belajarmu'}
                     </h3>
-                    <span className="text-[10px] text-slate-400 font-medium">
+                    <span className="text-[10px] text-slate-500 font-medium">
                       {isAuthenticated ? 'Streak, target XP & kosakata harian' : 'Mode Coba • Buat akun gratis'}
                     </span>
                   </div>
@@ -170,7 +170,7 @@ export const AppRightSidebar = ({
                 className="absolute transform -translate-x-1/2 -translate-y-full animate-float-up-fade flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-amber-950 font-brand font-black text-sm shadow-[0_4px_16px_rgba(245,158,11,0.5)] border-2 border-white ring-2 ring-amber-400/50"
                 style={{ left: reward.x, top: reward.y }}
               >
-                <Lightning weight="fill" className="w-4 h-4 text-amber-950 animate-bounce" />
+                <Lightning weight="fill" className="w-4 h-4 text-amber-950" />
                 <span>+{reward.amount} XP</span>
               </div>
             ))}

@@ -40,7 +40,7 @@ export const LeaderboardStandingsList = ({
     return (
       <div className={`${compact ? 'py-12' : 'py-16'} text-center space-y-3`}>
         <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-brand font-bold text-slate-400">
+        <p className="text-xs font-brand font-bold text-slate-500">
           Memuat klasemen {divisionConfig.name}...
         </p>
       </div>
@@ -136,7 +136,7 @@ export const LeaderboardStandingsList = ({
 
       {leaderboard.user_rank && !entries.some((e) => e.is_current_user) && (
         <div className="pt-2 border-t border-dashed border-slate-200 space-y-1.5">
-          <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400 px-1">
+          <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-500 px-1">
             Posisimu Saat Ini ({divisionConfig.name})
           </span>
           <LeaderboardEntryRow entry={leaderboard.user_rank} compact={compact} />

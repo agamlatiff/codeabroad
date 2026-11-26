@@ -152,6 +152,7 @@ class AudioService {
   private bgmVolume: number = DEFAULT_BGM_VOLUME
   private activeSoundscapeTrack: SoundscapeTrack = 'universal'
   private isUnlocked: boolean = false
+  private isBgmActive: boolean = false
 
   constructor() {
     this.setupAutoUnlock()
@@ -172,10 +173,12 @@ class AudioService {
         if (this.ctx && this.ctx.state === 'running') {
           void this.ctx.suspend().catch(() => {})
         }
-      } else if (this.isUnlocked && this.mode === 'all' && !this.isAuthRoute()) {
+      } else if (this.isUnlocked && this.isBgmActive && this.mode === 'all' && !this.isAuthRoute()) {
         if (this.ctx && this.ctx.state === 'suspended') {
           void this.ctx.resume().then(() => {
-            this.playBgm(this.activeSoundscapeTrack)
+            if (this.isBgmActive && this.mode === 'all' && !this.isAuthRoute()) {
+              this.playBgm(this.activeSoundscapeTrack)
+            }
           }).catch(() => {})
         }
       }
@@ -211,7 +214,7 @@ class AudioService {
         await ctx.resume()
         if ((ctx.state as AudioContextState) === 'running') {
           this.isUnlocked = true
-          if (this.mode === 'all' && !this.isAuthRoute()) {
+          if (this.isBgmActive && this.mode === 'all' && !this.isAuthRoute()) {
             this.playBgm(this.activeSoundscapeTrack)
           }
         }
@@ -220,6 +223,9 @@ class AudioService {
       }
     } else if (ctx && ctx.state === 'running') {
       this.isUnlocked = true
+      if (this.isBgmActive && this.mode === 'all' && !this.isAuthRoute()) {
+        this.playBgm(this.activeSoundscapeTrack)
+      }
     }
   }
 
@@ -308,6 +314,7 @@ class AudioService {
    */
   public playBgm(track: SoundscapeTrack = 'universal'): void {
     this.activeSoundscapeTrack = track
+    this.isBgmActive = true
     if (!this.isUnlocked || this.mode !== 'all' || this.isAuthRoute()) return
 
     const ctx = this.getContext()
@@ -320,6 +327,7 @@ class AudioService {
    * Stops ambient background soundscape.
    */
   public stopBgm(): void {
+    this.isBgmActive = false
     if (this.soundscape) {
       this.soundscape.stop()
     }
@@ -339,11 +347,13 @@ class AudioService {
     }
 
     if (mode === 'all') {
-      if (this.isUnlocked) {
+      if (this.isUnlocked && this.isBgmActive && !this.isAuthRoute()) {
         this.playBgm(this.activeSoundscapeTrack)
       }
     } else {
-      this.stopBgm()
+      if (this.soundscape) {
+        this.soundscape.stop()
+      }
       if (mode === 'muted') {
         this.stopSpeech()
       }

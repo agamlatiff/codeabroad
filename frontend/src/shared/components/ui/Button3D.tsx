@@ -26,6 +26,7 @@ export const Button3D = ({
   disableSound = false,
   disabled,
   className = '',
+  type = 'button',
   onClick,
   ...props
 }: Button3DProps) => {
@@ -40,6 +41,7 @@ export const Button3D = ({
 
   return (
     <button
+      type={type}
       disabled={disabled || loading}
       className={`${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants[variant]} ${BUTTON_3D_TOKENS.sizes[size]} ${widthStyle} ${className}`.trim()}
       onClick={handleClick}

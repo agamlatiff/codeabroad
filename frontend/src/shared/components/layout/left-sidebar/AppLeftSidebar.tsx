@@ -14,16 +14,14 @@ import { SettingsModal } from './SettingsModal'
 
 /**
  * AppLeftSidebar (SSOT)
- * Pure declarative left navigation rail (desktop) and bottom bar (mobile) for CodeAbroad.
+ * Pure declarative left navigation rail (desktop) and bottom bar (mobile) for Merantalk.
  * Powered 1:1 by useAppLeftSidebar.
  */
 export const AppLeftSidebar = () => {
   const {
     user,
     navItems,
-    avatarStyle,
     isSettingsOpen,
-    handleAvatarStyleChange,
     handleOpenSettings,
     handleCloseSettings,
     handleProfileUpdated,
@@ -50,10 +48,10 @@ export const AppLeftSidebar = () => {
         {/* Top Brand Mark */}
         <div className="flex flex-col items-center gap-6">
           <Link
-            to={user ? '/curriculum' : '/welcome'}
+            to="/"
             onClick={() => triggerHaptic('tap')}
             className="w-11 h-11 rounded-2xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer relative group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
-            title={user ? 'Merantalk Hub' : 'Kembali ke Beranda Merantalk'}
+            title="Kembali ke Beranda Merantalk"
           >
             <img
               src="/favicon.svg"
@@ -62,7 +60,7 @@ export const AppLeftSidebar = () => {
             />
 
             {/* Brand Tooltip */}
-            <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 flex items-center gap-1.5 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
+            <div aria-hidden="true" className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-slate-900/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 flex items-center gap-1.5 border border-slate-700/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
               <Sparkle weight="fill" className="w-3 h-3 text-amber-400" />
               <span>Merantalk Platform</span>
               <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-slate-900" />
@@ -70,7 +68,7 @@ export const AppLeftSidebar = () => {
           </Link>
 
           {/* Navigation Icon List */}
-          <nav className="flex flex-col items-center gap-3">
+          <nav aria-label="Navigasi utama" className="flex flex-col items-center gap-3">
             {navItems.map((item) => {
               const Icon = item.icon
 
@@ -79,11 +77,12 @@ export const AppLeftSidebar = () => {
                   key={item.label}
                   to={item.href}
                   data-tour={item.tourId}
+                  aria-label={item.label}
                   onClick={(e) => handleNavClick(e, item.requiresAuth)}
                   className={`w-12 h-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer relative group ${
                     item.isActive
                       ? 'bg-gradient-to-b from-blue-50 via-blue-100/70 to-blue-100/90 text-blue-600 border-2 border-blue-400 shadow-[0_3px_0_0_#93C5FD]'
-                      : 'text-slate-400 hover:text-slate-800 hover:bg-slate-100/80 border-2 border-transparent hover:border-slate-200/70'
+                      : 'text-slate-500 hover:text-slate-800 hover:bg-slate-100/80 border-2 border-transparent hover:border-slate-200/70'
                   }`}
                 >
                   <Icon
@@ -135,6 +134,7 @@ export const AppLeftSidebar = () => {
                 onClick={handleOpenSettings}
                 className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-slate-100/80 hover:border-slate-300 text-slate-500 hover:text-slate-800 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
                 title="Pengaturan"
+                aria-label="Pengaturan Akun"
               >
                 <GearSix weight="bold" className="w-4.5 h-4.5 transition-colors" />
 
@@ -151,6 +151,7 @@ export const AppLeftSidebar = () => {
                 onClick={handleLogout}
                 className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-500 hover:text-rose-600 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
                 title="Keluar"
+                aria-label="Keluar Akun"
               >
                 <SignOut weight="bold" className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
 
@@ -167,6 +168,7 @@ export const AppLeftSidebar = () => {
               onClick={() => triggerHaptic('tap')}
               className="w-10 h-10 rounded-2xl border-2 border-blue-200 bg-blue-50 hover:bg-blue-600 text-blue-600 hover:text-white shadow-[0_2px_0_0_#93C5FD] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
               title="Masuk atau Daftar Gratis"
+              aria-label="Masuk atau Daftar Gratis"
             >
               <SignIn weight="bold" className="w-4.5 h-4.5" />
 
@@ -180,7 +182,10 @@ export const AppLeftSidebar = () => {
       </aside>
 
       {/* ── MOBILE BOTTOM NAVIGATION BAR (Clean Light Mode) ── */}
-      <div className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t-2 border-slate-200/90 px-4 py-2 z-40 flex items-center justify-around shadow-sm">
+      <nav
+        aria-label="Navigasi seluler"
+        className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 backdrop-blur-md border-t-2 border-slate-200/90 px-4 py-2 z-40 flex items-center justify-around shadow-sm"
+      >
         {navItems.map((item) => {
           const Icon = item.icon
 
@@ -189,6 +194,7 @@ export const AppLeftSidebar = () => {
               key={item.label}
               to={item.href}
               data-tour={item.tourId}
+              aria-label={item.label}
               onClick={(e) => handleNavClick(e, item.requiresAuth)}
               className={`flex flex-col items-center gap-0.5 p-1.5 rounded-xl transition-all relative ${
                 item.isActive ? 'text-blue-600 font-bold' : 'text-slate-500'
@@ -205,7 +211,7 @@ export const AppLeftSidebar = () => {
             </Link>
           )
         })}
-      </div>
+      </nav>
 
       {/* ── DUOLINGO 3D ACCOUNT SETTINGS MODAL ── */}
       {user && (
@@ -213,8 +219,6 @@ export const AppLeftSidebar = () => {
           isOpen={isSettingsOpen}
           onClose={handleCloseSettings}
           user={user}
-          avatarStyle={avatarStyle}
-          onAvatarStyleChange={handleAvatarStyleChange}
           onProfileUpdated={handleProfileUpdated}
         />
       )}

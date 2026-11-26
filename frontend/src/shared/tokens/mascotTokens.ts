@@ -74,7 +74,7 @@ export const SPEECH_BUBBLE_TOKENS = {
   tailSize: '8px',
   radius: '1.25rem',
   shadow: '0 4px 14px rgba(15, 23, 42, 0.06)',
-  containerClass: 'mb-2 z-30 animate-bounce-subtle pointer-events-none',
+  containerClass: 'mb-2 z-30 pointer-events-none',
   bubbleClass:
     'relative bg-white border-2 border-slate-200/90 text-slate-800 px-3 py-1.5 rounded-2xl shadow-[0_4px_12px_rgba(15,23,42,0.08)] text-[11px] font-brand font-black tracking-tight max-w-[200px] text-center',
   tailClass:
