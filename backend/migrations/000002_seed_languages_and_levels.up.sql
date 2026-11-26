@@ -1,139 +1,35 @@
--- ============================================================================
--- Migration: 000002_seed_languages_and_levels.up.sql
--- Description: Seed 6 Global Language Tracks and Standard Proficiency Levels (JLPT, IELTS, TOEFL, Goethe, HSK, DELF)
--- Version: CodeAbroad v3.0
--- ============================================================================
+-- Seed Languages & Proficiency Levels
+INSERT INTO languages ("id", "code", "name", "supported_scripts", "is_active", "created_at") VALUES ('f2b394fb-8a3a-46ea-b9a5-a4dfd548210c', 'de', 'Jerman', '["latin"]'::jsonb, false, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO languages ("id", "code", "name", "supported_scripts", "is_active", "created_at") VALUES ('9b203062-8cb9-4556-a74e-6346130842fb', 'en-gb', 'Inggris (British)', '["latin"]'::jsonb, false, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO languages ("id", "code", "name", "supported_scripts", "is_active", "created_at") VALUES ('d0e37fce-33c2-4091-afc7-131867f5d20d', 'en-us', 'Inggris (American)', '["latin"]'::jsonb, false, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO languages ("id", "code", "name", "supported_scripts", "is_active", "created_at") VALUES ('8954aadd-4c31-44d3-9fa4-af0a8a23aeb6', 'fr', 'Prancis', '["latin"]'::jsonb, false, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO languages ("id", "code", "name", "supported_scripts", "is_active", "created_at") VALUES ('a7ca68a2-0041-4e5c-a1f1-7b786f319b65', 'ja', 'Jepang', '["kanji","hiragana","katakana","romaji"]'::jsonb, true, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO languages ("id", "code", "name", "supported_scripts", "is_active", "created_at") VALUES ('02e1bdbf-300e-4e32-ad34-24d6c445e320', 'zh', 'Mandarin', '["simplified","traditional","pinyin"]'::jsonb, false, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
 
--- ----------------------------------------------------------------------------
--- 1. SEED 6 GLOBAL LANGUAGES
--- ----------------------------------------------------------------------------
-INSERT INTO languages (code, name, supported_scripts, is_active) VALUES
-    ('ja', 'Jepang', '["kanji", "hiragana", "katakana", "romaji"]'::jsonb, TRUE),
-    ('en-gb', 'Inggris (British)', '["latin"]'::jsonb, TRUE),
-    ('en-us', 'Inggris (American)', '["latin"]'::jsonb, TRUE),
-    ('de', 'Jerman', '["latin"]'::jsonb, TRUE),
-    ('zh', 'Mandarin', '["simplified", "traditional", "pinyin"]'::jsonb, TRUE),
-    ('fr', 'Prancis', '["latin"]'::jsonb, TRUE)
-ON CONFLICT (code) DO UPDATE 
-SET name = EXCLUDED.name,
-    supported_scripts = EXCLUDED.supported_scripts,
-    is_active = EXCLUDED.is_active;
-
--- ----------------------------------------------------------------------------
--- 2. SEED PROFICIENCY LEVELS
--- ----------------------------------------------------------------------------
-
--- 🇯🇵 JAPANESE (JLPT N5 -> N1)
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'N5', 'JLPT N5 (Pemula)', 'beginner', 'JLPT', 60, 1 FROM languages WHERE code = 'ja'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'N4', 'JLPT N4 (Dasar Lanjutan)', 'beginner', 'JLPT', 60, 2 FROM languages WHERE code = 'ja'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'N3', 'JLPT N3 (Menengah Pra-Kerja)', 'intermediate', 'JLPT', 60, 3 FROM languages WHERE code = 'ja'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'N2', 'JLPT N2 (Bisnis Profesional)', 'intermediate', 'JLPT', 60, 4 FROM languages WHERE code = 'ja'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'N1', 'JLPT N1 (Mahir Fasih)', 'advanced', 'JLPT', 60, 5 FROM languages WHERE code = 'ja'
-ON CONFLICT (language_id, code) DO NOTHING;
-
--- 🇬🇧 BRITISH ENGLISH (IELTS Track)
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'IELTS_FOUNDATION', 'IELTS Foundation (Band 4.0 - 5.0)', 'beginner', 'IELTS', 60, 1 FROM languages WHERE code = 'en-gb'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'IELTS_INTERMEDIATE', 'IELTS Intermediate (Band 5.5 - 6.5)', 'intermediate', 'IELTS', 65, 2 FROM languages WHERE code = 'en-gb'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'IELTS_ADVANCED', 'IELTS Advanced (Band 7.0 - 9.0)', 'advanced', 'IELTS', 75, 3 FROM languages WHERE code = 'en-gb'
-ON CONFLICT (language_id, code) DO NOTHING;
-
--- 🇺🇸 AMERICAN ENGLISH (TOEFL Track)
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'TOEFL_FOUNDATION', 'TOEFL Foundation (Score 40 - 60)', 'beginner', 'TOEFL iBT', 60, 1 FROM languages WHERE code = 'en-us'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'TOEFL_INTERMEDIATE', 'TOEFL Intermediate (Score 61 - 90)', 'intermediate', 'TOEFL iBT', 65, 2 FROM languages WHERE code = 'en-us'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'TOEFL_ADVANCED', 'TOEFL Advanced (Score 91 - 120)', 'advanced', 'TOEFL iBT', 75, 3 FROM languages WHERE code = 'en-us'
-ON CONFLICT (language_id, code) DO NOTHING;
-
--- 🇩🇪 GERMAN (Goethe-Zertifikat Track)
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'A1', 'Goethe A1 (Start Deutsch 1)', 'beginner', 'Goethe-Zertifikat', 60, 1 FROM languages WHERE code = 'de'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'A2', 'Goethe A2 (Start Deutsch 2)', 'beginner', 'Goethe-Zertifikat', 60, 2 FROM languages WHERE code = 'de'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'B1', 'Goethe B1 (Zertifikat Deutsch)', 'intermediate', 'Goethe-Zertifikat', 60, 3 FROM languages WHERE code = 'de'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'B2', 'Goethe B2', 'intermediate', 'Goethe-Zertifikat', 60, 4 FROM languages WHERE code = 'de'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'C1', 'Goethe C1', 'advanced', 'Goethe-Zertifikat', 60, 5 FROM languages WHERE code = 'de'
-ON CONFLICT (language_id, code) DO NOTHING;
-
--- 🇨🇳 MANDARIN CHINESE (HSK Track)
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'HSK1', 'HSK Level 1 (Pemula)', 'beginner', 'HSK', 60, 1 FROM languages WHERE code = 'zh'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'HSK2', 'HSK Level 2 (Dasar)', 'beginner', 'HSK', 60, 2 FROM languages WHERE code = 'zh'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'HSK3', 'HSK Level 3 (Menengah Awal)', 'intermediate', 'HSK', 60, 3 FROM languages WHERE code = 'zh'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'HSK4', 'HSK Level 4 (Menengah Atas)', 'intermediate', 'HSK', 60, 4 FROM languages WHERE code = 'zh'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'HSK5', 'HSK Level 5 (Mahir)', 'advanced', 'HSK', 60, 5 FROM languages WHERE code = 'zh'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'HSK6', 'HSK Level 6 (Mastery)', 'advanced', 'HSK', 60, 6 FROM languages WHERE code = 'zh'
-ON CONFLICT (language_id, code) DO NOTHING;
-
--- 🇫🇷 FRENCH (DELF / DALF Track)
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'A1', 'DELF A1 (Découverte)', 'beginner', 'DELF', 60, 1 FROM languages WHERE code = 'fr'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'A2', 'DELF A2 (Survie)', 'beginner', 'DELF', 60, 2 FROM languages WHERE code = 'fr'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'B1', 'DELF B1 (Seuil)', 'intermediate', 'DELF', 60, 3 FROM languages WHERE code = 'fr'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'B2', 'DELF B2 (Avancé)', 'intermediate', 'DELF', 60, 4 FROM languages WHERE code = 'fr'
-ON CONFLICT (language_id, code) DO NOTHING;
-
-INSERT INTO proficiency_levels (language_id, code, name, tier, official_exam_name, passing_score_percent, order_index)
-SELECT id, 'C1', 'DALF C1 (Autonome)', 'advanced', 'DALF', 60, 5 FROM languages WHERE code = 'fr'
-ON CONFLICT (language_id, code) DO NOTHING;
-
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('a198e0df-4b39-48dc-84e5-9a99f2fd4cb8', '02e1bdbf-300e-4e32-ad34-24d6c445e320', 'HSK1', 'HSK Level 1 (Pemula)', 'beginner', 'HSK', 60, 1, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('ba74c69f-02aa-4b97-96ba-b529d95141d5', '02e1bdbf-300e-4e32-ad34-24d6c445e320', 'HSK2', 'HSK Level 2 (Dasar)', 'beginner', 'HSK', 60, 2, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('6ab46929-480d-4d12-af4a-5dbeededcef7', '02e1bdbf-300e-4e32-ad34-24d6c445e320', 'HSK3', 'HSK Level 3 (Menengah Awal)', 'intermediate', 'HSK', 60, 3, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('519a0338-f5c6-4bab-9cb8-ad11cbd4c178', '02e1bdbf-300e-4e32-ad34-24d6c445e320', 'HSK4', 'HSK Level 4 (Menengah Atas)', 'intermediate', 'HSK', 60, 4, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('78103873-45ab-4c5e-8545-6671ca7f0a57', '02e1bdbf-300e-4e32-ad34-24d6c445e320', 'HSK5', 'HSK Level 5 (Mahir)', 'advanced', 'HSK', 60, 5, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('40017629-0c51-4d2c-991f-3e305ce13264', '02e1bdbf-300e-4e32-ad34-24d6c445e320', 'HSK6', 'HSK Level 6 (Mastery)', 'advanced', 'HSK', 60, 6, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('05ea0cc2-ebc1-4335-9f4b-3ff2d6c65a81', '8954aadd-4c31-44d3-9fa4-af0a8a23aeb6', 'A1', 'DELF A1 (Découverte)', 'beginner', 'DELF', 60, 1, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('2e422340-bdce-40c9-b3fc-df8d40ba192e', '8954aadd-4c31-44d3-9fa4-af0a8a23aeb6', 'A2', 'DELF A2 (Survie)', 'beginner', 'DELF', 60, 2, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('41400785-87a0-40d8-b372-377ef20f15d0', '8954aadd-4c31-44d3-9fa4-af0a8a23aeb6', 'B1', 'DELF B1 (Seuil)', 'intermediate', 'DELF', 60, 3, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('f5bdc132-2f23-4cc4-ab00-35824aec8e6d', '8954aadd-4c31-44d3-9fa4-af0a8a23aeb6', 'B2', 'DELF B2 (Avancé)', 'intermediate', 'DELF', 60, 4, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('77735785-c5b9-47e5-90ed-26b52b98a06d', '8954aadd-4c31-44d3-9fa4-af0a8a23aeb6', 'C1', 'DALF C1 (Autonome)', 'advanced', 'DALF', 60, 5, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('b78aebf5-3de0-44bb-a91b-3a700eb99376', '9b203062-8cb9-4556-a74e-6346130842fb', 'IELTS_FOUNDATION', 'IELTS Foundation (Band 4.0 - 5.0)', 'beginner', 'IELTS', 60, 1, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('5202a5cb-7181-4cf4-963d-5c3b3e9d77f0', '9b203062-8cb9-4556-a74e-6346130842fb', 'IELTS_INTERMEDIATE', 'IELTS Intermediate (Band 5.5 - 6.5)', 'intermediate', 'IELTS', 65, 2, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('36605b51-0d22-4942-b30e-c770a091c694', '9b203062-8cb9-4556-a74e-6346130842fb', 'IELTS_ADVANCED', 'IELTS Advanced (Band 7.0 - 9.0)', 'advanced', 'IELTS', 75, 3, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('13e386c2-6c43-4b71-afde-61b263c5fe8b', 'a7ca68a2-0041-4e5c-a1f1-7b786f319b65', 'N5', 'JLPT N5 (Pemula)', 'beginner', 'JLPT', 60, 1, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('54857970-6269-4f19-a601-6e6f2834a769', 'a7ca68a2-0041-4e5c-a1f1-7b786f319b65', 'N4', 'JLPT N4 (Dasar Lanjutan)', 'beginner', 'JLPT', 60, 2, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('4a1e0477-b5b2-42ba-844d-596bd2a80cc7', 'a7ca68a2-0041-4e5c-a1f1-7b786f319b65', 'N3', 'JLPT N3 (Menengah Pra-Kerja)', 'intermediate', 'JLPT', 60, 3, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('dde2b2ff-276b-4591-b0ad-f79e636c93e5', 'a7ca68a2-0041-4e5c-a1f1-7b786f319b65', 'N2', 'JLPT N2 (Bisnis Profesional)', 'intermediate', 'JLPT', 60, 4, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('0175a068-7604-4e23-b571-a6d14dd68a47', 'a7ca68a2-0041-4e5c-a1f1-7b786f319b65', 'N1', 'JLPT N1 (Mahir Fasih)', 'advanced', 'JLPT', 60, 5, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('d830e1e6-1b30-4f45-8b1f-e4be44e095a3', 'd0e37fce-33c2-4091-afc7-131867f5d20d', 'TOEFL_FOUNDATION', 'TOEFL Foundation (Score 40 - 60)', 'beginner', 'TOEFL iBT', 60, 1, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('cc7e7ae5-89f2-4507-be40-d2e72ab99752', 'd0e37fce-33c2-4091-afc7-131867f5d20d', 'TOEFL_INTERMEDIATE', 'TOEFL Intermediate (Score 61 - 90)', 'intermediate', 'TOEFL iBT', 65, 2, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('462ee974-89af-4b34-ae40-2c295a93a416', 'd0e37fce-33c2-4091-afc7-131867f5d20d', 'TOEFL_ADVANCED', 'TOEFL Advanced (Score 91 - 120)', 'advanced', 'TOEFL iBT', 75, 3, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('d3829947-c82f-4cd2-a626-98b61e36d4ff', 'f2b394fb-8a3a-46ea-b9a5-a4dfd548210c', 'A1', 'Goethe A1 (Start Deutsch 1)', 'beginner', 'Goethe-Zertifikat', 60, 1, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('f8410743-c289-4c3c-8216-274c2812f63a', 'f2b394fb-8a3a-46ea-b9a5-a4dfd548210c', 'A2', 'Goethe A2 (Start Deutsch 2)', 'beginner', 'Goethe-Zertifikat', 60, 2, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('d8f526af-1c4c-4553-8c8e-37e5d39e78b8', 'f2b394fb-8a3a-46ea-b9a5-a4dfd548210c', 'B1', 'Goethe B1 (Zertifikat Deutsch)', 'intermediate', 'Goethe-Zertifikat', 60, 3, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('336bea77-79f1-463a-95b5-6afba4ed0191', 'f2b394fb-8a3a-46ea-b9a5-a4dfd548210c', 'B2', 'Goethe B2', 'intermediate', 'Goethe-Zertifikat', 60, 4, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;
+INSERT INTO proficiency_levels ("id", "language_id", "code", "name", "tier", "official_exam_name", "passing_score_percent", "order_index", "created_at") VALUES ('844b428c-2878-47a4-bbfb-2d63ea488fe8', 'f2b394fb-8a3a-46ea-b9a5-a4dfd548210c', 'C1', 'Goethe C1', 'advanced', 'Goethe-Zertifikat', 60, 5, '2026-11-16T14:02:47.968416+00:00') ON CONFLICT DO NOTHING;

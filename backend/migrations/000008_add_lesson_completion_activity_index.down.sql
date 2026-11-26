@@ -1,1 +1,0 @@
-DROP INDEX IF EXISTS idx_user_activity_logs_lesson_completed;
