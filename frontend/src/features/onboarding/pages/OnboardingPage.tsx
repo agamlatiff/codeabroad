@@ -1,6 +1,7 @@
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import { ArrowLeft, ArrowRight, Compass, Sparkle } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { useOnboardingWizard } from '../hooks/useOnboardingWizard'
 import { Step1LanguagePicker } from '../components/Step1LanguagePicker'
@@ -38,7 +39,13 @@ export function OnboardingPage() {
     selectedLanguage,
     placementQuestions,
     isLoadingLanguages,
+    isLanguagesError,
+    isFetchingLanguages,
+    refetchLanguages,
     isLoadingPlacement,
+    isPlacementError,
+    isFetchingPlacement,
+    refetchPlacement,
     isSubmitting,
     errorMessage,
     canProceed,
@@ -159,15 +166,49 @@ export function OnboardingPage() {
               >
                 {currentStep === 1 && (
                   isLoadingLanguages ? (
-                    <div className="w-full max-w-2xl rounded-3xl border border-slate-200 bg-white p-10 text-center text-sm font-medium text-slate-500">
-                      Memuat daftar bahasa...
+                    <div
+                      role="status"
+                      aria-label="Memuat daftar bahasa"
+                      className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-6 max-w-5xl w-full min-w-0"
+                    >
+                      {[0, 1, 2, 3, 4, 5].map((i) => (
+                        <div
+                          key={i}
+                          className="rounded-2xl sm:rounded-3xl border-2 border-slate-200/80 bg-white p-4 sm:p-6 flex flex-col items-center gap-3 shadow-xs"
+                        >
+                          <Skeleton variant="pill" className="h-5 w-20" />
+                          <Skeleton className="h-14 w-20 sm:h-20 sm:w-24" />
+                          <Skeleton className="h-5 w-28" />
+                          <Skeleton className="h-3.5 w-20" />
+                        </div>
+                      ))}
+                    </div>
+                  ) : isLanguagesError ? (
+                    <div className="w-full max-w-xl rounded-3xl border-2 border-rose-200 bg-rose-50/70 p-6 sm:p-8 text-center space-y-4">
+                      <p className="text-sm font-bold text-rose-700">
+                        Gagal memuat daftar bahasa. Periksa koneksi internet kamu lalu coba lagi.
+                      </p>
+                      <Button3D
+                        variant="rose"
+                        size="sm"
+                        loading={isFetchingLanguages}
+                        loadingText="Memuat..."
+                        onClick={() => void refetchLanguages()}
+                      >
+                        Coba Lagi
+                      </Button3D>
                     </div>
                   ) : (
                     <Step1LanguagePicker
                       languages={languages}
                       selectedLanguageId={form.languageId}
+                      disabled={isSubmitting}
                       onSelectLanguage={(languageId) =>
-                        updateForm({ languageId })
+                        updateForm(
+                          languageId !== form.languageId
+                            ? { languageId, placementAnswers: {} }
+                            : { languageId }
+                        )
                       }
                     />
                   )
@@ -176,6 +217,7 @@ export function OnboardingPage() {
                 {currentStep === 2 && (
                   <Step2PaceAndPlacement
                     dailyGoalMinutes={form.dailyGoalMinutes}
+                    disabled={isSubmitting}
                     onSelectDailyGoal={(dailyGoalMinutes) =>
                       updateForm({ dailyGoalMinutes })
                     }
@@ -191,6 +233,9 @@ export function OnboardingPage() {
                     questions={placementQuestions}
                     languageCode={selectedLanguage?.code}
                     isLoading={isLoadingPlacement}
+                    isError={isPlacementError}
+                    isRetrying={isFetchingPlacement}
+                    onRetry={() => void refetchPlacement()}
                     answers={form.placementAnswers}
                     onAnswerChange={setPlacementAnswer}
                     onSubmit={submitOnboarding}
@@ -222,6 +267,8 @@ export function OnboardingPage() {
               <Button3D
                 type="button"
                 variant="blue"
+                loading={isSubmitting}
+                loadingText="Menyimpan..."
                 onClick={() => {
                   triggerHaptic('tap')
                   handleNext()
@@ -230,9 +277,7 @@ export function OnboardingPage() {
                 className="flex-1 sm:flex-none px-4 sm:px-6 py-2.5 text-xs sm:text-sm font-semibold min-w-0"
               >
                 {currentStep === 2 && form.initialPlacementType === 'zero_beginner'
-                  ? isSubmitting
-                    ? 'Menyimpan...'
-                    : 'Mulai Belajar'
+                  ? 'Mulai Belajar'
                   : 'Lanjutkan'}
                 <ArrowRight className="ml-1.5 inline h-4 w-4" weight="bold" />
               </Button3D>

@@ -8,6 +8,7 @@ export interface AccessibleModalProps {
   ariaLabel: string
   children: ReactNode
   backdropClassName?: string
+  disableClose?: boolean
 }
 
 /**
@@ -20,12 +21,13 @@ export const AccessibleModal = ({
   ariaLabel,
   children,
   backdropClassName = 'bg-slate-900/40 backdrop-blur-xs',
+  disableClose = false,
 }: AccessibleModalProps) => {
   useEffect(() => {
     if (!isOpen) return
 
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !disableClose) {
         onClose()
       }
     }
@@ -38,7 +40,7 @@ export const AccessibleModal = ({
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isOpen, onClose])
+  }, [isOpen, onClose, disableClose])
 
   if (!isOpen || typeof document === 'undefined') return null
 
@@ -49,7 +51,12 @@ export const AccessibleModal = ({
       aria-label={ariaLabel}
       className={`fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-3 sm:p-4 animate-fadeIn ${backdropClassName}`}
     >
-      <div className="absolute inset-0" onClick={onClose} />
+      <div
+        className="absolute inset-0"
+        onClick={() => {
+          if (!disableClose) onClose()
+        }}
+      />
       <div className="relative z-10 w-full flex justify-center pointer-events-none">
         <div className="pointer-events-auto w-full flex justify-center">{children}</div>
       </div>

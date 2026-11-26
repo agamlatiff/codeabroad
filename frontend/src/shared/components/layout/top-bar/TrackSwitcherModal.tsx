@@ -1,7 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { createPortal } from 'react-dom'
+import { useIsMutating } from '@tanstack/react-query'
 import { Check, X, RocketLaunch, Translate, LockSimple } from '@phosphor-icons/react'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
+import { SWITCH_LANGUAGE_MUTATION_KEY } from '@/shared/constants/queryKeys'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import type { CareerTrackOption } from '@/features/curriculum/types/curriculum'
 import { useCurriculumSwitcherModal } from '@/features/curriculum/hooks/useCurriculumSwitcherModal'
@@ -11,12 +14,13 @@ export interface TrackSwitcherModalProps {
   isOpen: boolean
   onClose: () => void
   currentTrack: string
-  onSelectTrack: (trackIdOrSlug: string) => void
+  onSelectTrack: (trackIdOrSlug: string) => void | Promise<boolean | void>
   trackProgressMap?: Record<string, { completed: number; total: number }>
 }
 
 interface TrackSwitcherDialogProps extends Omit<TrackSwitcherModalProps, 'isOpen'> {
   trackOptions: CareerTrackOption[]
+  isLoading: boolean
 }
 
 const TrackSwitcherDialog = ({
@@ -25,14 +29,19 @@ const TrackSwitcherDialog = ({
   onSelectTrack,
   trackProgressMap,
   trackOptions,
+  isLoading,
 }: TrackSwitcherDialogProps) => {
   const [selectedTrack, setSelectedTrack] = useState<string>(currentTrack)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const submittingRef = useRef(false)
+  const isMutatingLanguage = useIsMutating({ mutationKey: SWITCH_LANGUAGE_MUTATION_KEY }) > 0
+  const isBusy = isSubmitting || isMutatingLanguage
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !isBusy) {
         onClose()
       }
     }
@@ -41,9 +50,10 @@ const TrackSwitcherDialog = ({
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [onClose])
+  }, [isBusy, onClose])
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
+    if (isBusy || submittingRef.current) return
     triggerHaptic('success')
     const selectedOption = trackOptions.find(
       (t) => t.slug === selectedTrack || t.id === selectedTrack
@@ -51,7 +61,18 @@ const TrackSwitcherDialog = ({
     const targetIdentifier = selectedOption ? selectedOption.id : selectedTrack
     const shouldActivatePreview = Boolean(selectedOption && !selectedOption.isActive)
     if (targetIdentifier && (targetIdentifier !== currentTrack || shouldActivatePreview)) {
-      onSelectTrack(targetIdentifier)
+      submittingRef.current = true
+      setIsSubmitting(true)
+      try {
+        const result = await onSelectTrack(targetIdentifier)
+        if (result !== false) {
+          onClose()
+        }
+      } finally {
+        submittingRef.current = false
+        setIsSubmitting(false)
+      }
+      return
     }
     onClose()
   }
@@ -72,17 +93,18 @@ const TrackSwitcherDialog = ({
       <button
         key={track.id}
         type="button"
+        disabled={isBusy}
         aria-pressed={isSelected}
         onClick={() => {
           triggerHaptic('tap')
           setSelectedTrack(track.id)
         }}
-        className={`group text-left rounded-2xl p-4 border-2 transition-all cursor-pointer flex flex-col justify-between gap-3 ${
+        className={`group text-left rounded-2xl p-4 border-2 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-65 flex flex-col justify-between gap-3 ${
           isSelected
             ? 'bg-blue-50/70 border-[#2563EB] shadow-sm -translate-y-0.5'
             : isUnenrolled
-              ? 'bg-slate-50/70 hover:bg-white border-slate-200 hover:border-blue-300'
-              : 'bg-white hover:bg-slate-50 border-slate-200 hover:border-blue-300'
+              ? 'bg-slate-50/70 enabled:hover:bg-white border-slate-200 enabled:hover:border-blue-300'
+              : 'bg-white enabled:hover:bg-slate-50 border-slate-200 enabled:hover:border-blue-300'
         }`}
       >
         <div className="flex items-start justify-between gap-2 w-full">
@@ -138,7 +160,12 @@ const TrackSwitcherDialog = ({
       aria-label="Ganti Bahasa"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 bg-slate-900/60 backdrop-blur-xs animate-fadeIn select-none"
     >
-      <div className="absolute inset-0" onClick={onClose} />
+      <div
+        className="absolute inset-0"
+        onClick={() => {
+          if (!isBusy) onClose()
+        }}
+      />
 
       <div className="relative z-10 w-full max-w-2xl bg-white rounded-3xl border-2 border-slate-200/90 shadow-2xl overflow-hidden my-auto max-h-[90vh] flex flex-col animate-pop">
         {/* Header */}
@@ -159,8 +186,9 @@ const TrackSwitcherDialog = ({
 
           <button
             type="button"
+            disabled={isBusy}
             onClick={onClose}
-            className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 hover:bg-slate-200 active:scale-95 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer"
+            className="min-w-[44px] min-h-[44px] rounded-full bg-slate-100 enabled:hover:bg-slate-200 enabled:active:scale-95 text-slate-500 enabled:hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
             aria-label="Tutup popup ganti bahasa"
           >
             <X weight="bold" className="w-4 h-4" />
@@ -169,9 +197,14 @@ const TrackSwitcherDialog = ({
 
         {/* Body */}
         <div className="p-6 space-y-5 flex-1 overflow-y-auto custom-scrollbar">
-          {enrolledLanguages.length === 0 ? (
+          {isLoading && enrolledLanguages.length === 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <Skeleton className="h-28 w-full rounded-2xl" />
+              <Skeleton className="h-28 w-full rounded-2xl" />
+            </div>
+          ) : enrolledLanguages.length === 0 ? (
             <p className="text-sm text-slate-500 text-center py-6">
-              Memuat daftar bahasa terdaftar...
+              Belum ada bahasa terdaftar yang ditemukan.
             </p>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -190,7 +223,7 @@ const TrackSwitcherDialog = ({
             </div>
           )}
 
-          {catalogLanguages.length === 0 && enrolledLanguages.length <= 1 && (
+          {!isLoading && catalogLanguages.length === 0 && enrolledLanguages.length <= 1 && (
             <p className="text-xs text-slate-500 text-center pt-2 border-t border-slate-100">
               Bahasa destinasi tambahan sedang disiapkan dan akan segera hadir.
             </p>
@@ -202,8 +235,11 @@ const TrackSwitcherDialog = ({
           <Button3D
             variant="blue"
             size="md"
+            loading={isBusy}
+            loadingText="Mengganti Bahasa..."
+            disabled={isBusy || (isLoading && enrolledLanguages.length === 0)}
             icon={<RocketLaunch weight="bold" className="w-4 h-4" />}
-            onClick={handleConfirm}
+            onClick={() => void handleConfirm()}
             className="w-full sm:w-auto text-sm px-6 py-2.5 font-brand font-black"
           >
             Mulai Belajar
@@ -223,7 +259,7 @@ export const TrackSwitcherModal = ({
   onSelectTrack,
   trackProgressMap,
 }: TrackSwitcherModalProps) => {
-  const { trackOptions: languageOptions } = useCurriculumSwitcherModal({
+  const { trackOptions: languageOptions, isLoading } = useCurriculumSwitcherModal({
     enabled: isOpen,
     onSelectTrack,
     onClose,
@@ -241,6 +277,7 @@ export const TrackSwitcherModal = ({
       onSelectTrack={onSelectTrack}
       trackProgressMap={trackProgressMap}
       trackOptions={languageOptions}
+      isLoading={isLoading}
     />
   )
 }

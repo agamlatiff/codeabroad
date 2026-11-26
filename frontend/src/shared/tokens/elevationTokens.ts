@@ -4,7 +4,7 @@
  */
 
 export const BUTTON_3D_TOKENS = {
-  base: 'inline-flex items-center justify-center font-brand font-black tracking-wide uppercase rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none active:translate-y-1 active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2',
+  base: 'inline-flex items-center justify-center font-brand font-black tracking-wide uppercase rounded-2xl transition-all duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none enabled:active:translate-y-1 enabled:active:shadow-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2',
   variants: {
     blue: 'bg-[#3B82F6] hover:bg-[#2563EB] active:bg-[#1D4ED8] text-white shadow-[0_4px_0_0_#1D4ED8] hover:shadow-[0_5px_0_0_#1D4ED8]',
     cyan: 'bg-[#0284C7] hover:bg-[#38BDF8] active:bg-[#0284C7] text-white shadow-[0_5px_0_0_#0369A1] hover:shadow-[0_6px_0_0_#0369A1]',

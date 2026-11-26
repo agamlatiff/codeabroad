@@ -39,7 +39,8 @@ export interface SidebarDailyQuestItem {
 }
 
 export interface UseQuestsSectionOptions {
-  onClaimChestReward: (e?: React.MouseEvent) => void
+  onClaimChestReward: (e?: React.MouseEvent, onClaimed?: () => void) => void
+  isClaimingChest?: boolean
 }
 
 /**
@@ -48,6 +49,7 @@ export interface UseQuestsSectionOptions {
  */
 export const useQuestsSection = ({
   onClaimChestReward,
+  isClaimingChest = false,
 }: UseQuestsSectionOptions) => {
   const navigate = useNavigate()
   const user = useAuthStore((s) => s.user)
@@ -66,13 +68,13 @@ export const useQuestsSection = ({
     return () => clearInterval(timer)
   }, [])
 
-  const { data: activityData } = useUserActivity()
+  const { data: activityData, status: activityStatus } = useUserActivity()
   const activitySummary = activityData.activitySummary
 
-  const { data: rewardsData } = useDailyRewards()
+  const { data: rewardsData, status: rewardsStatus } = useDailyRewards()
   const dailyRewardsStatus = rewardsData.dailyRewardsStatus
 
-  const { data: dailyQuestsApi = [] } = useQuery({
+  const { data: dailyQuestsApi = [], isLoading: isQuestsLoading } = useQuery({
     queryKey: getDailyQuestsQueryKey(user?.id),
     queryFn: ({ signal }) => gamificationService.getDailyQuests({ signal }),
     enabled: Boolean(user),
@@ -150,16 +152,16 @@ export const useQuestsSection = ({
   }, [])
 
   const handleCloseChestModal = useCallback(() => {
+    if (isClaimingChest) return
     setIsChestModalOpen(false)
-  }, [])
+  }, [isClaimingChest])
 
   const handleConfirmClaimChest = useCallback(
     (e?: React.MouseEvent) => {
-      if (!isChestUnlocked || isChestClaimedToday) return
-      setIsChestModalOpen(false)
-      onClaimChestReward(e)
+      if (!isChestUnlocked || isChestClaimedToday || isClaimingChest) return
+      onClaimChestReward(e, () => setIsChestModalOpen(false))
     },
-    [isChestUnlocked, isChestClaimedToday, onClaimChestReward]
+    [isChestUnlocked, isChestClaimedToday, isClaimingChest, onClaimChestReward]
   )
 
   const handleQuestAction = useCallback(
@@ -169,6 +171,11 @@ export const useQuestsSection = ({
     },
     [navigate]
   )
+
+  const isLoading =
+    Boolean(user) &&
+    dailyQuestsApi.length === 0 &&
+    (isQuestsLoading || activityStatus.isLoading || rewardsStatus.isLoading)
 
   return {
     timeLeft,
@@ -182,6 +189,7 @@ export const useQuestsSection = ({
     isChestClaimedToday,
     remainingXp,
     activeQuests,
+    isLoading,
     isChestModalOpen,
     handleOpenChestModal,
     handleCloseChestModal,

@@ -4,6 +4,7 @@ import {
   BowlFood,
   Cards,
   Check,
+  CircleNotch,
   Clock,
   HandWaving,
   PersonSimpleRun,
@@ -284,6 +285,7 @@ const FannedDeckCardsPreview = ({
 interface FlashcardDeckCardProps {
   deck: FlashcardDeck
   disabled?: boolean
+  isLoading?: boolean
   onSelect: (deck: FlashcardDeck) => void
 }
 
@@ -291,6 +293,7 @@ interface FlashcardDeckCardProps {
 export const FlashcardDeckCard = memo(function FlashcardDeckCard({
   deck,
   disabled = false,
+  isLoading = false,
   onSelect,
 }: FlashcardDeckCardProps) {
   const style = DECK_ACCENT_STYLES[deck.accent_color] ?? DECK_ACCENT_STYLES.blue
@@ -313,9 +316,14 @@ export const FlashcardDeckCard = memo(function FlashcardDeckCard({
   return (
     <button
       type="button"
-      disabled={disabled}
+      disabled={disabled || isLoading}
+      aria-busy={isLoading || undefined}
       onClick={() => onSelect(deck)}
-      className={`group relative text-left bg-white border-2 border-slate-200/90 ${style.border} rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] hover:shadow-[0_7px_0_0_#CBD5E1] hover:-translate-y-1.5 hover:z-20 active:translate-y-0.5 transition-all cursor-pointer flex flex-col justify-between gap-4 disabled:opacity-60 overflow-hidden`}
+      className={`group relative text-left bg-white border-2 ${
+        isLoading
+          ? 'border-[#2563EB] ring-2 ring-blue-100'
+          : `border-slate-200/90 ${style.border}`
+      } rounded-3xl p-5 shadow-[0_4px_0_0_#E2E8F0] enabled:hover:shadow-[0_7px_0_0_#CBD5E1] enabled:hover:-translate-y-1.5 enabled:hover:z-20 enabled:active:translate-y-0.5 transition-all cursor-pointer disabled:cursor-not-allowed flex flex-col justify-between gap-4 disabled:opacity-75 overflow-hidden`}
     >
       {sampleCards.length > 0 && (
         <div
@@ -396,7 +404,17 @@ export const FlashcardDeckCard = memo(function FlashcardDeckCard({
           </div>
 
           <span className="text-[11px] font-brand font-black text-blue-600 group-hover:translate-x-0.5 transition-transform inline-flex items-center gap-1 shrink-0">
-            {ctaLabel} <ArrowRight weight="bold" className="w-3 h-3" />
+            {isLoading ? (
+              <>
+                <CircleNotch weight="bold" className="w-3.5 h-3.5 animate-spin" />
+                <span>Membuka Dek...</span>
+              </>
+            ) : (
+              <>
+                <span>{ctaLabel}</span>
+                <ArrowRight weight="bold" className="w-3 h-3" />
+              </>
+            )}
           </span>
         </div>
       </div>

@@ -1,12 +1,13 @@
 import { useState, useCallback, useRef, useEffect, useMemo } from 'react'
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { extractApiErrorMessage } from "@/shared/services/api"
 import {
   getProfileQueryKey,
   getLanguageEnrollmentsQueryKey,
   DAILY_VOCABULARIES_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
+  SWITCH_LANGUAGE_MUTATION_KEY,
 } from "@/shared/constants/queryKeys"
 import { useAuthStore } from "@/features/auth/store/authStore"
 import {
@@ -62,33 +63,31 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const updateUser = useAuthStore((s) => s.updateUser)
 
   const requestedLevelCode = (searchParams.get('level') ?? '').trim().toUpperCase()
+  const effectiveLevelCode = requestedLevelCode || 'N5'
   const levelAccess = useMemo(
     () =>
-      checkLevelAccess(requestedLevelCode || 'N5', {
+      checkLevelAccess(effectiveLevelCode, {
         isAuthenticated: !isGuest,
         isPro,
       }),
-    [requestedLevelCode, isGuest, isPro]
+    [effectiveLevelCode, isGuest, isPro]
   )
 
   const handleSelectLevel = useCallback(
     (nextLevelCode: string) => {
+      const normalized = (nextLevelCode.trim().toUpperCase() || 'N5')
+      if (normalized === effectiveLevelCode) return
       triggerHaptic('tap')
-      const normalized = nextLevelCode.trim().toUpperCase()
       setSearchParams(
         (prev) => {
           const next = new URLSearchParams(prev)
-          if (!normalized || normalized === 'N5') {
-            next.set('level', 'N5')
-          } else {
-            next.set('level', normalized)
-          }
+          next.set('level', normalized)
           return next
         },
         { replace: true }
       )
     },
-    [setSearchParams]
+    [effectiveLevelCode, setSearchParams]
   )
 
   const guestCompletedLessons = useGuestTrialStore((s) => s.completedLessons)
@@ -112,6 +111,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const {
     data: rawCurriculumData = null,
     isLoading,
+    isFetching,
     error: queryError,
     refetch,
   } = useQuery({
@@ -119,7 +119,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       ...CURRICULUM_QUERY_KEY,
       userIdKey,
       targetLanguageId || 'active',
-      requestedLevelCode || 'default',
+      effectiveLevelCode,
     ],
     queryFn: ({ signal }) =>
       curriculumService.getCurriculum(
@@ -128,6 +128,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         requestedLevelCode || undefined
       ),
     enabled: levelAccess.allowed,
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 2,
   })
 
@@ -310,6 +311,24 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
 
   // ── 5. LANGUAGE SWITCHING & INTERACTION HANDLERS ──
   const isSwitchingRef = useRef(false)
+  const { mutateAsync: switchLanguageMutation } = useMutation({
+    mutationKey: SWITCH_LANGUAGE_MUTATION_KEY,
+    mutationFn: async (nextLanguageId: string) => {
+      const isEnrolled = enrollments.some((e) => e.language_id === nextLanguageId)
+      if (!isEnrolled) {
+        await languageService.enrollLanguage(nextLanguageId)
+      }
+      await languageService.switchActiveLanguage(nextLanguageId)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) }),
+        queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
+      ])
+    },
+  })
 
   const handleSelectLanguage = useCallback(
     async (nextLanguageId: string) => {
@@ -333,26 +352,16 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       isSwitchingRef.current = true
       setIsSwitchingLanguage(true)
       try {
-        const isEnrolled = enrollments.some((e) => e.language_id === nextLanguageId)
-        if (!isEnrolled) {
-          await languageService.enrollLanguage(nextLanguageId)
-        }
-        await languageService.switchActiveLanguage(nextLanguageId)
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: LANGUAGE_ENROLLMENTS_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userIdKey) }),
-          queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
-        ])
+        await switchLanguageMutation(nextLanguageId)
         navigate('/curriculum', { replace: true })
+        return true
       } catch (err: unknown) {
         const msg = extractApiErrorMessage(
           err,
           'Gagal mengganti bahasa aktif. Pastikan bahasa tersedia.'
         )
         showNotification(msg, true)
+        return false
       } finally {
         isSwitchingRef.current = false
         setIsSwitchingLanguage(false)
@@ -360,14 +369,12 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     },
     [
       activeLanguageId,
-      enrollments,
       isViewingInactiveTrack,
       markTourSeen,
       navigate,
-      queryClient,
       showNotification,
+      switchLanguageMutation,
       user,
-      userIdKey,
     ]
   )
 
@@ -453,6 +460,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       isGuestBannerDismissed,
       syncedSummary,
       isLoading,
+      isFetching,
       isSwitchingLanguage,
       error,
       notification,

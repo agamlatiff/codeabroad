@@ -4,6 +4,7 @@ import { MotionConfig, motion, useReducedMotion } from 'motion/react'
 import {
   ArrowLeft,
   CheckCircle,
+  CircleNotch,
   GlobeHemisphereWest,
   Repeat,
   Sparkle,
@@ -32,6 +33,8 @@ export interface AuthLayoutProps {
   heroDescription?: string
   mode?: 'login' | 'register'
   helperBanner?: string
+  isBusy?: boolean
+  busyLabel?: string | null
 }
 
 function mapEmotionToMeraMood(emotion: KodiEmotion): MeraShowcaseMood {
@@ -65,6 +68,8 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
   heroDescription,
   mode,
   helperBanner,
+  isBusy = false,
+  busyLabel = null,
 }) => {
   const { pathname } = useLocation()
   const shouldReduceMotion = Boolean(useReducedMotion())
@@ -92,7 +97,9 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
 
           {/* Top Bar: White Mera Talk Logo + Subtle Context Pill */}
           <div className="flex items-center justify-between gap-3 z-10">
-            <Logo variant="white" size="md" />
+            <div className={isBusy ? 'pointer-events-none opacity-75' : undefined}>
+              <Logo variant="white" size="md" />
+            </div>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3.5 py-1.5 text-xs font-brand font-bold text-blue-50">
               <GlobeHemisphereWest weight="fill" className="w-3.5 h-3.5 text-sky-200" />
               <span>Platform Bahasa Global</span>
@@ -171,10 +178,16 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
           <div className="w-full max-w-sm md:max-w-md lg:max-w-[400px] my-auto">
             {/* Mobile / Tablet Brand Header + Back to Home */}
             <div className="flex lg:hidden items-center justify-between gap-3 mb-4">
-              <Logo variant="blue" size="sm" />
+              <div className={isBusy ? 'pointer-events-none opacity-60' : undefined}>
+                <Logo variant="blue" size="sm" />
+              </div>
               <Link
                 to="/"
-                className="inline-flex items-center gap-1.5 text-xs font-brand font-bold text-slate-600 hover:text-[#2563EB] transition-colors rounded-full px-3 py-1.5 bg-white border border-slate-200/90 shadow-xs"
+                aria-disabled={isBusy || undefined}
+                tabIndex={isBusy ? -1 : undefined}
+                className={`inline-flex items-center gap-1.5 text-xs font-brand font-bold text-slate-600 hover:text-[#2563EB] transition-colors rounded-full px-3 py-1.5 bg-white border border-slate-200/90 shadow-xs ${
+                  isBusy ? 'pointer-events-none opacity-50' : ''
+                }`}
               >
                 <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
                 <span>Beranda</span>
@@ -185,7 +198,11 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
             <div className="hidden lg:flex items-center justify-end mb-4">
               <Link
                 to="/"
-                className="inline-flex items-center gap-1.5 text-xs font-brand font-bold text-slate-500 hover:text-[#2563EB] transition-colors"
+                aria-disabled={isBusy || undefined}
+                tabIndex={isBusy ? -1 : undefined}
+                className={`inline-flex items-center gap-1.5 text-xs font-brand font-bold text-slate-500 hover:text-[#2563EB] transition-colors ${
+                  isBusy ? 'pointer-events-none opacity-50' : ''
+                }`}
               >
                 <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
                 <span>Kembali ke Beranda</span>
@@ -217,10 +234,14 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
               {/* Tactile Masuk / Daftar Route Switcher */}
               <nav
                 aria-label="Pilih halaman autentikasi"
-                className="bg-slate-100 p-1 rounded-2xl border border-slate-200/80 grid grid-cols-2 gap-1 mb-4 sm:mb-5"
+                className={`bg-slate-100 p-1 rounded-2xl border border-slate-200/80 grid grid-cols-2 gap-1 mb-4 sm:mb-5 ${
+                  isBusy ? 'pointer-events-none opacity-60' : ''
+                }`}
               >
                 <Link
                   to="/login"
+                  aria-disabled={isBusy || undefined}
+                  tabIndex={isBusy ? -1 : undefined}
                   aria-current={activeMode === 'login' ? 'page' : undefined}
                   className={`text-center py-2 px-3 rounded-xl text-xs sm:text-sm font-brand font-black transition-all ${
                     activeMode === 'login'
@@ -232,6 +253,8 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
                 </Link>
                 <Link
                   to="/register"
+                  aria-disabled={isBusy || undefined}
+                  tabIndex={isBusy ? -1 : undefined}
                   aria-current={activeMode === 'register' ? 'page' : undefined}
                   className={`text-center py-2 px-3 rounded-xl text-xs sm:text-sm font-brand font-black transition-all ${
                     activeMode === 'register'
@@ -258,6 +281,17 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
                 <div className="mb-3.5 rounded-xl bg-[#EFF6FF] border border-blue-200/80 px-3 py-2 text-[11px] sm:text-xs text-[#1E40AF] font-medium flex items-start gap-2 leading-snug">
                   <CheckCircle weight="fill" className="w-4 h-4 text-[#2563EB] shrink-0 mt-0.5" />
                   <span>{helperBanner}</span>
+                </div>
+              )}
+
+              {busyLabel && (
+                <div
+                  role="status"
+                  aria-live="polite"
+                  className="mb-3.5 rounded-2xl border-2 border-blue-200 bg-[#EFF6FF] px-3.5 py-2.5 shadow-[0_3px_0_0_#DBEAFE] text-xs font-brand font-bold text-[#2563EB] flex items-center gap-2.5"
+                >
+                  <CircleNotch weight="bold" className="w-4 h-4 animate-spin shrink-0" />
+                  <span>{busyLabel}</span>
                 </div>
               )}
 

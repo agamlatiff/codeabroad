@@ -1,5 +1,5 @@
-import { useState, useCallback } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useEffect, useRef, useState, useCallback } from 'react'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   LEADERBOARD_QUERY_KEY,
@@ -51,10 +51,19 @@ export const useWeeklyLeaderboard = ({
     queryKey: [...LEADERBOARD_QUERY_KEY, userId, selectedDivision ?? 'auto'],
     queryFn: ({ signal }) => leaderboardService.getWeeklyLeaderboard(selectedDivision, { signal }),
     enabled,
+    placeholderData: keepPreviousData,
     staleTime: 30_000,
     retry: false,
   })
 
+  useEffect(() => {
+    if (!selectedDivision && query.data?.division) {
+      const resolved = normalizeLeagueDivision(query.data.division)
+      queryClient.setQueryData([...LEADERBOARD_QUERY_KEY, userId, resolved], query.data)
+    }
+  }, [query.data, queryClient, selectedDivision, userId])
+
+  const claimingRef = useRef(false)
   const claimRewardMutation = useMutation({
     mutationFn: () => leaderboardService.claimWeeklyReward(),
     onSuccess: (res) => {
@@ -70,6 +79,18 @@ export const useWeeklyLeaderboard = ({
       triggerHaptic('error')
     },
   })
+
+  const safeClaimWeeklyReward = useCallback(async () => {
+    if (claimingRef.current || claimRewardMutation.isPending) return
+    claimingRef.current = true
+    try {
+      await claimRewardMutation.mutateAsync()
+    } catch {
+      // Error surfaced via claimRewardMutation.error
+    } finally {
+      claimingRef.current = false
+    }
+  }, [claimRewardMutation])
 
   const activeDivision: LeagueDivision =
     selectedDivision ?? normalizeLeagueDivision(query.data?.division)
@@ -88,7 +109,8 @@ export const useWeeklyLeaderboard = ({
     leaderboard: query.data ?? null,
     activeDivision,
     currentDivisionConfig,
-    isLoading: query.isLoading || query.isFetching,
+    isLoading: query.isLoading,
+    isFetching: query.isFetching,
     error: query.isError
       ? extractApiErrorMessage(
           query.error,
@@ -98,7 +120,7 @@ export const useWeeklyLeaderboard = ({
     selectDivision,
     resetDivision,
     refetch: query.refetch,
-    claimWeeklyReward: claimRewardMutation.mutateAsync,
+    claimWeeklyReward: safeClaimWeeklyReward,
     isClaimingReward: claimRewardMutation.isPending,
     claimRewardError: claimRewardMutation.isError
       ? extractApiErrorMessage(claimRewardMutation.error, 'Gagal mengklaim hadiah podium mingguan.')

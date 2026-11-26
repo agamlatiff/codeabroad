@@ -14,8 +14,13 @@ export const LoginPage = () => {
   const [googleError, setGoogleError] = useState<string | null>(null)
   const [googleLoading, setGoogleLoading] = useState(false)
   const rememberMe = useWatch({ control, name: 'remember_me', defaultValue: false }) ?? false
+  const isBusy = status.loading || googleLoading
 
   const handleSubmit = (event: FormEvent) => {
+    if (isBusy) {
+      event.preventDefault()
+      return
+    }
     setGoogleError(null)
     actions.submit(event)
   }
@@ -29,6 +34,8 @@ export const LoginPage = () => {
       heroSubtitle="Pantau streak harian, kartu kosakata, dan target sertifikasi global bersama Mera."
       speechBubble="Halo! Siap lanjutkan latihan bahasamu hari ini?"
       helperBanner="Progres latihan, catatan kosakata, dan jadwal ulasan SRS tersinkronisasi di akunmu."
+      isBusy={isBusy}
+      busyLabel={googleLoading ? 'Memverifikasi akun Google kamu...' : null}
       error={status.error || googleError}
     >
       {/* ── 1. GOOGLE OAUTH CUSTOM BUTTON ── */}
@@ -49,6 +56,7 @@ export const LoginPage = () => {
           type="email"
           autoComplete="email"
           placeholder="nama@email.com"
+          disabled={isBusy}
           error={errors.email?.message}
           icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
           {...register('email')}
@@ -60,6 +68,7 @@ export const LoginPage = () => {
           isPassword
           autoComplete="current-password"
           placeholder="Masukkan kata sandi kamu"
+          disabled={isBusy}
           error={errors.password?.message}
           icon={<LockSimple weight="bold" className="w-4 h-4" />}
           {...register('password')}
@@ -70,6 +79,7 @@ export const LoginPage = () => {
           <AuthCheckbox
             id="remember"
             label="Ingat saya"
+            disabled={isBusy}
             {...register('remember_me')}
           />
         </div>
@@ -81,6 +91,7 @@ export const LoginPage = () => {
           size="md"
           fullWidth
           loading={status.loading}
+          loadingText="Memproses..."
           disabled={googleLoading}
           className="mt-2 text-sm"
         >
@@ -91,7 +102,14 @@ export const LoginPage = () => {
       {/* ── REGISTRATION FOOTER ── */}
       <div className="mt-4 sm:mt-5 text-center text-xs text-slate-500 font-normal">
         Belum punya akun?{' '}
-        <Link to="/register" className="text-blue-600 font-semibold hover:underline">
+        <Link
+          to="/register"
+          aria-disabled={isBusy || undefined}
+          tabIndex={isBusy ? -1 : undefined}
+          className={`text-blue-600 font-semibold hover:underline ${
+            isBusy ? 'pointer-events-none opacity-50' : ''
+          }`}
+        >
           Daftar sekarang
         </Link>
       </div>

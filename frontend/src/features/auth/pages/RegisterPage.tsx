@@ -14,8 +14,13 @@ export const RegisterPage = () => {
   const [googleError, setGoogleError] = useState<string | null>(null)
   const [googleLoading, setGoogleLoading] = useState(false)
   const password = useWatch({ control, name: 'password', defaultValue: '' }) ?? ''
+  const isBusy = status.loading || googleLoading
 
   const handleSubmit = (event: FormEvent) => {
+    if (isBusy) {
+      event.preventDefault()
+      return
+    }
     setGoogleError(null)
     actions.submit(event)
   }
@@ -30,6 +35,8 @@ export const RegisterPage = () => {
       heroEmotion="happy"
       speechBubble="Yuk mulai petualangan bahasa barumu bareng Mera!"
       helperBanner="Progres Unit 1 yang sudah kamu coba tanpa login akan tersimpan otomatis."
+      isBusy={isBusy}
+      busyLabel={googleLoading ? 'Memverifikasi akun Google kamu...' : null}
       error={status.error || googleError}
     >
       {/* ── 1. GOOGLE OAUTH CUSTOM BUTTON ── */}
@@ -50,6 +57,7 @@ export const RegisterPage = () => {
           type="text"
           autoComplete="name"
           placeholder="Contoh: Budi Pratama"
+          disabled={isBusy}
           error={errors.name?.message}
           icon={<User weight="bold" className="w-4 h-4" />}
           {...register('name')}
@@ -61,6 +69,7 @@ export const RegisterPage = () => {
           type="text"
           autoComplete="username"
           placeholder="nama_kamu"
+          disabled={isBusy}
           error={errors.username?.message}
           icon={<At weight="bold" className="w-4 h-4" />}
           {...register('username')}
@@ -72,6 +81,7 @@ export const RegisterPage = () => {
           type="email"
           autoComplete="email"
           placeholder="nama@email.com"
+          disabled={isBusy}
           error={errors.email?.message}
           icon={<EnvelopeSimple weight="bold" className="w-4 h-4" />}
           {...register('email')}
@@ -84,6 +94,7 @@ export const RegisterPage = () => {
             isPassword
             autoComplete="new-password"
             placeholder="Minimal 8 karakter"
+            disabled={isBusy}
             error={errors.password?.message}
             icon={<LockSimple weight="bold" className="w-4 h-4" />}
             {...register('password')}
@@ -99,6 +110,7 @@ export const RegisterPage = () => {
           size="md"
           fullWidth
           loading={status.loading}
+          loadingText="Mendaftarkan..."
           disabled={googleLoading}
           className="mt-2.5 text-sm"
         >
@@ -109,7 +121,14 @@ export const RegisterPage = () => {
       {/* ── LOGIN FOOTER ── */}
       <div className="mt-3.5 sm:mt-4 text-center text-xs text-slate-500 font-normal">
         Sudah punya akun?{' '}
-        <Link to="/login" className="text-blue-600 font-semibold hover:underline">
+        <Link
+          to="/login"
+          aria-disabled={isBusy || undefined}
+          tabIndex={isBusy ? -1 : undefined}
+          className={`text-blue-600 font-semibold hover:underline ${
+            isBusy ? 'pointer-events-none opacity-50' : ''
+          }`}
+        >
           Masuk sekarang
         </Link>
       </div>

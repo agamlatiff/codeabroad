@@ -222,6 +222,10 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
                   <span className="text-rose-800">
                     Hasil kuis belum tersimpan ({correctCount}/{total})
                   </span>
+                ) : isSubmitting ? (
+                  <span className="text-[#2563EB]">
+                    Menyimpan hasil kuis ({correctCount}/{total})...
+                  </span>
                 ) : passedThisRound ? (
                   <>
                     <Sparkle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -250,15 +254,17 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
               <Button3D
                 variant="rose"
                 size="sm"
-                disabled={isSubmitting}
+                loading={isSubmitting}
+                loadingText="Menyimpan..."
                 onClick={() => (onRetrySubmit ?? onSubmitResult)(correctCount, total)}
               >
-                {isSubmitting ? 'Menyimpan...' : 'Coba Simpan Lagi'}
+                Coba Simpan Lagi
               </Button3D>
             )}
             <Button3D
               variant={submitError ? 'white' : passedThisRound ? 'white' : 'amber'}
               size="sm"
+              disabled={isSubmitting}
               icon={<ArrowsClockwise weight="bold" className="w-4 h-4" />}
               onClick={handleResetQuiz}
               className="shrink-0"

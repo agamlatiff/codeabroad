@@ -150,6 +150,31 @@ export const useLearnWorkspace = (id?: string) => {
   const currentExerciseType = currentExercise?.exercise_type ?? ''
 
   const speechLocale = useActiveSpeechLocale()
+  const [isFinishingSession, setIsFinishingSession] = useState(false)
+
+  const {
+    mutateAsync: submitAnswerAsync,
+    isPending: isSubmittingAnswer,
+  } = useMutation({
+    mutationFn: (payload: {
+      exercise_id: string
+      user_answer: string
+      time_spent_seconds: number
+    }) => exerciseService.submitAnswer(payload),
+  })
+
+  const {
+    mutateAsync: completeLessonAsync,
+    isPending: isCompletingLesson,
+  } = useMutation({
+    mutationFn: (payload: { lessonId: string; score: number }) =>
+      curriculumService.completeLesson(payload.lessonId, {
+        lesson_id: payload.lessonId,
+        score: payload.score,
+      }),
+  })
+
+  const isSessionBusy = isSubmittingAnswer || isCompletingLesson || isFinishingSession
 
   const {
     parsedContent,
@@ -171,6 +196,7 @@ export const useLearnWorkspace = (id?: string) => {
   } = useExerciseQuestionInputs({
     currentExercise,
     submittedResult,
+    isSubmitting: isSessionBusy,
   })
 
   useEffect(() => {
@@ -212,7 +238,7 @@ export const useLearnWorkspace = (id?: string) => {
     handleToggleRecording,
   } = useExerciseMedia({
     speechLocale,
-    isLocked: submittedResult !== null,
+    isLocked: submittedResult !== null || isSessionBusy,
     onTranscript: handleSetTextInput,
   })
 
@@ -232,34 +258,13 @@ export const useLearnWorkspace = (id?: string) => {
     }
   }, [])
 
-  const {
-    mutateAsync: submitAnswerAsync,
-    isPending: isSubmittingAnswer,
-  } = useMutation({
-    mutationFn: (payload: {
-      exercise_id: string
-      user_answer: string
-      time_spent_seconds: number
-    }) => exerciseService.submitAnswer(payload),
-  })
-
-  const {
-    mutateAsync: completeLessonAsync,
-    isPending: isCompletingLesson,
-  } = useMutation({
-    mutationFn: (payload: { lessonId: string; score: number }) =>
-      curriculumService.completeLesson(payload.lessonId, {
-        lesson_id: payload.lessonId,
-        score: payload.score,
-      }),
-  })
-
   const resetQuestionInputs = useCallback(() => {
     stopMediaSession()
     resetInputs()
     setSubmittedResult(null)
     setSubmitError(null)
     setIsScoreTooLowError(false)
+    setIsFinishingSession(false)
     questionStartedAtRef.current = Date.now()
   }, [resetInputs, stopMediaSession])
 
@@ -438,6 +443,7 @@ export const useLearnWorkspace = (id?: string) => {
     }
 
     try {
+      setIsFinishingSession(true)
       const previousUser = useAuthStore.getState().user
       const completionResult = await completeLessonAsync({
         lessonId: lesson.id,
@@ -468,9 +474,8 @@ export const useLearnWorkspace = (id?: string) => {
           ? Math.max(0, completionResult.gamification.xp - previousUser.xp)
           : lesson.xp_reward)
 
-      await invalidateLearningSessionCaches(queryClient, {
+      void invalidateLearningSessionCaches(queryClient, {
         includeCurriculum: true,
-        includeLessonDetail: true,
         includeSrs: true,
         includeVocab: true,
       })
@@ -492,6 +497,7 @@ export const useLearnWorkspace = (id?: string) => {
       })
     } catch (err) {
       if (epoch !== sessionEpochRef.current) return
+      setIsFinishingSession(false)
       const errorCode = isAxiosError<ApiResponse<unknown>>(err)
         ? err.response?.data?.code
         : undefined
@@ -627,6 +633,7 @@ export const useLearnWorkspace = (id?: string) => {
     isLastExercise: exercises.length > 0 && safeIndex >= exercises.length - 1,
     isLoading: lessonQuery.isLoading,
     isError: lessonQuery.isError,
+    isRetryingLesson: lessonQuery.isError && lessonQuery.isFetching,
     isGuest,
     isLessonLockedError: Boolean(
       lessonQuery.isError &&
@@ -637,7 +644,7 @@ export const useLearnWorkspace = (id?: string) => {
     ),
     lessonErrorMessage,
     isChecking: isSubmittingAnswer,
-    isCompleting: isCompletingLesson,
+    isCompleting: isCompletingLesson || isFinishingSession,
     refetchLesson: lessonQuery.refetch,
     handleAddToken,
     handleRemoveToken,

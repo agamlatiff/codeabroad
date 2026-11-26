@@ -120,7 +120,7 @@ export const useSrsReviewPage = () => {
     }) => exerciseService.submitAnswer(payload),
   })
 
-  const { mutateAsync: processReviewAsync } = useMutation({
+  const { mutateAsync: processReviewAsync, isPending: isSyncingReview } = useMutation({
     mutationFn: (payload: { exercise_id: string; quality: number }) =>
       exerciseService.processReview(payload),
   })
@@ -156,26 +156,11 @@ export const useSrsReviewPage = () => {
         skip_srs_schedule: true,
       })
 
-      setSubmittedResult(res)
-
       if (!statsRecordedIdsRef.current.has(currentExercise.id)) {
         statsRecordedIdsRef.current.add(currentExercise.id)
         setReviewedCount((prev) => prev + 1)
         if (res.is_correct) {
           setFirstTryCorrectCount((prev) => prev + 1)
-        }
-      }
-
-      if (!srsSyncedIdsRef.current.has(currentExercise.id)) {
-        try {
-          await processReviewAsync({
-            exercise_id: currentExercise.id,
-            quality: res.is_correct ? 4 : 1,
-          })
-          srsSyncedIdsRef.current.add(currentExercise.id)
-        } catch {
-          // Keep feedback unblocked even if SRS schedule update fails transiently;
-          // retry queue items can recover SM-2 sync on a subsequent attempt.
         }
       }
 
@@ -192,6 +177,21 @@ export const useSrsReviewPage = () => {
             ).length
             return existingRetries < 1 ? [...prev, currentReviewItem] : prev
           })
+        }
+      }
+
+      setSubmittedResult(res)
+
+      if (!srsSyncedIdsRef.current.has(currentExercise.id)) {
+        try {
+          await processReviewAsync({
+            exercise_id: currentExercise.id,
+            quality: res.is_correct ? 4 : 1,
+          })
+          srsSyncedIdsRef.current.add(currentExercise.id)
+        } catch {
+          // Keep feedback unblocked even if SRS schedule update fails transiently;
+          // retry queue items can recover SM-2 sync on a subsequent attempt.
         }
       }
     } catch (err) {
@@ -213,6 +213,7 @@ export const useSrsReviewPage = () => {
   ])
 
   const handleContinue = useCallback(() => {
+    if (isChecking || isSyncingReview || submitLockRef.current) return
     if (submittedResult === null && queue.length > 0) return
 
     if (safeIndex >= queue.length - 1 || queue.length === 0) {
@@ -232,6 +233,8 @@ export const useSrsReviewPage = () => {
     setSubmitError(null)
     setCurrentIndex((prev) => prev + 1)
   }, [
+    isChecking,
+    isSyncingReview,
     queryClient,
     queue.length,
     resetInputs,
@@ -294,10 +297,12 @@ export const useSrsReviewPage = () => {
     isLastExercise: queue.length > 0 && safeIndex >= queue.length - 1,
     isLoading: dueQuery.isLoading,
     isError: dueQuery.isError,
+    isRetryingDue: dueQuery.isError && dueQuery.isFetching,
     loadErrorMessage: dueQuery.isError
       ? extractApiErrorMessage(dueQuery.error, 'Gagal memuat daftar ulasan soal.')
       : null,
     isChecking,
+    isSyncingReview,
     refetchDue: dueQuery.refetch,
     handleAddToken,
     handleRemoveToken,

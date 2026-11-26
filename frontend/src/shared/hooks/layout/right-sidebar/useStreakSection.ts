@@ -29,7 +29,7 @@ export const useStreakSection = () => {
   const user = userData.user
   const [isStreakModalOpen, setIsStreakModalOpen] = useState(false)
 
-  const { data: activityData } = useUserActivity()
+  const { data: activityData, status: activityStatus } = useUserActivity()
   const activitySummary = activityData.activitySummary
 
   const { data: gamificationStatus } = useQuery({
@@ -101,6 +101,7 @@ export const useStreakSection = () => {
     streakFreezeCount,
     weeklyStreakDays,
     calendarActiveDates,
+    isLoading: Boolean(user) && activityStatus.isLoading && !activitySummary,
     isStreakModalOpen,
     handleOpenStreakModal,
     handleCloseStreakModal,

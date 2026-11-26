@@ -151,17 +151,32 @@ export const GrammarDetailPage = () => {
   }, [targetId])
 
   // Fetch all grammar points (shared TanStack cache with /grammar)
-  const { data: grammarPoints = [], isLoading } = useQuery({
+  const {
+    data: grammarPoints = [],
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLanguageCode],
     queryFn: ({ signal }) =>
       curriculumService.getGrammarPointsByFilter(activeLanguageCode, undefined, { signal }),
     staleTime: 1000 * 60 * 5,
   })
 
-  // Fetch active curriculum tree so we know if the linked lesson is unlocked for direct launch
-  const { data: curriculumData } = useQuery({
-    queryKey: [...CURRICULUM_QUERY_KEY, userIdKey],
-    queryFn: ({ signal }) => curriculumService.getCurriculum(undefined, { signal }),
+  const pointLevelHint = useMemo(() => {
+    const found = grammarPoints.find(
+      (p) => p.id === targetId || p.code?.toLowerCase() === targetId.toLowerCase()
+    )
+    return (found?.level_code ?? 'N5').toUpperCase()
+  }, [grammarPoints, targetId])
+
+  // Fetch active curriculum tree for the matching JLPT level so linked lesson unlock is accurate
+  const { data: curriculumData, isLoading: isCurriculumLoading } = useQuery({
+    queryKey: [...CURRICULUM_QUERY_KEY, userIdKey, 'active', pointLevelHint],
+    queryFn: ({ signal }) =>
+      curriculumService.getCurriculum(undefined, { signal }, pointLevelHint),
+    enabled: grammarPoints.length > 0,
     staleTime: 1000 * 60 * 5,
   })
 
@@ -359,6 +374,8 @@ export const GrammarDetailPage = () => {
         <Button3D
           variant="white"
           size="sm"
+          loading={isCurriculumLoading}
+          loadingText="Memeriksa..."
           icon={
             linkedPracticeTarget && !linkedPracticeTarget.isUnlocked ? (
               <LockSimple weight="bold" className="w-4 h-4 text-blue-600" />
@@ -434,8 +451,29 @@ export const GrammarDetailPage = () => {
           </div>
         )}
 
+        {/* Error state */}
+        {!isLoading && isError && !currentPoint && (
+          <div className="max-w-xl mx-auto bg-rose-50/70 border-2 border-rose-200 rounded-3xl p-8 text-center space-y-4">
+            <h2 className="font-brand font-black text-base sm:text-lg text-rose-800">
+              Gagal Memuat Materi Grammar
+            </h2>
+            <p className="text-xs sm:text-sm text-rose-700">
+              Periksa koneksi internet kamu lalu coba muat ulang halaman ini.
+            </p>
+            <Button3D
+              variant="rose"
+              size="sm"
+              loading={isFetching}
+              loadingText="Memuat..."
+              onClick={() => void refetch()}
+            >
+              Coba Lagi
+            </Button3D>
+          </div>
+        )}
+
         {/* Not Found state */}
-        {!isLoading && !currentPoint && (
+        {!isLoading && !isError && !currentPoint && (
           <div className="max-w-xl mx-auto bg-white border-2 border-slate-200/90 rounded-3xl p-8 sm:p-12 text-center space-y-4 shadow-[0_4px_0_0_#E2E8F0]">
             <div className="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center mx-auto">
               <BookOpen weight="duotone" className="w-8 h-8" />

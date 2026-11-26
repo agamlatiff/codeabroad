@@ -18,6 +18,7 @@ const SPEAKABLE_TOKEN_REGEX = /[\p{L}\p{N}]/u
 interface UseExerciseQuestionInputsOptions {
   currentExercise: CurriculumExercise | null
   submittedResult: SubmitExerciseAnswerResponse | null
+  isSubmitting?: boolean
 }
 
 /**
@@ -26,8 +27,10 @@ interface UseExerciseQuestionInputsOptions {
 export const useExerciseQuestionInputs = ({
   currentExercise,
   submittedResult,
+  isSubmitting = false,
 }: UseExerciseQuestionInputsOptions) => {
   const speechLocale = useActiveSpeechLocale()
+  const isLocked = submittedResult !== null || isSubmitting
   const [selectedTokenIndices, setSelectedTokenIndices] = useState<number[]>([])
   const [selectedOptionValue, setSelectedOptionValue] = useState('')
   const [textInput, setTextInput] = useState('')
@@ -54,7 +57,7 @@ export const useExerciseQuestionInputs = ({
 
   const canCheckAnswer =
     currentExercise !== null &&
-    submittedResult === null &&
+    !isLocked &&
     currentUserAnswer.length > 0
 
   const resolvedCorrectAnswer = useMemo(() => {
@@ -75,17 +78,17 @@ export const useExerciseQuestionInputs = ({
 
   const runUnlockedTap = useCallback(
     (action: () => void) => {
-      if (submittedResult !== null) return
+      if (isLocked) return
       triggerHaptic('tap')
       audioEngine.playPop()
       action()
     },
-    [submittedResult]
+    [isLocked]
   )
 
   const handleAddToken = useCallback(
     (tokenIndex: number) => {
-      if (submittedResult !== null) return
+      if (isLocked) return
       const tokenText = parsedContent?.tokens[tokenIndex]
       runUnlockedTap(() => {
         setSelectedTokenIndices((prev) =>
@@ -100,7 +103,7 @@ export const useExerciseQuestionInputs = ({
         }
       }
     },
-    [parsedContent?.tokens, runUnlockedTap, speechLocale, submittedResult]
+    [isLocked, parsedContent?.tokens, runUnlockedTap, speechLocale]
   )
 
   const handleRemoveToken = useCallback(
@@ -127,10 +130,10 @@ export const useExerciseQuestionInputs = ({
 
   const handleSetTextInput = useCallback(
     (value: string) => {
-      if (submittedResult !== null) return
+      if (isLocked) return
       setTextInput(value)
     },
-    [submittedResult]
+    [isLocked]
   )
 
   const handleToggleHint = useCallback(() => {

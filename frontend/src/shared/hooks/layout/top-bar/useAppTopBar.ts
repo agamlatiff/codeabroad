@@ -17,14 +17,14 @@ export const useAppTopBar = (activeTrack: string) => {
   const { data } = useUser()
   const activeUser = data.user
 
-  const { data: enrollments = [] } = useQuery({
+  const { data: enrollments = [], isLoading: isEnrollmentsLoading } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(activeUser?.id),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
     enabled: Boolean(activeUser),
     staleTime: 1000 * 60 * 5,
   })
 
-  const { data: languages = [] } = useQuery({
+  const { data: languages = [], isLoading: isLanguagesLoading } = useQuery({
     queryKey: LANGUAGES_QUERY_KEY,
     queryFn: ({ signal }) => languageService.listLanguages({ signal }),
     staleTime: 1000 * 60 * 10,
@@ -106,5 +106,6 @@ export const useAppTopBar = (activeTrack: string) => {
     trackOptions,
     currentTrackConfig,
     canSwitchLanguage,
+    isTrackLoading: isLanguagesLoading || (Boolean(activeUser) && isEnrollmentsLoading),
   }
 }

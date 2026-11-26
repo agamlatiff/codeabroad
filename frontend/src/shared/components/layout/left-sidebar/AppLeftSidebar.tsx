@@ -1,12 +1,15 @@
 import { useState, type MouseEvent } from 'react'
 import { Link } from 'react-router-dom'
+import { useIsMutating } from '@tanstack/react-query'
 import {
+  CircleNotch,
   GearSix,
   LockSimple,
   SignIn,
   SignOut,
   Sparkle,
 } from '@phosphor-icons/react'
+import { LOGOUT_MUTATION_KEY } from '@/shared/constants/queryKeys'
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { useAppLeftSidebar } from "@/shared/hooks/layout/left-sidebar/useAppLeftSidebar"
 import { GuestLoginPromptModal } from '@/features/auth/components/GuestLoginPromptModal'
@@ -29,6 +32,7 @@ export const AppLeftSidebar = () => {
   } = useAppLeftSidebar()
 
   const [isGuestQuestsModalOpen, setIsGuestQuestsModalOpen] = useState(false)
+  const isLoggingOut = useIsMutating({ mutationKey: LOGOUT_MUTATION_KEY }) > 0
 
   const handleNavClick = (
     e: MouseEvent<HTMLAnchorElement>,
@@ -148,16 +152,21 @@ export const AppLeftSidebar = () => {
               {/* Logout Button */}
               <button
                 type="button"
+                disabled={isLoggingOut}
                 onClick={handleLogout}
-                className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-rose-50 hover:border-rose-300 text-slate-500 hover:text-rose-600 shadow-[0_2px_0_0_#CBD5E1] active:shadow-none active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer group relative"
+                className="w-10 h-10 rounded-2xl border-2 border-slate-200/90 bg-white enabled:hover:bg-rose-50 enabled:hover:border-rose-300 text-slate-500 enabled:hover:text-rose-600 shadow-[0_2px_0_0_#CBD5E1] enabled:active:shadow-none enabled:active:translate-y-0.5 flex items-center justify-center transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 group relative"
                 title="Keluar"
                 aria-label="Keluar Akun"
               >
-                <SignOut weight="bold" className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
+                {isLoggingOut ? (
+                  <CircleNotch weight="bold" className="w-4.5 h-4.5 animate-spin text-rose-500" />
+                ) : (
+                  <SignOut weight="bold" className="w-4.5 h-4.5 transition-transform group-hover:translate-x-0.5" />
+                )}
 
                 {/* Tooltip */}
                 <div className="absolute left-[calc(100%+14px)] top-1/2 -translate-y-1/2 px-3 py-1.5 bg-rose-950/95 text-white text-[11px] font-brand font-black rounded-xl shadow-lg whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-150 z-50 border border-rose-800/60 backdrop-blur-xs translate-x-1 group-hover:translate-x-0">
-                  <span>Keluar Akun</span>
+                  <span>{isLoggingOut ? 'Sedang Keluar...' : 'Keluar Akun'}</span>
                   <div className="absolute right-full top-1/2 -translate-y-1/2 border-[5px] border-transparent border-r-rose-950" />
                 </div>
               </button>

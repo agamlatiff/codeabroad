@@ -127,10 +127,21 @@ const GoogleAuthConfiguredButton: FC<GoogleAuthButtonProps> = ({
   const [redirecting, setRedirecting] = useState(false)
   const { authenticateWithCode, loading } = useGoogleAuth({
     rememberMe,
-    onError: (msg) => onError(msg),
+    onError: (msg) => {
+      setRedirecting(false)
+      onError(msg)
+    },
   })
 
-  const isBusy = loading || redirecting
+  const hasUnhandledOAuthCode =
+    typeof window !== 'undefined' &&
+    (() => {
+      const params = new URLSearchParams(window.location.search)
+      const code = params.get('code')
+      return Boolean(code && !params.get('error') && code !== lastHandledOAuthCode)
+    })()
+
+  const isBusy = loading || redirecting || hasUnhandledOAuthCode
 
   useEffect(() => {
     onLoadingChange?.(isBusy)
@@ -165,7 +176,9 @@ const GoogleAuthConfiguredButton: FC<GoogleAuthButtonProps> = ({
       return
     }
 
-    if (!code || lastHandledOAuthCode === code) return
+    if (!code || lastHandledOAuthCode === code) {
+      return
+    }
     lastHandledOAuthCode = code
 
     let savedRememberMe = rememberMe

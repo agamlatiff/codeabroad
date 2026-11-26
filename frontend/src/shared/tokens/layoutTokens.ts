@@ -20,14 +20,14 @@ export const FORM_TOKENS = {
   // Reusable class tokens for Input component
   labelClass: 'block text-xs sm:text-[13px] font-semibold text-slate-700 select-none tracking-normal font-sans',
   inputBaseClass:
-    'w-full min-h-[44px] h-11 sm:h-11.5 bg-white border-2 rounded-2xl text-base sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal font-sans',
+    'w-full min-h-[44px] h-11 sm:h-11.5 bg-white border-2 rounded-2xl text-base sm:text-sm text-slate-900 placeholder:text-slate-400 outline-none transition-all duration-150 font-normal font-sans disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed',
   inputNormalStateClass:
     'border-slate-200 hover:border-slate-300 focus:border-blue-600 focus:ring-4 focus:ring-blue-500/15',
   inputErrorStateClass:
     'border-rose-400 focus:border-rose-500 focus:ring-4 focus:ring-rose-500/15',
   iconWrapperClass: 'absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none transition-colors',
   passwordToggleClass:
-    'absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 transition p-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-1 cursor-pointer',
+    'absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 transition p-1 rounded-lg outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-1 cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed',
   errorMessageClass: 'text-xs text-rose-600 font-medium flex items-center gap-1.5 mt-1 animate-fadeIn',
   helperTextClass: 'text-[11px] sm:text-xs text-slate-500 font-normal mt-1',
 } as const

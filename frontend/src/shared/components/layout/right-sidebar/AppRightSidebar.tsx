@@ -35,6 +35,7 @@ export const AppRightSidebar = ({
     floatingRewards,
     claimingQuestId,
     isClaimingQuest,
+    isClaimingChest,
     handleClaimDailyQuest,
     handleClaimChest,
     handleCloseMobileDrawer,
@@ -63,9 +64,10 @@ export const AppRightSidebar = ({
         {/* ── 2. MISI & TARGET HARIAN (1:1 Hook) ── */}
         <QuestsSection
           onClaimDailyQuest={(questId, e) => handleClaimDailyQuest(questId, e)}
-          onClaimChestReward={(e) => handleClaimChest(e)}
+          onClaimChestReward={(e, onClaimed) => handleClaimChest(e, onClaimed)}
           isClaimingQuest={isClaimingQuest}
           claimingQuestId={claimingQuestId}
+          isClaimingChest={isClaimingChest}
         />
       </div>
 

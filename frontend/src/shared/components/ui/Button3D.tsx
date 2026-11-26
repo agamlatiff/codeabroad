@@ -7,6 +7,7 @@ export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: keyof typeof BUTTON_3D_TOKENS.variants
   size?: keyof typeof BUTTON_3D_TOKENS.sizes
   loading?: boolean
+  loadingText?: ReactNode
   icon?: ReactNode
   fullWidth?: boolean
   disableSound?: boolean
@@ -21,6 +22,7 @@ export const Button3D = ({
   variant = 'blue',
   size = 'md',
   loading = false,
+  loadingText,
   icon,
   fullWidth = false,
   disableSound = false,
@@ -31,8 +33,10 @@ export const Button3D = ({
   ...props
 }: Button3DProps) => {
   const widthStyle = fullWidth ? 'w-full' : ''
+  const activeLabel = loadingText ?? children
 
   const handleClick = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled || loading) return
     if (!disableSound) {
       audioEngine.playPop()
     }
@@ -43,12 +47,16 @@ export const Button3D = ({
     <button
       type={type}
       disabled={disabled || loading}
+      aria-busy={loading || undefined}
       className={`${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants[variant]} ${BUTTON_3D_TOKENS.sizes[size]} ${widthStyle} ${className}`.trim()}
       onClick={handleClick}
       {...props}
     >
       {loading ? (
-        <CircleNotch weight="bold" className="w-4 h-4 animate-spin" />
+        <>
+          <CircleNotch weight="bold" className="w-4 h-4 animate-spin shrink-0" />
+          {activeLabel ? <span>{activeLabel}</span> : null}
+        </>
       ) : (
         <>
           {icon && <span className="shrink-0">{icon}</span>}

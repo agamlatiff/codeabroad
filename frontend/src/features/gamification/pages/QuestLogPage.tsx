@@ -468,10 +468,15 @@ export const QuestLogPage = () => {
                         item.id === 'mock-interview' ||
                         item.id === 'xp-booster')
 
+                    const isActivatingThis = isActivatingItemId === item.id
+                    const isInventoryActionBusy =
+                      Boolean(isActivatingItemId) || Boolean(isPurchasingItemId)
+
                     return (
                       <button
                         key={item.id}
                         type="button"
+                        disabled={isInventoryActionBusy}
                         onClick={() => {
                           triggerHaptic('tap')
                           if (ownedCount > 0 && item.id === 'cv-review') {
@@ -484,10 +489,10 @@ export const QuestLogPage = () => {
                             setActiveTab('shop')
                           }
                         }}
-                        className={`p-2.5 rounded-2xl border-2 text-left flex items-center gap-2.5 transition-all cursor-pointer ${
+                        className={`p-2.5 rounded-2xl border-2 text-left flex items-center gap-2.5 transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${
                           ownedCount > 0
-                            ? 'bg-blue-50/40 border-blue-200/90 hover:border-blue-300'
-                            : 'bg-slate-50/70 border-slate-200/80 hover:border-slate-300'
+                            ? 'bg-blue-50/40 border-blue-200/90 enabled:hover:border-blue-300'
+                            : 'bg-slate-50/70 border-slate-200/80 enabled:hover:border-slate-300'
                         }`}
                       >
                         <div
@@ -510,15 +515,17 @@ export const QuestLogPage = () => {
                                     : 'text-slate-500'
                             }`}
                           >
-                            {item.id === 'xp-booster' && xpBoosterActive
-                              ? ownedCount > 0
-                                ? `2x XP Aktif · +${ownedCount}x`
-                                : '2x XP Aktif'
-                              : canTriggerAction
-                                ? `${ownedCount}x · ${item.id === 'xp-booster' ? 'Aktifkan' : 'Pakai'}`
-                                : ownedCount > 0
-                                  ? `${ownedCount}x Dimiliki`
-                                  : '0 Dimiliki'}
+                            {isActivatingThis
+                              ? 'Mengaktifkan...'
+                              : item.id === 'xp-booster' && xpBoosterActive
+                                ? ownedCount > 0
+                                  ? `2x XP Aktif · +${ownedCount}x`
+                                  : '2x XP Aktif'
+                                : canTriggerAction
+                                  ? `${ownedCount}x · ${item.id === 'xp-booster' ? 'Aktifkan' : 'Pakai'}`
+                                  : ownedCount > 0
+                                    ? `${ownedCount}x Dimiliki`
+                                    : '0 Dimiliki'}
                           </span>
                         </div>
                       </button>
@@ -536,7 +543,7 @@ export const QuestLogPage = () => {
         isOpen={isCourseSwitcherOpen}
         onClose={() => setIsCourseSwitcherOpen(false)}
         currentTrack={activeTrack}
-        onSelectTrack={(langId) => void handleSelectTrack(langId)}
+        onSelectTrack={(langId) => handleSelectTrack(langId)}
         trackProgressMap={trackProgressMap}
       />
 

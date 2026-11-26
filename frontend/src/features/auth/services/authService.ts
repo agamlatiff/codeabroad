@@ -47,7 +47,11 @@ export const authService = {
    */
   async logout(refreshToken?: string | null): Promise<void> {
     try {
-      await api.post('/auth/logout', refreshToken ? { refresh_token: refreshToken } : undefined)
+      await api.post(
+        '/auth/logout',
+        refreshToken ? { refresh_token: refreshToken } : undefined,
+        { timeout: 3500 }
+      )
     } catch (err: unknown) {
       if (import.meta.env.DEV) {
         console.warn('[authService.logout] Gagal mencabut sesi di server:', sanitizeAxiosErrorMessage(err))
@@ -60,7 +64,7 @@ export const authService = {
    */
   async logoutAll(): Promise<void> {
     try {
-      await api.post('/auth/logout-all')
+      await api.post('/auth/logout-all', undefined, { timeout: 3500 })
     } catch (err: unknown) {
       if (import.meta.env.DEV) {
         console.warn('[authService.logoutAll] Gagal mencabut semua sesi di server:', sanitizeAxiosErrorMessage(err))

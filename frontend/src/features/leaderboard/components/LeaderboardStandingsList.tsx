@@ -36,13 +36,40 @@ export const LeaderboardStandingsList = ({
 }: LeaderboardStandingsListProps) => {
   const navigate = useNavigate()
 
-  if (isLoading) {
+  if (isLoading && !leaderboard) {
     return (
-      <div className={`${compact ? 'py-12' : 'py-16'} text-center space-y-3`}>
-        <div className="w-8 h-8 border-3 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto" />
-        <p className="text-xs font-brand font-bold text-slate-500">
-          Memuat klasemen {divisionConfig.name}...
-        </p>
+      <div
+        role="status"
+        aria-label={`Memuat klasemen ${divisionConfig.name}`}
+        className="space-y-3 py-2"
+      >
+        <div className="grid grid-cols-3 gap-2.5 sm:gap-3 pt-2">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className={`rounded-3xl border-2 border-slate-200/80 bg-slate-50/80 p-3 flex flex-col items-center gap-2 animate-pulse ${
+                i === 1 ? 'h-38 -mt-2' : 'h-34'
+              }`}
+            >
+              <div className="w-11 h-11 rounded-full bg-slate-200/90" />
+              <div className="h-3.5 w-16 rounded-full bg-slate-200/90" />
+              <div className="h-3 w-12 rounded-full bg-slate-200/80" />
+            </div>
+          ))}
+        </div>
+        {[0, 1, 2, 3, 4].map((i) => (
+          <div
+            key={i}
+            className="h-14 rounded-2xl border-2 border-slate-200/80 bg-slate-50/70 px-4 flex items-center justify-between gap-3 animate-pulse"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-4 rounded bg-slate-200/90" />
+              <div className="w-9 h-9 rounded-full bg-slate-200/90" />
+              <div className="h-4 w-28 rounded-full bg-slate-200/90" />
+            </div>
+            <div className="h-4 w-16 rounded-full bg-slate-200/90" />
+          </div>
+        ))}
       </div>
     )
   }

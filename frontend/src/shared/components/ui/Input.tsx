@@ -61,6 +61,7 @@ export const Input = ({
         {isPassword && (
           <button
             type="button"
+            disabled={props.disabled}
             onClick={() => setShowPassword((prev) => !prev)}
             className={FORM_TOKENS.passwordToggleClass}
             title={toggleLabel}

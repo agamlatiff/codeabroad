@@ -41,8 +41,10 @@ export const SrsReviewPage = () => {
     isLastExercise,
     isLoading,
     isError,
+    isRetryingDue,
     loadErrorMessage,
     isChecking,
+    isSyncingReview,
     refetchDue,
     handleAddToken,
     handleRemoveToken,
@@ -94,6 +96,7 @@ export const SrsReviewPage = () => {
       <ExerciseSessionStatusView
         mode="loading"
         message="Menyiapkan soal kesalahan yang perlu diulas..."
+        onExit={handleExitToCurriculum}
       />
     )
   }
@@ -108,6 +111,7 @@ export const SrsReviewPage = () => {
         primaryLabel="Kembali ke Peta Belajar"
         onPrimary={handleExitToCurriculum}
         secondaryLabel="Coba Lagi"
+        isSecondaryLoading={isRetryingDue}
         onSecondary={() => void refetchDue()}
       />
     )
@@ -153,6 +157,7 @@ export const SrsReviewPage = () => {
       <ExerciseSessionHeader
         onExit={() => (hasReviewProgress ? setIsExitConfirmOpen(true) : handleExitToCurriculum())}
         exitAriaLabel="Keluar ke Peta Belajar"
+        exitDisabled={isChecking || isSyncingReview}
         progressPercent={progressPercent}
         progressFillClass={isRetryItem ? 'bg-amber-500' : 'bg-blue-600'}
         counterLabel={`${Math.min(currentIndex + 1, queueLength)}/${queueLength}`}
@@ -188,6 +193,7 @@ export const SrsReviewPage = () => {
             selectedOptionValue={selectedOptionValue}
             textInput={textInput}
             submittedResult={submittedResult}
+            isSubmitting={isChecking}
             showHint={showHint}
             isCheckpoint={false}
             isSpeakingAudio={isSpeakingAudio}
@@ -213,8 +219,9 @@ export const SrsReviewPage = () => {
         submitError={submitError}
         canCheckAnswer={canCheckAnswer}
         isChecking={isChecking}
-        isCompleting={false}
+        isCompleting={isSyncingReview}
         isLastExercise={isLastExercise}
+        completeLabel="Selesaikan Ulasan"
         onCheckAnswer={() => void handleCheckAnswer()}
         onContinue={handleContinue}
       />

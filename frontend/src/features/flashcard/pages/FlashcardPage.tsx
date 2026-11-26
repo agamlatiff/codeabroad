@@ -1,11 +1,18 @@
 import { useState, useEffect, useCallback, useMemo, useRef, useId } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { useQuery, useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  useQuery,
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from '@tanstack/react-query'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import {
   ArrowRight,
   Cards,
   CheckCircle,
+  CircleNotch,
   ClockCountdown,
   X,
   ArrowsClockwise,
@@ -18,6 +25,7 @@ import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftS
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { FilterToolbar } from '@/shared/components/ui/FilterToolbar'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { FlashcardHeroIllustration } from '@/features/flashcard/components/FlashcardHeroIllustration'
 import { FlashcardDeckCard } from '@/features/flashcard/components/FlashcardDeckCard'
@@ -216,12 +224,20 @@ export const FlashcardPage = () => {
   const [sessionXp, setSessionXp] = useState(0)
   const [reviewedCount, setReviewedCount] = useState(0)
   const [loadingSession, setLoadingSession] = useState(false)
+  const [loadingDeckId, setLoadingDeckId] = useState<string | null>(null)
+  const [submittingQuality, setSubmittingQuality] = useState<number | null>(null)
   const [sessionError, setSessionError] = useState<string | null>(null)
   const [rateError, setRateError] = useState<string | null>(null)
+  const sessionReqRef = useRef(false)
+  const ratingLockRef = useRef(false)
+  const sessionEpochRef = useRef(0)
 
   const {
     data: deckPages,
     isLoading: decksLoading,
+    isFetching: decksFetching,
+    isError: decksError,
+    refetch: refetchDecks,
     hasNextPage,
     fetchNextPage,
     isFetchingNextPage,
@@ -250,6 +266,7 @@ export const FlashcardPage = () => {
       ),
     getNextPageParam: (lastPage) =>
       lastPage.has_more && lastPage.next_cursor ? lastPage.next_cursor : undefined,
+    placeholderData: keepPreviousData,
     staleTime: 1000 * 60,
   })
 
@@ -415,8 +432,11 @@ export const FlashcardPage = () => {
 
   const startDeckSession = useCallback(
     async (deck: FlashcardDeck) => {
+      if (sessionReqRef.current) return
+      sessionReqRef.current = true
       triggerHaptic('tap')
       setLoadingSession(true)
+      setLoadingDeckId(deck.id)
       setSessionError(null)
       const deckSlug = getFlashcardDeckSlug(deck)
       handledDeckParamRef.current = deckSlug
@@ -449,7 +469,9 @@ export const FlashcardPage = () => {
         )
         setSessionError('Gagal memuat kartu dek. Coba lagi sebentar.')
       } finally {
+        sessionReqRef.current = false
         setLoadingSession(false)
+        setLoadingDeckId(null)
       }
     },
     [initSessionQueue, setSearchParams]
@@ -542,14 +564,14 @@ export const FlashcardPage = () => {
   }, [dueLoading, dueQueue, initSessionQueue, mode, searchParams])
 
   const startDueReviewSession = useCallback(() => {
-    if (!dueQueue || dueQueue.cards.length === 0) return
+    if (loadingSession || sessionReqRef.current || !dueQueue || dueQueue.cards.length === 0) return
     triggerHaptic('tap')
     setSessionError(null)
     setRateError(null)
     handledReviewParamRef.current = true
     setSearchParams({ mode: 'review' }, { replace: true })
     initSessionQueue(dueQueue.cards, 'Ulasan Terjadwal', null)
-  }, [dueQueue, initSessionQueue, setSearchParams])
+  }, [dueQueue, initSessionQueue, loadingSession, setSearchParams])
 
   const currentCardId = queue[0]
   const currentCard = currentCardId ? cardMap[currentCardId] : undefined
@@ -584,87 +606,97 @@ export const FlashcardPage = () => {
 
   const handleRate = useCallback(
     async (quality: number) => {
-      if (!currentCard || reviewMutation.isPending) return
+      if (!currentCard || reviewMutation.isPending || ratingLockRef.current) return
 
+      ratingLockRef.current = true
+      const activeEpoch = sessionEpochRef.current
+      setSubmittingQuality(quality)
       setRateError(null)
 
-      let updatedCard: FlashcardCard
-      if (!userData.isAuthenticated) {
-        setSessionXp((prev) => prev + (quality >= 3 ? 5 : 2))
-        setReviewedCount((prev) => prev + 1)
-        updatedCard = currentCard
-      } else {
-        try {
-          const res = await reviewMutation.mutateAsync({ cardId: currentCard.id, quality })
-          updatedCard = {
-            ...currentCard,
-            ease_factor: res.ease_factor,
-            interval_days: res.interval_days,
-            repetitions: res.repetitions,
-            next_review_at: res.next_review_at,
-            last_reviewed_at: new Date().toISOString(),
-          }
-        } catch (err) {
-          triggerHaptic('error')
-          audioEngine.playError()
-          setRateError(
-            extractApiErrorMessage(
-              err,
-              'Gagal menyimpan progres kartu. Periksa koneksi lalu coba lagi.'
+      try {
+        let updatedCard: FlashcardCard
+        if (!userData.isAuthenticated) {
+          setSessionXp((prev) => prev + (quality >= 3 ? 5 : 2))
+          setReviewedCount((prev) => prev + 1)
+          updatedCard = currentCard
+        } else {
+          try {
+            const res = await reviewMutation.mutateAsync({ cardId: currentCard.id, quality })
+            if (activeEpoch !== sessionEpochRef.current) return
+            updatedCard = {
+              ...currentCard,
+              ease_factor: res.ease_factor,
+              interval_days: res.interval_days,
+              repetitions: res.repetitions,
+              next_review_at: res.next_review_at,
+              last_reviewed_at: new Date().toISOString(),
+            }
+          } catch (err) {
+            if (activeEpoch !== sessionEpochRef.current) return
+            triggerHaptic('error')
+            audioEngine.playError()
+            setRateError(
+              extractApiErrorMessage(
+                err,
+                'Gagal menyimpan progres kartu. Periksa koneksi lalu coba lagi.'
+              )
             )
-          )
+            return
+          }
+        }
+
+        triggerHaptic('tap')
+        playSound(quality >= 3 ? 'zen_bell' : 'node_tap')
+        audioEngine.playCardSlide()
+
+        setCardMap((prev) => ({
+          ...prev,
+          [currentCard.id]: updatedCard,
+        }))
+
+        const remaining = queue.slice(1)
+
+        if (quality < 3) {
+          // Anki intra-session re-queue: return `Ulangi` card after up to 3 intermediate cards
+          const insertOffset = Math.min(3, remaining.length)
+          const nextQueue = [
+            ...remaining.slice(0, insertOffset),
+            currentCard.id,
+            ...remaining.slice(insertOffset),
+          ]
+          setRequeuedIds((prev) => {
+            const next = new Set(prev)
+            next.add(currentCard.id)
+            return next
+          })
+          setIsFlipped(false)
+          setQueue(nextQueue)
           return
         }
-      }
 
-      triggerHaptic('tap')
-      playSound(quality >= 3 ? 'zen_bell' : 'node_tap')
-      audioEngine.playCardSlide()
-
-      setCardMap((prev) => ({
-        ...prev,
-        [currentCard.id]: updatedCard,
-      }))
-
-      const remaining = queue.slice(1)
-
-      if (quality < 3) {
-        // Anki intra-session re-queue: return `Ulangi` card after up to 3 intermediate cards
-        const insertOffset = Math.min(3, remaining.length)
-        const nextQueue = [
-          ...remaining.slice(0, insertOffset),
-          currentCard.id,
-          ...remaining.slice(insertOffset),
-        ]
         setRequeuedIds((prev) => {
+          if (!prev.has(currentCard.id)) return prev
+          const next = new Set(prev)
+          next.delete(currentCard.id)
+          return next
+        })
+        setCompletedIds((prev) => {
           const next = new Set(prev)
           next.add(currentCard.id)
           return next
         })
-        setIsFlipped(false)
-        setQueue(nextQueue)
-        return
-      }
 
-      setRequeuedIds((prev) => {
-        if (!prev.has(currentCard.id)) return prev
-        const next = new Set(prev)
-        next.delete(currentCard.id)
-        return next
-      })
-      setCompletedIds((prev) => {
-        const next = new Set(prev)
-        next.add(currentCard.id)
-        return next
-      })
-
-      if (remaining.length === 0) {
-        playSound('quest_complete')
-        setQueue([])
-        setMode('complete')
-      } else {
-        setIsFlipped(false)
-        setQueue(remaining)
+        if (remaining.length === 0) {
+          playSound('quest_complete')
+          setQueue([])
+          setMode('complete')
+        } else {
+          setIsFlipped(false)
+          setQueue(remaining)
+        }
+      } finally {
+        ratingLockRef.current = false
+        setSubmittingQuality(null)
       }
     },
     [currentCard, queue, reviewMutation, userData.isAuthenticated]
@@ -674,7 +706,7 @@ export const FlashcardPage = () => {
   useEffect(() => {
     if (mode !== 'session') return
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.defaultPrevented) return
+      if (e.defaultPrevented || reviewMutation.isPending || ratingLockRef.current) return
       if (
         e.target instanceof HTMLElement &&
         e.target.closest('button, a, input, textarea, select, [role="button"]')
@@ -696,10 +728,13 @@ export const FlashcardPage = () => {
     }
     window.addEventListener('keydown', onKeyDown)
     return () => window.removeEventListener('keydown', onKeyDown)
-  }, [mode, isFlipped, handleRate])
+  }, [mode, isFlipped, handleRate, reviewMutation.isPending])
 
   const exitToLobby = () => {
     triggerHaptic('tap')
+    sessionEpochRef.current += 1
+    ratingLockRef.current = false
+    setSubmittingQuality(null)
     replayRequestTokenRef.current += 1
     handledDeckParamRef.current = null
     handledReviewParamRef.current = false
@@ -824,6 +859,8 @@ export const FlashcardPage = () => {
                 variant="white"
                 fullWidth
                 size="md"
+                loading={loadingSession}
+                loadingText="MEMUAT DEK..."
                 disabled={loadingSession}
                 onClick={replayActiveDeck}
               >
@@ -941,8 +978,13 @@ export const FlashcardPage = () => {
                     <FlashcardFlipCard
                       card={currentCard}
                       isFlipped={isFlipped}
+                      disabled={reviewMutation.isPending}
                       speechLocale={speechLocale}
-                      onToggleFlip={() => setIsFlipped((prev) => !prev)}
+                      onToggleFlip={() => {
+                        if (!reviewMutation.isPending) {
+                          setIsFlipped((prev) => !prev)
+                        }
+                      }}
                     />
                   </motion.div>
                 </AnimatePresence>
@@ -977,25 +1019,33 @@ export const FlashcardPage = () => {
             ) : (
               <div className="space-y-2">
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
-                  {RATING_OPTIONS.map((opt) => (
-                    <button
-                      key={opt.quality}
-                      type="button"
-                      disabled={reviewMutation.isPending}
-                      onClick={() => void handleRate(opt.quality)}
-                      className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer active:translate-y-0.5 disabled:opacity-50 ${opt.className}`}
-                    >
-                      <span className="block text-[11px] font-brand font-extrabold opacity-80">
-                        {ratingPreviews[opt.previewKey]}
-                      </span>
-                      <span className="block font-brand font-black text-sm mt-0.5">
-                        {opt.label}
-                      </span>
-                      <span className="block text-[10px] font-semibold opacity-65 mt-0.5">
-                        Tombol {opt.shortcut}
-                      </span>
-                    </button>
-                  ))}
+                  {RATING_OPTIONS.map((opt) => {
+                    const isSubmittingThis =
+                      reviewMutation.isPending && submittingQuality === opt.quality
+                    return (
+                      <button
+                        key={opt.quality}
+                        type="button"
+                        disabled={reviewMutation.isPending}
+                        aria-busy={isSubmittingThis || undefined}
+                        onClick={() => void handleRate(opt.quality)}
+                        className={`p-3 rounded-2xl border-2 text-center transition-all cursor-pointer disabled:cursor-not-allowed enabled:active:translate-y-0.5 disabled:opacity-60 ${opt.className}`}
+                      >
+                        <span className="block text-[11px] font-brand font-extrabold opacity-80">
+                          {ratingPreviews[opt.previewKey]}
+                        </span>
+                        <span className="font-brand font-black text-sm mt-0.5 flex items-center justify-center gap-1">
+                          {isSubmittingThis && (
+                            <CircleNotch weight="bold" className="w-3.5 h-3.5 animate-spin shrink-0" />
+                          )}
+                          <span>{isSubmittingThis ? 'Menyimpan...' : opt.label}</span>
+                        </span>
+                        <span className="block text-[10px] font-semibold opacity-65 mt-0.5">
+                          Tombol {opt.shortcut}
+                        </span>
+                      </button>
+                    )
+                  })}
                 </div>
               </div>
             )}
@@ -1091,7 +1141,9 @@ export const FlashcardPage = () => {
               Daftar Gratis
             </Button3D>
           </div>
-        ) : !dueLoading && totalDue > 0 && (dueQueue?.cards.length ?? 0) > 0 ? (
+        ) : dueLoading ? (
+          <Skeleton className="h-[76px] w-full rounded-3xl border border-slate-200/70" />
+        ) : totalDue > 0 && (dueQueue?.cards.length ?? 0) > 0 ? (
           <section
             aria-label="Daftar Ulasan Terjadwal"
             className="rounded-3xl border-2 border-amber-300/90 border-b-[4px] border-b-amber-400 bg-gradient-to-r from-amber-50 via-orange-50/70 to-yellow-50 p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-2xs"
@@ -1121,6 +1173,8 @@ export const FlashcardPage = () => {
             <Button3D
               variant="amber"
               size="md"
+              loading={loadingSession && !loadingDeckId}
+              loadingText="MEMBUKA ULASAN..."
               disabled={loadingSession}
               onClick={startDueReviewSession}
               icon={<ArrowRight weight="bold" className="w-4 h-4" />}
@@ -1129,7 +1183,7 @@ export const FlashcardPage = () => {
               MULAI ULASAN ({Math.min(totalDue, dueQueue?.cards.length ?? totalDue)} KARTU)
             </Button3D>
           </section>
-        ) : !dueLoading && totalDue === 0 && totalLearned > 0 ? (
+        ) : totalDue === 0 && totalLearned > 0 ? (
           <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 px-4 py-2.5 flex items-center gap-2.5 text-xs font-semibold text-emerald-800">
             <CheckCircle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
             <span>
@@ -1173,6 +1227,12 @@ export const FlashcardPage = () => {
                   Menampilkan {loadedDecks.length} dari {totalFilteredCount} dek
                 </span>
               )}
+              {decksFetching && !decksLoading && !isFetchingNextPage && (
+                <span className="inline-flex items-center gap-1.5 text-[11px] font-brand font-bold px-2.5 py-0.5 rounded-full bg-blue-50 border border-blue-200 text-[#2563EB]">
+                  <CircleNotch weight="bold" className="w-3 h-3 animate-spin" />
+                  <span>Memperbarui...</span>
+                </span>
+              )}
             </div>
             <span className="text-xs font-semibold text-slate-500">
               Arahkan kursor ke kartu untuk mengintip kata, klik dek untuk mulai
@@ -1191,9 +1251,40 @@ export const FlashcardPage = () => {
               {Array.from({ length: 6 }).map((_, idx) => (
                 <div
                   key={idx}
-                  className="h-64 rounded-3xl bg-white border-2 border-slate-200/80 animate-pulse"
-                />
+                  className="h-64 rounded-3xl bg-white border-2 border-slate-200/80 p-5 flex flex-col justify-between shadow-[0_4px_0_0_#E2E8F0]"
+                >
+                  <Skeleton className="h-24 w-full rounded-2xl" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-3/4 rounded-lg" />
+                    <Skeleton className="h-3 w-full rounded-md" />
+                  </div>
+                  <Skeleton className="h-5 w-full rounded-lg" />
+                </div>
               ))}
+            </div>
+          ) : decksError && loadedDecks.length === 0 ? (
+            <div className="bg-white border-2 border-rose-200/90 rounded-3xl p-8 text-center space-y-3 shadow-[0_4px_0_0_#FECDD3]">
+              <div className="flex justify-center">
+                <KodiCharacter emotion="curious" size={84} />
+              </div>
+              <div className="space-y-1">
+                <p className="font-brand font-black text-base text-slate-900">
+                  Gagal memuat daftar dek flashcard
+                </p>
+                <p className="text-xs sm:text-sm text-slate-600">
+                  Periksa koneksi internetmu lalu muat ulang halaman dek ini.
+                </p>
+              </div>
+              <Button3D
+                variant="blue"
+                size="sm"
+                loading={decksFetching}
+                loadingText="Memuat ulang..."
+                onClick={() => void refetchDecks()}
+                className="text-xs px-5 py-2 mx-auto"
+              >
+                Coba Muat Ulang
+              </Button3D>
             </div>
           ) : loadedDecks.length === 0 ? (
             <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 text-center space-y-3 shadow-[0_4px_0_0_#E2E8F0]">
@@ -1221,12 +1312,17 @@ export const FlashcardPage = () => {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+              <div
+                className={`grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5 transition-opacity ${
+                  decksFetching && !decksLoading && !isFetchingNextPage ? 'opacity-75' : ''
+                }`}
+              >
                 {loadedDecks.map((deck) => (
                   <FlashcardDeckCard
                     key={deck.id}
                     deck={deck}
                     disabled={loadingSession}
+                    isLoading={loadingDeckId === deck.id}
                     onSelect={handleSelectDeck}
                   />
                 ))}
@@ -1244,11 +1340,13 @@ export const FlashcardPage = () => {
                   <Button3D
                     variant="white"
                     size="sm"
+                    loading={isFetchingNextPage}
+                    loadingText="Memuat dek berikutnya..."
                     disabled={isFetchingNextPage}
                     onClick={() => void fetchNextPage()}
                     className="text-xs px-5 py-2.5"
                   >
-                    {isFetchingNextPage ? 'Memuat dek berikutnya...' : 'Muat Lebih Banyak Dek'}
+                    Muat Lebih Banyak Dek
                   </Button3D>
                 ) : (
                   loadedDecks.length > 0 && (

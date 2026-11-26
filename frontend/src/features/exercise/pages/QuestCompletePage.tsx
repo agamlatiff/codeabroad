@@ -202,8 +202,41 @@ export const QuestCompletePage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen min-h-dvh bg-[#FAFAF9] flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin" />
+      <div
+        role="status"
+        aria-label="Menyiapkan ringkasan hasil pelajaran"
+        className="min-h-screen min-h-dvh bg-[#FAFAF9] flex items-center justify-center p-4 sm:p-6"
+      >
+        <div className="w-full max-w-[1040px] rounded-[28px] sm:rounded-[34px] bg-white border-2 border-slate-200/90 shadow-[0_10px_0_0_rgba(37,99,235,0.07)] grid grid-cols-1 lg:grid-cols-12 overflow-hidden">
+          <div className="lg:col-span-5 bg-gradient-to-b from-[#EFF6FF] via-[#F8FAFF] to-[#FFFBEB]/70 p-6 sm:p-8 flex flex-col items-center justify-center gap-4">
+            <span className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white px-3.5 py-1 text-xs font-brand font-extrabold text-[#2563EB]">
+              <span className="w-3.5 h-3.5 rounded-full border-2 border-blue-300 border-t-[#2563EB] animate-spin" />
+              Menyiapkan Ringkasan Hasil...
+            </span>
+            <div className="w-28 h-28 rounded-full bg-blue-100/80 animate-pulse" />
+            <div className="h-6 w-48 rounded-xl bg-blue-100/80 animate-pulse" />
+            <div className="grid grid-cols-3 gap-2.5 w-full pt-2">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-2xl border-2 border-blue-100 bg-white/85 animate-pulse"
+                />
+              ))}
+            </div>
+          </div>
+          <div className="lg:col-span-7 p-6 sm:p-8 space-y-5">
+            <div className="h-24 rounded-2xl bg-slate-100/90 border-2 border-slate-200/80 animate-pulse" />
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <div
+                  key={i}
+                  className="h-20 rounded-2xl bg-slate-50 border-2 border-slate-200/80 animate-pulse"
+                />
+              ))}
+            </div>
+            <div className="h-13 w-full rounded-2xl bg-emerald-100/70 animate-pulse" />
+          </div>
+        </div>
       </div>
     )
   }

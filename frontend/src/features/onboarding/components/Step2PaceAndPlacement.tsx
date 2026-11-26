@@ -75,6 +75,7 @@ interface Step2PaceAndPlacementProps {
   onSelectDailyGoal: (minutes: DailyGoalMinutes) => void
   initialPlacementType: InitialPlacementType
   onSelectPlacementType: (type: InitialPlacementType) => void
+  disabled?: boolean
 }
 
 export const Step2PaceAndPlacement = ({
@@ -82,6 +83,7 @@ export const Step2PaceAndPlacement = ({
   onSelectDailyGoal,
   initialPlacementType,
   onSelectPlacementType,
+  disabled = false,
 }: Step2PaceAndPlacementProps) => {
   return (
     <div className="w-full min-w-0 max-w-4xl mx-auto space-y-5 sm:space-y-6">
@@ -99,12 +101,14 @@ export const Step2PaceAndPlacement = ({
               <button
                 key={opt.minutes}
                 type="button"
+                disabled={disabled}
                 aria-pressed={isSelected}
                 onClick={() => {
+                  if (disabled) return
                   triggerHaptic('tap')
                   onSelectDailyGoal(opt.minutes)
                 }}
-                className={`rounded-2xl p-3 sm:p-4 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 sm:gap-2.5 border-2 min-w-0 w-full overflow-hidden ${
+                className={`rounded-2xl p-3 sm:p-4 text-left transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex flex-col justify-between gap-2 sm:gap-2.5 border-2 min-w-0 w-full overflow-hidden ${
                   isSelected
                     ? 'bg-blue-50/80 border-[#2563EB] shadow-sm -translate-y-0.5'
                     : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'
@@ -172,12 +176,14 @@ export const Step2PaceAndPlacement = ({
               <button
                 key={opt.type}
                 type="button"
+                disabled={disabled}
                 aria-pressed={isSelected}
                 onClick={() => {
+                  if (disabled) return
                   triggerHaptic('tap')
                   onSelectPlacementType(opt.type)
                 }}
-                className={`rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer flex flex-col gap-3 sm:gap-3.5 border-2 min-w-0 w-full ${
+                className={`rounded-2xl sm:rounded-3xl p-4 sm:p-5 text-left transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex flex-col gap-3 sm:gap-3.5 border-2 min-w-0 w-full ${
                   isSelected
                     ? 'bg-blue-50/80 border-[#2563EB] shadow-md -translate-y-0.5'
                     : 'bg-white border-slate-200 hover:border-blue-300 hover:shadow-sm'

@@ -36,6 +36,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
     isSubmitConfirmOpen,
     isLoading,
     isError,
+    isRetryingQuestions,
     isAlreadyPassed,
     loadErrorMessage,
     isSubmitting,
@@ -64,6 +65,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
       <ExerciseSessionStatusView
         mode="loading"
         message="Menyiapkan soal ujian kesiapan level..."
+        onExit={handleBackToCurriculum}
       />
     )
   }
@@ -92,6 +94,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
         primaryLabel="Kembali ke Kurikulum"
         onPrimary={handleBackToCurriculum}
         secondaryLabel="Coba Lagi"
+        isSecondaryLoading={isRetryingQuestions}
         onSecondary={() => void refetchQuestions()}
       />
     )
@@ -125,6 +128,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
       <ExerciseSessionHeader
         onExit={() => (answeredCount > 0 ? setIsExitConfirmOpen(true) : handleBackToCurriculum())}
         exitAriaLabel="Keluar dari Ujian"
+        exitDisabled={isSubmitting}
         progressPercent={progressPercent}
         progressFillClass="bg-amber-500"
         counterLabel={`${answeredCount}/${questions.length} terjawab`}
@@ -175,6 +179,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
               selectedOptionValue={selectedOptionValue}
               textInput={textInput}
               submittedResult={null}
+              isSubmitting={isSubmitting}
               showHint={showHint}
               isCheckpoint={true}
               isSpeakingAudio={isSpeakingAudio}
@@ -247,6 +252,7 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
 
       <AccessibleModal
         isOpen={isSubmitConfirmOpen}
+        disableClose={isSubmitting}
         onClose={isSubmitting ? () => undefined : closeSubmitConfirm}
         ariaLabel="Konfirmasi Pengumpulan Ujian Kesiapan"
       >
@@ -260,6 +266,11 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
               langsung dinilai oleh sistem untuk kelulusan level ini.
             </p>
           </div>
+          {submitError && (
+            <p className="text-xs font-bold text-rose-600 bg-rose-50 border border-rose-200 rounded-xl px-3 py-2">
+              {submitError}
+            </p>
+          )}
           <div className="flex flex-col-reverse sm:flex-row gap-2.5 pt-1">
             <Button3D
               type="button"
@@ -271,19 +282,20 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
             >
               Periksa Lagi
             </Button3D>
-              <Button3D
-                type="button"
-                variant="emerald"
-                size="md"
-                fullWidth
-                loading={isSubmitting}
-                onClick={() => void handleSubmitExam()}
-              >
-                Ya, Kumpulkan
-              </Button3D>
-            </div>
+            <Button3D
+              type="button"
+              variant="emerald"
+              size="md"
+              fullWidth
+              loading={isSubmitting}
+              loadingText="Menilai..."
+              onClick={() => void handleSubmitExam()}
+            >
+              Ya, Kumpulkan
+            </Button3D>
           </div>
-        </AccessibleModal>
+        </div>
+      </AccessibleModal>
 
       <AccessibleModal
         isOpen={isExitConfirmOpen}

@@ -137,13 +137,23 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
   )
 
   const handleClaimChest = useCallback(
-    (e?: React.MouseEvent | { clientX?: number; clientY?: number }) => {
+    (
+      e?: React.MouseEvent | { clientX?: number; clientY?: number },
+      onClaimed?: () => void
+    ) => {
       if (isChestClaimedToday || claimRewardMutation.isPending) return
-      claimRewardMutation.mutate({
-        rewardType: 'golden_chest',
-        clientX: e?.clientX,
-        clientY: e?.clientY,
-      })
+      claimRewardMutation.mutate(
+        {
+          rewardType: 'golden_chest',
+          clientX: e?.clientX,
+          clientY: e?.clientY,
+        },
+        {
+          onSuccess: () => {
+            onClaimed?.()
+          },
+        }
+      )
     },
     [isChestClaimedToday, claimRewardMutation]
   )
@@ -166,6 +176,7 @@ export const useAppRightSidebar = ({ onCloseMobileDrawer }: UseAppRightSidebarOp
     floatingRewards,
     claimingQuestId,
     isClaimingQuest: claimDailyQuestMutation.isPending,
+    isClaimingChest: claimRewardMutation.isPending,
     handleClaimDailyQuest,
     handleClaimChest,
     handleCloseMobileDrawer,

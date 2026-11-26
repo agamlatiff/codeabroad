@@ -10,6 +10,7 @@ export interface ChestModalProps {
   remainingXp: number
   isChestUnlocked: boolean
   isChestClaimedToday: boolean
+  isClaiming?: boolean
   onClaimChest: (e?: React.MouseEvent) => void
 }
 
@@ -20,16 +21,25 @@ export const ChestModal: FC<ChestModalProps> = ({
   remainingXp,
   isChestUnlocked,
   isChestClaimedToday,
+  isClaiming = false,
   onClaimChest,
 }) => {
   return (
-    <AccessibleModal isOpen={isOpen} onClose={onClose} ariaLabel="Peti Target Harian">
+    <AccessibleModal
+      isOpen={isOpen}
+      disableClose={isClaiming}
+      onClose={() => {
+        if (!isClaiming) onClose()
+      }}
+      ariaLabel="Peti Target Harian"
+    >
       <div className="bg-white border-2 border-amber-300 rounded-3xl p-6 max-w-sm w-full text-center space-y-4 shadow-xl animate-pop relative">
         <button
           type="button"
+          disabled={isClaiming}
           onClick={onClose}
           aria-label="Tutup modal"
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 enabled:hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50"
         >
           <X weight="bold" className="w-4 h-4" />
         </button>
@@ -63,7 +73,9 @@ export const ChestModal: FC<ChestModalProps> = ({
           variant="amber"
           size="md"
           fullWidth
-          disabled={!isChestUnlocked || isChestClaimedToday}
+          loading={isClaiming}
+          loadingText="MENGKLAIM HADIAH..."
+          disabled={!isChestUnlocked || isChestClaimedToday || isClaiming}
           onClick={(e) => onClaimChest(e)}
           className="py-2.5 font-black text-xs shadow-[0_3px_0_0_#B45309]"
         >

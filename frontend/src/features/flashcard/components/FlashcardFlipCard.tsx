@@ -10,6 +10,7 @@ const SLOW_SPEECH_RATE = 0.58
 export interface FlashcardFlipCardProps {
   card: FlashcardCard
   isFlipped: boolean
+  disabled?: boolean
   speechLocale?: string
   onToggleFlip: () => void
 }
@@ -20,12 +21,14 @@ export interface FlashcardFlipCardProps {
 export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
   card,
   isFlipped,
+  disabled = false,
   speechLocale = 'ja-JP',
   onToggleFlip,
 }) => {
   const isCharacterCard = card.part_of_speech.toLowerCase().includes('huruf')
 
   const handleFlip = () => {
+    if (disabled) return
     triggerHaptic('tap')
     audioService.playCardFlip()
     onToggleFlip()
@@ -60,10 +63,11 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
           >
             <button
               type="button"
-              tabIndex={isFlipped ? -1 : 0}
+              disabled={disabled}
+              tabIndex={isFlipped || disabled ? -1 : 0}
               onClick={handleFlip}
               aria-label="Balik untuk melihat arti kartu"
-              className="absolute inset-0 z-0 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
+              className="absolute inset-0 z-0 rounded-3xl cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
             />
 
             <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
@@ -140,10 +144,11 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
           >
             <button
               type="button"
-              tabIndex={isFlipped ? 0 : -1}
+              disabled={disabled}
+              tabIndex={isFlipped && !disabled ? 0 : -1}
               onClick={handleFlip}
               aria-label="Balik ke sisi depan kartu"
-              className="absolute inset-0 z-0 rounded-3xl cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
+              className="absolute inset-0 z-0 rounded-3xl cursor-pointer disabled:cursor-not-allowed focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] focus-visible:ring-offset-2"
             />
 
             <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">

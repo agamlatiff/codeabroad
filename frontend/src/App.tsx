@@ -8,6 +8,9 @@ import {
   PreviewableRoute,
 } from '@/features/auth/components/ProtectedRoute'
 import { ErrorBoundary } from '@/shared/components/ui/ErrorBoundary'
+import { GlobalTopProgressBar } from '@/shared/components/ui/GlobalTopProgressBar'
+import { GlobalActionBlocker } from '@/shared/components/ui/GlobalActionBlocker'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
 import { ScrollToTop } from '@/shared/components/routing/ScrollToTop'
 
 const LandingPage = lazy(() =>
@@ -78,12 +81,33 @@ const NotFoundPage = lazy(() =>
 )
 
 const RouteLoadingFallback = () => (
-  <div className="min-h-screen bg-[#FAFAF9] flex items-center justify-center p-6">
-    <div className="flex flex-col items-center gap-3 text-slate-500">
-      <div className="w-10 h-10 rounded-2xl border-4 border-blue-200 border-t-blue-600 animate-spin" />
-      <span className="text-xs font-brand font-bold tracking-wide text-slate-500">
-        Memuat halaman...
-      </span>
+  <div
+    role="status"
+    aria-live="polite"
+    className="min-h-screen bg-[#FAFAF9] flex flex-col"
+  >
+    <div className="h-16 border-b-2 border-slate-200/80 bg-white px-4 sm:px-8 flex items-center justify-between">
+      <Skeleton className="h-9 w-36" />
+      <div className="flex items-center gap-2.5">
+        <Skeleton variant="pill" className="h-8 w-20" />
+        <Skeleton variant="pill" className="h-8 w-20 hidden sm:block" />
+      </div>
+    </div>
+    <div className="flex-1 max-w-4xl w-full mx-auto px-4 sm:px-6 py-8 space-y-5">
+      <div className="inline-flex items-center gap-2.5 rounded-2xl border-2 border-blue-200 bg-[#EFF6FF] px-4 py-2 shadow-[0_3px_0_0_#DBEAFE]">
+        <div className="w-4 h-4 rounded-full border-2 border-blue-300 border-t-[#2563EB] animate-spin shrink-0" />
+        <span className="text-xs font-brand font-extrabold text-[#2563EB]">
+          Memuat halaman...
+        </span>
+      </div>
+      <div className="rounded-3xl border-2 border-slate-200/80 bg-white p-6 shadow-[0_4px_0_0_#E2E8F0] space-y-4">
+        <Skeleton className="h-7 w-2/5" />
+        <Skeleton className="h-4 w-3/4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+          <Skeleton className="h-28 w-full" />
+          <Skeleton className="h-28 w-full" />
+        </div>
+      </div>
     </div>
   </div>
 )
@@ -93,6 +117,8 @@ function App() {
     <ErrorBoundary>
       <BrowserRouter>
         <ScrollToTop />
+        <GlobalTopProgressBar />
+        <GlobalActionBlocker />
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
             {/* Guest Routes (Only accessible when NOT logged in) */}

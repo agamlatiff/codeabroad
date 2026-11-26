@@ -72,6 +72,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     isLastExercise,
     isLoading,
     isError,
+    isRetryingLesson,
     isGuest,
     isLessonLockedError,
     lessonErrorMessage,
@@ -200,11 +201,18 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     submittedResult,
   ])
 
+  useEffect(() => {
+    if (isLastExercise) {
+      void import('@/features/exercise/pages/QuestCompletePage')
+    }
+  }, [isLastExercise])
+
   if (isLoading) {
     return (
       <ExerciseSessionStatusView
         mode="loading"
         message="Menyiapkan materi pelajaran..."
+        onExit={handleExitToCurriculum}
       />
     )
   }
@@ -237,6 +245,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
         primaryLabel="Kembali ke Kurikulum"
         onPrimary={handleExitToCurriculum}
         secondaryLabel="Coba Lagi"
+        isSecondaryLoading={isRetryingLesson}
         onSecondary={() => void refetchLesson()}
       />
     )
@@ -379,6 +388,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       <ExerciseSessionHeader
         onExit={requestExitSession}
         exitAriaLabel="Keluar ke Kurikulum"
+        exitDisabled={isChecking || isCompleting}
         progressPercent={unifiedProgressPercent}
         progressFillClass={isRetryRound ? 'bg-amber-500' : 'bg-emerald-500'}
         counterLabel={
@@ -412,8 +422,9 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
                 {introDeck && introDeck.items.length > 0 && (
                   <button
                     type="button"
+                    disabled={isChecking || isCompleting}
                     onClick={() => setIsStudyDrawerOpen(true)}
-                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-extrabold text-emerald-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-xs font-extrabold text-emerald-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Translate weight="bold" className="w-4 h-4" />
                     <span className="hidden sm:inline">Intip Materi</span>
@@ -423,8 +434,9 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
                 {lesson.grammar_points.length > 0 && (
                   <button
                     type="button"
+                    disabled={isChecking || isCompleting}
                     onClick={() => setIsGrammarDrawerOpen(true)}
-                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold text-blue-700 transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-1.5 min-h-[44px] px-3 rounded-xl bg-blue-50 hover:bg-blue-100 border border-blue-200 text-xs font-extrabold text-blue-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <BookOpen weight="bold" className="w-4 h-4" />
                     <span className="hidden sm:inline">Tata Bahasa</span>
@@ -460,6 +472,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
                   selectedOptionValue={selectedOptionValue}
                   textInput={textInput}
                   submittedResult={submittedResult}
+                  isSubmitting={isChecking || isCompleting}
                   showHint={showHint}
                   isCheckpoint={isCheckpoint}
                   fallbackHint={fallbackHint}

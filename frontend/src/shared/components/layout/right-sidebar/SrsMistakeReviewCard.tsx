@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { ArrowRight, ArrowsClockwise, CheckCircle } from '@phosphor-icons/react'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
 import { useAuthStore } from '@/features/auth/store/authStore'
 import {
   SRS_DUE_QUERY_KEY,
@@ -12,13 +13,17 @@ import {
  */
 export const SrsMistakeReviewCard = () => {
   const user = useAuthStore((s) => s.user)
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: [...SRS_DUE_QUERY_KEY, user?.id ?? 'anonymous', 'sidebar'],
     queryFn: ({ signal }) => exerciseService.getDueReviews(20, { signal }),
     enabled: Boolean(user),
     staleTime: 30_000,
     retry: false,
   })
+
+  if (user && isLoading) {
+    return <Skeleton className="h-[42px] w-full rounded-2xl" />
+  }
 
   const totalDue = data?.total_due ?? 0
 

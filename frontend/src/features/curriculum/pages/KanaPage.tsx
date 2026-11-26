@@ -10,6 +10,7 @@ import {
 } from '@phosphor-icons/react'
 import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftSidebar'
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
+import { Button3D } from '@/shared/components/ui/Button3D'
 import { useUser } from '@/features/user/hooks/useUser'
 import {
   curriculumService,
@@ -470,8 +471,11 @@ export const KanaPage = () => {
   }, [])
 
   const handleSelectScript = (nextScript: KanaScriptType) => {
+    if (nextScript === activeScript) return
     triggerHaptic('tap')
     setPracticeError(null)
+    audioService.stopSpeech()
+    setPlayingSpeed(null)
     const defaultChar = getDefaultCharParam(nextScript)
     navigate(`/kana/${nextScript}?char=${encodeURIComponent(defaultChar)}`, { replace: true })
   }
@@ -506,6 +510,7 @@ export const KanaPage = () => {
   }
 
   const handleFinishDrill = async (results: KanaPracticeItem[]) => {
+    if (practiceMutation.isPending) return
     if (!isAuthenticated) {
       setIsGuestKanaModalOpen(true)
       return
@@ -514,7 +519,7 @@ export const KanaPage = () => {
   }
 
   const handleMarkSelectedPracticed = () => {
-    if (!selectedChar) return
+    if (!selectedChar || practiceMutation.isPending) return
     triggerHaptic('success')
     if (!isAuthenticated) {
       setIsGuestKanaModalOpen(true)
@@ -614,10 +619,13 @@ export const KanaPage = () => {
                         {item.title}
                       </span>
                       <span
-                        className={`text-[10px] font-brand font-black px-2 py-0.5 rounded-full whitespace-nowrap ${
+                        className={`inline-flex items-center gap-1 text-[10px] font-brand font-black px-2 py-0.5 rounded-full whitespace-nowrap ${
                           isActive ? item.badgeActiveClass : item.badgeInactiveClass
                         }`}
                       >
+                        {isActive && kanaQuery.isFetching && (
+                          <span className="w-2.5 h-2.5 rounded-full border-2 border-current border-t-transparent animate-spin" />
+                        )}
                         {item.countLabel}
                       </span>
                     </div>
@@ -638,22 +646,43 @@ export const KanaPage = () => {
 
         {/* 2-Column Workspace: Left Matrix + Right Study / Tracing / Drill */}
         {kanaQuery.isLoading ? (
-          <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-            <div className="xl:col-span-7 h-96 rounded-3xl bg-white border-2 border-slate-200 animate-pulse" />
-            <div className="xl:col-span-5 h-96 rounded-3xl bg-white border-2 border-slate-200 animate-pulse" />
+          <div
+            role="status"
+            aria-label="Memuat tabel aksara Jepang"
+            className="grid grid-cols-1 xl:grid-cols-12 gap-6"
+          >
+            <div className="xl:col-span-7 rounded-3xl bg-white border-2 border-slate-200 p-5 space-y-3">
+              <div className="h-8 w-44 rounded-xl bg-slate-200/80 animate-pulse" />
+              <div className="grid grid-cols-5 gap-2.5">
+                {Array.from({ length: 20 }).map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-16 rounded-2xl bg-slate-100 border border-slate-200/80 animate-pulse"
+                  />
+                ))}
+              </div>
+            </div>
+            <div className="xl:col-span-5 rounded-3xl bg-white border-2 border-slate-200 p-6 space-y-4">
+              <div className="h-36 rounded-2xl bg-blue-50/80 animate-pulse" />
+              <div className="h-5 w-3/4 rounded-xl bg-slate-200/80 animate-pulse" />
+              <div className="h-44 rounded-2xl bg-slate-100 animate-pulse" />
+            </div>
           </div>
         ) : kanaQuery.isError ? (
-          <div className="rounded-3xl bg-rose-50 border-2 border-rose-200 p-6 text-center space-y-2">
+          <div className="rounded-3xl bg-rose-50 border-2 border-rose-200 p-6 text-center space-y-3">
             <p className="font-brand font-black text-sm text-rose-800">
               Gagal memuat tabel aksara Jepang
             </p>
-            <button
-              type="button"
+            <Button3D
+              variant="rose"
+              size="sm"
+              loading={kanaQuery.isFetching}
+              loadingText="Memuat..."
               onClick={() => void kanaQuery.refetch()}
-              className="px-4 py-2 rounded-xl bg-rose-600 text-white text-xs font-bold cursor-pointer"
+              className="mx-auto"
             >
               Coba Lagi
-            </button>
+            </Button3D>
           </div>
         ) : (
           <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -946,7 +975,10 @@ export const KanaPage = () => {
                     character={selectedChar.character}
                     script={activeScript}
                     isMastered={selectedChar.is_mastered}
-                    isSaving={practiceMutation.isPending}
+                    isSaving={
+                      practiceMutation.isPending &&
+                      practiceMutation.variables?.some((v) => v.character === selectedChar.character) === true
+                    }
                     onMarkPracticed={handleMarkSelectedPracticed}
                   />
                 </div>

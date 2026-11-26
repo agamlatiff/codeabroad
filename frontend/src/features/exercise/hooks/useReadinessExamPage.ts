@@ -189,12 +189,12 @@ export const useReadinessExamPage = (levelId?: string) => {
 
   const runUnlockedTap = useCallback(
     (action: () => void) => {
-      if (!currentExercise || resolvedExamResult !== null) return
+      if (!currentExercise || resolvedExamResult !== null || isSubmittingExam) return
       triggerHaptic('tap')
       audioEngine.playPop()
       action()
     },
-    [currentExercise, resolvedExamResult]
+    [currentExercise, isSubmittingExam, resolvedExamResult]
   )
 
   const handleAddToken = useCallback(
@@ -250,10 +250,10 @@ export const useReadinessExamPage = (levelId?: string) => {
 
   const handleSetTextInput = useCallback(
     (value: string) => {
-      if (!currentExercise || resolvedExamResult !== null) return
+      if (!currentExercise || resolvedExamResult !== null || isSubmittingExam) return
       setTextById((prev) => ({ ...prev, [currentExercise.id]: value }))
     },
-    [currentExercise, resolvedExamResult]
+    [currentExercise, isSubmittingExam, resolvedExamResult]
   )
 
   const handlePlayAudio = useCallback(
@@ -352,7 +352,6 @@ export const useReadinessExamPage = (levelId?: string) => {
 
     submitLockRef.current = true
     const epoch = sessionEpochRef.current
-    setIsSubmitConfirmOpen(false)
     commitCurrentQuestionElapsed()
     setSubmitError(null)
     stopMediaSession()
@@ -368,6 +367,7 @@ export const useReadinessExamPage = (levelId?: string) => {
       })
 
       if (epoch !== sessionEpochRef.current) return
+      setIsSubmitConfirmOpen(false)
       setExamResult(res)
       if (res.attempt.is_passed) {
         triggerHaptic('success')
@@ -445,6 +445,9 @@ export const useReadinessExamPage = (levelId?: string) => {
     audioEngine.playPop()
     timeSpentByIdRef.current = {}
     questionStartedAtRef.current = Date.now()
+    if (levelId) {
+      queryClient.removeQueries({ queryKey: [...EXAM_QUESTIONS_QUERY_KEY, userId, levelId] })
+    }
     setExamResult(null)
     setSubmitError(null)
     setIsAlreadyPassed(false)
@@ -454,7 +457,7 @@ export const useReadinessExamPage = (levelId?: string) => {
     setOptionById({})
     setTextById({})
     setShowHint(false)
-  }, [stopMediaSession])
+  }, [levelId, queryClient, stopMediaSession, userId])
 
   const handleBackToCurriculum = useCallback(() => {
     stopMediaSession()
@@ -504,6 +507,7 @@ export const useReadinessExamPage = (levelId?: string) => {
       questionsQuery.isLoading ||
       (shouldLoadPassedResult && passedResultQuery.isLoading),
     isError: questionsQuery.isError && !shouldLoadPassedResult,
+    isRetryingQuestions: questionsQuery.isError && questionsQuery.isFetching,
     loadErrorMessage,
     isSubmitting: isSubmittingExam,
     refetchQuestions: questionsQuery.refetch,

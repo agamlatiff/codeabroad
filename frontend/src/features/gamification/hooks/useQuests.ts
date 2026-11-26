@@ -50,6 +50,7 @@ import {
   DAILY_VOCABULARIES_QUERY_KEY,
   LEADERBOARD_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
+  SWITCH_LANGUAGE_MUTATION_KEY,
 } from '@/shared/constants/queryKeys'
 import { extractApiErrorMessage } from '@/shared/services/api'
 import { getWibDateKey, getWibHour, getWibMidnightRemainingMs } from '@/shared/utils/date'
@@ -805,10 +806,16 @@ export const useQuests = () => {
   }, [queryClient, userId])
 
   const [claimingQuestId, setClaimingQuestId] = useState<string | null>(null)
+  const claimingQuestLockRef = useRef(false)
+  const claimingChestLockRef = useRef(false)
+  const purchasingLockRef = useRef(false)
+  const activatingLockRef = useRef(false)
+  const claimingBadgeLockRef = useRef(false)
 
   const handleClaimDailyQuest = useCallback(
     async (questId: string) => {
-      if (!questId || claimingQuestId) return
+      if (!questId || claimingQuestId || claimingQuestLockRef.current) return
+      claimingQuestLockRef.current = true
       setClaimingQuestId(questId)
       try {
         const res = await gamificationService.claimDailyQuest(questId)
@@ -826,6 +833,7 @@ export const useQuests = () => {
         triggerHaptic('error')
         showToast(extractApiErrorMessage(err, 'Gagal mengklaim hadiah misi harian.'))
       } finally {
+        claimingQuestLockRef.current = false
         setClaimingQuestId(null)
       }
     },
@@ -849,43 +857,53 @@ export const useQuests = () => {
     mutationFn: () => gamificationService.claimMonthlyBadge(),
   })
 
+  const switchLanguageMutation = useMutation({
+    mutationKey: SWITCH_LANGUAGE_MUTATION_KEY,
+    mutationFn: async (languageId: string) => {
+      const isAlreadyEnrolled = (enrollmentsQuery.data ?? []).some(
+        (enrollment) => enrollment.language_id === languageId
+      )
+      if (!isAlreadyEnrolled) {
+        await languageService.enrollLanguage(languageId)
+      }
+      await languageService.switchActiveLanguage(languageId)
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getLanguageEnrollmentsQueryKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userId) }),
+        queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
+        queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_BADGES_QUERY_KEY, userId] }),
+        queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, userId] }),
+        queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY }),
+      ])
+      return { isAlreadyEnrolled }
+    },
+  })
+
   const [isActivatingItemId, setIsActivatingItemId] = useState<string | null>(null)
 
   const handleSelectTrack = useCallback(
     async (languageId: string) => {
-      if (!languageId) return
+      if (!languageId || switchLanguageMutation.isPending) return false
       try {
-        const isAlreadyEnrolled = (enrollmentsQuery.data ?? []).some(
-          (enrollment) => enrollment.language_id === languageId
-        )
-        if (!isAlreadyEnrolled) {
-          await languageService.enrollLanguage(languageId)
-        }
-        await languageService.switchActiveLanguage(languageId)
-        await Promise.all([
-          queryClient.invalidateQueries({ queryKey: getLanguageEnrollmentsQueryKey(userId) }),
-          queryClient.invalidateQueries({ queryKey: getProfileQueryKey(userId) }),
-          queryClient.invalidateQueries({ queryKey: CURRICULUM_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: GRAMMAR_POINTS_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: DAILY_VOCABULARIES_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: SRS_DUE_QUERY_KEY }),
-          queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_BADGES_QUERY_KEY, userId] }),
-          queryClient.invalidateQueries({ queryKey: [...GAMIFICATION_STATUS_QUERY_KEY, userId] }),
-          queryClient.invalidateQueries({ queryKey: FLASHCARD_DECKS_QUERY_KEY }),
-        ])
+        const { isAlreadyEnrolled } = await switchLanguageMutation.mutateAsync(languageId)
         triggerHaptic('success')
         setActiveTrack(languageId)
         setIsCourseSwitcherOpen(false)
         if (!isAlreadyEnrolled) {
           showToast('Berhasil mendaftar & beralih ke bahasa baru!')
         }
+        return true
       } catch (err: unknown) {
         triggerHaptic('error')
         audioEngine.playError()
         showToast(extractApiErrorMessage(err, 'Gagal mengganti bahasa aktif. Silakan coba lagi.'))
+        return false
       }
     },
-    [enrollmentsQuery.data, queryClient, showToast, userId]
+    [showToast, switchLanguageMutation]
   )
 
   const handleOpenChest = useCallback(
@@ -907,7 +925,8 @@ export const useQuests = () => {
   )
 
   const handleConfirmClaimChest = useCallback(async () => {
-    if (!selectedChestForModal || claimChestMutation.isPending) return
+    if (!selectedChestForModal || claimChestMutation.isPending || claimingChestLockRef.current) return
+    claimingChestLockRef.current = true
     const tier = selectedChestForModal.tier
     const chestLabel = selectedChestForModal.label
 
@@ -934,6 +953,8 @@ export const useQuests = () => {
       triggerHaptic('error')
       audioEngine.playError()
       showToast(extractApiErrorMessage(err, 'Gagal membuka peti hadiah harian.'))
+    } finally {
+      claimingChestLockRef.current = false
     }
   }, [
     claimChestMutation,
@@ -946,7 +967,7 @@ export const useQuests = () => {
 
   const handlePurchaseShopItem = useCallback(
     async (item: ShopItem) => {
-      if (isPurchasingItemId || buyItemMutation.isPending) return
+      if (isPurchasingItemId || buyItemMutation.isPending || purchasingLockRef.current) return
       if (userGems < item.price) {
         triggerHaptic('error')
         audioEngine.playError()
@@ -954,6 +975,7 @@ export const useQuests = () => {
         return
       }
 
+      purchasingLockRef.current = true
       setIsPurchasingItemId(item.id)
       try {
         const updatedStatus = await buyItemMutation.mutateAsync(item.id)
@@ -967,6 +989,7 @@ export const useQuests = () => {
         audioEngine.playError()
         showToast(extractApiErrorMessage(err, `Gagal menukar ${item.title}.`))
       } finally {
+        purchasingLockRef.current = false
         setIsPurchasingItemId(null)
       }
     },
@@ -975,7 +998,8 @@ export const useQuests = () => {
 
   const handleActivateShopItem = useCallback(
     async (itemId: string) => {
-      if (isActivatingItemId || activateItemMutation.isPending) return
+      if (isActivatingItemId || activateItemMutation.isPending || activatingLockRef.current) return
+      activatingLockRef.current = true
       setIsActivatingItemId(itemId)
       try {
         await activateItemMutation.mutateAsync(itemId)
@@ -988,6 +1012,7 @@ export const useQuests = () => {
         audioEngine.playError()
         showToast(extractApiErrorMessage(err, 'Gagal mengaktifkan item dari tas.'))
       } finally {
+        activatingLockRef.current = false
         setIsActivatingItemId(null)
       }
     },
@@ -995,7 +1020,8 @@ export const useQuests = () => {
   )
 
   const handleClaimMonthlyBadge = useCallback(async () => {
-    if (claimMonthlyBadgeMutation.isPending) return
+    if (claimMonthlyBadgeMutation.isPending || claimingBadgeLockRef.current) return
+    claimingBadgeLockRef.current = true
     try {
       const res = await claimMonthlyBadgeMutation.mutateAsync()
       triggerHaptic('success')
@@ -1014,6 +1040,8 @@ export const useQuests = () => {
       triggerHaptic('error')
       audioEngine.playError()
       showToast(extractApiErrorMessage(err, 'Gagal mengklaim lencana bulanan.'))
+    } finally {
+      claimingBadgeLockRef.current = false
     }
   }, [claimMonthlyBadgeMutation, invalidateGamificationCaches, showToast, triggerFloatingReward, updateUser])
 

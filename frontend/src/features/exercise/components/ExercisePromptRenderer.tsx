@@ -26,6 +26,7 @@ interface ExercisePromptRendererProps {
   selectedOptionValue: string
   textInput: string
   submittedResult: SubmitExerciseAnswerResponse | null
+  isSubmitting?: boolean
   showHint: boolean
   isCheckpoint?: boolean
   fallbackHint?: string
@@ -128,6 +129,7 @@ export const ExercisePromptRenderer = ({
   selectedOptionValue,
   textInput,
   submittedResult,
+  isSubmitting = false,
   showHint,
   isCheckpoint = false,
   fallbackHint,
@@ -155,7 +157,7 @@ export const ExercisePromptRenderer = ({
     label: exercise.skill_pillar,
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
   }
-  const isLocked = submittedResult !== null
+  const isLocked = submittedResult !== null || isSubmitting
   const showManualTyping =
     !speechRecognitionSupported || manualTypingExerciseId === exercise.id
   const showSentenceRomaji = romajiShownExerciseId === exercise.id

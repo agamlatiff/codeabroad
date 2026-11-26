@@ -22,7 +22,7 @@ export const LandingNavbar = () => {
   const headerRef = useRef<HTMLElement>(null)
   const toggleButtonRef = useRef<HTMLButtonElement>(null)
 
-  const continuePath = '/curriculum'
+  const continuePath = user && !user.is_onboarded ? '/onboarding' : '/curriculum'
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
 

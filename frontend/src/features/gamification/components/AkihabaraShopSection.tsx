@@ -215,17 +215,15 @@ export const AkihabaraShopSection = ({
                     variant="emerald"
                     size="sm"
                     onClick={() => onActivateItem(item.id)}
-                    disabled={isActivatingItemId === item.id}
+                    loading={isActivatingItemId === item.id}
+                    loadingText="MENGAKTIFKAN..."
+                    disabled={Boolean(isActivatingItemId) || Boolean(isPurchasingItemId)}
                     className="text-xs px-3.5 py-2 border-b-emerald-800"
                   >
                     <span className="inline-flex items-center gap-1.5">
                       <Lightning weight="fill" className="w-3.5 h-3.5" />
                       <span>
-                        {isActivatingItemId === item.id
-                          ? 'MENGAKTIFKAN...'
-                          : isBoosterCurrentlyActive
-                            ? 'PERPANJANG +15m'
-                            : 'AKTIFKAN 2x XP'}
+                        {isBoosterCurrentlyActive ? 'PERPANJANG +15m' : 'AKTIFKAN 2x XP'}
                       </span>
                     </span>
                   </Button3D>
@@ -277,14 +275,14 @@ export const AkihabaraShopSection = ({
                   variant={isAffordable ? 'blue' : 'ghost'}
                   size="sm"
                   onClick={() => onPurchaseItem(item)}
-                  disabled={!isAffordable || isPurchasingItemId === item.id}
+                  loading={isPurchasingItemId === item.id}
+                  loadingText="MEMPROSES..."
+                  disabled={!isAffordable || Boolean(isPurchasingItemId) || Boolean(isActivatingItemId)}
                   className={`text-xs px-4 py-2 min-w-[124px] ${
                     !isAffordable ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' : ''
                   }`}
                 >
-                  {isPurchasingItemId === item.id ? (
-                    <span>MEMPROSES...</span>
-                  ) : isAffordable ? (
+                  {isAffordable ? (
                     <span className="inline-flex items-center gap-1.5">
                       <span>TUKAR</span>
                       <GemIcon className="w-3.5 h-3.5 shrink-0" />

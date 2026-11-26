@@ -216,6 +216,14 @@ export const DailyQuestsSection = ({
 
       {/* 3 Daily Quests Chunky Cards Feed */}
       <div className="space-y-3.5 pt-0.5">
+        {isLoading && quests.length === 0
+          ? [0, 1, 2].map((i) => (
+              <div
+                key={`quest-skeleton-${i}`}
+                className="h-[88px] rounded-2xl border-2 border-slate-200/80 bg-slate-50/70 animate-pulse"
+              />
+            ))
+          : null}
         {quests.map((questItem) => {
           const isDone = questItem.isCompleted
           const isInProgress = !isDone && questItem.progressPercent > 0
@@ -309,6 +317,8 @@ export const DailyQuestsSection = ({
                     variant="amber"
                     size="sm"
                     loading={claimingQuestId === questItem.id}
+                    loadingText="Mengklaim..."
+                    disabled={Boolean(claimingQuestId)}
                     onClick={() => onClaimQuest(questItem.id)}
                     className="text-xs px-4 py-2"
                   >

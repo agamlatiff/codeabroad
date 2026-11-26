@@ -15,7 +15,7 @@ import {
 
 export interface UseCurriculumSwitcherModalOptions {
   enabled?: boolean
-  onSelectTrack: (languageId: string) => void
+  onSelectTrack: (languageId: string) => void | Promise<boolean | void>
   onClose: () => void
 }
 
@@ -30,14 +30,14 @@ export const useCurriculumSwitcherModal = ({
 }: UseCurriculumSwitcherModalOptions) => {
   const userId = useAuthStore((s) => s.user?.id)
 
-  const { data: enrollments = [] } = useQuery({
+  const { data: enrollments = [], isLoading: isEnrollmentsLoading } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userId),
     queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
     enabled: enabled && Boolean(userId),
     staleTime: 1000 * 60 * 5,
   })
 
-  const { data: languages = [] } = useQuery({
+  const { data: languages = [], isLoading: isLanguagesLoading } = useQuery({
     queryKey: LANGUAGES_QUERY_KEY,
     queryFn: ({ signal }) => languageService.listLanguages({ signal }),
     enabled,
@@ -75,6 +75,7 @@ export const useCurriculumSwitcherModal = ({
     trackOptions,
     enrolledOptions,
     catalogOptions,
+    isLoading: isLanguagesLoading || (Boolean(userId) && isEnrollmentsLoading),
     handleSelect,
   }
 }

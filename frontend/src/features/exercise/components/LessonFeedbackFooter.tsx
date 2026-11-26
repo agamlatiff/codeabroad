@@ -24,6 +24,7 @@ interface LessonFeedbackFooterProps {
   isChecking: boolean
   isCompleting: boolean
   isLastExercise: boolean
+  completeLabel?: string
   canRetryLesson?: boolean
   onCheckAnswer: () => void
   onContinue: () => void
@@ -42,6 +43,7 @@ export const LessonFeedbackFooter = ({
   isChecking,
   isCompleting,
   isLastExercise,
+  completeLabel = 'Selesaikan Pelajaran',
   canRetryLesson = false,
   onCheckAnswer,
   onContinue,
@@ -178,13 +180,19 @@ export const LessonFeedbackFooter = ({
           )}
 
           {!submittedResult && !submitError && (
-            <p className="text-xs sm:text-sm font-semibold text-slate-500">
-              Pilih atau susun jawabanmu lalu tekan Periksa.
+            <p
+              className={`text-xs sm:text-sm font-semibold ${
+                isChecking ? 'text-[#2563EB] font-bold' : 'text-slate-500'
+              }`}
+            >
+              {isChecking
+                ? 'Memeriksa jawabanmu...'
+                : 'Pilih atau susun jawabanmu lalu tekan Periksa.'}
             </p>
           )}
         </div>
 
-        <div className="shrink-0 w-full sm:w-auto">
+        <div className="shrink-0 w-full sm:w-auto sm:min-w-[216px]">
           {canRetryLesson && onRetryLesson ? (
             <Button3D
               type="button"
@@ -204,6 +212,7 @@ export const LessonFeedbackFooter = ({
               fullWidth
               disabled={!canCheckAnswer}
               loading={isChecking}
+              loadingText="Memeriksa..."
               onClick={onCheckAnswer}
             >
               Periksa Jawaban
@@ -215,9 +224,10 @@ export const LessonFeedbackFooter = ({
               size="md"
               fullWidth
               loading={isCompleting}
+              loadingText="Menyimpan..."
               onClick={onContinue}
             >
-              {isLastExercise ? 'Selesaikan Pelajaran' : 'Lanjutkan'}
+              {isLastExercise ? completeLabel : 'Lanjutkan'}
             </Button3D>
           )}
         </div>

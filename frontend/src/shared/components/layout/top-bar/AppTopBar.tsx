@@ -1,8 +1,9 @@
 import { useState, useRef, useEffect, type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery, useQueryClient, useIsMutating } from '@tanstack/react-query'
 import {
   CaretDown,
+  CircleNotch,
   Fire,
   Star,
   Gift,
@@ -24,8 +25,13 @@ import {
   gamificationService,
   GAMIFICATION_STATUS_QUERY_KEY,
 } from "@/features/gamification/services/gamificationService"
-import { getProfileQueryKey, LEADERBOARD_QUERY_KEY } from "@/shared/constants/queryKeys"
+import {
+  getProfileQueryKey,
+  LEADERBOARD_QUERY_KEY,
+  LOGOUT_MUTATION_KEY,
+} from "@/shared/constants/queryKeys"
 import { AppBreadcrumb, type BreadcrumbItem } from "@/shared/components/ui/AppBreadcrumb"
+import { Skeleton } from "@/shared/components/ui/Skeleton"
 import { GemIcon } from "@/shared/components/ui/GamificationIcons"
 import { useAppTopBar } from "@/shared/hooks/layout/top-bar/useAppTopBar"
 import { triggerHaptic } from "@/shared/utils/haptics"
@@ -65,6 +71,7 @@ export const AppTopBar = ({
     userGems,
     currentTrackConfig,
     canSwitchLanguage,
+    isTrackLoading,
   } = useAppTopBar(activeTrack)
 
   const [showXpPopover, setShowXpPopover] = useState(false)
@@ -77,6 +84,7 @@ export const AppTopBar = ({
   const accountMenuRef = useRef<HTMLDivElement>(null)
   const queryClient = useQueryClient()
   const logout = useLogout()
+  const isLoggingOut = useIsMutating({ mutationKey: LOGOUT_MUTATION_KEY }) > 0
   const xpProgress = computeXpLevelProgress(rawXp, userLevel)
 
   const gamificationStatusQuery = useQuery({
@@ -87,6 +95,11 @@ export const AppTopBar = ({
     retry: false,
   })
   const isXpBoosterActive = Boolean(gamificationStatusQuery.data?.xp_booster_active)
+  const resolvedUserGems = gamificationStatusQuery.data?.gems ?? userGems
+  const isGemsColdLoading =
+    Boolean(activeUser) &&
+    gamificationStatusQuery.isLoading &&
+    typeof activeUser?.gems !== 'number'
 
   useEffect(() => {
     if (!showXpPopover && !showAccountMenu) return
@@ -124,21 +137,27 @@ export const AppTopBar = ({
       : `${currentTrackConfig.shortTitle} ${normalizedLevelCode}`
     : currentTrackConfig.shortTitle
 
-  const trackLabelContent = (
-    <>
-      <div className="w-6 h-4 rounded-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-        {currentTrackConfig.languageCode ? (
-          <LanguageFlagIllustration code={currentTrackConfig.languageCode} compact className="w-full h-full object-contain" />
-        ) : (
-          <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
-        )}
-      </div>
-      <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
-        <span className="sm:hidden">{displayTrackShortTitle}</span>
-        <span className="hidden sm:inline">{displayTrackTitle}</span>
-      </span>
-    </>
-  )
+  const trackLabelContent =
+    isTrackLoading && !currentTrackConfig.languageCode ? (
+      <>
+        <Skeleton className="w-6 h-4 rounded-sm shrink-0" />
+        <Skeleton variant="pill" className="h-3.5 w-24 sm:w-32" />
+      </>
+    ) : (
+      <>
+        <div className="w-6 h-4 rounded-sm overflow-hidden flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+          {currentTrackConfig.languageCode ? (
+            <LanguageFlagIllustration code={currentTrackConfig.languageCode} compact className="w-full h-full object-contain" />
+          ) : (
+            <Translate weight="bold" className="w-3.5 h-3.5 text-blue-600" />
+          )}
+        </div>
+        <span className="text-[11px] sm:text-xs font-brand font-black text-slate-900 leading-tight truncate">
+          <span className="sm:hidden">{displayTrackShortTitle}</span>
+          <span className="hidden sm:inline">{displayTrackTitle}</span>
+        </span>
+      </>
+    )
 
   return (
     <div className="flex flex-col gap-2.5 sm:gap-3 min-w-0 w-full">
@@ -198,10 +217,14 @@ export const AppTopBar = ({
               {/* Gems Diamond Chip */}
               <div
                 className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-cyan-50/90 border border-cyan-200/80 text-cyan-700 font-brand font-black text-[11px] sm:text-xs shrink-0 whitespace-nowrap shadow-2xs"
-                title={`Saldo Gems: ${userGems} Gems`}
+                title={`Saldo Gems: ${resolvedUserGems} Gems`}
               >
                 <GemIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-                <span>{userGems}</span>
+                {isGemsColdLoading ? (
+                  <Skeleton variant="pill" className="h-3.5 w-6 bg-cyan-200/70" />
+                ) : (
+                  <span>{resolvedUserGems}</span>
+                )}
               </div>
 
               {/* Unified XP & Level Chip + Hover/Click Progress Popover */}
@@ -385,15 +408,20 @@ export const AppTopBar = ({
                     </button>
                     <button
                       type="button"
+                      disabled={isLoggingOut}
                       onClick={() => {
                         triggerHaptic('tap')
                         setShowAccountMenu(false)
                         void logout()
                       }}
-                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-brand font-bold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
+                      className="w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-brand font-bold text-rose-600 enabled:hover:bg-rose-50 transition-colors cursor-pointer disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <SignOut weight="bold" className="w-4 h-4 shrink-0" />
-                      <span>Keluar Akun</span>
+                      {isLoggingOut ? (
+                        <CircleNotch weight="bold" className="w-4 h-4 animate-spin shrink-0" />
+                      ) : (
+                        <SignOut weight="bold" className="w-4 h-4 shrink-0" />
+                      )}
+                      <span>{isLoggingOut ? 'Sedang Keluar...' : 'Keluar Akun'}</span>
                     </button>
                   </div>
                 </div>

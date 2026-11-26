@@ -7,7 +7,6 @@ import {
   Fire,
   Star,
   Check,
-  CircleNotch,
   SpeakerHigh,
   SpeakerLow,
   SpeakerSimpleSlash,
@@ -67,7 +66,9 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
   return (
     <AccessibleModal
       isOpen={isOpen}
+      disableClose={isSubmitting}
       onClose={() => {
+        if (isSubmitting) return
         triggerHaptic('tap')
         onClose()
       }}
@@ -78,11 +79,12 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
         {/* Close Button */}
         <button
           type="button"
+          disabled={isSubmitting}
           onClick={() => {
             triggerHaptic('tap')
             onClose()
           }}
-          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer transition-colors"
+          className="absolute top-4 right-4 w-8 h-8 rounded-full bg-slate-100 enabled:hover:bg-slate-200 text-slate-500 flex items-center justify-center font-bold cursor-pointer disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
           title="Tutup"
           aria-label="Tutup pengaturan"
         >
@@ -193,10 +195,11 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
                 id="settings-name-input"
                 type="text"
                 maxLength={100}
+                disabled={isSubmitting}
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="Nama kamu..."
-                className="w-full bg-white text-xs font-medium pl-9 pr-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs"
+                className="w-full bg-white text-xs font-medium pl-9 pr-3.5 py-2.5 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -210,10 +213,11 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               id="settings-bio-input"
               rows={2}
               maxLength={500}
+              disabled={isSubmitting}
               value={bio}
               onChange={(e) => setBio(e.target.value)}
               placeholder="Contoh: Sedang menyiapkan sertifikasi bahasa untuk studi dan karir internasional."
-              className="w-full bg-white text-xs font-medium p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs resize-none"
+              className="w-full bg-white text-xs font-medium p-3 rounded-xl border-2 border-slate-200 focus:border-blue-500 focus:outline-none transition-all placeholder:text-slate-400 text-slate-900 shadow-2xs resize-none disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -407,12 +411,13 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             </p>
             <button
               type="button"
+              disabled={isSubmitting}
               onClick={() => {
                 triggerHaptic('tap')
                 onClose()
                 navigate('/curriculum?tour=1')
               }}
-              className="w-full py-2.5 px-3.5 rounded-xl border-2 border-blue-200 bg-blue-50/70 hover:bg-blue-100/80 text-blue-700 text-xs font-brand font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:translate-y-0.5"
+              className="w-full py-2.5 px-3.5 rounded-xl border-2 border-blue-200 bg-blue-50/70 enabled:hover:bg-blue-100/80 text-blue-700 text-xs font-brand font-black transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 flex items-center justify-center gap-2 enabled:active:translate-y-0.5"
             >
               <Compass weight="bold" className="w-4 h-4" />
               <span>Ulangi Panduan Fitur</span>
@@ -423,12 +428,13 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
             <div className="md:hidden pt-3 border-t border-slate-200/80">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => {
                   triggerHaptic('tap')
                   onClose()
                   onLogout()
                 }}
-                className="w-full py-2.5 px-3.5 rounded-xl border-2 border-rose-200 bg-rose-50/70 hover:bg-rose-100 text-rose-700 text-xs font-brand font-black transition-all cursor-pointer flex items-center justify-center gap-2 active:translate-y-0.5"
+                className="w-full py-2.5 px-3.5 rounded-xl border-2 border-rose-200 bg-rose-50/70 enabled:hover:bg-rose-100 text-rose-700 text-xs font-brand font-black transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-55 flex items-center justify-center gap-2 enabled:active:translate-y-0.5"
               >
                 <SignOut weight="bold" className="w-4 h-4" />
                 <span>Keluar Akun</span>
@@ -442,6 +448,7 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               type="button"
               variant="white"
               size="md"
+              disabled={isSubmitting}
               onClick={() => {
                 triggerHaptic('tap')
                 onClose()
@@ -454,17 +461,12 @@ export const SettingsModal: FC<SettingsModalProps> = (props) => {
               type="submit"
               variant="blue"
               size="md"
+              loading={isSubmitting}
+              loadingText="MENYIMPAN..."
               disabled={isSubmitting}
               className="px-5 py-2 text-xs shadow-[0_3px_0_0_#1D4ED8]"
             >
-              {isSubmitting ? (
-                <span className="flex items-center gap-1.5">
-                  <CircleNotch weight="bold" className="w-3.5 h-3.5 animate-spin" />
-                  <span>MENYIMPAN...</span>
-                </span>
-              ) : (
-                'SIMPAN PERUBAHAN'
-              )}
+              SIMPAN PERUBAHAN
             </Button3D>
           </div>
         </form>

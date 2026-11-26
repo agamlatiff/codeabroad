@@ -9,21 +9,23 @@ interface Step1LanguagePickerProps {
   languages: OnboardingLanguage[]
   selectedLanguageId: string
   onSelectLanguage: (languageId: string) => void
+  disabled?: boolean
 }
 
 export const Step1LanguagePicker = ({
   languages,
   selectedLanguageId,
   onSelectLanguage,
+  disabled = false,
 }: Step1LanguagePickerProps) => {
   return (
     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 lg:gap-6 max-w-5xl w-full min-w-0">
       {languages.map((lang) => {
         const code = lang.code?.toLowerCase() || 'ja'
         const isSelected = selectedLanguageId === lang.id
-        const isActive = lang.is_active
+        const isActive = lang.is_active && !disabled
         const meta = getLanguageCatalogMeta(code, lang.name)
-        const examLabel = isActive ? meta.badgeLabel : 'Segera Hadir'
+        const examLabel = lang.is_active ? meta.badgeLabel : 'Segera Hadir'
 
         return (
           <div

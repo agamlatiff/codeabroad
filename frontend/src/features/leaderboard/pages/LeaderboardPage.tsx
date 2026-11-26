@@ -58,6 +58,7 @@ export const LeaderboardPage = () => {
     activeDivision,
     currentDivisionConfig,
     isLoading,
+    isFetching,
     error,
     selectDivision,
     refetch,
@@ -76,6 +77,7 @@ export const LeaderboardPage = () => {
   }, [activeDivision, isLoading, rawDivisionParam, setSearchParams])
 
   const handleSelectDivision = (div: LeagueDivision) => {
+    if (div === activeDivision || isClaimingReward) return
     triggerHaptic('tap')
     playSound('node_tap')
     selectDivision(div)
@@ -289,9 +291,10 @@ export const LeaderboardPage = () => {
                 <button
                   key={div.id}
                   type="button"
+                  disabled={isClaimingReward}
                   aria-pressed={isSelected}
                   onClick={() => handleSelectDivision(div.id)}
-                  className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between gap-2 relative ${
+                  className={`p-3.5 sm:p-4 rounded-2xl border-2 text-left transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex flex-col justify-between gap-2 relative ${
                     isSelected
                       ? div.activeTabClass
                       : 'bg-white border-slate-200 hover:border-slate-300 active:translate-y-0.5'
@@ -345,6 +348,12 @@ export const LeaderboardPage = () => {
                 <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">
                   {leaderboard?.total_competitors ?? leaderboard?.entries?.length ?? 0} Peserta
                 </span>
+                {isFetching && !isLoading && (
+                  <span
+                    aria-label="Menyegarkan klasemen"
+                    className="w-3.5 h-3.5 rounded-full border-2 border-blue-200 border-t-[#2563EB] animate-spin shrink-0"
+                  />
+                )}
               </div>
 
               {gapToNextRank ? (

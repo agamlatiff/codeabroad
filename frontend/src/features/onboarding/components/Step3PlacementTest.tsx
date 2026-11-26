@@ -11,6 +11,7 @@ import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
 import { resolveSpeechLocale } from '@/shared/utils/speechLocale'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { Skeleton } from '@/shared/components/ui/Skeleton'
 
 const SLOW_SPEECH_RATE = 0.58
 
@@ -18,6 +19,9 @@ interface Step3PlacementTestProps {
   questions: PlacementQuestionItem[]
   languageCode?: string
   isLoading: boolean
+  isError?: boolean
+  isRetrying?: boolean
+  onRetry?: () => void
   answers: Record<string, string>
   onAnswerChange: (exerciseId: string, answer: string) => void
   onSubmit: () => void
@@ -54,6 +58,9 @@ export const Step3PlacementTest = ({
   questions,
   languageCode,
   isLoading,
+  isError = false,
+  isRetrying = false,
+  onRetry,
   answers,
   onAnswerChange,
   onSubmit,
@@ -204,8 +211,62 @@ export const Step3PlacementTest = ({
 
   if (isLoading) {
     return (
-      <div className="w-full max-w-2xl min-w-0 bg-white border border-slate-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center shadow-xs">
-        <p className="text-sm font-semibold text-slate-600 break-words">Menyiapkan soal tes penempatan...</p>
+      <div
+        role="status"
+        aria-label="Menyiapkan soal tes penempatan"
+        className="w-full max-w-2xl min-w-0 bg-white border-2 border-slate-200/80 rounded-2xl sm:rounded-3xl p-5 sm:p-7 shadow-xs space-y-5"
+      >
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <Skeleton variant="pill" className="h-4 w-28" />
+            <Skeleton variant="pill" className="h-4 w-24" />
+          </div>
+          <Skeleton variant="pill" className="h-2 w-full" />
+        </div>
+        <div className="space-y-2.5">
+          <Skeleton variant="pill" className="h-5 w-24" />
+          <Skeleton className="h-6 w-3/4" />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Skeleton className="h-13 w-full" />
+          <Skeleton className="h-13 w-full" />
+          <Skeleton className="h-13 w-full" />
+          <Skeleton className="h-13 w-full" />
+        </div>
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="w-full max-w-2xl min-w-0 bg-rose-50/70 border-2 border-rose-200 rounded-2xl sm:rounded-3xl p-6 sm:p-8 text-center space-y-4">
+        <p className="text-sm font-bold text-rose-700 break-words">
+          Gagal memuat soal tes penempatan. Coba muat ulang atau langsung mulai dari level awal.
+        </p>
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          {onRetry && (
+            <Button3D
+              variant="rose"
+              size="sm"
+              loading={isRetrying}
+              loadingText="Memuat..."
+              disabled={isSubmitting}
+              onClick={onRetry}
+            >
+              Coba Lagi
+            </Button3D>
+          )}
+          <Button3D
+            variant="white"
+            size="sm"
+            loading={isSubmitting}
+            loadingText="Menyimpan..."
+            onClick={onSubmit}
+            disabled={isRetrying}
+          >
+            Mulai dari Nol Saja
+          </Button3D>
+        </div>
       </div>
     )
   }
@@ -216,7 +277,13 @@ export const Step3PlacementTest = ({
         <p className="text-sm font-semibold text-slate-700 break-words">
           Soal tes penempatan belum tersedia untuk bahasa ini. Kamu dapat langsung memulai dari level awal.
         </p>
-        <Button3D variant="blue" size="md" onClick={onSubmit} disabled={isSubmitting}>
+        <Button3D
+          variant="blue"
+          size="md"
+          onClick={onSubmit}
+          loading={isSubmitting}
+          loadingText="Menyimpan..."
+        >
           Lanjut ke Kurikulum
         </Button3D>
       </div>
@@ -280,9 +347,10 @@ export const Step3PlacementTest = ({
             <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => handlePlayAudio()}
                 aria-label={isPlayingAudio ? 'Hentikan audio soal' : 'Putar audio soal'}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-extrabold border transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
                   isPlayingAudio
                     ? 'bg-blue-600 border-blue-600 text-white'
                     : 'bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100'
@@ -293,9 +361,10 @@ export const Step3PlacementTest = ({
               </button>
               <button
                 type="button"
+                disabled={isSubmitting}
                 onClick={() => handlePlayAudio(SLOW_SPEECH_RATE)}
                 aria-label="Putar audio soal pelan 0.6x"
-                className="px-2.5 py-1.5 rounded-xl text-xs font-extrabold border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 transition-all cursor-pointer"
+                className="px-2.5 py-1.5 rounded-xl text-xs font-extrabold border border-blue-200 bg-white text-blue-700 hover:bg-blue-50 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 0.6x
               </button>
@@ -323,12 +392,14 @@ export const Step3PlacementTest = ({
               <button
                 key={`${currentQuestion.id}-${idx}-${val}`}
                 type="button"
+                disabled={isSubmitting}
                 aria-pressed={isSelected}
                 onClick={() => {
+                  if (isSubmitting) return
                   triggerHaptic('tap')
                   onAnswerChange(currentQuestion.id, val)
                 }}
-                className={`min-w-0 rounded-2xl px-4 py-3.5 text-left text-sm font-bold transition-all cursor-pointer flex items-center justify-between gap-2 border-2 ${
+                className={`min-w-0 rounded-2xl px-4 py-3.5 text-left text-sm font-bold transition-all cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-between gap-2 border-2 ${
                   isSelected
                     ? 'bg-blue-50 border-[#2563EB] text-[#2563EB]'
                     : 'bg-white border-slate-200 text-slate-800 hover:border-blue-300'
@@ -349,11 +420,13 @@ export const Step3PlacementTest = ({
                   <button
                     key={`selected-${tokenIdx}-${pos}`}
                     type="button"
+                    disabled={isSubmitting}
                     onClick={() => {
+                      if (isSubmitting) return
                       triggerHaptic('tap')
                       updateSelectedTokens(selectedIndices.filter((_, i) => i !== pos))
                     }}
-                    className="max-w-full min-w-0 break-words text-left px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-300 text-blue-700 text-xs font-extrabold cursor-pointer hover:bg-blue-100"
+                    className="max-w-full min-w-0 break-words text-left px-3 py-1.5 rounded-xl bg-blue-50 border border-blue-300 text-blue-700 text-xs font-extrabold cursor-pointer hover:bg-blue-100 disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {tokens[tokenIdx]}
                   </button>
@@ -367,9 +440,12 @@ export const Step3PlacementTest = ({
             {selectedIndices.length > 0 && (
               <button
                 type="button"
-                onClick={() => updateSelectedTokens([])}
+                disabled={isSubmitting}
+                onClick={() => {
+                  if (!isSubmitting) updateSelectedTokens([])
+                }}
                 aria-label="Hapus susunan kata"
-                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 cursor-pointer shrink-0"
+                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 cursor-pointer shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <Trash weight="bold" className="w-4 h-4" />
               </button>
@@ -382,15 +458,16 @@ export const Step3PlacementTest = ({
                 <button
                   key={`token-${idx}-${token}`}
                   type="button"
-                  disabled={used}
+                  disabled={used || isSubmitting}
                   onClick={() => {
+                    if (isSubmitting) return
                     triggerHaptic('tap')
                     updateSelectedTokens([...selectedIndices, idx])
                   }}
-                  className={`max-w-full min-w-0 break-words text-left px-3.5 py-2 rounded-xl border text-xs font-bold transition-all ${
+                  className={`max-w-full min-w-0 break-words text-left px-3.5 py-2 rounded-xl border text-xs font-bold transition-all disabled:opacity-60 ${
                     used
                       ? 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
-                      : 'bg-white border-slate-200 text-slate-800 hover:border-blue-300 hover:bg-blue-50/50 cursor-pointer'
+                      : 'bg-white border-slate-200 text-slate-800 hover:border-blue-300 hover:bg-blue-50/50 cursor-pointer disabled:cursor-not-allowed'
                   }`}
                 >
                   {token}
@@ -403,10 +480,11 @@ export const Step3PlacementTest = ({
         <div className="min-w-0">
           <input
             type="text"
+            disabled={isSubmitting}
             value={currentAnswer}
             onChange={(e) => onAnswerChange(currentQuestion.id, e.target.value)}
             placeholder="Ketik jawabanmu di sini..."
-            className="w-full min-w-0 rounded-2xl border border-slate-300 px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-[#2563EB]"
+            className="w-full min-w-0 rounded-2xl border border-slate-300 px-3.5 sm:px-4 py-2.5 sm:py-3 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-[#2563EB] disabled:bg-slate-50 disabled:text-slate-400 disabled:cursor-not-allowed"
           />
         </div>
       )}
@@ -416,10 +494,11 @@ export const Step3PlacementTest = ({
         <button
           type="button"
           onClick={() => {
+            if (isSubmitting) return
             stopAllAudio()
             setCurrentIndex((prev) => Math.max(0, prev - 1))
           }}
-          disabled={safeIndex === 0}
+          disabled={safeIndex === 0 || isSubmitting}
           className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-blue-600 disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
         >
           <ArrowLeft weight="bold" className="w-3.5 h-3.5" />
@@ -430,6 +509,7 @@ export const Step3PlacementTest = ({
           <Button3D
             variant="blue"
             size="sm"
+            disabled={isSubmitting}
             onClick={() => {
               stopAllAudio()
               triggerHaptic('tap')
@@ -447,10 +527,11 @@ export const Step3PlacementTest = ({
               stopAllAudio()
               onSubmit()
             }}
-            disabled={isSubmitting}
+            loading={isSubmitting}
+            loadingText="Menilai Jawaban..."
             icon={<ArrowRight weight="bold" className="w-3.5 h-3.5" />}
           >
-            {isSubmitting ? 'Menilai Jawaban...' : 'Selesai & Mulai Belajar'}
+            Selesai & Mulai Belajar
           </Button3D>
         )}
       </div>

@@ -12,6 +12,9 @@ export const SRS_DUE_QUERY_KEY = ['srs-due'] as const
 export const DAILY_VOCABULARIES_QUERY_KEY = ['daily-vocabularies'] as const
 export const LEADERBOARD_QUERY_KEY = ['leaderboard'] as const
 
+export const LOGOUT_MUTATION_KEY = ['auth', 'logout'] as const
+export const SWITCH_LANGUAGE_MUTATION_KEY = ['languages', 'switch'] as const
+
 export const getProfileQueryKey = (userId?: string | null) =>
   [...PROFILE_QUERY_KEY, userId ?? 'anonymous'] as const
 

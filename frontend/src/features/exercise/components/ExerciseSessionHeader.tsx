@@ -9,6 +9,7 @@ export interface TimelineStepSegment {
 interface ExerciseSessionHeaderProps {
   onExit: () => void
   exitAriaLabel: string
+  exitDisabled?: boolean
   progressPercent: number
   progressFillClass: string
   counterLabel: string
@@ -23,6 +24,7 @@ interface ExerciseSessionHeaderProps {
 export const ExerciseSessionHeader = ({
   onExit,
   exitAriaLabel,
+  exitDisabled = false,
   progressPercent,
   progressFillClass,
   counterLabel,
@@ -33,9 +35,10 @@ export const ExerciseSessionHeader = ({
     <header className="px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
       <button
         type="button"
+        disabled={exitDisabled}
         onClick={onExit}
         aria-label={exitAriaLabel}
-        className="min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer"
+        className="min-w-[44px] min-h-[44px] rounded-xl flex items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
       >
         <X weight="bold" className="w-6 h-6" />
       </button>

@@ -138,7 +138,13 @@ export const GrammarPage = () => {
     )
   }
 
-  const { data: grammarPoints = [], isLoading } = useQuery({
+  const {
+    data: grammarPoints = [],
+    isLoading,
+    isFetching,
+    isError,
+    refetch,
+  } = useQuery({
     queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLanguageCode],
     queryFn: ({ signal }) =>
       curriculumService.getGrammarPointsByFilter(activeLanguageCode, undefined, { signal }),
@@ -378,6 +384,22 @@ export const GrammarPage = () => {
                 className="h-48 rounded-3xl bg-white border-2 border-slate-200/80 animate-pulse"
               />
             ))}
+          </div>
+        ) : isError ? (
+          <div className="bg-rose-50/70 border-2 border-rose-200 rounded-3xl p-8 text-center space-y-4">
+            <p className="font-brand font-black text-sm sm:text-base text-rose-800">
+              Gagal memuat daftar materi grammar. Periksa koneksi internet kamu lalu coba lagi.
+            </p>
+            <Button3D
+              variant="rose"
+              size="sm"
+              loading={isFetching}
+              loadingText="Memuat..."
+              onClick={() => void refetch()}
+              className="mx-auto"
+            >
+              Coba Lagi
+            </Button3D>
           </div>
         ) : filteredPoints.length === 0 ? (
           <div className="bg-white border-2 border-slate-200/90 rounded-3xl p-8 text-center space-y-3 shadow-[0_4px_0_0_#E2E8F0]">

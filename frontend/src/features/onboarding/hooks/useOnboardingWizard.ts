@@ -50,7 +50,13 @@ export function useOnboardingWizard() {
     reset,
   } = useOnboardingStore()
 
-  const { data: languages = [], isLoading: isLoadingLanguages } = useQuery({
+  const {
+    data: languages = [],
+    isLoading: isLoadingLanguages,
+    isError: isLanguagesError,
+    isFetching: isFetchingLanguages,
+    refetch: refetchLanguages,
+  } = useQuery({
     queryKey: ONBOARDING_LANGUAGES_QUERY_KEY,
     queryFn: onboardingService.getLanguages,
     staleTime: 5 * 60 * 1000,
@@ -62,13 +68,16 @@ export function useOnboardingWizard() {
   )
 
   const shouldLoadPlacementQuestions =
-    currentStep === 3 &&
+    (currentStep === 2 || currentStep === 3) &&
     form.initialPlacementType === 'placement_test' &&
     Boolean(form.languageId)
 
   const {
     data: placementData,
     isLoading: isLoadingPlacement,
+    isError: isPlacementError,
+    isFetching: isFetchingPlacement,
+    refetch: refetchPlacement,
   } = useQuery({
     queryKey: PLACEMENT_QUESTIONS_QUERY_KEY(form.languageId),
     queryFn: () => onboardingService.getPlacementQuestions(form.languageId),
@@ -117,6 +126,7 @@ export function useOnboardingWizard() {
   })
 
   const submitOnboarding = () => {
+    if (completeMutation.isPending) return
     setErrorMessage(null)
     const parsed = onboardingSubmitSchema.safeParse({
       language_id: form.languageId,
@@ -157,6 +167,7 @@ export function useOnboardingWizard() {
   }, [currentStep, form, selectedLanguage])
 
   const handleNext = () => {
+    if (completeMutation.isPending) return
     setErrorMessage(null)
     if (!canProceed) return
     if (currentStep === 1) {
@@ -173,6 +184,7 @@ export function useOnboardingWizard() {
   }
 
   const handleBack = () => {
+    if (completeMutation.isPending) return
     setErrorMessage(null)
     if (currentStep === 1) {
       setIsLanding(true)
@@ -196,7 +208,13 @@ export function useOnboardingWizard() {
     selectedLanguage,
     placementQuestions,
     isLoadingLanguages,
+    isLanguagesError,
+    isFetchingLanguages,
+    refetchLanguages,
     isLoadingPlacement,
+    isPlacementError,
+    isFetchingPlacement,
+    refetchPlacement,
     isSubmitting: completeMutation.isPending,
     errorMessage,
     canProceed,
