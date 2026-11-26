@@ -202,12 +202,15 @@ func (u *usecase) GoogleAuth(ctx context.Context, req *GoogleAuthRequest) (*Auth
 		return u.issueSessionForUser(ctx, usr, req.RememberMe, true)
 	}
 
-	// 2. Existing user with matching verified email -> auto-link Google account
+	// 2. Existing user with matching email -> only auto-link verified local accounts to prevent pre-hijacking
 	usr, err = u.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup user by google email: %w", err)
 	}
 	if usr != nil {
+		if !usr.EmailVerified {
+			return nil, user.ErrLocalAccountUnverified
+		}
 		oauthAcc := &user.OAuthAccount{
 			UserID:         usr.ID,
 			Provider:       OAuthProviderGoogle,
@@ -254,6 +257,9 @@ func (u *usecase) GoogleAuth(ctx context.Context, req *GoogleAuthRequest) (*Auth
 				return nil, fmt.Errorf("failed to reload existing user after conflict: %w", lookupErr)
 			}
 			if existingUsr != nil {
+				if !existingUsr.EmailVerified {
+					return nil, user.ErrLocalAccountUnverified
+				}
 				linkAcc := &user.OAuthAccount{
 					UserID:         existingUsr.ID,
 					Provider:       OAuthProviderGoogle,
@@ -326,8 +332,8 @@ func (u *usecase) issueSessionForUser(ctx context.Context, usr *user.User, remem
 			if loggedNewDay || usr.LastActiveAt == nil {
 				newStreak, _ := u.helper.EvaluateLoginStreak(usr.Streak, usr.LastActiveAt, now)
 				usr.Streak = newStreak
+				usr.LastActiveAt = &now
 			}
-			usr.LastActiveAt = &now
 		}
 	}
 

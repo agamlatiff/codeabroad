@@ -28,6 +28,19 @@ type atomicXPActivityRecorder interface {
 	RecordXPActivity(ctx context.Context, userID string, activityType string, baseXP int, applyXPBooster bool, metadata map[string]any) (xpAwarded int, newXP int, newLevel int, newStreak int, err error)
 }
 
+// ReviewCardTxResult captures the atomic transaction outcome of a flashcard review.
+type ReviewCardTxResult struct {
+	SM2          SM2Result
+	XPAwarded    int
+	CurrentXP    int
+	CurrentLevel int
+	Streak       int
+}
+
+type transactionalFlashcardReviewer interface {
+	ReviewCardTx(ctx context.Context, userID string, cardID string, quality int, baseXP int, now time.Time, recordXP bool, meta map[string]any) (*ReviewCardTxResult, error)
+}
+
 type usecase struct {
 	repo         Repository
 	userRepo     user.Repository
@@ -157,103 +170,153 @@ func (u *usecase) ReviewCard(ctx context.Context, userID string, cardID string, 
 		return nil, ErrInvalidQualityRating
 	}
 
-	exists, err := u.repo.CardExists(ctx, trimmedCardID)
-	if err != nil {
-		return nil, err
-	}
-	if !exists {
-		return nil, ErrCardNotFound
-	}
-
-	prev, err := u.repo.GetCardProgress(ctx, userID, trimmedCardID)
-	if err != nil {
-		return nil, err
-	}
-
-	prevReps := 0
-	prevInterval := 0
-	prevEase := 2.5
-	if prev != nil {
-		prevReps = prev.Repetitions
-		prevInterval = prev.IntervalDays
-		prevEase = prev.EaseFactor
-	}
-
 	now := time.Now().UTC()
-	sm2 := CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
-
-	if err := u.repo.UpsertCardProgress(ctx, &CardProgress{
-		UserID:         userID,
-		CardID:         trimmedCardID,
-		EaseFactor:     sm2.EaseFactor,
-		IntervalDays:   sm2.IntervalDays,
-		Repetitions:    sm2.Repetitions,
-		NextReviewAt:   sm2.NextReviewAt,
-		LastReviewedAt: now,
-	}); err != nil {
-		return nil, err
-	}
-
 	xpAwarded := 5
 	if quality < 3 {
 		xpAwarded = 2
 	}
+	meta := map[string]any{
+		"card_id": trimmedCardID,
+		"quality": quality,
+	}
 
+	var sm2 SM2Result
 	currentXP := 0
 	currentStreak := 0
 	currentLevel := 0
-	if u.userRepo != nil {
-		meta := map[string]any{
-			"card_id": trimmedCardID,
-			"quality": quality,
-		}
-		if recorder, ok := u.userRepo.(atomicXPActivityRecorder); ok {
-			awarded, newXP, lvl, streak, recErr := recorder.RecordXPActivity(ctx, userID, "srs_review_completed", xpAwarded, true, meta)
-			if recErr != nil {
-				return nil, recErr
-			}
-			xpAwarded = awarded
-			currentXP = newXP
-			currentLevel = lvl
-			currentStreak = streak
-		} else if usr, err := u.userRepo.GetByID(ctx, userID); err == nil && usr != nil {
-			boosterActive := usr.XPBoosterExpiresAt != nil && usr.XPBoosterExpiresAt.After(now)
-			if boosterActive {
-				xpAwarded *= 2
-			}
-			meta["xp_booster_applied"] = boosterActive
-			_ = u.userRepo.LogActivity(ctx, &user.UserActivityLog{
-				UserID:       userID,
-				ActivityType: "srs_review_completed",
-				XPEarned:     xpAwarded,
-				Metadata:     meta,
-			})
 
-			refreshedUser := usr
-			if latest, getErr := u.userRepo.GetByID(ctx, userID); getErr == nil && latest != nil {
-				refreshedUser = latest
+	if txRepo, ok := u.repo.(transactionalFlashcardReviewer); ok {
+		txRes, txErr := txRepo.ReviewCardTx(ctx, userID, trimmedCardID, quality, xpAwarded, now, u.userRepo != nil, meta)
+		if txErr != nil {
+			return nil, txErr
+		}
+		sm2 = txRes.SM2
+		xpAwarded = txRes.XPAwarded
+		currentXP = txRes.CurrentXP
+		currentLevel = txRes.CurrentLevel
+		currentStreak = txRes.Streak
+	} else {
+		exists, err := u.repo.CardExists(ctx, trimmedCardID)
+		if err != nil {
+			return nil, err
+		}
+		if !exists {
+			return nil, ErrCardNotFound
+		}
+
+		prev, err := u.repo.GetCardProgress(ctx, userID, trimmedCardID)
+		if err != nil {
+			return nil, err
+		}
+
+		prevReps := 0
+		prevInterval := 0
+		prevEase := 2.5
+		if prev != nil {
+			prevReps = prev.Repetitions
+			prevInterval = prev.IntervalDays
+			prevEase = prev.EaseFactor
+		}
+
+		sm2 = CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
+
+		if err := u.repo.UpsertCardProgress(ctx, &CardProgress{
+			UserID:         userID,
+			CardID:         trimmedCardID,
+			EaseFactor:     sm2.EaseFactor,
+			IntervalDays:   sm2.IntervalDays,
+			Repetitions:    sm2.Repetitions,
+			NextReviewAt:   sm2.NextReviewAt,
+			LastReviewedAt: now,
+		}); err != nil {
+			return nil, err
+		}
+
+		if u.userRepo != nil {
+			if recorder, ok := u.userRepo.(atomicXPActivityRecorder); ok {
+				awarded, newXP, lvl, streak, recErr := recorder.RecordXPActivity(ctx, userID, "srs_review_completed", xpAwarded, true, meta)
+				if recErr != nil {
+					return nil, recErr
+				}
+				xpAwarded = awarded
+				currentXP = newXP
+				currentLevel = lvl
+				currentStreak = streak
 			} else {
-				refreshedUser.Streak, _ = progression.EvaluateDailyStreak(usr.LastActiveAt, usr.Streak, now)
+				usr, err := u.userRepo.GetByID(ctx, userID)
+				if err != nil {
+					return nil, err
+				}
+				if usr != nil {
+					boosterActive := usr.XPBoosterExpiresAt != nil && usr.XPBoosterExpiresAt.After(now)
+					if boosterActive {
+						xpAwarded *= 2
+					}
+					meta["xp_booster_applied"] = boosterActive
+					if logErr := u.userRepo.LogActivity(ctx, &user.UserActivityLog{
+						UserID:       userID,
+						ActivityType: "srs_review_completed",
+						XPEarned:     xpAwarded,
+						Metadata:     meta,
+					}); logErr != nil {
+						return nil, logErr
+					}
+
+					refreshedUser := usr
+					if latest, getErr := u.userRepo.GetByID(ctx, userID); getErr == nil && latest != nil {
+						refreshedUser = latest
+					} else {
+						refreshedUser.Streak, _ = progression.EvaluateDailyStreak(usr.LastActiveAt, usr.Streak, now)
+					}
+					newXP := refreshedUser.XP + xpAwarded
+					newLevel := progression.CalculateLevel(newXP)
+					currentXP = newXP
+					currentStreak = refreshedUser.Streak
+					currentLevel = newLevel
+					if updErr := u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, refreshedUser.Streak, &now); updErr != nil {
+						return nil, updErr
+					}
+				}
 			}
-			newXP := refreshedUser.XP + xpAwarded
-			newLevel := progression.CalculateLevel(newXP)
-			currentXP = newXP
-			currentStreak = refreshedUser.Streak
-			currentLevel = newLevel
-			_ = u.userRepo.UpdateGamification(ctx, userID, newXP, newLevel, refreshedUser.Streak, &now)
 		}
 	}
 
 	if u.badgeAwarder != nil {
+		preBadgeXP := currentXP
+		badgeUnlocked := false
+		badgeBonusXP := 0
+		awardAndTrack := func(badgeKey string) {
+			ub, bErr := u.badgeAwarder.AwardBadge(ctx, userID, badgeKey, currentLevel)
+			if bErr == nil && ub != nil && ub.NewlyAwarded {
+				badgeUnlocked = true
+				if ub.Badge != nil && ub.Badge.XPReward > 0 {
+					badgeBonusXP += ub.Badge.XPReward
+				}
+			}
+		}
+
 		if currentStreak >= 7 {
-			_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "streak_7", currentLevel)
+			awardAndTrack("streak_7")
 		}
 		if currentStreak >= 30 {
-			_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "streak_30", currentLevel)
+			awardAndTrack("streak_30")
 		}
 		if quality >= 3 {
 			if masteredCount, countErr := u.repo.CountMasteredCards(ctx, userID); countErr == nil && masteredCount >= 25 {
-				_, _ = u.badgeAwarder.AwardBadge(ctx, userID, "srs_veteran", currentLevel)
+				awardAndTrack("srs_veteran")
+			}
+		}
+
+		if badgeUnlocked {
+			if u.userRepo != nil {
+				if refreshed, getErr := u.userRepo.GetByID(ctx, userID); getErr == nil && refreshed != nil {
+					currentXP = refreshed.XP
+					currentLevel = refreshed.CurrentLevel
+				}
+			}
+			if badgeBonusXP > 0 && currentXP < preBadgeXP+badgeBonusXP {
+				currentXP = preBadgeXP + badgeBonusXP
+				currentLevel = progression.CalculateLevel(currentXP)
 			}
 		}
 	}

@@ -390,5 +390,31 @@ func TestHTTP_GoogleAuth_Success(t *testing.T) {
 	}
 }
 
+func TestHTTP_Logout_MalformedJSON_BadRequest(t *testing.T) {
+	router, _, _ := setupAuthTestRouter()
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/logout", bytes.NewBufferString(`{"refresh_token":`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for malformed JSON body on logout, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
+func TestHTTP_Logout_InvalidRefreshToken_Unauthorized(t *testing.T) {
+	router, _, _ := setupAuthTestRouter()
+
+	req, _ := http.NewRequest(http.MethodPost, "/api/v1/auth/logout", bytes.NewBufferString(`{"refresh_token":"not.a.valid.jwt"}`))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	router.ServeHTTP(w, req)
+
+	if w.Code != http.StatusUnauthorized {
+		t.Fatalf("expected 401 Unauthorized for invalid refresh_token on logout, got: %d, body: %s", w.Code, w.Body.String())
+	}
+}
+
 
 

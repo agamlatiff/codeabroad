@@ -160,6 +160,18 @@ func TestBuildLessonStudyItemsAndHints_CheckpointHasNoCardsOrHints(t *testing.T)
 	}
 }
 
+func TestIsCheckpointLessonSlug_TesAkhir(t *testing.T) {
+	if !isCheckpointLessonSlug("n4-u1-tes-akhir") {
+		t.Errorf("expected isCheckpointLessonSlug(%q) == true", "n4-u1-tes-akhir")
+	}
+	if !isCheckpointLessonSlug("n1-u10-tes-akhir") {
+		t.Errorf("expected isCheckpointLessonSlug(%q) == true", "n1-u10-tes-akhir")
+	}
+	if isCheckpointLessonSlug("n4-u1-kosakata") {
+		t.Errorf("expected isCheckpointLessonSlug(%q) == false", "n4-u1-kosakata")
+	}
+}
+
 func TestBuildLessonStudyItemsAndHints_PhraseFallbackAndAutoFurigana(t *testing.T) {
 	rawExercises := []exercise.Exercise{
 		{

@@ -3,6 +3,7 @@ package flashcard
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"merantalk/backend/internal/shared/apperror"
@@ -65,9 +66,12 @@ func (h *Handler) ListDecks(c *gin.Context) {
 	if isPaginated {
 		limit := 0
 		if rawLimit := c.Query("limit"); rawLimit != "" {
-			if parsed, err := strconv.Atoi(rawLimit); err == nil {
-				limit = parsed
+			parsed, err := strconv.Atoi(rawLimit)
+			if err != nil || parsed <= 0 {
+				response.BadRequest(c, "limit harus berupa bilangan bulat positif")
+				return
 			}
+			limit = parsed
 		}
 		page, err := h.usecase.ListDecksPaginated(c.Request.Context(), userID, DeckListFilter{
 			LanguageCode: lang,
@@ -116,7 +120,15 @@ func (h *Handler) GetDueQueue(c *gin.Context) {
 	}
 
 	lang := c.Query("lang")
-	limit, _ := strconv.Atoi(c.Query("limit"))
+	limit := 0
+	if rawLimit := c.Query("limit"); rawLimit != "" {
+		parsed, err := strconv.Atoi(rawLimit)
+		if err != nil || parsed <= 0 {
+			response.BadRequest(c, "limit harus berupa bilangan bulat positif")
+			return
+		}
+		limit = parsed
+	}
 	queue, err := h.usecase.GetDueQueue(c.Request.Context(), userID, lang, limit)
 	if err != nil {
 		response.Error(c, err)
@@ -142,7 +154,11 @@ func (h *Handler) ReviewCard(c *gin.Context) {
 		return
 	}
 
-	cardID := c.Param("id")
+	cardID := strings.TrimSpace(c.Param("id"))
+	if err := apperror.ValidateEntityUUID(cardID); err != nil {
+		response.Error(c, err)
+		return
+	}
 	res, err := h.usecase.ReviewCard(c.Request.Context(), userID, cardID, *req.Quality)
 	if err != nil {
 		response.Error(c, err)

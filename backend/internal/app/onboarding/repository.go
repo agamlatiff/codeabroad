@@ -55,7 +55,7 @@ func (s *PostgresStore) CompleteOnboardingTx(ctx context.Context, params *Comple
 
 	var usr user.User
 	lockQuery := `
-		SELECT u.id, u.email, u.created_at, u.updated_at,
+		SELECT u.id, u.email, u.email_verified, u.created_at, u.updated_at,
 		       up.name, up.username, up.bio, up.avatar_url, up.daily_goal_minutes,
 		       up.is_onboarded, up.has_seen_roadmap_tour,
 		       ug.xp, ug.current_level, ug.streak, ug.gems, ug.last_active_at
@@ -66,7 +66,7 @@ func (s *PostgresStore) CompleteOnboardingTx(ctx context.Context, params *Comple
 		FOR UPDATE OF up, ug
 	`
 	err = tx.QueryRow(ctx, lockQuery, params.UserID).Scan(
-		&usr.ID, &usr.Email, &usr.CreatedAt, &usr.UpdatedAt,
+		&usr.ID, &usr.Email, &usr.EmailVerified, &usr.CreatedAt, &usr.UpdatedAt,
 		&usr.Name, &usr.Username, &usr.Bio, &usr.AvatarURL, &usr.DailyGoalMinutes,
 		&usr.IsOnboarded, &usr.HasSeenRoadmapTour,
 		&usr.XP, &usr.CurrentLevel, &usr.Streak, &usr.Gems, &usr.LastActiveAt,

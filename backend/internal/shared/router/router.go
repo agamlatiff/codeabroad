@@ -47,8 +47,8 @@ func SetupRouter(cfg *Config) *gin.Engine {
 	}
 
 	r.Use(middleware.SecurityHeadersMiddleware())
-	r.Use(middleware.BodySizeLimitMiddleware(middleware.DefaultMaxBodyBytes))
 	r.Use(middleware.CORSMiddleware(cfg.CORSAllowedOrigins))
+	r.Use(middleware.BodySizeLimitMiddleware(middleware.DefaultMaxBodyBytes))
 
 	// API version 1 route group
 	v1 := r.Group("/api/v1")

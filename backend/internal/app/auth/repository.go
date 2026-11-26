@@ -48,6 +48,15 @@ end
 return 1
 `)
 
+var deleteAllSessionsScript = redis.NewScript(`
+local sessionIDs = redis.call("ZRANGE", KEYS[1], 0, -1)
+for _, sid in ipairs(sessionIDs) do
+	redis.call("DEL", ARGV[1] .. sid)
+end
+redis.call("DEL", KEYS[1])
+return #sessionIDs
+`)
+
 type redisSessionRepository struct {
 	rdb *infraRedis.RedisClient
 }
@@ -164,16 +173,10 @@ func (s *redisSessionRepository) DeleteAllSessions(ctx context.Context, userID s
 	if err := s.ensureClient(); err != nil {
 		return err
 	}
-	setKey := userSessionsKey(userID)
-	sessionIDs, err := s.rdb.Client.ZRange(ctx, setKey, 0, -1).Result()
-	if err != nil && !errors.Is(err, redis.Nil) {
-		return fmt.Errorf("failed to list active sessions for user: %w", err)
-	}
-	pipe := s.rdb.Client.TxPipeline()
-	for _, sessID := range sessionIDs {
-		pipe.Del(ctx, sessionKey(userID, sessID))
-	}
-	pipe.Del(ctx, setKey)
-	_, execErr := pipe.Exec(ctx)
-	return execErr
+	return deleteAllSessionsScript.Run(
+		ctx,
+		s.rdb.Client,
+		[]string{userSessionsKey(userID)},
+		fmt.Sprintf("session:{%s}:", userID),
+	).Err()
 }

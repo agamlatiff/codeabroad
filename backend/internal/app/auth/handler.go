@@ -137,13 +137,29 @@ func (h *Handler) Logout(c *gin.Context) {
 	sessionID := c.GetString("sessionID")
 
 	// If missing from Bearer claim (e.g. access token was expired), parse from optional refresh_token body
-	if (userID == "" || sessionID == "") && h.helper != nil {
+	if (userID == "" || sessionID == "") && h.helper != nil && c.Request != nil && c.Request.Body != nil && c.Request.Body != http.NoBody {
 		var req LogoutRequest
-		if err := c.ShouldBindJSON(&req); err == nil && strings.TrimSpace(req.RefreshToken) != "" {
-			if claims, err := h.helper.ParseRefreshToken(strings.TrimSpace(req.RefreshToken)); err == nil {
-				userID = claims.UserID
-				sessionID = claims.SessionID
+		if bindErr := c.ShouldBindJSON(&req); bindErr != nil && !errors.Is(bindErr, io.EOF) {
+			var maxBytesErr *http.MaxBytesError
+			if errors.As(bindErr, &maxBytesErr) {
+				c.JSON(http.StatusRequestEntityTooLarge, response.ErrorResponse{
+					Success: false,
+					Error:   "ukuran payload request melebihi batas maksimal yang diizinkan",
+					Code:    "PAYLOAD_TOO_LARGE",
+				})
+				return
 			}
+			response.BadRequest(c, sanitizedBindErrorMessage(bindErr))
+			return
+		}
+		if strings.TrimSpace(req.RefreshToken) != "" {
+			claims, parseErr := h.helper.ParseRefreshToken(strings.TrimSpace(req.RefreshToken))
+			if parseErr != nil {
+				response.Error(c, parseErr)
+				return
+			}
+			userID = claims.UserID
+			sessionID = claims.SessionID
 		}
 	}
 

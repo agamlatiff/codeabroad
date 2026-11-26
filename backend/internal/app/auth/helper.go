@@ -259,8 +259,9 @@ func (h *Helper) SanitizeOAuthAvatarURL(picture string) *string {
 func (h *Helper) BuildNewOAuthUser(email, name, username string, avatarURL *string) *user.User {
 	return &user.User{
 		UserAccount: user.UserAccount{
-			Email:        email,
-			PasswordHash: "",
+			Email:         email,
+			PasswordHash:  "",
+			EmailVerified: true,
 		},
 		UserProfile: user.UserProfile{
 			Name:             name,
@@ -279,6 +280,12 @@ func (h *Helper) BuildNewOAuthUser(email, name, username string, avatarURL *stri
 
 // GenerateTokenPair produces a signed access token and dynamic duration refresh token bound to a sessionID
 func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDuration time.Duration, rememberMe bool) (string, string, error) {
+	if h == nil || h.cfg == nil {
+		return "", "", fmt.Errorf("auth helper config is not initialized")
+	}
+	if u == nil {
+		return "", "", fmt.Errorf("user cannot be nil")
+	}
 	now := time.Now()
 
 	accessClaims := &JWTClaims{
@@ -329,6 +336,9 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 
 // ParseRefreshToken parses and validates a JWT refresh token and returns its claims
 func (h *Helper) ParseRefreshToken(refreshToken string) (*JWTClaims, error) {
+	if h == nil || h.cfg == nil {
+		return nil, ErrTokenExpired
+	}
 	token, err := jwt.ParseWithClaims(refreshToken, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])

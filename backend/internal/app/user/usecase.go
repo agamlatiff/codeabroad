@@ -121,14 +121,27 @@ func (u *usecase) ClaimDailyReward(ctx context.Context, userID string, rewardTyp
 		return nil, err
 	}
 	if res != nil && u.badgeAwarder != nil {
+		badgeUnlocked := false
 		if res.Streak >= 7 {
-			if bErr := u.badgeAwarder.AwardStreakBadge(ctx, userID, "streak_7", res.CurrentLevel); bErr != nil {
+			awarded, bErr := u.badgeAwarder.AwardStreakBadge(ctx, userID, "streak_7", res.CurrentLevel)
+			if bErr != nil {
 				log.Printf("[WARN] [user.ClaimDailyReward] failed to award streak_7 badge for user %s: %v", userID, bErr)
+			} else if awarded {
+				badgeUnlocked = true
 			}
 		}
 		if res.Streak >= 30 {
-			if bErr := u.badgeAwarder.AwardStreakBadge(ctx, userID, "streak_30", res.CurrentLevel); bErr != nil {
+			awarded, bErr := u.badgeAwarder.AwardStreakBadge(ctx, userID, "streak_30", res.CurrentLevel)
+			if bErr != nil {
 				log.Printf("[WARN] [user.ClaimDailyReward] failed to award streak_30 badge for user %s: %v", userID, bErr)
+			} else if awarded {
+				badgeUnlocked = true
+			}
+		}
+		if badgeUnlocked {
+			if refreshed, getErr := u.userRepo.GetByID(ctx, userID); getErr == nil && refreshed != nil {
+				res.CurrentXP = refreshed.XP
+				res.CurrentLevel = refreshed.CurrentLevel
 			}
 		}
 	}

@@ -29,7 +29,7 @@ func setupCurriculumTestRouter() (*gin.Engine, *curriculum.MockRepository, *lang
 	lvlID := "22222222-2222-2222-2222-222222222222"
 	lessonID := "33333333-3333-3333-3333-333333333333"
 
-	lang := &language.Language{ID: langID, Code: "ja", Name: "Japanese"}
+	lang := &language.Language{ID: langID, Code: "ja", Name: "Japanese", IsActive: true}
 	lvl := &language.ProficiencyLevel{ID: lvlID, LanguageID: langID, OrderIndex: 1, Code: "N5"}
 
 	langRepo.Languages[langID] = lang

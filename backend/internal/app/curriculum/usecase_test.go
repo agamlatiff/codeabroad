@@ -182,6 +182,7 @@ func TestGetGrammarPoints(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
 	cRepo.GrammarPoints["gp-1"] = &curriculum.GrammarPoint{ID: "gp-1", LevelID: "lvl-n5", Code: "GP-1", Title: "WA Particle"}
 	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
 	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", Name: "JLPT N5", OrderIndex: 1}
 	lRepo.Levels["lvl-n5"] = lvlN5
 	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
@@ -904,34 +905,49 @@ func TestGetCurriculum_StaleVersionDoesNotOverwriteInvalidatedCache(t *testing.T
 	}
 }
 
-func TestGetGrammarPoints_AuthorizationAnd404(t *testing.T) {
+func TestGetGrammarPoints_ActiveLanguagePolicyAnd404(t *testing.T) {
 	cRepo := curriculum.NewMockRepository()
-	cRepo.GrammarPoints["gp-n4"] = &curriculum.GrammarPoint{ID: "gp-n4", LevelID: "lvl-n4", Code: "GP-N4", Title: "Passive"}
+	cRepo.GrammarPoints["gp-n4"] = &curriculum.GrammarPoint{ID: "gp-n4", LevelID: "lvl-n4", LevelCode: "N4", Code: "GP-N4", Title: "Passive"}
 
 	lRepo := language.NewMockRepository()
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Languages["lang-de"] = &language.Language{ID: "lang-de", Code: "de", Name: "German", IsActive: false}
 	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1}
 	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2}
+	lvlA1 := &language.ProficiencyLevel{ID: "lvl-a1", LanguageID: "lang-de", Code: "A1", OrderIndex: 1}
 	lRepo.Levels["lvl-n5"] = lvlN5
 	lRepo.Levels["lvl-n4"] = lvlN4
+	lRepo.Levels["lvl-a1"] = lvlA1
 	lRepo.Enrollments["enr-ja"] = &language.UserLanguageEnrollment{
 		ID: "enr-ja", UserID: "user-1", LanguageID: "lang-ja", CurrentLevelID: &lvlN5.ID, IsActive: true, CurrentLevel: lvlN5,
 	}
 
 	uc := curriculum.NewUsecase(cRepo, lRepo, exercise.NewMockRepository(), user.NewMockRepository(), nil)
+	filterUC := uc.(interface {
+		GetGrammarPointsByLevelFilter(context.Context, string, string, string) ([]curriculum.GrammarPoint, error)
+	})
 
 	// Missing level returns ErrProficiencyLevelNotFound (404)
 	if _, err := uc.GetGrammarPoints(context.Background(), "user-1", "lvl-missing"); !errors.Is(err, language.ErrProficiencyLevelNotFound) {
 		t.Errorf("expected ErrProficiencyLevelNotFound for missing level, got %v", err)
 	}
 
-	// Higher level beyond enrollment returns ErrForbidden (403)
-	if _, err := uc.GetGrammarPoints(context.Background(), "user-1", "lvl-n4"); !errors.Is(err, apperror.ErrForbidden) {
-		t.Errorf("expected ErrForbidden for locked level grammar points, got %v", err)
+	// Inactive language is rejected consistently on both query modes
+	if _, err := uc.GetGrammarPoints(context.Background(), "user-1", "lvl-a1"); !errors.Is(err, language.ErrLanguageNotActive) {
+		t.Errorf("expected ErrLanguageNotActive for inactive language via level_id, got %v", err)
+	}
+	if _, err := filterUC.GetGrammarPointsByLevelFilter(context.Background(), "user-1", "de", "A1"); !errors.Is(err, language.ErrLanguageNotActive) {
+		t.Errorf("expected ErrLanguageNotActive for inactive language via lang filter, got %v", err)
 	}
 
-	// Unenrolled user returns ErrForbidden (403)
-	if _, err := uc.GetGrammarPoints(context.Background(), "stranger-user", "lvl-n5"); !errors.Is(err, apperror.ErrForbidden) {
-		t.Errorf("expected ErrForbidden for unenrolled user, got %v", err)
+	// Active language grammar reference (N5..N1) is consistently readable across both modes
+	ptsByLevel, err := uc.GetGrammarPoints(context.Background(), "user-1", "lvl-n4")
+	if err != nil || len(ptsByLevel) != 1 {
+		t.Errorf("expected open active-language grammar reference for authenticated user, got %v len=%d", err, len(ptsByLevel))
+	}
+	ptsByFilter, err := filterUC.GetGrammarPointsByLevelFilter(context.Background(), "", "ja", "N4")
+	if err != nil || len(ptsByFilter) != 1 {
+		t.Errorf("expected open active-language grammar reference for guest filter, got %v len=%d", err, len(ptsByFilter))
 	}
 }
 
@@ -2170,7 +2186,7 @@ func TestSubmitGrammarCheck_MasterySRSAndEnrichment(t *testing.T) {
 	}
 
 	lRepo := language.NewMockRepository()
-	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese"}
+	lRepo.Languages["lang-ja"] = &language.Language{ID: "lang-ja", Code: "ja", Name: "Japanese", IsActive: true}
 	lRepo.Levels["lvl-n5"] = &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", Name: "JLPT N5", OrderIndex: 1}
 	lvlID := "lvl-n5"
 	lRepo.Enrollments["enr-1"] = &language.UserLanguageEnrollment{
@@ -2354,5 +2370,98 @@ func TestGuestPreview_CurriculumUnit1TrialAndReadOnlyEndpoints(t *testing.T) {
 	}
 	if _, err := uc.CompleteLesson(ctx, "", &curriculum.CompleteLessonRequest{LessonID: l1ID, Score: 100}); !errors.Is(err, apperror.ErrUnauthorized) {
 		t.Fatalf("expected ErrUnauthorized for guest CompleteLesson, got %v", err)
+	}
+}
+
+func TestProUserUnitSkipPrivilege(t *testing.T) {
+	ctx := context.Background()
+	cRepo := curriculum.NewMockRepository()
+	lRepo := language.NewMockRepository()
+	eRepo := exercise.NewMockRepository()
+	uRepo := user.NewMockRepository()
+
+	langID := "lang-ja-pro"
+	lvlN5ID := "lvl-n5-pro"
+	lRepo.Languages[langID] = &language.Language{ID: langID, Code: "ja", Name: "Japanese", IsActive: true}
+	lRepo.Levels[lvlN5ID] = &language.ProficiencyLevel{ID: lvlN5ID, LanguageID: langID, Code: "N5", Name: "JLPT N5", OrderIndex: 1}
+
+	cRepo.Units["unit-1"] = &curriculum.UnitNodeResponse{ID: "unit-1", LevelID: lvlN5ID, Title: "Unit 1", UnitType: "curriculum", OrderIndex: 1}
+	cRepo.Units["unit-2"] = &curriculum.UnitNodeResponse{ID: "unit-2", LevelID: lvlN5ID, Title: "Unit 2", UnitType: "curriculum", OrderIndex: 2}
+	cRepo.Units["unit-3"] = &curriculum.UnitNodeResponse{ID: "unit-3", LevelID: lvlN5ID, Title: "Unit 3", UnitType: "curriculum", OrderIndex: 3}
+
+	cRepo.Lessons["lesson-1"] = &curriculum.LessonNodeResponse{ID: "lesson-1", UnitID: "unit-1", Title: "Lesson 1.1", OrderIndex: 1, XPReward: 15, IsCompleted: false}
+	cRepo.Lessons["lesson-2"] = &curriculum.LessonNodeResponse{ID: "lesson-2", UnitID: "unit-2", Title: "Lesson 2.1", OrderIndex: 1, XPReward: 15, IsCompleted: false}
+	cRepo.Lessons["lesson-3"] = &curriculum.LessonNodeResponse{ID: "lesson-3", UnitID: "unit-3", Title: "Lesson 3.1", OrderIndex: 1, XPReward: 20, IsCompleted: false}
+
+	lRepo.Enrollments["enr-pro"] = &language.UserLanguageEnrollment{
+		ID:             "enr-pro",
+		UserID:         "user-pro",
+		LanguageID:     langID,
+		CurrentLevelID: &lvlN5ID,
+		IsActive:       true,
+		Language:       lRepo.Languages[langID],
+		CurrentLevel:   lRepo.Levels[lvlN5ID],
+	}
+	lRepo.Enrollments["enr-free"] = &language.UserLanguageEnrollment{
+		ID:             "enr-free",
+		UserID:         "user-free",
+		LanguageID:     langID,
+		CurrentLevelID: &lvlN5ID,
+		IsActive:       true,
+		Language:       lRepo.Languages[langID],
+		CurrentLevel:   lRepo.Levels[lvlN5ID],
+	}
+
+	uRepo.Users["user-pro"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-pro", SubscriptionTier: "pro"},
+	}
+	uRepo.Users["user-free"] = &user.User{
+		UserAccount: user.UserAccount{ID: "user-free", SubscriptionTier: "free"},
+	}
+
+	uc := curriculum.NewUsecase(cRepo, lRepo, eRepo, uRepo, nil)
+
+	// 1. Pro user gets all units and lessons unlocked in GetCurriculum
+	proCurr, err := uc.GetCurriculum(ctx, "user-pro", &curriculum.GetCurriculumRequest{LanguageID: langID})
+	if err != nil {
+		t.Fatalf("expected Pro GetCurriculum to succeed, got %v", err)
+	}
+	if len(proCurr.Units) != 3 {
+		t.Fatalf("expected 3 units, got %d", len(proCurr.Units))
+	}
+	for _, unit := range proCurr.Units {
+		if !unit.IsUnlocked {
+			t.Errorf("expected unit %s to be unlocked for Pro user", unit.ID)
+		}
+		for _, lesson := range unit.Lessons {
+			if !lesson.IsUnlocked {
+				t.Errorf("expected lesson %s to be unlocked for Pro user", lesson.ID)
+			}
+		}
+	}
+	if proCurr.CurrentLessonID == nil || *proCurr.CurrentLessonID != "lesson-1" {
+		t.Errorf("expected CurrentLessonID to point to first uncompleted lesson-1, got %v", proCurr.CurrentLessonID)
+	}
+
+	// 2. Pro user can open Unit 3 lesson directly in GetLessonDetail
+	proDetail, err := uc.GetLessonDetail(ctx, "user-pro", "lesson-3")
+	if err != nil {
+		t.Fatalf("expected Pro user to open Unit 3 lesson without error, got %v", err)
+	}
+	if proDetail == nil || !proDetail.IsUnlocked {
+		t.Fatalf("expected Pro lesson detail to be unlocked, got %+v", proDetail)
+	}
+
+	// 3. Free user still sees Unit 2 & Unit 3 locked and gets ErrLessonLocked for Unit 3 lesson
+	freeCurr, err := uc.GetCurriculum(ctx, "user-free", &curriculum.GetCurriculumRequest{LanguageID: langID})
+	if err != nil {
+		t.Fatalf("expected Free GetCurriculum to succeed, got %v", err)
+	}
+	if !freeCurr.Units[0].IsUnlocked || freeCurr.Units[1].IsUnlocked || freeCurr.Units[2].IsUnlocked {
+		t.Errorf("expected only Unit 1 unlocked for Free user, got u1=%v u2=%v u3=%v",
+			freeCurr.Units[0].IsUnlocked, freeCurr.Units[1].IsUnlocked, freeCurr.Units[2].IsUnlocked)
+	}
+	if _, err := uc.GetLessonDetail(ctx, "user-free", "lesson-3"); !errors.Is(err, curriculum.ErrLessonLocked) {
+		t.Fatalf("expected ErrLessonLocked for Free user opening Unit 3 lesson, got %v", err)
 	}
 }

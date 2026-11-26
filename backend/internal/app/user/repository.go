@@ -30,6 +30,9 @@ const userSelectColumns = `
 	up.username, 
 	u.email, 
 	COALESCE(u.password_hash, ''), 
+	u.email_verified,
+	COALESCE(u.subscription_tier, 'free'),
+	u.subscription_expires_at,
 	up.bio, 
 	up.avatar_url,
 	up.daily_goal_minutes,
@@ -58,6 +61,9 @@ func scanUser(row pgx.Row, u *User) error {
 		&u.Username,
 		&u.Email,
 		&u.PasswordHash,
+		&u.EmailVerified,
+		&u.SubscriptionTier,
+		&u.SubscriptionExpiresAt,
 		&u.Bio,
 		&u.AvatarURL,
 		&u.DailyGoalMinutes,
@@ -76,10 +82,13 @@ func scanUser(row pgx.Row, u *User) error {
 
 // Create inserts a new user across all 3 normalized pillars in a single atomic Writeable CTE (1 DB round-trip)
 func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
+	if u == nil {
+		return apperror.ErrBadRequest
+	}
 	query := `
 		WITH new_user AS (
-			INSERT INTO users (email, password_hash)
-			VALUES ($1, NULLIF($2, ''))
+			INSERT INTO users (email, password_hash, email_verified)
+			VALUES ($1, NULLIF($2, ''), $12)
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
@@ -106,6 +115,7 @@ func (r *PostgresRepository) Create(ctx context.Context, u *User) error {
 		u.CurrentLevel,
 		u.Streak,
 		u.Gems,
+		u.EmailVerified,
 	).Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -190,8 +200,8 @@ func (r *PostgresRepository) CreateWithOAuth(ctx context.Context, u *User, oauth
 	}
 	query := `
 		WITH new_user AS (
-			INSERT INTO users (email, password_hash)
-			VALUES ($1, NULLIF($2, ''))
+			INSERT INTO users (email, password_hash, email_verified)
+			VALUES ($1, NULLIF($2, ''), $15)
 			RETURNING id, created_at, updated_at
 		),
 		new_profile AS (
@@ -228,6 +238,7 @@ func (r *PostgresRepository) CreateWithOAuth(ctx context.Context, u *User, oauth
 		oauth.Provider,
 		oauth.ProviderUserID,
 		oauth.Email,
+		u.EmailVerified,
 	).Scan(&u.ID, &u.CreatedAt, &u.UpdatedAt, &oauth.ID, &oauth.CreatedAt, &oauth.UpdatedAt)
 	if err != nil {
 		var pgErr *pgconn.PgError
@@ -305,6 +316,9 @@ func (r *PostgresRepository) LinkOAuthAccount(ctx context.Context, oauth *OAuthA
 
 // UpdateProfile updates user profile preferences and returns the updated aggregate in a single CTE round-trip.
 func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, req *UpdateProfileRequest) (*User, error) {
+	if req == nil {
+		return nil, apperror.ErrBadRequest
+	}
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return nil, err
 	}
@@ -330,6 +344,7 @@ func (r *PostgresRepository) UpdateProfile(ctx context.Context, userID string, r
 			up.username,
 			u.email,
 			COALESCE(u.password_hash, ''),
+			u.email_verified,
 			up.bio,
 			up.avatar_url,
 			up.daily_goal_minutes,
@@ -557,10 +572,10 @@ func (r *PostgresRepository) LogActivity(ctx context.Context, log *UserActivityL
 	return nil
 }
 
-// RecordXPActivity atomically locks user_gamification, applies 2x XP booster if active,
-// evaluates daily streak (with Streak Freeze consumption), updates XP/level/streak, and logs the activity.
-func (r *PostgresRepository) RecordXPActivity(
+// RecordXPActivityTx executes atomic XP, level, streak, freeze consumption, and activity logging inside an existing transaction.
+func RecordXPActivityTx(
 	ctx context.Context,
+	tx pgx.Tx,
 	userID string,
 	activityType string,
 	baseXP int,
@@ -570,12 +585,6 @@ func (r *PostgresRepository) RecordXPActivity(
 	if err = apperror.ValidateUserUUID(userID); err != nil {
 		return 0, 0, 0, 0, err
 	}
-
-	tx, err := r.db.Pool.Begin(ctx)
-	if err != nil {
-		return 0, 0, 0, 0, fmt.Errorf("failed to begin record xp activity tx: %w", err)
-	}
-	defer progression.RollbackTx(ctx, tx, "user.RecordXPActivity")
 
 	var currentXP, currentStreak int
 	var lastActiveAt, boosterExpiresAt *time.Time
@@ -642,6 +651,34 @@ func (r *PostgresRepository) RecordXPActivity(
 		userID, activityType, xpAwarded, metaJSON,
 	); err != nil {
 		return 0, 0, 0, 0, fmt.Errorf("failed to insert xp activity log: %w", err)
+	}
+
+	return xpAwarded, newXP, newLevel, newStreak, nil
+}
+
+// RecordXPActivity atomically locks user_gamification, applies 2x XP booster if active,
+// evaluates daily streak (with Streak Freeze consumption), updates XP/level/streak, and logs the activity.
+func (r *PostgresRepository) RecordXPActivity(
+	ctx context.Context,
+	userID string,
+	activityType string,
+	baseXP int,
+	applyXPBooster bool,
+	metadata map[string]any,
+) (xpAwarded int, newXP int, newLevel int, newStreak int, err error) {
+	if err = apperror.ValidateUserUUID(userID); err != nil {
+		return 0, 0, 0, 0, err
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return 0, 0, 0, 0, fmt.Errorf("failed to begin record xp activity tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "user.RecordXPActivity")
+
+	xpAwarded, newXP, newLevel, newStreak, err = RecordXPActivityTx(ctx, tx, userID, activityType, baseXP, applyXPBooster, metadata)
+	if err != nil {
+		return 0, 0, 0, 0, err
 	}
 
 	if err = tx.Commit(ctx); err != nil {

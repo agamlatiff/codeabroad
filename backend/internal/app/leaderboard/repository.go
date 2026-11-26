@@ -26,21 +26,6 @@ func NewRepository(db *postgres.PostgresDB) Repository {
 	return &PostgresRepository{db: db}
 }
 
-func scanLeaderboardEntry(scanner interface{ Scan(dest ...any) error }) (LeaderboardEntry, error) {
-	var e LeaderboardEntry
-	err := scanner.Scan(
-		&e.UserID,
-		&e.Name,
-		&e.Username,
-		&e.AvatarURL,
-		&e.TotalXP,
-		&e.CurrentLevel,
-		&e.Streak,
-		&e.WeeklyXP,
-	)
-	return e, err
-}
-
 const wibWeekStartExpr = `(date_trunc('week', NOW() AT TIME ZONE 'Asia/Jakarta') AT TIME ZONE 'Asia/Jakarta')`
 const wibPrevWeekStartExpr = `((date_trunc('week', NOW() AT TIME ZONE 'Asia/Jakarta') - INTERVAL '7 days') AT TIME ZONE 'Asia/Jakarta')`
 

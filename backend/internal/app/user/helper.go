@@ -101,10 +101,10 @@ func (h *Helper) ValidateAndNormalizeUpdateProfile(req *UpdateProfileRequest) er
 			}
 			if !strings.HasPrefix(trimmed, "/") {
 				parsed, parseErr := url.ParseRequestURI(trimmed)
-				if parseErr != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Host == "" {
+				if parseErr != nil || parsed.Scheme != "https" || parsed.Host == "" {
 					return apperror.NewBadRequestError(
 						"INVALID_AVATAR_URL",
-						"avatar_url harus berupa URL http/https atau path relatif yang valid",
+						"avatar_url harus berupa URL https atau path relatif yang valid",
 						nil,
 					)
 				}
@@ -138,12 +138,6 @@ func (h *Helper) ResolveDailyReward(rewardType string) (int, int, error) {
 	default:
 		return 0, 0, apperror.NewBadRequestError("INVALID_REWARD_TYPE", "tipe hadiah harian tidak valid", nil)
 	}
-}
-
-// ResolveDailyRewardXP validates the daily reward type and returns the XP amount to award
-func (h *Helper) ResolveDailyRewardXP(rewardType string) (int, error) {
-	xp, _, err := h.ResolveDailyReward(rewardType)
-	return xp, err
 }
 
 // CalculateLevel computes the user level from total XP according to Merantalk progression rules (100 XP per level)

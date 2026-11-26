@@ -212,17 +212,19 @@ type UnitNodeResponse struct {
 // GetCurriculumRequest defines query filters for retrieving the curriculum
 type GetCurriculumRequest struct {
 	LanguageID string `form:"language_id" binding:"omitempty,uuid"`
+	LevelCode  string `form:"level_code" binding:"omitempty,max=16"`
 }
 
 // CurriculumResponse encapsulates the full active language curriculum tree with level metrics
 type CurriculumResponse struct {
-	Language         language.Language         `json:"language"`
-	Level            language.ProficiencyLevel `json:"level"`
-	TotalLessons     int                       `json:"total_lessons"`
-	CompletedLessons int                       `json:"completed_lessons"`
-	ProgressPercent  int                       `json:"progress_percent"`
-	CurrentLessonID  *string                   `json:"current_lesson_id,omitempty"`
-	Units            []UnitNodeResponse        `json:"units"`
+	Language         language.Language           `json:"language"`
+	Level            language.ProficiencyLevel   `json:"level"`
+	AvailableLevels  []language.ProficiencyLevel `json:"available_levels,omitempty"`
+	TotalLessons     int                         `json:"total_lessons"`
+	CompletedLessons int                         `json:"completed_lessons"`
+	ProgressPercent  int                         `json:"progress_percent"`
+	CurrentLessonID  *string                     `json:"current_lesson_id,omitempty"`
+	Units            []UnitNodeResponse          `json:"units"`
 }
 
 // LessonStudyItem represents a sanitized, distractor-free preview card built server-side for the lesson study flow.

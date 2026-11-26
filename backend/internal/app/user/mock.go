@@ -50,10 +50,29 @@ func (m *MockRepository) Create(ctx context.Context, u *User) error {
 	if m.CreateError != nil {
 		return m.CreateError
 	}
+	if u == nil {
+		return apperror.ErrBadRequest
+	}
+	for _, existing := range m.Users {
+		if existing.Email == u.Email {
+			return ErrEmailAlreadyExists
+		}
+		if existing.Username == u.Username {
+			return ErrUsernameTaken
+		}
+	}
 	if u.ID == "" {
 		u.ID = fmt.Sprintf("usr_%d", len(m.Users)+1)
 	}
-	m.Users[u.ID] = u
+	now := time.Now().UTC()
+	if u.CreatedAt.IsZero() {
+		u.CreatedAt = now
+	}
+	if u.UpdatedAt.IsZero() {
+		u.UpdatedAt = now
+	}
+	cp := *u
+	m.Users[u.ID] = &cp
 	return nil
 }
 
@@ -195,9 +214,17 @@ func (m *MockRepository) LinkOAuthAccount(ctx context.Context, oauth *OAuthAccou
 		}
 	}
 	cp := *oauth
+	now := time.Now().UTC()
 	if cp.ID == "" {
 		cp.ID = fmt.Sprintf("oauth_%d", len(m.OAuthAccounts)+1)
 	}
+	if cp.CreatedAt.IsZero() {
+		cp.CreatedAt = now
+	}
+	if cp.UpdatedAt.IsZero() {
+		cp.UpdatedAt = now
+	}
+	*oauth = cp
 	m.OAuthAccounts[oauthKey(cp.Provider, cp.ProviderUserID)] = &cp
 	return nil
 }
@@ -210,7 +237,7 @@ func (m *MockRepository) UpdateProfile(ctx context.Context, userID string, req *
 	}
 	u, ok := m.Users[userID]
 	if !ok {
-		return nil, apperror.ErrNotFound
+		return nil, ErrUserNotFound
 	}
 	if req.Name != nil {
 		u.Name = *req.Name

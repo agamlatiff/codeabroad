@@ -366,6 +366,26 @@ func collectVisibleExerciseText(rawEx Exercise) string {
 	return strings.Join(parts, "\n")
 }
 
+func matchesFuriganaAnswer(kanji string, kana string, normalizedCorrect string) bool {
+	if normalizedCorrect == "" {
+		return false
+	}
+	if strings.EqualFold(kanji, normalizedCorrect) || strings.EqualFold(kana, normalizedCorrect) {
+		return true
+	}
+	for _, reading := range strings.Split(kana, "/") {
+		if strings.EqualFold(strings.TrimSpace(reading), normalizedCorrect) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsFillBlankTranslationSpoiler reports whether a fill-in-the-blank translation leaks the answer directly.
+func IsFillBlankTranslationSpoiler(translation string, correctAnswer string, content map[string]any) bool {
+	return isFillBlankTranslationSpoiler(translation, correctAnswer, content)
+}
+
 // EnrichExerciseFurigana populates non-spoiler content["furigana"] readings for visible Kanji
 // on student-safe lesson and SRS review exercises while skipping Kanji-reading quizzes and hidden listening audio_text.
 func EnrichExerciseFurigana(rawEx Exercise, sanitized *Exercise) {
@@ -392,7 +412,7 @@ func EnrichExerciseFurigana(rawEx Exercise, sanitized *Exercise) {
 		if seen[entry.kanji] || !strings.Contains(remaining, entry.kanji) {
 			continue
 		}
-		if normalizedCorrect != "" && (strings.EqualFold(entry.kanji, normalizedCorrect) || strings.EqualFold(entry.kana, normalizedCorrect)) {
+		if matchesFuriganaAnswer(entry.kanji, entry.kana, normalizedCorrect) {
 			remaining = strings.ReplaceAll(remaining, entry.kanji, " ")
 			continue
 		}

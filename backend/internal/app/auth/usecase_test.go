@@ -1233,6 +1233,17 @@ func TestGoogleAuth_LinksExistingEmailAccountAndBlocksPasswordlessLogin(t *testi
 		t.Fatalf("expected Register to succeed, got: %v", err)
 	}
 
+	// Unverified local email account must NOT be silently auto-linked (prevents OAuth pre-hijacking).
+	_, unverifiedErr := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-unverified-local"})
+	if !errors.Is(unverifiedErr, user.ErrLocalAccountUnverified) {
+		t.Fatalf("expected ErrLocalAccountUnverified before email verification, got: %v", unverifiedErr)
+	}
+
+	// Mark local account email as verified, then Google OAuth links cleanly.
+	if stored, ok := userRepo.Users[regRes.User.ID]; ok {
+		stored.EmailVerified = true
+	}
+
 	googleRes, err := authUc.GoogleAuth(ctx, &auth.GoogleAuthRequest{Code: "code-link"})
 	if err != nil {
 		t.Fatalf("expected GoogleAuth auto-link to succeed, got: %v", err)

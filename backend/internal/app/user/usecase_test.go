@@ -191,11 +191,19 @@ func TestGetActivityLogs_IdempotentDailyLogin(t *testing.T) {
 
 type stubStreakBadgeAwarder struct {
 	awardedKeys []string
+	repo        *user.MockRepository
+	bonusXP     int
 }
 
-func (s *stubStreakBadgeAwarder) AwardStreakBadge(_ context.Context, _ string, badgeKey string, _ int) error {
+func (s *stubStreakBadgeAwarder) AwardStreakBadge(_ context.Context, userID string, badgeKey string, _ int) (bool, error) {
 	s.awardedKeys = append(s.awardedKeys, badgeKey)
-	return nil
+	if s.repo != nil && s.bonusXP > 0 {
+		if usr, ok := s.repo.Users[userID]; ok && usr != nil {
+			usr.XP += s.bonusXP
+			usr.CurrentLevel = (usr.XP / 100) + 1
+		}
+	}
+	return true, nil
 }
 
 func TestClaimDailyReward_EvaluatesStreakBadges(t *testing.T) {
@@ -212,7 +220,7 @@ func TestClaimDailyReward_EvaluatesStreakBadges(t *testing.T) {
 	}
 	repo.FlashcardsReviewedToday["user-streak"] = 3
 
-	awarder := &stubStreakBadgeAwarder{}
+	awarder := &stubStreakBadgeAwarder{repo: repo, bonusXP: 50}
 	uc := user.NewUsecaseWithBadges(repo, awarder)
 
 	res, err := uc.ClaimDailyReward(context.Background(), "user-streak", "vocab_quest")
@@ -224,6 +232,10 @@ func TestClaimDailyReward_EvaluatesStreakBadges(t *testing.T) {
 	}
 	if len(awarder.awardedKeys) != 2 || awarder.awardedKeys[0] != "streak_7" || awarder.awardedKeys[1] != "streak_30" {
 		t.Fatalf("expected streak_7 and streak_30 badges evaluated, got %#v", awarder.awardedKeys)
+	}
+	// 120 base + 30 vocab_quest + 50 (streak_7) + 50 (streak_30) = 250 XP -> Level 3
+	if res.CurrentXP != 250 || res.CurrentLevel != 3 {
+		t.Fatalf("expected refreshed post-badge CurrentXP=250 CurrentLevel=3, got xp=%d level=%d", res.CurrentXP, res.CurrentLevel)
 	}
 }
 

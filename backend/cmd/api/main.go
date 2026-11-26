@@ -32,9 +32,12 @@ type userStreakBadgeAdapter struct {
 	repo gamification.Repository
 }
 
-func (a *userStreakBadgeAdapter) AwardStreakBadge(ctx context.Context, userID string, badgeKey string, currentLevel int) error {
-	_, err := a.repo.AwardBadge(ctx, userID, badgeKey, currentLevel)
-	return err
+func (a *userStreakBadgeAdapter) AwardStreakBadge(ctx context.Context, userID string, badgeKey string, currentLevel int) (bool, error) {
+	ub, err := a.repo.AwardBadge(ctx, userID, badgeKey, currentLevel)
+	if err != nil {
+		return false, err
+	}
+	return ub != nil && ub.NewlyAwarded, nil
 }
 
 func main() {

@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"merantalk/backend/internal/app/exercise"
 )
@@ -12,7 +13,7 @@ import (
 const maxStudyItemsPerLesson = 8
 
 var (
-	checkpointSlugRegex       = regexp.MustCompile(`(?i)checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir`)
+	checkpointSlugRegex       = regexp.MustCompile(`(?i)checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir|tes-akhir`)
 	trailingParensRegex       = regexp.MustCompile(`\(([^()]+)\)\s*$`)
 	trailingPromptParensRegex = regexp.MustCompile(`\(([^()]+)\)\s*[:：.!?]*\s*$`)
 	quotedSentenceRegex       = regexp.MustCompile(`"([^"]+)"`)
@@ -27,97 +28,97 @@ type kanaMnemonicInfo struct {
 
 var kanaMnemonicMap = map[string]kanaMnemonicInfo{
 	// Hiragana
-	"あ": {Romaji: "a", Mnemonic: `Bentuk lengkungnya memutar menyerupai huruf "a" bertangkai silang tanpa titik kanan.`},
-	"い": {Romaji: "i", Mnemonic: `Dua garis tegak berdiri berdampingan mirip angka 11 ("ii").`},
-	"う": {Romaji: "u", Mnemonic: `Lengkungan huruf "U" menyamping dengan topi miring kecil di atas.`},
-	"え": {Romaji: "e", Mnemonic: `Mirip angka 2 zig-zag dengan tanda miring di atas.`},
-	"お": {Romaji: "o", Mnemonic: `Memutar ke kanan bawah dan memiliki satu titik kecil terpisah di kanan atas.`},
-	"か": {Romaji: "ka", Mnemonic: `Garis melengkung mirip pisau katana + satu titik percikan di kanan.`},
-	"き": {Romaji: "ki", Mnemonic: `Dua garis palang disilang batang miring seperti kunci pintu.`},
-	"く": {Romaji: "ku", Mnemonic: `Satu sudut menyiku ke kiri seperti paruh burung kukuk.`},
-	"け": {Romaji: "ke", Mnemonic: `Satu tiang kiri + palang kanan mirip gagang tong kayu ("keg").`},
-	"こ": {Romaji: "ko", Mnemonic: `Dua garis horizontal atas-bawah sejajar seperti tanda "ko" kotak terbuka.`},
+	"あ": {Romaji: "a", Mnemonic: `Bentuk lengkungnya memutar bertangkai silang dari atas ke kanan bawah.`},
+	"い": {Romaji: "i", Mnemonic: `Dua garis tegak sedikit melengkung berdiri berdampingan mirip angka 11.`},
+	"う": {Romaji: "u", Mnemonic: `Satu lengkungan membulat menyamping dengan topi miring kecil di bagian atas.`},
+	"え": {Romaji: "e", Mnemonic: `Garis zig-zag menyerupai angka 2 dengan satu garis miring kecil di atas.`},
+	"お": {Romaji: "o", Mnemonic: `Garis silang memutar ke kanan bawah disertai satu titik terpisah di kanan atas.`},
+	"か": {Romaji: "ka", Mnemonic: `Garis melengkung mirip bilah pedang pendek ditambah satu titik percikan di kanan.`},
+	"き": {Romaji: "ki", Mnemonic: `Dua garis palang datar disilang batang miring menyerupai gigi anak kunci.`},
+	"く": {Romaji: "ku", Mnemonic: `Satu sudut tunggal menyiku ke kiri seperti paruh burung yang terbuka.`},
+	"け": {Romaji: "ke", Mnemonic: `Satu tiang tegak di kiri diikuti garis silang pendek dan kaki kanan melengkung.`},
+	"こ": {Romaji: "ko", Mnemonic: `Dua garis datar pendek sejajar atas-bawah membentuk rongga terbuka ke kiri.`},
 	"さ": {Romaji: "sa", Mnemonic: `Satu garis datar disilang batang miring lalu melengkung ke bawah seperti senyum.`},
-	"し": {Romaji: "shi", Mnemonic: `Satu goresan tegak lurus lalu melengkung ke kanan seperti mata pancing.`},
-	"す": {Romaji: "su", Mnemonic: `Palang datar dengan lingkaran kecil menggantung di tengah mirip gulungan sushi.`},
-	"せ": {Romaji: "se", Mnemonic: `Tiga garis bersilang mirip kursi santai tempat duduk ("seat").`},
-	"そ": {Romaji: "so", Mnemonic: `Satu goresan zig-zag mengalir ke bawah dari huruf Z lalu melengkung.`},
-	"た": {Romaji: "ta", Mnemonic: `Sisi kiri mirip huruf "t", sisi kanan berbentuk sama dengan "こ".`},
-	"ち": {Romaji: "chi", Mnemonic: `Mirip angka 5 yang ditarik miring dari kanan.`},
-	"つ": {Romaji: "tsu", Mnemonic: `Satu lengkungan lebar seperti ombak tsunami yang menggulung.`},
-	"て": {Romaji: "te", Mnemonic: `Garis atas datar berbelok halus membentuk huruf "T" / telapak tangan.`},
-	"と": {Romaji: "to", Mnemonic: `Garis vertikal menyamping yang menancap pada lengkungan seperti duri ("thorn").`},
-	"な": {Romaji: "na", Mnemonic: `Palang silang di kiri dengan simpul kecil menggantung di kanan bawah.`},
-	"に": {Romaji: "ni", Mnemonic: `Tiang vertikal di kiri dengan dua garis pendek di kanan (lutut = "knee").`},
-	"ぬ": {Romaji: "nu", Mnemonic: `Dua garis melingkar rumit seperti simpul mi ("noodle") berakhir berputar.`},
-	"ね": {Romaji: "ne", Mnemonic: `Tiang lurus di kiri berliku membentuk simpul seperti ekor kucing ("neko").`},
-	"の": {Romaji: "no", Mnemonic: `Satu lingkaran memutar seperti rambu "No" atau gulungan obat nyamuk.`},
-	"は": {Romaji: "ha", Mnemonic: `Tiang kiri tegak + garis kanan bersimpul di bawah seperti tawa "ha-ha".`},
-	"ひ": {Romaji: "hi", Mnemonic: `Satu lengkungan lebar terbuka di atas seperti senyum lebar ("hi!").`},
-	"ふ": {Romaji: "fu", Mnemonic: `Garis tengah melengkung diapit dua titik di kanan kiri seperti Gunung Fuji.`},
-	"へ": {Romaji: "he", Mnemonic: `Satu garis menanjak lalu turun tajam menyerupai atap puncak bukit.`},
-	"ほ": {Romaji: "ho", Mnemonic: `Mirip は, namun memiliki dua palang datar di kanan ("ho-ho").`},
-	"ま": {Romaji: "ma", Mnemonic: `Dua garis palang datar ditembus tiang bersimpul di bawah ("mama").`},
-	"み": {Romaji: "mi", Mnemonic: `Garis miring melingkar berakhiran garis melintang seperti angka 21 ("mi").`},
-	"む": {Romaji: "mu", Mnemonic: `Palang melengkung bersimpul dengan titik di kanan atas seperti moncong sapi ("moo").`},
-	"め": {Romaji: "me", Mnemonic: `Dua garis menyilang membulat polos tanpa simpul ekor (mata = "me").`},
-	"も": {Romaji: "mo", Mnemonic: `Kail panjang memancing cacing dengan dua garis umpan mendatar ("more").`},
-	"や": {Romaji: "ya", Mnemonic: `Lengkungan lebar ditembus garis pendek dan tiang miring seperti tanduk yak.`},
-	"ゆ": {Romaji: "yu", Mnemonic: `Lingkaran besar bertiang seperti ikan mas atau lambang pemandian air panas.`},
-	"よ": {Romaji: "yo", Mnemonic: `Tiang tegak berpalang pendek kanan lalu membentuk lingkaran simpul di bawah.`},
-	"ら": {Romaji: "ra", Mnemonic: `Titik atas terpisah dengan lengkungan membulat besar di bawahnya.`},
-	"り": {Romaji: "ri", Mnemonic: `Dua batang vertikal sejajar, batang kanan lebih panjang melengkung halus.`},
-	"る": {Romaji: "ru", Mnemonic: `Satu tarikan dari angka 3 yang berakhiran lingkaran simpul kecil di bawah.`},
-	"れ": {Romaji: "re", Mnemonic: `Tiang lurus kiri disilang lengkungan yang melenting tajam ke kanan.`},
-	"ろ": {Romaji: "ro", Mnemonic: `Mirip angka 3 polos terbuka tanpa simpul penutup di bagian ekor.`},
-	"わ": {Romaji: "wa", Mnemonic: `Tiang lurus kiri disilang garis yang melengkung lebar memutar ke kanan bawah.`},
-	"を": {Romaji: "o / wo", Mnemonic: `Bentuk seperti orang melompati rintangan huruf C.`},
-	"ん": {Romaji: "n", Mnemonic: `Satu tarikan yang sangat menyerupai huruf latin kecil "n" atau "h".`},
+	"し": {Romaji: "shi", Mnemonic: `Satu goresan tegak lurus lalu melengkung halus ke kanan seperti mata pancing.`},
+	"す": {Romaji: "su", Mnemonic: `Palang datar dengan simpul kecil menggantung di tengah mirip gulungan tali.`},
+	"せ": {Romaji: "se", Mnemonic: `Tiga garis bersilang membentuk lekukan seperti sandaran kursi santai.`},
+	"そ": {Romaji: "so", Mnemonic: `Satu goresan zig-zag mengalir ke bawah lalu berbelok melengkung di bagian kaki.`},
+	"た": {Romaji: "ta", Mnemonic: `Dua garis silang pendek di sisi kiri diikuti dua garis datar bertumpuk di sisi kanan.`},
+	"ち": {Romaji: "chi", Mnemonic: `Garis datar pendek ditembus tiang miring yang membulat ke bawah mirip angka 5.`},
+	"つ": {Romaji: "tsu", Mnemonic: `Satu lengkungan lebar menyapu ke bawah seperti ombak laut yang menggulung.`},
+	"て": {Romaji: "te", Mnemonic: `Garis atas datar yang berbelok halus ke kanan membentuk lengkungan terbuka.`},
+	"と": {Romaji: "to", Mnemonic: `Garis miring pendek di atas yang menancap pada lengkungan bulat seperti duri.`},
+	"な": {Romaji: "na", Mnemonic: `Palang silang di kiri dengan satu titik atas dan simpul kecil di kanan bawah.`},
+	"に": {Romaji: "ni", Mnemonic: `Tiang vertikal di kiri dengan dua garis datar pendek bertumpuk di sebelah kanan.`},
+	"ぬ": {Romaji: "nu", Mnemonic: `Dua garis melingkar saling bertaut berakhir pada satu simpul kecil di kanan bawah.`},
+	"ね": {Romaji: "ne", Mnemonic: `Tiang lurus di kiri berliku naik di sisi kanan dan ditutup satu simpul bawah.`},
+	"の": {Romaji: "no", Mnemonic: `Satu tarikan melingkar penuh dari dalam keluar seperti gulungan obat nyamuk.`},
+	"は": {Romaji: "ha", Mnemonic: `Tiang kiri tegak dengan satu palang datar kanan yang berakhir bersimpul di bawah.`},
+	"ひ": {Romaji: "hi", Mnemonic: `Satu lengkungan dalam menyerupai mangkuk senyum terbuka dengan ekor naik ke atas.`},
+	"ふ": {Romaji: "fu", Mnemonic: `Goresan tengah berombak diapit dua titik kecil di kanan kiri seperti puncak gunung.`},
+	"へ": {Romaji: "he", Mnemonic: `Satu tarikan menanjak pendek lalu turun panjang menyerupai puncak atap miring.`},
+	"ほ": {Romaji: "ho", Mnemonic: `Tiang kiri tegak dengan dua palang datar sejajar di kanan dan simpul di kaki.`},
+	"ま": {Romaji: "ma", Mnemonic: `Dua garis palang datar sejajar ditembus satu tiang tengah yang bersimpul di bawah.`},
+	"み": {Romaji: "mi", Mnemonic: `Goresan berputar membentuk simpul kiri lalu disilang lengkungan naik mirip angka 21.`},
+	"む": {Romaji: "mu", Mnemonic: `Palang datar disilang lingkaran simpul melenting disertai satu titik terpisah di kanan atas.`},
+	"め": {Romaji: "me", Mnemonic: `Dua garis menyilang membentuk lingkaran membulat polos tanpa simpul penutup.`},
+	"も": {Romaji: "mo", Mnemonic: `Satu kail lengkung tegak ditembus dua garis datar sejajar di bagian badan.`},
+	"や": {Romaji: "ya", Mnemonic: `Lengkungan lebar di kanan ditembus satu titik terpisah dan tiang miring ke kiri bawah.`},
+	"ゆ": {Romaji: "yu", Mnemonic: `Tiang kiri pendek menyambung lingkaran besar memutar yang disilang batang tegak.`},
+	"よ": {Romaji: "yo", Mnemonic: `Tiang tegak berpalang pendek ke kanan lalu membentuk satu simpul membulat di bawah.`},
+	"ら": {Romaji: "ra", Mnemonic: `Titik miring di atas yang terpisah dari lengkungan besar membulat ke kanan bawah.`},
+	"り": {Romaji: "ri", Mnemonic: `Dua batang vertikal sejajar, dengan batang kanan lebih panjang melengkung halus.`},
+	"る": {Romaji: "ru", Mnemonic: `Satu tarikan mirip angka 3 dengan satu lingkaran simpul kecil di ujung ekornya.`},
+	"れ": {Romaji: "re", Mnemonic: `Tiang lurus kiri disilang lengkungan tajam yang melenting ke luar arah kanan.`},
+	"ろ": {Romaji: "ro", Mnemonic: `Satu tarikan mirip angka 3 polos yang terbuka bersih tanpa simpul di bagian ekor.`},
+	"わ": {Romaji: "wa", Mnemonic: `Tiang lurus kiri disilang garis naik lalu melengkung lebar ke arah kanan bawah.`},
+	"を": {Romaji: "o / wo", Mnemonic: `Palang atas miring bertemu tiang tengah lalu melangkahi lengkungan bawah.`},
+	"ん": {Romaji: "n", Mnemonic: `Satu tarikan tunggal berkaki satu yang melengkung naik lalu turun di kanan.`},
 	// Katakana
-	"ア": {Romaji: "a", Mnemonic: `Sudut tajam atas yang bertumpu pada satu goresan miring ke kiri seperti kapak.`},
-	"イ": {Romaji: "i", Mnemonic: `Dua goresan miring-tegak mirip kuda-kuda penyangga ("easel").`},
-	"ウ": {Romaji: "u", Mnemonic: `Bentuk kotak tajam terbuka ke bawah dengan satu garis pendek tegak di atas.`},
-	"エ": {Romaji: "e", Mnemonic: `Dua garis datar dihubungkan batang tengah tegak seperti huruf I kapital / eskalator.`},
-	"オ": {Romaji: "o", Mnemonic: `Tanda tambah bersudut tajam dengan goresan miring ke kiri bawah.`},
-	"カ": {Romaji: "ka", Mnemonic: `Dua goresan tajam siku kanan mirip versi tegas Hiragana か tanpa titik.`},
-	"キ": {Romaji: "ki", Mnemonic: `Dua palang datar sejajar disilang satu garis miring tajam seperti kunci.`},
-	"ク": {Romaji: "ku", Mnemonic: `Dua garis pendek menyudut ke kiri seperti paruh tajam ("kuku").`},
-	"ケ": {Romaji: "ke", Mnemonic: `Menyerupai huruf K yang agak miring atau atap menyiku.`},
-	"コ": {Romaji: "ko", Mnemonic: `Kurung siku kotak menghadap kiri ("korner").`},
-	"サ": {Romaji: "sa", Mnemonic: `Palang datar disilang dua tiang, tiang kanan lebih panjang melengkung ke kiri.`},
-	"シ": {Romaji: "shi", Mnemonic: `Dua titik vertikal berbaris + sapuan panjang naik dari bawah ke kanan atas.`},
-	"ス": {Romaji: "su", Mnemonic: `Garis miring menyiku tajam dengan kaki penyangga ke kanan bawah.`},
-	"セ": {Romaji: "se", Mnemonic: `Palang sudut tajam ditembus garis siku huruf L dari bawah.`},
-	"ソ": {Romaji: "so", Mnemonic: `Satu titik kecil di kiri + garis miring turun tajam dari kanan atas.`},
-	"タ": {Romaji: "ta", Mnemonic: `Lengkungan tajam bersudut disilang garis pendek melintang di tengahnya.`},
-	"チ": {Romaji: "chi", Mnemonic: `Garis atas miring, palang tengah lebar, disilang batang yang melengkung ke kiri.`},
-	"ツ": {Romaji: "tsu", Mnemonic: `Dua titik sejajar di atas + sapuan panjang turun dari kanan atas ke kiri bawah.`},
-	"テ": {Romaji: "te", Mnemonic: `Dua garis datar atas (garis kedua lebih panjang) bertumpu di batang melengkung.`},
-	"ト": {Romaji: "to", Mnemonic: `Tiang tegak lurus dengan satu cabang menonjol miring ke kanan ("totem").`},
-	"ナ": {Romaji: "na", Mnemonic: `Palang horizontal disilang batang yang melengkung ke kiri bawah.`},
-	"ニ": {Romaji: "ni", Mnemonic: `Dua garis datar sejajar atas-bawah (mirip angka 2 / kanji 二).`},
-	"ヌ": {Romaji: "nu", Mnemonic: `Garis menyudut disilang sapuan miring ke kanan bawah.`},
-	"ネ": {Romaji: "ne", Mnemonic: `Titik atas + sudut tajam dengan batang tegak dan cabang pendek ke kanan.`},
+	"ア": {Romaji: "a", Mnemonic: `Sudut tajam terbuka di atas yang bertumpu pada satu goresan miring ke kiri bawah.`},
+	"イ": {Romaji: "i", Mnemonic: `Satu sapuan miring pendek di atas dengan batang tegak lurus menurun di bawahnya.`},
+	"ウ": {Romaji: "u", Mnemonic: `Satu titik tegak di atap garis datar yang membelok turun ke kiri bawah.`},
+	"エ": {Romaji: "e", Mnemonic: `Dua garis datar sejajar atas-bawah yang dihubungkan satu tiang tegak di tengah.`},
+	"オ": {Romaji: "o", Mnemonic: `Palang datar disilang batang tegak berkait kiri dengan satu garis miring di sudut kiri bawah.`},
+	"カ": {Romaji: "ka", Mnemonic: `Satu palang berbelok siku tajam ke bawah disilang satu garis miring ke kiri.`},
+	"キ": {Romaji: "ki", Mnemonic: `Dua palang datar bersudut tajam yang disilang satu batang miring di tengah.`},
+	"ク": {Romaji: "ku", Mnemonic: `Satu sapuan pendek kiri atas menyambung atap pendek lalu melengkung miring ke kiri.`},
+	"ケ": {Romaji: "ke", Mnemonic: `Satu garis miring pendek kiri diikuti atap datar dengan tiang melengkung ke kiri bawah.`},
+	"コ": {Romaji: "ko", Mnemonic: `Dua sudut siku tajam terbuka menghadap ke kiri seperti kurung kotak terbuka.`},
+	"サ": {Romaji: "sa", Mnemonic: `Palang datar disilang dua batang tegak, dengan batang kanan turun melengkung ke kiri.`},
+	"シ": {Romaji: "shi", Mnemonic: `Dua titik vertikal berbaris di kiri + sapuan panjang naik dari bawah ke kanan atas.`},
+	"ス": {Romaji: "su", Mnemonic: `Atap berbelok miring ke kiri bawah disertai satu kaki penyangga pendek ke kanan bawah.`},
+	"セ": {Romaji: "se", Mnemonic: `Garis atas menyiku tajam yang ditopang satu garis lengkung dari bawah.`},
+	"ソ": {Romaji: "so", Mnemonic: `Satu titik miring di kiri atas + satu sapuan panjang turun dari kanan atas ke kiri.`},
+	"タ": {Romaji: "ta", Mnemonic: `Sudut miring ke kiri atas dengan palang pendek menyilang di bagian tengah badan.`},
+	"チ": {Romaji: "chi", Mnemonic: `Atap miring pendek di atas palang datar yang ditembus batang melengkung ke kiri.`},
+	"ツ": {Romaji: "tsu", Mnemonic: `Dua titik sejajar horizontal di atas + sapuan panjang turun dari kanan atas ke kiri.`},
+	"テ": {Romaji: "te", Mnemonic: `Dua garis datar bertumpuk di atas dengan satu tiang tengah melengkung ke kiri bawah.`},
+	"ト": {Romaji: "to", Mnemonic: `Satu batang tegak lurus dengan satu cabang pendek menonjol miring ke kanan.`},
+	"ナ": {Romaji: "na", Mnemonic: `Palang horizontal lurus yang disilang satu sapuan melengkung ke kiri bawah.`},
+	"ニ": {Romaji: "ni", Mnemonic: `Dua garis datar bersih sejajar atas-bawah tanpa batang penghubung.`},
+	"ヌ": {Romaji: "nu", Mnemonic: `Garis menyudut turun ke kiri yang disilang satu titik goresan pendek di kanan bawah.`},
+	"ネ": {Romaji: "ne", Mnemonic: `Titik kecil di puncak atap miring bertiang tegak dengan cabang pendek di kanan bawah.`},
 	"ノ": {Romaji: "no", Mnemonic: `Satu goresan miring diagonal tajam dari kanan atas ke kiri bawah.`},
-	"ハ": {Romaji: "ha", Mnemonic: `Dua goresan miring menjauh ke kiri dan kanan seperti atap/kumis ("ha!").`},
-	"ヒ": {Romaji: "hi", Mnemonic: `Batang tegak berbelok ke kanan dengan palang pendek melintang ke kanan atas.`},
+	"ハ": {Romaji: "ha", Mnemonic: `Dua goresan pendek terbuka ke kiri dan kanan seperti atap miring terpisah.`},
+	"ヒ": {Romaji: "hi", Mnemonic: `Batang tegak berbelok sudut ke kanan bawah dengan satu garis pendek melintang ke atas.`},
 	"フ": {Romaji: "fu", Mnemonic: `Satu goresan datar berbelok turun ke kiri bawah tanpa sudut tambahan.`},
-	"ヘ": {Romaji: "he", Mnemonic: `Bentuknya identik dengan Hiragana へ, lebih tegas bersudut tajam.`},
-	"ホ": {Romaji: "ho", Mnemonic: `Bentuk salib/tanda tambah bertiang diapit dua titik cabang di kanan dan kiri.`},
-	"マ": {Romaji: "ma", Mnemonic: `Garis datar membelok ke kiri diikuti satu goresan pendek menyentuh di bawah.`},
-	"ミ": {Romaji: "mi", Mnemonic: `Tiga goresan pendek sejajar miring seperti cakar tiga baris ("mi-au").`},
-	"ム": {Romaji: "mu", Mnemonic: `Sudut segitiga miring ke kiri yang ditutup goresan pendek di kanan.`},
-	"メ": {Romaji: "me", Mnemonic: `Satu sapuan miring kiri disilang sapuan pendek membentuk tanda silang.`},
+	"ヘ": {Romaji: "he", Mnemonic: `Bentuk atap bersudut tajam menanjak pendek lalu menurun memanjang ke kanan.`},
+	"ホ": {Romaji: "ho", Mnemonic: `Bentuk salib bertiang diapit dua titik cabang pendek di sisi kiri dan kanan.`},
+	"マ": {Romaji: "ma", Mnemonic: `Garis datar membelok menyiku ke kiri diikuti satu goresan pendek di bagian ujung.`},
+	"ミ": {Romaji: "mi", Mnemonic: `Tiga goresan pendek miring sejajar bertumpuk rapi seperti tiga cakaran diagonal.`},
+	"ム": {Romaji: "mu", Mnemonic: `Garis sudut tajam turun ke kiri bawah yang ditutup satu goresan pendek di sudut kanan.`},
+	"メ": {Romaji: "me", Mnemonic: `Satu sapuan miring kiri disilang sapuan pendek membentuk tanda silang tajam.`},
 	"モ": {Romaji: "mo", Mnemonic: `Dua garis datar bertiang siku rata mendatar tanpa kait berlebih.`},
-	"ヤ": {Romaji: "ya", Mnemonic: `Versi tajam dari Hiragana や tanpa titik di sampingnya.`},
-	"ユ": {Romaji: "yu", Mnemonic: `Kotak berbelok tajam dengan garis alas panjang seperti huruf U terbalik.`},
-	"ヨ": {Romaji: "yo", Mnemonic: `Tiga garis mendatar bersambung oleh batang tegak di sebelah kanan (huruf E terbalik).`},
-	"ラ": {Romaji: "ra", Mnemonic: `Garis pendek di atas + sudut membelok ke bawah seperti pelari.`},
-	"リ": {Romaji: "ri", Mnemonic: `Dua batang tegak bersisian, garis kanan turun memanjang ke kiri.`},
-	"ル": {Romaji: "ru", Mnemonic: `Satu garis miring turun ke kiri dan satu batang siku membelok ke kanan.`},
+	"ヤ": {Romaji: "ya", Mnemonic: `Goresan menyiku ke kanan ditembus satu tiang panjang miring tanpa titik terpisah.`},
+	"ユ": {Romaji: "yu", Mnemonic: `Garis siku atas berbelok turun bertumpu di atas satu garis alas horizontal panjang.`},
+	"ヨ": {Romaji: "yo", Mnemonic: `Tiga garis mendatar terbuka ke kiri yang disatukan batang tegak di sebelah kanan.`},
+	"ラ": {Romaji: "ra", Mnemonic: `Satu garis datar pendek di atas diikuti lengkungan siku menurun ke kiri bawah.`},
+	"リ": {Romaji: "ri", Mnemonic: `Dua batang tegak bersisian, garis kanan turun memanjang melengkung ke kiri.`},
+	"ル": {Romaji: "ru", Mnemonic: `Satu garis miring turun ke kiri diikuti batang tegak berbelok tajam ke kanan atas.`},
 	"レ": {Romaji: "re", Mnemonic: `Satu tarikan vertikal yang melenting tajam ke kanan atas.`},
-	"ロ": {Romaji: "ro", Mnemonic: `Bentuk kotak segi empat utuh tertutup ("room").`},
-	"ワ": {Romaji: "wa", Mnemonic: `Tiang pendek kiri atas terhubung garis atas lalu melengkung turun membelok.`},
+	"ロ": {Romaji: "ro", Mnemonic: `Bentuk kotak segi empat siku utuh tertutup rapat.`},
+	"ワ": {Romaji: "wa", Mnemonic: `Tiang pendek kiri atas terhubung garis atas lalu melengkung turun membelok ke kiri.`},
 	"ヲ": {Romaji: "o / wo", Mnemonic: `Dua garis datar atas dihubungkan kurva turun tajam di sisi kanan.`},
 	"ン": {Romaji: "n", Mnemonic: `Satu titik di kiri atas + sapuan panjang naik dari kiri bawah ke kanan atas.`},
 }
@@ -365,7 +366,7 @@ func reconstructFillBlankWord(template string, selected string) string {
 	return collapseSpacesBetweenJapanese(replaced)
 }
 
-func buildContextualHint(rawEx exercise.Exercise, romaji string, grammarPoints []GrammarPoint) string {
+func buildContextualHint(rawEx exercise.Exercise, sanitizedEx exercise.Exercise, romaji string, grammarPoints []GrammarPoint) string {
 	if rawEx.Hint != nil && strings.TrimSpace(*rawEx.Hint) != "" {
 		return strings.TrimSpace(*rawEx.Hint)
 	}
@@ -380,7 +381,7 @@ func buildContextualHint(rawEx exercise.Exercise, romaji string, grammarPoints [
 		if info, ok := kanaMnemonicMap[selected]; ok {
 			return fmt.Sprintf("Ingat bentuk hurufnya: %s", stripSpoilerFromHint(info.Mnemonic, selected))
 		}
-		if trans := contentString(content, "translation"); trans != "" {
+		if trans := contentString(sanitizedEx.Content, "translation"); trans != "" && !exercise.IsFillBlankTranslationSpoiler(trans, rawEx.CorrectAnswer, content) {
 			if len(grammarPoints) > 0 && strings.TrimSpace(grammarPoints[0].Formula) != "" {
 				return fmt.Sprintf("Lengkapi bagian kosong untuk arti %q dengan pola: %s.", trans, grammarPoints[0].Formula)
 			}
@@ -646,7 +647,11 @@ func extractStudyItemForExercise(idx int, rawEx exercise.Exercise, grammarPoints
 			baseReading, parenMeaning := extractTrailingParen(resolvedReading)
 			if baseReading != "" && parenMeaning != "" && meaning == "" {
 				resolvedReading = baseReading
-				meaning = strings.ToUpper(parenMeaning[:1]) + parenMeaning[1:]
+				if r, size := utf8.DecodeRuneInString(parenMeaning); r != utf8.RuneError && size > 0 {
+					meaning = string(unicode.ToUpper(r)) + parenMeaning[size:]
+				} else {
+					meaning = parenMeaning
+				}
 			}
 		}
 		if resolvedReading == "" {
@@ -732,7 +737,7 @@ func buildLessonStudyItemsAndHints(
 		item, resolvedRomaji, ok := extractStudyItemForExercise(i, rawEx, grammarPoints)
 
 		if i < len(sanitizedExercises) {
-			hint := buildContextualHint(rawEx, resolvedRomaji, grammarPoints)
+			hint := buildContextualHint(rawEx, sanitizedExercises[i], resolvedRomaji, grammarPoints)
 			if hint != "" {
 				hintCopy := hint
 				sanitizedExercises[i].Hint = &hintCopy

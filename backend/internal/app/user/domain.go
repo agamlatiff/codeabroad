@@ -15,6 +15,7 @@ var (
 	ErrEmailAlreadyExists        = apperror.NewConflictError("EMAIL_ALREADY_EXISTS", "email sudah terdaftar")
 	ErrUsernameTaken             = apperror.NewConflictError("USERNAME_TAKEN", "username sudah digunakan")
 	ErrOAuthAccountConflict      = apperror.NewConflictError("OAUTH_ACCOUNT_CONFLICT", "akun ini sudah terhubung dengan akun OAuth lain")
+	ErrLocalAccountUnverified    = apperror.NewConflictError("LOCAL_ACCOUNT_UNVERIFIED", "email ini sudah terdaftar dengan akun kata sandi yang belum terverifikasi; masuk dengan kata sandi terlebih dahulu")
 )
 
 // OAuthAccount links an external identity provider (e.g., Google) to a Merantalk user account.
@@ -34,11 +35,25 @@ type OAuthAccount struct {
 
 // UserAccount represents Pillar 1: Auth Core (users table)
 type UserAccount struct {
-	ID           string    `json:"id"`
-	Email        string    `json:"email"`
-	PasswordHash string    `json:"-"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
+	ID                    string     `json:"id"`
+	Email                 string     `json:"email"`
+	PasswordHash          string     `json:"-"`
+	EmailVerified         bool       `json:"email_verified"`
+	SubscriptionTier      string     `json:"subscription_tier"`
+	SubscriptionExpiresAt *time.Time `json:"subscription_expires_at,omitempty"`
+	CreatedAt             time.Time  `json:"created_at"`
+	UpdatedAt             time.Time  `json:"updated_at"`
+}
+
+// IsPro reports whether the account currently has an active Pro subscription.
+func (u UserAccount) IsPro() bool {
+	if u.SubscriptionTier != "pro" {
+		return false
+	}
+	if u.SubscriptionExpiresAt != nil && u.SubscriptionExpiresAt.Before(time.Now()) {
+		return false
+	}
+	return true
 }
 
 // UserProfile represents Pillar 2: Profile & Learning Goals (user_profiles table)
@@ -187,7 +202,7 @@ type Repository interface {
 
 // StreakBadgeAwarder awards streak milestone badges without introducing an import cycle with gamification.
 type StreakBadgeAwarder interface {
-	AwardStreakBadge(ctx context.Context, userID string, badgeKey string, currentLevel int) error
+	AwardStreakBadge(ctx context.Context, userID string, badgeKey string, currentLevel int) (bool, error)
 }
 
 // Usecase specifies business operations for profile, activity history, and daily habit claims

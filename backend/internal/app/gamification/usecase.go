@@ -202,8 +202,11 @@ func (u *usecase) ClaimDailyQuest(ctx context.Context, userID string, questID st
 	if err != nil {
 		return nil, err
 	}
-	if res != nil {
-		u.evaluateStreakBadges(ctx, userID, res.Streak, res.CurrentLevel)
+	if res != nil && u.evaluateStreakBadges(ctx, userID, res.Streak, res.CurrentLevel) {
+		if stats, statErr := u.gamificationRepo.GetGamificationStats(ctx, userID); statErr == nil && stats != nil {
+			res.CurrentXP = stats.XP
+			res.CurrentLevel = stats.CurrentLevel
+		}
 	}
 	return res, nil
 }

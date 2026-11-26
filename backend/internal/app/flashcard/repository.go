@@ -6,10 +6,14 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"merantalk/backend/infrastructure/postgres"
+	"merantalk/backend/internal/app/user"
 	"merantalk/backend/internal/shared/apperror"
+	"merantalk/backend/internal/shared/progression"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type postgresRepository struct {
@@ -415,6 +419,9 @@ func (r *postgresRepository) GetDeckWithCards(ctx context.Context, userID string
 }
 
 func (r *postgresRepository) ListDueCards(ctx context.Context, userID string, languageCode string, limit int) (*DueQueueResponse, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
 	statsQuery := `
 		SELECT
 			COUNT(CASE WHEN p.repetitions >= 1 THEN 1 END)::int AS total_learned,
@@ -492,6 +499,9 @@ func (r *postgresRepository) ListDueCards(ctx context.Context, userID string, la
 }
 
 func (r *postgresRepository) CardExists(ctx context.Context, cardID string) (bool, error) {
+	if err := apperror.ValidateEntityUUID(cardID); err != nil {
+		return false, err
+	}
 	var exists bool
 	err := r.db.Pool.QueryRow(
 		ctx,
@@ -505,6 +515,12 @@ func (r *postgresRepository) CardExists(ctx context.Context, cardID string) (boo
 }
 
 func (r *postgresRepository) GetCardProgress(ctx context.Context, userID string, cardID string) (*CardProgress, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateEntityUUID(cardID); err != nil {
+		return nil, err
+	}
 	query := `
 		SELECT
 			user_id::text,
@@ -536,7 +552,11 @@ func (r *postgresRepository) GetCardProgress(ctx context.Context, userID string,
 	return &p, nil
 }
 
-func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *CardProgress) error {
+type sqlExecer interface {
+	Exec(ctx context.Context, sql string, arguments ...any) (pgconn.CommandTag, error)
+}
+
+func upsertCardProgressAndSyncKana(ctx context.Context, exec sqlExecer, progress *CardProgress) error {
 	query := `
 		INSERT INTO user_flashcard_progress (
 			user_id,
@@ -557,7 +577,7 @@ func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *C
 			last_reviewed_at = EXCLUDED.last_reviewed_at,
 			updated_at = NOW()
 	`
-	_, err := r.db.Pool.Exec(
+	_, err := exec.Exec(
 		ctx,
 		query,
 		progress.UserID,
@@ -600,8 +620,131 @@ func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *C
 			),
 			last_practiced_at = NOW()
 	`
-	_, _ = r.db.Pool.Exec(ctx, kanaSyncQuery, progress.UserID, progress.CardID, incCorrect, initScore, scoreDelta)
+	if _, err := exec.Exec(ctx, kanaSyncQuery, progress.UserID, progress.CardID, incCorrect, initScore, scoreDelta); err != nil {
+		return fmt.Errorf("sync kana progress from flashcard: %w", err)
+	}
 	return nil
+}
+
+func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *CardProgress) error {
+	if progress == nil {
+		return apperror.ErrBadRequest
+	}
+	if err := apperror.ValidateUserUUID(progress.UserID); err != nil {
+		return err
+	}
+	if err := apperror.ValidateEntityUUID(progress.CardID); err != nil {
+		return err
+	}
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("begin upsert flashcard progress tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "flashcard.UpsertCardProgress")
+
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('kana_fc_sync:' || $1, 0))`, progress.UserID); err != nil {
+		return fmt.Errorf("acquire flashcard sync lock: %w", err)
+	}
+
+	if err := upsertCardProgressAndSyncKana(ctx, tx, progress); err != nil {
+		return err
+	}
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("commit upsert flashcard progress tx: %w", err)
+	}
+	return nil
+}
+
+// ReviewCardTx atomically locks (userID, cardID), computes SM-2 progression, syncs kana mastery, and awards XP.
+func (r *postgresRepository) ReviewCardTx(
+	ctx context.Context,
+	userID string,
+	cardID string,
+	quality int,
+	baseXP int,
+	now time.Time,
+	recordXP bool,
+	meta map[string]any,
+) (*ReviewCardTxResult, error) {
+	if err := apperror.ValidateUserUUID(userID); err != nil {
+		return nil, err
+	}
+	if err := apperror.ValidateEntityUUID(cardID); err != nil {
+		return nil, err
+	}
+
+	tx, err := r.db.Pool.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin flashcard review tx: %w", err)
+	}
+	defer progression.RollbackTx(ctx, tx, "flashcard.ReviewCardTx")
+
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('kana_fc_sync:' || $1, 0))`, userID); err != nil {
+		return nil, fmt.Errorf("acquire flashcard review lock: %w", err)
+	}
+
+	var exists bool
+	if err := tx.QueryRow(ctx, `SELECT EXISTS(SELECT 1 FROM flashcard_cards WHERE id = $1::uuid)`, cardID).Scan(&exists); err != nil {
+		return nil, fmt.Errorf("check flashcard exists in tx: %w", err)
+	}
+	if !exists {
+		return nil, ErrCardNotFound
+	}
+
+	prevReps := 0
+	prevInterval := 0
+	prevEase := 2.5
+	var p CardProgress
+	err = tx.QueryRow(
+		ctx,
+		`SELECT user_id::text, card_id::text, ease_factor, interval_days, repetitions, next_review_at, COALESCE(last_reviewed_at, NOW())
+		 FROM user_flashcard_progress
+		 WHERE user_id = $1::uuid AND card_id = $2::uuid
+		 FOR UPDATE`,
+		userID, cardID,
+	).Scan(&p.UserID, &p.CardID, &p.EaseFactor, &p.IntervalDays, &p.Repetitions, &p.NextReviewAt, &p.LastReviewedAt)
+	if err != nil {
+		if !errors.Is(err, pgx.ErrNoRows) {
+			return nil, fmt.Errorf("lock flashcard progress: %w", err)
+		}
+	} else {
+		prevReps = p.Repetitions
+		prevInterval = p.IntervalDays
+		prevEase = p.EaseFactor
+	}
+
+	sm2 := CalculateSM2(quality, prevReps, prevInterval, prevEase, now)
+	if err := upsertCardProgressAndSyncKana(ctx, tx, &CardProgress{
+		UserID:         userID,
+		CardID:         cardID,
+		EaseFactor:     sm2.EaseFactor,
+		IntervalDays:   sm2.IntervalDays,
+		Repetitions:    sm2.Repetitions,
+		NextReviewAt:   sm2.NextReviewAt,
+		LastReviewedAt: now,
+	}); err != nil {
+		return nil, err
+	}
+
+	res := &ReviewCardTxResult{
+		SM2:       sm2,
+		XPAwarded: baseXP,
+	}
+	if recordXP {
+		awarded, newXP, lvl, streak, xpErr := user.RecordXPActivityTx(ctx, tx, userID, "srs_review_completed", baseXP, true, meta)
+		if xpErr != nil {
+			return nil, xpErr
+		}
+		res.XPAwarded = awarded
+		res.CurrentXP = newXP
+		res.CurrentLevel = lvl
+		res.Streak = streak
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return nil, fmt.Errorf("commit flashcard review tx: %w", err)
+	}
+	return res, nil
 }
 
 func (r *postgresRepository) CountMasteredCards(ctx context.Context, userID string) (int, error) {

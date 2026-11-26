@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 	"strings"
 	"time"
 
@@ -117,6 +118,7 @@ func (r *PostgresRepository) GetGrammarPointsByLanguageCode(ctx context.Context,
 		JOIN languages l ON l.id = pl.language_id
 		` + grammarPracticeLessonLateralJoin + `
 		WHERE l.code = $1
+		  AND l.is_active = true
 		  AND ($2 = '' OR UPPER(pl.code) = $2)
 		ORDER BY pl.order_index ASC, gp.order_index ASC, gp.id ASC
 	`
@@ -469,27 +471,34 @@ const curriculumUnlockPredicateSQL = `
 	EXISTS (
 		SELECT 1
 		FROM user_language_enrollments ule
-		JOIN proficiency_levels user_pl ON ule.current_level_id = user_pl.id
 		WHERE ule.user_id = $2::uuid
 		  AND ule.language_id = tl.language_id
 		  AND ule.is_active = true
-		  AND tl.level_order <= user_pl.order_index
-		  AND NOT EXISTS (
-			SELECT 1
-			FROM lessons prev_l
-			JOIN units prev_u ON prev_l.unit_id = prev_u.id
-			LEFT JOIN user_lesson_progress prev_ulp
-			  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
-			WHERE prev_u.level_id = tl.level_id
-			  AND prev_u.unit_type = 'curriculum'
-			  AND COALESCE(prev_ulp.is_completed, false) = false
-			  AND (
-				(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
-				OR (
-					prev_u.id = tl.unit_id
-					AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
-				)
-			  )
+		  AND (
+			EXISTS (
+				SELECT 1
+				FROM users u_pro
+				WHERE u_pro.id = $2::uuid
+				  AND u_pro.subscription_tier = 'pro'
+				  AND (u_pro.subscription_expires_at IS NULL OR u_pro.subscription_expires_at > NOW())
+			)
+			OR NOT EXISTS (
+				SELECT 1
+				FROM lessons prev_l
+				JOIN units prev_u ON prev_l.unit_id = prev_u.id
+				LEFT JOIN user_lesson_progress prev_ulp
+				  ON prev_l.id = prev_ulp.lesson_id AND prev_ulp.user_id = $2::uuid
+				WHERE prev_u.level_id = tl.level_id
+				  AND prev_u.unit_type = 'curriculum'
+				  AND COALESCE(prev_ulp.is_completed, false) = false
+				  AND (
+					(prev_u.order_index, prev_u.id) < (tl.unit_order, tl.unit_id)
+					OR (
+						prev_u.id = tl.unit_id
+						AND (prev_l.order_index, prev_l.id) < (tl.lesson_order, tl.id)
+					)
+				  )
+			)
 		  )
 	)
 `
@@ -1008,6 +1017,17 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 	}
 	defer func() { _ = tx.Rollback(ctx) }()
 
+	// Serialize with flashcard bidirectional kana sync to prevent AB-BA row-lock deadlocks (40P01).
+	if _, err := tx.Exec(ctx, `SELECT pg_advisory_xact_lock(hashtextextended('kana_fc_sync:' || $1, 0))`, userID); err != nil {
+		return 0, 0, fmt.Errorf("failed to acquire kana sync lock: %w", err)
+	}
+
+	sortedResults := make([]KanaPracticeItem, len(results))
+	copy(sortedResults, results)
+	sort.SliceStable(sortedResults, func(i, j int) bool {
+		return strings.TrimSpace(sortedResults[i].Character) < strings.TrimSpace(sortedResults[j].Character)
+	})
+
 	upsertSQL := `
 		INSERT INTO user_kana_progress (user_id, character, practice_count, correct_count, mastery_score, is_mastered, last_practiced_at)
 		SELECT $1::uuid, kc.character, 1, $3, $4, $5, NOW()
@@ -1059,7 +1079,7 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 	`
 
 	updatedCount := 0
-	for _, res := range results {
+	for _, res := range sortedResults {
 		ch := strings.TrimSpace(res.Character)
 		if ch == "" {
 			continue

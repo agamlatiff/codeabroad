@@ -301,6 +301,9 @@ func TestClaimDailyQuestAndChest_UnlocksStreakBadges(t *testing.T) {
 	if res.XPAwarded != 20 {
 		t.Fatalf("expected 20 XP from quest, got %d", res.XPAwarded)
 	}
+	if res.CurrentXP != 170 {
+		t.Fatalf("expected CurrentXP=170 (100 base + 20 quest + 50 streak_7 badge), got %d", res.CurrentXP)
+	}
 	if len(repo.UserBadges["user-1"]) != 1 || repo.UserBadges["user-1"][0].BadgeKey != "streak_7" {
 		t.Fatalf("expected streak_7 badge unlocked via ClaimDailyQuest, got %+v", repo.UserBadges["user-1"])
 	}
