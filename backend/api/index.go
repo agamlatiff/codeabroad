@@ -229,5 +229,14 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if originalPath := r.URL.Query().Get("__path"); originalPath != "" {
+		q := r.URL.Query()
+		q.Del("__path")
+		r.URL.Path = originalPath
+		r.URL.RawPath = ""
+		r.URL.RawQuery = q.Encode()
+		r.RequestURI = r.URL.RequestURI()
+	}
+
 	appEngine.ServeHTTP(w, r)
 }
