@@ -230,19 +230,37 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if originalPath := r.URL.Query().Get("__path"); originalPath != "" {
+	q := r.URL.Query()
+	originalPath := ""
+	if vals := q["__path"]; len(vals) > 0 {
+		for i := len(vals) - 1; i >= 0; i-- {
+			if strings.TrimSpace(vals[i]) != "" {
+				originalPath = vals[i]
+				break
+			}
+		}
+		q.Del("__path")
+	} else if p := strings.TrimSpace(q.Get("path")); p != "" && (r.URL.Path == "/api/index" || r.URL.Path == "/") {
+		originalPath = "/api/v1/" + strings.TrimLeft(p, "/")
+		q.Del("path")
+	}
+
+	if originalPath != "" {
 		if !strings.HasPrefix(originalPath, "/") {
 			originalPath = "/" + originalPath
 		}
 		for strings.HasPrefix(originalPath, "//") {
 			originalPath = strings.TrimPrefix(originalPath, "/")
 		}
-		q := r.URL.Query()
-		q.Del("__path")
 		r.URL.Path = originalPath
 		r.URL.RawPath = ""
 		r.URL.RawQuery = q.Encode()
 		r.RequestURI = r.URL.RequestURI()
+	} else if r.URL.Path == "/" || r.URL.Path == "/api/index" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"ok","service":"merantalk-api","health":"/api/v1/health"}`))
+		return
 	}
 
 	appEngine.ServeHTTP(w, r)
