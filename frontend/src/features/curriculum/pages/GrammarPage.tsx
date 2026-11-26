@@ -20,6 +20,8 @@ import {
 } from '@/features/curriculum/constants/grammarStyles'
 import { GrammarEditorialCard } from '@/features/curriculum/components/GrammarEditorialCard'
 import { GrammarHeroIllustration } from '@/features/curriculum/components/GrammarHeroIllustration'
+import { TierUpgradeBanner } from '@/shared/components/ui/TierUpgradeBanner'
+import { checkLevelAccess, isUserPro } from '@/shared/utils/levelAccess'
 
 type JlptLevelFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
 
@@ -48,11 +50,13 @@ function parseLevelFilterParam(raw: string | null): JlptLevelFilter {
 
 /**
  * Full-width 3D tactile Grammar Guide (/grammar):
- * - Unified AppTopBar + AppBreadcrumb + Clean Tactile PageHeroHeader + 1-Row FilterToolbar.
+ * - Unified AppTopBar + AppBreadcrumb + Clean Tactile Hero + 1-Row FilterToolbar.
  * - Always displays accurate formula Romaji beneath each pattern for beginner clarity.
  */
 export const GrammarPage = () => {
   const { data: userData } = useUser()
+  const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
+  const isPro = isUserPro(userData.user)
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
   const heroPatternId = `grammar-hero-seigaiha-${useId().replace(/:/g, '')}`
@@ -60,6 +64,10 @@ export const GrammarPage = () => {
 
   const rawLevelParam = searchParams.get('level')
   const levelFilter = useMemo(() => parseLevelFilterParam(rawLevelParam), [rawLevelParam])
+  const levelAccess = useMemo(
+    () => checkLevelAccess(levelFilter, { isAuthenticated, isPro }),
+    [levelFilter, isAuthenticated, isPro]
+  )
   const categoryFilter = searchParams.get('category')?.trim() || 'ALL'
   const reviewFilter = searchParams.get('review')?.trim().toLowerCase() === 'due' ? 'due' : 'all'
   const [searchQuery, setSearchQuery] = useState('')
@@ -110,6 +118,20 @@ export const GrammarPage = () => {
         } else {
           next.delete('review')
         }
+        return next
+      },
+      { replace: true }
+    )
+  }
+
+  const handleResetFilters = () => {
+    setSearchQuery('')
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev)
+        next.set('level', levelFilter)
+        next.delete('category')
+        next.delete('review')
         return next
       },
       { replace: true }
@@ -181,6 +203,9 @@ export const GrammarPage = () => {
     const query = searchQuery.trim().toLowerCase()
     return grammarPoints.filter((point: GrammarPoint) => {
       const levelCode = (point.level_code ?? 'N5').toUpperCase()
+      if (levelFilter === 'ALL' && !checkLevelAccess(levelCode, { isAuthenticated, isPro }).allowed) {
+        return false
+      }
       if (levelFilter !== 'ALL' && levelCode !== levelFilter) return false
       if (categoryFilter !== 'ALL' && point.category !== categoryFilter) return false
       if (reviewFilter === 'due' && !isGrammarPointDueForReview(point)) return false
@@ -201,7 +226,7 @@ export const GrammarPage = () => {
         exampleMatch
       )
     })
-  }, [grammarPoints, levelFilter, categoryFilter, reviewFilter, searchQuery])
+  }, [grammarPoints, levelFilter, categoryFilter, reviewFilter, searchQuery, isAuthenticated, isPro])
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -337,8 +362,15 @@ export const GrammarPage = () => {
           </section>
         )}
 
-        {/* Horizontal Editorial Grammar Cards (LingoDeer-inspired) */}
-        {isLoading ? (
+        {/* Tier Gate or Horizontal Editorial Grammar Cards */}
+        {!levelAccess.allowed && levelAccess.reason !== 'ok' ? (
+          <TierUpgradeBanner
+            levelCode={levelFilter}
+            reason={levelAccess.reason}
+            featureLabel="Panduan Grammar"
+            onSelectFreeLevel={() => handleSelectLevel('N5')}
+          />
+        ) : isLoading ? (
           <div className="space-y-4">
             {Array.from({ length: 4 }).map((_, idx) => (
               <div
@@ -364,11 +396,7 @@ export const GrammarPage = () => {
               <Button3D
                 variant="white"
                 size="sm"
-                onClick={() => {
-                  setSearchQuery('')
-                  handleSelectCategory('ALL')
-                  handleSetReviewFilter('all')
-                }}
+                onClick={handleResetFilters}
                 className="text-xs px-4 py-2 mx-auto"
               >
                 Reset Filter

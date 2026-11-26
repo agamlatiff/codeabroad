@@ -33,7 +33,7 @@ function formatReviewHint(iso?: string | null): string | null {
 
 /**
  * Interactive 3-question comprehension check right inside GrammarDetailPage.
- * Passing 3/3 marks the grammar point as "Paham ✓" and schedules spaced-repetition review.
+ * Passing 3/3 marks the grammar point as "Paham" and schedules spaced-repetition review.
  */
 export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
   questions,
@@ -105,7 +105,7 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
             {isAlreadyUnderstood && (
               <span className="inline-flex items-center gap-1 text-[11px] font-brand font-black uppercase tracking-wider px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
                 <CheckCircle weight="fill" className="w-3.5 h-3.5 text-emerald-600" />
-                Paham ✓{reviewLabel ? ` • Review ${reviewLabel}` : ''}
+                Paham{reviewLabel ? ` • Review ${reviewLabel}` : ''}
               </span>
             )}
           </div>
@@ -225,7 +225,7 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
                 ) : passedThisRound ? (
                   <>
                     <Sparkle weight="fill" className="w-4 h-4 text-emerald-600 shrink-0" />
-                    <span>Paham ✓ • Masuk Jadwal Ulasan ({correctCount}/{total})</span>
+                    <span>Paham • Masuk Jadwal Ulasan ({correctCount}/{total})</span>
                   </>
                 ) : (
                   <span>
@@ -240,7 +240,7 @@ export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
                     ? 'Menyimpan progres...'
                     : passedThisRound
                       ? 'Mantap! Pola ini sudah ditandai selesai di daftar materi.'
-                      : 'Jawab benar 3/3 untuk menandai materi ini sebagai Paham ✓.'}
+                      : 'Jawab benar 3/3 untuk menandai materi ini sebagai Paham.'}
               </p>
             </div>
           </div>

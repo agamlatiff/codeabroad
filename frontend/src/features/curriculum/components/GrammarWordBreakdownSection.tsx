@@ -55,7 +55,7 @@ export const GrammarWordBreakdownSection: FC<GrammarWordBreakdownSectionProps> =
             </p>
           )}
         </div>
-        <span className="text-xs text-slate-400 font-medium hidden sm:inline">
+        <span className="text-xs text-slate-500 font-medium hidden sm:inline">
           Dengarkan kecepatan normal atau 0.6x
         </span>
       </div>
@@ -145,7 +145,7 @@ export const GrammarWordBreakdownSection: FC<GrammarWordBreakdownSectionProps> =
 
                   {/* Complete Indonesian translation */}
                   <div className="pt-2 border-t border-slate-200/80 flex items-baseline gap-2">
-                    <span className="text-[11px] font-brand font-black uppercase tracking-wider text-slate-400 shrink-0">
+                    <span className="text-[11px] font-brand font-black uppercase tracking-wider text-slate-500 shrink-0">
                       Arti:
                     </span>
                     <p className="text-sm sm:text-base font-bold text-slate-800 leading-snug">

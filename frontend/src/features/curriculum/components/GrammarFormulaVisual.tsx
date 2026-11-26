@@ -2,6 +2,7 @@ import type { FC } from 'react'
 import { Check, Copy, Plus, Sparkle } from '@phosphor-icons/react'
 import type { GrammarFormulaPart } from '@/features/curriculum/types/curriculum'
 import { getGrammarRoleStyle } from '@/features/curriculum/constants/grammarStyles'
+import { humanizeFormulaSlotText } from '@/features/curriculum/constants/grammarSlotPresets'
 
 export interface GrammarFormulaVisualProps {
   formula: string
@@ -29,9 +30,9 @@ export const GrammarFormulaVisual: FC<GrammarFormulaVisualProps> = ({
   return (
     <div className="rounded-2xl bg-gradient-to-br from-slate-50 via-blue-50/40 to-white border-2 border-slate-200/90 p-4 sm:p-5 space-y-3.5 shadow-2xs">
       <div className="flex items-center justify-between gap-2 flex-wrap">
-        <span className="text-[11px] font-brand font-black uppercase tracking-wider text-blue-600 flex items-center gap-1.5">
+        <span className="text-[11px] font-brand font-black uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
           <Sparkle weight="fill" className="w-3.5 h-3.5" />
-          Rumus Pola Kalimat Berwarna
+          Pola Susunan Kalimat
         </span>
         <button
           type="button"
@@ -50,7 +51,7 @@ export const GrammarFormulaVisual: FC<GrammarFormulaVisualProps> = ({
           ) : (
             <>
               <Copy weight="bold" className="w-3.5 h-3.5" />
-              <span>Salin Rumus</span>
+              <span>Salin Pola</span>
             </>
           )}
         </button>
@@ -66,10 +67,10 @@ export const GrammarFormulaVisual: FC<GrammarFormulaVisualProps> = ({
                   className={`rounded-xl border-2 px-3.5 py-2 shadow-2xs ${style.block}`}
                 >
                   <div className="font-mono text-sm sm:text-base font-black leading-snug">
-                    {part.text}
+                    {humanizeFormulaSlotText(part.text)}
                   </div>
                   <div className={`text-[11px] font-brand font-bold leading-tight mt-0.5 ${style.label}`}>
-                    {part.label}
+                    {humanizeFormulaSlotText(part.label)}
                   </div>
                 </div>
                 {idx < formulaParts.length - 1 && (
@@ -89,7 +90,7 @@ export const GrammarFormulaVisual: FC<GrammarFormulaVisualProps> = ({
         <div className="pt-2 border-t border-slate-200/70 flex items-center gap-2 flex-wrap">
           <span className="text-[11px] font-brand font-bold text-slate-500">Cara baca:</span>
           <p className="text-xs sm:text-sm font-bold text-blue-700 break-words">
-            {formulaReading}
+            {humanizeFormulaSlotText(formulaReading)}
           </p>
         </div>
       )}

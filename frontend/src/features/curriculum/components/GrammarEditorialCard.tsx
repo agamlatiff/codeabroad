@@ -201,12 +201,12 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
                 point.is_understood && (
                   <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-emerald-100 text-emerald-800 border border-emerald-300">
                     <CheckCircle weight="fill" className="w-3 h-3 text-emerald-600" />
-                    <span>Paham ✓</span>
+                    <span>Paham</span>
                   </span>
                 )
               )}
             </div>
-            <span className="text-[11px] font-mono font-black text-slate-400">
+            <span className="text-[11px] font-mono font-black text-slate-500">
               #{String(index + 1).padStart(2, '0')}
             </span>
           </div>
@@ -235,9 +235,9 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
         </div>
 
         {/* Footer metadata + CTA */}
-        <div className="pt-2.5 flex items-center justify-between gap-2 border-t border-slate-100">
-          <span className="inline-flex items-center gap-1.5 text-[11px] font-brand font-bold text-slate-500">
-            <Quotes weight="fill" className="w-3.5 h-3.5 text-blue-400" />
+        <div className="pt-2.5 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100">
+          <span className="inline-flex items-center gap-1.5 min-w-0 text-[11px] font-brand font-bold text-slate-500">
+            <Quotes weight="fill" className="w-3.5 h-3.5 text-blue-400 shrink-0" />
             <span>
               {hasGuide
                 ? `${exampleCount} contoh pecah kata • Kuis 3 soal • Audio 0.6x`
@@ -245,12 +245,12 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
             </span>
           </span>
           <span
-            className={`inline-flex items-center gap-1 text-xs sm:text-[13px] font-brand font-black group-hover:gap-1.5 transition-all ${
+            className={`inline-flex items-center gap-1 shrink-0 text-xs sm:text-[13px] font-brand font-black group-hover:gap-1.5 transition-all ${
               isDueForReview ? 'text-amber-700' : 'text-blue-600'
             }`}
           >
             {isDueForReview ? 'Ulas Sekarang' : 'Pelajari Materi'}
-            <ArrowRight weight="bold" className="w-3.5 h-3.5" />
+            <ArrowRight weight="bold" className="w-3.5 h-3.5 shrink-0" />
           </span>
         </div>
       </div>
