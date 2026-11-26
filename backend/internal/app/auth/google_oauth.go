@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -25,29 +26,71 @@ type GoogleIdentity struct {
 
 // GoogleOAuthVerifier exchanges an authorization code and verifies the resulting Google ID token.
 type GoogleOAuthVerifier interface {
-	ExchangeAndVerify(ctx context.Context, code string) (*GoogleIdentity, error)
+	ExchangeAndVerify(ctx context.Context, code string, redirectURI string) (*GoogleIdentity, error)
 }
 
 type googleOAuthClient struct {
-	clientID     string
-	clientSecret string
+	clientID       string
+	clientSecret   string
+	allowedOrigins map[string]struct{}
 }
 
 // NewGoogleOAuthVerifier constructs a Google OAuth code-exchange + ID token verifier.
 // Returns nil when either credential is empty so local dev without Google OAuth stays non-blocking.
 func NewGoogleOAuthVerifier(clientID, clientSecret string) GoogleOAuthVerifier {
+	return NewGoogleOAuthVerifierWithOrigins(clientID, clientSecret, nil)
+}
+
+// NewGoogleOAuthVerifierWithOrigins constructs a Google OAuth verifier with an explicit origin allowlist for redirect URIs.
+func NewGoogleOAuthVerifierWithOrigins(clientID, clientSecret string, allowedOrigins []string) GoogleOAuthVerifier {
 	trimmedID := strings.TrimSpace(clientID)
 	trimmedSecret := strings.TrimSpace(clientSecret)
 	if trimmedID == "" || trimmedSecret == "" {
 		return nil
 	}
+	origins := make(map[string]struct{}, len(allowedOrigins))
+	for _, raw := range allowedOrigins {
+		u, err := url.Parse(strings.TrimSpace(raw))
+		if err != nil || u.Scheme == "" || u.Host == "" {
+			continue
+		}
+		origins[strings.ToLower(u.Scheme+"://"+u.Host)] = struct{}{}
+	}
 	return &googleOAuthClient{
-		clientID:     trimmedID,
-		clientSecret: trimmedSecret,
+		clientID:       trimmedID,
+		clientSecret:   trimmedSecret,
+		allowedOrigins: origins,
 	}
 }
 
-func (c *googleOAuthClient) ExchangeAndVerify(ctx context.Context, code string) (*GoogleIdentity, error) {
+func (c *googleOAuthClient) resolveRedirectURL(raw string) (string, bool) {
+	trimmed := strings.TrimSpace(raw)
+	if trimmed == "" || trimmed == "postmessage" {
+		return "postmessage", true
+	}
+	u, err := url.Parse(trimmed)
+	if err != nil || (u.Scheme != "https" && u.Scheme != "http") || u.Host == "" {
+		return "", false
+	}
+	if u.Path != "/login" && u.Path != "/register" {
+		return "", false
+	}
+	origin := strings.ToLower(u.Scheme + "://" + u.Host)
+	if len(c.allowedOrigins) > 0 {
+		if _, ok := c.allowedOrigins[origin]; !ok {
+			return "", false
+		}
+	}
+	return u.Scheme + "://" + u.Host + u.Path, true
+}
+
+func (c *googleOAuthClient) ExchangeAndVerify(ctx context.Context, code string, redirectURI string) (*GoogleIdentity, error) {
+	resolvedRedirect, ok := c.resolveRedirectURL(redirectURI)
+	if !ok {
+		log.Printf("[WARN] [auth.GoogleOAuth] rejected disallowed redirect_uri: %q", redirectURI)
+		return nil, ErrGoogleAuthFailed
+	}
+
 	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
 
@@ -57,7 +100,7 @@ func (c *googleOAuthClient) ExchangeAndVerify(ctx context.Context, code string) 
 	oauthCfg := &oauth2.Config{
 		ClientID:     c.clientID,
 		ClientSecret: c.clientSecret,
-		RedirectURL:  "postmessage",
+		RedirectURL:  resolvedRedirect,
 		Endpoint:     google.Endpoint,
 		Scopes:       []string{"openid", "email", "profile"},
 	}

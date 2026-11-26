@@ -1,13 +1,28 @@
-import { useEffect, useSyncExternalStore, type FC } from 'react'
-import { useGoogleLogin, useGoogleOAuth } from '@react-oauth/google'
+import { useEffect, useState, type FC } from 'react'
 import { CircleNotch } from '@phosphor-icons/react'
-import {
-  getGoogleScriptLoadError,
-  GOOGLE_CLIENT_ID,
-  subscribeGoogleScriptLoadError,
-} from '@/features/auth/hooks/authHelpers'
+import { GOOGLE_CLIENT_ID } from '@/features/auth/hooks/authHelpers'
 import { useGoogleAuth } from '@/features/auth/hooks/useGoogleAuth'
 import { triggerHaptic } from '@/shared/utils/haptics'
+
+const GOOGLE_OAUTH_STATE_KEY = 'merantalk_google_oauth_state_v1'
+let lastHandledOAuthCode: string | null = null
+
+const generateOAuthState = (): string => {
+  const bytes = new Uint8Array(16)
+  if (typeof window !== 'undefined' && window.crypto?.getRandomValues) {
+    window.crypto.getRandomValues(bytes)
+  } else {
+    for (let i = 0; i < bytes.length; i += 1) {
+      bytes[i] = Math.floor(Math.random() * 256)
+    }
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('')
+}
+
+const getGoogleRedirectUri = (): string => {
+  if (typeof window === 'undefined') return ''
+  return `${window.location.origin}/login`
+}
 
 export interface GoogleAuthButtonProps {
   mode: 'login' | 'register'
@@ -109,78 +124,107 @@ const GoogleAuthConfiguredButton: FC<GoogleAuthButtonProps> = ({
   onStart,
   onError,
 }) => {
-  const { scriptLoadedSuccessfully } = useGoogleOAuth()
-  const hasScriptError = useSyncExternalStore(
-    subscribeGoogleScriptLoadError,
-    getGoogleScriptLoadError,
-    () => false
-  )
+  const [redirecting, setRedirecting] = useState(false)
   const { authenticateWithCode, loading } = useGoogleAuth({
     rememberMe,
     onError: (msg) => onError(msg),
   })
 
+  const isBusy = loading || redirecting
+
   useEffect(() => {
-    onLoadingChange?.(loading)
+    onLoadingChange?.(isBusy)
     return () => {
       onLoadingChange?.(false)
     }
-  }, [loading, onLoadingChange])
+  }, [isBusy, onLoadingChange])
 
-  const openGooglePopup = useGoogleLogin({
-    flow: 'auth-code',
-    scope: 'openid email profile',
-    ux_mode: 'popup',
-    onSuccess: (codeResponse) => {
-      if (!codeResponse.code) {
-        onError('Kode autentikasi Google tidak diterima. Silakan coba lagi.')
-        return
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const params = new URLSearchParams(window.location.search)
+    const oauthError = params.get('error')
+    const code = params.get('code')
+    const returnedState = params.get('state')
+
+    if (!oauthError && !code) return
+
+    // Clean OAuth query params from URL immediately so refresh never replays a single-use code.
+    window.history.replaceState({}, '', window.location.pathname)
+
+    if (oauthError) {
+      try {
+        window.sessionStorage.removeItem(GOOGLE_OAUTH_STATE_KEY)
+      } catch {
+        // Ignore storage errors
       }
-      authenticateWithCode(codeResponse.code)
-    },
-    onError: (errorResponse) => {
-      if (errorResponse.error === 'access_denied') {
+      if (oauthError === 'access_denied') {
         onError('Akses masuk dengan Google dibatalkan.')
-        return
+      } else {
+        onError('Gagal menghubungkan akun Google. Silakan coba lagi.')
       }
-      onError(errorResponse.error_description || 'Gagal menghubungkan akun Google. Silakan coba lagi.')
-    },
-    onNonOAuthError: (nonOAuthError) => {
-      if (nonOAuthError.type === 'popup_closed') {
-        return
+      return
+    }
+
+    if (!code || lastHandledOAuthCode === code) return
+    lastHandledOAuthCode = code
+
+    let savedRememberMe = rememberMe
+    try {
+      const raw = window.sessionStorage.getItem(GOOGLE_OAUTH_STATE_KEY)
+      window.sessionStorage.removeItem(GOOGLE_OAUTH_STATE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw) as { state?: string; rememberMe?: boolean }
+        if (parsed.state && returnedState && parsed.state !== returnedState) {
+          onError('Sesi verifikasi Google tidak valid. Silakan coba lagi.')
+          return
+        }
+        if (typeof parsed.rememberMe === 'boolean') {
+          savedRememberMe = parsed.rememberMe
+        }
       }
-      if (nonOAuthError.type === 'popup_failed_to_open') {
-        onError('Popup Google gagal dibuka. Izinkan popup di browser lalu coba lagi.')
-        return
-      }
-      onError('Gagal membuka jendela masuk Google. Silakan coba lagi.')
-    },
-  })
+    } catch {
+      // Proceed if sessionStorage is unavailable in restricted browser contexts
+    }
+
+    onError(null)
+    authenticateWithCode(code, getGoogleRedirectUri(), savedRememberMe)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleClick = () => {
-    if (disabled || loading) return
+    if (disabled || isBusy) return
     triggerHaptic('tap')
     onError(null)
     onStart?.()
-    if (hasScriptError) {
-      onError(
-        'Skrip Google Sign-In gagal dimuat. Periksa koneksi atau nonaktifkan pemblokir iklan lalu muat ulang halaman.'
+
+    const state = generateOAuthState()
+    const redirectUri = getGoogleRedirectUri()
+    try {
+      window.sessionStorage.setItem(
+        GOOGLE_OAUTH_STATE_KEY,
+        JSON.stringify({ state, rememberMe })
       )
-      return
+    } catch {
+      // Continue even if sessionStorage is restricted
     }
-    if (!scriptLoadedSuccessfully) {
-      onError('Layanan masuk Google masih dimuat, silakan tunggu sebentar lalu coba lagi.')
-      return
-    }
-    openGooglePopup()
+
+    const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth')
+    authUrl.searchParams.set('client_id', GOOGLE_CLIENT_ID)
+    authUrl.searchParams.set('redirect_uri', redirectUri)
+    authUrl.searchParams.set('response_type', 'code')
+    authUrl.searchParams.set('scope', 'openid email profile')
+    authUrl.searchParams.set('state', state)
+    authUrl.searchParams.set('prompt', 'select_account')
+
+    setRedirecting(true)
+    window.location.assign(authUrl.toString())
   }
 
   return (
     <GoogleAuthButtonShell
       mode={mode}
-      loading={loading}
+      loading={isBusy}
       disabled={disabled}
-      scriptError={hasScriptError}
       onClick={handleClick}
     />
   )

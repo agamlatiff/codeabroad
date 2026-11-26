@@ -23,14 +23,20 @@ export const useGoogleAuth = (options?: UseGoogleAuthOptions) => {
   const rememberMe = options?.rememberMe ?? false
 
   const googleAuthMutation = useMutation({
-    mutationFn: (code: string) => authService.googleAuth({ code, remember_me: rememberMe }),
-    onSuccess: (data) => {
+    mutationFn: (params: { code: string; redirectUri?: string; rememberMe?: boolean }) =>
+      authService.googleAuth({
+        code: params.code,
+        redirect_uri: params.redirectUri,
+        remember_me: params.rememberMe ?? rememberMe,
+      }),
+    onSuccess: (data, variables) => {
       queryClient.clear()
       if (!data.access_token) {
         options?.onError?.('Sesi Google berhasil dibuat, tetapi token akses tidak diterima.')
         return
       }
-      setAuth(data.user, data.access_token, data.refresh_token, rememberMe)
+      const persist = variables.rememberMe ?? rememberMe
+      setAuth(data.user, data.access_token, data.refresh_token, persist)
       queryClient.setQueryData(getProfileQueryKey(data.user.id), data.user)
       navigate(resolvePostAuthPath(data.user), { replace: true })
     },
@@ -40,9 +46,9 @@ export const useGoogleAuth = (options?: UseGoogleAuthOptions) => {
   })
 
   return {
-    authenticateWithCode: (code: string) => {
+    authenticateWithCode: (code: string, redirectUri?: string, overrideRememberMe?: boolean) => {
       if (googleAuthMutation.isPending) return
-      googleAuthMutation.mutate(code)
+      googleAuthMutation.mutate({ code, redirectUri, rememberMe: overrideRememberMe })
     },
     loading: googleAuthMutation.isPending,
   }

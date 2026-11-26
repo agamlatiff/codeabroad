@@ -63,6 +63,7 @@ export type RegisterPayload = z.infer<typeof registerSchema>
 
 export interface GoogleAuthPayload {
   code: string
+  redirect_uri?: string
   remember_me?: boolean
 }
 

@@ -10,15 +10,17 @@ import (
 
 // MockGoogleOAuthVerifier implements GoogleOAuthVerifier for unit and HTTP tests.
 type MockGoogleOAuthVerifier struct {
-	Identity *GoogleIdentity
-	Err      error
-	LastCode string
+	Identity        *GoogleIdentity
+	Err             error
+	LastCode        string
+	LastRedirectURI string
 }
 
 var _ GoogleOAuthVerifier = (*MockGoogleOAuthVerifier)(nil)
 
-func (m *MockGoogleOAuthVerifier) ExchangeAndVerify(_ context.Context, code string) (*GoogleIdentity, error) {
+func (m *MockGoogleOAuthVerifier) ExchangeAndVerify(_ context.Context, code string, redirectURI string) (*GoogleIdentity, error) {
 	m.LastCode = code
+	m.LastRedirectURI = redirectURI
 	if m.Err != nil {
 		return nil, m.Err
 	}

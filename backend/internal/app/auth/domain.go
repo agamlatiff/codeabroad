@@ -62,8 +62,9 @@ type RefreshTokenRequest struct {
 
 // GoogleAuthRequest defines the input payload for Google OAuth 2.0 authorization-code exchange
 type GoogleAuthRequest struct {
-	Code       string `json:"code" binding:"required"`
-	RememberMe bool   `json:"remember_me"`
+	Code        string `json:"code" binding:"required"`
+	RedirectURI string `json:"redirect_uri,omitempty"`
+	RememberMe  bool   `json:"remember_me"`
 }
 
 // AuthResponse defines the payload returned upon successful authentication

@@ -30,7 +30,7 @@ func NewUsecase(
 ) Usecase {
 	var googleVerifier GoogleOAuthVerifier
 	if cfg != nil {
-		googleVerifier = NewGoogleOAuthVerifier(cfg.GoogleClientID, cfg.GoogleClientSecret)
+		googleVerifier = NewGoogleOAuthVerifierWithOrigins(cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.CORSAllowedOrigins)
 	}
 	return NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, googleVerifier)
 }
@@ -179,7 +179,7 @@ func (u *usecase) GoogleAuth(ctx context.Context, req *GoogleAuthRequest) (*Auth
 		return nil, ErrGoogleOAuthNotConfigured
 	}
 
-	identity, err := u.googleVerifier.ExchangeAndVerify(ctx, code)
+	identity, err := u.googleVerifier.ExchangeAndVerify(ctx, code, req.RedirectURI)
 	if err != nil {
 		return nil, err
 	}
