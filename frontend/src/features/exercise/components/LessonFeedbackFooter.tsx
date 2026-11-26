@@ -1,5 +1,6 @@
 import type { SubmitExerciseAnswerResponse } from '@/features/exercise/types/exercise'
 import type { LessonIntroItem } from '@/features/exercise/constants/lessonIntroCards'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
@@ -46,6 +47,7 @@ export const LessonFeedbackFooter = ({
   onContinue,
   onRetryLesson,
 }: LessonFeedbackFooterProps) => {
+  const speechLocale = useActiveSpeechLocale()
   const isCorrect = submittedResult?.is_correct === true
   const isIncorrect = submittedResult?.is_correct === false
   const displayedCorrectAnswer =
@@ -58,11 +60,7 @@ export const LessonFeedbackFooter = ({
     if (!speakCandidate) return
     triggerHaptic('tap')
     audioService.stopSpeech()
-    if (typeof rate === 'number') {
-      audioService.speakLanguage(speakCandidate, 'ja-JP', undefined, undefined, rate)
-    } else {
-      audioService.speakJapanese(speakCandidate)
-    }
+    audioService.speakLanguage(speakCandidate, speechLocale, undefined, undefined, rate)
   }
 
   const containerStyle = isCorrect
@@ -180,7 +178,7 @@ export const LessonFeedbackFooter = ({
           )}
 
           {!submittedResult && !submitError && (
-            <p className="text-xs sm:text-sm font-semibold text-slate-400">
+            <p className="text-xs sm:text-sm font-semibold text-slate-500">
               Pilih atau susun jawabanmu lalu tekan Periksa.
             </p>
           )}

@@ -84,7 +84,7 @@ export const LessonGrammarDrawer = ({
                   <span className="px-2.5 py-0.5 rounded-lg bg-blue-100 text-blue-800 text-[11px] font-mono font-bold">
                     {gp.code}
                   </span>
-                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
                     {formatCategoryLabel(gp.category)}
                   </span>
                 </div>

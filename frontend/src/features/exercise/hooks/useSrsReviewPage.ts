@@ -126,12 +126,13 @@ export const useSrsReviewPage = () => {
   })
 
   const handlePlayAudio = useCallback(
-    (rate?: number) => {
+    (rate?: number, options?: { isAutoPlay?: boolean }) => {
       if (!parsedContent) return
       playExerciseAudio(
         parsedContent.audioUrl,
         resolveExerciseSpokenText(parsedContent, currentExercise?.prompt),
-        rate
+        rate,
+        options
       )
     },
     [currentExercise?.prompt, parsedContent, playExerciseAudio]

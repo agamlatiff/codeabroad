@@ -1,5 +1,5 @@
 import { useEffect, useState, type FC } from 'react'
-import { Link } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom'
 import { MotionConfig, motion, useReducedMotion } from 'motion/react'
 import {
   CheckCircle,
@@ -173,6 +173,7 @@ export const QuestCompletePage = () => {
     handleOpenFlashcards,
   } = useLessonCompletePage()
 
+  const navigate = useNavigate()
   const shouldReduceMotion = Boolean(useReducedMotion())
   const [playingItemKey, setPlayingItemKey] = useState<string | null>(null)
 
@@ -251,7 +252,7 @@ export const QuestCompletePage = () => {
   return (
     <MotionConfig reducedMotion="user">
       <div className="min-h-screen min-h-dvh w-full max-w-full overflow-x-clip bg-gradient-to-b from-[#F4F8FF] via-[#FAFAF9] to-[#F8FAFC] text-slate-900 font-sans flex flex-col lg:items-center lg:justify-center selection:bg-blue-600/20">
-        <div className="w-full max-w-[1040px] mx-auto px-4 pt-4 pb-36 sm:px-6 sm:pt-6 lg:py-8 flex-1 lg:flex-none flex items-center">
+        <div className="w-full max-w-[1040px] mx-auto px-4 pt-4 pb-44 sm:px-6 sm:pt-6 sm:pb-40 lg:py-8 flex-1 lg:flex-none flex items-center">
           <div className="w-full min-w-0 bg-white border-2 border-slate-200/90 rounded-[28px] sm:rounded-[34px] shadow-[0_10px_0_0_rgba(37,99,235,0.07)] overflow-hidden grid grid-cols-1 lg:grid-cols-12">
             {/* ── LEFT COLUMN: HERO CELEBRATION SPOTLIGHT & REWARD STATS ── */}
             <div className="lg:col-span-5 relative overflow-hidden bg-gradient-to-b from-[#EFF6FF] via-[#F8FAFF] to-[#FFFBEB]/70 p-5 sm:p-7 lg:p-8 flex flex-col items-center justify-between text-center border-b-2 lg:border-b-0 lg:border-r-2 border-slate-200/80 gap-5">
@@ -308,9 +309,13 @@ export const QuestCompletePage = () => {
                   </span>
                 </div>
 
-                {/* Circular White Spotlight Around Mera */}
-                <div className="mt-1 w-36 h-36 sm:w-40 sm:h-40 rounded-full bg-white/95 border-2 border-blue-100 shadow-[0_10px_28px_-10px_rgba(37,99,235,0.22)] flex items-center justify-center">
-                  <KodiCharacter emotion="celebrate" size={118} interactive />
+                {/* Open-Stage Atmospheric Spotlight Around Mera */}
+                <div className="relative mt-1 flex items-center justify-center">
+                  <div
+                    aria-hidden="true"
+                    className="pointer-events-none absolute inset-2 rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.92)_0%,rgba(219,234,254,0.35)_65%,transparent_100%)] blur-xs"
+                  />
+                  <KodiCharacter emotion="celebrate" size={124} interactive className="relative z-10" />
                 </div>
 
                 <div className="space-y-1 max-w-sm">
@@ -378,21 +383,24 @@ export const QuestCompletePage = () => {
                     </div>
 
                     <div className="flex flex-col sm:flex-row gap-2.5">
-                      <Link to="/register?from=trial" className="flex-1">
-                        <Button3D
-                          variant="blue"
-                          size="md"
-                          fullWidth
-                          icon={<UserPlus weight="bold" className="w-4 h-4" />}
-                        >
-                          DAFTAR GRATIS &amp; KLAIM +{guestPendingTotalXp || xpEarned} XP
-                        </Button3D>
-                      </Link>
-                      <Link to="/login?from=trial" className="sm:w-auto">
-                        <Button3D variant="white" size="md" fullWidth>
-                          MASUK AKUN
-                        </Button3D>
-                      </Link>
+                      <Button3D
+                        variant="blue"
+                        size="md"
+                        fullWidth
+                        onClick={() => navigate('/register?from=trial')}
+                        icon={<UserPlus weight="bold" className="w-4 h-4" />}
+                        className="flex-1"
+                      >
+                        DAFTAR GRATIS &amp; KLAIM +{guestPendingTotalXp || xpEarned} XP
+                      </Button3D>
+                      <Button3D
+                        variant="white"
+                        size="md"
+                        onClick={() => navigate('/login?from=trial')}
+                        className="w-full sm:w-auto"
+                      >
+                        MASUK AKUN
+                      </Button3D>
                     </div>
                   </div>
                 ) : (

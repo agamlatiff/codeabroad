@@ -13,7 +13,7 @@ export interface UnitLayoutAssembly {
 /**
  * Builds a smooth continuous cubic Bezier SVG path through a series of 2D coordinates.
  */
-export const buildSvgPath = (coords: { x: number; y: number }[]): string => {
+const buildSvgPath = (coords: { x: number; y: number }[]): string => {
   if (coords.length === 0) return ''
   if (coords.length === 1) return `M ${coords[0].x} ${coords[0].y}`
 

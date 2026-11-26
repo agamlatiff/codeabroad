@@ -23,6 +23,7 @@ import {
 } from '@/features/exercise/constants/lessonIntroCards'
 import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import {
   ArrowsClockwise,
   BookOpen,
@@ -32,9 +33,11 @@ import {
 } from '@phosphor-icons/react'
 
 const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
+const SPEAKABLE_TEXT_REGEX = /[\p{L}\p{N}]/u
 
 const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
   const navigate = useNavigate()
+  const speechLocale = useActiveSpeechLocale()
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false)
   const {
     lesson,
@@ -130,7 +133,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     const timer = window.setTimeout(() => {
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
-      handlePlayAudio()
+      handlePlayAudio(undefined, { isAutoPlay: true })
     }, 220)
 
     return () => {
@@ -170,22 +173,32 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
   // Safety Net #3 + Auto-Play: softly pronounce the missed word when an answer is wrong
   useEffect(() => {
     if (!submittedResult || submittedResult.is_correct || isCheckpoint) return
+    const canSpeakCandidate = speechLocale.startsWith('ja')
+      ? JAPANESE_CHAR_REGEX.test(answerCandidateText)
+      : currentExercise?.exercise_type !== 'select_meaning' &&
+        SPEAKABLE_TEXT_REGEX.test(answerCandidateText)
     const speakTarget =
-      answerStudyItem?.speakText ||
-      (JAPANESE_CHAR_REGEX.test(answerCandidateText) ? answerCandidateText : '')
+      answerStudyItem?.speakText || (canSpeakCandidate ? answerCandidateText : '')
     if (!speakTarget) return
 
     const timer = window.setTimeout(() => {
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
-      audioService.speakJapanese(speakTarget)
+      audioService.speakLanguage(speakTarget, speechLocale)
     }, 450)
 
     return () => {
       window.clearTimeout(timer)
       audioService.stopSpeech()
     }
-  }, [answerCandidateText, answerStudyItem?.speakText, isCheckpoint, submittedResult])
+  }, [
+    answerCandidateText,
+    answerStudyItem?.speakText,
+    currentExercise?.exercise_type,
+    isCheckpoint,
+    speechLocale,
+    submittedResult,
+  ])
 
   if (isLoading) {
     return (
@@ -426,7 +439,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       {/* Main Interactive Exercise Stage */}
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-8">
         <div className="max-w-2xl mx-auto space-y-4">
-          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
             {lesson.title}
           </p>
 

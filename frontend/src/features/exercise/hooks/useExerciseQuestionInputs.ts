@@ -11,8 +11,9 @@ import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
 import { audioEngine } from '@/shared/utils/audio'
 import { triggerHaptic } from '@/shared/utils/haptics'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 
-const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
+const SPEAKABLE_TOKEN_REGEX = /[\p{L}\p{N}]/u
 
 interface UseExerciseQuestionInputsOptions {
   currentExercise: CurriculumExercise | null
@@ -26,6 +27,7 @@ export const useExerciseQuestionInputs = ({
   currentExercise,
   submittedResult,
 }: UseExerciseQuestionInputsOptions) => {
+  const speechLocale = useActiveSpeechLocale()
   const [selectedTokenIndices, setSelectedTokenIndices] = useState<number[]>([])
   const [selectedOptionValue, setSelectedOptionValue] = useState('')
   const [textInput, setTextInput] = useState('')
@@ -90,15 +92,15 @@ export const useExerciseQuestionInputs = ({
           prev.includes(tokenIndex) ? prev : [...prev, tokenIndex]
         )
       })
-      if (tokenText && JAPANESE_CHAR_REGEX.test(tokenText)) {
+      if (tokenText && SPEAKABLE_TOKEN_REGEX.test(tokenText)) {
         const { autoPlayVoice, audioMode } = useAudioStore.getState()
         if (autoPlayVoice && audioMode !== 'muted') {
           audioService.stopSpeech()
-          audioService.speakJapanese(tokenText)
+          audioService.speakLanguage(tokenText, speechLocale)
         }
       }
     },
-    [parsedContent?.tokens, runUnlockedTap, submittedResult]
+    [parsedContent?.tokens, runUnlockedTap, speechLocale, submittedResult]
   )
 
   const handleRemoveToken = useCallback(

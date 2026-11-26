@@ -35,11 +35,18 @@ import { triggerHaptic } from '@/shared/utils/haptics'
 
 const MAX_RETRIES_PER_EXERCISE = 2
 
+const lessonDraftAttemptSchema = z.object({
+  exerciseId: z.string().min(1),
+  userAnswer: z.string().min(1).max(2000),
+  timeSpentSeconds: z.number().int().min(0).max(86400),
+})
+
 const lessonDraftSchema = z.object({
   currentIndex: z.number().int().min(0),
   correctExerciseIds: z.array(z.string()),
   requeuedExerciseIds: z.array(z.string()).optional().default([]),
   dismissedStudyBatches: z.array(z.number().int().min(0)).optional().default([]),
+  attempts: z.array(lessonDraftAttemptSchema).optional().default([]),
 })
 
 const getLessonDraftKey = (userId: string, lessonId?: string) =>
@@ -56,6 +63,7 @@ const loadLessonDraft = (userId: string, lessonId?: string) => {
     correctExerciseIds: [] as string[],
     requeuedExerciseIds: [] as string[],
     dismissedStudyBatches: [] as number[],
+    attempts: [] as GuestTrialAttempt[],
   }
   if (!key) return emptyDraft
   try {
@@ -109,11 +117,14 @@ export const useLearnWorkspace = (id?: string) => {
   const [dismissedStudyBatches, setDismissedStudyBatches] = useState<number[]>(
     initialDraft.dismissedStudyBatches
   )
+  const [recordedAttempts, setRecordedAttempts] = useState<GuestTrialAttempt[]>(
+    initialDraft.attempts
+  )
 
   const questionStartedAtRef = useRef<number>(0)
   const submitLockRef = useRef(false)
   const sessionEpochRef = useRef(0)
-  const recordedAttemptsRef = useRef<GuestTrialAttempt[]>([])
+  const recordedAttemptsRef = useRef<GuestTrialAttempt[]>(initialDraft.attempts)
 
   const lessonQuery = useQuery({
     queryKey: [...LESSON_DETAIL_QUERY_KEY, userId, id],
@@ -164,7 +175,7 @@ export const useLearnWorkspace = (id?: string) => {
 
   useEffect(() => {
     const key = getLessonDraftKey(userId, id)
-    if (!key) return
+    if (!key || !lesson || exercises.length === 0) return
     try {
       sessionStorage.setItem(
         key,
@@ -173,12 +184,23 @@ export const useLearnWorkspace = (id?: string) => {
           correctExerciseIds,
           requeuedExerciseIds,
           dismissedStudyBatches,
+          attempts: recordedAttempts,
         })
       )
     } catch {
       // Ignore storage quota errors
     }
-  }, [correctExerciseIds, dismissedStudyBatches, id, requeuedExerciseIds, safeIndex, userId])
+  }, [
+    correctExerciseIds,
+    dismissedStudyBatches,
+    exercises.length,
+    id,
+    lesson,
+    recordedAttempts,
+    requeuedExerciseIds,
+    safeIndex,
+    userId,
+  ])
 
   const {
     isSpeakingAudio,
@@ -252,6 +274,7 @@ export const useLearnWorkspace = (id?: string) => {
     sessionEpochRef.current += 1
     submitLockRef.current = false
     recordedAttemptsRef.current = []
+    setRecordedAttempts([])
     stopMediaSession()
     triggerHaptic('tap')
     audioEngine.playPop()
@@ -270,12 +293,13 @@ export const useLearnWorkspace = (id?: string) => {
   }, [id, resetInputs, stopMediaSession, userId])
 
   const handlePlayAudio = useCallback(
-    (rate?: number) => {
+    (rate?: number, options?: { isAutoPlay?: boolean }) => {
       if (!parsedContent) return
       playExerciseAudio(
         parsedContent.audioUrl,
         resolveExerciseSpokenText(parsedContent, currentExercise?.prompt),
-        rate
+        rate,
+        options
       )
     },
     [currentExercise?.prompt, parsedContent, playExerciseAudio]
@@ -305,14 +329,16 @@ export const useLearnWorkspace = (id?: string) => {
       })
 
       if (epoch !== sessionEpochRef.current) return
-      recordedAttemptsRef.current = [
-        ...recordedAttemptsRef.current.slice(-29),
+      const nextAttempts: GuestTrialAttempt[] = [
+        ...recordedAttemptsRef.current.filter((a) => a.exerciseId !== currentExercise.id),
         {
           exerciseId: currentExercise.id,
           userAnswer: currentUserAnswer,
           timeSpentSeconds: elapsedSeconds,
         },
       ]
+      recordedAttemptsRef.current = nextAttempts
+      setRecordedAttempts(nextAttempts)
       setSubmittedResult(res)
       if (res.is_correct) {
         triggerHaptic('success')
@@ -338,7 +364,9 @@ export const useLearnWorkspace = (id?: string) => {
       triggerHaptic('error')
       audioEngine.playError()
     } finally {
-      submitLockRef.current = false
+      if (epoch === sessionEpochRef.current) {
+        submitLockRef.current = false
+      }
     }
   }, [
     canCheckAnswer,
@@ -402,7 +430,9 @@ export const useLearnWorkspace = (id?: string) => {
           state: navState,
         })
       } finally {
-        submitLockRef.current = false
+        if (epoch === sessionEpochRef.current) {
+          submitLockRef.current = false
+        }
       }
       return
     }
@@ -482,7 +512,9 @@ export const useLearnWorkspace = (id?: string) => {
       triggerHaptic('error')
       audioEngine.playError()
     } finally {
-      submitLockRef.current = false
+      if (epoch === sessionEpochRef.current) {
+        submitLockRef.current = false
+      }
     }
   }, [
     baseExercises.length,

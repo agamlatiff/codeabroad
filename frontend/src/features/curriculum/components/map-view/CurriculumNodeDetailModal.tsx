@@ -10,6 +10,7 @@ import {
   Sparkle,
   BookOpen,
   UserPlus,
+  ArrowRight,
 } from '@phosphor-icons/react'
 import type { GuestLoginPromptReason } from '@/features/auth/components/GuestLoginPromptModal'
 import { Button3D } from "@/shared/components/ui/Button3D"
@@ -19,6 +20,9 @@ import {
   resolveMapCategoryTokens,
   MAP_MODAL_TOKENS,
 } from "@/features/curriculum/tokens/curriculumTokens"
+import { NODE_PREVIEWS_N4_N3 } from '@/features/exercise/constants/lessonIntroN4N3'
+import { NODE_PREVIEWS_N2_N1 } from '@/features/exercise/constants/lessonIntroN2N1'
+import { NODE_PREVIEWS_N4_N1_EXPANSION } from '@/features/exercise/constants/lessonIntroN4N1Expansion'
 import { CurriculumModalNodeIcon } from './CurriculumNodeIcon'
 
 export interface CurriculumNodeDetailModalProps {
@@ -43,6 +47,7 @@ interface NodePreviewInfo {
   chips: string[]
   kanaScript?: 'hiragana' | 'katakana' | 'kanji'
   showGrammarLink?: boolean
+  grammarCode?: string
 }
 
 const KNOWN_NODE_PREVIEWS: Record<string, NodePreviewInfo> = {
@@ -98,6 +103,18 @@ const KNOWN_NODE_PREVIEWS: Record<string, NodePreviewInfo> = {
     chips: ['人 orang', '父 ayah', '母 ibu', '子 anak'],
     kanaScript: 'kanji',
   },
+  ...NODE_PREVIEWS_N4_N3,
+  ...NODE_PREVIEWS_N2_N1,
+  ...NODE_PREVIEWS_N4_N1_EXPANSION,
+}
+
+const inferGrammarLevelFromSlug = (slug: string): 'N5' | 'N4' | 'N3' | 'N2' | 'N1' => {
+  const lower = slug.toLowerCase()
+  if (lower.startsWith('n4-')) return 'N4'
+  if (lower.startsWith('n3-')) return 'N3'
+  if (lower.startsWith('n2-')) return 'N2'
+  if (lower.startsWith('n1-')) return 'N1'
+  return 'N5'
 }
 
 const KEYWORD_TOPIC_RULES: Array<{ test: RegExp; chip: string; grammar?: boolean }> = [
@@ -181,13 +198,18 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
 
   useEffect(() => {
     if (!node) return
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         onClose()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [node, onClose])
 
   if (!node || typeof document === 'undefined') {
@@ -197,6 +219,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
   const catTokens = resolveMapCategoryTokens(node.category)
   const mascotEmotion = resolveMascotEmotion(node)
   const isLockedPreview = isViewingInactiveTrack
+  const routeSlug = node.route.split('/learn/')[1]?.split('?')[0]?.trim() || node.id
   const nodePreview = resolveNodePreview(node)
   const canShowStudyPreview =
     !isLockedPreview && node.status !== 'locked' && !node.isChest && !node.isTrophy
@@ -230,11 +253,11 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-label={node.title}
-      className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fade-in"
+      className="fixed inset-0 z-50 w-screen h-screen flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs animate-fadeIn"
     >
       <div className="absolute inset-0" onClick={onClose} />
 
-      <div className="relative z-10 bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-sm w-full space-y-4 shadow-xl animate-pop">
+      <div className="relative z-10 bg-white border-2 border-slate-200 rounded-3xl p-6 max-w-sm w-full max-h-[90vh] overflow-y-auto space-y-4 shadow-xl animate-pop">
         <button
           type="button"
           onClick={onClose}
@@ -258,7 +281,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400">
+              <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-500">
                 {isLockedPreview ? 'Mode Lihat' : MAP_MODAL_TOKENS.statusBadge[node.status]}
               </span>
               {node.badgeLabel && (
@@ -288,7 +311,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
                 : node.subtitle}
         </p>
 
-        {canShowStudyPreview && (nodePreview.chips.length > 0 || nodePreview.kanaScript || nodePreview.showGrammarLink) && (
+        {canShowStudyPreview && (nodePreview.chips.length > 0 || nodePreview.kanaScript || nodePreview.showGrammarLink || nodePreview.grammarCode) && (
           <div className="rounded-2xl border border-blue-100 bg-blue-50/60 p-3 space-y-2">
             {nodePreview.chips.length > 0 && (
               <>
@@ -323,20 +346,26 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
                   ? 'Katakana'
                   : nodePreview.kanaScript === 'kanji'
                     ? 'Kanji'
-                    : 'Hiragana'}{' '}
-                →
+                    : 'Hiragana'}
+                <ArrowRight weight="bold" className="w-3 h-3" />
               </button>
-            ) : nodePreview.showGrammarLink ? (
+            ) : nodePreview.showGrammarLink || nodePreview.grammarCode ? (
               <button
                 type="button"
                 onClick={() => {
                   onClose()
-                  navigate('/grammar')
+                  if (nodePreview.grammarCode) {
+                    navigate(`/grammar/${encodeURIComponent(nodePreview.grammarCode)}`)
+                  } else {
+                    const inferredLevel = inferGrammarLevelFromSlug(routeSlug)
+                    navigate(`/grammar?level=${inferredLevel}`)
+                  }
                 }}
                 className="text-[11px] font-brand font-black text-blue-700 hover:text-blue-800 hover:underline inline-flex items-center gap-1 cursor-pointer"
               >
                 <BookOpen weight="bold" className="w-3.5 h-3.5" />
-                Lihat Panduan Grammar →
+                Lihat Panduan Grammar
+                <ArrowRight weight="bold" className="w-3 h-3" />
               </button>
             ) : null}
           </div>

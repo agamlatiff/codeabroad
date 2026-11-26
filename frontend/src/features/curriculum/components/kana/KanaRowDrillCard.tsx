@@ -86,6 +86,13 @@ export const KanaRowDrillCard: FC<KanaRowDrillCardProps> = ({
   const currentTargetChar = currentQuestion?.target.character ?? ''
   const currentMode = currentQuestion?.mode
 
+  // Ensure speech synthesis stops when leaving or unmounting the drill card in any mode
+  useEffect(() => {
+    return () => {
+      audioService.stopSpeech()
+    }
+  }, [])
+
   // Auto-play pronunciation ONLY on listening prompts (pick-kana); never spoil reading prompts (pick-romaji)
   useEffect(() => {
     if (isCompleted || !currentTargetChar || currentMode !== 'pick-kana') return

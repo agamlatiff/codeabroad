@@ -283,7 +283,7 @@ export const useReadinessExamPage = (levelId?: string) => {
     const timer = window.setTimeout(() => {
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
-      playExerciseAudio(currentParsedContent.audioUrl, spokenTarget)
+      playExerciseAudio(currentParsedContent.audioUrl, spokenTarget, undefined, { isAutoPlay: true })
     }, 220)
 
     return () => {
@@ -397,7 +397,9 @@ export const useReadinessExamPage = (levelId?: string) => {
       triggerHaptic('error')
       audioEngine.playError()
     } finally {
-      submitLockRef.current = false
+      if (epoch === sessionEpochRef.current) {
+        submitLockRef.current = false
+      }
     }
   }, [
     allAnswered,

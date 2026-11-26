@@ -52,11 +52,6 @@ export const MAP_GEOMETRY = {
   nodeDiscRadius: 46,
 } as const
 
-export const MAP_MILESTONE_REWARDS = {
-  defaultLessonXp: 15,
-  trophyXp: 100,
-} as const
-
 /**
  * 7. Map Node Category & Status Visual Tokens
  */
@@ -171,7 +166,7 @@ export const MAP_MILESTONE_DISC_TOKENS = {
     completed:
       'bg-gradient-to-b from-amber-300 to-amber-500 border-amber-600 shadow-[0_5px_0_0_#92400E]',
     active:
-      'bg-gradient-to-b from-amber-400 to-orange-500 border-amber-600 ring-4 ring-amber-200 shadow-[0_5px_0_0_#B45309] animate-pulse',
+      'bg-gradient-to-b from-amber-400 to-orange-500 border-amber-600 ring-4 ring-amber-200 shadow-[0_5px_0_0_#B45309]',
     locked: 'bg-slate-100 border-slate-300 shadow-[0_4px_0_0_#CBD5E1]',
   },
   trophy: {

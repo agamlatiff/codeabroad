@@ -1,11 +1,14 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle, LockSimple, Sparkle, UserPlus, WarningCircle, X } from '@phosphor-icons/react'
+import { CheckCircle, Crown, LockSimple, Sparkle, UserPlus, WarningCircle, X } from '@phosphor-icons/react'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { AppRightSidebar } from "@/shared/components/layout/right-sidebar/AppRightSidebar"
 import { TrackSwitcherModal } from "@/shared/components/layout/top-bar/TrackSwitcherModal"
 import { GuestLoginPromptModal } from "@/features/auth/components/GuestLoginPromptModal"
 import { Button3D } from "@/shared/components/ui/Button3D"
+import { TierUpgradeBanner } from "@/shared/components/ui/TierUpgradeBanner"
+import { checkLevelAccess } from "@/shared/utils/levelAccess"
+import { BUTTON_3D_TOKENS } from "@/shared/tokens/elevationTokens"
 import {
   SpotlightTourOverlay,
   type SpotlightTourStep,
@@ -83,6 +86,14 @@ const CURRICULUM_TOUR_STEPS: SpotlightTourStep[] = [
   },
 ]
 
+const LEVEL_TRACK_SUBLABELS: Record<string, string> = {
+  N5: 'Pemula',
+  N4: 'Dasar Kerja',
+  N3: 'Menengah',
+  N2: 'Karier · Pro',
+  N1: 'Mahir · Pro',
+}
+
 /**
  * CurriculumPage (SSOT Master Language Learning Screen)
  * Declarative learning hub hosting the Interactive Peta Belajar Map View,
@@ -93,7 +104,7 @@ export const CurriculumPage = () => {
   const activeLanguage = curriculum.data?.language
 
   return (
-    <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
+    <div className="min-h-screen w-full overflow-x-clip bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
       {/* ── 1. LEFT COMPACT NAV RAIL (SSOT) ── */}
       <AppLeftSidebar />
 
@@ -104,6 +115,7 @@ export const CurriculumPage = () => {
           {/* ── CONTEXTUAL TOP BAR ── */}
           <AppTopBar
             activeTrack={curriculum.currentLanguageId}
+            activeLevelCode={curriculum.selectedLevelCode}
             onOpenCourseSwitcher={actions.openSwitcher}
             onOpenMobileSidebar={() => actions.setIsMobileDrawerOpen(true)}
             completedCount={curriculum.metrics.completedLessonsCount}
@@ -159,15 +171,12 @@ export const CurriculumPage = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2 shrink-0">
-                <Link to="/register?from=guest">
-                  <Button3D
-                    variant="blue"
-                    size="sm"
-                    icon={<UserPlus weight="bold" className="w-4 h-4" />}
-                    className="text-xs"
-                  >
-                    Daftar Gratis
-                  </Button3D>
+                <Link
+                  to="/register?from=guest"
+                  className={`${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants.blue} ${BUTTON_3D_TOKENS.sizes.sm} text-xs`}
+                >
+                  <UserPlus weight="bold" className="w-4 h-4 shrink-0" />
+                  <span>Daftar Gratis</span>
                 </Link>
                 <button
                   type="button"
@@ -224,18 +233,101 @@ export const CurriculumPage = () => {
             </div>
           )}
 
-          {/* ── PETA BELAJAR ── */}
-          <CurriculumMapView
-            curriculum={curriculum.data}
-            isLoading={status.isLoading}
-            hasError={Boolean(status.error)}
-            isGuest={status.isGuest}
-            isViewingInactiveTrack={curriculum.isViewingInactiveTrack}
-            isActivatingTrack={status.isSwitchingLanguage}
-            onActivateTrack={actions.handleActivateCurrentTrack}
-            onStartLesson={actions.handleStartLesson}
-            onOpenGuestUnlock={actions.openGuestPrompt}
-          />
+          {/* ── JLPT LEVEL SWITCHER (5-Column Segmented Track: N5–N1) ── */}
+          {curriculum.availableLevelCodes.length > 1 && (
+            <section
+              aria-label="Pilih level JLPT"
+              className="bg-white border-2 border-slate-200/90 rounded-2xl p-2 shadow-[0_4px_0_0_#E2E8F0]"
+            >
+              <div
+                role="group"
+                aria-label="Level kurikulum"
+                className="grid grid-cols-5 gap-1.5 sm:gap-2"
+              >
+                {curriculum.availableLevelCodes.map((code) => {
+                  const isActive = curriculum.selectedLevelCode === code
+                  const access = checkLevelAccess(code, {
+                    isAuthenticated: !status.isGuest,
+                    isPro: status.isPro,
+                  })
+                  const isProTier = access.requiredTier === 'pro'
+                  const subLabel = LEVEL_TRACK_SUBLABELS[code] ?? 'Level'
+
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      aria-pressed={isActive}
+                      onClick={() => actions.handleSelectLevel(code)}
+                      className={`flex flex-col items-center sm:items-start justify-center px-1.5 py-2 sm:px-3 sm:py-2.5 rounded-xl border-2 text-center sm:text-left transition-all cursor-pointer active:translate-y-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 min-w-0 ${
+                        isActive
+                          ? 'bg-blue-600 text-white border-blue-700 shadow-[0_3px_0_0_#1D4ED8]'
+                          : !access.allowed
+                            ? 'bg-slate-50/90 text-slate-600 border-slate-200 hover:border-blue-300 hover:bg-blue-50/40 hover:text-slate-800'
+                            : 'bg-white text-slate-800 border-slate-200 hover:border-blue-300 hover:bg-blue-50/50'
+                      }`}
+                    >
+                      <div className="w-full flex items-center justify-center sm:justify-between gap-1">
+                        <span className="font-brand font-black text-xs sm:text-sm leading-none tracking-tight">
+                          {code}
+                        </span>
+                        {isProTier ? (
+                          <Crown
+                            weight="fill"
+                            className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${
+                              isActive
+                                ? 'text-amber-200'
+                                : !access.allowed
+                                  ? 'text-amber-500'
+                                  : 'text-amber-500/80'
+                            }`}
+                            aria-label="Khusus Pro"
+                          />
+                        ) : !access.allowed ? (
+                          <LockSimple
+                            weight="bold"
+                            className={`w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 ${
+                              isActive ? 'text-blue-100' : 'text-slate-400'
+                            }`}
+                            aria-label="Perlu masuk"
+                          />
+                        ) : null}
+                      </div>
+                      <span
+                        className={`hidden sm:block mt-1 text-[11px] font-semibold leading-tight truncate w-full ${
+                          isActive ? 'text-blue-100' : 'text-slate-500'
+                        }`}
+                      >
+                        {subLabel}
+                      </span>
+                    </button>
+                  )
+                })}
+              </div>
+            </section>
+          )}
+
+          {/* ── PETA BELAJAR OR TIER GATE ── */}
+          {!curriculum.levelAccess.allowed && curriculum.levelAccess.reason !== 'ok' ? (
+            <TierUpgradeBanner
+              levelCode={curriculum.selectedLevelCode}
+              reason={curriculum.levelAccess.reason}
+              featureLabel="Kurikulum"
+              onSelectFreeLevel={() => actions.handleSelectLevel('N5')}
+            />
+          ) : (
+            <CurriculumMapView
+              curriculum={curriculum.data}
+              isLoading={status.isLoading}
+              hasError={Boolean(status.error)}
+              isGuest={status.isGuest}
+              isViewingInactiveTrack={curriculum.isViewingInactiveTrack}
+              isActivatingTrack={status.isSwitchingLanguage}
+              onActivateTrack={actions.handleActivateCurrentTrack}
+              onStartLesson={actions.handleStartLesson}
+              onOpenGuestUnlock={actions.openGuestPrompt}
+            />
+          )}
         </main>
 
         {/* ══════ RIGHT SIDEBAR RAIL (SSOT) ══════ */}
@@ -267,7 +359,7 @@ export const CurriculumPage = () => {
 
       {/* ── TOAST NOTIFICATION ── */}
       {status.notification && (
-        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md flex items-center gap-3 animate-in fade-in slide-in-from-bottom-4 duration-200 max-w-md">
+        <div role="status" className="fixed bottom-24 md:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-slate-900/95 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700/80 backdrop-blur-md flex items-center gap-3 animate-fadeIn w-[calc(100vw-2rem)] max-w-md">
           <div className="w-6 h-6 rounded-lg bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
             <LockSimple weight="bold" className="w-4 h-4" />
           </div>

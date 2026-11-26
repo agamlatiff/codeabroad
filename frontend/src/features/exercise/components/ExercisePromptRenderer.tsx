@@ -500,7 +500,7 @@ export const ExercisePromptRenderer = ({
           {/* Sentence Construction Tray */}
           <div className="min-h-[84px] p-4 rounded-2xl bg-white border-2 border-dashed border-slate-300 flex flex-wrap items-center gap-2">
             {selectedTokens.length === 0 ? (
-              <span className="text-sm text-slate-400 font-medium">
+              <span className="text-sm text-slate-500 font-medium">
                 Ketuk balok kata di bawah untuk menyusun kalimat berurutan...
               </span>
             ) : (
@@ -639,7 +639,7 @@ export const ExercisePromptRenderer = ({
                   className={
                     textInput.trim().length > 0
                       ? 'font-bold text-slate-900'
-                      : 'text-sm font-medium text-slate-400'
+                      : 'text-sm font-medium text-slate-500'
                   }
                 >
                   {textInput.trim().length > 0

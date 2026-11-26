@@ -48,7 +48,7 @@ export const CurriculumMapUnitSection: FC<CurriculumMapUnitSectionProps> = ({
     <section id={`unit-section-${unit.unitNumber}`} className="space-y-4 scroll-mt-6">
       {/* ── UNIT BANNER HEADER (Sticky per unit section on scroll) ── */}
       <div
-        className={`sticky top-3 z-20 w-full text-white rounded-2xl px-5 py-4 sm:px-6 sm:py-4.5 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] relative overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
+        className={`sticky top-3 z-20 w-full text-white rounded-2xl px-5 py-4 sm:px-6 sm:py-4.5 shadow-[0_4px_0_0_rgba(0,0,0,0.18)] overflow-hidden flex items-center justify-between gap-4 border ${unit.bannerBorder} ${unit.bannerGradient}`}
       >
         <div className="space-y-1 min-w-0 relative z-10 flex-1">
           <div className="flex items-center gap-2">

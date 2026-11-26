@@ -129,11 +129,16 @@ export const curriculumService = {
    */
   async getCurriculum(
     languageId?: string,
-    options?: RequestOptions
+    options?: RequestOptions,
+    levelCode?: string
   ): Promise<CurriculumResponse> {
     const trimmed = languageId?.trim()
+    const trimmedLevel = levelCode?.trim().toUpperCase()
+    const params: Record<string, string> = {}
+    if (trimmed) params.language_id = trimmed
+    if (trimmedLevel) params.level_code = trimmedLevel
     const response = await api.get<ApiResponse<CurriculumResponse>>('/curriculum', {
-      params: trimmed ? { language_id: trimmed } : undefined,
+      params: Object.keys(params).length > 0 ? params : undefined,
       signal: options?.signal,
     })
     return unwrapApiResponse(response, 'Gagal memuat kurikulum belajar.')

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import type { KanaScriptType } from '@/features/curriculum/types/curriculum'
 import type { LessonIntroItem } from '@/features/exercise/constants/lessonIntroCards'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { Lightbulb, SpeakerHigh, Translate, X } from '@phosphor-icons/react'
@@ -26,16 +27,19 @@ export const LessonStudyCardsDrawer = ({
   onClose,
 }: LessonStudyCardsDrawerProps) => {
   const [playingKey, setPlayingKey] = useState<string | null>(null)
+  const speechLocale = useActiveSpeechLocale()
+  const onCloseRef = useRef(onClose)
 
   useEffect(() => {
-    if (!isOpen) {
-      audioService.stopSpeech()
-      return
-    }
+    onCloseRef.current = onClose
+  }, [onClose])
+
+  useEffect(() => {
+    if (!isOpen) return
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         audioService.stopSpeech()
-        onClose()
+        onCloseRef.current()
       }
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -43,7 +47,7 @@ export const LessonStudyCardsDrawer = ({
       window.removeEventListener('keydown', handleKeyDown)
       audioService.stopSpeech()
     }
-  }, [isOpen, onClose])
+  }, [isOpen])
 
   if (!isOpen) return null
 
@@ -52,11 +56,7 @@ export const LessonStudyCardsDrawer = ({
     audioService.stopSpeech()
     setPlayingKey(key)
     const clear = () => setPlayingKey((prev) => (prev === key ? null : prev))
-    if (typeof rate === 'number') {
-      audioService.speakLanguage(text, 'ja-JP', clear, clear, rate)
-    } else {
-      audioService.speakJapanese(text, clear, clear)
-    }
+    audioService.speakLanguage(text, speechLocale, clear, clear, rate)
   }
 
   return (

@@ -5,6 +5,9 @@ import type {
   KanaScriptType,
   LessonDetailResponse,
 } from '@/features/curriculum/types/curriculum'
+import { LESSON_INTRO_DECKS_N4_N3 } from './lessonIntroN4N3'
+import { LESSON_INTRO_DECKS_N2_N1 } from './lessonIntroN2N1'
+import { LESSON_INTRO_DECKS_N4_N1_EXPANSION } from './lessonIntroN4N1Expansion'
 
 export interface LessonIntroItem {
   symbol: string
@@ -215,9 +218,12 @@ const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
       },
     ],
   },
+  ...LESSON_INTRO_DECKS_N4_N3,
+  ...LESSON_INTRO_DECKS_N2_N1,
+  ...LESSON_INTRO_DECKS_N4_N1_EXPANSION,
 }
 
-const CHECKPOINT_SLUG_PATTERN = /checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir/i
+const CHECKPOINT_SLUG_PATTERN = /checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir|tes-akhir|readiness-mock-exam/i
 
 /**
  * Returns true if the lesson slug identifies an evaluation Checkpoint or Stage Spiral Test
@@ -524,7 +530,7 @@ export const buildDynamicLessonIntroDeck = (
   }
 
   const staticDeck = getLessonIntroDeck(lesson.slug)
-  const primaryGrammar = lesson.grammar_points[0]
+  const primaryGrammar = lesson.grammar_points?.[0]
   const grammarSummary: LessonIntroGrammarSummary | undefined = primaryGrammar
     ? {
         code: primaryGrammar.code,

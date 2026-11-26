@@ -19,6 +19,7 @@ import {
   ExerciseSessionHeader,
   type TimelineStepSegment,
 } from '@/features/exercise/components/ExerciseSessionHeader'
+import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { audioService } from '@/shared/services/audioService'
@@ -69,6 +70,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
     deck.items.length > 0 ? 'vocab' : 'grammar'
   )
   const manualInteractedRef = useRef(false)
+  const speechLocale = useActiveSpeechLocale()
 
   const handlePlay = (key: string, text: string, rate?: number) => {
     manualInteractedRef.current = true
@@ -76,11 +78,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
     audioService.stopSpeech()
     setPlayingKey(key)
     const clear = () => setPlayingKey((prev) => (prev === key ? null : prev))
-    if (typeof rate === 'number') {
-      audioService.speakLanguage(text, 'ja-JP', clear, clear, rate)
-    } else {
-      audioService.speakJapanese(text, clear, clear)
-    }
+    audioService.speakLanguage(text, speechLocale, clear, clear, rate)
   }
 
   const displayedItems = batch ? batch.items : deck.items
@@ -118,11 +116,11 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
           setPlayingKey(secondKey)
           const clearSecond = () =>
             setPlayingKey((prev) => (prev === secondKey ? null : prev))
-          audioService.speakJapanese(secondSpeakText, clearSecond, clearSecond)
+          audioService.speakLanguage(secondSpeakText, speechLocale, clearSecond, clearSecond)
         }, 650)
       }
 
-      audioService.speakJapanese(leadSpeakText, finishFirst, finishFirst)
+      audioService.speakLanguage(leadSpeakText, speechLocale, finishFirst, finishFirst)
     }, 220)
 
     return () => {
@@ -133,7 +131,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
       }
       audioService.stopSpeech()
     }
-  }, [batch, batchNumber, leadSpeakText, secondSpeakText])
+  }, [batch, batchNumber, leadSpeakText, secondSpeakText, speechLocale])
 
   // Interleaved mini-batch mode (Opsi A)
   if (batch) {
@@ -435,6 +433,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                 <button
                   key={tab.id}
                   type="button"
+                  aria-pressed={isSelected}
                   onClick={() => {
                     triggerHaptic('tap')
                     setActiveSlide(tab.id)

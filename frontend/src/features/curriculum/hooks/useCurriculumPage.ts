@@ -31,6 +31,7 @@ import { useUser } from "@/features/user/hooks/useUser"
 import { triggerHaptic } from "@/shared/utils/haptics"
 import { playSound, playBgm, stopBgm } from "@/shared/utils/sound"
 import { computeCurriculumPageMetrics } from "@/features/curriculum/utils/curriculumMapTransformer"
+import { checkLevelAccess, isUserPro } from "@/shared/utils/levelAccess"
 
 const TOAST_DURATION_MS = 3200
 
@@ -56,8 +57,39 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const { data: userData } = useUser()
   const user = userData.user
   const isGuest = !user
+  const isPro = isUserPro(user)
   const userIdKey = user?.id ?? 'anonymous'
   const updateUser = useAuthStore((s) => s.updateUser)
+
+  const requestedLevelCode = (searchParams.get('level') ?? '').trim().toUpperCase()
+  const levelAccess = useMemo(
+    () =>
+      checkLevelAccess(requestedLevelCode || 'N5', {
+        isAuthenticated: !isGuest,
+        isPro,
+      }),
+    [requestedLevelCode, isGuest, isPro]
+  )
+
+  const handleSelectLevel = useCallback(
+    (nextLevelCode: string) => {
+      triggerHaptic('tap')
+      const normalized = nextLevelCode.trim().toUpperCase()
+      setSearchParams(
+        (prev) => {
+          const next = new URLSearchParams(prev)
+          if (!normalized || normalized === 'N5') {
+            next.set('level', 'N5')
+          } else {
+            next.set('level', normalized)
+          }
+          return next
+        },
+        { replace: true }
+      )
+    },
+    [setSearchParams]
+  )
 
   const guestCompletedLessons = useGuestTrialStore((s) => s.completedLessons)
   const guestPendingXp = useMemo(
@@ -83,9 +115,19 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     error: queryError,
     refetch,
   } = useQuery({
-    queryKey: [...CURRICULUM_QUERY_KEY, userIdKey, targetLanguageId || 'active'],
+    queryKey: [
+      ...CURRICULUM_QUERY_KEY,
+      userIdKey,
+      targetLanguageId || 'active',
+      requestedLevelCode || 'default',
+    ],
     queryFn: ({ signal }) =>
-      curriculumService.getCurriculum(targetLanguageId || undefined, { signal }),
+      curriculumService.getCurriculum(
+        targetLanguageId || undefined,
+        { signal },
+        requestedLevelCode || undefined
+      ),
+    enabled: levelAccess.allowed,
     staleTime: 1000 * 60 * 2,
   })
 
@@ -232,8 +274,8 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     }
 
     if (hasSeenTour === false && !hasTriggeredTourRef.current) {
-      hasTriggeredTourRef.current = true
       const timer = window.setTimeout(() => {
+        hasTriggeredTourRef.current = true
         setIsTourOpen(true)
       }, 450)
       return () => window.clearTimeout(timer)
@@ -377,6 +419,17 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     void refetch()
   }, [refetch])
 
+  const selectedLevelCode =
+    requestedLevelCode || (curriculumData?.level?.code ?? 'N5').toUpperCase()
+
+  const availableLevelCodes = useMemo(() => {
+    const fromApi = rawCurriculumData?.available_levels?.map((lvl) => lvl.code.toUpperCase()) ?? []
+    if (fromApi.length > 0) return fromApi
+    const langCode = (rawCurriculumData?.language?.code ?? 'ja').toLowerCase()
+    if (langCode === 'ja') return ['N5', 'N4', 'N3', 'N2', 'N1']
+    return [selectedLevelCode]
+  }, [rawCurriculumData?.available_levels, rawCurriculumData?.language?.code, selectedLevelCode])
+
   return {
     curriculum: {
       currentLanguageId: activeLanguageId,
@@ -384,6 +437,9 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       enrollments,
       isViewingInactiveTrack,
       guestPendingXp,
+      selectedLevelCode,
+      availableLevelCodes,
+      levelAccess,
       metrics: {
         totalLessonsCount,
         completedLessonsCount,
@@ -393,6 +449,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     },
     status: {
       isGuest,
+      isPro,
       isGuestBannerDismissed,
       syncedSummary,
       isLoading,
@@ -408,6 +465,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     },
     actions: {
       refetch: handleRefetch,
+      handleSelectLevel,
       openSwitcher,
       closeSwitcher,
       setIsMobileDrawerOpen,

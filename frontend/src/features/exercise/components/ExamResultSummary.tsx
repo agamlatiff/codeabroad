@@ -119,7 +119,7 @@ export const ExamResultSummary = ({
             <p className="text-xs font-semibold text-slate-600">
               Diberikan kepada <span className="text-slate-900 font-bold">{certificate.candidate_name}</span> • Skor {certificate.score}/{certificate.max_score} ({certificate.percentage}%)
             </p>
-            <p className="text-[11px] font-mono text-slate-400">
+            <p className="text-[11px] font-mono text-slate-500">
               ID: {certificate.certificate_id}
             </p>
           </div>

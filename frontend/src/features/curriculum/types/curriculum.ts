@@ -195,6 +195,7 @@ export interface UnitNodeResponse {
 export interface CurriculumResponse {
   language: Language
   level: ProficiencyLevel
+  available_levels?: ProficiencyLevel[]
   total_lessons: number
   completed_lessons: number
   progress_percent: number

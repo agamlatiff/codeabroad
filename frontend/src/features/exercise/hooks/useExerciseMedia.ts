@@ -133,14 +133,19 @@ export const useExerciseMedia = ({
   }, [stopActiveAudio, stopActiveRecognition])
 
   const handlePlayAudio = useCallback(
-    (audioUrl?: string, spokenText?: string, rate?: number) => {
+    (audioUrl?: string, spokenText?: string, rate?: number, options?: { isAutoPlay?: boolean }) => {
+      const isAutoPlay = Boolean(options?.isAutoPlay)
       setAudioPlaybackError(null)
-      triggerHaptic('tap')
+      if (!isAutoPlay) {
+        triggerHaptic('tap')
+      }
       stopActiveAudio()
 
       const { audioMode, masterVolume } = useAudioStore.getState()
       if (audioMode === 'muted') {
-        setAudioPlaybackError('Mode audio sedang hening. Aktifkan suara di pengaturan atas.')
+        if (!isAutoPlay) {
+          setAudioPlaybackError('Mode audio sedang hening. Aktifkan suara di pengaturan atas.')
+        }
         return
       }
 
@@ -151,7 +156,9 @@ export const useExerciseMedia = ({
         if (sessionId !== audioSessionIdRef.current) return
         if (!spokenText) {
           setIsSpeakingAudio(false)
-          setAudioPlaybackError('Teks audio tidak tersedia untuk latihan ini.')
+          if (!isAutoPlay) {
+            setAudioPlaybackError('Teks audio tidak tersedia untuk latihan ini.')
+          }
           return
         }
         audioEngine.speakLanguage(
@@ -165,9 +172,11 @@ export const useExerciseMedia = ({
           () => {
             if (sessionId !== audioSessionIdRef.current) return
             setIsSpeakingAudio(false)
-            setAudioPlaybackError(
-              'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
-            )
+            if (!isAutoPlay) {
+              setAudioPlaybackError(
+                'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
+              )
+            }
           },
           rate
         )
@@ -178,6 +187,10 @@ export const useExerciseMedia = ({
         const triggerFallbackOnce = () => {
           if (fallbackTriggered || sessionId !== audioSessionIdRef.current) return
           fallbackTriggered = true
+          if (isAutoPlay) {
+            setIsSpeakingAudio(false)
+            return
+          }
           speakFallback()
         }
 

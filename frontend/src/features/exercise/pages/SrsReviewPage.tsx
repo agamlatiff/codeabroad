@@ -75,7 +75,7 @@ export const SrsReviewPage = () => {
     const timer = window.setTimeout(() => {
       const { autoPlayVoice, audioMode } = useAudioStore.getState()
       if (!autoPlayVoice || audioMode === 'muted') return
-      handlePlayAudio()
+      handlePlayAudio(undefined, { isAutoPlay: true })
     }, 220)
 
     return () => {
@@ -176,7 +176,7 @@ export const SrsReviewPage = () => {
 
       <main className="flex-1 overflow-y-auto px-4 sm:px-6 py-8">
         <div className="max-w-2xl mx-auto space-y-4">
-          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-400">
+          <p className="text-xs font-extrabold uppercase tracking-wider text-slate-500">
             Latih Ulang Soal yang Pernah Salah
           </p>
 

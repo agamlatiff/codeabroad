@@ -460,9 +460,14 @@ export const KanaPage = () => {
 
     return () => {
       window.clearTimeout(timer)
-      audioService.stopSpeech()
     }
   }, [activeDrillRow, activeScript, selectedChar])
+
+  useEffect(() => {
+    return () => {
+      audioService.stopSpeech()
+    }
+  }, [])
 
   const handleSelectScript = (nextScript: KanaScriptType) => {
     triggerHaptic('tap')
@@ -476,6 +481,7 @@ export const KanaPage = () => {
     setPracticeError(null)
     lastAutoSpokenKeyRef.current = `${activeScript}:${item.character}`
     setSearchParams({ char: getCharQueryKey(item) }, { replace: true })
+    audioService.stopSpeech()
     setPlayingSpeed('normal')
     const clear = () => setPlayingSpeed((prev) => (prev === 'normal' ? null : prev))
     audioService.speakJapanese(item.character, clear, clear)
@@ -689,13 +695,13 @@ export const KanaPage = () => {
                   {columnHeaders.map((col) => (
                     <span
                       key={col}
-                      className="text-[10px] font-brand font-black uppercase tracking-widest text-slate-400"
+                      className="text-[10px] font-brand font-black uppercase tracking-widest text-slate-500"
                     >
                       {col}
                     </span>
                   ))}
                 </div>
-                <span className="w-[74px] text-center text-[10px] font-brand font-black uppercase tracking-wider text-slate-400">
+                <span className="w-[74px] text-center text-[10px] font-brand font-black uppercase tracking-wider text-slate-500">
                   Latih
                 </span>
               </div>
@@ -709,7 +715,7 @@ export const KanaPage = () => {
                       <span className="text-[11px] font-brand font-extrabold text-slate-500">
                         {row.label}
                       </span>
-                      <span className="text-[10px] font-bold text-slate-400 tabular-nums">
+                      <span className="text-[10px] font-bold text-slate-500 tabular-nums">
                         {row.items.filter((i) => i.is_mastered).length}/{row.items.length} dikuasai
                       </span>
                     </div>
@@ -845,7 +851,7 @@ export const KanaPage = () => {
                             </span>
                           )}
                         </div>
-                        <p className="text-[11px] font-bold text-slate-400 tabular-nums">
+                        <p className="text-[11px] font-bold text-slate-500 tabular-nums">
                           Dilatih {selectedChar.practice_count}x • Skor penguasaan {selectedChar.mastery_score}%
                         </p>
                       </div>
@@ -897,7 +903,7 @@ export const KanaPage = () => {
                   {selectedChar.example_word && (
                     <div className="rounded-2xl bg-slate-50 border border-slate-200/90 p-3.5 flex items-center justify-between gap-3">
                       <div className="min-w-0">
-                        <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-400 block">
+                        <span className="text-[10px] font-brand font-black uppercase tracking-wider text-slate-500 block">
                           Contoh Kata
                         </span>
                         <p className="text-base font-black text-slate-900">

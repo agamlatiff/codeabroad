@@ -54,6 +54,20 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
     }
   }
 
+  const popoverAlignClass =
+    leftPercent < 38
+      ? '-left-5 translate-x-0 sm:left-1/2 sm:-translate-x-1/2'
+      : leftPercent > 62
+        ? '-right-5 translate-x-0 left-auto sm:right-auto sm:left-1/2 sm:-translate-x-1/2'
+        : 'left-1/2 -translate-x-1/2'
+
+  const popoverArrowAlignClass =
+    leftPercent < 38
+      ? 'left-16 -translate-x-1/2 sm:left-1/2'
+      : leftPercent > 62
+        ? 'right-16 translate-x-1/2 left-auto sm:right-auto sm:left-1/2 sm:-translate-x-1/2'
+        : 'left-1/2 -translate-x-1/2'
+
   return (
     <div
       className="absolute -translate-x-1/2 flex flex-col items-center group"
@@ -64,13 +78,13 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
     >
       {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
-        <div className="absolute top-full mt-4 left-1/2 -translate-x-1/2 z-30 flex flex-col items-center select-none pointer-events-auto">
+        <div className={`absolute top-full mt-4 ${popoverAlignClass} z-30 flex flex-col items-center select-none pointer-events-auto`}>
           <div
-            className={`bg-white border-2 rounded-2xl p-4 shadow-lg text-center w-[288px] sm:w-[304px] space-y-2.5 relative ${catTokens.popoverBorder}`}
+            className={`bg-white border-2 rounded-2xl p-4 shadow-lg text-center w-[min(268px,calc(100vw-2.5rem))] sm:w-[304px] space-y-2.5 relative ${catTokens.popoverBorder}`}
           >
             {/* Upward Speech Bubble Triangle */}
             <div
-              className={`absolute -top-2 left-1/2 -translate-x-1/2 w-3.5 h-3.5 bg-white border-l-2 border-t-2 rotate-45 ${catTokens.popoverBorder}`}
+              className={`absolute -top-2 ${popoverArrowAlignClass} w-3.5 h-3.5 bg-white border-l-2 border-t-2 rotate-45 ${catTokens.popoverBorder}`}
             />
 
             <div className="flex items-center justify-between gap-2">
@@ -224,7 +238,7 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
           </h5>
           <span
             className={`text-[11px] sm:text-xs font-bold block mt-0.5 tabular-nums ${
-              node.status === 'completed' ? 'text-emerald-600' : 'text-slate-400'
+              node.status === 'completed' ? 'text-emerald-600' : 'text-slate-500'
             }`}
           >
             {(node.totalExercises ?? 0) > 0
