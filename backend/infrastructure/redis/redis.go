@@ -2,7 +2,9 @@ package redis
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
+	"strings"
 	"time"
 
 	"merantalk/backend/config"
@@ -20,17 +22,25 @@ func NewRedisClient(ctx context.Context, cfg *config.Config) (*RedisClient, erro
 	}
 	addr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
 
-	rdb := redis.NewClient(&redis.Options{
+	opts := &redis.Options{
 		Addr:         addr,
 		Password:     cfg.RedisPassword,
 		DB:           0,
 		PoolSize:     20,
 		MinIdleConns: 2,
-		DialTimeout:  2 * time.Second,
-		ReadTimeout:  750 * time.Millisecond,
-		WriteTimeout: 750 * time.Millisecond,
+		DialTimeout:  5 * time.Second,
+		ReadTimeout:  1500 * time.Millisecond,
+		WriteTimeout: 1500 * time.Millisecond,
 		MaxRetries:   1,
-	})
+	}
+	if cfg.RedisTLS || strings.HasSuffix(strings.ToLower(cfg.RedisHost), ".upstash.io") {
+		opts.TLSConfig = &tls.Config{
+			MinVersion: tls.VersionTLS12,
+			ServerName: cfg.RedisHost,
+		}
+	}
+
+	rdb := redis.NewClient(opts)
 
 	// Verify Redis connectivity within 5 seconds
 	pingCtx, cancel := context.WithTimeout(ctx, 5*time.Second)

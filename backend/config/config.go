@@ -21,6 +21,7 @@ type Config struct {
 	RedisHost                  string
 	RedisPort                  string
 	RedisPassword              string
+	RedisTLS                   bool
 	JWTSecret                  string
 	JWTAccessExpirationMinutes int
 	JWTRefreshExpirationDays   int
@@ -123,6 +124,7 @@ func LoadConfig() (*Config, error) {
 		RedisHost:                  getEnv("REDIS_HOST", "localhost"),
 		RedisPort:                  getEnv("REDIS_PORT", "6379"),
 		RedisPassword:              redisPassword,
+		RedisTLS:                   strings.EqualFold(getEnv("REDIS_TLS", "false"), "true"),
 		JWTSecret:                  jwtSecret,
 		JWTAccessExpirationMinutes: jwtExpMin,
 		JWTRefreshExpirationDays:   jwtRefreshExpDays,
