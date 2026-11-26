@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -230,6 +231,12 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if originalPath := r.URL.Query().Get("__path"); originalPath != "" {
+		if !strings.HasPrefix(originalPath, "/") {
+			originalPath = "/" + originalPath
+		}
+		for strings.HasPrefix(originalPath, "//") {
+			originalPath = strings.TrimPrefix(originalPath, "/")
+		}
 		q := r.URL.Query()
 		q.Del("__path")
 		r.URL.Path = originalPath
