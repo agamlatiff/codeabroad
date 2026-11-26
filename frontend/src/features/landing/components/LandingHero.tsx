@@ -16,9 +16,9 @@ import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
 const HERO_TRUST_ITEMS = [
-  'Unit 1 terbuka tanpa akun',
-  'Audio penutur asli',
-  'Jalur JLPT, IELTS, Goethe, HSK & DELF',
+  'Mulai N5 tanpa login',
+  'N4–N3 gratis dengan akun',
+  'N2–N1 & bebas lompat unit di Pro',
 ] as const
 
 function findMatchedLanguage(
@@ -99,13 +99,13 @@ export const LandingHero = () => {
       <div className="max-w-[1140px] mx-auto text-center">
         {/* Centered ClassDojo Display Headline */}
         <h1 className="font-brand font-black text-[#1E293B] text-[30px] sm:text-5xl lg:text-[62px] leading-[1.12] tracking-tight max-w-4xl mx-auto">
-          Belajar bahasa asing jadi terarah dan menyenangkan.
+          Belajar bahasa asing untuk karier, beasiswa, dan merantau.
         </h1>
 
         <p className="mt-4 sm:mt-5 text-base sm:text-2xl font-semibold text-[#475569] leading-[1.38] max-w-2xl mx-auto">
-          Dari nol hingga siap sertifikasi global.{' '}
+          Jalur terstruktur dari nol hingga siap kerja &amp; kuliah di luar negeri.{' '}
           <span className="underline decoration-[#93C5FD] decoration-[3px] underline-offset-4 text-[#1E293B]">
-            Bisa dicoba dulu, gratis.
+            Mulai N5 tanpa login, gratis.
           </span>
         </p>
 

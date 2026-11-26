@@ -10,6 +10,7 @@ const NAV_LINKS = [
   { href: '#fitur', label: 'Fitur' },
   { href: '#rute-belajar', label: 'Rute Belajar' },
   { href: '#metode', label: 'Metode' },
+  { href: '#pricing', label: 'Harga' },
 ] as const
 
 export const LandingNavbar = () => {
@@ -21,7 +22,7 @@ export const LandingNavbar = () => {
   const headerRef = useRef<HTMLElement>(null)
   const toggleButtonRef = useRef<HTMLButtonElement>(null)
 
-  const continuePath = user?.is_onboarded ? '/curriculum' : '/onboarding'
+  const continuePath = '/curriculum'
 
   const closeMobileMenu = () => setIsMobileMenuOpen(false)
 
@@ -90,7 +91,7 @@ export const LandingNavbar = () => {
             {isAuthenticated && user ? (
               <Link
                 to={continuePath}
-                className="inline-flex items-center gap-2 rounded-[14px] px-4 py-2.5 text-sm font-brand font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
+                className="inline-flex items-center gap-2 rounded-[14px] px-4 py-2 text-sm font-brand font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[0_3px_0_0_#1D4ED8] active:translate-y-0.5 active:shadow-none transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
               >
                 Lanjut Belajar
                 <ArrowRight weight="bold" className="w-4 h-4" aria-hidden="true" />
@@ -121,9 +122,9 @@ export const LandingNavbar = () => {
               <Link
                 to={continuePath}
                 onClick={closeMobileMenu}
-                className="rounded-[12px] px-3 py-2 text-xs font-brand font-black text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] transition-all inline-flex items-center whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
+                className="rounded-[12px] px-3 py-1.5 text-xs font-brand font-black text-white bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[0_3px_0_0_#1D4ED8] active:translate-y-0.5 active:shadow-none transition-all inline-flex items-center gap-1 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
               >
-                Lanjut
+                Lanjut Belajar
               </Link>
             ) : (
               <Link
@@ -187,7 +188,7 @@ export const LandingNavbar = () => {
                 <Link
                   to={continuePath}
                   onClick={closeMobileMenu}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-sm font-brand font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] active:scale-[0.98] transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-[14px] px-4 py-2.5 text-sm font-brand font-bold text-white bg-[#2563EB] hover:bg-[#1D4ED8] shadow-[0_3px_0_0_#1D4ED8] active:translate-y-0.5 active:shadow-none transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 focus-visible:ring-offset-2"
                 >
                   Lanjut Belajar
                   <ArrowRight weight="bold" className="w-4 h-4" aria-hidden="true" />

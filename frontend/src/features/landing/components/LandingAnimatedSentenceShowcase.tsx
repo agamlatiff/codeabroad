@@ -418,7 +418,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                     whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
                     className={`rounded-[20px] sm:rounded-[22px] ${tileStyle.surfaceClass} min-w-[84px] sm:min-w-[112px] min-h-[70px] sm:min-h-[84px] px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col items-center justify-center gap-1 sm:gap-1.5 text-center text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
                       isSpotlighted
-                        ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(15,23,42,0.16)] scale-[1.04]'
+                        ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(15,23,42,0.16)]'
                         : 'hover:brightness-[1.04]'
                     }`}
                   >
@@ -460,7 +460,7 @@ export const LandingAnimatedSentenceShowcase = () => {
                 whileTap={shouldReduceMotion ? undefined : { y: 2, scale: 0.96 }}
                 className={`rounded-[20px] sm:rounded-[22px] bg-[#00A8FF] shadow-[0_5px_0_0_#0284C7] min-w-[84px] sm:min-w-[112px] min-h-[70px] sm:min-h-[84px] px-3 sm:px-4 py-2.5 sm:py-3 flex flex-col items-center justify-center gap-1 sm:gap-1.5 text-white cursor-pointer transition-shadow focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2563EB]/35 ${
                   isSpeaking
-                    ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(2,132,199,0.28)] scale-[1.04]'
+                    ? 'ring-4 ring-white shadow-lg drop-shadow-[0_10px_14px_rgba(2,132,199,0.28)]'
                     : 'hover:brightness-[1.04]'
                 }`}
               >

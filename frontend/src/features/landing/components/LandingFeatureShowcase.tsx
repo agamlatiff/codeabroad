@@ -37,7 +37,6 @@ interface FeatureStoryRow {
   pillLabel: string
   pillAccentColor: string
   pillPositionClass: string
-  tiltClass: string
   renderVisual: () => ReactNode
 }
 
@@ -57,7 +56,6 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
     pillLabel: 'Unit 1 Gratis Tanpa Login',
     pillAccentColor: '#00B2F7',
     pillPositionClass: '-bottom-4 right-4 sm:right-6',
-    tiltClass: 'md:-rotate-1',
     renderVisual: () => <CurriculumPathIllustration />,
   },
   {
@@ -75,7 +73,6 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
     pillLabel: 'Breakdown Per Kata',
     pillAccentColor: '#10B981',
     pillPositionClass: '-bottom-4 left-4 sm:left-6',
-    tiltClass: 'md:rotate-1',
     renderVisual: () => <LandingAnimatedSentenceShowcase />,
   },
   {
@@ -93,7 +90,6 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
     pillLabel: 'Aksara & Audio Native',
     pillAccentColor: '#F34E47',
     pillPositionClass: '-top-3.5 right-4 sm:right-6',
-    tiltClass: 'md:-rotate-1',
     renderVisual: () => <ScriptStrokeIllustration />,
   },
   {
@@ -111,7 +107,6 @@ const FEATURE_STORY_ROWS: ReadonlyArray<FeatureStoryRow> = [
     pillLabel: 'Ulasan Terjadwal Otomatis',
     pillAccentColor: '#FF9C28',
     pillPositionClass: '-bottom-4 right-4 sm:right-6',
-    tiltClass: 'md:rotate-1',
     renderVisual: () => <FlashcardStackIllustration />,
   },
 ]
@@ -245,7 +240,6 @@ interface FeatureVisualStageProps {
   pillLabel: string
   pillAccentColor: string
   pillPositionClass: string
-  tiltClass?: string
   children: ReactNode
 }
 
@@ -388,7 +382,6 @@ export const LandingFeatureShowcase = () => {
                       pillLabel={row.pillLabel}
                       pillAccentColor={row.pillAccentColor}
                       pillPositionClass={row.pillPositionClass}
-                      tiltClass={row.tiltClass}
                     >
                       {row.renderVisual()}
                     </FeatureVisualStage>

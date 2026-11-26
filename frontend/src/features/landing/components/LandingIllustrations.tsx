@@ -2,9 +2,7 @@ import {
   useEffect,
   useRef,
   useState,
-  type KeyboardEvent,
   type MouseEvent,
-  type ReactNode,
 } from 'react'
 import { AnimatePresence, motion, useInView, useReducedMotion } from 'motion/react'
 import { ArrowsClockwise, SpeakerHigh, Swap } from '@phosphor-icons/react'
@@ -19,26 +17,6 @@ import { LanguageFlagIllustration } from '@/features/onboarding/components/illus
 import { QuestChestIllustration } from '@/features/gamification/components/QuestChestIllustration'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
-
-/**
- * ClassDojo-inspired crisp white tactile studio framing that lifts illustration
- * cards cleanly above organic pastel blobs.
- */
-export const StudioCardFrame = ({
-  children,
-  className = '',
-}: {
-  children: ReactNode
-  className?: string
-}) => {
-  return (
-    <div
-      className={`bg-white border-2 border-[#E2E8F0] rounded-[24px] shadow-[0_6px_0_0_rgba(45,64,150,0.06)] ${className}`.trim()}
-    >
-      {children}
-    </div>
-  )
-}
 
 /**
  * Animated vertical soundwave bars that pulse smoothly while speech audio plays.
@@ -811,14 +789,6 @@ export const FlashcardStackIllustration = () => {
     handleNextCard()
   }
 
-  const handleCardKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
-    if (e.target !== e.currentTarget) return
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault()
-      handleToggleFlip()
-    }
-  }
-
   const handleSpeakPhrase = (e: MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation()
     triggerHaptic('tap')
@@ -881,16 +851,6 @@ export const FlashcardStackIllustration = () => {
                 transition={{ duration: 0.18 }}
               >
                 <motion.div
-                  role="button"
-                  tabIndex={0}
-                  onClick={handleToggleFlip}
-                  onKeyDown={handleCardKeyDown}
-                  aria-pressed={isFlipped}
-                  aria-label={
-                    isFlipped
-                      ? `Arti kartu ${currentCard.langLabel}. Tekan untuk melihat kosakata di sisi depan.`
-                      : `Kartu kosakata ${currentCard.langLabel}: ${currentCard.phrase}. Tekan untuk membalik kartu.`
-                  }
                   animate={{ rotateY: isFlipped ? 180 : 0 }}
                   transition={
                     shouldReduceMotion
@@ -898,7 +858,7 @@ export const FlashcardStackIllustration = () => {
                       : { type: 'spring', stiffness: 260, damping: 24 }
                   }
                   style={{ transformStyle: 'preserve-3d' }}
-                  className="relative w-full h-[210px] sm:h-[228px] cursor-pointer rounded-[24px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
+                  className="relative w-full h-[210px] sm:h-[228px] rounded-[24px]"
                 >
                   {/* Front Face */}
                   <div
@@ -908,7 +868,15 @@ export const FlashcardStackIllustration = () => {
                       isFlipped ? 'pointer-events-none' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      tabIndex={isFlipped ? -1 : 0}
+                      onClick={handleToggleFlip}
+                      aria-label={`Kartu kosakata ${currentCard.langLabel}: ${currentCard.phrase}. Tekan untuk membalik kartu.`}
+                      className="absolute inset-0 z-0 rounded-[24px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
+                    />
+
+                    <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
                       <div className="inline-flex items-center gap-2 min-w-0">
                         <div className="w-7 h-5 rounded overflow-hidden border border-slate-200 shrink-0">
                           <LanguageFlagIllustration
@@ -927,7 +895,7 @@ export const FlashcardStackIllustration = () => {
                         tabIndex={isFlipped ? -1 : 0}
                         onClick={handleSpeakPhrase}
                         aria-label={`Dengarkan pelafalan ${currentCard.langLabel}: ${currentCard.phrase}`}
-                        className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
+                        className={`pointer-events-auto inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl border text-[11px] font-brand font-black transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB] ${
                           isSpeaking
                             ? 'bg-blue-50 border-blue-300 text-[#2563EB]'
                             : 'bg-slate-50 hover:bg-blue-50 border-slate-200 hover:border-blue-300 text-[#1E293B]'
@@ -938,7 +906,7 @@ export const FlashcardStackIllustration = () => {
                       </button>
                     </div>
 
-                    <div className="text-center space-y-1 my-auto py-1">
+                    <div className="relative z-10 text-center space-y-1 my-auto py-1 pointer-events-none">
                       <p className="font-brand font-black text-xl sm:text-[22px] text-[#1E293B] leading-tight">
                         {currentCard.phrase}
                       </p>
@@ -947,7 +915,7 @@ export const FlashcardStackIllustration = () => {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] font-brand font-bold text-[#64748B] pt-2 border-t border-slate-100">
+                    <div className="relative z-10 flex items-center justify-between text-[11px] font-brand font-bold text-[#64748B] pt-2 border-t border-slate-100 pointer-events-none">
                       <span>Kartu {cardIdx + 1}/{FLASHCARDS.length}</span>
                       <span className="inline-flex items-center gap-1 text-[#2563EB]">
                         <Swap weight="bold" className="w-3.5 h-3.5 shrink-0" />
@@ -967,7 +935,15 @@ export const FlashcardStackIllustration = () => {
                       !isFlipped ? 'pointer-events-none' : ''
                     }`}
                   >
-                    <div className="flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      tabIndex={!isFlipped ? -1 : 0}
+                      onClick={handleToggleFlip}
+                      aria-label={`Arti kartu ${currentCard.langLabel}. Tekan untuk melihat kosakata di sisi depan.`}
+                      className="absolute inset-0 z-0 rounded-[24px] cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#2563EB]"
+                    />
+
+                    <div className="relative z-10 flex items-center justify-between gap-2 pointer-events-none">
                       <span className="text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white text-[#2563EB] border border-blue-200">
                         Arti &amp; Contoh
                       </span>
@@ -977,7 +953,7 @@ export const FlashcardStackIllustration = () => {
                       </span>
                     </div>
 
-                    <div className="space-y-1 text-left my-auto py-1">
+                    <div className="relative z-10 space-y-1 text-left my-auto py-1 pointer-events-none">
                       <p className="font-brand font-black text-base text-[#1E293B] leading-snug">
                         {currentCard.meaning}
                       </p>
@@ -989,7 +965,7 @@ export const FlashcardStackIllustration = () => {
                       </p>
                     </div>
 
-                    <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-blue-200/70">
+                    <div className="relative z-10 flex items-center justify-between gap-1.5 pt-2 border-t border-blue-200/70">
                       {RATING_PILLS.map((pill) => (
                         <button
                           key={pill.id}

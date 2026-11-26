@@ -28,30 +28,6 @@ export interface LandingLanguageDemoPack {
   questions: ReadonlyArray<DemoQuizQuestion>
 }
 
-export interface LandingFeatureItem {
-  id: string
-  badge: string
-  title: string
-  description: string
-  href: string
-  ctaLabel: string
-  accent: 'blue' | 'emerald' | 'amber' | 'sky'
-  isAccountOnly?: boolean
-}
-
-export interface GuestVsAccountRow {
-  feature: string
-  guestAccess: string
-  accountAccess: string
-  accountAdvantage?: boolean
-}
-
-export const HERO_TRUST_BADGES = [
-  '6 Jalur Bahasa Global',
-  'Tanpa Daftar Langsung Coba',
-  'Standar JLPT, IELTS, Goethe, HSK & DELF',
-] as const
-
 export const LANDING_DEMO_PACKS: ReadonlyArray<LandingLanguageDemoPack> = [
   {
     code: 'ja',
@@ -404,77 +380,4 @@ export const LANDING_DEMO_PACKS: ReadonlyArray<LandingLanguageDemoPack> = [
   },
 ]
 
-export const LANDING_FEATURES: ReadonlyArray<LandingFeatureItem> = [
-  {
-    id: 'feat-curriculum',
-    badge: 'Unit 1 Terbuka Gratis',
-    title: 'Peta Kurikulum Standar Sertifikasi Global',
-    description:
-      'Materi dipecah menjadi pelajaran singkat 3–5 menit dengan kartu pengantar sebelum latihan, mendukung jalur JLPT, IELTS, TOEFL, Goethe, HSK, hingga DELF.',
-    href: '/curriculum',
-    ctaLabel: 'Jelajahi Peta & Coba Unit 1',
-    accent: 'blue',
-  },
-  {
-    id: 'feat-flashcards',
-    badge: 'Ulasan Terjadwal',
-    title: 'Flashcard Kosakata & Audio Multi-Bahasa',
-    description:
-      'Balik kartu cepat lengkap dengan tulisan asli, cara baca, dan suara pengucapan. Saat masuk akun gratis, kartu otomatis dijadwalkan ulang supaya makin mudah diingat.',
-    href: '/flashcards',
-    ctaLabel: 'Coba Dek Flashcard',
-    accent: 'sky',
-  },
-  {
-    id: 'feat-grammar',
-    badge: 'Panduan Tata Bahasa',
-    title: 'Panduan Pola Kalimat & Tata Bahasa',
-    description:
-      'Pahami susunan kalimat lewat penjelasan warna per bagian kata, contoh situasi kerja dan keseharian di luar negeri, serta kuis singkat.',
-    href: '/grammar',
-    ctaLabel: 'Lihat Panduan Grammar',
-    accent: 'amber',
-  },
-  {
-    id: 'feat-kana',
-    badge: 'Bahasa Beraksara',
-    title: 'Papan Aksara & Latihan Tulis Interaktif',
-    description:
-      'Latihan menulis huruf langsung di layar, tips mengingat bentuk huruf untuk pemula, dan audio pengucapan asli (tersedia lengkap untuk Hiragana, Katakana & Kanji Jepang).',
-    href: '/kana/hiragana',
-    ctaLabel: 'Coba Papan Aksara Jepang',
-    accent: 'emerald',
-  },
-]
 
-export const GUEST_VS_ACCOUNT_ROWS: ReadonlyArray<GuestVsAccountRow> = [
-  {
-    feature: 'Jelajahi Peta Kurikulum, Tata Bahasa, Aksara & Kartu Kosakata',
-    guestAccess: 'Terbuka Penuh',
-    accountAccess: 'Terbuka Penuh',
-  },
-  {
-    feature: 'Mengerjakan Pelajaran Unit 1 (Kuis & Audio Interaktif)',
-    guestAccess: 'Bisa dicoba langsung',
-    accountAccess: 'Bisa + tersimpan permanen',
-    accountAdvantage: true,
-  },
-  {
-    feature: 'Buka Seluruh Unit Lanjutan & Ujian Kesiapan Sertifikasi',
-    guestAccess: 'Terkunci (Perlu Akun)',
-    accountAccess: 'Terbuka Gratis Seumur Hidup',
-    accountAdvantage: true,
-  },
-  {
-    feature: 'Simpan XP, Level, Streak Harian & Pelindung Streak Lintas Bahasa',
-    guestAccess: 'Sementara di perangkat ini',
-    accountAccess: 'Tersimpan Permanen di Akun',
-    accountAdvantage: true,
-  },
-  {
-    feature: 'Misi Harian, Hadiah Gems, & Jadwal Ulang Otomatis',
-    guestAccess: 'Perlu Akun',
-    accountAccess: 'Aktif Otomatis',
-    accountAdvantage: true,
-  },
-]

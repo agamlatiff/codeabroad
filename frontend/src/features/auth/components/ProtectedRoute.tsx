@@ -1,20 +1,8 @@
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuthStore } from "@/features/auth/store/authStore"
 
-// HomeRoute displays LandingPage to guests and routes authenticated learners to their learning workspace
+// HomeRoute allows both guests and authenticated learners to visit the public landing page freely
 export const HomeRoute = () => {
-  const isAuthenticated = useAuthStore((state) =>
-    Boolean(state.isAuthenticated && (state.refreshToken || state.accessToken) && state.user)
-  )
-  const user = useAuthStore((state) => state.user)
-
-  if (isAuthenticated && user) {
-    if (!user.is_onboarded) {
-      return <Navigate to="/onboarding" replace />
-    }
-    return <Navigate to="/curriculum" replace />
-  }
-
   return <Outlet />
 }
 

@@ -41,7 +41,7 @@ export const LandingFloatingCta = () => {
     const bottomObserver = new IntersectionObserver(
       ([bottomEntry]) => {
         if (!bottomEntry) return
-        setBottomVisible(bottomEntry.isIntersecting)
+        setBottomVisible(bottomEntry.isIntersecting || bottomEntry.boundingClientRect.top < 0)
       },
       { threshold: 0 }
     )

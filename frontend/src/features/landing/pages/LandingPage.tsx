@@ -7,6 +7,7 @@ import { LandingFeatureShowcase } from '@/features/landing/components/LandingFea
 import { LandingGoalRoadmapSection } from '@/features/landing/components/LandingGoalRoadmapSection'
 import { LandingPhraseShowcaseBand } from '@/features/landing/components/LandingPhraseShowcaseBand'
 import { LandingMethodTrustSection } from '@/features/landing/components/LandingMethodTrustSection'
+import { LandingPricingSection } from '@/features/landing/components/LandingPricingSection'
 import { LandingBottomCta } from '@/features/landing/components/LandingBottomCta'
 import { LandingFooter } from '@/features/landing/components/LandingFooter'
 import { LandingFloatingCta } from '@/features/landing/components/LandingFloatingCta'
@@ -24,6 +25,7 @@ export const LandingPage = () => {
           <LandingGoalRoadmapSection />
           <LandingPhraseShowcaseBand />
           <LandingMethodTrustSection />
+          <LandingPricingSection />
           <LandingBottomCta />
         </main>
         <LandingFooter />

@@ -70,6 +70,9 @@ const KanaPage = lazy(() =>
 const SrsReviewPage = lazy(() =>
   import('@/features/exercise/pages/SrsReviewPage').then((m) => ({ default: m.SrsReviewPage }))
 )
+const PricingPage = lazy(() =>
+  import('@/features/pricing/pages/PricingPage').then((m) => ({ default: m.PricingPage }))
+)
 const NotFoundPage = lazy(() =>
   import('@/shared/pages/NotFoundPage').then((m) => ({ default: m.NotFoundPage }))
 )
@@ -103,7 +106,7 @@ function App() {
               <Route path="/onboarding" element={<OnboardingPage />} />
             </Route>
 
-            {/* Public Landing Page (/ redirects authenticated learners to /curriculum via HomeRoute) */}
+            {/* Public Landing Page (Accessible to both guests and authenticated learners) */}
             <Route element={<HomeRoute />}>
               <Route path="/" element={<LandingPage />} />
             </Route>
@@ -117,6 +120,7 @@ function App() {
               <Route path="/grammar/:id" element={<GrammarDetailPage />} />
               <Route path="/kana" element={<KanaPage />} />
               <Route path="/kana/:script" element={<KanaPage />} />
+              <Route path="/pricing" element={<PricingPage />} />
               <Route path="/roadmap" element={<Navigate to="/curriculum" replace />} />
               <Route path="/roadmap/:track" element={<Navigate to="/curriculum" replace />} />
               <Route path="/courses" element={<Navigate to="/curriculum" replace />} />

@@ -132,7 +132,7 @@ const GOAL_ROADMAPS: readonly GoalRoadmapConfig[] = [
     TabIcon: GraduationCap,
     meraFigure: 'sensei',
     meraMood: 'happy',
-    meraBadge: 'Beasiswa',
+    meraBadge: 'Studi',
     badgeLabel: 'Jalur Akademik & Persiapan Kuliah',
     personaHeadline: 'Siapkan syarat bahasa untuk kampus impian dan beasiswa luar negeri',
     personaSummary:
@@ -189,7 +189,7 @@ const GOAL_ROADMAPS: readonly GoalRoadmapConfig[] = [
     TabIcon: Certificate,
     meraFigure: 'timekeeper',
     meraMood: 'pointing',
-    meraBadge: 'Sertifikasi',
+    meraBadge: 'JLPT',
     badgeLabel: 'Jalur Evaluasi Terukur & Target Skor',
     personaHeadline: 'Progres sistematis mengikuti kisi-kisi ujian resmi internasional',
     personaSummary:
