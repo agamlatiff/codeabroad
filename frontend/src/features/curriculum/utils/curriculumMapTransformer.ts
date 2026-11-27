@@ -55,7 +55,7 @@ export const transformCurriculumToMapUnits = (
       }
 
       const subtitle = lesson.is_skipped
-        ? 'Dilewati otomatis via placement'
+        ? 'Sudah dikuasai dari tes awal'
         : lesson.is_completed
           ? `Skor ${lesson.score}% • Selesai`
           : levelCode

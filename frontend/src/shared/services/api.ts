@@ -33,31 +33,96 @@ export interface RequestOptions {
   signal?: AbortSignal
 }
 
+const DEFAULT_API_ERROR_MESSAGE = 'Ada gangguan sementara. Coba lagi sebentar ya.'
+
+export const FRIENDLY_API_ERROR_BY_CODE: Record<string, string> = {
+  INVALID_CREDENTIALS: 'Email atau kata sandi belum cocok. Cek kembali ya.',
+  TOKEN_EXPIRED: 'Sesi masuk kamu sudah habis. Yuk masuk ulang dulu.',
+  UNAUTHORIZED: 'Sesi masuk kamu sudah habis. Yuk masuk ulang dulu.',
+  TOO_MANY_REQUESTS: 'Kamu terlalu cepat menekan tombol. Tunggu sebentar lalu coba lagi ya.',
+  RATE_LIMIT_EXCEEDED: 'Kamu terlalu cepat menekan tombol. Tunggu sebentar lalu coba lagi ya.',
+  PAYLOAD_TOO_LARGE: 'Data yang dikirim terlalu besar. Coba kurangi panjang isiannya ya.',
+  LESSON_LOCKED: 'Selesaikan pelajaran sebelumnya dulu untuk membuka materi ini.',
+  EXERCISE_LESSON_LOCKED: 'Selesaikan pelajaran sebelumnya dulu untuk membuka materi ini.',
+  LESSON_NOT_FOUND: 'Materi pelajaran tidak ditemukan. Coba muat ulang halaman.',
+  UNIT_NOT_FOUND: 'Materi pelajaran tidak ditemukan. Coba muat ulang halaman.',
+  EXERCISE_NOT_FOUND: 'Materi pelajaran tidak ditemukan. Coba muat ulang halaman.',
+  LOGIN_REQUIRED_FOR_LEVEL: 'Masuk atau daftar akun gratis untuk membuka level ini.',
+  PRO_REQUIRED_FOR_LEVEL: 'Level ini tersedia di paket Merantalk Pro.',
+  LESSON_SCORE_TOO_LOW: 'Skor latihan masih perlu ditingkatkan. Yuk coba ulangi lagi!',
+  EXERCISES_NOT_ATTEMPTED: 'Selesaikan seluruh soal latihan dulu sebelum menuntaskan pelajaran.',
+  LESSON_EXERCISES_REQUIRED: 'Selesaikan seluruh soal latihan dulu sebelum menuntaskan pelajaran.',
+  SRS_REVIEW_NOT_FOUND: 'Materi ulasan ini belum jatuh tempo atau sudah selesai diulas.',
+  SRS_REVIEW_NOT_DUE: 'Materi ulasan ini belum jatuh tempo atau sudah selesai diulas.',
+  LEVEL_CURRICULUM_INCOMPLETE:
+    'Selesaikan semua unit di level ini dulu sebelum mengikuti ujian kesiapan.',
+  EXAM_ALREADY_PASSED: 'Kamu sudah lulus ujian kesiapan di level ini!',
+  BADGE_NOT_FOUND: 'Item atau lencana tidak ditemukan.',
+  SHOP_ITEM_NOT_FOUND: 'Item atau lencana tidak ditemukan.',
+  CHEST_ALREADY_CLAIMED: 'Hadiah ini sudah kamu klaim sebelumnya.',
+  DAILY_QUEST_ALREADY_CLAIMED: 'Hadiah ini sudah kamu klaim sebelumnya.',
+  MONTHLY_BADGE_ALREADY_CLAIMED: 'Hadiah ini sudah kamu klaim sebelumnya.',
+  INSUFFICIENT_GEMS: 'Gems kamu belum cukup untuk menukar item ini.',
+  INTERNAL_ERROR: 'Ada gangguan sementara. Coba lagi sebentar ya.',
+  INTERNAL_SERVER_ERROR: 'Ada gangguan sementara. Coba lagi sebentar ya.',
+}
+
+const RAW_TECHNICAL_ERROR_PATTERN =
+  /\b(invalid .* format|must be a valid uuid|cannot be nil|sql|pgx|internal server error|payload|token|srs review|lesson node|request failed with status code|network error|timeout of \d+ms exceeded)\b/i
+
+const isRawTechnicalErrorMessage = (msg: string): boolean =>
+  RAW_TECHNICAL_ERROR_PATTERN.test(msg)
+
 export const unwrapApiResponse = <T>(
   response: AxiosResponse<ApiResponse<T>>,
-  fallbackError: string = 'Terjadi kesalahan pada server'
+  fallbackError: string = DEFAULT_API_ERROR_MESSAGE
 ): T => {
   if (response.data.success && response.data.data !== undefined) {
     return response.data.data
   }
-  throw new Error(response.data.error || fallbackError)
+  const code =
+    typeof response.data.code === 'string' ? response.data.code.trim().toUpperCase() : ''
+  if (code && FRIENDLY_API_ERROR_BY_CODE[code]) {
+    throw new Error(FRIENDLY_API_ERROR_BY_CODE[code])
+  }
+  const rawError = typeof response.data.error === 'string' ? response.data.error.trim() : ''
+  if (rawError.length > 0 && !isRawTechnicalErrorMessage(rawError)) {
+    throw new Error(rawError)
+  }
+  throw new Error(fallbackError)
 }
 
 export const extractApiErrorMessage = (
   error: unknown,
-  fallback: string = 'Terjadi kesalahan pada server'
+  fallback: string = DEFAULT_API_ERROR_MESSAGE
 ): string => {
   if (axios.isAxiosError(error)) {
-    const data = error.response?.data as { error?: unknown; message?: unknown } | undefined
+    const data = error.response?.data as
+      | { code?: unknown; error?: unknown; message?: unknown }
+      | undefined
+    const code = typeof data?.code === 'string' ? data.code.trim().toUpperCase() : ''
+    if (code && FRIENDLY_API_ERROR_BY_CODE[code]) {
+      return FRIENDLY_API_ERROR_BY_CODE[code]
+    }
     if (typeof data?.error === 'string' && data.error.trim().length > 0) {
-      return data.error
+      const trimmed = data.error.trim()
+      return isRawTechnicalErrorMessage(trimmed) ? fallback : trimmed
     }
     if (typeof data?.message === 'string' && data.message.trim().length > 0) {
-      return data.message
+      const trimmed = data.message.trim()
+      return isRawTechnicalErrorMessage(trimmed) ? fallback : trimmed
     }
+    if (error.response?.status === 429) {
+      return FRIENDLY_API_ERROR_BY_CODE.TOO_MANY_REQUESTS
+    }
+    if (error.response?.status === 413) {
+      return FRIENDLY_API_ERROR_BY_CODE.PAYLOAD_TOO_LARGE
+    }
+    return fallback
   }
   if (error instanceof Error && error.message.trim().length > 0) {
-    return error.message
+    const trimmed = error.message.trim()
+    return isRawTechnicalErrorMessage(trimmed) ? fallback : trimmed
   }
   return fallback
 }

@@ -592,7 +592,7 @@ export const useLearnWorkspace = (id?: string) => {
   const lessonErrorMessage = lessonQuery.isError
     ? extractApiErrorMessage(
         lessonQuery.error,
-        'Gagal memuat detail pelajaran dari server.'
+        'Gagal memuat pelajaran. Cek koneksi internetmu lalu coba lagi.'
       )
     : null
 

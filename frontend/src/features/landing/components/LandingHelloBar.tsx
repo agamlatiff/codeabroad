@@ -15,16 +15,15 @@ export const LandingHelloBar = () => {
     >
       <div className="w-full max-w-[1440px] mx-auto flex items-center justify-center relative min-w-0">
         <p className="min-w-0 flex-1 pr-8 sm:px-9 text-center leading-snug text-xs sm:text-sm">
-          <span className="sm:hidden">Mulai N5 tanpa login · N4–N3 gratis dengan akun.</span>
+          <span className="sm:hidden">Mulai N5 / A1 tanpa login · Gratis dengan akun.</span>
           <span className="hidden sm:inline">
-            Belajar bahasa untuk karier, beasiswa &amp; merantau — mulai N5 tanpa login, N4–N3 gratis dengan akun, N2–N1 di Pro.
+            Belajar bahasa untuk karier, beasiswa &amp; merantau — mulai N5 / A1 tanpa login, dasar hingga menengah gratis dengan akun.
           </span>
           <Link
             to="/curriculum"
             className="ml-1.5 font-brand font-bold text-[#2563EB] hover:text-[#1D4ED8] inline-flex items-center gap-0.5 whitespace-nowrap rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]/40 transition-colors"
           >
-            <span className="sm:hidden">Coba N5</span>
-            <span className="hidden sm:inline">Coba sekarang</span>
+            <span>Coba Gratis</span>
             <CaretRight weight="bold" className="w-3.5 h-3.5 shrink-0" aria-hidden="true" />
           </Link>
         </p>

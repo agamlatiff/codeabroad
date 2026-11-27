@@ -185,10 +185,10 @@ export const GrammarPage = () => {
       { value: 'ALL', label: 'Kategori: Semua' },
       ...Array.from(seen).map((cat) => ({
         value: cat,
-        label: formatCategoryLabel(cat),
+        label: formatCategoryLabel(cat, activeLanguageCode),
       })),
     ]
-  }, [grammarPoints])
+  }, [activeLanguageCode, grammarPoints])
 
   const duePointsInScope = useMemo(
     () =>
@@ -320,7 +320,11 @@ export const GrammarPage = () => {
           onSelectCategory={handleSelectCategory}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Cari pola kalimat, partikel, atau contoh..."
+          searchPlaceholder={
+            isJapaneseTrack
+              ? 'Cari pola kalimat, partikel, atau contoh...'
+              : 'Cari pola kalimat, bentuk kata kerja, atau contoh...'
+          }
         />
 
         {/* Scheduled Smart Grammar Review Banner */}
@@ -428,7 +432,12 @@ export const GrammarPage = () => {
         ) : (
           <div className="space-y-4">
             {filteredPoints.map((point, pointIdx) => (
-              <GrammarEditorialCard key={point.id} point={point} index={pointIdx} />
+              <GrammarEditorialCard
+                key={point.id}
+                point={point}
+                index={pointIdx}
+                languageCode={activeLanguageCode}
+              />
             ))}
           </div>
         )}

@@ -174,7 +174,7 @@ export const useExerciseMedia = ({
             setIsSpeakingAudio(false)
             if (!isAutoPlay) {
               setAudioPlaybackError(
-                'Audio speaker tidak didukung browser ini, silakan baca transkripnya.'
+                'Suara belum didukung di perangkat ini, baca teksnya langsung ya.'
               )
             }
           },
@@ -227,7 +227,7 @@ export const useExerciseMedia = ({
     const RecognitionCtor = getSpeechRecognitionConstructor()
     if (!RecognitionCtor) {
       setAudioPlaybackError(
-        'Pengenalan suara browser tidak tersedia. Ketik atau konfirmasi pelafalan secara manual.'
+        'Mikrofon belum didukung di perangkat ini. Ketik jawabannya langsung ya.'
       )
       return
     }

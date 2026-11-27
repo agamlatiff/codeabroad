@@ -415,7 +415,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
             {isCheckpoint ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 border border-rose-200 text-xs font-extrabold text-rose-700">
                 <ShieldCheck weight="fill" className="w-4 h-4 text-rose-600" />
-                <span className="hidden sm:inline">Ujian Checkpoint • Tanpa Bantuan</span>
+                <span className="hidden sm:inline">Ujian Akhir Unit • Tanpa Bantuan</span>
                 <span className="sm:hidden">Ujian</span>
               </span>
             ) : (

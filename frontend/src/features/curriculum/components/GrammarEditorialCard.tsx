@@ -79,7 +79,11 @@ const CATEGORY_COVER_THEMES: Record<string, EditorialCoverTheme> = {
 
 const DEFAULT_COVER_THEME: EditorialCoverTheme = CATEGORY_COVER_THEMES.sentence_pattern
 
-function splitEditorialTitle(title: string, category: string): {
+function splitEditorialTitle(
+  title: string,
+  category: string,
+  languageCode?: string
+): {
   primary: string
   accentSub: string
 } {
@@ -92,13 +96,14 @@ function splitEditorialTitle(title: string, category: string): {
   }
   return {
     primary: title,
-    accentSub: formatCategoryLabel(category),
+    accentSub: formatCategoryLabel(category, languageCode),
   }
 }
 
 export interface GrammarEditorialCardProps {
   point: GrammarPoint
   index: number
+  languageCode?: string
 }
 
 /**
@@ -106,7 +111,11 @@ export interface GrammarEditorialCardProps {
  * - Left graphic poster panel: dark brand pill, stacked poster typography, tagline, and Kodi mascot.
  * - Right content panel: level/category badges, full single-line formula + Romaji strip, explanation, and CTA.
  */
-export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, index }) => {
+export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({
+  point,
+  index,
+  languageCode,
+}) => {
   const levelCode = (point.level_code ?? 'N5').toUpperCase()
   const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
   const cover = CATEGORY_COVER_THEMES[point.category] ?? DEFAULT_COVER_THEME
@@ -114,7 +123,7 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
   const exampleCount = point.learning_guide?.breakdowns?.length ?? point.examples?.length ?? 0
   const hasGuide = Boolean(point.learning_guide?.breakdowns?.length)
   const previewText = point.learning_guide?.analogy || point.explanation
-  const { primary, accentSub } = splitEditorialTitle(point.title, point.category)
+  const { primary, accentSub } = splitEditorialTitle(point.title, point.category, languageCode)
   const isDueForReview = isGrammarPointDueForReview(point)
 
   return (
@@ -190,7 +199,7 @@ export const GrammarEditorialCard: FC<GrammarEditorialCardProps> = ({ point, ind
               </span>
               <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-slate-50 text-slate-600 border border-slate-200">
                 {renderCategoryIcon(point.category, 'w-3 h-3')}
-                <span>{formatCategoryLabel(point.category)}</span>
+                <span>{formatCategoryLabel(point.category, languageCode)}</span>
               </span>
               {isDueForReview ? (
                 <span className="inline-flex items-center gap-1 text-[10px] font-brand font-black uppercase tracking-wider px-2.5 py-0.5 rounded-lg bg-amber-100 text-amber-900 border border-amber-300">

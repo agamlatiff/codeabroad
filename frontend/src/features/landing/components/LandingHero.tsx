@@ -15,10 +15,16 @@ import { LanguageFlagIllustration } from '@/features/onboarding/components/illus
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
-const HERO_TRUST_ITEMS = [
+const HERO_TRUST_ITEMS_JA = [
   'Mulai N5 tanpa login',
   'N4–N3 gratis dengan akun',
   'N2–N1 & bebas lompat unit di Pro',
+] as const
+
+const HERO_TRUST_ITEMS_EN = [
+  'Mulai A1 tanpa login',
+  'A2–B1 gratis dengan akun',
+  'B2–C2 & bebas lompat unit di Pro',
 ] as const
 
 const FALLBACK_LANGUAGE_IDS: Partial<Record<DemoLanguageCode, string>> = {
@@ -79,6 +85,11 @@ export const LandingHero = () => {
         : `/curriculum/${resolvedLangId}`
       : '/curriculum'
   const leadPhrase = selectedPack.phrases[0]
+  const isEnglishSelected = selectedPack.code === 'en-us'
+  const heroSubheadlineCta = isEnglishSelected
+    ? 'Mulai A1 tanpa login, gratis.'
+    : 'Mulai N5 tanpa login, gratis.'
+  const heroTrustItems = isEnglishSelected ? HERO_TRUST_ITEMS_EN : HERO_TRUST_ITEMS_JA
 
   const handleSelectLanguage = (code: DemoLanguageCode) => {
     triggerHaptic('tap')
@@ -124,7 +135,7 @@ export const LandingHero = () => {
         <p className="mt-4 sm:mt-5 text-base sm:text-2xl font-semibold text-[#475569] leading-[1.38] max-w-2xl mx-auto">
           Jalur terstruktur dari nol hingga siap kerja &amp; kuliah di luar negeri.{' '}
           <span className="underline decoration-[#93C5FD] decoration-[3px] underline-offset-4 text-[#1E293B]">
-            Mulai N5 tanpa login, gratis.
+            {heroSubheadlineCta}
           </span>
         </p>
 
@@ -307,7 +318,7 @@ export const LandingHero = () => {
 
         {/* Verifiable Trust Strip */}
         <div className="mt-5 sm:mt-6 flex flex-wrap items-center justify-center gap-x-5 sm:gap-x-6 gap-y-2 text-xs sm:text-sm font-semibold text-[#64748B]">
-          {HERO_TRUST_ITEMS.map((item) => (
+          {heroTrustItems.map((item) => (
             <div key={item} className="inline-flex items-center gap-1.5">
               <CheckCircle
                 weight="fill"

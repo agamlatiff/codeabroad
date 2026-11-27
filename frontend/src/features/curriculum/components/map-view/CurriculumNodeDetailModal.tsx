@@ -374,7 +374,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
         <div className="flex items-center justify-between p-2.5 bg-slate-50 border border-slate-200/80 rounded-2xl text-xs font-bold text-slate-700">
           <span className="flex items-center gap-1.5 text-amber-700">
             <Lightning weight="fill" className="w-4 h-4 text-amber-500" />
-            <span>+{node.xpReward} XP Reward</span>
+            <span>+{node.xpReward} XP</span>
           </span>
           {node.status === 'completed' && typeof node.score === 'number' && !node.isSkipped ? (
             <span className="flex items-center gap-1 text-emerald-700 font-brand font-black">

@@ -52,20 +52,20 @@ const BILLING_OPTIONS: readonly BillingOption[] = [
 ] as const
 
 const GUEST_FEATURES = [
-  'Akses materi dasar N5 tanpa perlu akun',
+  'Akses materi dasar N5 & A1 tanpa perlu akun',
   'Latihan kosakata, tata bahasa & audio penutur asli',
   'Coba langsung Flashcard & kuis interaktif',
 ] as const
 
 const FREE_ACCOUNT_FEATURES = [
-  'Akses penuh kurikulum N5, N4 hingga N3',
+  'Akses penuh kurikulum N5–N3 (Jepang) & A1–B1 (Inggris US)',
   'Progres, XP & streak tersimpan lintas perangkat',
   'Kartu kosakata yang muncul lagi tepat sebelum kamu lupa',
   'Belajar bertahap mengikuti rute unit',
 ] as const
 
 const PRO_FEATURES = [
-  'Akses penuh seluruh level N5 hingga N1',
+  'Akses penuh seluruh level N5–N1 & A1–C2 (TOEFL 72–120)',
   'Bebas lompat ke unit atau materi mana saja',
   'Jalur khusus karier, wawancara & beasiswa',
   'Latihan ulang tanpa batas sampai benar-benar hafal',
@@ -99,8 +99,8 @@ export const LandingPricingSection = () => {
           </h2>
 
           <p className="mt-3 sm:mt-4 text-sm sm:text-lg font-medium text-[#475569] leading-relaxed">
-            Coba N5 tanpa login, lanjut N4–N3 gratis dengan akun, atau buka N2–N1 &amp; kebebasan
-            lompat unit dengan Merantalk Pro.
+            Coba N5 atau A1 tanpa login, lanjut N4–N3 &amp; A2–B1 gratis dengan akun, atau buka
+            N2–N1 &amp; B2–C2 di Pro.
           </p>
         </div>
 
@@ -147,19 +147,19 @@ export const LandingPricingSection = () => {
           {/* Card 1: Tamu */}
           <div className="flex flex-col rounded-[24px] bg-white border-2 border-slate-200/90 shadow-[0_4px_0_0_#E2E8F0] p-6 sm:p-7">
             <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 min-w-0">
                 <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-slate-100 text-[#475569] shrink-0">
                   <Compass weight="duotone" className="w-5 h-5" aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-brand font-black text-lg text-[#1E293B] leading-tight">
                     Tamu
                   </h3>
-                  <p className="text-xs font-semibold text-[#64748B]">Level N5 · Tanpa Login</p>
+                  <p className="text-xs font-semibold text-[#64748B]">Level N5 &amp; A1 · Tanpa Login</p>
                 </div>
               </div>
-              <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-[#475569] whitespace-nowrap">
-                N5
+              <span className="rounded-full bg-slate-100 border border-slate-200 px-2.5 py-1 text-[11px] font-bold text-[#475569] whitespace-nowrap shrink-0">
+                N5 · A1
               </span>
             </div>
 
@@ -171,7 +171,7 @@ export const LandingPricingSection = () => {
                 <span className="text-sm font-semibold text-[#64748B]">/ selamanya</span>
               </div>
               <p className="mt-2 text-xs sm:text-sm font-medium text-[#64748B]">
-                Langsung coba belajar N5 tanpa daftar atau kartu kredit.
+                Langsung coba belajar N5 atau A1 tanpa daftar dan tanpa kartu kredit.
               </p>
             </div>
 
@@ -192,7 +192,7 @@ export const LandingPricingSection = () => {
               to="/curriculum"
               className="mt-7 w-full inline-flex items-center justify-center gap-2 rounded-2xl border-2 border-slate-200/90 bg-white hover:bg-slate-50 hover:border-slate-300 text-[#1E293B] px-5 py-3 text-sm font-brand font-bold shadow-[0_4px_0_0_#E2E8F0] active:translate-y-0.5 active:shadow-none transition-all focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-blue-500/20"
             >
-              <span>Coba N5 Gratis</span>
+              <span>Coba N5 / A1 Gratis</span>
               <ArrowRight weight="bold" className="w-4 h-4 shrink-0" aria-hidden="true" />
             </Link>
           </div>
@@ -200,19 +200,19 @@ export const LandingPricingSection = () => {
           {/* Card 2: Akun Gratis */}
           <div className="flex flex-col rounded-[24px] bg-white border-2 border-slate-200/90 shadow-[0_4px_0_0_#E2E8F0] p-6 sm:p-7">
             <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 min-w-0">
                 <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-blue-50 text-[#2563EB] shrink-0">
                   <UserCircle weight="duotone" className="w-5 h-5" aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-brand font-black text-lg text-[#1E293B] leading-tight">
                     Akun Gratis
                   </h3>
-                  <p className="text-xs font-semibold text-[#64748B]">Level N5–N3 · Gratis</p>
+                  <p className="text-xs font-semibold text-[#64748B]">Level N5–N3 &amp; A1–B1</p>
                 </div>
               </div>
-              <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-1 text-[11px] font-bold text-[#2563EB] whitespace-nowrap">
-                N5–N3
+              <span className="rounded-full bg-blue-50 border border-blue-200/80 px-2.5 py-1 text-[11px] font-bold text-[#2563EB] whitespace-nowrap shrink-0">
+                Gratis
               </span>
             </div>
 
@@ -224,7 +224,7 @@ export const LandingPricingSection = () => {
                 <span className="text-sm font-semibold text-[#64748B]">/ dengan akun</span>
               </div>
               <p className="mt-2 text-xs sm:text-sm font-medium text-[#64748B]">
-                Fondasi kuat untuk persiapan magang, kerja dasar &amp; JLPT N3.
+                Fondasi kuat untuk persiapan kerja, kuliah &amp; ujian JLPT N3 atau CEFR B1.
               </p>
             </div>
 
@@ -253,18 +253,18 @@ export const LandingPricingSection = () => {
           {/* Card 3: Merantalk Pro */}
           <div className="relative flex flex-col rounded-[24px] bg-white border-2 border-[#2563EB] shadow-[0_6px_0_0_#1D4ED8] p-6 sm:p-7">
             <div className="flex items-center justify-between gap-2">
-              <div className="inline-flex items-center gap-2">
+              <div className="inline-flex items-center gap-2 min-w-0">
                 <span className="inline-flex items-center justify-center w-9 h-9 rounded-xl bg-[#2563EB] text-white shrink-0">
                   <Crown weight="fill" className="w-5 h-5" aria-hidden="true" />
                 </span>
-                <div>
+                <div className="min-w-0">
                   <h3 className="font-brand font-black text-lg text-[#1E293B] leading-tight">
                     Merantalk Pro
                   </h3>
-                  <p className="text-xs font-semibold text-[#2563EB]">N5–N1 + Bebas Lompat Unit</p>
+                  <p className="text-xs font-semibold text-[#2563EB]">Semua Level (N5–N1 &amp; A1–C2)</p>
                 </div>
               </div>
-              <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-1 text-[11px] font-brand font-bold text-amber-900 whitespace-nowrap">
+              <span className="rounded-full bg-amber-100 border border-amber-300 px-2.5 py-1 text-[11px] font-brand font-bold text-amber-900 whitespace-nowrap shrink-0">
                 {activePlan.badge}
               </span>
             </div>

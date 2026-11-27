@@ -120,7 +120,7 @@ export function useOnboardingWizard() {
         return
       }
       setErrorMessage(
-        extractApiErrorMessage(error, 'Gagal menyelesaikan onboarding. Coba lagi.')
+        extractApiErrorMessage(error, 'Gagal menyimpan pengaturan awal. Coba lagi ya.')
       )
     },
   })
@@ -134,7 +134,7 @@ export function useOnboardingWizard() {
       initial_placement_type: form.initialPlacementType,
     })
     if (!parsed.success) {
-      setErrorMessage(parsed.error.issues[0]?.message || 'Lengkapi pilihan onboarding terlebih dahulu.')
+      setErrorMessage(parsed.error.issues[0]?.message || 'Lengkapi pilihan awal belajarmu dulu ya.')
       return
     }
 

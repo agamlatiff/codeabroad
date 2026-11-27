@@ -32,7 +32,7 @@ export const useGoogleAuth = (options?: UseGoogleAuthOptions) => {
     onSuccess: (data, variables) => {
       queryClient.clear()
       if (!data.access_token) {
-        options?.onError?.('Sesi Google berhasil dibuat, tetapi token akses tidak diterima.')
+        options?.onError?.('Gagal menyelesaikan masuk dengan Google. Coba lagi sebentar ya.')
         return
       }
       const persist = variables.rememberMe ?? rememberMe

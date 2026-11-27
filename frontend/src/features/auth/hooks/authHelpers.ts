@@ -19,8 +19,8 @@ export interface ParsedAuthError {
 }
 
 export const NETWORK_ERROR_MESSAGE = 'Tidak dapat terhubung. Periksa koneksi internet kamu dan coba lagi ya.'
-export const PAYLOAD_TOO_LARGE_MESSAGE = 'Data yang dikirim terlalu besar. Mohon periksa kembali formulir kamu.'
-export const SERVER_ERROR_MESSAGE = 'Terjadi kendala pada sistem kami. Silakan coba beberapa saat lagi.'
+export const PAYLOAD_TOO_LARGE_MESSAGE = 'Data yang dikirim terlalu besar. Kurangi panjang isian lalu coba lagi.'
+export const SERVER_ERROR_MESSAGE = 'Ada gangguan sementara. Coba lagi sebentar ya.'
 
 /** Normalizes an unknown mutation error into a predictable shape. */
 export const parseAuthError = (err: unknown): ParsedAuthError => {
@@ -166,7 +166,7 @@ export const GOOGLE_CLIENT_ID =
   (import.meta.env.VITE_GOOGLE_CLIENT_ID as string | undefined)?.trim() ?? ''
 
 export const GOOGLE_AUTH_ERROR_MAP: Record<string, string> = {
-  GOOGLE_OAUTH_NOT_CONFIGURED: 'Masuk dengan Google belum diaktifkan pada server.',
+  GOOGLE_OAUTH_NOT_CONFIGURED: 'Masuk dengan Google sedang tidak tersedia saat ini.',
   GOOGLE_AUTH_FAILED: 'Verifikasi akun Google gagal atau kedaluwarsa. Silakan coba lagi.',
   GOOGLE_EMAIL_NOT_VERIFIED:
     'Email pada akun Google belum terverifikasi. Gunakan akun Google terverifikasi.',

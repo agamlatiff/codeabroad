@@ -580,7 +580,7 @@ export const GrammarDetailPage = () => {
                     </span>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-brand font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80">
                       {renderCategoryIcon(currentPoint.category, 'w-3.5 h-3.5 text-blue-600')}
-                      <span>{formatCategoryLabel(currentPoint.category)}</span>
+                      <span>{formatCategoryLabel(currentPoint.category, effectiveLanguageCode)}</span>
                     </span>
                     {currentPoint.is_understood && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-brand font-black bg-emerald-50 text-emerald-700 border border-emerald-200">

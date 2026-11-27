@@ -12,10 +12,18 @@ import type { GrammarPoint } from '@/features/curriculum/types/curriculum'
 
 export const CATEGORY_LABELS: Record<string, string> = {
   sentence_pattern: 'Pola Kalimat',
-  conjugation: 'Konjugasi',
+  conjugation: 'Bentuk Kata',
   particle: 'Partikel',
-  tense: 'Tense',
+  tense: 'Waktu',
   honorific: 'Keigo & Sopan',
+}
+
+export const ENGLISH_CATEGORY_LABELS: Record<string, string> = {
+  sentence_pattern: 'Pola Kalimat',
+  conjugation: 'Bentuk Kata Kerja',
+  particle: 'Preposisi & Penghubung',
+  tense: 'Waktu (Tense)',
+  honorific: 'Sopan & Formal',
 }
 
 export interface LevelAccentTheme {
@@ -194,8 +202,12 @@ export function getGrammarRoleStyle(role?: string): GrammarRoleStyle {
   return GRAMMAR_ROLE_STYLE_MAP[key] ?? DEFAULT_GRAMMAR_ROLE_STYLE
 }
 
-export function formatCategoryLabel(category: string): string {
-  return CATEGORY_LABELS[category] ?? category.replace(/_/g, ' ')
+export function formatCategoryLabel(category?: string, languageCode?: string): string {
+  const normalizedCategory = category?.trim() ?? ''
+  if (!normalizedCategory) return ''
+  const isEnglish = languageCode?.trim().toLowerCase().startsWith('en') ?? false
+  const labels = isEnglish ? ENGLISH_CATEGORY_LABELS : CATEGORY_LABELS
+  return labels[normalizedCategory] ?? normalizedCategory.replace(/_/g, ' ')
 }
 
 export function renderCategoryIcon(category: string, className = 'w-3.5 h-3.5'): ReactNode {

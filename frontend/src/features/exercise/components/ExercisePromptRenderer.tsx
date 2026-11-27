@@ -419,7 +419,7 @@ export const ExercisePromptRenderer = ({
               <p className="text-[11px] font-brand font-extrabold uppercase tracking-wider text-amber-700">
                 {optionsMatchAudioText && parsedContent.romaji
                   ? 'Pelafalan Cadangan (Audio Tidak Tersedia)'
-                  : 'Transkrip Cadangan (Audio Tidak Tersedia)'}
+                  : 'Teks Bantu (Suara Tidak Tersedia)'}
               </p>
               <p className="text-base font-extrabold text-slate-900 break-words">
                 {fallbackTranscriptValue}

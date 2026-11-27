@@ -387,7 +387,7 @@ export const MilestonesAndBadgesSection = ({
                 ? 'Selesaikan pelajaran pertamamu, jaga streak harian, atau ulas kartu flashcard untuk membuka lencana pertamamu.'
                 : badgeFilter === 'locked' && totalBadgeCount > 0
                   ? 'Luar biasa! Seluruh lencana pencapaian yang tersedia sudah terpasang di koleksimu.'
-                  : 'Sedang mengambil katalog lencana pencapaian dari server.'}
+                  : 'Sedang memuat daftar lencanamu...'}
             </p>
           </div>
         ) : (

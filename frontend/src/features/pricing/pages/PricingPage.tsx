@@ -14,6 +14,7 @@ import { AppLeftSidebar } from '@/shared/components/layout/left-sidebar/AppLeftS
 import { AppTopBar } from '@/shared/components/layout/top-bar/AppTopBar'
 import { Button3D } from '@/shared/components/ui/Button3D'
 import { useUser } from '@/features/user/hooks/useUser'
+import { useActiveLanguageCode } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { isUserPro } from '@/shared/utils/levelAccess'
 import { triggerHaptic } from '@/shared/utils/haptics'
 
@@ -37,7 +38,8 @@ const PRO_BILLING_OPTIONS: ProBillingOption[] = [
     priceDisplay: 'Rp 49.000',
     originalPrice: 'Rp 85.000',
     perMonthNote: 'per bulan',
-    summary: 'Cocok untuk mulai fokus persiapan JLPT N2–N1 dan bebas lompat unit tanpa komitmen panjang.',
+    summary:
+      'Cocok untuk mulai fokus persiapan JLPT N2–N1 atau CEFR B2–C2 (TOEFL iBT) dan bebas lompat unit tanpa komitmen panjang.',
   },
   {
     id: 'semiannual',
@@ -46,7 +48,8 @@ const PRO_BILLING_OPTIONS: ProBillingOption[] = [
     priceDisplay: 'Rp 239.000',
     originalPrice: 'Rp 510.000',
     perMonthNote: '~Rp 39.800 / bulan',
-    summary: 'Ideal untuk 1 siklus ujian JLPT Juli atau Desember dari awal sampai siap tes.',
+    summary:
+      'Ideal untuk 1 siklus persiapan ujian JLPT atau TOEFL iBT dari awal sampai siap tes.',
   },
   {
     id: 'annual',
@@ -55,7 +58,8 @@ const PRO_BILLING_OPTIONS: ProBillingOption[] = [
     priceDisplay: 'Rp 399.000',
     originalPrice: 'Rp 1.020.000',
     perMonthNote: '~Rp 33.250 / bulan',
-    summary: 'Pilihan terbaik untuk menuntaskan N2 hingga N1 serta persiapan kerja/beasiswa.',
+    summary:
+      'Pilihan terbaik untuk menuntaskan Jepang N2–N1 & Inggris US B2–C2 sekaligus persiapan kerja atau beasiswa.',
   },
 ]
 
@@ -67,9 +71,9 @@ const COMPARISON_ROWS: Array<{
 }> = [
   {
     feature: 'Kurikulum Interaktif (4 Pilar)',
-    guest: 'JLPT N5 (30 Unit)',
-    free: 'JLPT N5, N4, N3 (50 Unit)',
-    pro: 'Semua Level N5–N1 (70 Unit)',
+    guest: 'Jepang N5 & Inggris US A1',
+    free: 'Jepang N5–N3 & Inggris US A1–B1',
+    pro: 'Semua Level: Jepang N5–N1 & Inggris US A1–C2',
   },
   {
     feature: 'Navigasi Unit Kurikulum',
@@ -78,19 +82,19 @@ const COMPARISON_ROWS: Array<{
     pro: 'Bebas lompat ke unit mana pun tanpa harus urut',
   },
   {
-    feature: 'Panduan Grammar & Slot Builder',
-    guest: 'JLPT N5 (16 Materi)',
-    free: 'JLPT N5, N4, N3 (36 Materi)',
-    pro: 'Semua Level N5–N1 (56 Materi)',
+    feature: 'Panduan Grammar & Latihan Kalimat',
+    guest: 'Level N5 & A1',
+    free: 'Level N5–N3 & A1–B1',
+    pro: 'Semua Level N5–N1 & A1–C2',
   },
   {
     feature: 'Kartu Kosakata & Pengingat Ulang',
-    guest: 'JLPT N5 (40 Deck)',
-    free: 'JLPT N5, N4, N3 (80 Deck)',
-    pro: 'Semua Level N5–N1 (120 Deck)',
+    guest: 'Deck dasar N5 & A1',
+    free: 'Deck N5–N3 & A1–B1',
+    pro: 'Semua Deck N5–N1 & A1–C2 (termasuk TOEFL)',
   },
   {
-    feature: 'Aksara Hiragana, Katakana & Kanji',
+    feature: 'Aksara Jepang & Pengucapan Audio',
     guest: 'Penuh',
     free: 'Penuh',
     pro: 'Penuh',
@@ -98,25 +102,25 @@ const COMPARISON_ROWS: Array<{
   {
     feature: 'Simpan Progres, Streak & Misi Harian',
     guest: 'Lokal di perangkat',
-    free: 'Sinkronisasi akun penuh',
-    pro: 'Sinkronisasi akun penuh',
+    free: 'Progres tersimpan di semua perangkat',
+    pro: 'Progres tersimpan di semua perangkat',
   },
   {
-    feature: 'Materi Bisnis, Berita & Ujian N2–N1',
+    feature: 'Materi Bisnis, Akademik & Ujian Lanjutan',
     guest: 'Terkunci',
     free: 'Terkunci',
-    pro: 'Terbuka penuh',
+    pro: 'Terbuka penuh (N2–N1 & B2–C2 / TOEFL iBT)',
   },
 ]
 
 const FAQ_ITEMS = [
   {
     q: 'Apakah saya harus bayar untuk belajar dari nol?',
-    a: 'Tidak. Level N5 bisa langsung dicoba tanpa login. Begitu kamu daftar akun gratis, level N4 dan N3 langsung terbuka penuh di Kurikulum, Grammar, dan Flashcard.',
+    a: 'Tidak. Level N5 (Jepang) dan A1 (Inggris US) bisa langsung dicoba tanpa login. Begitu kamu daftar satu akun gratis, level N4–N3 dan A2–B1 langsung terbuka penuh di Kurikulum, Grammar, dan Kartu Kosakata.',
   },
   {
     q: 'Apa bedanya paket Bulanan, 6 Bulan, dan Tahunan?',
-    a: 'Semua periode membuka fitur Pro yang sama: akses penuh JLPT N5–N1 dan bebas lompat ke unit mana pun. Bulanan Rp 49.000 (hemat 42%), 6 Bulan Rp 239.000 (~Rp 39.800/bln), dan Tahunan Rp 399.000 (~Rp 33.250/bln).',
+    a: 'Semua periode membuka satu langganan Pro untuk seluruh jalur bahasa aktif — Jepang (N5–N1) sekaligus Inggris US (A1–C2 / TOEFL iBT) — plus bebas lompat ke unit mana pun. Bulanan Rp 49.000 (hemat 42%), 6 Bulan Rp 239.000 (~Rp 39.800/bln), dan Tahunan Rp 399.000 (~Rp 33.250/bln).',
   },
   {
     q: 'Metode pembayaran apa saja yang didukung?',
@@ -127,8 +131,14 @@ const FAQ_ITEMS = [
 export const PricingPage = () => {
   const navigate = useNavigate()
   const { data: userData } = useUser()
+  const activeLanguageCode = useActiveLanguageCode()
   const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
   const isPro = isUserPro(userData.user)
+
+  const isEnglishTrack = activeLanguageCode.startsWith('en')
+  const guestEntryLevel = isEnglishTrack ? 'A1' : 'N5'
+  const freeNextLevel = isEnglishTrack ? 'A2' : 'N4'
+  const proEntryLevel = isEnglishTrack ? 'B2' : 'N2'
 
   const [selectedCycle, setSelectedCycle] = useState<BillingCycle>('semiannual')
   const [isReserveModalOpen, setIsReserveModalOpen] = useState(false)
@@ -156,13 +166,14 @@ export const PricingPage = () => {
           </div>
 
           <h1 className="font-brand font-black text-3xl sm:text-4xl text-slate-900 tracking-tight leading-tight">
-            Belajar Bahasa Jepang Sampai Siap Kerja, Beasiswa, dan Merantau
+            Belajar Bahasa Asing Sampai Siap Kerja, Beasiswa, dan Merantau
           </h1>
 
           <p className="text-sm sm:text-base text-slate-600 leading-relaxed">
-            Mulai dari <strong>N5 tanpa login</strong>, lanjutkan <strong>N4–N3 gratis</strong>{' '}
-            dengan akun, dan buka <strong>N2–N1 serta akses lompat unit bebas</strong> saat kamu
-            siap mengejar karier profesional dan tunjangan JLPT.
+            Satu akun untuk jalur <strong>Jepang (N5–N1)</strong> &amp;{' '}
+            <strong>Inggris US (A1–C2 / TOEFL iBT)</strong>. Mulai dari{' '}
+            <strong>N5 / A1 tanpa login</strong>, lanjutkan <strong>N4–N3 &amp; A2–B1 gratis</strong>{' '}
+            dengan akun, atau buka <strong>N2–N1, B2–C2 &amp; bebas lompat unit</strong> di Pro.
           </p>
         </header>
 
@@ -210,14 +221,14 @@ export const PricingPage = () => {
                   Tanpa Login
                 </span>
                 <span className="text-xs font-brand font-bold text-emerald-700 whitespace-nowrap shrink-0">
-                  JLPT N5
+                  N5 &amp; A1
                 </span>
               </div>
 
               <div>
                 <h2 className="font-brand font-black text-xl text-slate-900">Tamu (Coba Dulu)</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Langsung rasakan metode Merantalk dari nol tanpa perlu daftar.
+                  Langsung rasakan metode Merantalk dari nol di jalur Jepang atau Inggris US tanpa perlu daftar.
                 </p>
               </div>
 
@@ -230,10 +241,10 @@ export const PricingPage = () => {
 
               <ul className="space-y-2.5 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-700 font-medium">
                 {[
-                  'Kurikulum N5 lengkap (30 Unit)',
-                  '16 Panduan Grammar N5 + Slot Builder',
-                  '40 Deck Flashcard N5 (603 kartu)',
-                  'Papan Aksara Hiragana & Katakana',
+                  'Kurikulum pemula lengkap: Jepang N5 & Inggris US A1',
+                  'Panduan Grammar dasar N5 & A1 + latihan kalimat',
+                  'Deck kartu kosakata dasar N5 & A1 dengan audio',
+                  'Papan Aksara Hiragana & Katakana untuk jalur Jepang',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <Check weight="bold" className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
@@ -249,10 +260,10 @@ export const PricingPage = () => {
               fullWidth
               onClick={() => {
                 triggerHaptic('tap')
-                navigate('/curriculum?level=N5')
+                navigate(`/curriculum?level=${guestEntryLevel}`)
               }}
             >
-              Mulai Belajar N5
+              {isEnglishTrack ? 'Mulai Belajar A1' : 'Mulai Belajar N5'}
             </Button3D>
           </div>
 
@@ -264,14 +275,14 @@ export const PricingPage = () => {
                   Akun Gratis
                 </span>
                 <span className="text-xs font-brand font-bold text-blue-700 whitespace-nowrap shrink-0">
-                  JLPT N5–N3
+                  N5–N3 &amp; A1–B1
                 </span>
               </div>
 
               <div>
-                <h2 className="font-brand font-black text-xl text-slate-900">Free Tier</h2>
+                <h2 className="font-brand font-black text-xl text-slate-900">Paket Gratis</h2>
                 <p className="text-xs text-slate-500 mt-1">
-                  Cukup untuk persiapan kerja Tokutei Ginou (SSW) &amp; percakapan menengah.
+                  Satu akun gratis untuk membangun fondasi kerja, studi &amp; percakapan menengah di kedua bahasa.
                 </p>
               </div>
 
@@ -284,11 +295,11 @@ export const PricingPage = () => {
 
               <ul className="space-y-2.5 pt-2 border-t border-slate-100 text-xs sm:text-sm text-slate-700 font-medium">
                 {[
-                  'Semua materi JLPT N5',
-                  'Buka penuh Kurikulum N4 & N3 (20 Unit · 600 Soal)',
-                  '20 Panduan Grammar N4–N3 + Kuis',
-                  '40 Deck Flashcard N4–N3 (608 kartu)',
-                  'Simpan progres, XP, Streak & Misi Harian',
+                  'Semua materi pemula Jepang N5 & Inggris US A1',
+                  'Buka penuh Kurikulum N4–N3 & A2–B1 dalam satu akun',
+                  'Panduan Grammar menengah N4–N3 & A2–B1 + kuis',
+                  'Deck kartu kosakata N4–N3 & A2–B1 dengan pengingat ulang',
+                  'Progres, XP, Streak & Misi Harian tersimpan di semua perangkat',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <Check weight="bold" className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
@@ -306,10 +317,14 @@ export const PricingPage = () => {
                 icon={<LockOpen weight="bold" className="w-4 h-4 text-blue-600" />}
                 onClick={() => {
                   triggerHaptic('tap')
-                  navigate('/curriculum?level=N4')
+                  navigate(`/curriculum?level=${freeNextLevel}`)
                 }}
               >
-                {isPro ? 'Termasuk di Paket Pro' : 'Paket Aktif Saat Ini — Buka N4'}
+                {isPro
+                  ? 'Termasuk di Paket Pro'
+                  : isEnglishTrack
+                    ? 'Lanjut Belajar A2–B1 Gratis'
+                    : 'Lanjut Belajar N4–N3 Gratis'}
               </Button3D>
             ) : (
               <Button3D
@@ -335,7 +350,7 @@ export const PricingPage = () => {
                   <span>{activePlan.badge}</span>
                 </span>
                 <span className="text-xs font-brand font-black text-amber-200 whitespace-nowrap shrink-0">
-                  JLPT N5–N1
+                  N5–N1 &amp; A1–C2
                 </span>
               </div>
 
@@ -360,11 +375,11 @@ export const PricingPage = () => {
 
               <ul className="space-y-2.5 pt-2 border-t border-white/20 text-xs sm:text-sm text-white/95 font-medium">
                 {[
-                  'Semua fitur akun Free (N5–N3)',
+                  '1 langganan Pro untuk semua jalur aktif (Jepang & Inggris US)',
+                  'Semua fitur Paket Gratis (N5–N3 & A1–B1)',
                   'Bebas lompat ke unit mana pun tanpa harus urut',
-                  'Buka penuh Kurikulum N2 & N1 (20 Unit · 600 Soal)',
-                  '20 Panduan Grammar bisnis, berita & akademik N2–N1',
-                  '40 Deck Kartu Kosakata N2–N1 (608 kartu) dengan pengingat otomatis',
+                  'Buka penuh Kurikulum N2–N1 & B2–C2 (TOEFL iBT)',
+                  'Panduan Grammar & kartu kosakata bisnis, akademik & ujian lanjutan',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <CheckCircle
@@ -385,11 +400,11 @@ export const PricingPage = () => {
                 icon={<ArrowRight weight="bold" className="w-4 h-4 text-blue-700" />}
                 onClick={() => {
                   triggerHaptic('tap')
-                  navigate('/curriculum?level=N2')
+                  navigate(`/curriculum?level=${proEntryLevel}`)
                 }}
                 className="text-blue-700 font-brand font-black"
               >
-                Pro Aktif — Buka JLPT N2
+                {isEnglishTrack ? 'Pro Aktif — Buka CEFR B2' : 'Pro Aktif — Buka JLPT N2'}
               </Button3D>
             ) : (
               <Button3D
@@ -422,7 +437,7 @@ export const PricingPage = () => {
                 <tr className="border-b border-slate-200 text-xs font-brand font-black uppercase tracking-wider text-slate-500">
                   <th className="py-3.5 px-5 sm:px-6">Fitur</th>
                   <th className="py-3.5 px-4">Tamu</th>
-                  <th className="py-3.5 px-4 text-blue-700">Free Tier</th>
+                  <th className="py-3.5 px-4 text-blue-700">Paket Gratis</th>
                   <th className="py-3.5 px-4 text-blue-700 bg-blue-50/60">Merantalk Pro</th>
                 </tr>
               </thead>
@@ -509,13 +524,15 @@ export const PricingPage = () => {
                     Kamu memilih paket <strong>{activePlan.label}</strong> ({activePlan.priceDisplay}
                     ). Integrasi pembayaran otomatis (QRIS, Virtual Account &amp; E-Wallet) sedang
                     tahap akhir aktivasi. Sambil menunggu, kamu bisa langsung menyelesaikan materi{' '}
-                    <strong>JLPT N5, N4, dan N3</strong> gratis penuh!
+                    <strong>Jepang N5–N3</strong> &amp; <strong>Inggris US A1–B1</strong> gratis
+                    penuh!
                   </>
                 ) : (
                   <>
                     Buat akun Merantalk gratis dulu untuk melanjutkan aktivasi paket{' '}
                     <strong>{activePlan.label}</strong> ({activePlan.priceDisplay}) sekaligus
-                    langsung membuka akses penuh <strong>JLPT N4 &amp; N3</strong> hari ini.
+                    langsung membuka akses penuh <strong>Jepang N4–N3</strong> &amp;{' '}
+                    <strong>Inggris US A2–B1</strong> hari ini.
                   </>
                 )}
               </p>
@@ -529,10 +546,10 @@ export const PricingPage = () => {
                   fullWidth
                   onClick={() => {
                     setIsReserveModalOpen(false)
-                    navigate('/curriculum?level=N4')
+                    navigate(`/curriculum?level=${freeNextLevel}`)
                   }}
                 >
-                  Lanjut Belajar N4–N3 Gratis
+                  {isEnglishTrack ? 'Lanjut Belajar A2–B1 Gratis' : 'Lanjut Belajar N4–N3 Gratis'}
                 </Button3D>
               ) : (
                 <Button3D

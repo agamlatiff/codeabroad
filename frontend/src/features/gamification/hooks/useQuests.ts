@@ -527,7 +527,7 @@ export const useQuests = () => {
         case 'akihabara_novice': {
           currentProgress = isEarned ? 1 : 0
           targetProgress = 1
-          progressLabel = isEarned ? '1/1 Onboarding Selesai' : '0/1 Onboarding'
+          progressLabel = isEarned ? '1/1 Mulai Belajar' : 'Belum Mulai'
           break
         }
         case 'first_step': {
@@ -574,20 +574,24 @@ export const useQuests = () => {
           }
           break
         }
-        case 'n5_mastery': {
-          const isN5ActiveLevel = (levelExamSummary?.levelCode ?? '').toUpperCase() === 'N5'
+        case 'n5_mastery':
+        case 'a1_mastery': {
+          const isEnglishLang = activeLangCode.toLowerCase().startsWith('en')
+          const beginnerLevelCode = isEnglishLang ? 'A1' : 'N5'
+          const activeLevelCode = (levelExamSummary?.levelCode ?? beginnerLevelCode).toUpperCase()
+          const isBeginnerActiveLevel = activeLevelCode === 'N5' || activeLevelCode === 'A1'
           if (isEarned) {
             currentProgress = 1
             targetProgress = 1
             progressLabel = 'Ujian Lulus • Lencana Diraih'
-          } else if (levelExamSummary && !isN5ActiveLevel) {
+          } else if (levelExamSummary && !isBeginnerActiveLevel) {
             currentProgress = 1
             targetProgress = 1
-            progressLabel = 'Kurikulum N5 Tuntas'
+            progressLabel = `Kurikulum ${beginnerLevelCode} Tuntas`
           } else if (levelExamSummary?.status === 'passed') {
             currentProgress = 1
             targetProgress = 1
-            progressLabel = 'Ujian Lulus • Sinkronisasi Lencana'
+            progressLabel = 'Ujian Lulus • Menyiapkan Lencana...'
           } else if (levelExamSummary && levelExamSummary.totalLessons > 0) {
             currentProgress = levelExamSummary.completedLessons
             targetProgress = levelExamSummary.totalLessons
@@ -596,11 +600,15 @@ export const useQuests = () => {
                 ? `Ujian Siap • Lulus ≥ ${levelExamSummary.passingScorePercent}%`
                 : `${currentProgress}/${targetProgress} Pelajaran`
           } else {
-            progressLabel = 'Selesaikan Unit & Ujian N5'
+            progressLabel = `Selesaikan Unit & Ujian ${activeLevelCode}`
           }
-          if (!isEarned && (!levelExamSummary || isN5ActiveLevel) && levelExamSummary?.status !== 'passed') {
+          if (
+            !isEarned &&
+            (!levelExamSummary || isBeginnerActiveLevel) &&
+            levelExamSummary?.status !== 'passed'
+          ) {
             if (levelExamSummary?.status === 'ready') {
-              actionLabel = 'Mulai Ujian N5'
+              actionLabel = `Mulai Ujian ${activeLevelCode}`
               actionType = 'navigate'
               actionRoute = levelExamSummary.examRoute
             } else {
@@ -666,6 +674,7 @@ export const useQuests = () => {
     })
   }, [
     activeCatalogLanguageCount,
+    activeLangCode,
     badgesQuery.data?.catalog,
     completedCurriculumLessons,
     currentUserStreak,

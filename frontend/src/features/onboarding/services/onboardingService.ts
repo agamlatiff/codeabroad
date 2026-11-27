@@ -57,6 +57,6 @@ export const onboardingService = {
         language_name: resData.enrollment?.language?.name,
       }
     }
-    throw new Error(response.data.error || 'Gagal menyelesaikan onboarding')
+    throw new Error(response.data.error || 'Gagal menyimpan pengaturan awal')
   },
 }
