@@ -1,5 +1,8 @@
-import { useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { useAuthStore } from '@/features/auth/store/authStore'
+import { languageService } from '@/features/curriculum/services/languageService'
 import { ExamResultSummary } from '@/features/exercise/components/ExamResultSummary'
 import { ExercisePromptRenderer } from '@/features/exercise/components/ExercisePromptRenderer'
 import { ExerciseSessionHeader } from '@/features/exercise/components/ExerciseSessionHeader'
@@ -7,6 +10,10 @@ import { ExerciseSessionStatusView } from '@/features/exercise/components/Exerci
 import { useReadinessExamPage } from '@/features/exercise/hooks/useReadinessExamPage'
 import { AccessibleModal } from '@/shared/components/ui/AccessibleModal'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import {
+  LANGUAGES_QUERY_KEY,
+  getLanguageEnrollmentsQueryKey,
+} from '@/shared/constants/queryKeys'
 import { ArrowLeft, ArrowRight, Certificate } from '@phosphor-icons/react'
 
 const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
@@ -342,10 +349,92 @@ const ReadinessExamContent = ({ levelId }: { levelId?: string }) => {
 }
 
 /**
- * Interactive Readiness Exam page (/exam/:levelId), keyed per levelId to reset session state cleanly.
+ * Interactive Readiness Exam page supporting clean slug routes (/exam/:langCode/:levelCode, e.g. /exam/en-us/a1)
+ * and backward-compatible UUID routes (/exam/:levelId), keyed per resolved levelId to reset session state cleanly.
  */
 export const ReadinessExamPage = () => {
-  const { levelId } = useParams<{ levelId: string }>()
-  return <ReadinessExamContent key={levelId ?? 'missing'} levelId={levelId} />
+  const navigate = useNavigate()
+  const userId = useAuthStore((state) => state.user?.id ?? 'anonymous')
+  const { levelId: routeLevelId, langCode, levelCode } = useParams<{
+    levelId?: string
+    langCode?: string
+    levelCode?: string
+  }>()
+
+  const normalizedLangCode = (langCode ?? '').trim().toLowerCase()
+  const normalizedLevelCode = (levelCode ?? '').trim().toLowerCase()
+  const isSlugRoute = Boolean(normalizedLangCode && normalizedLevelCode)
+
+  const languagesQuery = useQuery({
+    queryKey: LANGUAGES_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.listLanguages({ signal }),
+    enabled: isSlugRoute,
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const matchedLanguage = useMemo(() => {
+    if (!isSlugRoute) return null
+    const list = languagesQuery.data ?? []
+    return (
+      list.find((lang) => lang.code.trim().toLowerCase() === normalizedLangCode) ??
+      list.find((lang) => lang.id.trim().toLowerCase() === normalizedLangCode) ??
+      null
+    )
+  }, [isSlugRoute, languagesQuery.data, normalizedLangCode])
+
+  const languageDetailsQuery = useQuery({
+    queryKey: ['language-details', matchedLanguage?.id ?? ''],
+    queryFn: ({ signal }) => languageService.getLanguageDetails(matchedLanguage!.id, { signal }),
+    enabled: isSlugRoute && Boolean(matchedLanguage?.id),
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const resolvedSlugLevelId = useMemo(() => {
+    if (!isSlugRoute) return undefined
+    const levels = languageDetailsQuery.data?.levels ?? []
+    const matched = levels.find(
+      (lvl) => lvl.code.trim().toLowerCase() === normalizedLevelCode
+    )
+    return matched?.id
+  }, [isSlugRoute, languageDetailsQuery.data?.levels, normalizedLevelCode])
+
+  // Canonicalize legacy UUID URLs (/exam/<uuid>) into clean /exam/:langCode/:levelCode when enrollment metadata matches
+  const enrollmentsQuery = useQuery({
+    queryKey: getLanguageEnrollmentsQueryKey(userId),
+    queryFn: ({ signal }) => languageService.getUserEnrollments({ signal }),
+    enabled: !isSlugRoute && Boolean(routeLevelId) && userId !== 'anonymous',
+    staleTime: 1000 * 60 * 5,
+  })
+
+  useEffect(() => {
+    if (isSlugRoute || !routeLevelId) return
+    const matchedEnrollment = (enrollmentsQuery.data ?? []).find(
+      (enr) =>
+        enr.current_level_id === routeLevelId || enr.current_level?.id === routeLevelId
+    )
+    const canonicalLang = matchedEnrollment?.language?.code?.trim().toLowerCase()
+    const canonicalLevel = matchedEnrollment?.current_level?.code?.trim().toLowerCase()
+    if (canonicalLang && canonicalLevel) {
+      navigate(
+        `/exam/${encodeURIComponent(canonicalLang)}/${encodeURIComponent(canonicalLevel)}`,
+        { replace: true }
+      )
+    }
+  }, [enrollmentsQuery.data, isSlugRoute, navigate, routeLevelId])
+
+  if (
+    isSlugRoute &&
+    (languagesQuery.isLoading || (Boolean(matchedLanguage?.id) && languageDetailsQuery.isLoading))
+  ) {
+    return (
+      <ExerciseSessionStatusView
+        mode="loading"
+        message="Menyiapkan soal ujian kesiapan level..."
+      />
+    )
+  }
+
+  const effectiveLevelId = isSlugRoute ? resolvedSlugLevelId : routeLevelId
+  return <ReadinessExamContent key={effectiveLevelId ?? 'missing'} levelId={effectiveLevelId} />
 }
 

@@ -82,7 +82,7 @@ export const LandingHero = () => {
     isActiveTrack && resolvedLangId
       ? selectedPack.code === 'ja'
         ? '/curriculum'
-        : `/curriculum/${resolvedLangId}`
+        : `/curriculum/${encodeURIComponent(selectedPack.code.toLowerCase())}`
       : '/curriculum'
   const leadPhrase = selectedPack.phrases[0]
   const isEnglishSelected = selectedPack.code === 'en-us'

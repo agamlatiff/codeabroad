@@ -5,6 +5,7 @@ import { extractApiErrorMessage } from "@/shared/services/api"
 import {
   getProfileQueryKey,
   getLanguageEnrollmentsQueryKey,
+  LANGUAGES_QUERY_KEY,
   DAILY_VOCABULARIES_QUERY_KEY,
   SRS_DUE_QUERY_KEY,
   SWITCH_LANGUAGE_MUTATION_KEY,
@@ -100,16 +101,64 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const { syncedSummary, dismissSyncedSummary } = useGuestTrialSync()
 
   // ── 1. RESOLVE REQUESTED LANGUAGE & ENROLLMENTS ──
-  const targetLanguageId =
+  const { data: catalogLanguages = [], isLoading: isLanguagesLoading } = useQuery({
+    queryKey: LANGUAGES_QUERY_KEY,
+    queryFn: ({ signal }) => languageService.listLanguages({ signal }),
+    staleTime: 1000 * 60 * 10,
+  })
+
+  const rawRequestedLanguage =
     explicitLanguageId || routeLanguageId || (isGuest ? guestPreferredLanguageId || '' : '')
+
+  const matchedRequestedLanguage = useMemo(() => {
+    const normalized = rawRequestedLanguage.trim().toLowerCase()
+    if (!normalized) return null
+    return (
+      catalogLanguages.find(
+        (lang) =>
+          lang.id.trim().toLowerCase() === normalized ||
+          lang.code.trim().toLowerCase() === normalized
+      ) ?? null
+    )
+  }, [catalogLanguages, rawRequestedLanguage])
+
+  const isRawRequestedUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    rawRequestedLanguage.trim()
+  )
+  const targetLanguageId = matchedRequestedLanguage?.id ?? (isRawRequestedUUID ? rawRequestedLanguage.trim() : '')
+  const isWaitingForSlugResolution =
+    Boolean(rawRequestedLanguage.trim()) &&
+    !isRawRequestedUUID &&
+    !matchedRequestedLanguage &&
+    isLanguagesLoading
+
+  // Canonicalize legacy UUID URLs (/curriculum/<uuid>) to clean /curriculum/:langCode
+  useEffect(() => {
+    if (!routeLanguageId || !matchedRequestedLanguage?.code) return
+    const canonicalCode = matchedRequestedLanguage.code.trim().toLowerCase()
+    if (routeLanguageId.trim().toLowerCase() !== canonicalCode) {
+      const searchSuffix = searchParams.toString() ? `?${searchParams.toString()}` : ''
+      navigate(`/curriculum/${encodeURIComponent(canonicalCode)}${searchSuffix}`, { replace: true })
+    }
+  }, [matchedRequestedLanguage?.code, navigate, routeLanguageId, searchParams])
 
   useEffect(() => {
     if (!isGuest) return
     const explicit = explicitLanguageId || routeLanguageId
     if (explicit) {
-      setGuestPreferredLanguageId(explicit)
+      const resolvedId = matchedRequestedLanguage?.id ?? (isRawRequestedUUID ? explicit : '')
+      if (resolvedId) {
+        setGuestPreferredLanguageId(resolvedId)
+      }
     }
-  }, [explicitLanguageId, isGuest, routeLanguageId, setGuestPreferredLanguageId])
+  }, [
+    explicitLanguageId,
+    isGuest,
+    isRawRequestedUUID,
+    matchedRequestedLanguage?.id,
+    routeLanguageId,
+    setGuestPreferredLanguageId,
+  ])
 
   const { data: enrollments = [] } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userIdKey),
@@ -138,7 +187,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         { signal },
         requestedLevelCode || undefined
       ),
-    enabled: levelAccess.allowed,
+    enabled: levelAccess.allowed && !isWaitingForSlugResolution,
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60 * 2,
   })
@@ -349,7 +398,12 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         playSound('track_change')
         setGuestPreferredLanguageId(nextLanguageId)
         if (nextLanguageId !== activeLanguageId) {
-          navigate(`/curriculum/${nextLanguageId}`)
+          const nextLangSlug =
+            catalogLanguages
+              .find((lang) => lang.id === nextLanguageId)
+              ?.code?.trim()
+              .toLowerCase() || nextLanguageId
+          navigate(`/curriculum/${encodeURIComponent(nextLangSlug)}`)
         }
         return
       }
@@ -381,6 +435,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     },
     [
       activeLanguageId,
+      catalogLanguages,
       isViewingInactiveTrack,
       markTourSeen,
       navigate,

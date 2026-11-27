@@ -162,6 +162,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path="/quests" element={<QuestLogPage />} />
               <Route path="/review" element={<SrsReviewPage />} />
+              <Route path="/exam/:langCode/:levelCode" element={<ReadinessExamPage />} />
               <Route path="/exam/:levelId" element={<ReadinessExamPage />} />
             </Route>
 

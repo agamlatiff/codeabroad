@@ -484,6 +484,13 @@ export const useQuests = () => {
     const progressPercent =
       totalLessons > 0 ? Math.min(100, Math.round((completedLessons / totalLessons) * 100)) : 0
 
+    const examLangCode = activeCurriculum.language?.code?.trim().toLowerCase()
+    const examLevelCode = activeLevel.code?.trim().toLowerCase()
+    const examRoute =
+      examLangCode && examLevelCode
+        ? `/exam/${encodeURIComponent(examLangCode)}/${encodeURIComponent(examLevelCode)}`
+        : `/exam/${encodeURIComponent(activeLevel.id)}`
+
     return {
       levelId: activeLevel.id,
       levelCode: activeLevel.code,
@@ -496,7 +503,7 @@ export const useQuests = () => {
       status,
       nextLessonRoute: nextLesson.route,
       nextLessonTitle: nextLesson.title,
-      examRoute: `/exam/${encodeURIComponent(activeLevel.id)}`,
+      examRoute,
       passedResult,
     }
   }, [activeCurriculum, activeLevel, examResultQuery.data, user])

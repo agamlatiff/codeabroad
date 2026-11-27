@@ -39,6 +39,12 @@ export const transformCurriculumToMapUnits = (
   let allLessonsCompleted = true
   const langCode = curriculum.language?.code?.toUpperCase() || 'LANG'
   const levelCode = curriculum.level?.code || ''
+  const examRoute =
+    curriculum.language?.code && curriculum.level?.code
+      ? `/exam/${encodeURIComponent(curriculum.language.code.toLowerCase())}/${encodeURIComponent(curriculum.level.code.toLowerCase())}`
+      : curriculum.level?.id
+        ? `/exam/${curriculum.level.id}`
+        : '/curriculum'
 
   return curriculum.units.map((unit, unitIndex): CurriculumUnitData => {
     const palette = resolveMapUnitPalette(unitIndex)
@@ -88,7 +94,7 @@ export const transformCurriculumToMapUnits = (
         status,
         route:
           unit.unit_type === 'diagnostic_exam' && curriculum.level?.id
-            ? `/exam/${curriculum.level.id}`
+            ? examRoute
             : `/learn/${lesson.slug || lesson.id}`,
         xpReward: lesson.xp_reward || 15,
         score: lesson.score,
@@ -115,7 +121,7 @@ export const transformCurriculumToMapUnits = (
                 ? 'Simulasi Ujian Akhir Level • Siap Diuji'
                 : 'Tantang Ujian Kesiapan kapan saja untuk langsung naik tingkat — pelajaran di atas opsional sebagai persiapan',
             status: isGuest ? 'locked' : 'active',
-            route: `/exam/${curriculum.level.id}`,
+            route: examRoute,
             xpReward: 50,
             category: 'boss',
             badgeLabel: levelCode || langCode,
