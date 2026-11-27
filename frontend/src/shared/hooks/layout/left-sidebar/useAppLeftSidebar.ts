@@ -116,7 +116,9 @@ export const useAppLeftSidebar = () => {
         tooltip:
           flashcardDueCount > 0
             ? `Langkah 2 • Flashcard (${flashcardDueCount} kartu siap diulas)`
-            : 'Langkah 2 • Kartu Huruf & Kosakata',
+            : supportsKanaBoard(activeLanguageCode)
+              ? 'Langkah 2 • Kartu Huruf & Kosakata'
+              : 'Langkah 2 • Kartu Kosakata & Frasa',
         href: '/flashcards',
         icon: Cards,
         hasBadge: flashcardDueCount > 0,
@@ -145,7 +147,9 @@ export const useAppLeftSidebar = () => {
       },
       {
         label: 'Pro',
-        tooltip: 'Merantalk Pro • Buka JLPT N2 & N1',
+        tooltip: supportsKanaBoard(activeLanguageCode)
+          ? 'Merantalk Pro • Buka JLPT N2 & N1'
+          : 'Merantalk Pro • Buka CEFR B2, C1 & C2',
         href: '/pricing',
         icon: Crown,
       },

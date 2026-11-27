@@ -63,20 +63,20 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const updateUser = useAuthStore((s) => s.updateUser)
 
   const requestedLevelCode = (searchParams.get('level') ?? '').trim().toUpperCase()
-  const effectiveLevelCode = requestedLevelCode || 'N5'
+  const levelQueryKeySegment = requestedLevelCode || 'default'
   const levelAccess = useMemo(
     () =>
-      checkLevelAccess(effectiveLevelCode, {
+      checkLevelAccess(requestedLevelCode || 'A1', {
         isAuthenticated: !isGuest,
         isPro,
       }),
-    [effectiveLevelCode, isGuest, isPro]
+    [requestedLevelCode, isGuest, isPro]
   )
 
   const handleSelectLevel = useCallback(
     (nextLevelCode: string) => {
-      const normalized = (nextLevelCode.trim().toUpperCase() || 'N5')
-      if (normalized === effectiveLevelCode) return
+      const normalized = nextLevelCode.trim().toUpperCase()
+      if (!normalized || normalized === requestedLevelCode) return
       triggerHaptic('tap')
       setSearchParams(
         (prev) => {
@@ -87,10 +87,12 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
         { replace: true }
       )
     },
-    [effectiveLevelCode, setSearchParams]
+    [requestedLevelCode, setSearchParams]
   )
 
   const guestCompletedLessons = useGuestTrialStore((s) => s.completedLessons)
+  const guestPreferredLanguageId = useGuestTrialStore((s) => s.preferredLanguageId)
+  const setGuestPreferredLanguageId = useGuestTrialStore((s) => s.setPreferredLanguageId)
   const guestPendingXp = useMemo(
     () => getGuestTotalXp(guestCompletedLessons),
     [guestCompletedLessons]
@@ -98,7 +100,16 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
   const { syncedSummary, dismissSyncedSummary } = useGuestTrialSync()
 
   // ── 1. RESOLVE REQUESTED LANGUAGE & ENROLLMENTS ──
-  const targetLanguageId = explicitLanguageId || routeLanguageId || ''
+  const targetLanguageId =
+    explicitLanguageId || routeLanguageId || (isGuest ? guestPreferredLanguageId || '' : '')
+
+  useEffect(() => {
+    if (!isGuest) return
+    const explicit = explicitLanguageId || routeLanguageId
+    if (explicit) {
+      setGuestPreferredLanguageId(explicit)
+    }
+  }, [explicitLanguageId, isGuest, routeLanguageId, setGuestPreferredLanguageId])
 
   const { data: enrollments = [] } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userIdKey),
@@ -119,7 +130,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       ...CURRICULUM_QUERY_KEY,
       userIdKey,
       targetLanguageId || 'active',
-      effectiveLevelCode,
+      levelQueryKeySegment,
     ],
     queryFn: ({ signal }) =>
       curriculumService.getCurriculum(
@@ -336,6 +347,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       if (!user) {
         triggerHaptic('success')
         playSound('track_change')
+        setGuestPreferredLanguageId(nextLanguageId)
         if (nextLanguageId !== activeLanguageId) {
           navigate(`/curriculum/${nextLanguageId}`)
         }
@@ -372,6 +384,7 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
       isViewingInactiveTrack,
       markTourSeen,
       navigate,
+      setGuestPreferredLanguageId,
       showNotification,
       switchLanguageMutation,
       user,
@@ -426,14 +439,18 @@ export const useCurriculumPage = (explicitLanguageId?: string) => {
     void refetch()
   }, [refetch])
 
+  const activeLangForLevels = (rawCurriculumData?.language?.code ?? '').toLowerCase()
+  const fallbackBeginnerCode = activeLangForLevels.startsWith('en') ? 'A1' : 'N5'
   const selectedLevelCode =
-    requestedLevelCode || (curriculumData?.level?.code ?? 'N5').toUpperCase()
+    requestedLevelCode ||
+    (curriculumData?.level?.code ?? fallbackBeginnerCode).toUpperCase()
 
   const availableLevelCodes = useMemo(() => {
     const fromApi = rawCurriculumData?.available_levels?.map((lvl) => lvl.code.toUpperCase()) ?? []
     if (fromApi.length > 0) return fromApi
     const langCode = (rawCurriculumData?.language?.code ?? 'ja').toLowerCase()
     if (langCode === 'ja') return ['N5', 'N4', 'N3', 'N2', 'N1']
+    if (langCode.startsWith('en')) return ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
     return [selectedLevelCode]
   }, [rawCurriculumData?.available_levels, rawCurriculumData?.language?.code, selectedLevelCode])
 

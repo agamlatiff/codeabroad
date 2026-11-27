@@ -8,6 +8,8 @@ import type {
 import { LESSON_INTRO_DECKS_N4_N3 } from './lessonIntroN4N3'
 import { LESSON_INTRO_DECKS_N2_N1 } from './lessonIntroN2N1'
 import { LESSON_INTRO_DECKS_N4_N1_EXPANSION } from './lessonIntroN4N1Expansion'
+import { LESSON_INTRO_DECKS_EN_A1_B1 } from './lessonIntroEnA1B1'
+import { LESSON_INTRO_DECKS_EN_B2_C2 } from './lessonIntroEnB2C2'
 
 export interface LessonIntroItem {
   symbol: string
@@ -221,9 +223,11 @@ const LESSON_INTRO_DECKS: Record<string, LessonIntroDeck> = {
   ...LESSON_INTRO_DECKS_N4_N3,
   ...LESSON_INTRO_DECKS_N2_N1,
   ...LESSON_INTRO_DECKS_N4_N1_EXPANSION,
+  ...LESSON_INTRO_DECKS_EN_A1_B1,
+  ...LESSON_INTRO_DECKS_EN_B2_C2,
 }
 
-const CHECKPOINT_SLUG_PATTERN = /checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir|tes-akhir|readiness-mock-exam/i
+const CHECKPOINT_SLUG_PATTERN = /checkpoint|spiral-test|musim-dan-suasana-kota|simulasi-akhir|tes-akhir|readiness-mock-exam|readiness-exam/i
 
 /**
  * Returns true if the lesson slug identifies an evaluation Checkpoint or Stage Spiral Test
@@ -234,11 +238,15 @@ export const isCheckpointLesson = (slug?: string | null): boolean => {
   return CHECKPOINT_SLUG_PATTERN.test(slug)
 }
 
-function detectScriptHint(lesson: LessonDetailResponse): KanaScriptType {
+function detectScriptHint(lesson: LessonDetailResponse): KanaScriptType | undefined {
   const combined = `${lesson.slug ?? ''} ${lesson.title}`.toLowerCase()
+  if (combined.startsWith('en-') || combined.startsWith('en_')) return undefined
   if (combined.includes('katakana')) return 'katakana'
   if (combined.includes('kanji')) return 'kanji'
-  return 'hiragana'
+  if (combined.includes('hiragana')) return 'hiragana'
+  const sampleText = (lesson.study_items ?? []).map((it) => it.symbol).join('')
+  if (/[\u3040-\u30ff\u4e00-\u9faf]/.test(sampleText)) return 'hiragana'
+  return undefined
 }
 
 function asNonEmptyString(val: unknown): string {
@@ -473,24 +481,30 @@ export const buildClientFallbackHint = (
   switch (exercise.exercise_type) {
     case 'sentence_builder':
       return grammarPoint?.formula
-        ? `Susun potongan sesuai urutan pola ${grammarPoint.formula} (abaikan huruf pengecoh).`
-        : 'Susun potongan yang membentuk kata/kalimat inti dan abaikan huruf pengecoh.'
+        ? `Susun potongan sesuai urutan pola ${grammarPoint.formula} (abaikan kata pengecoh).`
+        : 'Susun potongan yang membentuk kalimat inti dan abaikan kata pengecoh.'
     case 'listening_choice': {
       const promptLower = exercise.prompt.toLowerCase()
+      const audioSample = asNonEmptyString((exercise.content ?? {}).audio_text)
+      const isJapaneseAudio = /[\u3040-\u30ff\u4e00-\u9faf]/.test(audioSample)
       if (promptLower.includes('siapakah') || promptLower.includes('siapa ') || promptLower.includes('nama')) {
-        return 'Fokus dengarkan nama orang atau subjek yang disebutkan sebelum です atau は pada audio.'
+        return isJapaneseAudio
+          ? 'Fokus dengarkan nama orang atau subjek yang disebutkan sebelum です atau は pada audio.'
+          : 'Fokus dengarkan nama pembicara, jabatan, atau subjek utama pada awal kalimat audio.'
       }
       if (promptLower.includes('di mana') || promptLower.includes('dimana') || promptLower.includes('posisi') || promptLower.includes('letak')) {
-        return 'Fokus dengarkan nama tempat dan kata petunjuk posisi (atas, sebelah, dalam, lantai) pada audio.'
+        return 'Fokus dengarkan nama tempat dan kata petunjuk lokasi pada audio.'
       }
       if (promptLower.includes('kapan') || promptLower.includes('berapa lama') || promptLower.includes('jam berapa') || promptLower.includes('hari apa')) {
-        return 'Fokus dengarkan keterangan waktu, hari, atau durasi bilangan pada audio (putar 0.6x Pelan bila cepat).'
+        return 'Fokus dengarkan keterangan waktu, hari, atau durasi angka pada audio (putar 0.6x Pelan bila cepat).'
       }
       if (promptLower.includes('mengapa') || promptLower.includes('kenapa') || promptLower.includes('alasan')) {
-        return 'Fokus dengarkan bagian alasan atau sebab yang biasanya ditandai kata hubung から (karena).'
+        return isJapaneseAudio
+          ? 'Fokus dengarkan bagian alasan atau sebab yang biasanya ditandai kata hubung から (karena).'
+          : 'Fokus dengarkan klausa alasan (because / since / due to) yang disebutkan pembicara.'
       }
       if (promptLower.includes('ajakan') || promptLower.includes('diajak') || promptLower.includes('himbauan') || promptLower.includes('diminta')) {
-        return 'Fokus dengarkan kata kerja utama dan akhiran ajakan atau permintaan di akhir kalimat audio.'
+        return 'Fokus dengarkan kata kerja utama dan ungkapan permintaan/ajakan pada audio.'
       }
       if (promptLower.includes('salam') || promptLower.includes('sapaan') || promptLower.includes('perkenalan')) {
         return 'Kenali situasi sosial ungkapan pada audio (sapaan waktu, perkenalan, terima kasih, atau maaf).'
@@ -498,14 +512,14 @@ export const buildClientFallbackHint = (
       if (grammarPoint?.formula) {
         return `Dengarkan pola ${grammarPoint.formula} pada audio lalu cocokkan dengan arti yang sesuai di Kartu Materi.`
       }
-      return 'Putar audio 0.6x Pelan, tangkap kata kunci atau huruf pertamanya, lalu hubungkan dengan arti kata di Kartu Materi.'
+      return 'Putar audio 0.6x Pelan, tangkap kata kunci utamanya, lalu hubungkan dengan arti di Kartu Materi.'
     }
     case 'speaking_repeat':
-      return 'Dengarkan contoh audio pelan 0.6x di Intip Materi lalu tirukan perlahan per suku kata.'
+      return 'Dengarkan contoh audio pelan 0.6x di Intip Materi lalu tirukan intonasi dan penekanan katanya.'
     default:
       return grammarPoint?.title
         ? `Ingat pola ${grammarPoint.title}, atau klik Intip Kartu Materi di bawah jika lupa.`
-        : 'Perhatikan konteks kalimat atau klik Intip Kartu Materi untuk melihat pengingat bentuk & suara.'
+        : 'Perhatikan konteks kalimat atau klik Intip Kartu Materi untuk melihat pengingat bentuk & pelafalan.'
   }
 }
 
@@ -531,6 +545,7 @@ export const buildDynamicLessonIntroDeck = (
 
   const staticDeck = getLessonIntroDeck(lesson.slug)
   const primaryGrammar = lesson.grammar_points?.[0]
+  const isEnglishLesson = Boolean(lesson.slug?.toLowerCase().startsWith('en-'))
   const grammarSummary: LessonIntroGrammarSummary | undefined = primaryGrammar
     ? {
         code: primaryGrammar.code,
@@ -559,7 +574,9 @@ export const buildDynamicLessonIntroDeck = (
       grammarSummary: staticDeck.grammarSummary ?? grammarSummary,
       contrastiveTip:
         staticDeck.contrastiveTip ??
-        'Perhatikan bentuk huruf kembar & fungsi partikel sebelum memilih jawaban di kuis.',
+        (isEnglishLesson
+          ? 'Perhatikan perubahan waktu kata kerja (tense), kolokasi preposisi, dan intonasi kata kunci sebelum menjawab.'
+          : 'Perhatikan bentuk huruf kembar & fungsi partikel sebelum memilih jawaban di kuis.'),
     }
   }
 
@@ -570,13 +587,16 @@ export const buildDynamicLessonIntroDeck = (
 
   return {
     headline: `Pahami Materi Dulu: ${lesson.short_title || lesson.title}`,
-    subtitle:
-      'Pelajari aksara, kosakata kunci, rumus pola kalimat, dan jebakan umum sebelum masuk ke sesi kuis interaktif.',
+    subtitle: isEnglishLesson
+      ? 'Pelajari kosakata kunci, pelafalan IPA Amerika, rumus kalimat, dan jebakan umum sebelum masuk ke kuis interaktif.'
+      : 'Pelajari aksara, kosakata kunci, rumus pola kalimat, dan jebakan umum sebelum masuk ke sesi kuis interaktif.',
     kanaLinkScript: detectScriptHint(lesson),
     items,
     grammarSummary,
     contrastiveTip:
       primaryGrammar?.explanation ??
-      'Perhatikan bentuk huruf kembar, pelafalan panjang-pendek, serta posisi partikel sebelum menjawab.',
+      (isEnglishLesson
+        ? 'Perhatikan bentuk subjek-kata kerja, penanda waktu, dan pelafalan kata kunci sebelum menjawab.'
+        : 'Perhatikan bentuk huruf kembar, pelafalan panjang-pendek, serta posisi partikel sebelum menjawab.'),
   }
 }

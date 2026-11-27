@@ -64,7 +64,9 @@ export const GrammarWordBreakdownSection: FC<GrammarWordBreakdownSectionProps> =
         {hasBreakdowns
           ? breakdowns.map((bd, idx) => {
               const fullJp = bd.tokens.map((t) => t.jp).join(' ')
-              const ttsJp = bd.tokens.map((t) => t.jp).join('')
+              const ttsJp = /[\u3040-\u30ff\u4e00-\u9faf]/.test(fullJp)
+                ? bd.tokens.map((t) => t.jp).join('')
+                : fullJp
               const normalKey = `${pointId}-bd-${idx}-normal`
               const slowKey = `${pointId}-bd-${idx}-slow`
               const isPlayingNormal = playingExampleKey === normalKey

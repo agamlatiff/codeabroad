@@ -21,13 +21,18 @@ const HERO_TRUST_ITEMS = [
   'N2–N1 & bebas lompat unit di Pro',
 ] as const
 
+const FALLBACK_LANGUAGE_IDS: Partial<Record<DemoLanguageCode, string>> = {
+  ja: 'a7ca68a2-0041-4e5c-a1f1-7b786f319b65',
+  'en-us': 'd0e37fce-33c2-4091-afc7-131867f5d20d',
+}
+
 function findMatchedLanguage(
   languages: Language[],
   packCode: DemoLanguageCode
 ): Language | undefined {
   return (
     languages.find((l) => l.code.toLowerCase() === packCode) ??
-    (packCode === 'en-gb'
+    (packCode === 'en-us' || packCode === 'en-gb'
       ? languages.find((l) => l.is_active && l.code.toLowerCase().startsWith('en'))
       : undefined)
   )
@@ -39,7 +44,7 @@ function isPackTrackActive(
 ): boolean {
   const matched = findMatchedLanguage(languages, packCode)
   if (matched) return Boolean(matched.is_active)
-  return packCode === 'ja'
+  return packCode === 'ja' || packCode === 'en-us'
 }
 
 export const LandingHero = () => {
@@ -66,8 +71,13 @@ export const LandingHero = () => {
     LANDING_DEMO_PACKS.find((pack) => pack.code === selectedCode) ?? LANDING_DEMO_PACKS[0]
   const matchedLang = findMatchedLanguage(languages, selectedPack.code)
   const isActiveTrack = isPackTrackActive(languages, selectedPack.code)
+  const resolvedLangId = matchedLang?.id ?? FALLBACK_LANGUAGE_IDS[selectedPack.code]
   const targetRoute =
-    isActiveTrack && matchedLang?.id ? `/curriculum/${matchedLang.id}` : '/curriculum'
+    isActiveTrack && resolvedLangId
+      ? selectedPack.code === 'ja'
+        ? '/curriculum'
+        : `/curriculum/${resolvedLangId}`
+      : '/curriculum'
   const leadPhrase = selectedPack.phrases[0]
 
   const handleSelectLanguage = (code: DemoLanguageCode) => {
@@ -247,10 +257,10 @@ export const LandingHero = () => {
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleSelectLanguage('ja')}
+                    onClick={() => handleSelectLanguage('en-us')}
                     className="text-xs sm:text-sm font-brand font-bold text-[#2563EB] hover:text-[#1D4ED8] hover:underline cursor-pointer"
                   >
-                    Saat ini baru Bahasa Jepang (N5–N1) yang aktif — pilih Jepang untuk mulai gratis
+                    Saat ini baru Bahasa Jepang &amp; Inggris (US) yang aktif — klik untuk mulai gratis
                   </button>
                 </div>
               )}

@@ -487,7 +487,13 @@ export const ExercisePromptRenderer = ({
                   }
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-[11px] font-brand font-extrabold text-blue-700 transition-colors cursor-pointer"
                 >
-                  {showSentenceRomaji ? 'Sembunyikan Romaji' : 'Tampilkan Bacaan (Romaji)'}
+                  {parsedContent.romaji.startsWith('/')
+                    ? showSentenceRomaji
+                      ? 'Sembunyikan IPA'
+                      : 'Tampilkan Pelafalan (IPA)'
+                    : showSentenceRomaji
+                      ? 'Sembunyikan Romaji'
+                      : 'Tampilkan Bacaan (Romaji)'}
                 </button>
               )}
             </div>
@@ -495,7 +501,7 @@ export const ExercisePromptRenderer = ({
 
           {showSentenceRomaji && !isCheckpoint && parsedContent.romaji && (
             <div className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-xs font-mono font-bold text-blue-800">
-              Cara baca: {parsedContent.romaji}
+              {parsedContent.romaji.startsWith('/') ? 'Pelafalan' : 'Cara baca'}: {parsedContent.romaji}
             </div>
           )}
 

@@ -18,40 +18,20 @@ import {
   formatCategoryLabel,
   isGrammarPointDueForReview,
 } from '@/features/curriculum/constants/grammarStyles'
+import {
+  getDefaultBeginnerLevel,
+  getLanguageLevelsForFilter,
+  supportsKanaBoard,
+} from '@/shared/constants/languageCatalog'
 import { GrammarEditorialCard } from '@/features/curriculum/components/GrammarEditorialCard'
 import { GrammarHeroIllustration } from '@/features/curriculum/components/GrammarHeroIllustration'
 import { TierUpgradeBanner } from '@/shared/components/ui/TierUpgradeBanner'
 import { checkLevelAccess, isUserPro } from '@/shared/utils/levelAccess'
 
-type JlptLevelFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
-
-const JLPT_LEVEL_OPTIONS: Array<{ value: JlptLevelFilter; label: string }> = [
-  { value: 'N5', label: 'N5' },
-  { value: 'N4', label: 'N4' },
-  { value: 'N3', label: 'N3' },
-  { value: 'N2', label: 'N2' },
-  { value: 'N1', label: 'N1' },
-  { value: 'ALL', label: 'Semua' },
-]
-
-const VALID_JLPT_FILTERS: ReadonlySet<JlptLevelFilter> = new Set([
-  'ALL',
-  'N5',
-  'N4',
-  'N3',
-  'N2',
-  'N1',
-])
-
-function parseLevelFilterParam(raw: string | null): JlptLevelFilter {
-  const upper = (raw ?? '').trim().toUpperCase() as JlptLevelFilter
-  return VALID_JLPT_FILTERS.has(upper) ? upper : 'N5'
-}
-
 /**
  * Full-width 3D tactile Grammar Guide (/grammar):
  * - Unified AppTopBar + AppBreadcrumb + Clean Tactile Hero + 1-Row FilterToolbar.
- * - Always displays accurate formula Romaji beneath each pattern for beginner clarity.
+ * - Dynamically adapts level tabs between JLPT (N5-N1) and CEFR (A1-C2).
  */
 export const GrammarPage = () => {
   const { data: userData } = useUser()
@@ -59,11 +39,31 @@ export const GrammarPage = () => {
   const isPro = isUserPro(userData.user)
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
+  const isJapaneseTrack = supportsKanaBoard(activeLanguageCode)
+  const levelCodes = useMemo(
+    () => getLanguageLevelsForFilter(activeLanguageCode),
+    [activeLanguageCode]
+  )
+  const defaultLevel = useMemo(
+    () => getDefaultBeginnerLevel(activeLanguageCode),
+    [activeLanguageCode]
+  )
+  const levelOptions = useMemo(
+    () => [
+      ...levelCodes.map((code) => ({ value: code, label: code })),
+      { value: 'ALL', label: 'Semua' },
+    ],
+    [levelCodes]
+  )
+  const validLevelSet = useMemo(() => new Set(['ALL', ...levelCodes]), [levelCodes])
   const heroPatternId = `grammar-hero-seigaiha-${useId().replace(/:/g, '')}`
   const [searchParams, setSearchParams] = useSearchParams()
 
   const rawLevelParam = searchParams.get('level')
-  const levelFilter = useMemo(() => parseLevelFilterParam(rawLevelParam), [rawLevelParam])
+  const levelFilter = useMemo(() => {
+    const upper = (rawLevelParam ?? '').trim().toUpperCase()
+    return validLevelSet.has(upper) ? upper : defaultLevel
+  }, [defaultLevel, rawLevelParam, validLevelSet])
   const levelAccess = useMemo(
     () => checkLevelAccess(levelFilter, { isAuthenticated, isPro }),
     [levelFilter, isAuthenticated, isPro]
@@ -72,7 +72,6 @@ export const GrammarPage = () => {
   const reviewFilter = searchParams.get('review')?.trim().toLowerCase() === 'due' ? 'due' : 'all'
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Ensure default N5 reflects explicitly in /grammar?level=N5 for consistent sharable URLs
   useEffect(() => {
     if (!rawLevelParam || rawLevelParam.trim().toUpperCase() !== levelFilter) {
       const next = new URLSearchParams(searchParams)
@@ -81,7 +80,7 @@ export const GrammarPage = () => {
     }
   }, [levelFilter, rawLevelParam, searchParams, setSearchParams])
 
-  const handleSelectLevel = (nextLevel: JlptLevelFilter) => {
+  const handleSelectLevel = (nextLevel: string) => {
     setSearchParams(
       (prev) => {
         const next = new URLSearchParams(prev)
@@ -152,34 +151,30 @@ export const GrammarPage = () => {
   })
 
   const levelCounts = useMemo(() => {
-    const counts: Record<JlptLevelFilter, number> = {
+    const counts: Record<string, number> = {
       ALL: grammarPoints.length,
-      N5: 0,
-      N4: 0,
-      N3: 0,
-      N2: 0,
-      N1: 0,
+    }
+    for (const code of levelCodes) {
+      counts[code] = 0
     }
     for (const point of grammarPoints) {
-      const code = (point.level_code ?? 'N5').toUpperCase() as JlptLevelFilter
-      if (code in counts) {
-        counts[code] += 1
-      }
+      const code = (point.level_code ?? defaultLevel).toUpperCase()
+      counts[code] = (counts[code] ?? 0) + 1
     }
     return counts
-  }, [grammarPoints])
+  }, [defaultLevel, grammarPoints, levelCodes])
 
   const levelMasteryStats = useMemo(() => {
     const matching =
       levelFilter === 'ALL'
         ? grammarPoints
-        : grammarPoints.filter((p) => (p.level_code ?? 'N5').toUpperCase() === levelFilter)
+        : grammarPoints.filter((p) => (p.level_code ?? defaultLevel).toUpperCase() === levelFilter)
     const understoodCount = matching.filter((p) => p.is_understood).length
     return {
       understoodCount,
       totalInLevel: matching.length,
     }
-  }, [grammarPoints, levelFilter])
+  }, [defaultLevel, grammarPoints, levelFilter])
 
   const categoryOptions = useMemo(() => {
     const seen = new Set<string>()
@@ -198,17 +193,17 @@ export const GrammarPage = () => {
   const duePointsInScope = useMemo(
     () =>
       grammarPoints.filter((point) => {
-        const levelCode = (point.level_code ?? 'N5').toUpperCase()
+        const levelCode = (point.level_code ?? defaultLevel).toUpperCase()
         if (levelFilter !== 'ALL' && levelCode !== levelFilter) return false
         return isGrammarPointDueForReview(point)
       }),
-    [grammarPoints, levelFilter]
+    [defaultLevel, grammarPoints, levelFilter]
   )
 
   const filteredPoints = useMemo(() => {
     const query = searchQuery.trim().toLowerCase()
     return grammarPoints.filter((point: GrammarPoint) => {
-      const levelCode = (point.level_code ?? 'N5').toUpperCase()
+      const levelCode = (point.level_code ?? defaultLevel).toUpperCase()
       if (levelFilter === 'ALL' && !checkLevelAccess(levelCode, { isAuthenticated, isPro }).allowed) {
         return false
       }
@@ -232,7 +227,12 @@ export const GrammarPage = () => {
         exampleMatch
       )
     })
-  }, [grammarPoints, levelFilter, categoryFilter, reviewFilter, searchQuery, isAuthenticated, isPro])
+  }, [defaultLevel, grammarPoints, levelFilter, categoryFilter, reviewFilter, searchQuery, isAuthenticated, isPro])
+
+  const examBadgePrefix = isJapaneseTrack ? 'JLPT' : 'CEFR'
+  const allRangeLabel = isJapaneseTrack
+    ? 'N5–N1'
+    : `${levelCodes[0] ?? 'A1'}–${levelCodes[levelCodes.length - 1] ?? 'C2'}`
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -243,7 +243,7 @@ export const GrammarPage = () => {
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },
             { label: 'Panduan Grammar' },
-            { label: levelFilter === 'ALL' ? 'Semua Level' : `JLPT ${levelFilter}` },
+            { label: levelFilter === 'ALL' ? 'Semua Level' : `${examBadgePrefix} ${levelFilter}` },
           ]}
         />
 
@@ -300,7 +300,7 @@ export const GrammarPage = () => {
 
             {/* Right: Custom Grammar Syntax & Notebook Illustration */}
             <GrammarHeroIllustration
-              levelLabel={levelFilter === 'ALL' ? 'N5–N1' : levelFilter}
+              levelLabel={levelFilter === 'ALL' ? allRangeLabel : levelFilter}
               className="hidden md:flex shrink-0"
             />
           </div>
@@ -308,13 +308,13 @@ export const GrammarPage = () => {
 
         {/* Compact 1-Row Segmented + Category + Search Toolbar */}
         <FilterToolbar
-          levelOptions={JLPT_LEVEL_OPTIONS.map((opt) => ({
+          levelOptions={levelOptions.map((opt) => ({
             value: opt.value,
             label: opt.label,
-            count: levelCounts[opt.value],
+            count: levelCounts[opt.value] ?? 0,
           }))}
           selectedLevel={levelFilter}
-          onSelectLevel={(v) => handleSelectLevel(v as JlptLevelFilter)}
+          onSelectLevel={(v) => handleSelectLevel(v)}
           categoryOptions={categoryOptions}
           selectedCategory={categoryFilter}
           onSelectCategory={handleSelectCategory}
@@ -374,7 +374,7 @@ export const GrammarPage = () => {
             levelCode={levelFilter}
             reason={levelAccess.reason}
             featureLabel="Panduan Grammar"
-            onSelectFreeLevel={() => handleSelectLevel('N5')}
+            onSelectFreeLevel={() => handleSelectLevel(defaultLevel)}
           />
         ) : isLoading ? (
           <div className="space-y-4">
@@ -411,7 +411,7 @@ export const GrammarPage = () => {
                 Tidak ada materi grammar yang cocok
               </p>
               <p className="text-xs sm:text-sm text-slate-500">
-                Coba pilih tingkat JLPT lain atau ubah kata kunci pencarianmu.
+                Coba pilih tingkat {examBadgePrefix} lain atau ubah kata kunci pencarianmu.
               </p>
             </div>
             {(searchQuery.trim().length > 0 || categoryFilter !== 'ALL' || reviewFilter === 'due') && (

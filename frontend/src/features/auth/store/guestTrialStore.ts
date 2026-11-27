@@ -26,6 +26,7 @@ const guestTrialPersistedSchema = z.object({
   completedLessons: z.array(guestCompletedLessonSchema).max(MAX_STORED_TRIAL_LESSONS).default([]),
   demoCompleted: z.boolean().default(false),
   promptDismissedCount: z.number().int().min(0).default(0),
+  preferredLanguageId: z.string().min(1).max(64).optional(),
 })
 
 export type GuestTrialAttempt = z.infer<typeof guestTrialAttemptSchema>
@@ -37,6 +38,7 @@ export interface GuestTrialState extends GuestTrialPersistedState {
   removeCompletedLessons: (lessonIds: ReadonlyArray<string>) => void
   markDemoCompleted: () => void
   incrementPromptDismissed: () => void
+  setPreferredLanguageId: (languageId: string) => void
   clearGuestTrial: () => void
 }
 
@@ -58,6 +60,7 @@ const EMPTY_PERSISTED_STATE: GuestTrialPersistedState = {
   completedLessons: [],
   demoCompleted: false,
   promptDismissedCount: 0,
+  preferredLanguageId: undefined,
 }
 
 const loadPersistedGuestTrial = (): GuestTrialPersistedState => {
@@ -137,6 +140,7 @@ export const useGuestTrialStore = create<GuestTrialState>((set, get) => ({
       completedLessons: nextLessons,
       demoCompleted: current.demoCompleted,
       promptDismissedCount: current.promptDismissedCount,
+      preferredLanguageId: current.preferredLanguageId,
     }
     savePersistedGuestTrial(nextPersisted)
     set(nextPersisted)
@@ -149,6 +153,7 @@ export const useGuestTrialStore = create<GuestTrialState>((set, get) => ({
       completedLessons: current.completedLessons,
       demoCompleted: true,
       promptDismissedCount: current.promptDismissedCount,
+      preferredLanguageId: current.preferredLanguageId,
     }
     savePersistedGuestTrial(nextPersisted)
     set({ demoCompleted: true })
@@ -161,9 +166,25 @@ export const useGuestTrialStore = create<GuestTrialState>((set, get) => ({
       completedLessons: current.completedLessons,
       demoCompleted: current.demoCompleted,
       promptDismissedCount: nextCount,
+      preferredLanguageId: current.preferredLanguageId,
     }
     savePersistedGuestTrial(nextPersisted)
     set({ promptDismissedCount: nextCount })
+  },
+
+  setPreferredLanguageId: (languageId) => {
+    const normalized = languageId.trim()
+    if (!normalized) return
+    const current = get()
+    if (current.preferredLanguageId === normalized) return
+    const nextPersisted: GuestTrialPersistedState = {
+      completedLessons: current.completedLessons,
+      demoCompleted: current.demoCompleted,
+      promptDismissedCount: current.promptDismissedCount,
+      preferredLanguageId: normalized,
+    }
+    savePersistedGuestTrial(nextPersisted)
+    set({ preferredLanguageId: normalized })
   },
 
   removeCompletedLessons: (lessonIds) => {
@@ -178,11 +199,13 @@ export const useGuestTrialStore = create<GuestTrialState>((set, get) => ({
       completedLessons: nextLessons,
       demoCompleted: current.demoCompleted,
       promptDismissedCount: current.promptDismissedCount,
+      preferredLanguageId: current.preferredLanguageId,
     }
     if (
       nextPersisted.completedLessons.length === 0 &&
       !nextPersisted.demoCompleted &&
-      nextPersisted.promptDismissedCount === 0
+      nextPersisted.promptDismissedCount === 0 &&
+      !nextPersisted.preferredLanguageId
     ) {
       if (cachedStorage) {
         try {

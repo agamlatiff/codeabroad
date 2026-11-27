@@ -261,7 +261,10 @@ export const GrammarSlotPlayground: FC<GrammarSlotPlaygroundProps> = ({
 
   const activeIndex = Math.min(selectedBreakdownIdx, breakdowns.length - 1)
   const activeBreakdown = breakdowns[activeIndex]
-  const ttsText = activeBreakdown.tokens.map((t) => t.jp).join('')
+  const spacedTokens = activeBreakdown.tokens.map((t) => t.jp).join(' ')
+  const ttsText = /[\u3040-\u30ff\u4e00-\u9faf]/.test(spacedTokens)
+    ? activeBreakdown.tokens.map((t) => t.jp).join('')
+    : spacedTokens
   const normalKey = `${pointId}-explorer-${activeIndex}-normal`
   const slowKey = `${pointId}-explorer-${activeIndex}-slow`
   const isPlayingNormal = playingExampleKey === normalKey

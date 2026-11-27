@@ -176,7 +176,8 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     if (!submittedResult || submittedResult.is_correct || isCheckpoint) return
     const canSpeakCandidate = speechLocale.startsWith('ja')
       ? JAPANESE_CHAR_REGEX.test(answerCandidateText)
-      : currentExercise?.exercise_type !== 'select_meaning' &&
+      : currentExercise?.exercise_type !== 'listening_choice' &&
+        currentExercise?.exercise_type !== 'select_meaning' &&
         SPEAKABLE_TEXT_REGEX.test(answerCandidateText)
     const speakTarget =
       answerStudyItem?.speakText || (canSpeakCandidate ? answerCandidateText : '')
@@ -505,6 +506,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       <LessonFeedbackFooter
         submittedResult={submittedResult}
         resolvedCorrectAnswer={resolvedCorrectAnswer}
+        exerciseType={currentExercise.exercise_type}
         answerStudyItem={isCheckpoint ? null : answerStudyItem}
         submitError={submitError}
         canCheckAnswer={canCheckAnswer}

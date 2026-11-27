@@ -1,0 +1,16 @@
+-- Rollback American English (en-us) CEFR A1-B1 Curriculum, Placement Diagnostic & Readiness Exams
+BEGIN;
+
+DELETE FROM exercises
+WHERE id BETWEEN 'e4200001-0000-4000-8000-000000000001'::uuid
+             AND 'e4200001-0000-4000-8000-000000001023'::uuid;
+
+DELETE FROM lessons
+WHERE id BETWEEN 'e4100001-0000-4000-8000-000000000001'::uuid
+             AND 'e4100001-0000-4000-8000-000000000124'::uuid;
+
+DELETE FROM units
+WHERE id BETWEEN 'e4000001-0000-4000-8000-000000000001'::uuid
+             AND 'e4000001-0000-4000-8000-000000000034'::uuid;
+
+COMMIT;

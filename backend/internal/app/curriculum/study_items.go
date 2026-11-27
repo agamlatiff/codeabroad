@@ -401,9 +401,15 @@ func buildContextualHint(rawEx exercise.Exercise, sanitizedEx exercise.Exercise,
 			return fmt.Sprintf("Susun tepat %d huruf yang membentuk kata sesuai arti soal (abaikan huruf pengecoh).", len(tokens))
 		}
 		if len(tokens) > 0 {
-			return fmt.Sprintf("Susun tepat %d potongan sesuai pola kalimat Jepang (topik/subjek di depan, predikat di akhir).", len(tokens))
+			if containsJapaneseRune(rawEx.CorrectAnswer) {
+				return fmt.Sprintf("Susun tepat %d potongan sesuai pola kalimat Jepang (topik/subjek di depan, predikat di akhir).", len(tokens))
+			}
+			return fmt.Sprintf("Susun tepat %d potongan kata sesuai urutan kalimat yang alami.", len(tokens))
 		}
-		return "Susun kata-kata inti sesuai urutan tata bahasa Jepang."
+		if containsJapaneseRune(rawEx.CorrectAnswer) {
+			return "Susun kata-kata inti sesuai urutan tata bahasa Jepang."
+		}
+		return "Susun kata-kata inti menjadi kalimat utuh yang tepat."
 
 	case exercise.ExerciseTypeListeningChoice:
 		audioText := contentString(content, "audio_text")
@@ -446,8 +452,11 @@ func extractStudyItemForExercise(idx int, rawEx exercise.Exercise, grammarPoints
 			return LessonStudyItem{}, romaji, false
 		}
 		symbol := strings.Join(tokens, " ")
-		speakText := strings.Join(tokens, "")
-		if isSingleRuneSlice(tokens) {
+		speakText := symbol
+		if containsJapaneseRune(symbol) {
+			speakText = strings.Join(tokens, "")
+		}
+		if isSingleRuneSlice(tokens) && containsJapaneseRune(symbol) {
 			symbol = speakText
 		}
 		meaning := contentString(content, "target_translation")

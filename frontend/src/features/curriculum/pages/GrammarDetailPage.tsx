@@ -36,8 +36,10 @@ import type { GrammarPoint, UnitNodeResponse } from '@/features/curriculum/types
 import { extractApiErrorMessage } from '@/shared/services/api'
 import {
   useActiveLanguageCode,
+  useActiveLanguageId,
   useActiveSpeechLocale,
 } from '@/features/exercise/hooks/useActiveSpeechLocale'
+import { getDefaultBeginnerLevel } from '@/shared/constants/languageCatalog'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import {
@@ -97,7 +99,13 @@ export const GrammarDetailPage = () => {
   const isAuthenticated = Boolean(userData.isAuthenticated && userData.user)
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
+  const activeLanguageId = useActiveLanguageId()
   const speechLocale = useActiveSpeechLocale()
+  const effectiveLanguageCode = targetId.startsWith('en-') ? 'en-us' : activeLanguageCode
+  const isEnglishGrammar = effectiveLanguageCode.startsWith('en')
+  const defaultBeginnerLevel = getDefaultBeginnerLevel(effectiveLanguageCode)
+  const levelFrameworkLabel = isEnglishGrammar ? 'CEFR' : 'JLPT'
+  const readingToggleLabel = isEnglishGrammar ? 'IPA' : 'Romaji'
 
   const [showRomaji, setShowRomaji] = useState(true)
   const [playingExampleKey, setPlayingExampleKey] = useState<string | null>(null)
@@ -158,9 +166,9 @@ export const GrammarDetailPage = () => {
     isError,
     refetch,
   } = useQuery({
-    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, activeLanguageCode],
+    queryKey: [...GRAMMAR_POINTS_QUERY_KEY, userIdKey, effectiveLanguageCode],
     queryFn: ({ signal }) =>
-      curriculumService.getGrammarPointsByFilter(activeLanguageCode, undefined, { signal }),
+      curriculumService.getGrammarPointsByFilter(effectiveLanguageCode, undefined, { signal }),
     staleTime: 1000 * 60 * 5,
   })
 
@@ -168,14 +176,20 @@ export const GrammarDetailPage = () => {
     const found = grammarPoints.find(
       (p) => p.id === targetId || p.code?.toLowerCase() === targetId.toLowerCase()
     )
-    return (found?.level_code ?? 'N5').toUpperCase()
-  }, [grammarPoints, targetId])
+    return (found?.level_code ?? defaultBeginnerLevel).toUpperCase()
+  }, [defaultBeginnerLevel, grammarPoints, targetId])
 
-  // Fetch active curriculum tree for the matching JLPT level so linked lesson unlock is accurate
+  // Fetch active curriculum tree for the matching level so linked lesson unlock is accurate
+  const guestLanguageOverride = !isAuthenticated ? activeLanguageId : undefined
   const { data: curriculumData, isLoading: isCurriculumLoading } = useQuery({
-    queryKey: [...CURRICULUM_QUERY_KEY, userIdKey, 'active', pointLevelHint],
+    queryKey: [
+      ...CURRICULUM_QUERY_KEY,
+      userIdKey,
+      guestLanguageOverride || 'active',
+      pointLevelHint,
+    ],
     queryFn: ({ signal }) =>
-      curriculumService.getCurriculum(undefined, { signal }, pointLevelHint),
+      curriculumService.getCurriculum(guestLanguageOverride, { signal }, pointLevelHint),
     enabled: grammarPoints.length > 0,
     staleTime: 1000 * 60 * 5,
   })
@@ -305,7 +319,7 @@ export const GrammarDetailPage = () => {
     }
   }, [])
 
-  const levelCode = (currentPoint?.level_code ?? 'N5').toUpperCase()
+  const levelCode = (currentPoint?.level_code ?? defaultBeginnerLevel).toUpperCase()
   const isPro = isUserPro(userData.user)
   const detailAccess = checkLevelAccess(levelCode, { isAuthenticated, isPro })
   const accent = LEVEL_ACCENT_STYLES[levelCode] ?? DEFAULT_LEVEL_ACCENT
@@ -317,8 +331,13 @@ export const GrammarDetailPage = () => {
     activeStep === 'quiz' && !hasQuiz ? 'understand' : activeStep
 
   const heroBreakdown = guide?.breakdowns?.[0] ?? null
+  const heroBreakdownSpaced = heroBreakdown
+    ? heroBreakdown.tokens.map((t) => t.jp).join(' ')
+    : ''
   const heroBreakdownFullJp = heroBreakdown
-    ? heroBreakdown.tokens.map((t) => t.jp).join('')
+    ? /[\u3040-\u30ff\u4e00-\u9faf]/.test(heroBreakdownSpaced)
+      ? heroBreakdown.tokens.map((t) => t.jp).join('')
+      : heroBreakdownSpaced
     : ''
   const heroBreakdownFullReading = heroBreakdown
     ? heroBreakdown.tokens
@@ -413,7 +432,7 @@ export const GrammarDetailPage = () => {
             { label: 'Beranda', to: '/curriculum' },
             { label: 'Panduan Grammar', to: `/grammar?level=${encodeURIComponent(levelCode)}` },
             {
-              label: `JLPT ${levelCode}`,
+              label: `${levelFrameworkLabel} ${levelCode}`,
               to: `/grammar?level=${encodeURIComponent(levelCode)}`,
             },
             ...(currentPoint ? [{ label: currentPoint.title }] : []),
@@ -437,7 +456,7 @@ export const GrammarDetailPage = () => {
               ) : (
                 <EyeSlash weight="bold" className="w-4 h-4 text-slate-500" />
               )}
-              <span>Romaji: {showRomaji ? 'Tampil' : 'Sembunyi'}</span>
+              <span>{readingToggleLabel}: {showRomaji ? 'Tampil' : 'Sembunyi'}</span>
             </button>
           }
         />
@@ -490,20 +509,20 @@ export const GrammarDetailPage = () => {
               variant="blue"
               size="sm"
               icon={<ArrowLeft weight="bold" className="w-4 h-4" />}
-              onClick={() => navigate('/grammar?level=N5')}
+              onClick={() => navigate(`/grammar?level=${encodeURIComponent(defaultBeginnerLevel)}`)}
             >
               Kembali ke Daftar Grammar
             </Button3D>
           </div>
         )}
 
-        {/* Tier Gate when user directly opens a locked N4-N1 grammar URL */}
+        {/* Tier Gate when user directly opens a locked grammar URL */}
         {!isLoading && currentPoint && !detailAccess.allowed && detailAccess.reason !== 'ok' && (
           <TierUpgradeBanner
             levelCode={levelCode}
             reason={detailAccess.reason}
             featureLabel="Materi Grammar"
-            onSelectFreeLevel={() => navigate('/grammar?level=N5')}
+            onSelectFreeLevel={() => navigate(`/grammar?level=${encodeURIComponent(defaultBeginnerLevel)}`)}
           />
         )}
 
@@ -557,7 +576,7 @@ export const GrammarDetailPage = () => {
                     <span
                       className={`px-2.5 py-1 rounded-lg text-[11px] font-brand font-black tracking-wide border ${accent.badge}`}
                     >
-                      JLPT {levelCode}
+                      {levelFrameworkLabel} {levelCode}
                     </span>
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-brand font-extrabold uppercase tracking-wider bg-blue-50 text-blue-700 border border-blue-200/80">
                       {renderCategoryIcon(currentPoint.category, 'w-3.5 h-3.5 text-blue-600')}

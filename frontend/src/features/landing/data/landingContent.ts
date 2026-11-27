@@ -1,4 +1,4 @@
-export type DemoLanguageCode = 'ja' | 'en-gb' | 'de' | 'zh' | 'fr'
+export type DemoLanguageCode = 'ja' | 'en-us' | 'en-gb' | 'de' | 'zh' | 'fr'
 
 export interface DemoPhraseCard {
   id: string
@@ -99,10 +99,10 @@ export const LANDING_DEMO_PACKS: ReadonlyArray<LandingLanguageDemoPack> = [
     ],
   },
   {
-    code: 'en-gb',
+    code: 'en-us',
     label: 'Inggris',
-    speechLocale: 'en-GB',
-    examLabel: 'IELTS / TOEFL',
+    speechLocale: 'en-US',
+    examLabel: 'CEFR A1–C2 · TOEFL',
     phraseSubtitle: 'Ungkapan profesional untuk interview, rapat & studi internasional',
     phrases: [
       {

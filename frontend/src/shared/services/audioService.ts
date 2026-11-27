@@ -550,6 +550,9 @@ export function sanitizeTextForSpeech(text: string, lang = 'ja-JP'): string {
   if (!trimmed) return ''
   if (!lang.toLowerCase().startsWith('ja')) {
     return trimmed
+      .replace(/(^|\n)\s*[A-Za-z][A-Za-z0-9 ]{0,10}\s*[:：]\s*/g, '$1')
+      .replace(/[ \t]{2,}/g, ' ')
+      .trim()
   }
   const cleaned = trimmed
     .replace(/(^|\n)\s*[A-Za-z]\s*[:：]\s*/g, '$1')

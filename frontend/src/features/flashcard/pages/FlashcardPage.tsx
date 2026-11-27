@@ -68,18 +68,29 @@ import { audioEngine } from '@/shared/utils/audio'
 import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
 import { TierUpgradeBanner } from '@/shared/components/ui/TierUpgradeBanner'
+import {
+  getDefaultBeginnerLevel,
+  getLanguageLevelsForFilter,
+  supportsKanaBoard,
+} from '@/shared/constants/languageCatalog'
 import { checkLevelAccess, isUserPro } from '@/shared/utils/levelAccess'
 
 type SessionMode = 'lobby' | 'session' | 'complete'
-type JlptFilter = 'ALL' | 'N5' | 'N4' | 'N3' | 'N2' | 'N1'
-type DeckCategoryFilter = 'ALL' | 'hiragana' | 'katakana' | 'kanji' | 'vocab'
 
-const DECK_CATEGORY_OPTIONS: Array<{ value: DeckCategoryFilter; label: string }> = [
+const JAPANESE_DECK_CATEGORY_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'ALL', label: 'Semua Jenis Dek' },
   { value: 'hiragana', label: 'Huruf Hiragana' },
   { value: 'katakana', label: 'Huruf Katakana' },
   { value: 'kanji', label: 'Huruf Kanji' },
   { value: 'vocab', label: 'Kosakata & Ungkapan' },
+]
+
+const ENGLISH_DECK_CATEGORY_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'ALL', label: 'Semua Jenis Dek' },
+  { value: 'daily', label: 'Percakapan Harian' },
+  { value: 'work_study', label: 'Karier & Kampus' },
+  { value: 'phrasal_idioms', label: 'Phrasal Verbs & Idiom' },
+  { value: 'academic_toefl', label: 'Akademik & TOEFL' },
 ]
 
 interface RatingOption {
@@ -88,43 +99,6 @@ interface RatingOption {
   label: string
   shortcut: string
   className: string
-}
-
-const JLPT_FILTER_OPTIONS: Array<{ value: JlptFilter; label: string }> = [
-  { value: 'N5', label: 'N5' },
-  { value: 'N4', label: 'N4' },
-  { value: 'N3', label: 'N3' },
-  { value: 'N2', label: 'N2' },
-  { value: 'N1', label: 'N1' },
-  { value: 'ALL', label: 'Semua' },
-]
-
-const VALID_JLPT_FILTERS: ReadonlySet<JlptFilter> = new Set([
-  'ALL',
-  'N5',
-  'N4',
-  'N3',
-  'N2',
-  'N1',
-])
-
-const VALID_DECK_CATEGORIES: ReadonlySet<DeckCategoryFilter> = new Set([
-  'ALL',
-  'hiragana',
-  'katakana',
-  'kanji',
-  'vocab',
-])
-
-function parseFlashcardLevelParam(raw: string | null): JlptFilter {
-  const upper = (raw ?? '').trim().toUpperCase() as JlptFilter
-  return VALID_JLPT_FILTERS.has(upper) ? upper : 'N5'
-}
-
-function parseFlashcardCategoryParam(raw: string | null): DeckCategoryFilter {
-  const trimmed = (raw ?? '').trim()
-  const candidate = (trimmed.toUpperCase() === 'ALL' ? 'ALL' : trimmed.toLowerCase()) as DeckCategoryFilter
-  return VALID_DECK_CATEGORIES.has(candidate) ? candidate : 'ALL'
 }
 
 const RATING_OPTIONS: RatingOption[] = [
@@ -177,20 +151,65 @@ export const FlashcardPage = () => {
   const updateUser = useAuthStore((state) => state.updateUser)
   const userIdKey = userData.user?.id ?? 'anonymous'
   const activeLanguageCode = useActiveLanguageCode()
+  const isJapaneseTrack = supportsKanaBoard(activeLanguageCode)
+  const levelCodes = useMemo(
+    () => getLanguageLevelsForFilter(activeLanguageCode),
+    [activeLanguageCode]
+  )
+  const defaultLevel = useMemo(
+    () => getDefaultBeginnerLevel(activeLanguageCode),
+    [activeLanguageCode]
+  )
+  const levelOptions = useMemo(
+    () => [
+      ...levelCodes.map((code) => ({ value: code, label: code })),
+      { value: 'ALL', label: 'Semua' },
+    ],
+    [levelCodes]
+  )
+  const validLevelSet = useMemo(() => new Set(['ALL', ...levelCodes]), [levelCodes])
+  const categoryOptions = useMemo(
+    () => (isJapaneseTrack ? JAPANESE_DECK_CATEGORY_OPTIONS : ENGLISH_DECK_CATEGORY_OPTIONS),
+    [isJapaneseTrack]
+  )
+  const validCategorySet = useMemo(
+    () => new Set(categoryOptions.map((opt) => opt.value)),
+    [categoryOptions]
+  )
+  const parseLevelParam = useCallback(
+    (raw: string | null): string => {
+      const upper = (raw ?? '').trim().toUpperCase()
+      return validLevelSet.has(upper) ? upper : defaultLevel
+    },
+    [defaultLevel, validLevelSet]
+  )
+  const parseCategoryParam = useCallback(
+    (raw: string | null): string => {
+      const trimmed = (raw ?? '').trim()
+      const candidate = trimmed.toUpperCase() === 'ALL' ? 'ALL' : trimmed.toLowerCase()
+      return validCategorySet.has(candidate) ? candidate : 'ALL'
+    },
+    [validCategorySet]
+  )
   const speechLocale = useActiveSpeechLocale()
   const heroPatternId = `flashcards-hero-seigaiha-${useId().replace(/:/g, '')}`
 
   const [mode, setMode] = useState<SessionMode>('lobby')
-  const [lobbyLevelMemory, setLobbyLevelMemory] = useState<JlptFilter>(() =>
-    parseFlashcardLevelParam(searchParams.get('level'))
+  const [lobbyLevelMemory, setLobbyLevelMemory] = useState<string>(() =>
+    parseLevelParam(searchParams.get('level'))
   )
-  const [categoryMemory, setCategoryMemory] = useState<DeckCategoryFilter>(() =>
-    parseFlashcardCategoryParam(searchParams.get('category'))
+  const [categoryMemory, setCategoryMemory] = useState<string>(() =>
+    parseCategoryParam(searchParams.get('category'))
   )
   const rawLevelParam = searchParams.get('level')
   const levelFilter = useMemo(
-    () => (rawLevelParam ? parseFlashcardLevelParam(rawLevelParam) : lobbyLevelMemory),
-    [rawLevelParam, lobbyLevelMemory]
+    () =>
+      rawLevelParam
+        ? parseLevelParam(rawLevelParam)
+        : validLevelSet.has(lobbyLevelMemory)
+          ? lobbyLevelMemory
+          : defaultLevel,
+    [defaultLevel, lobbyLevelMemory, parseLevelParam, rawLevelParam, validLevelSet]
   )
   const levelAccess = useMemo(
     () => checkLevelAccess(levelFilter, { isAuthenticated, isPro }),
@@ -198,8 +217,13 @@ export const FlashcardPage = () => {
   )
   const rawCategoryParam = searchParams.get('category')
   const categoryFilter = useMemo(
-    () => (rawCategoryParam ? parseFlashcardCategoryParam(rawCategoryParam) : categoryMemory),
-    [rawCategoryParam, categoryMemory]
+    () =>
+      rawCategoryParam
+        ? parseCategoryParam(rawCategoryParam)
+        : validCategorySet.has(categoryMemory)
+          ? categoryMemory
+          : 'ALL',
+    [categoryMemory, parseCategoryParam, rawCategoryParam, validCategorySet]
   )
   const [searchQuery, setSearchQuery] = useState('')
   const [debouncedSearch, setDebouncedSearch] = useState('')
@@ -295,17 +319,16 @@ export const FlashcardPage = () => {
     return result
   }, [deckPages, levelFilter, isAuthenticated, isPro])
 
-  const levelCounts = useMemo<Record<JlptFilter, number>>(() => {
+  const levelCounts = useMemo<Record<string, number>>(() => {
     const raw = deckPages?.pages[0]?.level_counts
-    return {
+    const counts: Record<string, number> = {
       ALL: raw?.ALL ?? 0,
-      N5: raw?.N5 ?? 0,
-      N4: raw?.N4 ?? 0,
-      N3: raw?.N3 ?? 0,
-      N2: raw?.N2 ?? 0,
-      N1: raw?.N1 ?? 0,
     }
-  }, [deckPages])
+    for (const code of levelCodes) {
+      counts[code] = raw?.[code] ?? 0
+    }
+    return counts
+  }, [deckPages, levelCodes])
 
   const totalFilteredCount = deckPages?.pages[0]?.total_count ?? loadedDecks.length
 
@@ -380,7 +403,7 @@ export const FlashcardPage = () => {
     []
   )
 
-  const handleSelectLevel = (nextLevel: JlptFilter) => {
+  const handleSelectLevel = (nextLevel: string) => {
     setLobbyLevelMemory(nextLevel)
     handledDeckParamRef.current = null
     handledReviewParamRef.current = false
@@ -396,7 +419,7 @@ export const FlashcardPage = () => {
     )
   }
 
-  const handleSelectCategory = (nextCat: DeckCategoryFilter) => {
+  const handleSelectCategory = (nextCat: string) => {
     setCategoryMemory(nextCat)
     handledDeckParamRef.current = null
     handledReviewParamRef.current = false
@@ -417,18 +440,21 @@ export const FlashcardPage = () => {
     )
   }
 
-  // Canonicalize lobby URL so default N5 reflects explicitly in ?level=N5 while preserving ?category=
+  // Canonicalize lobby URL so active language's default level reflects explicitly in ?level=...
   useEffect(() => {
     if (mode !== 'lobby') return
     if (searchParams.has('deck') || searchParams.get('mode') === 'review') return
     const currentRaw = searchParams.get('level')
-    const normalized = parseFlashcardLevelParam(currentRaw)
+    const normalized = parseLevelParam(currentRaw)
     if (!currentRaw || currentRaw.trim().toUpperCase() !== normalized) {
       const next = new URLSearchParams(searchParams)
-      next.set('level', lobbyLevelMemory)
+      next.set('level', levelFilter)
+      if (categoryFilter === 'ALL') {
+        next.delete('category')
+      }
       setSearchParams(next, { replace: true })
     }
-  }, [lobbyLevelMemory, mode, searchParams, setSearchParams])
+  }, [categoryFilter, levelFilter, mode, parseLevelParam, searchParams, setSearchParams])
 
   const startDeckSession = useCallback(
     async (deck: FlashcardDeck) => {
@@ -1058,6 +1084,10 @@ export const FlashcardPage = () => {
   // ── HYBRID FLASHCARD LOBBY ──
   const totalDue = dueQueue?.total_due ?? 0
   const totalLearned = dueQueue?.total_learned ?? 0
+  const examBadgePrefix = isJapaneseTrack ? 'JLPT' : 'CEFR'
+  const heroRangeText = isJapaneseTrack
+    ? 'JLPT N5 hingga N1'
+    : `CEFR ${levelCodes[0] ?? 'A1'} hingga ${levelCodes[levelCodes.length - 1] ?? 'C2'} (TOEFL iBT)`
 
   return (
     <div className="min-h-screen bg-[#FAFAF9] text-slate-900 font-sans flex selection:bg-blue-600/20">
@@ -1068,7 +1098,7 @@ export const FlashcardPage = () => {
           breadcrumbs={[
             { label: 'Beranda', to: '/curriculum' },
             { label: 'Flashcards' },
-            { label: levelFilter === 'ALL' ? 'Semua Level' : `JLPT ${levelFilter}` },
+            { label: levelFilter === 'ALL' ? 'Semua Level' : `${examBadgePrefix} ${levelFilter}` },
           ]}
         />
 
@@ -1108,7 +1138,7 @@ export const FlashcardPage = () => {
                 </h1>
 
                 <p className="text-xs sm:text-sm text-slate-600 max-w-lg leading-relaxed font-medium">
-                  Hafalkan kosakata lewat kartu flip kapan saja lintas tingkat JLPT N5 hingga N1.
+                  Hafalkan kosakata lewat kartu flip kapan saja lintas tingkat {heroRangeText}.
                 </p>
               </div>
             </div>
@@ -1128,7 +1158,7 @@ export const FlashcardPage = () => {
             <div className="flex items-start sm:items-center gap-2.5 text-xs text-slate-700 font-medium">
               <Sparkle weight="fill" className="w-4 h-4 text-blue-600 shrink-0 mt-0.5 sm:mt-0" />
               <span>
-                <strong>Mode Coba Flashcard:</strong> Seluruh 120+ dek bisa dibalik &amp; didengarkan gratis. Masuk untuk mengaktifkan jadwal ulang otomatis!
+                <strong>Mode Coba Flashcard:</strong> Seluruh dek level awal bisa dibalik &amp; didengarkan gratis. Masuk untuk mengaktifkan jadwal ulang otomatis!
               </span>
             </div>
             <Button3D
@@ -1200,19 +1230,19 @@ export const FlashcardPage = () => {
 
         {/* Unified 1-Row Filter Toolbar */}
         <FilterToolbar
-          levelOptions={JLPT_FILTER_OPTIONS.map((opt) => ({
+          levelOptions={levelOptions.map((opt) => ({
             value: opt.value,
             label: opt.label,
-            count: levelCounts[opt.value],
+            count: levelCounts[opt.value] ?? 0,
           }))}
           selectedLevel={levelFilter}
-          onSelectLevel={(v) => handleSelectLevel(v as JlptFilter)}
-          categoryOptions={DECK_CATEGORY_OPTIONS}
+          onSelectLevel={(v) => handleSelectLevel(v)}
+          categoryOptions={categoryOptions}
           selectedCategory={categoryFilter}
-          onSelectCategory={(v) => handleSelectCategory(v as DeckCategoryFilter)}
+          onSelectCategory={(v) => handleSelectCategory(v)}
           searchValue={searchQuery}
           onSearchChange={setSearchQuery}
-          searchPlaceholder="Cari judul, huruf, atau topik dek..."
+          searchPlaceholder="Cari judul, kata kunci, atau topik dek..."
         />
 
         {/* Permanent Fanned Collectible Decks Grid */}
@@ -1244,7 +1274,7 @@ export const FlashcardPage = () => {
               levelCode={levelFilter}
               reason={levelAccess.reason}
               featureLabel="Flashcard"
-              onSelectFreeLevel={() => handleSelectLevel('N5')}
+              onSelectFreeLevel={() => handleSelectLevel(defaultLevel)}
             />
           ) : decksLoading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -1296,7 +1326,7 @@ export const FlashcardPage = () => {
                   Tidak ada dek yang cocok
                 </p>
                 <p className="text-xs sm:text-sm text-slate-500">
-                  Coba ubah filter tingkat JLPT atau kata kunci pencarianmu.
+                  Coba ubah filter tingkat {examBadgePrefix} atau kata kunci pencarianmu.
                 </p>
               </div>
               {searchQuery.trim().length > 0 && (

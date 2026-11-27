@@ -394,3 +394,34 @@ func TestBuildLessonStudyItemsAndHints_ContextualListeningHints(t *testing.T) {
 		t.Errorf("expected spoiler-free kana mnemonic hint without leaking 'あ', got %q", hint2)
 	}
 }
+
+func TestBuildLessonStudyItemsAndHints_EnglishSentenceBuilderPreservesSpacesAndNeutralHints(t *testing.T) {
+	rawExercises := []exercise.Exercise{
+		{
+			ID:           "en-sb-1",
+			ExerciseType: exercise.ExerciseTypeSentenceBuilder,
+			Prompt:       "Susun kalimat sapaan profesional berikut:",
+			Content: map[string]any{
+				"romaji":             "/kʊd juː rɪˈpiːt ðæt/",
+				"tokens":             []any{"Could", "you", "repeat", "that?", "repeats"},
+				"target_translation": "Bisakah Anda mengulangi itu?",
+			},
+			CorrectAnswer: "Could you repeat that?",
+		},
+	}
+
+	sanitized := exercise.SanitizeExercises(rawExercises)
+	items := buildLessonStudyItemsAndHints("en-a1-u1-greetings", rawExercises, sanitized, nil)
+	if len(items) != 1 {
+		t.Fatalf("expected 1 study item, got %d", len(items))
+	}
+	if items[0].SpeakText != "Could you repeat that?" {
+		t.Errorf("expected English SpeakText to preserve word spaces, got %q", items[0].SpeakText)
+	}
+	if sanitized[0].Hint == nil {
+		t.Fatalf("expected fallback hint to be populated")
+	}
+	if strings.Contains(*sanitized[0].Hint, "Jepang") || strings.Contains(*sanitized[0].Hint, "は/が/を") {
+		t.Errorf("expected English sentence_builder hint to be free of Japanese SOV copy, got %q", *sanitized[0].Hint)
+	}
+}

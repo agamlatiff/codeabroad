@@ -669,11 +669,21 @@ func containsHan(s string) bool {
 	return false
 }
 
+func containsJapaneseScript(s string) bool {
+	for _, r := range s {
+		if unicode.In(r, unicode.Hiragana, unicode.Katakana, unicode.Han) {
+			return true
+		}
+	}
+	return false
+}
+
 // KanaToRomaji converts Japanese Kana (and known N5 Kanji compounds) into spaced readable Romaji,
-// normalizing standalone particle words ("ha"/"he"/"wo" -> "wa"/"e"/"o"). Returns "" if any Kanji remain unmapped.
+// normalizing standalone particle words ("ha"/"he"/"wo" -> "wa"/"e"/"o"). Returns "" if any Kanji remain unmapped
+// or if the input contains no Japanese script characters.
 func KanaToRomaji(raw string) string {
 	trimmed := strings.TrimSpace(raw)
-	if trimmed == "" {
+	if trimmed == "" || !containsJapaneseScript(trimmed) {
 		return ""
 	}
 	folded := foldKatakanaAndKanjiSpeech(trimmed)
@@ -815,22 +825,34 @@ func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 		}
 	}
 
-	// Phonetic romaji fallback comparing Kana/mapped-Kanji/Romaji across variants
-	for _, userVariant := range userVariants {
-		uPhonetic := normalizeRomajiPhonetics(userVariant)
-		if uPhonetic == "" {
-			continue
+	hasJapaneseCandidate := containsJapaneseScript(ex.CorrectAnswer)
+	for _, cand := range candidates {
+		if hasJapaneseCandidate {
+			break
 		}
-		for _, cand := range candidates {
-			cPhonetic := normalizeRomajiPhonetics(cand)
-			if cPhonetic == "" {
+		if containsJapaneseScript(cand) {
+			hasJapaneseCandidate = true
+		}
+	}
+
+	// Phonetic romaji fallback comparing Kana/mapped-Kanji/Romaji across variants (Japanese only)
+	if hasJapaneseCandidate {
+		for _, userVariant := range userVariants {
+			uPhonetic := normalizeRomajiPhonetics(userVariant)
+			if uPhonetic == "" {
 				continue
 			}
-			if (utf8.RuneCountInString(uPhonetic) >= 2 && utf8.RuneCountInString(cPhonetic) >= 2 && uPhonetic == cPhonetic) ||
-				(utf8.RuneCountInString(uPhonetic) == 1 && uPhonetic == cPhonetic) ||
-				(utf8.RuneCountInString(uPhonetic) >= 6 && utf8.RuneCountInString(cPhonetic) >= 6 &&
-					unspacedParticleReplacer.Replace(uPhonetic) == unspacedParticleReplacer.Replace(cPhonetic)) {
-				return true
+			for _, cand := range candidates {
+				cPhonetic := normalizeRomajiPhonetics(cand)
+				if cPhonetic == "" {
+					continue
+				}
+				if (utf8.RuneCountInString(uPhonetic) >= 2 && utf8.RuneCountInString(cPhonetic) >= 2 && uPhonetic == cPhonetic) ||
+					(utf8.RuneCountInString(uPhonetic) == 1 && uPhonetic == cPhonetic) ||
+					(utf8.RuneCountInString(uPhonetic) >= 6 && utf8.RuneCountInString(cPhonetic) >= 6 &&
+						unspacedParticleReplacer.Replace(uPhonetic) == unspacedParticleReplacer.Replace(cPhonetic)) {
+					return true
+				}
 			}
 		}
 	}

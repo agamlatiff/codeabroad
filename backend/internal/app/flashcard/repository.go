@@ -206,9 +206,7 @@ func (r *postgresRepository) queryDeckLevelCounts(ctx context.Context, filter De
 			return nil, fmt.Errorf("scan flashcard deck level count: %w", err)
 		}
 		counts["ALL"] += cnt
-		if _, ok := counts[lvl]; ok {
-			counts[lvl] = cnt
-		}
+		counts[lvl] = cnt
 	}
 	if err := rows.Err(); err != nil {
 		return nil, fmt.Errorf("iterate flashcard deck level counts: %w", err)

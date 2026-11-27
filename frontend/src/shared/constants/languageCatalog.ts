@@ -46,14 +46,14 @@ export const GLOBAL_LANGUAGE_CATALOG: ReadonlyArray<LanguageCatalogMeta> = [
     code: 'en-us',
     name: 'Inggris (American)',
     shortName: 'Inggris US',
-    examTag: 'TOEFL iBT 40 – 120',
+    examTag: 'CEFR A1 – C2 • TOEFL iBT',
     examShort: 'TOEFL iBT',
-    countryLabel: 'Inggris (US) • TOEFL / Business',
+    countryLabel: 'Inggris (US) • CEFR A1–C2 / TOEFL',
     description:
-      'Bahasa Inggris Amerika untuk presentasi global, interview & kolaborasi internasional.',
-    badgeLabel: 'Tersedia',
+      'Bahasa Inggris Amerika dari A1 hingga C2 untuk karier global, beasiswa & skor tinggi TOEFL iBT.',
+    badgeLabel: 'Populer',
     hasDedicatedScriptBoard: false,
-    fallbackActive: false,
+    fallbackActive: true,
   },
   {
     code: 'de',
@@ -150,6 +150,24 @@ export function getLanguageCatalogMeta(
 
 export function supportsKanaBoard(code?: string): boolean {
   return code?.trim().toLowerCase() === 'ja'
+}
+
+export function getLanguageLevelsForFilter(code?: string): string[] {
+  const normalized = code?.trim().toLowerCase() ?? 'ja'
+  if (normalized === 'ja' || normalized.includes('jp')) {
+    return ['N5', 'N4', 'N3', 'N2', 'N1']
+  }
+  if (normalized === 'zh' || normalized.includes('cn')) {
+    return ['HSK1', 'HSK2', 'HSK3', 'HSK4', 'HSK5', 'HSK6']
+  }
+  if (normalized.startsWith('en')) {
+    return ['A1', 'A2', 'B1', 'B2', 'C1', 'C2']
+  }
+  return ['A1', 'A2', 'B1', 'B2', 'C1']
+}
+
+export function getDefaultBeginnerLevel(code?: string): string {
+  return getLanguageLevelsForFilter(code)[0] ?? 'N5'
 }
 
 function formatCodeSegment(segment: string): string {

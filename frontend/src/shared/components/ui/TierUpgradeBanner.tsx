@@ -33,8 +33,25 @@ export const TierUpgradeBanner: FC<TierUpgradeBannerProps> = ({
 }) => {
   const navigate = useNavigate()
   const normalized = levelCode.trim().toUpperCase()
+  const isCefrTrack = /^(A1|A2|B1|B2|C1|C2)$/.test(normalized)
+  const examPrefix = isCefrTrack ? 'CEFR' : 'JLPT'
+  const freeGuestLevel = isCefrTrack ? 'A1' : 'N5'
+  const freeAccountRange = isCefrTrack ? 'CEFR A2 & B1' : 'JLPT N4 & N3'
+  const proRange = isCefrTrack ? 'B2, C1 & C2 (TOEFL 72–120)' : 'N2 & N1'
 
   if (reason === 'login_required') {
+    const loginPerks = isCefrTrack
+      ? [
+          'Kurikulum A2 & B1 penuh (20 Unit · 640+ Soal)',
+          'Panduan Grammar & 20 Deck Flashcard A2–B1',
+          'Progres, XP, dan Streak tersimpan otomatis',
+        ]
+      : [
+          'Kurikulum N4 & N3 penuh (20 Unit · 600 Soal)',
+          'Panduan Grammar & 40 Deck Flashcard N4–N3',
+          'Progres, XP, dan Streak tersimpan otomatis',
+        ]
+
     return (
       <section className="min-w-0 bg-white border-2 border-blue-200/90 rounded-3xl p-5 sm:p-8 shadow-[0_6px_0_0_#DBEAFE] space-y-5">
         <div className="flex flex-col sm:flex-row sm:items-start gap-4">
@@ -47,22 +64,18 @@ export const TierUpgradeBanner: FC<TierUpgradeBannerProps> = ({
               <span>Gratis untuk Akun Terdaftar</span>
             </span>
             <h2 className="font-brand font-black text-xl sm:text-2xl text-slate-900 leading-tight">
-              Daftar Gratis untuk Membuka {featureLabel} JLPT {normalized}
+              Daftar Gratis untuk Membuka {featureLabel} {examPrefix} {normalized}
             </h2>
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed max-w-2xl">
-              Level <strong>N5</strong> bisa langsung kamu coba tanpa akun. Untuk membuka penuh
-              kurikulum, grammar, dan flashcard <strong>JLPT N4 &amp; N3</strong> (syarat kerja
-              Tokutei Ginou &amp; percakapan menengah), cukup buat akun gratis dalam 30 detik.
+              Level <strong>{freeGuestLevel}</strong> bisa langsung kamu coba tanpa akun. Untuk
+              membuka penuh kurikulum, grammar, dan flashcard <strong>{freeAccountRange}</strong>,
+              cukup buat akun gratis dalam 30 detik.
             </p>
           </div>
         </div>
 
         <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-          {[
-            'Kurikulum N4 & N3 penuh (20 Unit · 600 Soal)',
-            'Panduan Grammar & 40 Deck Flashcard N4–N3',
-            'Progres, XP, dan Streak tersimpan otomatis',
-          ].map((perk) => (
+          {loginPerks.map((perk) => (
             <li
               key={perk}
               className="min-w-0 flex items-start gap-2 rounded-2xl bg-slate-50 border border-slate-200/80 px-3.5 py-2.5 text-xs font-semibold text-slate-700"
@@ -102,13 +115,25 @@ export const TierUpgradeBanner: FC<TierUpgradeBannerProps> = ({
               }}
               className="text-xs font-brand font-bold text-slate-500 hover:text-slate-800 underline underline-offset-4 cursor-pointer px-2 py-1"
             >
-              Kembali ke N5
+              Kembali ke {freeGuestLevel}
             </button>
           )}
         </div>
       </section>
     )
   }
+
+  const proPerks = isCefrTrack
+    ? [
+        'Bebas lompat ke unit mana pun tanpa harus berurutan',
+        'Kurikulum B2, C1 & C2 penuh (30 Unit · Fokus TOEFL iBT 72–120)',
+        '30 Panduan Grammar & 30 Deck Flashcard B2–C2 + SRS',
+      ]
+    : [
+        'Bebas lompat ke unit mana pun (Unit 1 langsung ke Unit 3+)',
+        'Kurikulum N2 & N1 penuh (20 Unit · 600 Soal)',
+        '20 Panduan Grammar & 40 Deck Flashcard N2–N1 + SRS',
+      ]
 
   return (
     <section className="min-w-0 bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 text-white border-2 border-blue-700 rounded-3xl p-5 sm:p-8 shadow-[0_6px_0_0_#1D4ED8] space-y-5">
@@ -122,22 +147,18 @@ export const TierUpgradeBanner: FC<TierUpgradeBannerProps> = ({
             <span>Merantalk Pro • Mulai Rp 33rb/bln</span>
           </span>
           <h2 className="font-brand font-black text-xl sm:text-2xl text-white leading-tight">
-            Buka {featureLabel} JLPT {normalized} dengan Merantalk Pro
+            Buka {featureLabel} {examPrefix} {normalized} dengan Merantalk Pro
           </h2>
           <p className="text-xs sm:text-sm text-blue-100 leading-relaxed max-w-2xl">
-            Level <strong>N2 &amp; N1</strong> dirancang khusus untuk target karier profesional di
-            perusahaan Jepang, beasiswa universitas (MEXT/LPDP), dan kelulusan ujian JLPT tingkat
+            Level <strong>{proRange}</strong> dirancang khusus untuk target karier profesional
+            internasional, beasiswa universitas (LPDP/Fulbright/MEXT), dan skor sertifikasi tingkat
             mahir.
           </p>
         </div>
       </div>
 
       <ul className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
-        {[
-          'Bebas lompat ke unit mana pun (Unit 1 langsung ke Unit 3+)',
-          'Kurikulum N2 & N1 penuh (20 Unit · 600 Soal)',
-          '20 Panduan Grammar & 40 Deck Flashcard N2–N1 + SRS',
-        ].map((perk) => (
+        {proPerks.map((perk) => (
           <li
             key={perk}
             className="min-w-0 flex items-start gap-2 rounded-2xl bg-white/15 border border-white/20 px-3.5 py-2.5 text-xs font-semibold text-white"

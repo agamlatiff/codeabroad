@@ -491,3 +491,42 @@ func TestSanitizeExercises_StripsFillBlankSentenceTemplateSpoilers(t *testing.T)
 		t.Errorf("expected non-spoiler parenthetical template preserved, got %q", tpl)
 	}
 }
+
+func TestEvaluateExerciseAnswer_EnglishSpeakingAndKanaGuard(t *testing.T) {
+	h := NewHelper()
+
+	// Ensure KanaToRomaji skips non-Japanese Latin strings cleanly without particle replacement ("He" -> "e")
+	if got := KanaToRomaji("He has scheduled a meeting in Seattle"); got != "" {
+		t.Errorf("expected KanaToRomaji to return empty string for pure English input, got %q", got)
+	}
+
+	enSpeakingEx := &Exercise{
+		ExerciseType:  ExerciseTypeSpeakingRepeat,
+		CorrectAnswer: "He has scheduled a meeting in Seattle.",
+		Content: map[string]any{
+			"display_text": "He has scheduled a meeting in Seattle.",
+			"audio_text":   "He has scheduled a meeting in Seattle.",
+			"romaji":       "/hiː hæz ˈskedʒuːld ə ˈmiːtɪŋ ɪn siˈætəl/",
+		},
+	}
+
+	for _, accepted := range []string{
+		"He has scheduled a meeting in Seattle.",
+		"he has scheduled a meeting in seattle",
+		"HE HAS SCHEDULED A MEETING IN SEATTLE!",
+	} {
+		if !h.EvaluateExerciseAnswer(enSpeakingEx, accepted) {
+			t.Errorf("expected English speaking_repeat to accept %q", accepted)
+		}
+	}
+
+	for _, rejected := range []string{
+		"E has scheduled a meeting in Seattle",
+		"She canceled the flight to Boston",
+		"",
+	} {
+		if h.EvaluateExerciseAnswer(enSpeakingEx, rejected) {
+			t.Errorf("expected English speaking_repeat to reject %q", rejected)
+		}
+	}
+}

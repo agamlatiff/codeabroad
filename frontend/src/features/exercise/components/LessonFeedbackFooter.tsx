@@ -18,6 +18,7 @@ const JAPANESE_CHAR_REGEX = /[\u3040-\u30ff\u4e00-\u9faf]/
 interface LessonFeedbackFooterProps {
   submittedResult: SubmitExerciseAnswerResponse | null
   resolvedCorrectAnswer?: string
+  exerciseType?: string
   answerStudyItem?: LessonIntroItem | null
   submitError: string | null
   canCheckAnswer: boolean
@@ -37,6 +38,7 @@ interface LessonFeedbackFooterProps {
 export const LessonFeedbackFooter = ({
   submittedResult,
   resolvedCorrectAnswer,
+  exerciseType,
   answerStudyItem,
   submitError,
   canCheckAnswer,
@@ -54,9 +56,14 @@ export const LessonFeedbackFooter = ({
   const isIncorrect = submittedResult?.is_correct === false
   const displayedCorrectAnswer =
     resolvedCorrectAnswer || submittedResult?.correct_answer || ''
+  const isAnswerSpeakableInLocale = speechLocale.startsWith('ja')
+    ? JAPANESE_CHAR_REGEX.test(displayedCorrectAnswer)
+    : exerciseType !== 'listening_choice' &&
+      exerciseType !== 'select_meaning' &&
+      /[A-Za-z]/.test(displayedCorrectAnswer)
   const speakCandidate =
     answerStudyItem?.speakText ||
-    (JAPANESE_CHAR_REGEX.test(displayedCorrectAnswer) ? displayedCorrectAnswer : '')
+    (isAnswerSpeakableInLocale ? displayedCorrectAnswer : '')
 
   const handlePlayAnswerAudio = (rate?: number) => {
     if (!speakCandidate) return

@@ -92,6 +92,12 @@ const LEVEL_TRACK_SUBLABELS: Record<string, string> = {
   N3: 'Menengah',
   N2: 'Karier · Pro',
   N1: 'Mahir · Pro',
+  A1: 'Pemula',
+  A2: 'Dasar',
+  B1: 'Menengah',
+  B2: 'TOEFL · Pro',
+  C1: 'Akademik · Pro',
+  C2: 'Mastery · Pro',
 }
 
 /**
@@ -237,16 +243,20 @@ export const CurriculumPage = () => {
             </div>
           )}
 
-          {/* ── JLPT LEVEL SWITCHER (5-Column Segmented Track: N5–N1) ── */}
+          {/* ── LEVEL SWITCHER (5-Column JLPT or 6-Column CEFR) ── */}
           {curriculum.availableLevelCodes.length > 1 && (
             <section
-              aria-label="Pilih level JLPT"
+              aria-label="Pilih level kurikulum"
               className="bg-white border-2 border-slate-200/90 rounded-2xl p-2 shadow-[0_4px_0_0_#E2E8F0]"
             >
               <div
                 role="group"
                 aria-label="Level kurikulum"
-                className="grid grid-cols-5 gap-1.5 sm:gap-2"
+                className={`grid gap-1.5 sm:gap-2 ${
+                  curriculum.availableLevelCodes.length === 6
+                    ? 'grid-cols-3 sm:grid-cols-6'
+                    : 'grid-cols-5'
+                }`}
               >
                 {curriculum.availableLevelCodes.map((code) => {
                   const isActive = curriculum.selectedLevelCode === code
@@ -323,7 +333,9 @@ export const CurriculumPage = () => {
               levelCode={curriculum.selectedLevelCode}
               reason={curriculum.levelAccess.reason}
               featureLabel="Kurikulum"
-              onSelectFreeLevel={() => actions.handleSelectLevel('N5')}
+              onSelectFreeLevel={() =>
+                actions.handleSelectLevel(curriculum.availableLevelCodes[0] ?? 'N5')
+              }
             />
           ) : (
             <CurriculumMapView
