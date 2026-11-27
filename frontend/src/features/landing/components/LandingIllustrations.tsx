@@ -117,7 +117,7 @@ const CURRICULUM_ORBIT_NODES: ReadonlyArray<CurriculumOrbitNode> = [
 ]
 
 /**
- * Open ClassDojo-style curriculum showcase: central Mera trio squad flanked by
+ * Open Merantalk interactive curriculum showcase: central Mera trio squad flanked by
  * 5 orbiting interactive floating sticker cards and a live preview pill.
  */
 export const CurriculumPathIllustration = () => {
@@ -395,7 +395,7 @@ const SCRIPT_PACKS: ReadonlyArray<ScriptPack> = [
 ]
 
 /**
- * Open ClassDojo-style multi-language script & pronunciation collage:
+ * Open Merantalk interactive multi-language script & pronunciation collage:
  * 4 tilted squircle language tiles, Mera Polyglot cheering beside an animated
  * stroke-order writing pad, and floating sticker playback controls.
  */
@@ -751,7 +751,7 @@ const RATING_PILLS: ReadonlyArray<{
 ]
 
 /**
- * Open ClassDojo-style flashcard stage: Mera Timekeeper companion beside a tactile
+ * Open Merantalk interactive flashcard stage: Mera Timekeeper companion beside a tactile
  * 5-language 3D-flipping stacked card deck and 3 floating tilted stickers.
  */
 export const FlashcardStackIllustration = () => {
@@ -990,10 +990,10 @@ export const FlashcardStackIllustration = () => {
       <div className="relative z-20 flex flex-wrap sm:flex-nowrap items-center justify-center gap-x-3 gap-y-10 pt-8">
         <FloatingStickerCard
           kind="clock"
-          label="Jadwal SRS"
+          label="Anti Lupa"
           sublabel="Ulas Otomatis"
           className="-rotate-6"
-          ariaLabel="Jadwal SRS: ulas kosakata otomatis sesuai daya ingat"
+          ariaLabel="Anti Lupa: kosakata muncul lagi tepat sebelum kamu lupa"
         />
         <FloatingStickerCard
           kind="lightbulb"

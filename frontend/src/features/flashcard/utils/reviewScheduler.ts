@@ -1,14 +1,14 @@
 import type { FlashcardCard } from '@/features/flashcard/types/flashcard'
 
-export interface AnkiIntervalPreviews {
+export interface ReviewIntervalPreviews {
   again: string
   hard: string
   good: string
   easy: string
 }
 
-/** Formats day intervals into concise Indonesian Anki labels. */
-export function formatAnkiIntervalDays(days: number): string {
+/** Formats day intervals into concise Indonesian review interval labels. */
+export function formatReviewIntervalDays(days: number): string {
   if (days >= 365) {
     const years = days / 365
     const rounded = Number.isInteger(years) ? String(years) : years.toFixed(1).replace(/\.0$/, '')
@@ -22,10 +22,10 @@ export function formatAnkiIntervalDays(days: number): string {
 }
 
 /**
- * Mirrors backend `CalculateSM2` (Anki-modified SM-2) to display live next-interval
+ * Mirrors backend adaptive review interval scheduling to display live next-interval
  * previews on the 4 self-rating buttons before the user submits a card review.
  */
-export function previewAnkiIntervals(card: FlashcardCard): AnkiIntervalPreviews {
+export function previewReviewIntervals(card: FlashcardCard): ReviewIntervalPreviews {
   const prevReps = card.repetitions ?? 0
   const prevInterval = card.interval_days ?? 0
   const prevEase = (card.ease_factor ?? 0) < 1.3 ? 2.5 : card.ease_factor
@@ -33,7 +33,7 @@ export function previewAnkiIntervals(card: FlashcardCard): AnkiIntervalPreviews 
   const hard =
     prevReps === 0
       ? '10 mnt'
-      : formatAnkiIntervalDays(Math.max(1, Math.round(Math.max(1, prevInterval) * 1.2)))
+      : formatReviewIntervalDays(Math.max(1, Math.round(Math.max(1, prevInterval) * 1.2)))
 
   const nextGoodReps = prevReps + 1
   const goodDays =
@@ -49,13 +49,13 @@ export function previewAnkiIntervals(card: FlashcardCard): AnkiIntervalPreviews 
   return {
     again: '1 mnt',
     hard,
-    good: formatAnkiIntervalDays(goodDays),
-    easy: formatAnkiIntervalDays(easyDays),
+    good: formatReviewIntervalDays(goodDays),
+    easy: formatReviewIntervalDays(easyDays),
   }
 }
 
 /** Local fallback state when a card rated Again (1) fails network sync mid-session. */
-export function resetCardForAnkiRequeue(card: FlashcardCard): FlashcardCard {
+export function resetCardForRequeue(card: FlashcardCard): FlashcardCard {
   const prevEase = (card.ease_factor ?? 0) < 1.3 ? 2.5 : card.ease_factor
   const nextEase = Math.max(1.3, Math.round((prevEase - 0.2) * 100) / 100)
   return {

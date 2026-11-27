@@ -211,7 +211,7 @@ export const curriculumService = {
   },
 
   /**
-   * Persists the learner's mini comprehension quiz outcome and SRS schedule for a grammar point.
+   * Persists the learner's mini comprehension quiz outcome and scheduled review state for a grammar point.
    */
   async submitGrammarCheck(
     grammarPointIdOrCode: string,

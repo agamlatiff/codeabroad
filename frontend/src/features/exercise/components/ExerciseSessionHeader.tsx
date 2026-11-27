@@ -18,7 +18,7 @@ interface ExerciseSessionHeaderProps {
 }
 
 /**
- * Shared sticky top bar for full-screen Learn, SRS Review, and Readiness Exam players,
+ * Shared sticky top bar for full-screen Learn, Mistake Review, and Readiness Exam players,
  * optionally rendering an interleaved Study/Exercise mini-stepper row underneath.
  */
 export const ExerciseSessionHeader = ({

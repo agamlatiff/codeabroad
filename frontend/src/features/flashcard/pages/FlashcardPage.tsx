@@ -58,9 +58,9 @@ import {
 } from '@/features/flashcard/types/flashcard'
 import { FlashcardFlipCard } from '@/features/flashcard/components/FlashcardFlipCard'
 import {
-  previewAnkiIntervals,
-  type AnkiIntervalPreviews,
-} from '@/features/flashcard/utils/ankiScheduler'
+  previewReviewIntervals,
+  type ReviewIntervalPreviews,
+} from '@/features/flashcard/utils/reviewScheduler'
 import { extractApiErrorMessage } from '@/shared/services/api'
 import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
@@ -95,7 +95,7 @@ const ENGLISH_DECK_CATEGORY_OPTIONS: Array<{ value: string; label: string }> = [
 
 interface RatingOption {
   quality: number
-  previewKey: keyof AnkiIntervalPreviews
+  previewKey: keyof ReviewIntervalPreviews
   label: string
   shortcut: string
   className: string
@@ -134,9 +134,9 @@ const RATING_OPTIONS: RatingOption[] = [
 
 /**
  * Hybrid Flashcard page (/flashcards):
- * - Lobby: Scheduled Smart Review banner + JLPT N5-N1 filter tabs + Anki 3-state Topic Decks.
- * - Session: Interactive 3D flip card player with TTS audio, Modified SM-2 interval previews,
- *   and Anki intra-session re-queueing when `Ulangi` is pressed.
+ * - Lobby: Scheduled Smart Review banner + JLPT N5-N1 filter tabs + 3-state Topic Decks.
+ * - Session: Interactive 3D flip card player with TTS audio, adaptive review interval previews,
+ *   and intra-session re-queueing when `Ulangi` is pressed.
  */
 export const FlashcardPage = () => {
   const navigate = useNavigate()
@@ -683,7 +683,7 @@ export const FlashcardPage = () => {
         const remaining = queue.slice(1)
 
         if (quality < 3) {
-          // Anki intra-session re-queue: return `Ulangi` card after up to 3 intermediate cards
+          // Intra-session re-queue: return `Ulangi` card after up to 3 intermediate cards
           const insertOffset = Math.min(3, remaining.length)
           const nextQueue = [
             ...remaining.slice(0, insertOffset),
@@ -835,7 +835,7 @@ export const FlashcardPage = () => {
   }, [queue, cardMap, requeuedIds, completedIds])
 
   const ratingPreviews = useMemo(
-    () => (currentCard ? previewAnkiIntervals(currentCard) : null),
+    () => (currentCard ? previewReviewIntervals(currentCard) : null),
     [currentCard]
   )
 

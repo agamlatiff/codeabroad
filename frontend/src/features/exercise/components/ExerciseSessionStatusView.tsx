@@ -27,7 +27,7 @@ type ExerciseSessionStatusViewProps =
   | ExerciseSessionStatusCardProps
 
 /**
- * Shared full-screen loading & error/status card across Lesson, SRS Review, and Exam players.
+ * Shared full-screen loading & error/status card across Lesson, Mistake Review, and Exam players.
  */
 export const ExerciseSessionStatusView = (props: ExerciseSessionStatusViewProps) => {
   if (props.mode === 'loading') {

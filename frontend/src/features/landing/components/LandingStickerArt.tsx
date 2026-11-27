@@ -29,7 +29,7 @@ function sanitizeSvgId(rawId: string): string {
 }
 
 /**
- * LandingStickerIcon — ClassDojo-style chunky cel-shaded comic vector stickers
+ * LandingStickerIcon — Merantalk chunky cel-shaded comic vector stickers
  * with bold #1E293B outlines, multi-stop gradients, specular highlights, and
  * white die-cut sticker contours.
  */
@@ -1502,7 +1502,7 @@ export interface FloatingStickerCardProps {
 }
 
 /**
- * FloatingStickerCard — ClassDojo-style white tactile squircle card where the
+ * FloatingStickerCard — Merantalk white tactile squircle card where the
  * die-cut sticker artwork pops cleanly over the top border edge.
  */
 export const FloatingStickerCard: FC<FloatingStickerCardProps> = ({

@@ -25,8 +25,8 @@ import { triggerHaptic } from '@/shared/utils/haptics'
 import { playSound } from '@/shared/utils/sound'
 
 /**
- * Headless controller hook for the cross-unit SRS Mistake Review session (/review).
- * Calls submitAnswer with skip_srs_schedule=true and records the SM-2 review once per exercise ID.
+ * Headless controller hook for the cross-unit Mistake Review session (/review).
+ * Calls submitAnswer with skip_srs_schedule=true and records the adaptive review once per exercise ID.
  */
 export const useSrsReviewPage = () => {
   const navigate = useNavigate()
@@ -190,8 +190,8 @@ export const useSrsReviewPage = () => {
           })
           srsSyncedIdsRef.current.add(currentExercise.id)
         } catch {
-          // Keep feedback unblocked even if SRS schedule update fails transiently;
-          // retry queue items can recover SM-2 sync on a subsequent attempt.
+          // Keep feedback unblocked even if scheduled review update fails transiently;
+          // retry queue items can recover review schedule sync on a subsequent attempt.
         }
       }
     } catch (err) {

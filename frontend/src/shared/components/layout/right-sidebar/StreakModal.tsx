@@ -88,7 +88,7 @@ export const StreakModal: FC<StreakModalProps> = ({
           </button>
         </div>
 
-        {/* ── STATS CARDS GRID (DUOLINGO 3D TACTILE TILES) ── */}
+        {/* ── STATS CARDS GRID (MERANTALK 3D TACTILE TILES) ── */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
           {/* Stat 1: Current Streak */}
           <div className="p-2.5 rounded-2xl bg-orange-50/70 border border-orange-200 text-center space-y-0.5 shadow-2xs">
@@ -284,7 +284,7 @@ export const StreakModal: FC<StreakModalProps> = ({
           </div>
         </div>
 
-        {/* ── MOTIVATIONAL DUOLINGO TIP BANNER ── */}
+        {/* ── MOTIVATIONAL MERANTALK TIP BANNER ── */}
         <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200/90 rounded-2xl flex items-center gap-3">
           <div className="w-9 h-9 rounded-2xl bg-amber-100 border border-amber-300 text-amber-700 flex items-center justify-center shrink-0">
             <Sparkle weight="fill" className="w-5 h-5 text-amber-600" />

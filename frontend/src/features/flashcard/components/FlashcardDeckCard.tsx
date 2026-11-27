@@ -150,7 +150,7 @@ function renderDeckIcon(iconName: string) {
 /**
  * Interactive collectible 4-card arc fan widening to the right:
  * - Supports per-card hover peek (lifts touched card to z-30 with reading & meaning)
- * - Highlights SM-2 card status (mastered check stamp, due amber dot)
+ * - Highlights adaptive review card status (mastered check stamp, due amber dot)
  * - Adapts typography cleanly to Japanese word length with zero corner text duplication.
  */
 const FannedDeckCardsPreview = ({

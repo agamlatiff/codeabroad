@@ -19,7 +19,7 @@ const (
 	DefaultFlashcardReviewMessage = "terlalu banyak ulasan flashcard, tunggu sebentar"
 )
 
-// Handler exposes HTTP endpoints for standalone and spaced-repetition flashcards.
+// Handler exposes HTTP endpoints for standalone and adaptive-review flashcards.
 type Handler struct {
 	usecase           Usecase
 	reviewRateLimiter gin.HandlerFunc

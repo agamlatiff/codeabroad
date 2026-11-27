@@ -19,7 +19,7 @@ const CONVERSION_HIGHLIGHTS = [
 
 /**
  * Persuasive right-rail conversion card shown to unauthenticated guests in place of
- * account-only Streak, Quests, SRS, and Daily Vocab widgets (prevents unnecessary 401 queries).
+ * account-only Streak, Quests, Mistake Review, and Daily Vocab widgets (prevents unnecessary 401 queries).
  */
 export const GuestConversionSidebarCard = () => {
   const completedLessons = useGuestTrialStore((s) => s.completedLessons)

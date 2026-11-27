@@ -60,7 +60,7 @@ export const StreakSection: FC = () => {
           )}
         </div>
 
-        {/* 7 Days Duolingo Flame Tokens Row (Clickable) */}
+        {/* 7 Days Merantalk Flame Tokens Row (Clickable) */}
         {isLoading ? (
           <div className="w-full grid grid-cols-7 gap-1 sm:gap-1.5 bg-orange-50/20 border border-orange-100/70 rounded-2xl p-1.5 sm:p-2">
             {weeklyStreakDays.map((item) => (

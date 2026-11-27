@@ -14,7 +14,7 @@ export interface Button3DProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 /**
- * Button3D — Tactile 3D Duolingo-style push-down button.
+ * Button3D — Tactile 3D Merantalk push-down button.
  * Uses BUTTON_3D_TOKENS from elevationTokens.ts as Single Source of Truth.
  */
 export const Button3D = ({

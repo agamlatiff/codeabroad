@@ -22,7 +22,7 @@ interface UseExerciseQuestionInputsOptions {
 }
 
 /**
- * Shared headless input controller for single-question exercise sessions (Lesson & SRS Review).
+ * Shared headless input controller for single-question exercise sessions (Lesson & Mistake Review).
  */
 export const useExerciseQuestionInputs = ({
   currentExercise,

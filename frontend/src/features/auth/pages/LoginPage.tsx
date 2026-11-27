@@ -33,7 +33,7 @@ export const LoginPage = () => {
       heroTitle="Lanjutkan Progres Bahasamu"
       heroSubtitle="Pantau streak harian, kartu kosakata, dan target sertifikasi global bersama Mera."
       speechBubble="Halo! Siap lanjutkan latihan bahasamu hari ini?"
-      helperBanner="Progres latihan, catatan kosakata, dan jadwal ulasan SRS tersinkronisasi di akunmu."
+      helperBanner="Progres belajar, kosakata, dan jadwal latihan ulang tersimpan otomatis di akunmu."
       isBusy={isBusy}
       busyLabel={googleLoading ? 'Memverifikasi akun Google kamu...' : null}
       error={status.error || googleError}
@@ -84,7 +84,7 @@ export const LoginPage = () => {
           />
         </div>
 
-        {/* Submit Button with Duolingo 3D Tactile Push-Down */}
+        {/* Submit Button with Merantalk 3D Tactile Push-Down */}
         <Button3D
           type="submit"
           variant="blue"

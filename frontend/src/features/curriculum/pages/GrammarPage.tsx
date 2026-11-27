@@ -323,7 +323,7 @@ export const GrammarPage = () => {
           searchPlaceholder="Cari pola kalimat, partikel, atau contoh..."
         />
 
-        {/* Scheduled SRS Grammar Review Banner */}
+        {/* Scheduled Smart Grammar Review Banner */}
         {!isLoading && duePointsInScope.length > 0 && (
           <section
             aria-label="Jadwal Ulasan Tata Bahasa"

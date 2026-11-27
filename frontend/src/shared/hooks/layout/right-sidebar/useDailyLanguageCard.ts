@@ -103,7 +103,7 @@ function buildFallbackChoices(current: VocabularyItem, allItems: VocabularyItem[
  * Interactive Daily Language Card controller:
  * - Renders backend flashcard-backed daily vocabularies with Kana/Romaji/Flag metadata.
  * - Supports 2-speed pronunciation audio (`normal` 0.9x and `slow` 0.58x) without XP bypass.
- * - Supports interactive `Belajar | Tebak` quick drill (0 XP; XP & SM-2 stay in Lesson & /flashcards).
+ * - Supports interactive `Belajar | Tebak` quick drill (0 XP; XP & adaptive review stay in Lesson & /flashcards).
  */
 export const useDailyLanguageCard = () => {
   const user = useAuthStore((s) => s.user)

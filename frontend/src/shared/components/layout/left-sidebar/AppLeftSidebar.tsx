@@ -47,7 +47,7 @@ export const AppLeftSidebar = () => {
 
   return (
     <>
-      {/* ── DESKTOP & TABLET LEFT NAV RAIL (76px width — Duolingo 3D Tactile) ── */}
+      {/* ── DESKTOP & TABLET LEFT NAV RAIL (76px width — Merantalk 3D Tactile) ── */}
       <aside className="hidden md:flex flex-col items-center justify-between w-[76px] shrink-0 h-screen sticky top-0 bg-white border-r-2 border-slate-200/90 py-5 z-40 select-none">
         {/* Top Brand Mark */}
         <div className="flex flex-col items-center gap-6">
@@ -222,7 +222,7 @@ export const AppLeftSidebar = () => {
         })}
       </nav>
 
-      {/* ── DUOLINGO 3D ACCOUNT SETTINGS MODAL ── */}
+      {/* ── MERANTALK 3D ACCOUNT SETTINGS MODAL ── */}
       {user && (
         <SettingsModal
           isOpen={isSettingsOpen}

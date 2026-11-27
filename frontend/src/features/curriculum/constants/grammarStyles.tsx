@@ -217,7 +217,7 @@ export function renderCategoryIcon(category: string, className = 'w-3.5 h-3.5'):
   }
 }
 
-/** Returns true when a mastered grammar point has reached or passed its SRS review schedule. */
+/** Returns true when a mastered grammar point has reached or passed its scheduled review time. */
 export function isGrammarPointDueForReview(
   point: Pick<GrammarPoint, 'is_understood' | 'next_review_at'>
 ): boolean {

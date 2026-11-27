@@ -653,7 +653,7 @@ func (r *postgresRepository) UpsertCardProgress(ctx context.Context, progress *C
 	return nil
 }
 
-// ReviewCardTx atomically locks (userID, cardID), computes SM-2 progression, syncs kana mastery, and awards XP.
+// ReviewCardTx atomically locks (userID, cardID), computes adaptive review progression, syncs kana mastery, and awards XP.
 func (r *postgresRepository) ReviewCardTx(
 	ctx context.Context,
 	userID string,

@@ -2,7 +2,7 @@
  * [DOMAIN: AUDIO SERVICE & SOUNDSCAPE SYNTHESIZER]
  * Hardware & Web Audio API synthesizer driver for CodeAbroad.
  * Generates 100% royalty-free, mathematical background ambient soundscapes (Lo-Fi focus & Tokyo Zen)
- * and Duolingo-grade tactile sound effects without requiring any external MP3 files.
+ * and Merantalk tactile sound effects without requiring any external MP3 files.
  */
 
 import {
@@ -258,7 +258,7 @@ class AudioService {
   }
 
   /**
-   * Plays a Duolingo-grade procedural tactile sound effect.
+   * Plays a Merantalk procedural tactile sound effect.
    */
   public play(type: SoundEffectType, volumeMultiplier = 1): void {
     if (this.mode === 'muted') return

@@ -268,7 +268,7 @@ func (u *usecase) SubmitAnswer(ctx context.Context, userID string, req *SubmitEx
 	}, nil
 }
 
-// GetDueReviews retrieves pending spaced repetition cards due today with solution fields stripped
+// GetDueReviews retrieves pending scheduled review cards due today with solution fields stripped
 func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (*SRSQueueResponse, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized
@@ -322,7 +322,7 @@ func (u *usecase) GetDueReviews(ctx context.Context, userID string, limit int) (
 	}, nil
 }
 
-// ProcessReview executes SM-2 memory retention adjustment based on user recall grade (0-5)
+// ProcessReview executes adaptive review schedule adjustment based on user recall grade (0-5)
 func (u *usecase) ProcessReview(ctx context.Context, userID string, req *SubmitSRSReviewRequest) (*UserSRSReview, error) {
 	if userID == "" {
 		return nil, apperror.ErrUnauthorized

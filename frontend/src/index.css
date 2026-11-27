@@ -27,7 +27,7 @@
   --color-code-streak: #FB923C;
   --color-code-verified: #10B981;
 
-  /* ── TACTILE 3D BUTTON SHADOWS (DUOLINGO TASTE) ── */
+  /* ── TACTILE 3D BUTTON SHADOWS (MERANTALK TACTILE) ── */
   --shadow-tactile-code: 0 4px 0 0 #1D4ED8;
   --shadow-tactile-blue: 0 4px 0 0 #1D4ED8;
   --shadow-tactile-blue-hover: 0 5px 0 0 #1D4ED8;
@@ -81,7 +81,7 @@ body {
   }
 }
 
-/* Duolingo-style Brand Font Utility */
+/* Merantalk Brand Font Utility */
 .font-brand {
   font-family: 'Fredoka', 'Plus Jakarta Sans', system-ui, sans-serif;
 }
@@ -102,7 +102,7 @@ body {
   animation: fadeIn 0.35s ease-out both;
 }
 
-/* ── DUOLINGO GAMIFIED MICRO-ANIMATIONS ──────────────────────────────────── */
+/* ── MERANTALK GAMIFIED MICRO-ANIMATIONS ─────────────────────────────────── */
 @keyframes pop {
   0% {
     transform: scale(0.85);
@@ -145,7 +145,7 @@ body {
   animation: float-up-fade 1.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
-/* ── DUOLINGO SPRING SLIDE-OVER DRAWER & BACKDROP ANIMATIONS ── */
+/* ── MERANTALK SPRING SLIDE-OVER DRAWER & BACKDROP ANIMATIONS ── */
 @keyframes drawer-slide-in {
   from {
     transform: translateX(100%);
@@ -373,7 +373,7 @@ body {
   }
 }
 
-/* ── CLASSDOJO-INSPIRED LANDING STUDIO TOKENS & UTILITIES ── */
+/* ── MERANTALK LANDING STUDIO TOKENS & UTILITIES ── */
 :root {
   --landing-surface: #FFFFFF;
   --landing-announcement: #FAFAFA;

@@ -103,7 +103,7 @@ export const RegisterPage = () => {
           <PasswordStrengthMeter password={password} />
         </div>
 
-        {/* Submit Button with Duolingo 3D Tactile Push-Down */}
+        {/* Submit Button with Merantalk 3D Tactile Push-Down */}
         <Button3D
           type="submit"
           variant="blue"

@@ -529,7 +529,7 @@ export const GrammarDetailPage = () => {
         {/* Main 1-Column Focused Learning Flow */}
         {!isLoading && currentPoint && detailAccess.allowed && (
           <article ref={learningCardTopRef} className="space-y-5 scroll-mt-4">
-            {/* Spaced-Repetition Review Banner */}
+            {/* Scheduled Smart Review Banner */}
             {isDueForReview && (
               <div className="rounded-2xl border-2 border-amber-300 bg-gradient-to-r from-amber-50 via-yellow-50/70 to-orange-50/50 px-4 py-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_3px_0_0_#FDE68A]">
                 <div className="flex items-center gap-3 min-w-0">

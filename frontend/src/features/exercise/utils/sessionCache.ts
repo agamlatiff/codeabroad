@@ -32,7 +32,7 @@ export interface InvalidateLearningCachesOptions {
 }
 
 /**
- * Shared TanStack Query cache invalidation helper for exercise/exam/SRS completions.
+ * Shared TanStack Query cache invalidation helper for exercise/exam/scheduled review completions.
  */
 export const invalidateLearningSessionCaches = async (
   queryClient: QueryClient,

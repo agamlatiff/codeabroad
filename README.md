@@ -1,254 +1,168 @@
 <div align="center">
 
-# 🌍 Merantalk
+# Merantalk
 
 ### *Master Languages. Achieve Global Certification.*
 
-A world-class gamified language learning mastery platform engineered for global learners.  
-Combining **Duolingo 3D Tactile Physics**, **Anki Spaced Repetition (SuperMemo SM-2)**, and **Official International Standards**:  
-**JLPT 🇯🇵 (N5–N1)** · **IELTS 🇬🇧 (5.0–8.5)** · **TOEFL 🇺🇸 (60–120)** · **Goethe 🇩🇪 (A1–C1)** · **HSK 🇨🇳 (1–6)** · **DELF 🇫🇷 (A1–C1)**.
+Platform pembelajaran bahasa bergamifikasi taktil untuk pembelajar Indonesia menuju karier, beasiswa, dan sertifikasi global.  
+Memadukan **Desain 3D Taktil Merantalk**, **Pengingat Ulang Otomatis (Anti Lupa)**, dan **Kurikulum Standar Internasional**:  
+**JLPT Jepang (`N5–N1` • Aktif)** · **TOEFL iBT / CEFR Inggris US (`A1–C2` • Aktif)** · *Segera Hadir:* **IELTS UK** · **Goethe Jerman** · **HSK Mandarin** · **DELF Prancis**.
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Go Version](https://img.shields.io/badge/Go-1.23+-00ADD8?logo=go)](https://golang.org)
-[![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5+-3178C6?logo=typescript)](https://typescriptlang.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-2563EB.svg)](LICENSE)
+[![Go Version](https://img.shields.io/badge/Go-1.25+-00ADD8?logo=go)](https://golang.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript)](https://typescriptlang.org)
 [![Tailwind CSS v4](https://img.shields.io/badge/Tailwind-v4-38BDF8?logo=tailwindcss)](https://tailwindcss.com)
-[![Web Audio API](https://img.shields.io/badge/Web%20Audio-Procedural%20SFX-8B5CF6)](frontend/src/services/audioService.ts)
+[![Live Demo](https://img.shields.io/badge/Live-merantalk.vercel.app-10B981)](https://merantalk.vercel.app)
 
-[Documentation](.agents/docs/SKILL.md) · [ERD & DBML (v3.0)](.agents/docs/erd.md) · [PRD (v3.0)](.agents/docs/prd.md) · [Design System](.agents/docs/design-system.md)
+[Live App](https://merantalk.vercel.app) · [Engineering Workflow](.agents/skills/codeabroad-workflow/SKILL.md) · [PRD (v3.2)](.agents/docs/prd.md) · [ERD & DBML (v3.2)](.agents/docs/erd.md) · [OpenAPI 3.0](docs/api/openapi.yaml)
 
 </div>
 
 ---
 
-## 📖 About Merantalk
+## Ringkasan Platform & Konten Aktif
 
-**Merantalk** is an open-source, gamified language acquisition and certification platform. Unlike generic language apps that focus on mindless vocabulary memorization, Merantalk bridges three worlds into a unified pedagogical engine:
+**Merantalk** menjembatani keseruan gamifikasi harian dengan kedalaman tata bahasa kontras Bahasa Indonesia, **Pengingat Ulang Otomatis (Anti Lupa)** agar materi menempel lebih lama, dan simulasi kesiapan ujian resmi internasional:
 
-1. 🎮 **The Tactile Delight of Duolingo 3D:**  
-   Chunky physical 3D buttons (4px depth), an interactive serpentine RPG roadmap, procedural Web Audio synthesizer soundscape (zero network latency), daily streak flames, golden reward chests, and an empathetic companion mascot (**Mera**).
-2. 🧠 **The Pedagogical Rigor of Anki SRS (SuperMemo SM-2):**  
-   Eliminating the forgetting curve. Every mistake made in daily lessons or exams is automatically scheduled into an adaptive Spaced Repetition memory queue with dynamic interval math ($1 \to 3 \to 6 \to 12 \to 30$ days).
-3. 🏛️ **The Standard of Official International Certifications:**  
-   No arbitrary app levels. All curriculum tracks map directly to global certification frameworks (**JLPT, IELTS, TOEFL, Goethe-Zertifikat, HSK, DELF**) with full-length **Diagnostic Mock Exams** simulating official timer conditions, audio rules, and sectional pass marks.
-4. 🧩 **Visual Syntax Scaffolding (Mastery Over Memorization):**  
-   Sentences are deconstructed into color-coded functional syntax blocks:  
-   🟦 **Subject/Topic** · 🟩 **Particle/Case/Preposition** · 🟧 **Object/Target/Context** · 🟪 **Predicate/Verb Tenses**.
+| Jalur Bahasa | Status | Standar Level | Konten Produksi Saat Ini |
+| :--- | :--- | :--- | :--- |
+| **Jepang (`ja`)** | **Aktif Penuh** | **JLPT N5 – N1** | Papan Hiragana/Katakana/Kanji interaktif, **56** Panduan Grammar, **120** Dek Kartu Kosakata (**1.819** kartu), **76** Unit (**496** pelajaran, **4.113** soal 4 pilar) |
+| **Inggris US (`en-us`)** | **Aktif Penuh** | **CEFR A1 – C2 • TOEFL iBT** | **60** Panduan Grammar ber-IPA Amerika, **60** Dek Kartu Kosakata (**900** kartu), **67** Unit (**247** pelajaran, **2.031** soal 4 pilar, **180** dek studi pengantar) |
+| **Inggris UK (`en-gb`)** | Segera Hadir | CEFR A1 – C2 • IELTS | Terpisah dari `en-us` untuk ortografi British, kosakata UK, dan format IELTS Academic |
+| **Jerman (`de`)** | Segera Hadir | Goethe-Zertifikat A1 – C1 | Katalog terdaftar & terkunci aman di Landing/Onboarding |
+| **Mandarin (`zh`)** | Segera Hadir | HSK 1 – 6 | Katalog terdaftar & terkunci aman di Landing/Onboarding |
+| **Prancis (`fr`)** | Segera Hadir | DELF / DALF A1 – C2 | Katalog terdaftar & terkunci aman di Landing/Onboarding |
 
----
-
-## 🗺️ 6 Global Destination Tracks
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   MERANTALK 6 GLOBAL DESTINATION TRACKS                                        │
-├──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┤
-│   🇯🇵 JEPANG      │ 🇬🇧 INGGRIS (UK)  │ 🇺🇸 INGGRIS (US)  │    🇩🇪 JERMAN     │   🇨🇳 MANDARIN    │    🇫🇷 PRANCIS    │
-│  (Tokyo Track)   │  (London Track)  │(Silicon Valley)  │  (Berlin Track)  │ (Shanghai Track) │  (Paris Track)   │
-├──────────────────┼──────────────────┼──────────────────┼──────────────────┼──────────────────┼──────────────────┤
-│ • JLPT N5 – N1   │ • IELTS 5.0–8.5  │ • TOEFL iBT      │ • Goethe A1 – C1 │ • HSK 1 – 6      │ • DELF A1 – C1   │
-│ • Kanji, Kana    │ • UK Spelling    │ • US Spelling    │ • Artikel Kasus  │ • Hanzi & Pinyin │ • Gender Benda   │
-│   & Romaji       │   (colour/lift)  │   (color/elev.)  │   (Der/Die/Das)  │   4 Nada (Tones) │ • Passé Composé  │
-│ • Partikel SOV   │ • Non-Rhotic RP  │ • Rhotic Flap-T  │ • V2 & Perfekt   │ • Aspek '了'     │ • Aksen é/è/ç    │
-│ • Tiket CGK✈️HND  │ • Tiket CGK✈️LHR │ • Tiket CGK✈️SFO │ • Tiket CGK✈️BER │ • Tiket CGK✈️PEK │ • Tiket CGK✈️CDG │
-└──────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┘
-```
+**Total Bank Materi Aktif di Database Produksi:** **143 Unit** · **743 Pelajaran** · **6.144 Latihan 4 Pilar** · **116 Panduan Grammar Interaktif** · **180 Dek Kartu Kosakata (2.719 Kartu)**.
 
 ---
 
-## 🎮 Core Learning Features
+## Fitur Utama
 
-| Feature | Description |
+| Fitur | Deskripsi |
 | :--- | :--- |
-| 🧩 **Visual Syntax Builder** | Interactive drag-and-drop / tap-to-assemble sentence builder with color-coded syntax roles and distractor tiles |
-| 👂 **Multi-Pillar 4 Indera** | Reading (dynamic Furigana `<ruby>`), Listening (native audio + 0.75x Turtle mode), Writing (multi-script tolerance), Speaking (Web Speech API mic recognition) |
-| 🦉 **Mera AI Diagnostic Coach** | Instant conceptual error analysis via `diagnostic_rubric` explaining *why* a specific mistake was made (e.g. particle `で` vs `に`, case `Akkusativ` vs `Dativ`) |
-| 🗂️ **Automated Anki SRS Decks** | SuperMemo SM-2 spaced repetition queue auto-scheduling failed exercises into daily review warm-ups |
-| 📋 **Diagnostic Mock Exam Engine** | Full-length timed mock exams simulating official testing conditions, sectional cutoffs, and pass probability prediction |
-| 🛡️ **Adaptive Placement Test** | 10-minute dynamic test allowing experienced learners to skip beginner levels with auto-completed prior units and zero-clutter SRS |
-| ⚡ **Multi-Language Switcher** | Instant language drawer switching in TopBar with **Zero Collision Architecture** (isolated progress & SRS per language) |
-| 🔊 **Procedural Web Audio Engine** | 13 Duolingo-grade procedural tactile sound effects synthesized in browser with zero network download latency |
-| 🎫 **3D Tactile Boarding Pass** | Interactive onboarding milestone ticket (`CGK ✈️ HND`, `CGK ✈️ BER`, etc.) granting +50 XP welcome bonus |
-| 🔥 **Daily Streak & Golden Chest** | Flame streak consistency tracking with 3D golden chests unlocked at 50 XP daily habit milestones |
+| **Learn-Before-Quiz Study Batches** | Kartu pengantar materi bertahap (*2 Materi → Latihan → 2 Materi*) lengkap dengan audio kecepatan normal (`1.0x`) & pelan (`0.6x`), mnemonik Bahasa Indonesia, dan laci *Intip Materi* |
+| **4 Pilar Kemahiran Interaktif** | `fill_blank` (*Reading*), `listening_choice` (*Listening*), `sentence_builder` (*Writing* balok kata + pengecoh), dan `speaking_repeat` (*Speaking* via Web Speech API) |
+| **3-Step Interactive Grammar Studio** | Setiap poin grammar (`GP-JA-*` & `GP-EN-*`) memiliki alur *1. Pahami* (analogi Indonesia + bedah kata berwarna + jebakan umum), *2. Coba Rakit*, dan *3. Tes Cepat* 3 soal |
+| **Pengingat Ulang Otomatis (Anti Lupa)** | Antrean latihan ulang otomatis untuk soal yang masih keliru (`/review`) **dan** 180 dek **Kartu Kosakata** bertingkat dengan jadwal latihan ulang adaptif agar **Ingat Lebih Lama** (`/flashcards`) |
+| **Papan Aksara Jepang Interaktif** | Tabel Hiragana, Katakana, dan Kanji lengkap dengan latihan kuis per baris (`/kana/:script`) yang otomatis disembunyikan saat pengguna belajar bahasa beraksara Latin (`en-us`) |
+| **Mode Coba Tanpa Login & 3-Tier Akses** | **Guest:** Unit 1 `N5` / `A1` gratis tanpa akun (progres tersimpan lokal & disinkronkan otomatis saat daftar); **Akun Gratis:** `N5–N3` & `A1–B1` penuh; **Merantalk Pro:** `N2–N1` & `B2–C2` |
+| **Tes Penempatan & Readiness Mock Exam** | Tes diagnostik 15 soal saat Onboarding untuk lompat level otomatis + Ujian Simulasi Kesiapan 4 pilar (`order_index = 99`) di tiap level |
+| **Misi Harian, Peti Harta & Liga Mingguan** | 3 misi harian rotasi WIB, Peti Harian bertingkat, Lencana Kehormatan Bulanan, Toko Gems (*Streak Freeze*, *2x XP Booster*), dan Liga Mingguan (`Bronze` → `Diamond`) |
+| **Procedural Web Audio & Multi-Locale TTS** | Synthesizer efek suara taktil via Web Audio API (`audioService.ts`) + pelafalan otomatis `ja-JP` dan `en-US` tanpa aset MP3 eksternal berat |
 
 ---
 
-## 🛠️ Tech Stack & Architecture
+## Tech Stack & Arsitektur
 
-### Frontend
-- **Framework:** React 18 + TypeScript 5 (Strict **Zero `any`** policy)
-- **Tooling:** Vite, Tailwind CSS v4 (`@theme`)
-- **State Management:** **Zustand** (client auth & UI state) + **TanStack Query** (server caching & mutations)
-- **Architecture:** **Headless Hook Pattern** (all API & business logic isolated into custom hooks, JSX pages remain purely presentational)
-- **Audio & Speech:** **Web Audio API** (Procedural Synthesizer in `audioService.ts`) + **Web Speech API** (`SpeechRecognition` & `speakLanguage`)
-- **Design Primitives:** `<Button3D>`, `<Card3D>`, `<RoadmapNode3D>`, `<Modal3D>`, `<Input>`, `<MetricTile>`, `<BadgePill>`, `<ProgressBar3D>`, `<KodiMascot>`, `<Logo>`
+### Frontend (`frontend/`)
+- **Core:** React 19 + TypeScript 5.9 (**Zero `any`** policy), Vite 8, Tailwind CSS v4
+- **State & Data:** **Zustand** (`authStore`, `guestTrialStore`, `onboardingStore`, `audioStore`) + **TanStack Query v5** + `react-hook-form` + `zod`
+- **Arsitektur:** **Feature-Sliced + Headless Hook Pattern** (`features/<domain>/{components,hooks,pages,services,store,types,utils}` + `shared/`)
+- **UI & Aksesibilitas:** **Desain 3D Taktil Merantalk** (Royal Blue `#2563EB`), SVG Flag Illustrations (Zero Raw Emoji Policy), *skeleton* pemuatan konsisten, dan proteksi anti-*double-submit* global
 
-### Backend
-- **Language:** Golang 1.23+ with Gin Web Framework
-- **Architecture:** **Strict Clean Architecture** (`delivery/http/` ➔ `usecase/` ➔ `repository/` ➔ `domain/`)
-- **Authentication:** Stateless short-lived JWT Access Token (15m) + Stateful Rotated Refresh Token in Redis (30d)
-- **Database:** PostgreSQL 16 (`pgcrypto`) with Normalized 3NF Curriculum & JSONB Interactive Payloads
-- **Cache:** Redis 7 (sessions, active streaks, daily review queue cache)
-- **Messaging:** Apache Kafka (event-driven async processing)
-
-### Infrastructure
-- **Containers:** Docker + Docker Compose (PostgreSQL, Redis, Kafka, Zookeeper)
-- **Reverse Proxy:** Nginx with security headers and SSL termination
+### Backend (`backend/`)
+- **Core:** Go 1.25+ dengan Gin Web Framework
+- **Arsitektur:** **Modular Clean Architecture** per domain (`internal/app/<module>/{domain,repository,usecase,handler,helper}.go` + `internal/shared/{apperror,middleware,progression,response,router}`)
+- **Autentikasi:** JWT Access Token berumur pendek (15 menit) + Rotated Refresh Token di Redis (30 hari) + **Google OAuth 2.0** (`/api/v1/auth/google`)
+- **Database & Cache:** **Neon Serverless PostgreSQL 16** (`pgx/v5`, 32 tabel ternormalisasi + JSONB) & **Upstash Redis TLS** (sesi refresh token, *rate limiting*, dan *cache* kurikulum)
+- **Deployment:** Vercel Serverless Go Function di region **Singapura (`sin1`)** (`backend/api/index.go` & `backend/vercel.json`) + Vercel Static SPA CDN (`frontend/vercel.json`)
 
 ---
 
-## 🗄️ Database Architecture & ERD (v3.0)
-
-Merantalk v3.0 unites **Core Identity & Gamification** with the **Universal Language Curriculum & SRS Engine**:
-
-```text
-┌────────────────────────────────────────────────────────┐
-│               PILLAR 1: AUTH CORE                      │
-│  users (UUID, Email, Password Hash)                    │
-└───────────────────────────┬────────────────────────────┘
-                            │ (1-to-1 FK user_id)
-        ┌───────────────────┴───────────────────┐
-        ▼                                       ▼
-┌──────────────────────────────┐ ┌──────────────────────────────┐
-│  PILLAR 2: USER PROFILES     │ │  PILLAR 3: GAME LOOP ENGINE  │
-│  user_profiles               │ │  user_gamification           │
-│  - Name, Username, Bio       │ │  - XP, Level, Streak, Gems   │
-│  - Roadmap View Preference   │ │  - Last Active Timestamp     │
-│  - Onboarding Wizard Flags   │ └──────────────┬───────────────┘
-└──────────────────────────────┘                │ (1-to-Many FK user_id)
-        ┌───────────────────────────────────────┴───────────────────────┐
-        ▼                                       ▼                       ▼
-  user_inventories                     user_activity_logs       user_daily_chest_claims
-   (Consumables & Bag)                 (7-Day Consistency)      (Milestone Chests)
-
-┌────────────────────────────────────────────────────────────────────────┐
-│             UNIVERSAL LANGUAGE CURRICULUM & 4-PILLAR EXERCISES         │
-│  languages (6 tracks: ja, en-gb, en-us, de, zh, fr + supported_scripts)│
-│       │ (1:N)                                                          │
-│       ▼                                                                │
-│  proficiency_levels (JLPT N5-N1, CEFR A1-C1, HSK 1-6 + tier)           │
-│       ├───────────────────┬───────────────────┐                        │
-│       ▼                   ▼                   ▼                        │
-│  grammar_points         units               readiness_exam_attempts    │
-│  (category: tense,     (curriculum &        (4-Pillar Score & Report)  │
-│   conjugation,          mock exam)                                     │
-│   particles)              │                                            │
-│       │                   ▼                                            │
-│       │                lessons (daily node)                            │
-│       │                   │                                            │
-│       └─────────┬─────────┘                                            │
-│                 ▼                                                      │
-│             exercises                                                  │
-│             - skill_pillar: reading, listening, writing, speaking      │
-│             - type: sentence_builder, fill_blank, speaking_repeat      │
-│             - content, correct_answer, acceptable_answers, rubric      │
-└────────────────────────────────────────────────────────────────────────┘
-
-┌────────────────────────────────────────────────────────────────────────┐
-│             USER PROGRESS, ANKI SRS & READINESS DIAGNOSTICS            │
-│  users ──(1:N)──> user_language_enrollments (Active study languages)   │
-│  users ──(1:N)──> user_lesson_progress      (Node completion & score)  │
-│  users ──(1:N)──> user_exercise_attempts    (Item-level attempt log)   │
-│  users ──(1:N)──> user_srs_reviews          (Anki SM-2 Spaced Memory)  │
-│  users ──(1:N)──> readiness_exam_attempts   (Mock Exam 4-Pillar Score) │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-> 💡 **Interactive Visualizer:** Copy-paste the full DBML script from [`.agents/docs/erd.md`](.agents/docs/erd.md) directly into **[dbdiagram.io](https://dbdiagram.io)**.
-
----
-
-## 🗂️ Project Structure
+## Struktur Proyek
 
 ```text
 codeabroad/
-├── .agents/                    # 🧠 Master AI Agent & Engineering Central
-│   └── docs/
-│       ├── SKILL.md            # Master Autonomous Engineering Workflow (SSOT)
-│       ├── erd.md              # Database Schema (v3.0 Normalized) & DBML
-│       ├── prd.md              # Product Requirements Document (v3.0)
-│       └── design-system.md    # Duolingo 3D Design System Specification (v3.1)
+├── .agents/
+│   ├── docs/
+│   │   ├── erd.md                      # Skema 32 tabel PostgreSQL 16, DBML & inventaris migrasi (v3.2)
+│   │   └── prd.md                      # Product Requirements Document & alur fitur saat ini (v3.2)
+│   ├── rules/                          # Aturan disiplin scope, minimal diff, dan standar teknis
+│   └── skills/codeabroad-workflow/     # Panduan workflow engineering Merantalk (SKILL.md)
 │
-├── frontend/                   # React 18 + TypeScript Client
+├── docs/api/
+│   └── openapi.yaml                    # Kontrak REST API OpenAPI 3.0.3 lengkap (50+ endpoint)
+│
+├── backend/                            # Go 1.25+ Modular Clean Architecture API
+│   ├── api/index.go                    # Entrypoint Vercel Serverless Function (region: sin1)
+│   ├── cmd/api/main.go                 # Entrypoint server HTTP lokal / container
+│   ├── config/                         # Konfigurasi environment & validasi fail-fast
+│   ├── infrastructure/                 # Koneksi pool PostgreSQL (pgx/v5) & Redis (TLS)
+│   ├── internal/
+│   │   ├── app/                        # Modul domain: auth, user, onboarding, language,
+│   │   │                               # curriculum, exercise, flashcard, gamification,
+│   │   │                               # leaderboard, health
+│   │   └── shared/                     # apperror, middleware, progression, response, router
+│   └── migrations/                     # 17 pasang migrasi sekuensial (000001 .. 000017)
+│
+├── frontend/                           # React 19 + TypeScript 5.9 SPA
 │   └── src/
-│       ├── components/
-│       │   ├── ui/             # Single Source of Truth 3D UI Primitives (Button3D, Card3D, etc.)
-│       │   └── guards/         # ProtectedRoute & Onboarding enforcement
-│       ├── hooks/              # Headless controller hooks (useLogin, useLearnWorkspace, etc.)
-│       ├── pages/              # Pure declarative page layouts
-│       ├── services/           # Typed Axios HTTP endpoints + AudioService (Web Audio procedural SFX)
-│       ├── store/              # Zustand global client stores (auth, audio, roadmap)
-│       ├── tokens/             # Design token constants (TOKENS)
-│       └── types/              # Strict TypeScript interfaces & DTOs (Zero 'any')
+│       ├── features/                   # Slice fitur: landing, auth, onboarding, curriculum,
+│       │                               # exercise, flashcard, gamification, leaderboard,
+│       │                               # pricing, user
+│       └── shared/                     # UI primitives (Button3D, Skeleton, TierUpgradeBanner),
+│                                       # layout (TopBar, Left/Right Sidebar, TrackSwitcher),
+│                                       # audioService, tokens, constants, hooks, utils
 │
-├── backend/                    # Go 1.23+ Clean Architecture API
-│   ├── cmd/api/                # Main entrypoint
-│   └── internal/
-│       ├── config/             # Environment configs
-│       ├── delivery/http/      # Gin HTTP controllers, routes & middleware
-│       ├── domain/             # Pure entities, domain interfaces & business errors
-│       ├── repository/         # Postgres & Redis persistence implementations
-│       └── usecase/            # Pure business workflows
-│
-└── docker-compose.yml          # Local infra orchestration (Postgres, Redis, Kafka)
+└── docker-compose.yml                  # Orkestrasi PostgreSQL & Redis lokal
 ```
 
 ---
 
-## 🚀 Quickstart
+## Menjalankan Secara Lokal (Quickstart)
 
-### Prerequisites
-- Docker & Docker Compose
-- Node.js 20+ & npm
-- Go 1.23+
+### Prasyarat
+- Go `1.25+`
+- Node.js `20+` & `npm`
+- PostgreSQL `16+` & Redis `7+` (via Docker Compose atau Neon/Upstash)
 
-### 1. Clone & Setup Environment
+### 1. Salin Konfigurasi Environment
 ```bash
-git clone https://github.com/agamlatiff/codeabroad.git
-cd codeabroad
-
-cp backend/.env.example backend/.env
-cp frontend/.env.example frontend/.env
+cp .env.example .env
 ```
 
-### 2. Start Infrastructure
+### 2. Jalankan PostgreSQL & Redis Lokal (Opsional jika tidak memakai cloud DB)
 ```bash
-docker compose up -d postgres redis kafka
+docker compose up -d postgres redis
 ```
 
-### 3. Run Database Migrations
-Apply normalized schema tables, official proficiency levels, grammar banks, and seed lessons:
-```bash
-make db-migrate-up
-```
+### 3. Terapkan Migrasi Database (`000001` – `000017`)
+Jalankan seluruh berkas `.up.sql` di `backend/migrations/` secara berurutan menggunakan `golang-migrate` atau `psql`.
 
-### 4. Run Backend API
+### 4. Jalankan Backend API (`http://localhost:8080`)
 ```bash
 cd backend
+go vet ./...
+go test -count=1 ./...
 go run cmd/api/main.go
 ```
 
-### 5. Run Frontend App
+### 5. Jalankan Frontend Web (`http://localhost:5173`)
 ```bash
 cd frontend
 npm install
+npx eslint .
 npm run dev
 ```
 
-Visit `http://localhost:5173` to start your language mastery journey!
+---
+
+## Verifikasi Kualitas (CI Gate)
+
+Sebelum melakukan *commit* atau *deploy*, pastikan keempat gerbang verifikasi berikut lulus 100%:
+
+```bash
+# Backend
+cd backend && go vet ./... && go test -count=1 ./...
+
+# Frontend
+cd frontend && npx eslint . && npm run build
+```
 
 ---
 
-## 📜 Engineering Standards & Policies
+## Lisensi
 
-1. **Zero `any` TypeScript:** All frontend code must use strict types. Type casting to `any` is strictly prohibited.
-2. **Headless Hook Pattern:** Components in `frontend/src/pages` and `frontend/src/components` must remain presentational. All state, API calls, and lifecycle logic live in dedicated custom hooks.
-3. **Strict Clean Architecture:** Domain entities and repository interfaces live in `backend/internal/domain`. HTTP handlers never communicate directly with repositories; they strictly call `usecase`.
-4. **Duolingo 3D Tactile Design Standard:** All buttons, cards, and modal surfaces must follow the tactile 3D physical depth token system defined in [`design-system.md`](.agents/docs/design-system.md).
-5. **Zero Raw Emoji Policy:** Database and UI components must use clean vector 3D SVG flag badges instead of raw OS Unicode emojis.
-
----
-
-## 📄 License
-
-Merantalk is licensed under the [MIT License](LICENSE).
+Merantalk dilisensikan di bawah [MIT License](LICENSE).

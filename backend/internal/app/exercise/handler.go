@@ -57,7 +57,7 @@ const (
 	DefaultExerciseSubmitLimit = 30
 	// DefaultExerciseSubmitMessage is the rate-limit error message returned for exercise submissions.
 	DefaultExerciseSubmitMessage = "too many exercise submissions, please wait a moment"
-	// DefaultSRSReviewLimit is the default per-minute limit for spaced repetition reviews.
+	// DefaultSRSReviewLimit is the default per-minute limit for scheduled exercise reviews.
 	DefaultSRSReviewLimit = 30
 	// DefaultSRSReviewMessage is the rate-limit error message returned for SRS reviews.
 	DefaultSRSReviewMessage = "too many SRS review submissions, please wait a moment"

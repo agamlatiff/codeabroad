@@ -19,7 +19,7 @@ export const EXAM_RESULT_QUERY_KEY = ['exams', 'result'] as const
 
 export const exerciseService = {
   /**
-   * Submits a single exercise answer to backend for evaluation, XP credit, and optional SRS scheduling (skipped when skip_srs_schedule is true).
+   * Submits a single exercise answer to backend for evaluation, XP credit, and optional scheduled review tracking (skipped when skip_srs_schedule is true).
    */
   submitAnswer: async (
     payload: SubmitExerciseAnswerRequest,
@@ -34,7 +34,7 @@ export const exerciseService = {
   },
 
   /**
-   * Retrieves due Spaced Repetition System (SRS) flashcards for the authenticated user.
+   * Retrieves due adaptive review items for the authenticated user.
    */
   getDueReviews: async (
     limit = 20,
@@ -48,7 +48,7 @@ export const exerciseService = {
   },
 
   /**
-   * Submits an SM-2 quality rating (0-5) for a due flashcard.
+   * Submits a review recall rating (0-5) for a due review item.
    */
   processReview: async (
     payload: SubmitSRSReviewRequest,

@@ -84,7 +84,7 @@ const COMPARISON_ROWS: Array<{
     pro: 'Semua Level N5–N1 (56 Materi)',
   },
   {
-    feature: 'Flashcard & Pengingat SRS',
+    feature: 'Kartu Kosakata & Pengingat Ulang',
     guest: 'JLPT N5 (40 Deck)',
     free: 'JLPT N5, N4, N3 (80 Deck)',
     pro: 'Semua Level N5–N1 (120 Deck)',
@@ -364,7 +364,7 @@ export const PricingPage = () => {
                   'Bebas lompat ke unit mana pun tanpa harus urut',
                   'Buka penuh Kurikulum N2 & N1 (20 Unit · 600 Soal)',
                   '20 Panduan Grammar bisnis, berita & akademik N2–N1',
-                  '40 Deck Flashcard N2–N1 (608 kartu) + SRS',
+                  '40 Deck Kartu Kosakata N2–N1 (608 kartu) dengan pengingat otomatis',
                 ].map((item) => (
                   <li key={item} className="flex items-start gap-2">
                     <CheckCircle

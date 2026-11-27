@@ -33,7 +33,7 @@ interface LessonFeedbackFooterProps {
 }
 
 /**
- * Duolingo-style sticky bottom verification & diagnostic feedback footer.
+ * Merantalk tactile sticky bottom verification & diagnostic feedback footer.
  */
 export const LessonFeedbackFooter = ({
   submittedResult,

@@ -74,7 +74,7 @@ export const AppRightSidebar = ({
       {/* ── SUBTLE SECTION DIVIDER ── */}
       <div className="h-[1px] bg-slate-100" />
 
-      {/* ── 3. ULASAN SOAL YANG PERNAH SALAH (SRS /review) ── */}
+      {/* ── 3. ULASAN SOAL YANG PERNAH SALAH (/review) ── */}
       <SrsMistakeReviewCard />
 
       {/* ── SUBTLE SECTION DIVIDER ── */}

@@ -60,7 +60,7 @@ const GUEST_FEATURES = [
 const FREE_ACCOUNT_FEATURES = [
   'Akses penuh kurikulum N5, N4 hingga N3',
   'Progres, XP & streak tersimpan lintas perangkat',
-  'Latihan Flashcard SRS terjadwal otomatis',
+  'Kartu kosakata yang muncul lagi tepat sebelum kamu lupa',
   'Belajar bertahap mengikuti rute unit',
 ] as const
 
@@ -68,7 +68,7 @@ const PRO_FEATURES = [
   'Akses penuh seluruh level N5 hingga N1',
   'Bebas lompat ke unit atau materi mana saja',
   'Jalur khusus karier, wawancara & beasiswa',
-  'Review SRS & latihan mendalam tanpa batas',
+  'Latihan ulang tanpa batas sampai benar-benar hafal',
 ] as const
 
 export const LandingPricingSection = () => {

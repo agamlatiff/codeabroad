@@ -116,7 +116,7 @@ export const LandingHero = () => {
       className="relative bg-white pt-8 pb-12 sm:pt-14 sm:pb-20 px-4 sm:px-6 overflow-x-clip"
     >
       <div className="max-w-[1140px] mx-auto text-center">
-        {/* Centered ClassDojo Display Headline */}
+        {/* Centered Merantalk Display Headline */}
         <h1 className="font-brand font-black text-[#1E293B] text-[30px] sm:text-5xl lg:text-[62px] leading-[1.12] tracking-tight max-w-4xl mx-auto">
           Belajar bahasa asing untuk karier, beasiswa, dan merantau.
         </h1>

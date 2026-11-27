@@ -45,7 +45,7 @@ const TRUST_PILLARS: readonly TrustPillar[] = [
   {
     id: 'pillar-adaptive',
     stickerKind: 'clock',
-    badge: 'Jadwal SRS',
+    badge: 'Anti Lupa',
     title: 'Jadwal Ulasan Adaptif',
     description:
       'Materi yang belum mantap dijadwalkan ulang otomatis saat kamu belajar memakai akun gratis.',

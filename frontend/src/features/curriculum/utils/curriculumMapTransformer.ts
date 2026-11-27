@@ -21,7 +21,7 @@ const resolveLessonStatus = (
 
 /**
  * Pure single-pass transformer converting backend CurriculumResponse into
- * Duolingo 3D Serpentine Map Unit structures strictly respecting backend unlock status.
+ * Merantalk 3D Serpentine Map Unit structures strictly respecting backend unlock status.
  */
 export const transformCurriculumToMapUnits = (
   curriculum: CurriculumResponse | null | undefined

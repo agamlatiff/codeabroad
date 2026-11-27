@@ -10,7 +10,7 @@ import { useAudioStore } from '@/shared/store/audioStore'
 import { ArrowsClockwise, Brain } from '@phosphor-icons/react'
 
 /**
- * Interactive cross-unit Spaced Repetition Mistake Review session (/review).
+ * Interactive cross-unit adaptive Mistake Review session (/review).
  */
 export const SrsReviewPage = () => {
   const [isExitConfirmOpen, setIsExitConfirmOpen] = useState(false)

@@ -33,7 +33,7 @@ function formatReviewHint(iso?: string | null): string | null {
 
 /**
  * Interactive 3-question comprehension check right inside GrammarDetailPage.
- * Passing 3/3 marks the grammar point as "Paham" and schedules spaced-repetition review.
+ * Passing 3/3 marks the grammar point as "Paham" and schedules adaptive smart review.
  */
 export const GrammarMiniQuizCard: FC<GrammarMiniQuizCardProps> = ({
   questions,

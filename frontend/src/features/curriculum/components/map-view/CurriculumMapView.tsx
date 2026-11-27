@@ -26,7 +26,7 @@ const computeInitialVisibleCount = (totalUnits: number, activeUnitIndex: number)
 
 /**
  * CurriculumMapView
- * Interactive Duolingo 3D Serpentine Path view powered directly by backend CurriculumResponse.
+ * Interactive Merantalk 3D Serpentine Path view powered directly by backend CurriculumResponse.
  */
 export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
   className = '',

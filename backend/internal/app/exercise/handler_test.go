@@ -173,7 +173,7 @@ func TestHTTP_ProcessReview_AllowsZeroQuality(t *testing.T) {
 	r.ServeHTTP(w, req)
 
 	if w.Code != http.StatusOK {
-		t.Fatalf("expected 200 OK when submitting SM-2 quality 0, got: %d, body: %s", w.Code, w.Body.String())
+		t.Fatalf("expected 200 OK when submitting review quality 0, got: %d, body: %s", w.Code, w.Body.String())
 	}
 }
 

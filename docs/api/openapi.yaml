@@ -3,15 +3,23 @@ info:
   title: Merantalk API Documentation
   description: >
     Official RESTful API documentation for Merantalk — Global Language Mastery Platform,
-    Anki SRS & Diagnostic Exam Engine.
-    Covers Authentication, User Profiles, Onboarding, Languages, Curriculum, Exercises,
-    Vocabularies, Spaced Repetition (SRS), Mock Exams, Gamification, and Leaderboards.
-  version: 3.0.0
+    Adaptive Smart Review & Diagnostic Exam Engine.
+    Supports active tracks for Japanese (JLPT N5–N1, `ja`) and American English
+    (CEFR A1–C2 / TOEFL iBT, `en-us`), with Guest Trial, Free, and Merantalk Pro tiering,
+    Interactive Grammar Guides, Kana & Kanji Mastery Board, Adaptive Scheduled Review for
+    Exercises & Vocabulary Flashcards, Readiness Mock Exams, Daily Quests, 3-Tier Chests,
+    Monthly Challenge Badges, Arcade Shop & 2x XP Boosters, and Weekly Leagues (anchored to WIB / Asia/Jakarta UTC+7).
+    All JSON request bodies are capped at 1 MB (`413 PAYLOAD_TOO_LARGE`) and protected mutations
+    enforce Redis-backed distributed rate limiting (`429 TOO_MANY_REQUESTS` with
+    `X-RateLimit-Limit`, `X-RateLimit-Remaining`, and `Retry-After` headers).
+  version: 3.2.0
   contact:
     name: Merantalk Engineering Team
-    url: https://github.com/agamlatiff/codeabroad
+    url: https://github.com/agamlatiff/merantalk
 
 servers:
+  - url: https://merantalk-d21r.vercel.app/api/v1
+    description: Production API Server (Vercel Serverless Singapore sin1)
   - url: http://localhost:8080/api/v1
     description: Local Development API Server
 
@@ -48,6 +56,10 @@ components:
         code:
           type: string
           example: SPECIFIC_ERROR_CODE
+        details:
+          type: object
+          additionalProperties: true
+          nullable: true
 
   responses:
     BadRequestError:
@@ -205,6 +217,10 @@ paths:
               properties:
                 code:
                   type: string
+                  maxLength: 2048
+                redirect_uri:
+                  type: string
+                  description: "Optional OAuth 2.0 redirect URI (defaults to \"postmessage\"; custom URIs must match an allowed origin's /login or /register path)"
                 remember_me:
                   type: boolean
       responses:
@@ -215,11 +231,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Invalid payload or Google OAuth not configured on server (`GOOGLE_OAUTH_NOT_CONFIGURED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          description: "Google token verification failed (`GOOGLE_AUTH_FAILED`) or Google email unverified (`GOOGLE_EMAIL_NOT_VERIFIED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
-          description: Conflict — Google account already linked to another user or matching local email is unverified (`LOCAL_ACCOUNT_UNVERIFIED`)
+          description: "Conflict — Google account already linked to another user (`OAUTH_ACCOUNT_CONFLICT`), matching local email is unverified (`LOCAL_ACCOUNT_UNVERIFIED`), or username collision (`USERNAME_TAKEN`)"
           content:
             application/json:
               schema:
@@ -309,20 +333,22 @@ paths:
     get:
       tags: [Users]
       security: [{ BearerAuth: [] }]
-      summary: Get authenticated user profile
+      summary: Get authenticated user profile, subscription tier, and gamification stats
       responses:
         "200":
-          description: User profile retrieved
+          description: "User profile retrieved (3-pillar aggregate including subscription_tier, subscription_expires_at, xp_booster_expires_at, profile, and gamification stats)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
     patch:
       tags: [Users]
       security: [{ BearerAuth: [] }]
-      summary: Update authenticated user profile
+      summary: Update authenticated user profile (at least one field required)
       requestBody:
         required: true
         content:
@@ -340,6 +366,7 @@ paths:
                 avatar_url:
                   type: string
                   maxLength: 500
+                  description: Valid https:// URL or relative path starting with /
                 daily_goal_minutes:
                   type: integer
                   enum: [5, 15, 30, 45]
@@ -356,6 +383,8 @@ paths:
           $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
 
@@ -363,7 +392,7 @@ paths:
     get:
       tags: [Users]
       security: [{ BearerAuth: [] }]
-      summary: Get 7-day learning activity logs and streak status
+      summary: Get 7-day WIB learning activity logs, 90-day active dates, and streak status
       responses:
         "200":
           description: Activity logs retrieved
@@ -373,6 +402,8 @@ paths:
                 $ref: "#/components/schemas/SuccessResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
 
   /users/me/daily-rewards:
     get:
@@ -393,7 +424,7 @@ paths:
     post:
       tags: [Users]
       security: [{ BearerAuth: [] }]
-      summary: Claim daily reward (vocab_quest or golden_chest; golden_chest awards +50 XP and +20 Gems after 50+ daily XP)
+      summary: "Claim daily reward (vocab_quest awards +30 XP after 3+ flashcards reviewed today WIB; golden_chest awards +50 XP and +20 Gems after 50+ non-chest daily XP WIB)"
       requestBody:
         required: true
         content:
@@ -427,7 +458,7 @@ paths:
   /onboarding/languages:
     get:
       tags: [Onboarding]
-      summary: List available target languages for onboarding
+      summary: "List active target destination languages for onboarding (e.g. ja, en-us)"
       responses:
         "200":
           description: Onboarding languages retrieved
@@ -486,6 +517,7 @@ paths:
                   format: uuid
                 placement_answers:
                   type: array
+                  maxItems: 50
                   items:
                     type: object
                     required: [exercise_id, user_answer]
@@ -495,6 +527,8 @@ paths:
                         format: uuid
                       user_answer:
                         type: string
+                        minLength: 1
+                        maxLength: 2000
       responses:
         "200":
           description: Onboarding completed
@@ -519,7 +553,7 @@ paths:
   /languages:
     get:
       tags: [Languages]
-      summary: List all supported languages
+      summary: "List all supported languages (active tracks: Japanese ja & American English en-us, plus upcoming tracks)"
       responses:
         "200":
           description: Languages retrieved
@@ -531,7 +565,7 @@ paths:
   /languages/{id}:
     get:
       tags: [Languages]
-      summary: Get language details and proficiency levels
+      summary: "Get language details and proficiency levels (e.g. JLPT N5–N1 for ja, CEFR A1–C2 for en-us)"
       parameters:
         - name: id
           in: path
@@ -570,7 +604,7 @@ paths:
     post:
       tags: [Languages]
       security: [{ BearerAuth: [] }]
-      summary: Enroll authenticated user into an active destination language track
+      summary: "Enroll authenticated user into an active destination language track (awards multilingual_explorer badge on 2+ tracks)"
       requestBody:
         required: true
         content:
@@ -641,17 +675,25 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: Get curriculum units and lessons for active or specified language enrollment
+      summary: Get curriculum units and lessons for active or specified language enrollment and optional proficiency level
       parameters:
         - name: language_id
           in: query
           required: false
+          description: "Optional language UUID override (defaults to authenticated user's active enrollment, or Japanese `ja` for unauthenticated guests)"
           schema:
             type: string
             format: uuid
+        - name: level_code
+          in: query
+          required: false
+          description: "Optional proficiency level code override (`N5`..`N1` for `ja`, `A1`..`C2` for `en-us`). Beginner levels (`N5`, `A1`) are open to guests; intermediate levels (`N4–N3`, `A2–B1`) require login (`401 LOGIN_REQUIRED_FOR_LEVEL`); advanced levels (`N2–N1`, `B2–C2`) require Merantalk Pro (`403 PRO_REQUIRED_FOR_LEVEL`)."
+          schema:
+            type: string
+            maxLength: 16
       responses:
         "200":
-          description: Curriculum retrieved
+          description: "Curriculum retrieved (includes `language`, active `level`, `available_levels` for level switcher UI, `total_lessons`, `completed_lessons`, `progress_percent`, `current_lesson_id`, and `units` with Guest/Free/Pro unlock states)"
           content:
             application/json:
               schema:
@@ -659,7 +701,17 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequestError"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          description: "Missing/invalid token or unauthenticated guest requesting a non-beginner level (`LOGIN_REQUIRED_FOR_LEVEL` on `N4–N1` / `A2–C2`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: "Tier access denied — Free account requesting a Pro-tier level (`PRO_REQUIRED_FOR_LEVEL` on `N2–N1` / `B2–C2`, with `details.required_tier` and `details.level_code`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           $ref: "#/components/responses/NotFoundError"
 
@@ -669,17 +721,18 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: Get lesson details
+      summary: Get lesson details, curated study preview cards, grammar points, and sanitized exercises
       parameters:
         - name: id
           in: path
           required: true
-          description: Lesson UUID or ASCII URL slug
+          description: Lesson UUID or ASCII URL slug (max 160 characters)
           schema:
             type: string
+            maxLength: 160
       responses:
         "200":
-          description: Lesson details retrieved
+          description: "Lesson details retrieved (includes `study_items` — server-curated distractor-free preview cards preserving word spaces for English `sentence_builder` — `grammar_points`, and sanitized `exercises` with spoiler-free contextual hints and furigana)"
           content:
             application/json:
               schema:
@@ -687,9 +740,13 @@ paths:
         "400":
           $ref: "#/components/responses/BadRequestError"
         "401":
-          $ref: "#/components/responses/UnauthorizedError"
+          description: "Missing/invalid token or unauthenticated guest requesting a lesson in a non-beginner level (`LOGIN_REQUIRED_FOR_LEVEL` on `N4–N1` / `A2–C2`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "403":
-          description: Previous lesson nodes must be completed first
+          description: "Access forbidden — covers both locked sequential lessons (`LESSON_LOCKED`, including unauthenticated guests on Unit 2+ of beginner levels and non-Pro users with incomplete prerequisites) and Pro tier locks (`PRO_REQUIRED_FOR_LEVEL` for free users on `N2–N1` / `B2–C2`). Guest attempts on non-beginner levels return `401 LOGIN_REQUIRED_FOR_LEVEL`."
           content:
             application/json:
               schema:
@@ -705,14 +762,15 @@ paths:
     post:
       tags: [Curriculum]
       security: [{ BearerAuth: [] }]
-      summary: Mark lesson as completed and award XP
+      summary: Mark lesson as completed, verify attempt accuracy server-side, and award XP
       parameters:
         - name: id
           in: path
           required: true
-          description: Lesson UUID or ASCII URL slug
+          description: Lesson UUID or ASCII URL slug (max 160 characters)
           schema:
             type: string
+            maxLength: 160
       requestBody:
         required: false
         content:
@@ -726,17 +784,21 @@ paths:
                   maximum: 100
       responses:
         "200":
-          description: Lesson completed (includes progress, gamification, unlocked_next_lesson_id, awarded_badges)
+          description: "Lesson completed (includes `progress`, server-verified `session_score`, `xp_earned`, `gamification`, `unlocked_next_lesson_id`, `unlocked_next_lesson_slug`, `awarded_badges`)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Invalid identifier/payload, unconfigured exercises (`LESSON_EXERCISES_REQUIRED`), incomplete exercise attempts (`EXERCISES_NOT_ATTEMPTED`), or score below 60% on initial completion (`LESSON_SCORE_TOO_LOW`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "403":
-          description: Lesson locked or incomplete exercise attempts
+          description: "Lesson locked (`LESSON_LOCKED` — prerequisite lessons incomplete or user not enrolled in active track)"
           content:
             application/json:
               schema:
@@ -761,24 +823,25 @@ paths:
         - name: level_id
           in: query
           required: false
+          description: Proficiency level UUID (either `level_id` or `lang`/`level_code` must be provided)
           schema:
             type: string
             format: uuid
         - name: lang
           in: query
           required: false
-          description: Active target language ISO code (e.g. ja)
+          description: "Active target language ISO code (`ja` | `en-us`; defaults to `ja` when `level_code` is provided without `lang`)"
           schema:
             type: string
         - name: level_code
           in: query
           required: false
-          description: Proficiency level code filter (e.g. N5, N4, ALL)
+          description: "Proficiency level code filter (`N5`..`N1` for `ja`, `A1`..`C2` for `en-us`, or `ALL` / `SEMUA`)"
           schema:
             type: string
       responses:
         "200":
-          description: Grammar points retrieved
+          description: "Grammar points retrieved (open reference across all active-language levels with no tier lock; authenticated users also receive personalized mastery fields `is_understood`, `quiz_score`, `attempts_count`, and `next_review_at`)"
           content:
             application/json:
               schema:
@@ -794,14 +857,15 @@ paths:
     post:
       tags: [Curriculum]
       security: [{ BearerAuth: [] }]
-      summary: Submit grammar point mini-quiz score and schedule SRS review
+      summary: Submit grammar point mini-quiz score and schedule adaptive follow-up review
       parameters:
         - name: id
           in: path
           required: true
-          description: Grammar point UUID or canonical code (e.g. GP-JA-N5-001)
+          description: "Grammar point UUID or canonical code (e.g. `GP-JA-N5-001`..`GP-JA-N1-010` for `ja`, `GP-EN-A1-001`..`GP-EN-C2-010` for `en-us`)"
           schema:
             type: string
+            maxLength: 64
       requestBody:
         required: true
         content:
@@ -813,13 +877,14 @@ paths:
                 correct_count:
                   type: integer
                   minimum: 0
+                  description: Number of correct mini-quiz answers (must be <= `total_questions`)
                 total_questions:
                   type: integer
                   minimum: 1
                   maximum: 20
       responses:
         "200":
-          description: Grammar check recorded
+          description: "Grammar check recorded (returns updated `progress` with scheduled `next_review_at` and `understood_total`; open to all authenticated users with no tier lock)"
           content:
             application/json:
               schema:
@@ -839,11 +904,12 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: Get Kana & Kanji reference chart with user mastery progress
+      summary: Get Kana & Kanji reference chart with user mastery progress (zeroed for guests)
       parameters:
         - name: script
           in: query
           required: false
+          description: Script filter (`hiragana`, `katakana`, `kanji`, or `all`; defaults to `all`)
           schema:
             type: string
             enum: [hiragana, katakana, kanji, all]
@@ -863,7 +929,7 @@ paths:
     post:
       tags: [Curriculum]
       security: [{ BearerAuth: [] }]
-      summary: Record interactive Kana/Kanji drill results
+      summary: Record interactive Kana/Kanji drill results (bidirectionally synced with script flashcards)
       requestBody:
         required: true
         content:
@@ -907,14 +973,15 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: Get exercises for a specific lesson
+      summary: Get sanitized exercises for a specific lesson (supports Unit-1 beginner guest trial preview)
       parameters:
         - name: lesson_id
           in: path
           required: true
-          description: Lesson UUID or ASCII URL slug
+          description: Lesson UUID or ASCII URL slug (max 160 characters)
           schema:
             type: string
+            maxLength: 160
       responses:
         "200":
           description: Exercises retrieved
@@ -927,7 +994,11 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "403":
-          $ref: "#/components/responses/ForbiddenError"
+          description: "Lesson locked (`LESSON_LOCKED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           $ref: "#/components/responses/NotFoundError"
 
@@ -937,7 +1008,7 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: Submit exercise answer for evaluation
+      summary: Submit exercise answer for evaluation (supports stateless Unit-1 guest trial; logs attempts and auto-schedules adaptive review on mistakes for authenticated users)
       requestBody:
         required: true
         content:
@@ -957,8 +1028,10 @@ paths:
                   type: integer
                   minimum: 0
                   maximum: 86400
+                  description: Elapsed seconds on exercise (values above 86400 are clamped to 86400 server-side)
                 skip_srs_schedule:
                   type: boolean
+                  description: When true, marks attempt as a scheduled review session and skips inserting/resetting the adaptive review schedule on mistake
       responses:
         "200":
           description: Answer evaluated
@@ -975,11 +1048,7 @@ paths:
         "404":
           $ref: "#/components/responses/NotFoundError"
         "429":
-          description: Rate limit exceeded
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/ErrorResponse"
+          $ref: "#/components/responses/TooManyRequestsError"
 
   # ==========================================
   # VOCABULARIES
@@ -988,7 +1057,7 @@ paths:
     get:
       tags: [Vocabularies]
       security: [{ BearerAuth: [] }]
-      summary: Get daily vocabulary set
+      summary: "Get daily contextual vocabulary set for the learner's active language track (`ja` or `en-us`)"
       parameters:
         - name: limit
           in: query
@@ -1011,13 +1080,13 @@ paths:
           $ref: "#/components/responses/UnauthorizedError"
 
   # ==========================================
-  # SPACED REPETITION (SRS)
+  # SCHEDULED REVIEW
   # ==========================================
   /srs/due:
     get:
-      tags: [SRS]
+      tags: [Scheduled Review]
       security: [{ BearerAuth: [] }]
-      summary: Get due SRS review cards
+      summary: Get due adaptive exercise review cards
       parameters:
         - name: limit
           in: query
@@ -1029,7 +1098,7 @@ paths:
             default: 20
       responses:
         "200":
-          description: Due SRS cards retrieved
+          description: Due scheduled review cards retrieved
           content:
             application/json:
               schema:
@@ -1041,9 +1110,9 @@ paths:
 
   /srs/review:
     post:
-      tags: [SRS]
+      tags: [Scheduled Review]
       security: [{ BearerAuth: [] }]
-      summary: Submit SRS review rating (SM-2)
+      summary: Submit adaptive exercise review recall rating
       requestBody:
         required: true
         content:
@@ -1061,7 +1130,7 @@ paths:
                   maximum: 5
       responses:
         "200":
-          description: SRS review processed
+          description: Scheduled review processed
           content:
             application/json:
               schema:
@@ -1073,15 +1142,19 @@ paths:
         "403":
           $ref: "#/components/responses/ForbiddenError"
         "404":
-          $ref: "#/components/responses/NotFoundError"
-        "409":
-          $ref: "#/components/responses/ConflictError"
-        "429":
-          description: Rate limit exceeded
+          description: "Exercise or scheduled review item not found (`EXERCISE_NOT_FOUND`, `SRS_REVIEW_NOT_FOUND`)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: "Scheduled review item is not due yet (`SRS_REVIEW_NOT_DUE`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
 
   # ==========================================
   # EXAMS
@@ -1110,17 +1183,25 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "403":
-          $ref: "#/components/responses/ForbiddenError"
+          description: "Level locked, unenrolled, or curriculum incomplete (`LEVEL_CURRICULUM_INCOMPLETE`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "404":
           $ref: "#/components/responses/NotFoundError"
         "409":
-          $ref: "#/components/responses/ConflictError"
+          description: "Readiness exam already passed for this level (`EXAM_ALREADY_PASSED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /exams/result/{level_id}:
     get:
       tags: [Exams]
       security: [{ BearerAuth: [] }]
-      summary: Get mock exam result for a proficiency level
+      summary: Get passed mock exam result and certificate for a proficiency level
       parameters:
         - name: level_id
           in: path
@@ -1148,7 +1229,7 @@ paths:
     post:
       tags: [Exams]
       security: [{ BearerAuth: [] }]
-      summary: Submit mock exam answers
+      summary: Submit mock exam answers for grading, certificate issuance, and level progression
       requestBody:
         required: true
         content:
@@ -1191,17 +1272,21 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "403":
-          $ref: "#/components/responses/ForbiddenError"
-        "404":
-          $ref: "#/components/responses/NotFoundError"
-        "409":
-          $ref: "#/components/responses/ConflictError"
-        "429":
-          description: Rate limit exceeded
+          description: "Level locked, unenrolled, or curriculum incomplete (`LEVEL_CURRICULUM_INCOMPLETE`)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
+        "409":
+          description: "Readiness exam already passed (`EXAM_ALREADY_PASSED`) or concurrent level advancement (`LEVEL_ALREADY_CHANGED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "429":
+          $ref: "#/components/responses/TooManyRequestsError"
 
   # ==========================================
   # FLASHCARDS
@@ -1212,37 +1297,42 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: List flashcard decks (or paginated deck slices with Anki counters)
+      summary: List flashcard decks (or cursor-paginated deck slices with review progress counters and dynamic level counts)
       parameters:
         - name: lang
           in: query
           required: false
+          description: "Target language ISO code (`ja` default for Japanese JLPT, or `en-us` for American English CEFR / TOEFL iBT)"
           schema:
             type: string
         - name: level
           in: query
           required: false
+          description: "Proficiency level code filter (`N5`..`N1` for `ja`, `A1`..`C2` for `en-us`, or `ALL` / `SEMUA`)"
           schema:
             type: string
         - name: category
           in: query
           required: false
+          description: "Optional topic or script category filter (`all` / `semua` for all). For `ja`: script decks (`hiragana`, `katakana`, `kanji`), virtual `vocab` (excludes pure script decks), and topical categories (`greetings`, `numbers`, `food`, `verbs`, `places`, `adjectives`, `objects`, `family`, `directions`, `shopping`, `weather`, `work_study`, `travel`, `health`, `culture`, and N4–N1 domain categories such as `verbs_n4`, `adjectives_n4`, `city_n3`, `work_n3`, `business_n2`, `academic_n2`, `policy_n1`, `science_n1`). For `en-us`: `daily`, `work_study`, `phrasal_idioms`, `academic_toefl`."
           schema:
             type: string
         - name: q
           in: query
           required: false
+          description: Case-insensitive substring search matching deck title, description, or proficiency level code
           schema:
             type: string
         - name: cursor
           in: query
           required: false
+          description: Opaque URL-safe base64 keyset pagination cursor (`next_cursor` from previous response)
           schema:
             type: string
         - name: limit
           in: query
           required: false
-          description: Decks per page (values above 30 are clamped down to 30)
+          description: Decks per page (positive integer; values above 30 are clamped down to 30)
           schema:
             type: integer
             minimum: 1
@@ -1250,12 +1340,13 @@ paths:
         - name: paginated
           in: query
           required: false
+          description: "Set to `1` or `true` to force the paginated response envelope (also activated automatically when `cursor`, `limit`, `category`, or `q` is supplied)"
           schema:
             type: string
             enum: ["1", "true"]
       responses:
         "200":
-          description: Flashcard decks retrieved
+          description: "Flashcard decks retrieved. Paginated responses return `{ items, next_cursor, has_more, total_count, level_counts }` where `level_counts` is dynamically keyed by uppercase level codes (`N5..N1` for `ja` or `A1..C2` for `en-us`, plus `ALL`). Unpaginated responses return an array of decks with review progress counters and `sample_cards`."
           content:
             application/json:
               schema:
@@ -1271,21 +1362,23 @@ paths:
       security:
         - BearerAuth: []
         - {}
-      summary: Get a flashcard deck and all ordered cards with SM-2 state
+      summary: Get a flashcard deck and all ordered cards with adaptive review state (open preview; no tier lock)
       parameters:
         - name: id
           in: path
           required: true
-          description: Deck UUID or URL slug
+          description: Deck UUID, URL slug, slugified title, or category alias
           schema:
             type: string
       responses:
         "200":
-          description: Flashcard deck detail retrieved
+          description: "Flashcard deck detail retrieved (returns `{ deck, cards }`; guests receive default review schedule state, authenticated users receive personalized progress; no 403 tier lock)"
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+        "400":
+          $ref: "#/components/responses/BadRequestError"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
@@ -1300,6 +1393,7 @@ paths:
         - name: lang
           in: query
           required: false
+          description: "Target language ISO code (`ja` default, or `en-us`)"
           schema:
             type: string
         - name: limit
@@ -1312,7 +1406,7 @@ paths:
             default: 20
       responses:
         "200":
-          description: Due flashcard queue retrieved
+          description: Due flashcard queue retrieved (`total_due`, `total_learned`, `cards`)
           content:
             application/json:
               schema:
@@ -1326,7 +1420,7 @@ paths:
     post:
       tags: [Flashcards]
       security: [{ BearerAuth: [] }]
-      summary: Submit SM-2 quality rating for a flashcard and award XP
+      summary: Submit adaptive review recall rating for a flashcard, award XP, and sync Kana/Kanji mastery
       parameters:
         - name: id
           in: path
@@ -1346,9 +1440,10 @@ paths:
                   type: integer
                   minimum: 0
                   maximum: 5
+                  description: "Recall rating: `0–2` Again (+2 XP, 1m retry), `3` Hard (+5 XP), `4` Good (+5 XP), `5` Easy (+5 XP); XP is doubled when 2x XP Booster is active"
       responses:
         "200":
-          description: Flashcard review saved (includes SM-2 interval, xp_awarded, current_xp, current_level, streak)
+          description: Flashcard review saved (includes adaptive schedule fields `ease_factor`, `interval_days`, `repetitions`, `next_review_at`, `xp_awarded`, `current_xp`, `current_level`, `streak`)
           content:
             application/json:
               schema:
@@ -1369,7 +1464,7 @@ paths:
     get:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: Get user gamification status (XP, level, streak, gems)
+      summary: Get user gamification status (XP, level, streak, gems, booster, inventory, chests, badges, monthly progress)
       responses:
         "200":
           description: Gamification status retrieved
@@ -1413,13 +1508,17 @@ paths:
                   maxLength: 100
       responses:
         "200":
-          description: Item purchased
+          description: Item purchased (`purchased_item`, updated `status`)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Invalid payload, insufficient gems (`INSUFFICIENT_GEMS`), or item unavailable (`ITEM_UNAVAILABLE`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
@@ -1431,7 +1530,7 @@ paths:
     post:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: Activate an owned consumable shop item (e.g. xp-booster)
+      summary: "Activate an owned consumable shop item (currently `xp-booster`, extending 2x XP window by 15 minutes)"
       requestBody:
         required: true
         content:
@@ -1451,9 +1550,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Invalid payload, item not owned (`ITEM_NOT_OWNED`), or item not activatable (`ITEM_NOT_ACTIVATABLE`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
 
@@ -1461,10 +1566,10 @@ paths:
     get:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: List user badges
+      summary: List badge catalog and user unlocked badges
       responses:
         "200":
-          description: Badges retrieved
+          description: Badges retrieved (`catalog`, `user_badges`)
           content:
             application/json:
               schema:
@@ -1476,7 +1581,7 @@ paths:
     post:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: Claim daily golden chest
+      summary: "Claim daily milestone chest (Tier 1: +5 Gems/+20 XP, Tier 2: +15 Gems/+50 XP, Tier 3: +30 Gems/+100 XP)"
       requestBody:
         required: true
         content:
@@ -1489,19 +1594,30 @@ paths:
                   type: integer
                   minimum: 1
                   maximum: 3
+                  description: Chest tier (requires completing at least `tier` daily quests today WIB)
       responses:
         "200":
-          description: Daily chest claimed
+          description: Daily chest claimed (`claim`, updated `status`)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Invalid tier or prerequisite daily quests incomplete (`CHEST_NOT_UNLOCKED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
+        "404":
+          $ref: "#/components/responses/NotFoundError"
         "409":
-          $ref: "#/components/responses/ConflictError"
+          description: "Chest tier already claimed today (`CHEST_ALREADY_CLAIMED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
 
@@ -1509,7 +1625,7 @@ paths:
     get:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: Get rotating daily quests for the current WIB calendar date
+      summary: Get 3 rotating daily quests (curriculum, flashcard, XP slots) for the current WIB calendar date
       responses:
         "200":
           description: Daily quests retrieved
@@ -1540,13 +1656,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Daily quest target not yet reached (`DAILY_QUEST_NOT_COMPLETED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          description: "Daily quest template not found for today (`DAILY_QUEST_NOT_FOUND`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
-          $ref: "#/components/responses/ConflictError"
+          description: "Daily quest reward already claimed today (`DAILY_QUEST_ALREADY_CLAIMED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
 
@@ -1554,20 +1682,28 @@ paths:
     post:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: Claim monthly challenge honor badge and +150 XP bonus
+      summary: Claim monthly challenge honor badge and +150 XP bonus (requires 25+ completed lessons & claimed quests in current WIB month)
       responses:
         "200":
-          description: Monthly badge claimed
+          description: Monthly badge claimed (`claim`, updated `status`)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Monthly target not yet reached (`MONTHLY_BADGE_NOT_UNLOCKED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "409":
-          $ref: "#/components/responses/ConflictError"
+          description: "Monthly badge already claimed this month (`MONTHLY_BADGE_ALREADY_CLAIMED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"
 
@@ -1575,7 +1711,7 @@ paths:
     post:
       tags: [Gamification]
       security: [{ BearerAuth: [] }]
-      summary: Submit coaching check-in
+      summary: "Submit mentorship coaching request (`cv-review` requires `target_role` & `resume_url`; `mock-interview` requires `discord_handle` & `focus_topic`)"
       requestBody:
         required: true
         content:
@@ -1613,13 +1749,17 @@ paths:
                   maxLength: 2000
       responses:
         "201":
-          description: Coaching submitted
+          description: Coaching submitted (`submission`, updated `status`)
           content:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
         "400":
-          $ref: "#/components/responses/BadRequestError"
+          description: "Invalid coaching fields (`INVALID_COACHING_PAYLOAD`) or missing coaching coupon (`INSUFFICIENT_COUPONS`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "429":
@@ -1656,12 +1796,12 @@ paths:
   /leaderboard/weekly/claim:
     post:
       tags: [Leaderboard]
-      summary: Claim previous week Top-3 league podium Gems prize
+      summary: "Claim previous ISO week Top-3 league podium Gems prize (1st: 100, 2nd: 50, 3rd: 25 Gems)"
       security:
         - BearerAuth: []
       responses:
         "200":
-          description: Weekly Top-3 reward claimed and Gems credited
+          description: Weekly Top-3 reward claimed and Gems credited (`reward`, `new_gems`)
           content:
             application/json:
               schema:
@@ -1669,8 +1809,16 @@ paths:
         "401":
           $ref: "#/components/responses/UnauthorizedError"
         "404":
-          $ref: "#/components/responses/NotFoundError"
+          description: "No unclaimed Top-3 reward for previous ISO week (`NO_PENDING_WEEKLY_REWARD`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "409":
-          $ref: "#/components/responses/ConflictError"
+          description: "Previous week podium reward already claimed (`WEEKLY_REWARD_ALREADY_CLAIMED`)"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "429":
           $ref: "#/components/responses/TooManyRequestsError"

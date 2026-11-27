@@ -102,7 +102,7 @@ export interface GrammarEditorialCardProps {
 }
 
 /**
- * LingoDeer-inspired full-width horizontal editorial card for /grammar:
+ * Merantalk full-width horizontal editorial card for /grammar:
  * - Left graphic poster panel: dark brand pill, stacked poster typography, tagline, and Kodi mascot.
  * - Right content panel: level/category badges, full single-line formula + Romaji strip, explanation, and CTA.
  */

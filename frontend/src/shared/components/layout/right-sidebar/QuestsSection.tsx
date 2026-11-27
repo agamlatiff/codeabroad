@@ -80,7 +80,7 @@ export const QuestsSection: FC<QuestsSectionProps> = ({
           </span>
         </div>
 
-        {/* Duolingo Integrated Progress Track with Aligned Chest Button */}
+        {/* Merantalk Integrated Progress Track with Aligned Chest Button */}
         {isLoading ? (
           <>
             <Skeleton className="h-14 w-full rounded-xl" />

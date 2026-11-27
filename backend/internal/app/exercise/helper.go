@@ -435,7 +435,7 @@ func answersMatch(candidate string, userWithSpaces string, userCollapsed string)
 	return candCollapsed != "" && candCollapsed == userCollapsed
 }
 
-// Helper encapsulates cognitive algorithms including SuperMemo SM-2 and answer grading
+// Helper encapsulates adaptive review scheduling and answer grading algorithms
 type Helper struct{}
 
 // NewHelper creates a new exercise Helper instance
@@ -443,7 +443,7 @@ func NewHelper() *Helper {
 	return &Helper{}
 }
 
-// SM2Result holds the computed memory state after a spaced retrieval review
+// SM2Result holds the computed memory state after an adaptive review
 type SM2Result struct {
 	Repetitions  int
 	IntervalDays int
@@ -451,7 +451,7 @@ type SM2Result struct {
 	DueDate      time.Time
 }
 
-// CalculateSM2 computes interval, ease factor, and due date following the SuperMemo SM-2 algorithm
+// CalculateSM2 computes the next interval, ease factor, and due date for Merantalk's adaptive review scheduler
 func (h *Helper) CalculateSM2(
 	quality int,
 	prevRepetitions int,
@@ -470,7 +470,7 @@ func (h *Helper) CalculateSM2(
 		prevEaseFactor = 1.3
 	}
 
-	// SM-2 updates Ease Factor (EF') first so intervals >= 2 use the newly revised ease factor.
+	// Update Ease Factor (EF') first so intervals >= 2 use the newly revised ease factor.
 	qDiff := 5.0 - float64(quality)
 	easeFactor := prevEaseFactor + (0.1 - qDiff*(0.08+qDiff*0.02))
 	if easeFactor < 1.3 {

@@ -1,685 +1,372 @@
-# Product Requirements Document (PRD) - Merantalk
-**Version:** 3.0 (Global Multi-Country Language Mastery Platform, Anki SRS & Diagnostic Exam Engine)  
-**Status:** In Active Development (v0.4.0)  
-**Last Updated:** 2026-11-09  
+# Product Requirements Document (PRD) — Merantalk
+**Version:** 3.2 (Global Multi-Language Mastery Platform: JLPT N5–N1 & CEFR A1–C2 / TOEFL iBT, Pengingat Ulang Otomatis Anti Lupa & Diagnostic Exam Engine)  
+**Status:** Production Live (v1.2.0 — https://merantalk.vercel.app)  
+**Last Updated:** 2026-11-27  
 
 ---
 
-## 🧭 1. Executive Summary, Philosophy & Pedagogical Foundations
+## 1. Executive Summary, Philosophy & Pedagogical Foundations
 
 ### 1.1 Latar Belakang Masalah (The Core Industry Problem)
 Industri pembelajaran bahasa digital saat ini terbelah menjadi tiga kubu yang terfragmentasi, dan masing-masing memiliki kelemahan mendasar:
 
-1. **The "Duolingo Illusion" (Gamifikasi Dangkal & Hafalan Mekanis):**  
-   Banyak aplikasi bahasa mengutamakan *retensi engagement* (streak dan animasi lucu) di atas *pemahaman kaidah linguistik*. Pengguna menghafal kalimat acak ("apel itu hijau", "kucing minum susu") secara mekanis melalui tebak gambar berulang-ulang. Akibatnya, setelah 300 hari menjaga streak, pengguna tetap tidak mampu menyusun kalimat sendiri di dunia nyata karena **tidak pernah diajarkan peran sintaksis kalimat, fungsi partikel/kasus gramatikal, dan logika perubahan tenses/konjugasi**.
-2. **The "Anki Friction" (Metode Ilmiah Kuat, Namun Kering & Minim Kurikulum):**  
-   Sistem *Spaced Repetition (SRS)* seperti Anki secara ilmiah terbukti paling efektif untuk retensi memori jangka panjang (*Ebbinghaus Forgetting Curve*). Namun, antarmukanya kaku, membutuhkan kurasi kartu manual yang melelahkan, tidak memiliki alur kurikulum interaktif, dan tidak memberikan penjelasan instan terhadap kesalahan tata bahasa.
+1. **Ilusi Gamifikasi Dangkal & Hafalan Mekanis:**  
+   Banyak aplikasi bahasa mengutamakan *retensi engagement* di atas *pemahaman kaidah linguistik*. Pengguna menghafal kalimat acak secara mekanis melalui tebak gambar berulang-ulang, namun setelah berbulan-bulan menjaga streak tetap tidak mampu menyusun kalimat mandiri di dunia nyata karena **tidak pernah diajarkan peran sintaksis kalimat, fungsi partikel/kasus gramatikal, serta logika konjugasi dan tenses secara kontrastif terhadap Bahasa Indonesia**.
+2. **Alat Hafalan Kaku yang Terpisah dari Kurikulum:**  
+   Aplikasi kartu hafalan mandiri dengan penjadwalan ulang memang membantu melawan lupa (*Ebbinghaus Forgetting Curve*), tetapi antarmukanya terasa kaku, menuntut kurasi kartu manual, tidak menyatu dengan alur kurikulum bertingkat, dan tidak memberikan koreksi diagnostik ketika pembelajar salah memahami struktur kalimat.
 3. **The "Official Exam Blindness" (Ketakutan Ujian Sertifikasi Berbayar):**  
-   Ujian sertifikasi bahasa resmi internasional (**JLPT 🇯🇵 N5–N1, Goethe-Zertifikat / TestDaF 🇩🇪 A1–C1, IELTS / Cambridge 🇬🇧/🇺🇸 B1–C2, HSK 🇨🇳 1–6, DELF 🇫🇷 A1–C1**) memiliki biaya pendaftaran yang mahal (\$100–\$250 per ujian) dan jadwal tes yang sangat terbatas (hanya 1–2 kali per tahun). Pembelajar sering kali masuk ruang ujian secara "buta" tanpa tahu apakah kemampuan riil mereka sudah memenuhi passing score resmi atau belum.
+   Ujian sertifikasi bahasa internasional (**JLPT N5–N1**, **TOEFL iBT / CEFR A1–C2**, **IELTS**, **Goethe-Zertifikat A1–C1**, **HSK 1–6**, **DELF/DALF A1–C2**) memiliki biaya pendaftaran tinggi (USD 100–250 per ujian) dan jadwal tes terbatas. Pembelajar kerap memasuki ruang ujian secara "buta" tanpa tolok ukur objektif atas kesiapan 4 pilar kemahiran mereka.
 4. **The "Gimmick Fatigue" (Metafora Fiktif yang Membingungkan):**  
-   Penggunaan metafora fiktif (seperti nama stasiun kereta, tiket ekspres, stasiun Shinjuku) yang dipaksakan membuat pengguna bingung membedakan antara progres kurikulum dengan gimik aplikasi. Pembelajar membutuhkan **alur kurikulum universal yang bersih, bertaraf internasional, dan langsung mencerminkan standar ujian resmi dunia**.
+   Metafora buatan yang dipaksakan (seperti tiket pesawat fiktif atau nama stasiun kereta) membuat pengguna bingung membedakan progres linguistik dengan gimik antarmuka. Pembelajar membutuhkan **alur kurikulum universal yang bersih, terstruktur, dan mencerminkan standar ujian sertifikasi resmi dunia secara langsung**.
 
 ---
 
-### 1.2 Misi Produk & Cakupan 6 Track Bahasa Resmi (The Merantalk Mission)
-**Merantalk** hadir sebagai platform pembelajaran bahasa bertaraf internasional yang dirancang secara modular untuk mempersiapkan talenta global menembus karir, studi, dan kehidupan di 6 destinasi bahasa utama dunia:
+### 1.2 Misi Produk & Cakupan 6 Destinasi Bahasa (Live Production & Roadmap)
+**Merantalk** hadir sebagai platform pembelajaran bahasa bertaraf internasional bagi pembelajar Indonesia untuk menembus karier global, beasiswa, dan sertifikasi bahasa resmi melalui 6 jalur bahasa modular:
 
-```
-┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                                   MERANTALK 6 GLOBAL DESTINATION TRACKS                                        │
-├──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┬──────────────────┤
-│   🇯🇵 JEPANG      │ 🇬🇧 INGGRIS (UK)  │ 🇺🇸 INGGRIS (US)  │    🇩🇪 JERMAN     │   🇨🇳 MANDARIN    │    🇫🇷 PRANCIS    │
-│  (Tokyo Track)   │  (London Track)  │(Silicon Valley)  │  (Berlin Track)  │ (Shanghai Track) │  (Paris Track)   │
-├──────────────────┼──────────────────┼──────────────────┼──────────────────┼──────────────────┼──────────────────┤
-│ • JLPT N5 – N1   │ • IELTS 5.0–8.5  │ • TOEFL iBT      │ • Goethe A1 – C1 │ • HSK 1 – 6      │ • DELF A1 – C1   │
-│ • Kanji, Kana    │ • UK Spelling    │ • US Spelling    │ • Artikel Kasus  │ • Hanzi & Pinyin │ • Gender Benda   │
-│   & Romaji       │   (colour/lift)  │   (color/elev.)  │   (Der/Die/Das)  │   4 Nada (Tones) │ • Passé Composé  │
-│ • Partikel SOV   │ • Non-Rhotic RP  │ • Rhotic Flap-T  │ • V2 & Perfekt   │ • Aspek '了'     │ • Aksen é/è/ç    │
-│ • Tiket CGK✈️HND  │ • Tiket CGK✈️LHR │ • Tiket CGK✈️SFO │ • Tiket CGK✈️BER │ • Tiket CGK✈️PEK │ • Tiket CGK✈️CDG │
-└──────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┴──────────────────┘
-```
+| Kode ISO | Destinasi Bahasa | Status Produksi | Standar & Level Resmi | Inventaris Konten Produksi Saat Ini |
+| :--- | :--- | :--- | :--- | :--- |
+| **`ja`** | **Jepang** | **Aktif Penuh** | **JLPT N5 – N1** (5 level) | Papan Hiragana/Katakana/Kanji interaktif (`/kana/:script`), **56** Panduan Grammar (`GP-JA-*`), **120** Dek Kartu Kosakata (**1.819** kartu), **76** Unit (**496** pelajaran, **4.113** soal 4 pilar), Tes Penempatan 15 soal & Ujian Simulasi Kesiapan N5–N1 |
+| **`en-us`** | **Inggris (American)** | **Aktif Penuh** | **CEFR A1 – C2 / TOEFL iBT** (6 level: `A1` Pra-TOEFL Dasar, `A2` TOEFL 32–41, `B1` TOEFL 42–71, `B2` TOEFL 72–94, `C1` TOEFL 95–114, `C2` TOEFL 115–120) | **60** Panduan Grammar ber-IPA General American (`GP-EN-A1-001`..`GP-EN-C2-010`), **60** Dek Kartu Kosakata (**900** kartu dalam `daily`, `work_study`, `phrasal_idioms`, `academic_toefl`), **67** Unit (**247** pelajaran, **2.031** soal 4 pilar, **180** dek studi pengantar), Tes Penempatan 15 soal & Ujian Simulasi Kesiapan A1–C2 |
+| **`en-gb`** | **Inggris (British)** | **Segera Hadir** (`is_active = false`) | **CEFR A1 – C2 / IELTS** | Terpisah secara eksplisit dari `en-us` untuk ortografi UK (*colour, programme*), kosakata UK, dan format IELTS Academic; terkunci eksplisit di Landing/Onboarding |
+| **`de`** | **Jerman** | **Segera Hadir** (`is_active = false`) | **Goethe-Zertifikat A1 – C1** | Katalog terdaftar & terkunci eksplisit di Landing/Onboarding tanpa fallback diam-diam ke Jepang |
+| **`zh`** | **Mandarin** | **Segera Hadir** (`is_active = false`) | **HSK 1 – 6** | Katalog terdaftar & terkunci eksplisit di Landing/Onboarding tanpa fallback diam-diam ke Jepang |
+| **`fr`** | **Prancis** | **Segera Hadir** (`is_active = false`) | **DELF / DALF A1 – C2** | Katalog terdaftar & terkunci eksplisit di Landing/Onboarding tanpa fallback diam-diam ke Jepang |
 
-> *"Memberdayakan pembelajar global untuk mencapai kemahiran bahasa yang mendalam (True Linguistic Mastery), retensi memori permanen bebas lupa, dan kesiapan ujian sertifikasi resmi internasional melalui gamifikasi 3D taktil yang menyenangkan, pemahaman tata bahasa visual, dan simulasi diagnostik yang presisi."*
+> **Total Bank Materi Aktif di Produksi (`ja` + `en-us`):** **143 Unit** · **743 Pelajaran** · **6.144 Soal 4 Pilar** · **116 Panduan Grammar Interaktif** · **180 Dek Kartu Kosakata (2.719 Kartu)**.
+
+> *"Memberdayakan pembelajar Indonesia mencapai penguasaan bahasa yang mendalam (True Linguistic Mastery), daya ingat jangka panjang agar ingat lebih lama, dan kesiapan ujian sertifikasi internasional melalui Desain 3D Taktil Merantalk, pembelajaran tata bahasa visual-kontrastif, Pengingat Ulang Otomatis Anti Lupa, dan simulasi ujian diagnostik."*
 
 Tiga pilar filosofis utama Merantalk:
-* 🎮 **The Delight of Duolingo 3D Tactile Physics:**  
-  Menghadirkan kenikmatan belajar harian dengan tombol fisik berkedalaman 4px, alur roadmap serpentine interaktif, partikel konfeti kemenangan, synthesizer audio prosedural Web Audio API tanpa beban kuota, serta maskot pendamping setia (**Mera**).
-* 🧠 **The Pedagogical Rigor of Anki SRS (SuperMemo SM-2):**  
-  Menghilangkan kebiasaan lupa (*Eliminating the Forgetting Curve*). Setiap kali pengguna melakukan kesalahan pada latihan harian, butir soal tersebut secara otomatis masuk ke antrean kartu memori *Spaced Repetition* dengan penyesuaian interval dinamis (`ease_factor` & `interval_days`).
-* 🏛️ **The Standard of Official International Certifications:**  
-  Tidak ada tingkatan semu. Seluruh level kurikulum dipetakan secara ketat ke standar resmi dunia: **JLPT (N5–N1)** untuk Jepang, **IELTS / Cambridge (B1–C2)** untuk Inggris UK, **TOEFL (A1–C2)** untuk Inggris US, **Goethe (A1–C1)** untuk Jerman, **HSK (1–6)** untuk Mandarin, dan **DELF (A1–C1)** untuk Prancis.
+* **Desain 3D Taktil Merantalk:** Kenikmatan belajar harian melalui tombol fisik berkedalaman 4px (Royal Blue `#2563EB`), peta kurikulum interaktif, kartu pengantar materi sebelum kuis (*Learn-Before-Quiz*), synthesizer Web Audio API prosedural bebas beban kuota, serta maskot pendamping **Mera**.
+* **Pengingat Ulang Otomatis Merantalk (Anti Lupa):** Membantu pembelajar **Ingat Lebih Lama** melalui dua sistem **Jadwal Latihan Ulang Adaptif** — (1) antrean latihan ulang otomatis untuk soal yang masih keliru (`/review`) dan (2) 180 dek **Kartu Kosakata** terkurasi bertingkat (`/flashcards`).
+* **Official International Certification Standard:** Seluruh tingkat kemahiran dipetakan langsung ke standar sertifikasi global (**JLPT N5–N1** untuk `ja`, **CEFR A1–C2 / TOEFL iBT** untuk `en-us`, serta **IELTS / Goethe / HSK / DELF** untuk jalur ekspansi berikutnya).
 
 ---
 
 ### 1.3 Landasan Ilmu Kognitif & Pedagogi Bahasa (Cognitive Science Foundations)
 
-Merantalk dibangun di atas 4 teori pemerolehan bahasa modern yang diterapkan secara universal di seluruh bahasa target:
+Merantalk dibangun di atas 5 pilar pedagogi kognitif yang diterapkan lintas bahasa target:
 
 #### A. Mastery Over Memorization: Balok Sintaksis Berkode Warna (Color-Coded Syntax Blocks)
-Alih-alih menghafal kalimat secara mekanis, pengguna diajarkan memahami **arsitektur kalimat** menggunakan balok peran tata bahasa universal:
-* 🟦 **Biru (Topik / Subjek):** Menandai entitas pelaku (misal: わたし, *Ich*, *She*, *我*, *Je*).
-* 🟩 **Hijau (Partikel / Kasus / Preposisi):** Semen perekat hubungan kata (misal: は/に/で, *auf/in*, *for/since*, *在*, *à/de*).
-* 🟧 **Oranye (Objek / Keterangan Waktu & Tempat):** Target aksi atau latar (misal: 東京, *Berlin*, *London*, *茶*, *Paris*).
-* 🟪 **Ungu (Predikat / Kata Kerja & Tenses):** Mesin aksi beserta perubahan konjugasinya (misal: 行きます, *habe... getrunken*, *has lived*, *喝了*, *suis allé*).
+Pembelajar dilatih memahami **arsitektur kalimat** menggunakan balok peran gramatikal universal yang konsisten di Kurikulum maupun Grammar Studio:
+* **Biru (Topik / Subjek):** Pelaku atau topik kalimat (misal: `わたし`, `Sarah`, `The committee`).
+* **Hijau (Partikel / Preposisi / Penghubung):** Perekat hubungan sintaksis (misal: `は / に / で`, `for / since / although`).
+* **Oranye (Objek / Keterangan Waktu & Tempat):** Sasaran aksi atau latar konteks (misal: `東京`, `in San Francisco`, `quarterly report`).
+* **Ungu (Predikat / Kata Kerja & Tenses):** Mesin aksi beserta konjugasi/aspek waktu (misal: `行きます`, `has been working`, `would have completed`).
 
-#### Penerapan Balok Sintaksis Lintas Bahasa Target:
-1. **Jepang 🇯🇵 (Struktur SOV & Partikel):**  
+Contoh penerapan lintas bahasa aktif:
+1. **Jepang (`ja` — Struktur SOV & Partikel):**  
    `[わたし (Biru)]` + `[は (Hijau)]` + `[とうきょう (Oranye)]` + `[に (Hijau)]` + `[いきます (Ungu)]`  
-   *Logika visual:* Partikel penanda arah 'に' selalu mengunci kata tujuan sebelum kata kerja.
-2. **Jerman 🇩🇪 (Aturan Verb-Second / V2 & Das Perfekt):**  
-   `[Ich (Biru)]` + `[habe (Ungu)]` + `[einen Kaffee (Oranye)]` + `[in Berlin (Oranye)]` + `[getrunken (Ungu)]`  
-   *Logika visual:* Kata kerja bantu (*habe*) menempati posisi ke-2, sementara *Partizip II* (*getrunken*) dikirim ke akhir kalimat.
-3. **Inggris 🇬🇧/🇺🇸 (Struktur SVO & Aspectual Tense):**  
-   `[Sarah (Biru)]` + `[has lived (Ungu)]` + `[in London (Oranye)]` + `[for three years (Oranye)]`  
-   *Logika visual:* Preposisi durasi *for* mengunci keterangan rentang waktu untuk menghubungkan masa lalu ke masa kini.
-4. **Mandarin 🇨🇳 (Struktur SVO & Partikel Aspek):**  
-   `[我 (Biru)]` + `[在咖啡馆 (Oranye)]` + `[喝了 (Ungu)]` + `[一杯茶 (Oranye)]`  
-   *Logika visual:* Keterangan tempat mendahului kata kerja, dan partikel aspek '了' melekat langsung pada kata kerja penanda selesainya aksi.
+   *Logika visual:* Partikel arah `に` mengunci tujuan tepat sebelum predikat di akhir kalimat.
+2. **Inggris Amerika (`en-us` — Struktur SVO, Aspectual Tense & IPA):**  
+   `[Maya (Biru)]` + `[has worked (Ungu)]` + `[in Seattle (Oranye)]` + `[for three years (Hijau/Oranye)]`  
+   *Logika visual:* *Present Perfect* menghubungkan durasi masa lalu hingga sekarang dengan penanda durasi `for`.
 
----
+#### B. Keseimbangan Holistik 4 Pilar Kemahiran
+1. **Reading (`fill_blank`):** Membaca Kanji/Kana dengan Furigana Ruby (`<ruby>`) untuk `ja` serta teks situasional dan akademik berstandar TOEFL untuk `en-us`.
+2. **Listening (`listening_choice`):** Pengucapan multi-locale BCP-47 (`ja-JP`, `en-US`, dll.) dengan kontrol kecepatan **Normal (`1.0x`)** dan **Pelan (`0.6x`)** tanpa membocorkan transkrip sebelum jawaban diperiksa.
+3. **Writing (`sentence_builder`):** Menyusun balok kalimat berkode warna dilengkapi balok pengecoh (*distractor tiles*) untuk melatih diskriminasi urutan kata dan kaidah tata bahasa.
+4. **Speaking (`speaking_repeat`):** Evaluasi pelafalan aktif via Web Speech API + panduan fonetik (Romaji/Furigana untuk `ja`, General American IPA untuk `en-us`) serta tombol toleransi aksesibilitas ketika tidak memungkinkan berbicara.
 
-#### B. Keseimbangan Holistik 4 Pilar Kemahiran Lintas Bahasa
-1. **Reading:**
-   * *Jepang:* Membaca Kanji dengan Furigana Ruby dinamis (`<ruby>`).
-   * *Jerman:* Membaca artikel spesifik (*der/die/das*) dan huruf khusus (*ä, ö, ü, ß*).
-   * *Mandarin:* Membaca karakter Hanzi dengan bantuan Pinyin di atasnya.
-   * *Inggris & Prancis:* Membaca teks otentik artikel berita dan esai formal.
-2. **Listening:**
-   * Audio penutur asli (*Native Audio*) dengan aksen natural: Aksen Tokyo standar, *Hochdeutsch* Jerman, Aksen British/American, Mandarin Beijing standar, dan Bahasa Prancis standar.
-   * Kontrol kecepatan dinamis (0.8x untuk pemula, 1.0x normal, 1.2x untuk melatih ketajaman ujian).
-3. **Writing:**
-   * Menyusun balok kalimat, melengkapi konjugasi tenses, dan menulis dengan toleransi ortografi multi-aksara.
-4. **Speaking:**
-   * Evaluasi fonetik suara via Web Speech API.
-   * Panduan intonasi: *Pitch Accent* (Jepang), Kontur 4 Nada Pinyin (Mandarin), *Stress Markers* IPA (Inggris), Vokal Umlaut (Jerman).
+#### C. Evaluasi Cerdas & Remediasi Instan (`diagnostic_rubric`)
+Setiap kali pembelajar keliru, sistem membaca `diagnostic_rubric` untuk menampilkan umpan balik kontrastif Bahasa Indonesia secara langsung (*Point-of-Performance Remediation*) alih-alih sekadar menandai salah:
+* **Kasus Jepang (`ja`):** Memilih `で` alih-alih `に` untuk tujuan perjalanan -> Mera menjelaskan perbedaan lokasi aktivitas (`で`) vs arah tujuan pergerakan (`に` / `へ`).
+* **Kasus Inggris US (`en-us`):** Memilih *"I have seen him yesterday"* -> Mera membedah bahwa keterangan waktu lampau spesifik (`yesterday`) mensyaratkan *Past Simple* (`I saw him yesterday`), bukan *Present Perfect*.
 
----
+#### D. Toleransi Multi-Aksara & Pengaman Evaluasi Lintas Bahasa
+* Kolom `acceptable_answers JSONB` menerima variasi sah (misal Kanji vs Hiragana penuh untuk `ja`, kontraksi vs bentuk penuh `don't` / `do not` untuk `en-us`, serta `ß` vs `ss` untuk ekspansi `de`).
+* Pada latihan `speaking_repeat`, backend Go menerapkan normalisasi Kanji/Katakana/Hiragana/Romaji khusus bahasa Jepang yang dijaga oleh fungsi **`containsJapaneseScript`** agar fallback fonetik Romaji Jepang tidak pernah diterapkan secara keliru pada bahasa beraksara Latin seperti `en-us`.
 
-#### C. Evaluasi Cerdas & Remediasi Instan (The Mera AI Coach Lintas Bahasa)
-Ketika pengguna menjawab salah, sistem membaca `diagnostic_rubric` untuk memberikan edukasi langsung sesuai kaidah bahasa terkait:
-
-* 🇯🇵 **Kasus Jepang (Jebakan Partikel):**  
-  Pengguna memilih `で` alih-alih `に` untuk *"Saya pergi ke Tokyo"*.  
-  *Mera:* *"Kamu memilih で. Hati-hati! Partikel で digunakan untuk tempat aktivitas (misal: makan di resto), sedangkan arah tujuan pergerakan wajib menggunakan partikel に atau へ."*
-* 🇩🇪 **Kasus Jerman (Jebakan Kasus Akkusativ vs Dativ):**  
-  Pengguna memilih *"auf dem Tisch"* alih-alih *"auf den Tisch"* untuk kalimat meletakkan cangkir ke atas meja.  
-  *Mera:* *"Kamu memilih dem (Dativ). Ingat aturan Wechselpräposition: jika menyatakan perpindahan posisi / gerakan ke suatu tempat, gunakan Akkusativ (den Tisch). Dativ hanya untuk posisi yang sudah diam!"*
-* 🇬🇧 **Kasus Inggris (Jebakan Present Perfect vs Past Simple):**  
-  Pengguna memilih *"I have seen him yesterday"*.  
-  *Mera:* *"Hati-hati! Kata keterangan waktu lampau spesifik ('yesterday', 'last night') tidak boleh menggunakan Present Perfect. Gunakan Past Simple: 'I saw him yesterday'."*
-* 🇨🇳 **Kasus Mandarin (Jebakan Kata Satuan / Measure Words):**  
-  Pengguna memilih *"一个人"* vs *"一本书"* atau salah menggunakan kata satuan umum '个' untuk benda lembaran.  
-  *Mera:* *"Untuk benda lembaran tipis seperti tiket atau kertas (票, 纸), gunakan kata satuan 张 (zhāng), bukan 个 (gè)!"*
-
----
-
-#### D. Toleransi Multi-Aksara Tanpa Hukuman Salah (Multi-Script Flexibility)
-Kolom `acceptable_answers` dirancang modular untuk menampung seluruh keragaman aksara dunia:
-* **Jepang:** Menerima versi Kanji `私は学生です` maupun Hiragana `わたしはがくせいです` (100% Benar).
-* **Mandarin:** Menerima karakter Simplified `中国` maupun Traditional `中國`, serta Pinyin dengan nada `zhōng guó`.
-* **Inggris:** Menerima ejaan British (`colour`, `theatre`, `programme`) maupun American (`color`, `theater`, `program`).
-* **Jerman:** Menerima penulisan `groß` maupun `gross` jika keyboard pengguna tidak memiliki tombol Eszett (ß).
-
----
-
-#### E. Prediktor Kesiapan Ujian Resmi (The Readiness Exam Predictor)
-Simulasi ujian diagnostik sebelum pengguna membayar ujian resmi (\$100–\$250):
-* 🇯🇵 **JLPT Mock Exam:** Seksi *Moji/Goi*, *Bunpo/Dokkai*, dan *Choukai* (audio 1x putar).
-* 🇩🇪 **Goethe Mock Exam:** Seksi *Lesen*, *Hören*, *Schreiben*, dan *Sprechen*.
-* 🇬🇧 **IELTS Mock Exam:** Seksi *Academic Reading*, *Listening (Multi-Accent)*, *Writing Task 1 & 2*, dan *Speaking Interview*.
-* 🇨🇳 **HSK Mock Exam:** Seksi *Tīnglì* (Mendengar), *Yuèdú* (Membaca), dan *Xiězuò* (Menulis).
-* Menghasilkan **Laporan Kesiapan Presisi** dengan probabilitas kelulusan riil (misal: *"Probabilitas Lulus Goethe B1: 81%"*).
+#### E. Prediktor Kesiapan Ujian Resmi (Readiness Mock Exam)
+Setiap level resmi (N5–N1 untuk `ja` dan A1–C2 untuk `en-us`) dilengkapi unit **Readiness Exam (`unit_type = 'diagnostic_exam'`, `order_index = 99`)** yang mensimulasikan ujian sertifikasi tanpa bantuan kartu pengantar (*spoiler-free*), menghasilkan rincian skor 4 pilar (`reading`, `listening`, `writing`, `speaking`), status kelulusan terhadap `passing_score_percent`, dan rekomendasi remediasi topik grammar.
 
 ---
 
 ### 1.4 Delapan Metodologi Pembelajaran Ilmiah (The 8 Scientific Pedagogical Methodologies)
 
-Merantalk memadukan 8 metodologi pedagogi teruji dari ranah sains kognitif dan akuisisi bahasa untuk menjamin pemahaman nyata dan retensi permanen:
-
-```
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                           8 METODOLOGI PEDAGOGI ILMIAH MERANTALK                                │
-├──────────────────────────┬───────────────────────────────────────────────────────────────────────┤
-│ 1. Spaced Repetition     │ Pengulangan berjarak adaptif (SM-2) tepat saat kurva memori menurun.  │
-│ 2. Active Recall         │ Memaksa otak memanggil ingatan aktif (bukan membaca pasif).           │
-│ 3. Syntax Scaffolding    │ Balok berkode warna mereduksi beban kognitif struktur asing (SOV/V2). │
-│ 4. Multi-Sensory         │ Aktivasi 4 indera serentak: Telinga, Mata, Tangan, dan Mulut.         │
-│ 5. Pushed Output         │ Keseimbangan Comprehensible Input (Krashen) & Produksi Aktif (Swain). │
-│ 6. Formative Feedback    │ Koreksi instan berbasis logika via Mera (mencegah kesalahan membatu). │
-│ 7. Microlearning Habits  │ Ritual mikro 15 menit konsisten bebas burnout (Atomic Habits).        │
-│ 8. Mastery Benchmark     │ Penguasaan bertingkat 80% & simulasi ujian patokan resmi dunia.       │
-└──────────────────────────┴───────────────────────────────────────────────────────────────────────┘
-```
-
-1. **Metode Spaced Repetition System (SRS) — Pengulangan Berjarak Ilmiah (SuperMemo SM-2):**
-   * *Mekanisme:* Materi diulang bukan setiap hari secara monoton, melainkan dengan jeda waktu adaptif ($1 \to 3 \to 6 \to 12 \to 30$ hari) tepat saat kurva daya ingat (*Ebbinghaus Forgetting Curve*) mulai menurun.
-   * *Manfaat Pedagogis:* Mentransfer kosakata dan kaidah tata bahasa dari memori kerja jangka pendek (*Short-Term Memory*) menjadi memori permanen (*Long-Term Potentiation*) secara efisien.
-
-2. **Metode Active Recall / Retrieval Practice — Pemanggilan Memori Aktif:**
-   * *Mekanisme:* Otak dipaksa bekerja memeras ingatan sendiri untuk menjawab kalimat rumpang atau menyusun balok kata tanpa melihat kunci jawaban terlebih dahulu.
-   * *Manfaat Pedagogis:* Riset kognitif membuktikan bahwa *retrieval practice* melipatgandakan kekuatan retensi hingga 300% dibandingkan membaca ulang teks secara pasif.
-
-3. **Metode Visual Syntax Scaffolding — Perancah Sintaksis Berkode Warna:**
-   * *Mekanisme:* Kalimat asing didekonstruksi menjadi balok fungsional (🟦 Subjek, 🟩 Partikel/Kasus, 🟧 Objek/Latar, 🟪 Predikat/Tenses) dengan aturan keterikatan magnetik.
-   * *Manfaat Pedagogis:* Menerapkan *Cognitive Load Theory* (Sweller). Mereduksi beban memori kerja pembelajar pemula saat menghadapi struktur urutan kata yang terbalik dari bahasa ibu (misal: SOV Jepang atau V2 Jerman).
-
-4. **Metode Multi-Sensory 4-Pillar Learning — Pembelajaran Multi-Indera Terpadu:**
-   * *Mekanisme:* Mengintegrasikan 4 sensori secara seimbang dalam setiap materi: Auditori (Mendengar audio native), Visual (Membaca Kanji/aksara + Furigana), Kinestetik/Taktil (Menyusun balok 3D), dan Vokal/Artikulasi (Melafalkan ke mikrofon).
-   * *Manfaat Pedagogis:* Membangun koneksi sinapsis ganda di otak (*Dual-Coding Theory*). Jika telinga lupa, tangan masih mengingat urutan balok; jika mata lupa, memori otot lidah masih mengingat artikulasinya.
-
-5. **Metode Pushed Output & Comprehensible Input — Keseimbangan Input-Output:**
-   * *Mekanisme:* Memadukan *Krashen’s Comprehensible Input ($i+1$)* dan *Swain’s Pushed Output Hypothesis*. Pembelajar tidak hanya mengonsumsi konten pasif, melainkan dipaksa memproduksi kalimat secara aktif melalui *Speaking Repeat* dan *Dialogue Roleplay*.
-   * *Manfaat Pedagogis:* Menghilangkan sindrom *"paham saat mendengarkan, tetapi membeku saat harus berbicara"*.
-
-6. **Metode Immediate Formative Feedback — Koreksi Diagnostik Berbasis Logika:**
-   * *Mekanisme:* Saat pengguna keliru, sistem membaca rubrik diagnostik (`diagnostic_rubric`) dan Mera langsung membedah letak kekeliruan berpikirnya saat itu juga (*Point-of-Performance Remediation*).
-   * *Manfaat Pedagogis:* Mencegah *fossilization* (kekeliruan tata bahasa yang membatu permanen karena tidak pernah dikoreksi logikanya).
-
-7. **Metode Microlearning & Habit Stacking — Ritual Mikro 15 Menit:**
-   * *Mekanisme:* Memecah silabus sertifikasi internasional menjadi porsi mikro harian berdurasi 15 menit, dikombinasikan dengan penguat kebiasaan (*Atomic Habits*: Api Streak dan Peti Emas 3D).
-   * *Manfaat Pedagogis:* Menurunkan hambatan inersia belajar, menjaga konsistensi jangka panjang tanpa risiko *burnout*.
-
-8. **Metode Mastery Learning & Benchmark Testing — Penguasaan Bertingkat & Ujian Patokan:**
-   * *Mekanisme:* Mengunci akses materi lanjutan via *Boss Battle Checkpoint* (syarat kelulusan $\ge 80\%$) dan memvalidasi kesiapan akhir menggunakan *Diagnostic Mock Exam* berstandar sertifikasi resmi (JLPT, IELTS, Goethe, HSK).
-   * *Manfaat Pedagogis:* Menghilangkan tebak-tebakan kesiapan ujian dan memberikan tolok ukur kompetensi yang objektif.
+| # | Metodologi | Implementasi Nyata di Merantalk |
+| :--- | :--- | :--- |
+| **1** | **Pengingat Ulang Otomatis (Anti Lupa)** | Jadwal Latihan Ulang Adaptif ganda: antrean soal yang masih keliru (`user_srs_reviews`) dan 180 dek **Kartu Kosakata** (`user_flashcard_progress`) dengan penyesuaian otomatis faktor kemudahan (`ease_factor`) & jarak hari (`interval_days`). |
+| **2** | **Learn-Before-Quiz Scaffolding** | Materi dikenalkan dalam batch mikro (*2 kartu studi -> latihan -> 2 kartu berikutnya*) lengkap dengan mnemonik Indonesia & audio 2 kecepatan sebelum diuji. |
+| **3** | **Active Recall / Retrieval Practice** | Latihan rumpang, susun balok kata, dan mini-kuis 3 soal pada Grammar Studio memaksa pemanggilan memori aktif, bukan membaca pasif. |
+| **4** | **Visual Syntax Scaffolding** | Balok peran kalimat berkode warna & *Slot Playground* mereduksi beban kognitif struktur bahasa asing (SOV Jepang, pola klausa akademik TOEFL). |
+| **5** | **Multi-Sensory 4-Pillar Learning** | Aktivasi simultan auditori (TTS BCP-47), visual (Furigana/IPA/warna), taktil (balok 3D), dan artikulasi vokal (mikrofon Web Speech API). |
+| **6** | **Immediate Formative Feedback** | Koreksi logis instan berbasis `diagnostic_rubric` untuk mencegah *fossilization* kekeliruan tata bahasa. |
+| **7** | **Microlearning & Habit Loops** | Pilihan ritme 5/15/30/45 menit/hari, 3 Misi Harian rotasi WIB, 3 Peti Harian, Streak harian, Lencana Bulanan, dan Liga Mingguan. |
+| **8** | **Mastery Gatekeeping & Benchmarking** | Checkpoint akhir unit (*spoiler-free*) dan Ujian Simulasi Kesiapan 4 pilar sebagai tolok ukur objektif sebelum naik level atau mengikuti ujian resmi. |
 
 ---
 
-## 🔄 2. End-to-End User Experience Lifecycle (Alur Komprehensif)
+## 2. End-to-End User Experience Lifecycle
 
-```
-┌──────────────────────────────────────────────────────────────────────────────────────────────────┐
-│                               THE COMPREHENSIVE LEARNER LIFECYCLE                                │
-├───────────────────┬─────────────────────┬────────────────────┬──────────────────┬────────────────┤
-│      STAGE 1      │       STAGE 2       │      STAGE 3       │     STAGE 4      │    STAGE 5     │
-│  Onboarding &     │   The 15-Minute     │   Unit Mastery     │  The Diagnostic  │ Multi-Language │
-│ Placement Compass │ Daily Mastery Loop  │  Gatekeeper (Boss) │ Mock Exam & Prep │ & Level Leap   │
-├───────────────────┼─────────────────────┼────────────────────┼──────────────────┼────────────────┤
-│ • Auth & Profil   │ • 3-Min Anki SRS    │ • Tantangan        │ • Simulasi Ujian │ • Naik Level   │
-│ • Pilih Bahasa    │ • 8-Min Visual      │   Sintesis Bab     │   Resmi (Timer)  │   (N5➔N4, A1➔A2)│
-│ • Target Ujian    │   Lesson Node       │ • Zero Hints       │ • Skor 4 Pilar   │ • Switch ke    │
-│ • Placement Test  │ • 3-Min Speaking    │ • Syarat Lulus 80% │ • Preskripsi     │   Bahasa Lain  │
-│   (Skip Level)    │ • Klaim Peti Emas   │ • Buka Kunci Unit  │   Remediasi AI   │ • Zero Reset   │
-│ • 3D Boarding Pass│   & Streak Api      │   Berikutnya       │ • Garansi Lulus  │   Collision    │
-└───────────────────┴─────────────────────┴────────────────────┴──────────────────┴────────────────┘
+```text
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                             MERANTALK LEARNER LIFECYCLE (v3.2 LIVE)                                 │
+├──────────────────┬──────────────────┬──────────────────┬──────────────────┬─────────────────────────┤
+│     STAGE 0      │     STAGE 1      │     STAGE 2      │     STAGE 3      │         STAGE 4         │
+│   Guest Trial    │ 3-Step Onboarding│  Daily Mastery   │ Unit Checkpoint  │ Readiness Exam & Track  │
+│  (Tanpa Login)   │ & Placement Test │ & Anti Lupa Loop │  (Spoiler-Free)  │  Switching / Pro Leap   │
+├──────────────────┼──────────────────┼──────────────────┼──────────────────┼─────────────────────────┤
+│ • Unit 1 N5 / A1 │ • Step 1: Bahasa │ • Interleaved    │ • Tes Akhir Unit │ • Simulasi 4 Pilar per  │
+│ • Grammar & Deck │   (SVG Flags)    │   Study Batches  │   (`tes-akhir`)  │   Level (N5-N1 / A1-C2) │
+│   Pemula         │ • Step 2: Pace   │ • 4-Pillar Quiz  │ • Tanpa Bocoran  │ • Laporan Kelemahan &   │
+│ • Simpan Lokal   │   5/15/30/45 mnt │ • Grammar Studio │   & Laci Materi  │   Masuk Antrean Ulang   │
+│   & Auto-Sync    │ • Step 3: Tes 15 │ • Ulang Adaptif  │ • Buka Unit      │ • Switch ja <-> en-us   │
+│   saat Daftar    │   Soal -> +50 XP │ • Misi WIB & Liga│   Berikutnya     │   Zero Collision        │
+└──────────────────┴──────────────────┴──────────────────┴──────────────────┴─────────────────────────┘
 ```
 
----
+### 2.1 Stage 0: Mode Coba Tanpa Login (Guest Trial & Auto-Sync)
+* Pengunjung di Landing Page atau `/curriculum` dapat langsung memilih bahasa aktif (`ja` atau `en-us`) dan memainkan seluruh **Unit 1 pada level pemula (`JLPT N5` / `CEFR A1`)**, membuka panduan grammar pemula, papan aksara Jepang, serta deck flashcard pemula tanpa registrasi.
+* Progres pelajaran yang diselesaikan beserta preferensi bahasa aktif (`preferredLanguageId`) disimpan secara lokal di peramban melalui `guestTrialStore` (`merantalk_guest_trial_v1`).
+* Begitu pengguna mendaftar atau masuk (via Email/Password atau **Google OAuth 2.0**) dan menuntaskan onboarding, hook **`useGuestTrialSync`** memutar ulang (*replay*) seluruh pelajaran yang diselesaikan secara kronologis dengan *single-flight lock* ke PostgreSQL sehingga XP dan progres Unit 1 tidak pernah hilang.
 
-### 2.1 Stage 1: Onboarding, Compass Penempatan & Boarding Pass 3D
+### 2.2 Stage 1: Registrasi & 3-Step Onboarding Wizard
+Pengguna baru yang mendaftar melalui Email/Password atau **Google OAuth 2.0** diarahkan ke alur **3-Step Onboarding Wizard** yang ringkas (< 2 menit):
 
-1. **Registrasi Cepat & Seamless Auto-Login:**
-   * Pengguna mendaftar dengan Email & Password (enkripsi Bcrypt).
-   * Token JWT dikeluarkan seketika, langsung mengalirkan pengguna ke Wizard Penempatan (*Zero Friction*).
-2. **Langkah A: Pemilihan Destinasi Bahasa (Language Picker):**
-   * Pengguna disajikan kartu 3D visual 5 destinasi utama:
-     * 🇯🇵 **Jepang** (`ja`): JLPT N5 – N1 • Aksara: Kanji, Hiragana, Katakana.
-     * 🇩🇪 **Jerman** (`de`): Goethe / TestDaF A1 – C1 • Aksara: Latin & Umlaut (ä, ö, ü, ß).
-     * 🇬🇧/🇺🇸 **Inggris** (`en-gb` / `en-us`): IELTS 5.0–8.5 / TOEFL • Aksara: Latin UK/US.
-     * 🇨🇳 **Mandarin** (`zh`): HSK 1 – 6 • Aksara: Hanzi (Simplified/Traditional) & Pinyin.
-     * 🇫🇷 **Prancis** (`fr`): DELF A1 – C1 • Aksara: Latin dengan aksen (é, è, ç).
-3. **Langkah B: Penentuan Target Sertifikasi Resmi (Proficiency Target Compass):**
-   * Pengguna memilih ambisi konkrit mereka:
-     * *Jepang:* JLPT N5 (Pemula), N4 (SSW Visa), N3 (Transisi), N2 (Kerja Profesional/Kuliah), N1 (Native Mastery).
-     * *Jerman:* Goethe A1 (Syarat Visa Pasangan), A2, B1 (Syarat Kerja Ausbildung/Kerja Terampil), B2 (Universitas/IT Engineer), C1 (Eksekutif).
-     * *Inggris:* IELTS 6.0 (Undergraduate), 7.0 (Postgraduate), 8.0+ (Global Tech Lead).
-     * *Mandarin:* HSK 2, HSK 4 (Beasiswa China/Taiwan), HSK 5–6 (Bisnis & Manufaktur).
-4. **Langkah C: Jalur Penempatan Diagnostik (The Placement Fork):**
-   * 🟢 **Opsi 1: "Saya Benar-Benar Pemula (Mulai dari Nol)"**:
-     Langsung diarahkan ke Unit 1 Lesson 1 bahasa tersebut (Pengenalan Aksara & Kalimat Subjek Dasar).
-   * ⚡ **Opsi 2: "Saya Sudah Punya Dasar (Tes Penempatan 10 Menit)"**:
-     * Mengerjakan 15 soal adaptif.
-     * Jika meraih skor $\ge 80\%$ pada materi level awal (misal: N5 untuk Jepang atau A1 untuk Jerman), sistem secara otomatis menandai seluruh unit level awal sebagai *Completed* dan membuka gerbang awal level berikutnya (JLPT N4 atau CEFR A2).
-5. **Langkah D: Penerbitan Tiket Fisik 3D (The Boarding Pass Milestone):**
-   * Mera menyerahkan tiket penerbangan interaktif 3D sesuai destinasi pilihan:
-     * 🇯🇵 Jakarta ➔ Tokyo (`CGK ✈️ HND`)
-     * 🇩🇪 Jakarta ➔ Berlin (`CGK ✈️ BER`)
-     * 🇬🇧 Jakarta ➔ London (`CGK ✈️ LHR`)
-     * 🇺🇸 Jakarta ➔ San Francisco (`CGK ✈️ SFO`)
-     * 🇨🇳 Jakarta ➔ Beijing (`CGK ✈️ PEK`)
-     * 🇫🇷 Jakarta ➔ Paris (`CGK ✈️ CDG`)
-   * Efek audio chimes berdentang, hadiah selamat datang **+50 XP** diberikan, dan pengguna mendarat di Dashboard Roadmap Utama.
+1. **Welcome Intro -> Step 1: Pemilihan Destinasi Bahasa (`Step1LanguagePicker`):**
+   * Menampilkan kartu bahasa dengan ilustrasi **Bendera SVG 3D** (Zero Raw Emoji Policy).
+   * Bahasa aktif (**Jepang `ja`** dan **Inggris American `en-us`**) dapat dipilih langsung.
+   * Bahasa bertanda *Segera Hadir* (**Inggris British `en-gb`**, **Jerman `de`**, **Mandarin `zh`**, **Prancis `fr`** dengan `is_active = false`) terkunci secara eksplisit beserta label status tanpa pernah melakukan fallback diam-diam ke Jepang.
+2. **Step 2: Ritme Belajar Harian & Jalur Penempatan (`Step2PaceAndPlacement`):**
+   * **Komitmen Belajar Harian (`daily_goal_minutes`):**
+     * **5 Menit / Hari** — Santai & konsisten (~1 materi/hari).
+     * **15 Menit / Hari (Rekomendasi)** — Ritme ideal anti-burnout (~2 materi/hari).
+     * **30 Menit / Hari** — Progres cepat menuju sertifikasi (~3–4 materi/hari).
+     * **45 Menit / Hari** — Akselerasi intensif (~5+ materi/hari).
+   * **Jalur Penempatan Awal (`initial_placement_type`):**
+     * **Mulai dari Nol (`zero_beginner`):** Langsung menuntaskan onboarding dan memulai dari Unit 1 Level Pemula (`JLPT N5` / `CEFR A1`).
+     * **Tes Penempatan Singkat (`placement_test`):** Melanjutkan ke Langkah 3.
+3. **Step 3: Tes Penempatan Adaptif 15 Soal (`Step3PlacementTest`):**
+   * Mengambil hingga **15 soal diagnostik** (`unit_type = 'diagnostic_exam'`, `order_index = -1`) untuk bahasa pilihan (`ja` atau `en-us`).
+   * **Penilaian & Lompat Level Otomatis:** Jika skor >= 80% dan level lanjutan tersedia serta memiliki materi, sistem otomatis menempatkan `user_language_enrollments.current_level_id` ke level berikutnya dan menandai pelajaran level awal sebagai `is_completed = true`, `is_skipped = true` (tetap *replayable* tanpa membanjiri antrean **Pengingat Ulang Otomatis** dengan materi dasar yang sudah dikuasai).
+4. **Penyelesaian Wizard:**
+   * Backend memberikan bonus selamat datang **+50 XP** (tercatat sebagai `onboarding_completed` di `user_activity_logs`), menginvalidasi cache kurikulum Redis, dan langsung mengarahkan pengguna ke **`/curriculum`**.
 
----
+### 2.3 Stage 2: Siklus Belajar Harian (Interleaved Study, Grammar Studio & Anti Lupa)
+1. **Interleaved Learn-Before-Quiz Study Batches (`LessonIntroView` & `LessonStudyCardsDrawer`):**
+   * Pada setiap pelajaran non-checkpoint, alur pembelajaran memadukan **2 kartu studi pengantar -> 2–3 soal latihan -> 2 kartu studi berikutnya** di dalam satu progress bar terpadu.
+   * Setiap kartu studi menampilkan aksara/kosakata atau frasa target, pembacaan (Furigana/Romaji atau US IPA), arti Bahasa Indonesia, mnemonik/jembatan keledai, serta audio 2 kecepatan (**Normal `1.0x`** dan **Pelan `0.6x`**) dengan auto-play berurutan.
+   * Selama mengerjakan latihan non-checkpoint, pembelajar dapat membuka slide-over **Intip Kartu Materi (`LessonStudyCardsDrawer`)** kapan saja tanpa kehilangan posisi soal.
+2. **Latihan Interaktif 4 Pilar:**
+   * Soal mencakup `fill_blank`, `listening_choice`, `sentence_builder`, `speaking_repeat`, dan `dialogue_roleplay` dengan umpan balik diagnostik Mera seketika.
+   * Soal yang dijawab keliru secara otomatis dijadwalkan masuk ke antrean **Pengingat Ulang Otomatis (`/review`)** agar segera dilatih kembali sebelum lupa.
+3. **3-Step Progressive Interactive Grammar Studio (`/grammar` & `/grammar/:code`):**
+   * Terbuka untuk seluruh 116 poin tata bahasa (`56` `GP-JA-*` & `60` `GP-EN-*`) dengan alur bertahap: **1. Pahami** -> **2. Coba Rakit** -> **3. Tes Cepat (3 Soal)** yang merekam progres ke `user_grammar_progress`.
+4. **Pengingat Ulang Otomatis (Anti Lupa), Kartu Kosakata & Papan Aksara:**
+   * Pembelajar mengulas kesalahan latihan di **`/review`** (`user_srs_reviews`), melatih kosakata kurasi per topik di **`/flashcards`** (`user_flashcard_progress`), serta berlatih Hiragana/Katakana/Kanji di **`/kana/:script`** (`user_kana_progress`) saat berada pada jalur Jepang.
+5. **Ritual Gamifikasi Harian & Mingguan:**
+   * Menyelesaikan 3 Misi Harian rotasi WIB, membuka 3 Peti Harian bertingkat, mengejar Lencana Kehormatan Bulanan (`25` misi/bulan, `+150 XP`), berbelanja di Toko Gems (*Streak Freeze*, *2x XP Booster*), dan bersaing di Liga Mingguan (`Bronze` -> `Diamond`).
 
-### 2.1.1 Spesifikasi Algoritma Tes Penempatan Adaptif (Adaptive Placement Test)
-Bagi pengguna yang memilih *"Saya Sudah Punya Dasar"*, sistem menjalankan tes penempatan adaptif 10 menit dengan mekanisme:
-* **Struktur Soal (15 Butir Dinamis):**
-  * Butir 1–5: Tingkat Dasar (JLPT N5 / CEFR A1 / HSK 1) — Kosakata, partikel dasar, dan listening singkat.
-  * Butir 6–10: Tingkat Menengah Bawah (JLPT N4 / CEFR A2 / HSK 2) — Konjugasi tenses lampau, klausa penghubung, artikel kasus.
-  * Butir 11–15: Tingkat Transisi Menengah (JLPT N3 / CEFR B1 / HSK 3) — Pemahaman paragraf kerja, tenses majemuk, keigo dasar.
-* **Logika Penyesuaian Dinamis (Branching Logic):**
-  * Jika pengguna salah 3 kali berturut-turut pada soal tingkat N5/A1, tes langsung dihentikan lebih awal (*early stop*) untuk mencegah frustrasi, dan pengguna ditempatkan di Unit 1 Level Pemula.
-  * Jika pengguna meraih akurasi $\ge 80\%$ pada soal kelompok level tertentu, seluruh unit di level tersebut langsung ditandai `is_completed: true` di database, dan `user_language_enrollments.current_level_id` otomatis dimajukan ke level berikutnya!
+### 2.4 Stage 3: Checkpoint Akhir Unit (`tes-akhir`) — Mode Bebas Bocoran
+* Di penghujung setiap unit terdapat pelajaran checkpoint (**`tes-akhir`**) yang menguji sintesis seluruh materi unit tersebut.
+* **Spoiler-Free Discipline:** Kartu pengantar materi (`LessonIntroView`) dan laci *Intip Kartu Materi* (`LessonStudyCardsDrawer`) dinonaktifkan penuh pada checkpoint. Selain itu, backend secara otomatis menyaring petunjuk terjemahan atau rumus persamaan yang berpotensi membocorkan jawaban (`isFillBlankTranslationSpoiler`, `sanitizeFillBlankSentenceTemplate`).
+* Lulus checkpoint membuka gerbang menuju Unit berikutnya (kecuali pengguna Merantalk Pro yang memiliki keleluasaan melompat antar-unit).
 
----
-
-### 2.2 Stage 2: The 15-Minute Daily Mastery Ritual (Siklus Harian)
-
-Setiap hari, pengguna disambut dengan siklus belajar harian berdurasi 15 menit yang terbukti secara kognitif memaksimalkan retensi memori tanpa memicu kejenuhan (*anti-burnout*):
-
-#### ⏰ Menit 00–03: Pemanasan Kartu Memori Anki SRS (Spaced Retrieval Practice)
-* Pengguna membuka tab **"Review Harian (Anki Deck)"**.
-* Backend mengeksekusi query kilat mengambil kartu yang jatuh tempo hari ini:  
-  `SELECT * FROM user_srs_reviews WHERE user_id = $1 AND next_review_at <= NOW()`
-* Pengguna disajikan 10–15 kartu memori lintas bahasa sesuai track aktif:
-  * 🇯🇵 *Jepang:* Kanji `東京` ➔ Cara baca `とうきょう` & arti.
-  * 🇩🇪 *Jerman:* Gender kata benda: `___ Tisch` ➔ Balik kartu: `der Tisch` (Maskulin).
-  * 🇬🇧 *Inggris:* Bentuk irregular verb: `freeze` ➔ `froze` ➔ `frozen`.
-  * 🇨🇳 *Mandarin:* Karakter `谢谢` ➔ Pinyin nada ke-4 `xièxie`.
-* Penilaian dengan 4 tombol taktil SM-2: 🔴 Lupa (1 hari), 🟠 Sulit (3 hari), 🟢 Bagus (6 hari), 🔵 Mudah (12 hari).
-
-#### ⏰ Menit 03–11: Node Kurikulum Harian (Interactive Visual Lesson)
-* Pengguna membuka Roadmap. Node aktif berdenyut dengan ring biru listrik dan popover:  
-  `"Part 3: [Nama Materi] • +15 XP"`.
-* Masuk ke **Learn Workspace**:
-  1. **Micro-Grammar Introduction (2 menit):**
-     * Mempelajari rumus sintaksis visual berkode warna (Biru = Subjek, Hijau = Partikel/Preposisi, Oranye = Objek/Latar, Ungu = Predikat/Tenses).
-     * Mendengarkan audio pengucapan penutur asli (*Native Audio*).
-  2. **Interactive 4-Pillar Exercises (6 menit):**
-     * **Latihan 1 (Reading):** Membaca teks otentik dengan bantuan aksara.
-     * **Latihan 2 (Listening):** Mendengarkan klip suara native dan memilih makna yang tepat.
-     * **Latihan 3 (Writing - Sentence Builder):** Menyusun balok kata fisik sesuai aturan urutan kata (SOV di Jepang, V2 di Jerman, SVO di Inggris & Mandarin).
-     * **Latihan 4 (Fill-in-the-Blank):** Melengkapi partikel/artikel/konjugasi waktu.
-       * *Skenario Kesalahan:* Jika keliru, bottom-sheet Mera muncul seketika memberikan penjelasan edukatif sesuai kaidah linguistik bahasa tersebut, dan otomatis menyuntikkan soal ke antrean kartu Anki besok!
-
-#### ⏰ Menit 11–14: Latihan Bicara Aktif (Active Speech & Pushed Output)
-* Pengguna menekan tombol mikrofon 3D tebal dan melafalkan kalimat target.
-* Web Speech API menangkap ucapan dan mencocokkan transkrip fonetik dengan toleransi aksara.
-* Jika akurasi $\ge 75\%$, tombol menyala hijau terang dengan suara keberhasilan taktil, melatih kepercayaan diri berbicara sebelum menghadapi wawancara atau ujian lisan resmi.
-
-#### ⏰ Menit 14–15: Selebrasi Kemenangan, Peti Emas & Streak Harian
-* Konfeti visual berhamburan di layar!
-* XP bertambah +15 XP, menggenapkan target harian 50 XP.
-* **Peti Emas 3D (Golden Chest) berguncang**:
-  * Pengguna mengklik peti, peti terbuka dengan animasi fisika 3D dan audio synthesizer fanfare.
-  * Hadiah klaim: **+10 Gems Biru** dan **+20 XP Bonus**.
-* Api Streak berkobar menyala dengan efek audio desisan api hangat. Kebiasaan harian berhasil dirawat!
+### 2.5 Stage 4: Ujian Simulasi Kesiapan (Readiness Mock Exam) & Multi-Language Switching
+* Setiap level (`N5–N1` & `A1–C2`) menyediakan **Readiness Exam (`order_index = 99`)** berformat 4 pilar dengan penghitung waktu, bebas bocoran, skor terpisah Reading/Listening/Writing/Speaking (`readiness_exam_attempts`), status lulus terhadap ambang batas resmi (`60%–75%`), serta rekomendasi penguatan ke topik grammar dan antrean **Pengingat Ulang Otomatis** (`/review`).
+* Melalui **Track Switcher** di TopBar/Sidebar, pengguna dapat beralih secara instan antara **Jepang (`ja`)** dan **Inggris American (`en-us`)** tanpa konflik data (*Zero Collision*), dengan pembaruan otomatis level, grammar, kartu kosakata, audio BCP-47, serta visibilitas menu Aksara Kana.
 
 ---
 
-### 2.3 Stage 3: Unit Mastery Gatekeeper ("Boss Battle Checkpoint")
+## 3. Target Personas & Success Metrics
 
-* Di akhir setiap Unit (4–6 lessons), terdapat **Node Gerbang Checkpoint**:
-  * **Ujian Sintesis Tanpa Bantuan:** 10 soal komprehensif yang menguji kombinasi seluruh topik grammar di unit tersebut.
-  * **Zero Hints & No Undo:** Fitur petunjuk dinonaktifkan untuk menguji pemahaman orisinal.
-  * **Ambang Batas Kelulusan 80%:** Pengguna wajib meraih minimal nilai 80 untuk membuka Unit kurikulum berikutnya.
-  * **Jika Lulus:** Animasi gembok emas terbuka dengan dentang suara kunci logam 3D, menganugerahkan **Lencana Unit (Badge)** ke profil pengguna.
-  * **Jika Belum Lulus:** Mera menyajikan analisis kelemahan spesifik dan mengarahkan kembali ke modul latihan penguatan.
-
----
-
-### 2.4 Stage 4: The Diagnostic Mock Exam (Simulasi Ujian Kesiapan Resmi)
-
-Ketika pengguna menyelesaikan seluruh unit dalam satu level resmi (misal: seluruh Unit di level JLPT N5, Goethe A1, atau IELTS Foundation), modul **Diagnostic Mock Exam** terbuka:
-
-1. **Kondisi Ujian Otentik (Strict Exam Environment):**
-   * Penghitung waktu mundur (*Countdown Timer*) berjalan sesuai durasi ujian resmi dunia.
-   * Seksi dipisahkan secara ketat sesuai format resmi lembaga penguji (JLPT, Goethe-Institut, British Council/IDP, Hanban).
-2. **Dashboard Evaluasi & Skor 4 Pilar:**
-   * Menampilkan nilai terpisah untuk **Reading (0–100), Listening (0–100), Writing (0–100), dan Speaking (0–100)** serta Skor Agregat Keseluruhan.
-   * Indikator status kelulusan resmi: **LULUS (Passed)** atau **BELUM LULUS (Needs Revision)** mengacu pada passing grade resmi (misal: 60%).
-3. **The AI Diagnostic Prescription (Resep Remediasi Cerdas):**
-   * **Gauge Probabilitas Kelulusan:** Menghitung persentase kesiapan riil (misal: *"Probabilitas Kelulusan Goethe B1: 83%"*).
-   * **Daftar Kelemahan Kritis (Critical Weaknesses):** Memetakan topik tata bahasa spesifik yang gagal dijawab saat ujian dengan tombol satu-klik: **[Buka Remedial Topik Ini]**.
-   * **Sinkronisasi Otomatis ke SRS:** Seluruh butir soal yang salah saat mock exam langsung dijadwalkan masuk ke kartu Anki harian untuk diperkuat selama 7 hari ke depan.
-
----
-
-### 2.5 Stage 5: Lompatan Level & Pembelajaran Multi-Bahasa Bebas Konflik
-
-Setelah lulus ujian kesiapan di satu level, ekosistem Merantalk memberikan kebebasan penuh:
-1. **Lompatan Level Vertikal:** Pengguna dapat langsung naik kelas ke level berikutnya (misal: dari JLPT N5 naik ke JLPT N4, atau Goethe A1 naik ke A2) dengan kurikulum yang menyambung secara logis.
-2. **Eksplorasi Multi-Bahasa Bebas Bentrok (Multi-Language Switching):**
-   * Pengguna dapat membuka TopBar dan mengaktifkan bahasa lain (misal: beralih dari Jepang ke Jerman atau Mandarin).
-   * **Zero Collision Architecture:** Database menyimpan progres di tabel terisolasi (`user_language_enrollments`, `user_lesson_progress`, `user_srs_reviews`). Beralih ke bahasa Jerman tidak akan pernah mereset kartu Anki atau streak bahasa Jepang pengguna!
-
----
-
-## 🎯 3. Target Personas & Success Metrics
-
-### 3.1 Personas 6 Track Destinasi
-1. **Persona 1: Rian (24 thn) — Target Kerja & Beasiswa di Tokyo 🇯🇵**
-   * *Target:* JLPT N5 hingga N2. Sering bingung membedakan partikel (に vs で) dan konjugasi bentuk lampau/te-form.
-   * *Solusi Merantalk:* Latihan susun balok peran kalimat, toggle Furigana dinamis, dan kartu Anki otomatis untuk partikel yang sering keliru.
-2. **Persona 2: Nadia (27 thn) — Profesional Menuju Berlin / Uni Eropa 🇩🇪**
-   * *Target:* Goethe-Zertifikat A1–B2 untuk visa kerja tenaga ahli IT. Membutuhkan penguasaan gender kata benda (*der/die/das*), kasus (*Akkusativ/Dativ*), dan tenses (*Das Perfekt*).
-   * *Solusi Merantalk:* Latihan balok sintaksis posisi kata kerja (V2), kartu artikel Anki, dan evaluasi fonetik vokal Umlaut.
-3. **Persona 3: Kevin (22 thn) — Mahasiswa Menuju Cambridge / London 🇬🇧**
-   * *Target:* Skor IELTS 7.5+ (CEFR C1) untuk kuliah magister di Inggris. Membutuhkan penguasaan ejaan British (*colour, organise*), aksen non-rhotic, dan esai formal IELTS Writing Task 2.
-   * *Solusi Merantalk:* Mock Exam simulasi IELTS dengan evaluasi tata bahasa tingkat lanjut dan transkrip audio aksen British native.
-4. **Persona 4: Maya (25 thn) — Software Engineer Menuju Silicon Valley / New York 🇺🇸**
-   * *Target:* Skor TOEFL iBT 105+ dan kelancaran komunikasi engineering tech culture US. Membutuhkan penguasaan ejaan American (*color, organize*), idiom kerja (*circle back, touch base*), dan pelafalan rhotic flap-t.
-   * *Solusi Merantalk:* Latihan speaking repeat dengan pengujian audio Amerika, kuis kosakata workplace US, dan persiapan TOEFL diagnostik.
-5. **Persona 5: David (26 thn) — Hardware Engineer & Supply Chain ke Shenzhen / Shanghai 🇨🇳**
-   * *Target:* HSK 3 hingga HSK 5 untuk kolaborasi teknologi dan manufaktur perangkat keras. Membutuhkan pengenalan karakter Hanzi dan pelafalan 4 nada Pinyin.
-   * *Solusi Merantalk:* Evaluasi nada Pinyin via Web Speech API, dekonstruksi radikal Hanzi, dan kartu memori nada sandhi.
-6. **Persona 6: Claire (25 thn) — Peneliti AI Menuju Paris 🇫🇷**
-   * *Target:* DELF B1–B2 untuk studi dan riset di Prancis. Membutuhkan pemahaman gender kata benda dan perbedaan tenses *Passé Composé* vs *Imparfait*.
-   * *Solusi Merantalk:* Latihan konjugasi kata kerja interaktif dan pengenalan aksen fonetik Prancis.
+### 3.1 Personas Utama
+1. **Rian (24 thn) — Kandidat Tokutei Ginou (SSW) / Engineer Menuju Jepang (`ja` • Aktif):**  
+   *Target:* JLPT N5 -> N3 (Akun Gratis) hingga N2 (Merantalk Pro). Sering tertukar partikel (`に` vs `で`) dan konjugasi *te-form*.  
+   *Solusi:* Papan Kana/Kanji interaktif, Grammar Studio 3 langkah dengan analogi Indonesia, balok sintaksis berwarna, dan 120 dek **Kartu Kosakata** dengan jadwal latihan ulang adaptif.
+2. **Maya (25 thn) — Software Engineer / Kandidat Beasiswa LPDP & Karier Global (`en-us` • Aktif):**  
+   *Target:* CEFR A1–B1 (Akun Gratis) hingga B2–C2 / TOEFL iBT 95–114+ (Merantalk Pro). Membutuhkan penguasaan tenses akademik, phrasal verbs/idiom kerja US, dan pelafalan General American IPA.  
+   *Solusi:* 67 unit kurikulum 4 pilar dengan 180 dek studi pengantar, 60 panduan grammar ber-IPA Amerika, 60 dek **Kartu Kosakata** (`work_study`, `phrasal_idioms`, `academic_toefl`), dan simulasi Readiness Exam A1–C2.
+3. **Kevin, Nadia, David & Claire — Target Ekspansi Jalur Berikutnya (`en-gb`, `de`, `zh`, `fr` • Segera Hadir):**  
+   Kandidat studi dan karier di Inggris (IELTS), Jerman (Goethe A1–C1), Tiongkok/Taiwan (HSK 1–6), dan Prancis (DELF/DALF A1–C2) yang akan dilayani di atas arsitektur kurikulum multi-bahasa yang sudah siap di database.
 
 ### 3.2 Core Product Metrics
 | Metrik | Target | Instrumen Pengukuran |
 | :--- | :--- | :--- |
-| **Daily Habit Retention (7-Day Streak)** | > 50% dari active users | Redis streak sessions & log presensi harian |
-| **SRS Review Adherence** | > 70% kartu jatuh tempo diselesaikan | Query `user_srs_reviews` due cards per hari |
-| **First-Pass Exercise Accuracy** | > 65% pada sesi latihan pertama | Log `user_exercise_attempts.is_correct` |
-| **Mock Exam Readiness Predictive Accuracy** | > 85% korelasi dengan kelulusan asli | Skor `readiness_exam_attempts` vs survey kelulusan |
-| **Onboarding to First Lesson Completion** | > 80% dari user registrasi | Rasio `user_lesson_progress` node 1 |
+| **Guest-to-Signup Conversion** | > 25% tamu yang menyelesaikan minimal 1 pelajaran Unit 1 | Rasio `guestTrialStore` -> `useGuestTrialSync` completion |
+| **Onboarding to First Lesson Completion** | > 80% dari pengguna teregistrasi | Rasio `user_profiles.is_onboarded` vs `user_lesson_progress` |
+| **Daily Habit Retention (7-Day Streak)** | > 50% dari active users | `user_gamification.streak` & `user_activity_logs` WIB |
+| **Kepatuhan Pengingat Ulang (Anti Lupa)** | > 70% kartu dan soal terjadwal diselesaikan tepat waktu | Antrean jatuh tempo pada `user_srs_reviews` & `user_flashcard_progress` |
+| **First-Pass Exercise Accuracy** | > 65% pada percobaan pertama | `user_exercise_attempts.is_correct` |
+| **Mock Exam Readiness Correlation** | > 85% kesesuaian dengan hasil ujian resmi | Skor `readiness_exam_attempts` vs survei pengguna |
 
 ---
 
-## 🎮 4. Core Features & Functional Specifications
+## 4. Core Features & Functional Specifications
 
-### 4.1 Authentication & The 3-Pillar Normalized Architecture
-* **Pillar 1 (`users`):** Auth Core murni (ID, Email, Password Hash Bcrypt). Zero data leak pada query profil publik.
-* **Pillar 2 (`user_profiles`):** Biodata pengguna, nama, username unik, preferensi visual kurikulum (`preferred_roadmap_view`: `'map'` vs `'syllabus'`), dan status wizard onboarding.
-* **Pillar 3 (`user_gamification`):** Mesin gamifikasi berkonkurensi tinggi (XP, Level, Streak, Gems, Last Active At).
-
----
-
-### 4.2 Kurikulum Multi-Bahasa & Tingkat Kemahiran Resmi
-Sistem kurikulum dirancang berjenjang dan modular: **`languages` ➔ `proficiency_levels` ➔ `units` ➔ `lessons` ➔ `exercises`**:
-1. **Master Bahasa (`languages`):**
-   * Mendukung kode ISO: `ja` (Jepang), `de` (Jerman), `en-us` (Inggris Amerika), `en-gb` (Inggris British), `zh` (Mandarin), `fr` (Prancis).
-   * Menyimpan metadata aksara resmi di `supported_scripts JSONB` (contoh: `["kanji", "hiragana", "katakana", "romaji"]` untuk Jepang, `["latin", "umlaut"]` untuk Jerman, `["simplified_hanzi", "pinyin"]` untuk Mandarin).
-2. **Tingkat Kemahiran Internasional (`proficiency_levels`):**
-   * Standar resmi: JLPT (N5–N1), CEFR (A1–C1), HSK (1–6).
-   * Kolom `tier` (`beginner`, `intermediate`, `advanced`):
-     * 🟢 **Pemula (`beginner`):** JLPT N5–N4, Goethe A1–A2, CEFR A1–A2 (IELTS < 4.5), HSK 1–2, DELF A1–A2.
-     * 🟡 **Menengah (`intermediate`):** JLPT N3–N2, Goethe B1–B2, CEFR B1–B2 (IELTS 5.0–6.5), HSK 3–4, DELF B1–B2.
-     * 🔴 **Mahir (`advanced`):** JLPT N1, Goethe C1–C2, CEFR C1–C2 (IELTS 7.0–9.0), HSK 5–6, DALF C1–C2.
-   * Menyimpan `official_exam_name` dan `passing_score_percent` resmi (misal: 60% standar kelulusan).
-3. **Multi-Language Enrollment (`user_language_enrollments`):**
-   * Pengguna dapat mempelajari lebih dari satu bahasa secara paralel tanpa terjadinya konflik progres.
-   * State bahasa aktif dapat dialihkan secara instan melalui bilah navigasi atas (TopBar).
-   * Menyimpan `initial_placement_type` (`'zero_beginner'`, `'placement_test'`, `'manual_select'`) dan `placement_score_percent`.
-
-#### 4.2.1 Desain Drawer Pemilih Multi-Bahasa di TopBar (Multi-Language Switcher UX)
-* **Bilah Navigasi Atas (TopBar):**  
-  Menampilkan lencana bendera 3D bahasa yang sedang aktif (misal: 🇯🇵 Jepang dengan label `JLPT N5`).
-* **Drawer Interaktif 3D (Language Switcher Sheet):**  
-  Ketika lencana ditekan, drawer samping membuka daftar seluruh bahasa yang sedang dipelajari pengguna:
-  * Menampilkan level saat ini per bahasa (misal: *Jepang N5*, *Jerman A1*).
-  * Menampilkan jumlah kartu Anki yang jatuh tempo hari ini per bahasa.
-  * Menampilkan api streak bahasa tersebut.
-  * Tombol taktil: **[+ Pelajari Bahasa Baru]** untuk menambah track baru dari 6 bahasa yang tersedia.
-* **Isolasi State Bebas Bentrok (Zero Collision Guarantee):**  
-  Pergantian bahasa bersifat instan di sisi klien melalui Zustand store dan TanStack Query. Seluruh data progres tersimpan terpisah di database (`user_language_enrollments`, `user_lesson_progress`, `user_srs_reviews`), menjamin pergantian bahasa tidak akan pernah mereset progres bahasa lain!
-
-#### 4.2.2 Mekanisme Penempatan Pengguna (Pemula vs Menengah vs Mahir)
-Bagaimana database memperlakukan pengguna berdasarkan tingkat kemahiran awal mereka:
-
-* **Skenario 1: Pengguna Pemula (Mulai dari Nol):**
-  * `user_language_enrollments.current_level_id` menunjuk ke level pertama (`order_index = 1`, misal: JLPT N5 atau Goethe A1).
-  * `initial_placement_type = 'zero_beginner'`.
-  * Unit 1 Lesson 1 berstatus aktif ⚡, materi setelahnya terkunci 🔒.
-* **Skenario 2: Pengguna Menengah / Mahir (Lolos Tes Penempatan atau Pilih Mandiri):**
-  * Misal pengguna lolos di level **JLPT N4 (Menengah Bawah)**:
-  * `current_level_id` langsung diarahkan ke ID level N4 (`order_index = 2`).
-  * `initial_placement_type = 'placement_test'` dengan skor `placement_score_percent` (misal: 85).
-  * **Auto-Unlock Materi Sebelumnya (`is_skipped: true`):**  
-    Seluruh pelajaran di level sebelumnya (N5) otomatis dimasukkan ke tabel `user_lesson_progress` dengan nilai `is_completed: true`, `score: 100`, dan `is_skipped: true`.  
-    *Hasil di UI:* Seluruh node N5 menampilkan centang hijau selesai (✅) dan tetap bisa dimainkan ulang kapan saja (*Replayable*), sementara node N4 langsung aktif sebagai gerbang belajar utama.
-  * **Zero-Clutter Anki SRS:**  
-    Sistem **TIDAK AKAN** membebani antrean kartu Anki pengguna dengan 300 kosakata dasar N5 yang sudah mereka kuasai bertahun-tahun. Kartu Anki SRS murni hanya mulai dibuat untuk kosakata baru di level aktif (N4) dan butir soal yang dijawab salah!
+### 4.1 Authentication, Google OAuth & 3-Pillar User Architecture
+Sesuai skema ternormalisasi di `.agents/docs/erd.md` (v3.2):
+* **Pillar 1 — Identity, OAuth & Subscription (`users` & `user_oauth_accounts`):**  
+  Menyimpan `id`, `email`, `password_hash` (Bcrypt, *nullable* bagi akun murni Google OAuth), `email_verified`, `subscription_tier` (`'free'` | `'pro'`), `subscription_expires_at`, serta tautan akun **Google OAuth 2.0** (`/api/v1/auth/google`). Sesi menggunakan JWT Access Token (15 menit) dan Rotated Refresh Token di Upstash Redis (30 hari).
+* **Pillar 2 — Profile (`user_profiles`):**  
+  Menyimpan `name`, `username` unik, `bio`, `avatar_url`, `daily_goal_minutes` (`5 | 15 | 30 | 45`), `is_onboarded`, dan `has_seen_roadmap_tour` (untuk tur spotlight interaktif pertama kali).
+* **Pillar 3 — High-Concurrency Gamification (`user_gamification`):**  
+  Menyimpan `xp`, `current_level`, `streak`, `gems`, `xp_booster_expires_at`, dan `last_active_at`.
 
 ---
 
-### 4.3 Engine Tata Bahasa & Tenses Ternormalisasi (`grammar_points`)
-Untuk memastikan evaluasi tidak hanya berupa teks acak, seluruh aturan bahasa dinormalisasi ke tabel `grammar_points`:
-* **Kategori Grammar (`category`):**
-  * `'tense'`: Aturan waktu (*Past Simple, Present Perfect, Das Perfekt, Passé Composé*).
-  * `'conjugation'`: Konjugasi kata kerja/sifat (*Bentuk Masu, Te-form, Konjunktiv II*).
-  * `'particle'`: Partikel & kasus (*は, に, で, Akkusativ, Dativ*).
-  * `'honorific'`: Tingkat kesopanan formal/kasual (*Keigo, Sie vs Du, 您 vs 你*).
-  * `'sentence_pattern'`: Pola struktur kalimat majemuk (Klausa relatif, kalimat pengandaian / *conditionals*).
-* **Rumus Sintaksis (`formula`):** Format baku susunan kata (misal: `[Subjek] + は + [Keterangan] + です` atau `[Subjekt] + [Hilfsverb] + ... + [Partizip II]`).
-* **Hubungan ke Soal:** Setiap butir `exercises` dapat ditautkan ke `grammar_point_id` sehingga sistem dapat memetakan kelemahan spesifik pengguna.
+### 4.2 Kurikulum Multi-Bahasa & Isolasi Jalur (`languages` -> `exercises`)
+Hierarki kurikulum universal: **`languages` -> `proficiency_levels` -> `units` -> `lessons` -> `exercises`**:
+1. **Master Bahasa (`languages`):**  
+   Menyimpan kode ISO (`ja`, `en-us`, `en-gb`, `de`, `zh`, `fr`), nama lokal Bahasa Indonesia, metadata `supported_scripts JSONB`, dan flag `is_active` (`true` untuk `ja` dan `en-us`; `false` untuk 4 bahasa *Segera Hadir*).
+2. **Tingkat Kemahiran Resmi (`proficiency_levels`):**
+   * **Jepang (`ja`):** `N5` (beginner, passing 60%), `N4` (beginner), `N3` (intermediate), `N2` (intermediate), `N1` (advanced) — standar **JLPT**.
+   * **Inggris American (`en-us`):** `A1` Pra-TOEFL Dasar (beginner, passing 60%), `A2` TOEFL 32–41 (beginner, 60%), `B1` TOEFL 42–71 (intermediate, 65%), `B2` TOEFL 72–94 (intermediate, 65%), `C1` TOEFL 95–114 (advanced, 70%), `C2` TOEFL 115–120 (advanced, 75%) — standar **TOEFL iBT / CEFR**.
+3. **Multi-Language Enrollment & Track Switcher (`user_language_enrollments`):**
+   * Pengguna dapat mendaftar dan beralih secara instan antar bahasa aktif melalui **Track Switcher** di TopBar/Sidebar.
+   * Seluruh progres (`user_lesson_progress`, `user_srs_reviews`, `user_flashcard_progress`, `user_grammar_progress`, `readiness_exam_attempts`) terisolasi ketat (*Zero Collision*).
+   * Menu **Papan Aksara (`/kana/:script`)** ditampilkan hanya ketika bahasa aktif mendukung aksara Kana (`ja`) dan disembunyikan otomatis saat bahasa aktif non-Kana (`en-us`).
 
 ---
 
-### 4.4 Engine Latihan Interaktif 4 Pilar (`exercises`)
-Setiap sesi pelajaran (`lessons`) menyajikan rangkaian latihan interaktif yang menguji **4 Pilar Bahasa**:
+### 4.3 Interleaved Learn-Before-Quiz & Engine Latihan 4 Pilar (`exercises`)
+1. **Interleaved Study Batches (`LessonIntroView` & `LessonStudyCardsDrawer`):**
+   * Materi pengantar pada pelajaran kurikulum dibagi ke dalam segmen mikro **2 kartu studi -> blok 2–3 soal -> 2 kartu studi berikutnya**.
+   * Setiap kartu menyajikan teks target, pembacaan (Furigana/Romaji atau US IPA), arti Bahasa Indonesia, jembatan keledai (mnemonik), serta pemutar suara **Normal (`1.0x`)** dan **Pelan (`0.6x`)**.
+   * **Laci Intip Materi (`LessonStudyCardsDrawer`):** Drawer geser di sisi kanan agar pembelajar dapat mengecek ulang materi selama latihan reguler; nonaktif pada Checkpoint (`tes-akhir`) dan Readiness Exam (`order_index = 99`).
+2. **5 Tipe Latihan Interaktif:**
 
-| Pilar Kemahiran | Tipe Latihan (`exercise_type`) | Mekanisme & Interaksi UX |
+| Pilar Kemahiran | Tipe (`exercise_type`) | Mekanisme & Aturan Evaluasi |
 | :--- | :--- | :--- |
-| **Writing** | `sentence_builder` | Balok peran kata warna-warni yang dapat disusun. Dilengkapi kode warna sintaks (Subjek = Biru, Partikel/Kasus = Hijau, Objek = Oranye, Predikat = Ungu). |
-| **Reading** | `fill_blank` | Melengkapi partikel/artikel/konjugasi yang hilang sesuai tenses dan konteks kalimat. |
-| **Listening** | `listening_choice` | Audio penutur asli berkualitas tinggi dengan pilihan ganda makna atau transkrip kalimat. |
-| **Speaking** | `speaking_repeat` | Merekam suara via mikrofon browser, dianalisis menggunakan Web Speech API / pembanding fonetik dengan threshold akurasi. |
-| **Integrated** | `dialogue_roleplay` | Percakapan situasi nyata dua arah dengan maskot Mera. |
-
-#### 4.4.1 Deep Dive Interaksi: `sentence_builder` (Balok Sintaksis Visual)
-* **Tata Letak & Interaksi:**
-  * Bagian atas: **Garis Rakitan Kalimat (Sentence Assembly Line)** berupa slot kosong berkedalaman 3D.
-  * Bagian bawah: **Bank Balok Kata (Word Tile Bank)** yang diacak.
-  * Pengguna dapat menekan (*tap/click*) atau menarik (*drag-and-drop*) balok untuk memindahkannya ke rakitan kalimat. Mengetuk balok di atas akan mengembalikannya ke bank bawah.
-* **Balok Pengalih (Distractor Tiles):**
-  * Setiap soal menyertakan 2–3 balok pengalih (misal: partikel yang salah `で` vs `に`, atau konjugasi bentuk lampau vs bentuk sekarang) untuk melatih ketelitian diskriminasi kaidah tata bahasa.
-* **Aturan Khusus Aksara & Ortografi:**
-  * *Jepang:* Tanpa spasi antar-balok, diakhiri tanda baca句点 (`。`).
-  * *Jerman:* Balok kata benda (*Substantiv*) selalu diawali huruf kapital (*der Tisch*, *die Frau*).
-  * *Inggris:* Balok pertama otomatis dikapitalisasi dan diberi tanda titik (`.`) di akhir.
-
-#### 4.4.2 Deep Dive Interaksi: `fill_blank` (Sintaksis & Konjugasi Rumpang)
-* **Mode Ganda:**
-  1. *Mode Tile Selector (Pemula):* Memilih 1 dari 3–4 balok opsi partikel/konjugasi yang disajikan di bawah kalimat.
-  2. *Mode Text Input (Tingkat Mahir):* Mengetik langsung jawaban menggunakan keyboard virtual atau fisik (menguji penguasaan ejaan/kanji tanpa bantuan opsi).
-* **Umpan Balik Posisi:** Kursor secara otomatis melompat ke celah rumpang berikutnya setelah satu celah terisi.
-
-#### 4.4.3 Deep Dive Interaksi: `listening_choice` (Pemahaman Menyimak)
-* **Kontrol Pemutar Audio Otentik:**
-  * Tombol Putar Standar (1.0x kecepatan alami penutur asli).
-  * Tombol Kura-kura (*Turtle Mode* / 0.75x) untuk mendengarkan pelafalan fonem yang lambat dan jernih.
-  * Pintasan Keyboard: `Ctrl + Space` atau `Spasi` untuk memutar ulang audio secara instan tanpa menggerakkan kursor mouse.
-* **Transkrip Tersembunyi:** Teks dialog disembunyikan selama pengerjaan agar pengguna benar-benar mengandalkan telinga, dan baru dibuka secara otomatis setelah pengguna menekan tombol "Periksa".
-
-#### 4.4.4 Deep Dive Interaksi: `speaking_repeat` (Pelafalan Suara Aktif)
-* **Alur Izin & Aksesibilitas Mikrofon:**
-  * Saat pertama kali membuka latihan speaking, browser menampilkan prompt izin mikrofon yang ramah.
-  * **Tombol Toleransi ("Tidak Bisa Bicara Sekarang"):**  
-    Jika pengguna sedang berada di transportasi umum, perpustakaan, atau lingkungan bising, pengguna dapat mengklik tombol *"Tidak bisa bicara sekarang"*. Sistem akan menonaktifkan latihan speaking selama 15 menit dan menggantinya dengan latihan menulis tanpa penalti streak atau XP!
-* **Pencocokan Fonetik & Threshold:**
-  * Akurasi $\ge 75\%$: **Lulus Sempurna** (Lampu hijau bersinar, audio chime).
-  * Akurasi $60\% - 74\%$: **Hampir Benar** (Mera memberi tips artikulasi suku kata mana yang kurang jelas).
-  * Akurasi $< 60\%$: **Ulangi Sekali Lagi** (Diberikan kesempatan 2x mencoba sebelum masuk antrean Anki).
-
-#### 4.4.5 Deep Dive Interaksi: `dialogue_roleplay` (Simulasi Percakapan Nyata)
-* **Interaksi Bergilir (Turn-Based Chat):**
-  * Mera memulai dialog dalam setting situasional (misal: memesan makanan di kedai ramen Tokyo, menanyakan arah di stasiun Berlin Hauptbahnhof, atau memesan teh di Shanghai).
-  * Pengguna memilih respon kalimat yang tepat atau melafalkan balasan menggunakan mikrofon.
-  * Setiap giliran dialog disertai translasi kontekstual yang dapat di-tap (*tap-to-translate*).
+| **Reading** | `fill_blank` | Melengkapi partikel, kosakata, atau bentuk tenses (pilihan balok atau input teks) dengan proteksi anti-spoiler backend (`isFillBlankTranslationSpoiler`, `sanitizeFillBlankSentenceTemplate`). |
+| **Listening** | `listening_choice` | Audio BCP-47 (`1.0x` normal & `0.6x` pelan) dengan transkrip tersembunyi hingga jawaban diperiksa. |
+| **Writing** | `sentence_builder` | Menyusun balok kata berkode warna (Biru/Hijau/Oranye/Ungu) disertai balok pengalih (*distractor tiles*). |
+| **Speaking** | `speaking_repeat` | Pengenalan suara Web Speech API dengan tombol toleransi *"Tidak bisa bicara sekarang"* dan pengaman backend **`containsJapaneseScript`** agar normalisasi fonetik Romaji hanya berjalan pada soal berbahasa Jepang. |
+| **Integrated** | `dialogue_roleplay` | Simulasi dialog dua arah kontekstual bersama Mera dengan terjemahan situasional. |
 
 ---
 
-#### 4.4.6 Dukungan Multi-Aksara & Toleransi Jawaban (`acceptable_answers JSONB`):
-* Menampung variasi ejaan resmi lintas negara (Kanji vs Hiragana, Simplified vs Traditional Hanzi, British vs American English, Eszett vs ss Jerman). Seluruh variasi dinilai sah 100%.
-* Tampilan Furigana interaktif di frontend menggunakan tag standar `<ruby>` yang dapat diaktifkan/dinonaktifkan oleh pengguna (Mode Pemula vs Mode Ujian Asli).
-
-#### 4.4.7 Rubrik Diagnostik Kesalahan Cerdas (`diagnostic_rubric JSONB`):
-* Jika pengguna salah memilih opsi, Mera tidak hanya memberi tanda silang, melainkan membaca rubrik diagnostik kesalahan umum (*Common Misconceptions*) untuk memberikan edukasi instan.
-
----
-
-### 4.5 Spesifikasi Algoritma Anki Spaced Repetition (SuperMemo SM-2)
-Merantalk mengadopsi rumus matematika **SuperMemo SM-2** yang telah disesuaikan:
-
-1. **Rating Kualitas Jawaban ($q \in [0, 5]$):**
-   * $q = 5$: Jawaban sempurna tanpa ragu-ragu (< 4 detik).
-   * $q = 4$: Jawaban benar setelah sedikit berpikir (4–8 detik).
-   * $q = 3$: Jawaban benar dengan usaha serius (> 8 detik).
-   * $q = 2$: Salah, tapi langsung ingat saat melihat kunci jawaban.
-   * $q = 1$: Salah total, jawaban tampak asing.
-   * $q = 0$: Blank total.
-
-2. **Pembaruan Faktor Kemudahan (Ease Factor - $EF$):**
-   $$EF' = EF + (0.1 - (5 - q) \times (0.08 + (5 - q) \times 0.02))$$
-   * Batas minimum $EF$: `1.30` (mencegah kartu terjebak dalam siklus tak berujung).
-   * Nilai bawaan awal $EF$: `2.50`.
-
-3. **Pembaruan Interval Hari ($I$):**
-   * Jika $q < 3$ (Gagal): `repetition_count = 0`, `interval_days = 1`.
-   * Jika $q \ge 3$ (Berhasil):
-     * $n = 1 \implies I_1 = 1\text{ hari}$
-     * $n = 2 \implies I_2 = 6\text{ hari}$
-     * $n > 2 \implies I_n = I_{n-1} \times EF'$
-
-4. **Manajemen Kartu "Leech":**
-   Kartu yang gagal diulang lebih dari 5 kali berturut-turut diberi label *Leech*, dan Mera akan memberikan saran khusus untuk mengulang kembali materi teori di Unit kurikulum terkait.
-
-#### 4.5.1 Protokol Remediasi Cerdas untuk Kartu "Leech"
-* **Definisi Leech:** Kartu memori yang gagal diingat pengguna sebanyak $\ge 5$ kali berturut-turut ($q < 3$). Kondisi ini membuktikan bahwa metode hafalan pasif tidak lagi mempan dan pengguna mengalami *kebuntuan pemahaman konsep*.
-* **Intervensi Proaktif Mera:**
-  * Alih-alih membiarkan kartu terus muncul dan membuat frustrasi, Mera mengunci kartu sementara dan menyajikan kartu bantuan (*Conceptual Rescue Card*):  
-    *"Kartu ini agak membandel ya! Jangan cuma dihafal bunyinya. Yuk kita bedah kaidah dasarnya!"*
-  * Sistem menyertakan tautan satu-klik langsung ke modul materi dan puzzle susun balok kalimat (`sentence_builder`) di Unit kurikulum terkait, mengubah kegagalan hafalan mekanis menjadi pemahaman logika aktif.
+### 4.4 3-Step Progressive Interactive Grammar Studio (`/grammar` & `/grammar/:code`)
+Menampung **116 panduan tata bahasa ternormalisasi** (`56` `GP-JA-*` + `60` `GP-EN-A1-001`..`GP-EN-C2-010`) dalam tabel `grammar_points` (`category`: `tense | conjugation | particle | honorific | sentence_pattern`, plus payload kaya `learning_guide JSONB`):
+1. **Tab 1 — Pahami:**
+   * Contoh kalimat nyata di awal (*example-first*), analogi Bahasa Indonesia yang membumi, kapan digunakan (`when_to_use`), rumus warna interaktif (`GrammarFormulaVisual`), bedah kalimat kata per kata (`GrammarWordBreakdownSection`) dengan tombol toggle **Romaji** (untuk `ja`) atau **IPA** (untuk `en-us`), tabel variasi bentuk (`forms`), serta daftar jebakan umum (`mistakes`).
+2. **Tab 2 — Coba Rakit:**
+   * *Interactive Slot Playground* (`GrammarSlotPlayground`) tempat pembelajar merakit kombinasi subjek, partikel/preposisi, objek, dan predikat untuk melihat perubahan makna secara langsung beserta audio pengucapannya.
+3. **Tab 3 — Tes Cepat (3 Soal):**
+   * Mini-kuis 3 soal (`GrammarMiniQuizCard`) yang mencatat skor, status pemahaman (`is_understood`), dan jadwal ulasan berkala (`next_review_at`) ke **`user_grammar_progress`**, serta tautan langsung menuju pelajaran kurikulum terkait.
 
 ---
 
-### 4.6 Ujian Kesiapan Diagnostik (Diagnostic Mock Exam)
-Modul simulasi ujian (`readiness_exam_attempts`) dirancang persis menyerupai ujian internasional resmi:
-* **Penilaian Terpisah 4 Pilar:** Menghasilkan skor 0–100 untuk Reading, Listening, Writing, dan Speaking.
-* **Laporan Kesiapan & Rekomendasi Remedi (`analysis_report JSONB`):**
-  * Menghitung probabilitas kelulusan ujian resmi (contoh: *"Prediksi: Lulus JLPT N5: 84%"*, *"Probabilitas Lulus Goethe B1: 82%"*).
-  * Memberikan daftar topik tata bahasa yang paling mendesak untuk diperbaiki beserta tautan modul untuk mengulanginya.
+### 4.5 Pengingat Ulang Otomatis Merantalk (Anti Lupa & Ingat Lebih Lama)
+Merantalk menjalankan dua mesin **Jadwal Latihan Ulang Adaptif** yang menyesuaikan jarak waktu munculnya kembali materi berdasarkan tingkat kemudahan pembelajar mengingatnya ($EF' = EF + (0.1 - (5 - q)(0.08 + (5 - q) \times 0.02))$, batas minimum faktor kemudahan $EF_{\min} = 1.30$, nilai awal $EF = 2.50$):
 
-#### 4.6.1 Mesin Kalkulasi Kelulusan Berbasis Ambang Batas Seksi Resmi (Sectional Cutoff Rules)
-Banyak ujian resmi dunia yang tidak hanya mensyaratkan skor total rata-rata, melainkan memberlakukan **Ambang Batas Minimum Per Seksi (Sectional Pass Marks)**:
-* **Simulasi JLPT 🇯🇵:**  
-  Untuk lulus JLPT N5, peserta membutuhkan skor total $\ge 90/180$ (50%), **DAN** nilai seksi *Moji/Goi/Bunpo* $\ge 19/60$ serta seksi *Choukai* (Listening) $\ge 19/60$. Jika seorang pengguna meraih nilai sempurna di Listening namun hanya mendapat 15/60 di Moji/Goi, status kelulusan dinyatakan **TIDAK LULUS (Gagal pada Batas Seksi)**.
-* **Simulasi Goethe-Zertifikat 🇩🇪:**  
-  Setiap modul (*Lesen, Hören, Schreiben, Sprechen*) wajib meraih minimal 60 poin (60%). Jika salah satu modul gagal, peserta harus mengulang modul tersebut.
-* **Simulasi IELTS 🇬🇧:**  
-  Menghitung *Band Score* per seksi (0.0 – 9.0) dengan pembulatan *half-band* resmi, menghindarkan pengguna dari ilusi nilai rata-rata biasa.
+1. **Mesin 1 — Antrean Latihan Ulang Soal Keliru (`/review` -> `user_srs_reviews`):**
+   * Setiap soal latihan atau ujian simulasi yang dijawab keliru otomatis masuk ke antrean pengingat ulang harian.
+   * Penilaian 4 tingkat daya ingat (*Lupa*, *Sulit*, *Bagus*, *Mudah*) memperbarui jarak hari (`interval_days`), jumlah pengulangan (`repetition_count`), faktor kemudahan (`ease_factor`), dan jadwal berikutnya (`next_review_at`).
+   * **Soal yang Masih Sering Salah** (berulang kali keliru) ditandai secara khusus agar pembelajar diarahkan kembali ke penjelasan konsep kurikulum dan panduan grammar terkait.
+2. **Mesin 2 — Dek Kartu Kosakata Terkurasi (`/flashcards` -> `flashcard_decks`, `flashcard_cards`, `user_flashcard_progress`):**
+   * **120 Dek Jepang (`ja`, 1.819 kartu)** dari JLPT `N5` hingga `N1`.
+   * **60 Dek Inggris American (`en-us`, 900 kartu)** dari CEFR `A1` hingga `C2` dalam 4 kategori tematik: **`daily`**, **`work_study`**, **`phrasal_idioms`**, dan **`academic_toefl`**.
+   * Setiap kartu menampilkan teks target, pembacaan Kana/Romaji atau US IPA, audio 2 kecepatan, arti Bahasa Indonesia, kelas kata (`part_of_speech`), serta jadwal latihan ulang adaptif independen per pengguna agar kosakata menempel lebih lama.
 
 ---
 
-### 4.7 Gamifikasi & Desain Audio Tactile 3D
-* **Desain Visual:** Standar Duolingo 3D Tactile Physics (Clean Light Mode, tombol fisik tebal berkedalaman 4px, partikel konfeti kemenangan, dan maskot Mera).
-* **Audio Interaktif:** Web Audio API Procedural Synthesizer (`AudioService.ts`) menghasilkan 13 efek suara taktil (klik balok kata, jawaban benar, jawaban salah, naik level, klaim peti emas, streak flame) tanpa ketergantungan file audio eksternal yang berat.
-* **Siklus Harian:**
-  * Streak harian bertingkat dengan api animasi (`streak`).
-  * Peti emas harian dengan milestone 50 XP (`user_daily_chest_claims`).
-  * Toko Arcade untuk membeli *Streak Freeze* dan *XP Booster*.
-
-#### 4.7.1 Standar Desain Visual Lencana Bendera 3D (Zero Raw Emoji Policy)
-* **Larangan Emoji Mentah (Zero Raw Unicode Emoji in DB/UI):**  
-  Aplikasi dan database **DILARANG KERAS** menggunakan karakter emoji mentah sistem operasi (seperti `🇯🇵`, `🇩🇪`, `🇬🇧`) karena inkonsistensi rendering antar perangkat (Windows vs iOS vs Android) yang tampak kurang profesional.
-* **Spesifikasi 3D Vector SVG Flag Badges:**  
-  Seluruh bendera negara dirender menggunakan komponen SVG vektor 3D khusus:
-  * Bentuk: Persegi panjang tumpul (*rounded rect* `rounded-lg`).
-  * Efek Taktil: Border halus 1px semi-transparan dengan bayangan bevel bawah 2px berkedalaman fisik.
-  * Tampilan seragam, tajam di layar Retina/HiDPI, dan menyatu sempurna dengan estetika Duolingo 3D.
-
-#### 4.7.2 Penyesuaian Ritme Belajar Harian (Daily Habit Pace Tiers)
-Pengguna dapat menentukan ritme komitmen waktu belajar harian sesuai gaya hidup mereka pada menu Pengaturan:
-* 🟢 **Casual:** 5 menit/hari (Target: 20 XP) — Cocok untuk menjaga streak di sela kesibukan.
-* 🟡 **Regular:** 10 menit/hari (Target: 35 XP) — Belajar stabil 1 lesson + review singkat.
-* 🔵 **Serious (Bawaan):** 15 menit/hari (Target: 50 XP) — Target standar untuk membuka Peti Emas harian.
-* 🟣 **Intense:** 30 menit/hari (Target: 100 XP) — Persiapan intensif menjelang ujian resmi (2 lessons + full SRS review + speaking challenge).
+### 4.6 Papan Aksara Jepang Interaktif (`/kana/:script`)
+* Didukung tabel `kana_characters` dan `user_kana_progress` khusus bahasa Jepang (`ja`).
+* Menyajikan papan interaktif **Hiragana**, **Katakana**, dan **Kanji** inti JLPT lengkap dengan urutan baris (`row_group`), mnemonik Bahasa Indonesia, contoh kosakata, audio pelafalan `ja-JP`, serta mode kuis latihan per baris untuk melacak penguasaan (`mastery_score`, `is_mastered`).
+* **Adaptif Bahasa:** Tautan navigasi Papan Aksara disembunyikan secara otomatis ketika pengguna sedang aktif belajar bahasa beraksara Latin (`en-us`).
 
 ---
 
-### 4.8 Sistem Perilaku & State Machine Maskot Mera (The Mera Companion Engine)
-Mera bertindak sebagai tutor AI dan pendamping emosional pembelajar dengan 5 kondisi emosional visual (*State Machine*):
+### 4.7 Audio Multi-Locale & Procedural Synthesizer (`audioService.ts` + `useActiveSpeechLocale`)
+1. **Procedural Web Audio Synthesizer (`audioService.ts` & `soundTokens.ts`):**
+   * Menghasilkan **13 preset SFX taktil** secara matematis tanpa unduhan file MP3 eksternal: `node_tap`, `node_hover`, `modal_open`, `modal_close`, `quest_start`, `node_locked`, `trophy_tap`, `track_change`, `yamanote_jingle`, `zen_bell`, `quest_complete`, `gem_collect`, dan `streak_ignite`.
+   * Dilengkapi 2 latar suara fokus ambient prosedural (**Universal Lo-Fi Focus** & **Japan Zen Pentatonic**) dengan 3 mode pemutaran (`all` | `sfx_only` | `muted`) yang tersimpan di `audioStore`.
+2. **Multi-Locale Speech Synthesis & Recognition (`useActiveSpeechLocale` + `resolveSpeechLocale`):**
+   * Memetakan kode bahasa aktif pengguna (baik akun login maupun `guestTrialStore.preferredLanguageId`) secara otomatis ke locale BCP-47 (`ja-JP`, `en-US`, `en-GB`, `de-DE`, `zh-CN`, `fr-FR`).
+   * Mendukung pemutaran **Normal (`1.0x`)** dan **Pelan (`0.6x`)** di kartu studi, soal listening, grammar studio, papan aksara, dan flashcard.
 
-| State Emosi Mera | Pemicu Antarmuka (UX Trigger) | Perilaku & Ekspresi Visual |
+---
+
+### 4.8 Gamifikasi, Misi Harian WIB, Toko Gems & Liga Mingguan
+1. **Misi Harian Rotasi WIB (`daily_quest_templates` & `user_daily_quest_claims`):**
+   * 3 misi harian yang berotasi otomatis setiap pergantian hari **WIB (`Asia/Jakarta`)** dengan klaim hadiah XP idempoten per `(user_id, quest_template_id, claim_date_wib)`.
+2. **3 Peti Harian Bertingkat (`user_daily_chest_claims`):**
+   * Tier 1, Tier 2, dan Tier 3 terbuka progresif seiring pencapaian target harian untuk mengklaim hadiah **Blue Gems** & bonus **XP**.
+3. **Lencana Kehormatan Bulanan (`user_monthly_badge_claims`) & Pencapaian (`badge_definitions`, `user_badges`):**
+   * Menyelesaikan **25** misi & pelajaran dalam satu bulan kalender membuka klaim Lencana Bulanan berhadiah **+150 XP**.
+4. **Toko Gems & Inventaris (`shop_items` & `user_inventories`):**
+   * Pengguna membelanjakan Blue Gems untuk membeli dan mengaktifkan item seperti **Streak Freeze** (melindungi api streak saat absen) dan **2x XP Booster** (pengganda XP aktif selama 15 menit via `xp_booster_expires_at`).
+5. **Liga Mingguan (`leaderboard_weekly_rewards`):**
+   * 4 divisi kompetitif lintas bahasa berdasarkan XP mingguan: **Bronze** (`0–299 XP`), **Silver** (`300–799 XP`), **Gold** (`800–1.499 XP`), dan **Diamond** (`1.500+ XP`), lengkap dengan indikator zona promosi/aman/degradasi serta klaim hadiah Gems bagi podium **Top 3** setiap pekan ISO.
+6. **Standar Visual Desain 3D Taktil Merantalk & Zero Raw Emoji Policy:**
+   * Seluruh antarmuka dan basis data bebas dari emoji Unicode mentah. Seluruh bendera negara dirender menggunakan komponen **SVG Bendera 3D** dan ikonografi menggunakan **Phosphor Icons**, dipadukan dengan maskot **Mera** (5 state visual: `IDLE`, `CHEERING`, `COACHING`, `LISTENING`, `CELEBRATING`).
+
+---
+
+## 5. Inventaris Konten Produksi & Peta Jalan Ekspansi (Scope & Rollout)
+
+### 5.1 Live Production Inventory (v1.2.0 — Terpasang di Neon PostgreSQL)
+* **Migrasi `000001`–`000012` — Jalur Jepang (`ja` • JLPT N5–N1):**
+  * **5 Level Resmi:** `N5`, `N4`, `N3`, `N2`, `N1`.
+  * **76 Unit**, **496 Pelajaran**, **4.113 Soal 4 Pilar** (termasuk 1 Tes Penempatan 15 soal & 5 Ujian Simulasi Kesiapan N5–N1).
+  * **56 Panduan Grammar Interaktif** (`GP-JA-*`), **120 Deck Flashcard** (**1.819 kartu**), dan Papan Aksara **Hiragana, Katakana & Kanji**.
+* **Migrasi `000013`–`000017` — Jalur Inggris American (`en-us` • CEFR A1–C2 / TOEFL iBT):**
+  * **6 Level Resmi:** `A1` (Pra-TOEFL Dasar), `A2` (TOEFL 32–41), `B1` (TOEFL 42–71), `B2` (TOEFL 72–94), `C1` (TOEFL 95–114), `C2` (TOEFL 115–120).
+  * **67 Unit** (1 Placement + 60 Curriculum + 6 Readiness Exams), **247 Pelajaran**, **2.031 Soal 4 Pilar**, dan **180 dek studi pengantar**.
+  * **60 Panduan Grammar ber-IPA General American** (`GP-EN-A1-001`..`GP-EN-C2-010`) & **60 Deck Flashcard** (**900 kartu**).
+
+### 5.2 Roadmap Ekspansi Berikutnya
+* **v1.3 (Monetization & Midtrans Integration):** Aktivasi checkout otomatis **Merantalk Pro** via **Midtrans** (QRIS, GoPay/OVO/DANA/ShopeePay, Virtual Account BCA/Mandiri/BRI/BNI) dengan webhook pembaruan `subscription_tier` & `subscription_expires_at`, serta pembaruan sinkron halaman `/pricing` lintas bahasa (`ja` & `en-us`).
+* **v1.4 (UK IELTS & European Expansion):** Aktivasi jalur **Inggris British (`en-gb` • IELTS A1–C2)** dan **Jerman (`de` • Goethe A1–C1)** beserta deck flashcard, panduan grammar, dan ujian simulasi masing-masing.
+* **v1.5 (Asian & Romance Expansion):** Aktivasi jalur **Mandarin (`zh` • HSK 1–6)** dan **Prancis (`fr` • DELF/DALF A1–C2)**.
+
+### 5.3 Explicit Out-of-Scope
+* **Kelas Privat Tatap Muka / Live Video Classroom:** Platform berfokus pada *self-paced mastery* interaktif, AI coaching terstruktur, dan review asinkron (`coaching_submissions`), bukan layanan live video streaming antar-pengguna.
+* **Forum Diskusi Bebas Tanpa Moderasi:** Interaksi sosial dibatasi pada Liga Mingguan dan profil pencapaian untuk menjaga fokus belajar serta mencegah spam.
+* **Mode Offline Penuh (SQLite Native):** Aplikasi web membutuhkan koneksi jaringan untuk sinkronisasi progres dan leaderboard (dengan penyangga lokal sementara untuk sesi tamu via `guestTrialStore`).
+
+---
+
+## 6. Ketahanan Sistem, Integritas Data & Edge Cases
+
+1. **Sinkronisasi Progres Tamu Anti-Duplikasi (`guestTrialStore` + `useGuestTrialSync`):**  
+   Progres Unit 1 dan `preferredLanguageId` pengguna tamu divalidasi dengan skema `zod` di `localStorage` (`merantalk_guest_trial_v1`). Saat masuk/daftar, `useGuestTrialSync` menerapkan *single-flight lock* dan memutar ulang pelajaran secara kronologis sambil menangani konflik `409` dengan bersih.
+2. **Proteksi Anti-Double-Submit & Rate Limiting:**  
+   Seluruh mutasi kritis (submit jawaban, selesai pelajaran, klaim misi/peti/lencana/hadiah liga, pembelian toko, submit onboarding) dilindungi tombol *optimistic disable* di frontend, pembatas laju (*rate limiting*) berbasis Upstash Redis di backend, serta constraint `UNIQUE` idempoten di PostgreSQL.
+3. **Global Loading & Error States:**  
+   Seluruh halaman utama menyediakan skeleton loading konsisten dan fallback retry yang bersih tanpa halaman kosong atau *layout shift*.
+4. **Spoiler-Free Integrity & Multi-Locale Speech Safety:**  
+   Backend menyaring jawaban bocor pada `fill_blank` (`isFillBlankTranslationSpoiler`, `sanitizeFillBlankSentenceTemplate`), menonaktifkan materi pengantar pada `tes-akhir` & `order_index = 99`, serta memastikan normalisasi fonetik Romaji hanya berjalan jika `containsJapaneseScript` bernilai benar.
+5. **Penguncian Ketat Jalur Segera Hadir & Zero-Collision Multi-Bahasa:**  
+   Bahasa dengan `is_active = false` ditolak eksplisit oleh API (`ErrLanguageNotActive`) dan terkunci di UI tanpa fallback diam-diam ke Jepang. Seluruh tabel progres menyertakan isolasi relasional lintas bahasa.
+
+---
+
+## 7. Model Akses 3-Tier Freemium & Merantalk Pro
+
+Seluruh aturan gerbang akses (*Single Source of Truth*) ditegakkan secara konsisten oleh `frontend/src/shared/utils/levelAccess.ts`, halaman `/pricing`, dan otorisasi tier pada `users.subscription_tier` (`free` | `pro`) serta `users.subscription_expires_at`:
+
+| Dimensi Akses | Mode Coba Tanpa Login (Guest Trial) | Akun Gratis (`subscription_tier = 'free'`) | Merantalk Pro (`subscription_tier = 'pro'`) |
+| :--- | :--- | :--- | :--- |
+| **Biaya & Autentikasi** | Rp 0 — Tanpa akun | Rp 0 selamanya — Email/Password atau **Google OAuth 2.0** | Langganan Pro: **Bulanan** Rp 49.000, **6 Bulan** Rp 239.000 (~Rp 39.800/bln), **Tahunan** Rp 399.000 (~Rp 33.250/bln) |
+| **Level Kurikulum Terbuka** | Seluruh **Unit 1** level pemula (`JLPT N5` / `CEFR A1`) | Akses penuh **JLPT N5–N3** & **CEFR A1–B1** tanpa batas nyawa/energi | Akses penuh semua level termasuk mahir: **JLPT N2–N1** & **CEFR B2–C2 (TOEFL 72–120)** |
+| **Navigasi Unit** | Berurutan dari Unit 1 | Berurutan per unit & checkpoint | **Bebas lompat ke unit mana pun** tanpa harus berurutan |
+| **Grammar Studio & Kartu Kosakata** | Materi & dek tingkat pemula (`N5` / `A1`) + Papan Kana | Penuh untuk `N5–N3` & `A1–B1` + Papan Kana | Penuh seluruh level termasuk materi bisnis, berita & akademik `N2–N1` & `B2–C2` |
+| **Readiness Mock Exam** | Pratinjau pemula | Ujian kesiapan `N5–N3` & `A1–B1` | Seluruh ujian simulasi kesiapan termasuk tingkat lanjut `N2–N1` & `B2–C2` |
+| **Progres, Gamifikasi & Karier** | Simpan lokal (`guestTrialStore` + `preferredLanguageId`), auto-sync saat daftar (`useGuestTrialSync`) | Sinkronisasi akun penuh, Misi Harian WIB, 3 Peti Harian, Lencana Bulanan, Pengingat Ulang Otomatis (Anti Lupa), Kartu Kosakata, Toko Gems & Liga Mingguan (`Bronze`–`Diamond`) | Seluruh fitur Akun Gratis + akses fitur karier & coaching (`coaching_submissions`: CV review & mock interview) |
+
+> **Roadmap Integrasi Pembayaran:** Integrasi payment gateway **Midtrans** (QRIS, E-Wallet lokal GoPay/OVO/DANA/ShopeePay, dan Virtual Account Bank BCA/Mandiri/BRI/BNI) dijadwalkan pada rilis berikutnya untuk mengotomatisasi aktivasi dan perpanjangan `subscription_tier = 'pro'`.
+
+---
+
+## 8. Technical Architecture Stack
+
+| Lapisan Sistem | Teknologi Produksi | Pola & Standar Arsitektur |
 | :--- | :--- | :--- |
-| `IDLE` | Berada di Roadmap atau Dashboard | Duduk santai di sebelah node aktif, mata berkedip lembut dengan pose menyemangati. |
-| `CHEERING` | Pengguna menjawab benar / kombo 3x | Melompat gembira dengan partikel bintang kecil dan senyum lebar. |
-| `COACHING` | Pengguna menjawab salah | Memegang papan tulis kecil dengan pose berpikir empati; memberikan penjelasan edukatif tanpa ekspresi marah atau menghakimi. |
-| `LISTENING` | Berada di soal Listening / Speaking | Mengenakan headphone retro saat audio diputar, atau memegang mikrofon saat pengguna merekam suara. |
-| `CELEBRATING` | Menyelesaikan Lesson / Peti Emas / Mock Exam | Mengangkat piala emas 3D dengan konfeti melimpah dan animasi tepuk tangan. |
+| **Frontend Web SPA** | React 19, TypeScript 5.9 (**Zero `any`**), Vite 8, Tailwind CSS v4, Phosphor Icons | **Feature-Sliced + Headless Hook Pattern** (`features/<domain>/{components,hooks,pages,services,store,types,utils}` + `shared/`), Zustand (`authStore`, `guestTrialStore`, `onboardingStore`, `audioStore`), TanStack Query v5, `react-hook-form` + `zod`, global skeleton loading & anti-double-submit guards |
+| **Audio & Speech Engine** | Procedural Web Audio API (`audioService.ts`, 13 SFX + 2 ambient soundscapes) + Web Speech API (`useActiveSpeechLocale`) | Sintesis audio zero-MP3 bebas latensi jaringan + pengucapan/pengenalan multi-locale BCP-47 (`ja-JP`, `en-US`, dll.) |
+| **Backend REST API** | Go 1.25+, Gin Web Framework | **Modular Clean Architecture** (`internal/app/<module>/{domain,repository,usecase,handler,helper}.go` + `internal/shared/{apperror,middleware,progression,response,router}`) |
+| **Database & Caching** | **Neon Serverless PostgreSQL 16** (`pgx/v5`, `pgcrypto`) + **Upstash Redis TLS** | 32 tabel relasional ternormalisasi + payload `JSONB` (17 migrasi `000001`–`000017`); Redis TLS untuk rotated refresh tokens, rate limiting, dan cache kurikulum |
+| **Cloud Deployment** | Vercel Serverless Go Function (`backend/api/index.go`, region **`sin1` Singapura**) + Vercel Static SPA CDN | Live production di `https://merantalk.vercel.app`, terhubung langsung ke Neon PostgreSQL & Upstash Redis |
 
 ---
 
-### 4.9 Sistem Audio Prosedural & Sintesis Suara (Audio System Specifications)
-Arsitektur suara Merantalk mengadopsi **Web Audio API Procedural Synthesizer** murni (`audioService.ts`) yang menghasilkan 13 preset SFX taktil tanpa memerlukan download aset audio MP3 eksternal yang membebani kuota:
+## 9. Cross-References & Contract Documents
 
-1. `tap`: Klik tajam frekuensi 800Hz untuk peletakan balok kata.
-2. `card_flip`: Suara gesekan kartu memori Anki berputar.
-3. `correct`: Arpeggio akor mayor riang (C5 - E5 - G5 - C6) bertempo cepat.
-4. `incorrect`: Nada rendah tumpul non-punitive (F3 - C3) dengan filter low-pass halus.
-5. `streak_flame`: Desisan api hangat (*white noise filter sweep*) saat streak bertambah.
-6. `level_up`: Fanfare multi-oktaf megah penanda kenaikan level gamifikasi.
-7. `chest_open`: Derit peti kayu fisika 3D diikuti kilauan kristal emas.
-8. `reward_claim`: Denting kristal frekuensi tinggi saat menerima Blue Gems.
-9. `button_press`: Suara pegas mekanik berkedalaman 4px saat tombol 3D ditekan.
-10. `node_unlock`: Dentang gembok logam terbuka saat gerbang unit baru terlepas.
-11. `combo`: Nada frekuensi naik progresif setiap kali pengguna menjawab benar beruntun.
-12. `timer_tick`: Detak halus penanda waktu mundur pada simulasi ujian diagnostik.
-13. `fanfare`: Melodi kemenangan orkestra penutup sesi belajar.
-
-*Fallback Sintesis Suara:* Jika file audio native sebuah kata belum tersedia di CDN, sistem memicu Web Speech API lokal (`speakLanguage`) dengan tag bahasa BCP-47 (`ja-JP`, `de-DE`, `en-GB`, `en-US`, `zh-CN`, `fr-FR`).
-
----
-
-## 🎯 5. Batasan Scope Produk (Scope Boundaries & Phased Rollout)
-
-Untuk menjamin kualitas eksekusi engineering dan fokus pedagogis, batasan cakupan sistem ditetapkan secara ketat:
-
-### 5.1 In-Scope: Rilis MVP (v1.0)
-* **Dukungan Skema Penuh:** Database PostgreSQL sudah siap menampung 6 bahasa (`ja`, `en-gb`, `en-us`, `de`, `zh`, `fr`).
-* **Kurikulum Lengkap Peluncuran Perdana:**
-  * 🇯🇵 **Jepang:** Kurikulum lengkap **JLPT N5** (6 Unit, 30 Lessons, 180+ Exercises 4 Pilar, dan Simulasi Diagnostic Mock Exam N5).
-  * 🇬🇧 **Inggris British:** Kurikulum **IELTS Foundation (Band 5.0–6.5)** lengkap dengan latihan tata bahasa dan listening multi-aksen.
-* **Fitur Inti:**
-  * Engine 5 tipe latihan interaktif lengkap.
-  * Mesin Anki Spaced Repetition SM-2 otomatis.
-  * Sistem Gamifikasi (XP, Streak Flame, Peti Emas 3D, Blue Gems, Toko Arcade).
-  * Audio Synthesizer Prosedural 13 SFX.
-  * Ujian Diagnostik Kesiapan (Readiness Exam Predictor) dengan laporan remedi.
-
-### 5.2 In-Scope: Rollout Bertahap (v1.1 – v1.3)
-* **v1.1 (European Expansion):** Peluncuran kurikulum penuh **Jerman 🇩🇪 Goethe A1** dan **Inggris Amerika 🇺🇸 TOEFL Starter**.
-* **v1.2 (Asian & Romance Expansion):** Peluncuran kurikulum penuh **Mandarin 🇨🇳 HSK 1–2** dan **Prancis 🇫🇷 DELF A1**.
-* **v1.3 (Advanced Levels):** Ekspansi kurikulum tingkat menengah (**JLPT N4–N3**, **Goethe B1–B2**, **IELTS 7.0–8.0**).
-
-### 5.3 Explicit Out-of-Scope (Bukan Bagian dari Produk)
-* ❌ **Tutor Tatap Muka Manusia 1-on-1:** Platform berfokus 100% pada *self-paced mastery*, gamifikasi interaktif, dan pembimbing AI (Mera). Tidak ada fitur booking guru privat manusia.
-* ❌ **Streaming Video / Live Classroom:** Tidak ada panggilan video langsung antar-pengguna demi menjaga performa server yang ringan dan privasi pengguna.
-* ❌ **Forum Diskusi Bebas Tanpa Moderasi:** Interaksi sosial dibatasi pada sistem yang sehat dan memotivasi (*Weekly Leaderboard* dan profil publik) untuk mencegah spam dan toksisitas.
-* ❌ **Mode Offline Penuh (Lokal SQLite):** Versi web membutuhkan koneksi internet untuk sinkronisasi state. Mode offline penuh dicadangkan untuk aplikasi mobile native di masa mendatang.
-
----
-
-## 🛡️ 6. Ketahanan Sistem, Integritas Data & Edge Cases
-
-1. **Pemutusan Koneksi Jaringan Mendadak (Network Disconnection Resilience):**
-   * Sesi latihan yang sedang berjalan disimpan secara optimis di memori lokal peramban (*Zustand persistent storage*).
-   * Jika pengguna kehilangan koneksi internet di tengah soal nomor 5, latihan tidak akan *crash*. Begitu koneksi kembali pulih, progres jawaban langsung disinkronkan ke endpoint `POST /api/v1/lessons/:id/submit`.
-2. **Pencegahan Kecurangan & Dobel Submit (Anti-Spam & Debouncing):**
-   * Tombol "Periksa Jawaban" dikunci secara instan (*optimistic disable*) saat pertama kali ditekan untuk mencegah dobel submit skor XP atau gems.
-3. **Penanganan Aksara & Furigana Rendering:**
-   * Seluruh teks karakter CJK (Kanji/Hanzi) dirender menggunakan font standar UTF-8 `Noto Sans JP` dan `Noto Sans SC` untuk menjamin tampilan glif tidak pecah di perangkat lawas.
-4. **Isolasi Multi-Bahasa (Zero Collision Guarantee):**
-   * Seluruh query progres dikunci dengan komposit key `(user_id, language_id)`. Beralih dari belajar bahasa Jepang ke bahasa Jerman dijamin tidak akan merusak jadwal review Anki bahasa Jepang pengguna.
-
----
-
-## 💎 7. Kebijakan Akses Bebas & Batasan Bebas Paywall
-
-* **Komitmen Akses Inti 100% Gratis (Zero Paywall on Learning):**  
-  Seluruh materi kurikulum inti, modul tata bahasa visual, latihan 4 pilar, sistem Anki SRS harian, dan streak flame dapat diakses secara **penuh dan gratis tanpa batasan kuota energi/nyawa yang membatasi belajar**.
-* **Fitur Opsional Masa Depan (Merantalk Pro):**  
-  Monetisasi opsional di masa mendatang hanya diperuntukkan bagi fitur tingkat lanjut non-kurikulum, seperti: simulasi Diagnostic Mock Exam tanpa batas dengan sertifikat digital terverifikasi dan analisis heatmap pengucapan fonetik AI mendalam.
-
----
-
-## 🛠️ 8. Technical Architecture Stack
-
-| Lapisan Sistem | Teknologi | Pola & Standar Arsitektur |
-| :--- | :--- | :--- |
-| **Frontend** | React 18, TypeScript 5, Vite, Tailwind CSS v4, Lucide & Phosphor Icons | **Headless Hook Pattern** (Separasi logika state murni di custom hooks, JSX bersih) + Zustand Persistent Stores + TanStack Query |
-| **Audio & Speech Engine** | Web Audio API (Synthesizer prosedural) + Web Speech API (Speech Recognition & Synthesis) | Taktil tanpa latensi jaringan, fallback cerdas antar-browser |
-| **Backend API** | Golang 1.23+, Gin Web Framework | **Strict Clean Architecture** (`delivery/http` ➔ `usecase` ➔ `repository` ➔ `domain`) |
-| **Database** | PostgreSQL 16 (`pgcrypto`), Redis 7 | Skema relasional ternormalisasi (3NF) dipadukan dengan payload `JSONB` untuk konten interaktif dan rubrik evaluasi |
-| **Event Streaming** | Apache Kafka | Pemrosesan asinkron untuk reset antrean SRS harian, rekap leaderboard, dan audit aktivitas |
-
----
-
-## 📋 9. Database Schema Cross-Reference
-
-Seluruh spesifikasi teknis tabel, tipe data, indeks performa, dan relasi cardinalitas mengacu secara ketat pada dokumen:  
-👉 [`.agents/docs/erd.md`](file:///c:/Projects/codeabroad/.agents/docs/erd.md) (Versi 3.0).
+Seluruh implementasi basis data dan kontrak antarmuka REST API harus tetap selaras 100% dengan dokumen sumber kebenaran berikut:
+* **Database Schema, DBML & Migration Inventory (v3.2 — 32 Tables, `000001`–`000017`):** [`.agents/docs/erd.md`](file:///c:/Projects/codeabroad/.agents/docs/erd.md)
+* **REST API OpenAPI 3.0.3 Specification (v3.2.0):** [`docs/api/openapi.yaml`](file:///c:/Projects/codeabroad/docs/api/openapi.yaml)
+* **Engineering & Repository Overview (v3.2):** [`README.md`](file:///c:/Projects/codeabroad/README.md)

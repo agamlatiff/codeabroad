@@ -27,7 +27,7 @@ func NewRepository(db *postgres.PostgresDB) Repository {
 	return &PostgresRepository{db: db}
 }
 
-// NewSRSRepository creates a new PostgreSQL spaced repetition repository instance
+// NewSRSRepository creates a new PostgreSQL scheduled review repository instance
 func NewSRSRepository(db *postgres.PostgresDB) SRSRepository {
 	return &PostgresRepository{db: db}
 }
@@ -708,7 +708,7 @@ func (r *PostgresRepository) CreateAttempt(ctx context.Context, attempt *UserExe
 	return nil
 }
 
-// GetDueReviews retrieves spaced repetition cards due for review as of the specified time
+// GetDueReviews retrieves scheduled review cards due for review as of the specified time
 func (r *PostgresRepository) GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error) {
 	reviews, _, err := r.GetDueReviewsWithTotal(ctx, userID, now, limit)
 	return reviews, err
@@ -821,7 +821,7 @@ const upsertSRSReviewQuery = `
 	RETURNING id, repetition_count, next_review_at
 `
 
-// UpsertReview records or updates an SM-2 scheduling record atomically
+// UpsertReview records or updates an adaptive review scheduling record atomically
 func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSReview) error {
 	if review == nil {
 		return apperror.ErrBadRequest
@@ -843,12 +843,12 @@ func (r *PostgresRepository) UpsertReview(ctx context.Context, review *UserSRSRe
 	return nil
 }
 
-// ApplyReviewTx atomically locks, reads, computes, and upserts an SM-2 SRS card within a single transaction.
+// ApplyReviewTx atomically locks, reads, computes, and upserts a scheduled review card within a single transaction.
 func (r *PostgresRepository) ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error) {
 	return r.applyReviewTx(ctx, userID, exerciseID, false, time.Time{}, compute)
 }
 
-// ApplyDueReviewTx atomically verifies the SRS card exists and is due before computing and persisting SM-2 updates.
+// ApplyDueReviewTx atomically verifies the scheduled review card exists and is due before computing and persisting adaptive schedule updates.
 func (r *PostgresRepository) ApplyDueReviewTx(ctx context.Context, userID, exerciseID string, now time.Time, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error) {
 	return r.applyReviewTx(ctx, userID, exerciseID, true, now, compute)
 }
@@ -921,7 +921,7 @@ func (r *PostgresRepository) applyReviewTx(
 	return updated, nil
 }
 
-// GetDueCount counts all pending spaced repetition cards due on or before now
+// GetDueCount counts all pending scheduled review cards due on or before now
 func (r *PostgresRepository) GetDueCount(ctx context.Context, userID string, now time.Time) (int, error) {
 	if err := apperror.ValidateUserUUID(userID); err != nil {
 		return 0, err

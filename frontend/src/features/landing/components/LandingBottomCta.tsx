@@ -12,7 +12,7 @@ export const LandingBottomCta = () => {
       aria-labelledby="landing-bottom-cta-heading"
       className="landing-cv-section relative bg-gradient-to-br from-[#2563EB] via-[#1D4ED8] to-[#0284C7] text-white overflow-hidden"
     >
-      {/* ClassDojo-style Curved White SVG Top Mask */}
+      {/* Merantalk Curved White SVG Top Mask */}
       <svg
         viewBox="0 0 1292 55"
         preserveAspectRatio="none"

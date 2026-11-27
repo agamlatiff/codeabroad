@@ -106,7 +106,7 @@ type UserExerciseAttempt struct {
 	CreatedAt        time.Time      `json:"created_at"`
 }
 
-// UserSRSReview represents the spaced repetition memory state (SM-2) for an exercise (user_srs_reviews table)
+// UserSRSReview represents the adaptive review memory state for an exercise (user_srs_reviews table)
 type UserSRSReview struct {
 	ID              string     `json:"id"`
 	UserID          string     `json:"user_id"`
@@ -156,13 +156,13 @@ type SubmitExerciseAnswerResponse struct {
 	NextReviewDue      *time.Time `json:"next_review_due,omitempty"`
 }
 
-// SubmitSRSReviewRequest defines the SM-2 quality grade (0-5) after reviewing a card
+// SubmitSRSReviewRequest defines the recall quality grade (0-5) after reviewing a card
 type SubmitSRSReviewRequest struct {
 	ExerciseID string `json:"exercise_id" binding:"required,uuid"`
 	Quality    *int   `json:"quality" binding:"required,min=0,max=5"`
 }
 
-// SRSQueueResponse provides the batch of due spaced repetition reviews
+// SRSQueueResponse provides the batch of due adaptive reviews
 type SRSQueueResponse struct {
 	TotalDue int             `json:"total_due"`
 	Items    []UserSRSReview `json:"items"`
@@ -226,7 +226,7 @@ type Repository interface {
 	CreateAttempt(ctx context.Context, attempt *UserExerciseAttempt) error
 }
 
-// SRSRepository specifies persistence operations for spaced repetition scheduling
+// SRSRepository specifies persistence operations for adaptive review scheduling
 type SRSRepository interface {
 	GetDueReviews(ctx context.Context, userID string, now time.Time, limit int) ([]UserSRSReview, error)
 	GetReview(ctx context.Context, userID string, exerciseID string) (*UserSRSReview, error)
@@ -234,12 +234,12 @@ type SRSRepository interface {
 	GetDueCount(ctx context.Context, userID string, now time.Time) (int, error)
 }
 
-// TransactionalSRSReviewer atomically locks, reads, computes, and persists an SM-2 SRS card update
+// TransactionalSRSReviewer atomically locks, reads, computes, and persists a scheduled review card update
 type TransactionalSRSReviewer interface {
 	ApplyReviewTx(ctx context.Context, userID, exerciseID string, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error)
 }
 
-// TransactionalDueSRSReviewer atomically verifies card existence & due status before applying SM-2 updates.
+// TransactionalDueSRSReviewer atomically verifies card existence & due status before applying adaptive review updates.
 type TransactionalDueSRSReviewer interface {
 	ApplyDueReviewTx(ctx context.Context, userID, exerciseID string, now time.Time, compute func(prevReps, prevInterval int, prevEase float64) *UserSRSReview) (*UserSRSReview, error)
 }
@@ -292,7 +292,7 @@ type Usecase interface {
 	GetDailyVocabularies(ctx context.Context, userID string, limit int) ([]VocabularyItem, error)
 }
 
-// SRSUsecase specifies spaced repetition review workflows
+// SRSUsecase specifies adaptive scheduled review workflows
 type SRSUsecase interface {
 	GetDueReviews(ctx context.Context, userID string, limit int) (*SRSQueueResponse, error)
 	ProcessReview(ctx context.Context, userID string, req *SubmitSRSReviewRequest) (*UserSRSReview, error)

@@ -1150,7 +1150,7 @@ func (r *PostgresRepository) GetUserGrammarProgressMap(ctx context.Context, user
 	return res, nil
 }
 
-// RecordGrammarCheck atomically persists a learner's mini comprehension quiz outcome and schedules spaced review.
+// RecordGrammarCheck atomically persists a learner's mini comprehension quiz outcome and schedules adaptive follow-up review.
 func (r *PostgresRepository) RecordGrammarCheck(
 	ctx context.Context,
 	userID string,

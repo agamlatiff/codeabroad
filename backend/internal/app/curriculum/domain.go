@@ -85,7 +85,7 @@ type GrammarLearningGuide struct {
 	Quiz         []GrammarMiniQuizItem     `json:"quiz"`
 }
 
-// UserGrammarProgress captures per-user comprehension quiz mastery & next spaced-repetition review timestamp.
+// UserGrammarProgress captures per-user comprehension quiz mastery & next adaptive review timestamp.
 type UserGrammarProgress struct {
 	ID              string     `json:"id"`
 	UserID          string     `json:"user_id"`

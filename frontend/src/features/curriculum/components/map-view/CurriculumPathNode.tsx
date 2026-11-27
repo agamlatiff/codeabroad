@@ -76,7 +76,7 @@ export const CurriculumPathNode: FC<CurriculumPathNodeProps> = memo(({
         top: `${topPx}px`,
       }}
     >
-      {/* ── DUOLINGO FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
+      {/* ── MERANTALK FLOATING POPOVER CARD FOR ACTIVE LESSON ── */}
       {node.status === 'active' && !node.isChest && !node.isTrophy && (
         <div className={`absolute top-full mt-4 ${popoverAlignClass} z-30 flex flex-col items-center select-none pointer-events-auto`}>
           <div

@@ -34,7 +34,7 @@ export interface KodiCharacterProps {
 
 /**
  * KodiCharacter — The Living Master Mascot of CodeAbroad ("Kodi-chan" / Chiikawa Neko).
- * 100% Vector SVG, zero raster dependency. Features theatrical Duolingo-grade cartoon acting:
+ * 100% Vector SVG, zero raster dependency. Features theatrical expressive cartoon acting:
  * - Natural double-blinking eyes with transform-box precision
  * - Expressive cat tail participating in all 6 emotional states
  * - Extreme body deformations (fountain tears, brain overheat steam, trophy leap, super saiyan flames, speedrun typing)

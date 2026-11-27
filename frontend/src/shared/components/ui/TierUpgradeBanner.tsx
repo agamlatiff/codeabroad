@@ -127,12 +127,12 @@ export const TierUpgradeBanner: FC<TierUpgradeBannerProps> = ({
     ? [
         'Bebas lompat ke unit mana pun tanpa harus berurutan',
         'Kurikulum B2, C1 & C2 penuh (30 Unit · Fokus TOEFL iBT 72–120)',
-        '30 Panduan Grammar & 30 Deck Flashcard B2–C2 + SRS',
+        '30 Panduan Grammar & 30 Deck Kartu Kosakata B2–C2 dengan pengingat otomatis',
       ]
     : [
         'Bebas lompat ke unit mana pun (Unit 1 langsung ke Unit 3+)',
         'Kurikulum N2 & N1 penuh (20 Unit · 600 Soal)',
-        '20 Panduan Grammar & 40 Deck Flashcard N2–N1 + SRS',
+        '20 Panduan Grammar & 40 Deck Kartu Kosakata N2–N1 dengan pengingat otomatis',
       ]
 
   return (

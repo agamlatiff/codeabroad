@@ -233,7 +233,7 @@ function clearPlaybackTimers(
 }
 
 /**
- * Open borderless ClassDojo-style interactive grammar mentor stage with Mera Sensei
+ * Open borderless Merantalk interactive grammar mentor stage with Mera Sensei
  * pointing toward candy-colored tilted squircle word tiles across 4 languages.
  */
 export const LandingAnimatedSentenceShowcase = () => {
@@ -363,7 +363,7 @@ export const LandingAnimatedSentenceShowcase = () => {
         </div>
       </div>
 
-      {/* Main Open ClassDojo Stage */}
+      {/* Main Open Merantalk Interactive Stage */}
       <div className="grid grid-cols-1 sm:grid-cols-12 items-end gap-4 sm:gap-5">
         {/* Left Hero Mera Sensei Grounded on Open Pastel Blob */}
         <div className="min-w-0 sm:col-span-5 flex items-end justify-center sm:justify-start relative">

@@ -168,7 +168,7 @@ export const AuthLayout: FC<AuthLayoutProps> = ({
             </span>
             <span className="inline-flex items-center gap-1.5 rounded-full bg-white/12 px-3 py-1.5 text-[11px] font-brand font-bold text-blue-50">
               <Repeat weight="bold" className="w-3.5 h-3.5 text-emerald-300" />
-              <span>Ulasan SRS Otomatis</span>
+              <span>Ingat Lebih Lama</span>
             </span>
           </div>
         </div>

@@ -8,7 +8,7 @@ import type {
 } from "@/features/curriculum/types/curriculum"
 
 /**
- * 1. Map View Duolingo 3D Serpentine Path Palettes & Geometry Tokens
+ * 1. Map View Merantalk 3D Serpentine Path Palettes & Geometry Tokens
  */
 export interface MapUnitPalette {
   gradient: string

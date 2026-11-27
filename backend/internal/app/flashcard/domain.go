@@ -39,7 +39,7 @@ type SampleCard struct {
 	Status      string `json:"status"`
 }
 
-// Deck represents a standalone topic flashcard deck with per-user Anki memory cycle counters.
+// Deck represents a standalone topic flashcard deck with per-user adaptive review progress counters.
 type Deck struct {
 	ID             string       `json:"id"`
 	Slug           string       `json:"slug"`
@@ -60,7 +60,7 @@ type Deck struct {
 	CreatedAt      time.Time    `json:"created_at"`
 }
 
-// Card represents a single flashcard item with optional user SM-2 scheduling state.
+// Card represents a single flashcard item with optional user adaptive review scheduling state.
 type Card struct {
 	ID             string     `json:"id"`
 	DeckID         string     `json:"deck_id"`
@@ -76,7 +76,7 @@ type Card struct {
 	LastReviewedAt *time.Time `json:"last_reviewed_at,omitempty"`
 }
 
-// CardProgress holds the persisted SM-2 scheduling state for a user and card.
+// CardProgress holds the persisted adaptive review scheduling state for a user and card.
 type CardProgress struct {
 	UserID         string
 	CardID         string
@@ -105,7 +105,7 @@ type ReviewCardRequest struct {
 	Quality *int `json:"quality"`
 }
 
-// ReviewCardResponse returns the updated SM-2 schedule and XP earned for a review.
+// ReviewCardResponse returns the updated adaptive review schedule and XP earned for a review.
 type ReviewCardResponse struct {
 	CardID       string    `json:"card_id"`
 	EaseFactor   float64   `json:"ease_factor"`
@@ -118,7 +118,7 @@ type ReviewCardResponse struct {
 	Streak       int       `json:"streak,omitempty"`
 }
 
-// SM2Result holds the computed SM-2 schedule values.
+// SM2Result holds the computed adaptive review schedule values.
 type SM2Result struct {
 	EaseFactor   float64
 	IntervalDays int
@@ -126,7 +126,7 @@ type SM2Result struct {
 	NextReviewAt time.Time
 }
 
-// CalculateSM2 computes the next Anki-modified SM-2 spaced-repetition schedule for a flashcard.
+// CalculateSM2 computes the next adaptive review schedule for a flashcard.
 func CalculateSM2(quality int, prevReps int, prevInterval int, prevEase float64, now time.Time) SM2Result {
 	if prevEase < 1.3 {
 		prevEase = 2.5
