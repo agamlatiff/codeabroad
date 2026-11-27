@@ -24,14 +24,19 @@ const resolveLessonStatus = (
  * Merantalk 3D Serpentine Map Unit structures strictly respecting backend unlock status.
  */
 export const transformCurriculumToMapUnits = (
-  curriculum: CurriculumResponse | null | undefined
+  curriculum: CurriculumResponse | null | undefined,
+  options?: { isGuest?: boolean }
 ): CurriculumUnitData[] => {
   if (!curriculum || !curriculum.units || curriculum.units.length === 0) {
     return []
   }
 
+  const isGuest = Boolean(options?.isGuest)
+
   let globalLessonCounter = 1
   let hasAssignedActiveNode = false
+  let hasAnyLesson = false
+  let allLessonsCompleted = true
   const langCode = curriculum.language?.code?.toUpperCase() || 'LANG'
   const levelCode = curriculum.level?.code || ''
 
@@ -41,6 +46,11 @@ export const transformCurriculumToMapUnits = (
     const lessons = unit.lessons || []
 
     const parts: CurriculumPartNode[] = lessons.map((lesson) => {
+      hasAnyLesson = true
+      if (!lesson.is_completed) {
+        allLessonsCompleted = false
+      }
+
       const lessonNum = globalLessonCounter++
       const isCurrentLesson =
         curriculum.current_lesson_id === lesson.id ||
@@ -91,9 +101,7 @@ export const transformCurriculumToMapUnits = (
 
     const cleanTitle = unit.title.replace(/^unit\s*\d+\s*[:.\-–—]\s*/i, '').trim() || unit.title
     const isLastUnit = unitIndex === curriculum.units.length - 1
-    const allLevelLessonsCompleted =
-      curriculum.units.every((u) => (u.lessons ?? []).every((l) => l.is_completed)) &&
-      curriculum.units.some((u) => (u.lessons?.length ?? 0) > 0)
+    const allLevelLessonsCompleted = isLastUnit && hasAnyLesson && allLessonsCompleted
 
     const bossQuest: CurriculumPartNode | undefined =
       isLastUnit && curriculum.level?.id
@@ -101,10 +109,12 @@ export const transformCurriculumToMapUnits = (
             id: `exam-${curriculum.level.id}`,
             number: globalLessonCounter,
             title: `Ujian Kesiapan ${levelCode || langCode}`,
-            subtitle: allLevelLessonsCompleted
-              ? 'Simulasi Ujian Akhir Level • Siap Diuji'
-              : 'Selesaikan seluruh pelajaran level ini untuk membuka ujian akhir',
-            status: allLevelLessonsCompleted ? 'active' : 'locked',
+            subtitle: isGuest
+              ? 'Daftar gratis untuk mengikuti ujian kesiapan dan membuka level berikutnya'
+              : allLevelLessonsCompleted
+                ? 'Simulasi Ujian Akhir Level • Siap Diuji'
+                : 'Tantang Ujian Kesiapan kapan saja untuk langsung naik tingkat — pelajaran di atas opsional sebagai persiapan',
+            status: isGuest ? 'locked' : 'active',
             route: `/exam/${curriculum.level.id}`,
             xpReward: 50,
             category: 'boss',

@@ -46,14 +46,14 @@ func main() {
 	if err != nil {
 		log.Fatalf("failed to load configuration: %v", err)
 	}
-	if cfg.Env == "production" || cfg.Env == "staging" {
+	if cfg.App.Env == "production" || cfg.App.Env == "staging" {
 		gin.SetMode(gin.ReleaseMode)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	// 2. Initialize PostgreSQL connection pool
-	pg, err := postgres.NewPostgresDB(ctx, cfg)
+	pg, err := postgres.NewPostgresDB(ctx, cfg.Database)
 	if err != nil {
 		log.Fatalf("failed to connect to postgres: %v", err)
 	}
@@ -61,7 +61,7 @@ func main() {
 	log.Println("connected to PostgreSQL successfully")
 
 	// 3. Initialize Redis client
-	rdb, err := redis.NewRedisClient(ctx, cfg)
+	rdb, err := redis.NewRedisClient(ctx, cfg.Redis)
 	if err != nil {
 		log.Fatalf("failed to connect to redis: %v", err)
 	}
@@ -107,7 +107,7 @@ func main() {
 		"terlalu banyak percobaan autentikasi, silakan coba lagi beberapa saat",
 	)
 	authHandler := auth.NewHandlerWithRateLimiter(authUsecase, authLimiter)
-	authHandler.SetHelper(auth.NewHelper(cfg))
+	authHandler.SetHelper(auth.NewHelper(cfg.JWT))
 	userProfileLimiter := middleware.DistributedUserOrIPRateLimitMiddleware(
 		rdb.Client,
 		"user:profile_update",
@@ -200,8 +200,8 @@ func main() {
 		leaderboard.DefaultLeaderboardMessage,
 	)
 	leaderboardHandler := leaderboard.NewHandlerWithRateLimiter(leaderboardUsecase, leaderboardReadLimiter)
-	authMiddleware := middleware.AuthMiddlewareWithSessionCheck(cfg.JWTSecret, sessionRepo)
-	optionalAuth := middleware.OptionalAuthMiddlewareWithSessionCheck(cfg.JWTSecret, sessionRepo)
+	authMiddleware := middleware.AuthMiddlewareWithSessionCheck(cfg.JWT.Secret, sessionRepo)
+	optionalAuth := middleware.OptionalAuthMiddlewareWithSessionCheck(cfg.JWT.Secret, sessionRepo)
 
 	// 7. Setup Gin router with registered routes
 	appRouter := router.SetupRouter(&router.Config{
@@ -217,13 +217,13 @@ func main() {
 		LeaderboardHandler:     leaderboardHandler,
 		AuthMiddleware:         authMiddleware,
 		OptionalAuthMiddleware: optionalAuth,
-		CORSAllowedOrigins:     cfg.CORSAllowedOrigins,
-		TrustedProxies:         cfg.TrustedProxies,
+		CORSAllowedOrigins:     cfg.HTTP.CORSAllowedOrigins,
+		TrustedProxies:         cfg.HTTP.TrustedProxies,
 	})
 
 	// 8. Configure HTTP server
 	srv := &http.Server{
-		Addr:              ":" + cfg.Port,
+		Addr:              ":" + cfg.App.Port,
 		Handler:           appRouter,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -235,7 +235,7 @@ func main() {
 	// 9. Start server in a background goroutine
 	serverErrCh := make(chan error, 1)
 	go func() {
-		log.Printf("Merantalk API server listening on port %s (%s environment)", cfg.Port, cfg.Env)
+		log.Printf("Merantalk API server listening on port %s (%s environment)", cfg.App.Port, cfg.App.Env)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			serverErrCh <- err
 		}

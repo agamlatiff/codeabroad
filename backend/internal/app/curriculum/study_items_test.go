@@ -1,10 +1,13 @@
 package curriculum
 
 import (
+	"context"
 	"strings"
 	"testing"
 
 	"merantalk/backend/internal/app/exercise"
+	"merantalk/backend/internal/app/language"
+	"merantalk/backend/internal/app/user"
 )
 
 func TestBuildLessonStudyItemsAndHints_N5Unit1KosakataDasar(t *testing.T) {
@@ -423,5 +426,77 @@ func TestBuildLessonStudyItemsAndHints_EnglishSentenceBuilderPreservesSpacesAndN
 	}
 	if strings.Contains(*sanitized[0].Hint, "Jepang") || strings.Contains(*sanitized[0].Hint, "は/が/を") {
 		t.Errorf("expected English sentence_builder hint to be free of Japanese SOV copy, got %q", *sanitized[0].Hint)
+	}
+}
+
+func TestGetLessonDetail_AutoWiresDBBackedStudyItemService(t *testing.T) {
+	cRepo := NewMockRepository()
+	cRepo.Units["unit-1"] = &UnitNodeResponse{ID: "unit-1", LevelID: "lvl-n5", OrderIndex: 1}
+	cRepo.Lessons["lesson-dakuten"] = &LessonNodeResponse{
+		ID:         "lesson-dakuten",
+		UnitID:     "unit-1",
+		Slug:       "n5-u2-dakuten-yoon",
+		Title:      "Dakuten & Yoon",
+		OrderIndex: 1,
+		IsUnlocked: true,
+	}
+	cRepo.KanaCatalog = []KanaCharacterItem{
+		{
+			Character: "が",
+			Script:    "hiragana",
+			Romaji:    "ga",
+			Mnemonic:  `Huruf か (ka) ditambah 2 titik tenten kanan atas berubah menjadi bunyi tebal "GA".`,
+		},
+		{
+			Character: "きゃ",
+			Script:    "hiragana",
+			Romaji:    "kya",
+			Mnemonic:  `Gabungan き (ki) + huruf kecil ゃ (ya) dilebur cepat menjadi satu suku kata "KYA".`,
+		},
+	}
+
+	lessonID := "lesson-dakuten"
+	eRepo := exercise.NewMockRepository()
+	eRepo.Exercises["ex-ga"] = &exercise.Exercise{
+		ID:            "ex-ga",
+		LessonID:      &lessonID,
+		ExerciseType:  exercise.ExerciseTypeFillBlank,
+		Prompt:        "Pilih huruf hiragana dakuten yang tepat:",
+		Content:       map[string]any{"options": []any{"が", "か", "ぎ", "ぐ"}},
+		CorrectAnswer: "が",
+		OrderIndex:    1,
+	}
+	eRepo.Exercises["ex-kya"] = &exercise.Exercise{
+		ID:            "ex-kya",
+		LessonID:      &lessonID,
+		ExerciseType:  exercise.ExerciseTypeListeningChoice,
+		Prompt:        "Dengarkan bunyi huruf berikut dan pilih aksara yang benar:",
+		Content:       map[string]any{"audio_text": "きゃ", "options": []any{"きゃ", "きゅ", "きょ"}},
+		CorrectAnswer: "きゃ",
+		OrderIndex:    2,
+	}
+
+	uc := NewUsecase(cRepo, language.NewMockRepository(), eRepo, user.NewMockRepository(), nil)
+	detail, err := uc.GetLessonDetail(context.Background(), "", "lesson-dakuten")
+	if err != nil {
+		t.Fatalf("GetLessonDetail failed: %v", err)
+	}
+	if len(detail.StudyItems) != 2 {
+		t.Fatalf("expected 2 DB-backed study items (が, きゃ), got %d: %+v", len(detail.StudyItems), detail.StudyItems)
+	}
+	if detail.StudyItems[0].Symbol != "が" || detail.StudyItems[0].Reading != "ga" {
+		t.Errorf("expected study item[0] for が with reading 'ga', got %+v", detail.StudyItems[0])
+	}
+	if detail.StudyItems[1].Symbol != "きゃ" || detail.StudyItems[1].Reading != "kya" {
+		t.Errorf("expected study item[1] for きゃ with reading 'kya', got %+v", detail.StudyItems[1])
+	}
+	if len(detail.Exercises) != 2 || detail.Exercises[0].Hint == nil || detail.Exercises[1].Hint == nil {
+		t.Fatalf("expected contextual hints populated on both exercises, got %+v", detail.Exercises)
+	}
+	if strings.Contains(*detail.Exercises[0].Hint, "が") || strings.Contains(*detail.Exercises[0].Hint, `"GA"`) {
+		t.Errorf("expected spoiler-free dakuten hint for が, got %q", *detail.Exercises[0].Hint)
+	}
+	if strings.Contains(*detail.Exercises[1].Hint, "きゃ") || strings.Contains(*detail.Exercises[1].Hint, `"KYA"`) {
+		t.Errorf("expected spoiler-free yoon hint for きゃ, got %q", *detail.Exercises[1].Hint)
 	}
 }

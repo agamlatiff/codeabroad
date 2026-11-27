@@ -22,9 +22,11 @@ func setupAuthTestRouter() (*gin.Engine, *user.MockRepository, *auth.MockSession
 	gin.SetMode(gin.TestMode)
 
 	cfg := &config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+		JWT: config.JWTConfig{
+			Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+			AccessExpirationMinutes: 15,
+			RefreshExpirationDays:   30,
+		},
 	}
 
 	userRepo := user.NewMockRepository()
@@ -32,9 +34,9 @@ func setupAuthTestRouter() (*gin.Engine, *user.MockRepository, *auth.MockSession
 	authUc := auth.NewUsecase(userRepo, sessionRepo, cfg)
 
 	authHandler := auth.NewHandlerWithRateLimiter(authUc, nil) // no rate limiter in tests
-	authHandler.SetHelper(auth.NewHelper(cfg))
-	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
-	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
+	authHandler.SetHelper(auth.NewHelper(cfg.JWT))
+	authMiddleware := middleware.AuthMiddleware(cfg.JWT.Secret)
+	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWT.Secret)
 
 	r := gin.New()
 	v1 := r.Group("/api/v1")
@@ -295,11 +297,11 @@ func TestHTTP_Logout_ViaRefreshTokenBody_SuccessWithoutAccessToken(t *testing.T)
 	router, _, sessionRepo := setupAuthTestRouter()
 	ctx := context.Background()
 
-	cfg := &config.Config{
-		JWTSecret:                "test-secret-at-least-32-chars-long-key-12345",
-		JWTRefreshExpirationDays: 30,
+	jwtCfg := config.JWTConfig{
+		Secret:                "test-secret-at-least-32-chars-long-key-12345",
+		RefreshExpirationDays: 30,
 	}
-	helper := auth.NewHelper(cfg)
+	helper := auth.NewHelper(jwtCfg)
 	u := &user.User{
 		UserAccount: user.UserAccount{ID: "usr_rt_logout", Email: "rt_logout@example.com"},
 		UserProfile: user.UserProfile{Username: "rt_logout"},
@@ -330,18 +332,18 @@ func TestHTTP_Logout_ViaRefreshTokenBody_SuccessWithoutAccessToken(t *testing.T)
 
 func setupGoogleAuthTestRouter(verifier auth.GoogleOAuthVerifier) *gin.Engine {
 	gin.SetMode(gin.TestMode)
-	cfg := &config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+	jwtCfg := config.JWTConfig{
+		Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+		AccessExpirationMinutes: 15,
+		RefreshExpirationDays:   30,
 	}
 	userRepo := user.NewMockRepository()
 	sessionRepo := auth.NewMockSessionRepository()
-	authUc := auth.NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, verifier)
+	authUc := auth.NewUsecaseWithGoogle(userRepo, sessionRepo, jwtCfg, verifier)
 	authHandler := auth.NewHandlerWithRateLimiter(authUc, nil)
-	authHandler.SetHelper(auth.NewHelper(cfg))
-	authMiddleware := middleware.AuthMiddleware(cfg.JWTSecret)
-	optionalAuth := middleware.OptionalAuthMiddleware(cfg.JWTSecret)
+	authHandler.SetHelper(auth.NewHelper(jwtCfg))
+	authMiddleware := middleware.AuthMiddleware(jwtCfg.Secret)
+	optionalAuth := middleware.OptionalAuthMiddleware(jwtCfg.Secret)
 
 	r := gin.New()
 	v1 := r.Group("/api/v1")

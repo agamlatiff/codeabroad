@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
+import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
 import type {
   ParsedExerciseContent,
@@ -151,6 +151,10 @@ export const ExercisePromptRenderer = ({
   const [manualTypingExerciseId, setManualTypingExerciseId] = useState<string | null>(null)
   const [romajiShownExerciseId, setRomajiShownExerciseId] = useState<string | null>(null)
   const [hiddenFuriganaExerciseId, setHiddenFuriganaExerciseId] = useState<string | null>(null)
+  const selectedTokenIndexSet = useMemo(
+    () => new Set(selectedTokenIndices),
+    [selectedTokenIndices]
+  )
 
   const exerciseType = exercise.exercise_type
   const pillarMeta = SKILL_PILLAR_LABELS[exercise.skill_pillar] ?? {
@@ -542,7 +546,7 @@ export const ExercisePromptRenderer = ({
           {/* Available Token Bank */}
           <div className="flex flex-wrap gap-2.5 pt-1">
             {parsedContent.tokens.map((token, tokenIndex) => {
-              const isUsed = selectedTokenIndices.includes(tokenIndex)
+              const isUsed = selectedTokenIndexSet.has(tokenIndex)
               return (
                 <button
                   key={`${token}-${tokenIndex}`}

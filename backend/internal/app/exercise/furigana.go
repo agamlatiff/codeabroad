@@ -17,6 +17,28 @@ type furiganaDictEntry struct {
 	kana  string
 }
 
+var (
+	furiganaByKanji           map[string]string
+	furiganaMaxLenByFirstRune map[rune]int
+)
+
+func init() {
+	furiganaByKanji = make(map[string]string, len(n5FuriganaEntries))
+	furiganaMaxLenByFirstRune = make(map[rune]int, len(n5FuriganaEntries))
+	for _, entry := range n5FuriganaEntries {
+		if entry.kanji == "" {
+			continue
+		}
+		if _, exists := furiganaByKanji[entry.kanji]; !exists {
+			furiganaByKanji[entry.kanji] = entry.kana
+		}
+		runes := []rune(entry.kanji)
+		if len(runes) > furiganaMaxLenByFirstRune[runes[0]] {
+			furiganaMaxLenByFirstRune[runes[0]] = len(runes)
+		}
+	}
+}
+
 // Ordered longest-Kanji-first so multi-character compounds match before constituent single Kanji glyphs.
 var n5FuriganaEntries = []furiganaDictEntry{
 	// 4+ character compounds & phrases
@@ -401,28 +423,43 @@ func EnrichExerciseFurigana(rawEx Exercise, sanitized *Exercise) {
 	}
 
 	normalizedCorrect := strings.TrimSpace(rawEx.CorrectAnswer)
-	remaining := visibleText
+	runes := []rune(visibleText)
 	seen := make(map[string]bool, 8)
 	items := make([]map[string]string, 0, 8)
 
-	for _, entry := range n5FuriganaEntries {
-		if len(items) >= 8 {
+	for i := 0; i < len(runes) && len(items) < 8; {
+		maxL := furiganaMaxLenByFirstRune[runes[i]]
+		if maxL == 0 {
+			i++
+			continue
+		}
+		if rem := len(runes) - i; maxL > rem {
+			maxL = rem
+		}
+		matchedLen := 0
+		for l := maxL; l >= 1; l-- {
+			cand := string(runes[i : i+l])
+			kana, ok := furiganaByKanji[cand]
+			if !ok {
+				continue
+			}
+			if !seen[cand] {
+				seen[cand] = true
+				if !matchesFuriganaAnswer(cand, kana, normalizedCorrect) {
+					items = append(items, map[string]string{
+						"kanji": cand,
+						"kana":  kana,
+					})
+				}
+			}
+			matchedLen = l
 			break
 		}
-		if seen[entry.kanji] || !strings.Contains(remaining, entry.kanji) {
-			continue
+		if matchedLen > 0 {
+			i += matchedLen
+		} else {
+			i++
 		}
-		if matchesFuriganaAnswer(entry.kanji, entry.kana, normalizedCorrect) {
-			remaining = strings.ReplaceAll(remaining, entry.kanji, " ")
-			continue
-		}
-		seen[entry.kanji] = true
-		items = append(items, map[string]string{
-			"kanji": entry.kanji,
-			"kana":  entry.kana,
-		})
-		// Blank out matched compound so its constituent single Kanji are not duplicated redundantly
-		remaining = strings.ReplaceAll(remaining, entry.kanji, " ")
 	}
 
 	if len(items) == 0 {

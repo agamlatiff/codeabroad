@@ -16,15 +16,12 @@ type RedisClient struct {
 	Client *redis.Client
 }
 
-func NewRedisClient(ctx context.Context, cfg *config.Config) (*RedisClient, error) {
-	if cfg == nil {
-		return nil, fmt.Errorf("redis config cannot be nil")
-	}
-	addr := fmt.Sprintf("%s:%s", cfg.RedisHost, cfg.RedisPort)
+func NewRedisClient(ctx context.Context, cfg config.RedisConfig) (*RedisClient, error) {
+	addr := fmt.Sprintf("%s:%s", cfg.Host, cfg.Port)
 
 	opts := &redis.Options{
 		Addr:         addr,
-		Password:     cfg.RedisPassword,
+		Password:     cfg.Password,
 		DB:           0,
 		PoolSize:     20,
 		MinIdleConns: 2,
@@ -33,10 +30,10 @@ func NewRedisClient(ctx context.Context, cfg *config.Config) (*RedisClient, erro
 		WriteTimeout: 1500 * time.Millisecond,
 		MaxRetries:   1,
 	}
-	if cfg.RedisTLS || strings.HasSuffix(strings.ToLower(cfg.RedisHost), ".upstash.io") {
+	if cfg.TLS || strings.HasSuffix(strings.ToLower(cfg.Host), ".upstash.io") {
 		opts.TLSConfig = &tls.Config{
 			MinVersion: tls.VersionTLS12,
-			ServerName: cfg.RedisHost,
+			ServerName: cfg.Host,
 		}
 	}
 

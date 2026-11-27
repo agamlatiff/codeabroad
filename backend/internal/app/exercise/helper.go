@@ -812,14 +812,30 @@ func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 		}
 	}
 
+	candSpacesSet := make(map[string]struct{}, len(candidates))
+	candCollapsedSet := make(map[string]struct{}, len(candidates))
+	for _, cand := range candidates {
+		candWithSpaces, candCollapsed := normalizeComparableAnswer(cand)
+		if candWithSpaces == "" {
+			continue
+		}
+		candSpacesSet[candWithSpaces] = struct{}{}
+		if candCollapsed != "" {
+			candCollapsedSet[candCollapsed] = struct{}{}
+		}
+	}
+
 	userVariants := normalizeSpeechCandidate(userAnswer)
 	for _, userVariant := range userVariants {
 		uSpaces, uCollapsed := normalizeComparableAnswer(userVariant)
 		if uSpaces == "" {
 			continue
 		}
-		for _, cand := range candidates {
-			if answersMatch(cand, uSpaces, uCollapsed) {
+		if _, ok := candSpacesSet[uSpaces]; ok {
+			return true
+		}
+		if uCollapsed != "" {
+			if _, ok := candCollapsedSet[uCollapsed]; ok {
 				return true
 			}
 		}
@@ -837,21 +853,42 @@ func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 
 	// Phonetic romaji fallback comparing Kana/mapped-Kanji/Romaji across variants (Japanese only)
 	if hasJapaneseCandidate {
+		candPhoneticLen1 := make(map[string]struct{})
+		candPhoneticLen2Plus := make(map[string]struct{}, len(candidates))
+		candUnspacedLen6Plus := make(map[string]struct{}, len(candidates))
+		for _, cand := range candidates {
+			cPhonetic := normalizeRomajiPhonetics(cand)
+			if cPhonetic == "" {
+				continue
+			}
+			cLen := utf8.RuneCountInString(cPhonetic)
+			if cLen == 1 {
+				candPhoneticLen1[cPhonetic] = struct{}{}
+			} else if cLen >= 2 {
+				candPhoneticLen2Plus[cPhonetic] = struct{}{}
+				if cLen >= 6 {
+					candUnspacedLen6Plus[unspacedParticleReplacer.Replace(cPhonetic)] = struct{}{}
+				}
+			}
+		}
 		for _, userVariant := range userVariants {
 			uPhonetic := normalizeRomajiPhonetics(userVariant)
 			if uPhonetic == "" {
 				continue
 			}
-			for _, cand := range candidates {
-				cPhonetic := normalizeRomajiPhonetics(cand)
-				if cPhonetic == "" {
-					continue
-				}
-				if (utf8.RuneCountInString(uPhonetic) >= 2 && utf8.RuneCountInString(cPhonetic) >= 2 && uPhonetic == cPhonetic) ||
-					(utf8.RuneCountInString(uPhonetic) == 1 && uPhonetic == cPhonetic) ||
-					(utf8.RuneCountInString(uPhonetic) >= 6 && utf8.RuneCountInString(cPhonetic) >= 6 &&
-						unspacedParticleReplacer.Replace(uPhonetic) == unspacedParticleReplacer.Replace(cPhonetic)) {
+			uLen := utf8.RuneCountInString(uPhonetic)
+			if uLen == 1 {
+				if _, ok := candPhoneticLen1[uPhonetic]; ok {
 					return true
+				}
+			} else if uLen >= 2 {
+				if _, ok := candPhoneticLen2Plus[uPhonetic]; ok {
+					return true
+				}
+				if uLen >= 6 {
+					if _, ok := candUnspacedLen6Plus[unspacedParticleReplacer.Replace(uPhonetic)]; ok {
+						return true
+					}
 				}
 			}
 		}
@@ -1019,19 +1056,19 @@ func (h *Helper) ExtractDiagnosticFeedback(rubric map[string]any, userAnswer str
 
 	cleanedUser := comparablePunctuationReplacer.Replace(lowerUser)
 	userFields := strings.Fields(cleanedUser)
+	userTokenSet := make(map[string]struct{}, len(userFields)*2)
+	for _, token := range userFields {
+		userTokenSet[token] = struct{}{}
+		if trimmedToken := strings.TrimFunc(token, unicode.IsPunct); trimmedToken != "" {
+			userTokenSet[trimmedToken] = struct{}{}
+		}
+	}
 	for _, k := range keys {
 		lowerKey := strings.ToLower(strings.TrimSpace(k))
 		if lowerKey == "" {
 			continue
 		}
-		matched := false
-		for _, token := range userFields {
-			trimmedToken := strings.TrimFunc(token, unicode.IsPunct)
-			if token == lowerKey || (trimmedToken != "" && trimmedToken == lowerKey) {
-				matched = true
-				break
-			}
-		}
+		_, matched := userTokenSet[lowerKey]
 		if !matched && containsCJK(lowerKey) && utf8.RuneCountInString(lowerKey) >= 2 && strings.Contains(lowerUser, lowerKey) {
 			matched = true
 		}

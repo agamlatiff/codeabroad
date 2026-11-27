@@ -153,7 +153,12 @@ export const MilestonesAndBadgesSection = ({
                     ) : examSummary.status === 'ready' ? (
                       <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-amber-100 border border-amber-300 text-amber-900 inline-flex items-center gap-1">
                         <Sparkle weight="fill" className="w-3 h-3 text-amber-600" />
-                        <span>SIAP DIUJI</span>
+                        <span>
+                          {examSummary.totalLessons > 0 &&
+                          examSummary.completedLessons >= examSummary.totalLessons
+                            ? 'SIAP DIUJI'
+                            : 'TERBUKA • TES LANGSUNG'}
+                        </span>
                       </span>
                     ) : (
                       <span className="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-md bg-slate-100 border border-slate-200 text-slate-600 inline-flex items-center gap-1">
@@ -174,8 +179,11 @@ export const MilestonesAndBadgesSection = ({
                     {examSummary.status === 'passed'
                       ? `Selamat! Ujian kesiapan ${examSummary.languageName} tingkat ${examSummary.levelCode} sudah lulus.`
                       : examSummary.status === 'ready'
-                        ? `Semua ${examSummary.totalLessons} pelajaran tuntas! Raih minimal ${examSummary.passingScorePercent}% untuk naik tingkat & membuka Lencana Kelulusan.`
-                        : `Tuntaskan ${examSummary.totalLessons - examSummary.completedLessons} pelajaran lagi di ${examSummary.languageName} ${examSummary.levelCode} untuk membuka ujian kelulusan level (min. ${examSummary.passingScorePercent}%).`}
+                        ? examSummary.totalLessons > 0 &&
+                          examSummary.completedLessons >= examSummary.totalLessons
+                          ? `Semua ${examSummary.totalLessons} pelajaran tuntas! Raih minimal ${examSummary.passingScorePercent}% untuk naik tingkat & membuka Lencana Kelulusan.`
+                          : `Sudah siap di ${examSummary.languageName} ${examSummary.levelCode}? Langsung tantang Ujian Kesiapan kapan saja (lulus ≥ ${examSummary.passingScorePercent}%), atau selesaikan ${Math.max(0, examSummary.totalLessons - examSummary.completedLessons)} pelajaran lagi sebagai persiapan opsional.`
+                        : `Masuk ke akunmu untuk mengikuti ujian kesiapan ${examSummary.languageName} ${examSummary.levelCode} (min. ${examSummary.passingScorePercent}%).`}
                   </p>
                 </div>
               </div>
@@ -242,8 +250,8 @@ export const MilestonesAndBadgesSection = ({
                 <div className="flex-1 space-y-1.5 min-w-0 pt-2 sm:pt-0">
                   <div className="flex items-center justify-between text-[11px] font-bold">
                     <span className="text-slate-600">
-                      Syarat Buka Ujian: {examSummary.completedLessons} / {examSummary.totalLessons}{' '}
-                      Pelajaran
+                      Persiapan Kurikulum (Opsional): {examSummary.completedLessons} /{' '}
+                      {examSummary.totalLessons} Pelajaran
                     </span>
                     <span className="font-mono text-indigo-700">{examSummary.progressPercent}%</span>
                   </div>
@@ -287,7 +295,12 @@ export const MilestonesAndBadgesSection = ({
                     className="text-xs px-4 py-2"
                   >
                     <span className="inline-flex items-center gap-1.5">
-                      <span>MULAI UJIAN KESIAPAN</span>
+                      <span>
+                        {examSummary.totalLessons > 0 &&
+                        examSummary.completedLessons >= examSummary.totalLessons
+                          ? 'MULAI UJIAN KESIAPAN'
+                          : 'TANTANG UJIAN KESIAPAN'}
+                      </span>
                       <ArrowRight weight="bold" className="w-3.5 h-3.5" />
                     </span>
                   </Button3D>

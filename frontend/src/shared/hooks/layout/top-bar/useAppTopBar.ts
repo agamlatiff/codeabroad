@@ -12,10 +12,13 @@ import {
   mapEnrollmentsToTrackOptions,
   mapGuestLanguagesToTrackOptions,
 } from '@/features/curriculum/utils/curriculumMapper'
+import { useActiveLanguageId } from '@/features/exercise/hooks/useActiveSpeechLocale'
 
 export const useAppTopBar = (activeTrack: string) => {
   const { data } = useUser()
   const activeUser = data.user
+  const resolvedActiveLanguageId = useActiveLanguageId()
+  const effectiveTrack = (activeTrack || resolvedActiveLanguageId || '').trim()
 
   const { data: enrollments = [], isLoading: isEnrollmentsLoading } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(activeUser?.id),
@@ -40,20 +43,20 @@ export const useAppTopBar = (activeTrack: string) => {
     () =>
       activeUser
         ? mapEnrollmentsToTrackOptions(enrollments, languages)
-        : mapGuestLanguagesToTrackOptions(languages, activeTrack),
-    [activeTrack, activeUser, enrollments, languages]
+        : mapGuestLanguagesToTrackOptions(languages, effectiveTrack),
+    [activeUser, effectiveTrack, enrollments, languages]
   )
 
   const currentTrackConfig: CareerTrackOption =
     trackOptions.find(
       (t) =>
-        t.id === activeTrack ||
-        t.slug === activeTrack ||
-        (t.languageCode ?? '').toLowerCase() === activeTrack.toLowerCase()
+        t.id === effectiveTrack ||
+        t.slug === effectiveTrack ||
+        (t.languageCode ?? '').toLowerCase() === effectiveTrack.toLowerCase()
     ) ??
     trackOptions.find((t) => t.isActive) ??
     (() => {
-      const normalizedActive = activeTrack.trim().toLowerCase()
+      const normalizedActive = effectiveTrack.trim().toLowerCase()
       const fallbackLang =
         languages.find(
           (l) =>
@@ -81,8 +84,8 @@ export const useAppTopBar = (activeTrack: string) => {
       }
 
       return {
-        id: activeTrack || 'guest-track',
-        slug: activeTrack || 'lang',
+        id: effectiveTrack || 'guest-track',
+        slug: effectiveTrack || 'lang',
         title: 'Kurikulum Bahasa',
         shortTitle: 'Bahasa',
         subtitle: activeUser ? 'Memuat jalur...' : 'Mode Coba',

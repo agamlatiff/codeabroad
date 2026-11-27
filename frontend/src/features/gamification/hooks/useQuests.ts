@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { isAxiosError } from 'axios'
 import { useAuthStore } from '@/features/auth/store/authStore'
+import { useGuestTrialStore } from '@/features/auth/store/guestTrialStore'
 import { useUser } from '@/features/user/hooks/useUser'
 import { languageService } from '@/features/curriculum/services/languageService'
 import {
@@ -167,6 +168,7 @@ export const useQuests = () => {
   const [searchParams, setSearchParams] = useSearchParams()
   const { user, updateUser } = useAuthStore()
   const userId = user?.id ?? 'anonymous'
+  const setGuestPreferredLanguageId = useGuestTrialStore((s) => s.setPreferredLanguageId)
 
   useUser()
 
@@ -474,7 +476,7 @@ export const useQuests = () => {
     const passedResult = examResultQuery.data ?? null
     const status: LevelExamSummary['status'] = passedResult?.attempt?.is_passed
       ? 'passed'
-      : allLevelLessonsCompleted
+      : user
         ? 'ready'
         : 'locked'
     const totalLessons = activeCurriculum.total_lessons
@@ -497,7 +499,7 @@ export const useQuests = () => {
       examRoute: `/exam/${encodeURIComponent(activeLevel.id)}`,
       passedResult,
     }
-  }, [activeCurriculum, activeLevel, allLevelLessonsCompleted, examResultQuery.data])
+  }, [activeCurriculum, activeLevel, examResultQuery.data, user])
 
   const enrolledLanguageCount = enrollmentsQuery.data?.length ?? (activeCurriculum ? 1 : 0)
   const learnedFlashcardsCount = useMemo(
@@ -737,11 +739,16 @@ export const useQuests = () => {
 
     if (activeTab === 'milestones') {
       if (levelExamSummary?.status === 'ready') {
+        const allPrepared =
+          levelExamSummary.totalLessons > 0 &&
+          levelExamSummary.completedLessons >= levelExamSummary.totalLessons
         return {
           emotion: 'cheering' as KodiEmotion,
-          badge: 'Ujian Siap Dibuka!',
+          badge: allPrepared ? 'Ujian Siap Dibuka!' : 'Tes Langsung Terbuka!',
           badgeBg: 'bg-amber-100 text-amber-900 border-amber-300',
-          speech: `Semua pelajaran ${levelExamSummary.levelCode} sudah beres, ${userFirstName}! Yuk uji kemampuanmu untuk naik tingkat.`,
+          speech: allPrepared
+            ? `Semua pelajaran ${levelExamSummary.levelCode} sudah beres, ${userFirstName}! Yuk uji kemampuanmu untuk naik tingkat.`
+            : `Merasa sudah siap di ${levelExamSummary.levelCode}, ${userFirstName}? Kamu bisa langsung tantang Ujian Kesiapan kapan saja untuk naik tingkat!`,
         }
       }
       return {
@@ -895,7 +902,15 @@ export const useQuests = () => {
 
   const handleSelectTrack = useCallback(
     async (languageId: string) => {
-      if (!languageId || switchLanguageMutation.isPending) return false
+      if (!languageId) return false
+      if (!user) {
+        setGuestPreferredLanguageId(languageId)
+        setActiveTrack(languageId)
+        setIsCourseSwitcherOpen(false)
+        triggerHaptic('success')
+        return true
+      }
+      if (switchLanguageMutation.isPending) return false
       try {
         const { isAlreadyEnrolled } = await switchLanguageMutation.mutateAsync(languageId)
         triggerHaptic('success')
@@ -912,7 +927,7 @@ export const useQuests = () => {
         return false
       }
     },
-    [showToast, switchLanguageMutation]
+    [setGuestPreferredLanguageId, showToast, switchLanguageMutation, user]
   )
 
   const handleOpenChest = useCallback(

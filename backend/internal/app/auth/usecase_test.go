@@ -18,9 +18,11 @@ import (
 
 func setupTestUsecase() (auth.Usecase, *user.MockRepository, *auth.MockSessionRepository) {
 	cfg := &config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+		JWT: config.JWTConfig{
+			Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+			AccessExpirationMinutes: 15,
+			RefreshExpirationDays:   30,
+		},
 	}
 	userRepo := user.NewMockRepository()
 	sessionRepo := auth.NewMockSessionRepository()
@@ -411,8 +413,7 @@ func TestLogin_MultiDevice_ConcurrentSessions(t *testing.T) {
 
 	// 4. Logout Device 1 (terminates only Laptop session)
 	// Helper ParseRefreshToken to get device 1 session ID
-	cfg := &config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"}
-	helper := auth.NewHelper(cfg)
+	helper := auth.NewHelper(config.JWTConfig{Secret: "test-secret-at-least-32-chars-long-key-12345"})
 	claims1, _ := helper.ParseRefreshToken(refreshed1.RefreshToken)
 
 	if err := authUc.Logout(ctx, u.ID, claims1.SessionID); err != nil {
@@ -442,8 +443,7 @@ func TestLogin_MultiDevice_ConcurrentSessions(t *testing.T) {
 }
 
 func TestEvaluateLoginStreak_TimezoneAware(t *testing.T) {
-	cfg := &config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"}
-	helper := auth.NewHelper(cfg)
+	helper := auth.NewHelper(config.JWTConfig{Secret: "test-secret-at-least-32-chars-long-key-12345"})
 
 	// User logged in on Nov 10 at 23:30 WIB (which is Nov 10 16:30 UTC)
 	wib := helper.DefaultLocation()
@@ -583,7 +583,7 @@ func TestRegister_PasswordValidation(t *testing.T) {
 		}
 	}
 
-	helper := auth.NewHelper(&config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"})
+	helper := auth.NewHelper(config.JWTConfig{Secret: "test-secret-at-least-32-chars-long-key-12345"})
 	if _, err := helper.HashPassword(strings.Repeat("あ", 25)); !errors.Is(err, apperror.ErrBadRequest) || !errors.Is(err, auth.ErrPasswordTooLong) {
 		t.Fatalf("expected HashPassword to return BadRequest ErrPasswordTooLong, got: %v", err)
 	}
@@ -640,12 +640,12 @@ func TestRegister_SetSessionFailure_GracefulDegradation(t *testing.T) {
 }
 
 func TestHelper_TokenTypeSeparation_AndParseRefreshToken(t *testing.T) {
-	cfg := &config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+	jwtCfg := config.JWTConfig{
+		Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+		AccessExpirationMinutes: 15,
+		RefreshExpirationDays:   30,
 	}
-	helper := auth.NewHelper(cfg)
+	helper := auth.NewHelper(jwtCfg)
 	u := &user.User{
 		UserAccount: user.UserAccount{ID: "usr_toktype", Email: "tok@example.com"},
 		UserProfile: user.UserProfile{Username: "tokuser"},
@@ -657,7 +657,7 @@ func TestHelper_TokenTypeSeparation_AndParseRefreshToken(t *testing.T) {
 	}
 
 	parsedAccess, err := jwt.ParseWithClaims(accessTok, &auth.JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(cfg.JWTSecret), nil
+		return []byte(jwtCfg.Secret), nil
 	})
 	if err != nil || !parsedAccess.Valid {
 		t.Fatalf("expected valid access token, got err=%v", err)
@@ -692,7 +692,7 @@ func TestHelper_TokenTypeSeparation_AndParseRefreshToken(t *testing.T) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Hour)),
 		},
 	}
-	legacyTok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, legacyClaims).SignedString([]byte(cfg.JWTSecret))
+	legacyTok, err := jwt.NewWithClaims(jwt.SigningMethodHS256, legacyClaims).SignedString([]byte(jwtCfg.Secret))
 	if err != nil {
 		t.Fatalf("failed to sign legacy token: %v", err)
 	}
@@ -719,7 +719,7 @@ func TestHelper_TokenTypeSeparation_AndParseRefreshToken(t *testing.T) {
 func TestRefreshToken_StoresHashedTokenInSessionRepo(t *testing.T) {
 	authUc, _, sessionRepo := setupTestUsecase()
 	ctx := context.Background()
-	helper := auth.NewHelper(&config.Config{JWTSecret: "test-secret-at-least-32-chars-long-key-12345"})
+	helper := auth.NewHelper(config.JWTConfig{Secret: "test-secret-at-least-32-chars-long-key-12345"})
 
 	regRes, err := authUc.Register(ctx, &auth.RegisterRequest{
 		Name:     "Hash Check User",
@@ -766,10 +766,10 @@ func TestRefreshToken_StoresHashedTokenInSessionRepo(t *testing.T) {
 }
 
 func TestRefreshToken_PreservesRememberMeTTL(t *testing.T) {
-	helper := auth.NewHelper(&config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+	helper := auth.NewHelper(config.JWTConfig{
+		Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+		AccessExpirationMinutes: 15,
+		RefreshExpirationDays:   30,
 	})
 
 	testCases := []struct {
@@ -1068,9 +1068,11 @@ func (m *streakFreezeUserRepo) EnsureDailyLogin(
 
 func TestLogin_PreservesStreakFreezeStreakFromRepo(t *testing.T) {
 	cfg := &config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+		JWT: config.JWTConfig{
+			Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+			AccessExpirationMinutes: 15,
+			RefreshExpirationDays:   30,
+		},
 	}
 	baseRepo := user.NewMockRepository()
 	repo := &streakFreezeUserRepo{
@@ -1115,14 +1117,14 @@ func TestLogin_PreservesStreakFreezeStreakFromRepo(t *testing.T) {
 }
 
 func setupGoogleTestUsecase(verifier auth.GoogleOAuthVerifier) (auth.Usecase, *user.MockRepository, *auth.MockSessionRepository) {
-	cfg := &config.Config{
-		JWTSecret:                  "test-secret-at-least-32-chars-long-key-12345",
-		JWTAccessExpirationMinutes: 15,
-		JWTRefreshExpirationDays:   30,
+	jwtCfg := config.JWTConfig{
+		Secret:                  "test-secret-at-least-32-chars-long-key-12345",
+		AccessExpirationMinutes: 15,
+		RefreshExpirationDays:   30,
 	}
 	userRepo := user.NewMockRepository()
 	sessionRepo := auth.NewMockSessionRepository()
-	authUc := auth.NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, verifier)
+	authUc := auth.NewUsecaseWithGoogle(userRepo, sessionRepo, jwtCfg, verifier)
 	return authUc, userRepo, sessionRepo
 }
 

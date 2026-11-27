@@ -466,7 +466,7 @@ export const CurriculumNodeDetailModal: FC<CurriculumNodeDetailModalProps> = ({
             {node.isTrophy
               ? node.status === 'completed'
                 ? 'LIHAT HASIL UJIAN'
-                : 'MULAI UJIAN UNIT'
+                : 'TANTANG UJIAN KESIAPAN'
               : node.status === 'completed'
                 ? 'ULANGI PELAJARAN'
                 : `MULAI BELAJAR (+${node.xpReward} XP)`}

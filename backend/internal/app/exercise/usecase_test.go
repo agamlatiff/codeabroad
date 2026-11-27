@@ -2496,3 +2496,127 @@ func TestGuestMode_TrialEvaluationWithoutDBWritesAndUnit2Locked(t *testing.T) {
 	}
 }
 
+type mockIncompleteCurriculumChecker struct{}
+
+func (m *mockIncompleteCurriculumChecker) IsLessonUnlocked(ctx context.Context, userID string, lessonID string) (bool, error) {
+	return true, nil
+}
+
+func (m *mockIncompleteCurriculumChecker) IsLevelCurriculumCompleted(ctx context.Context, userID string, levelID string) (bool, error) {
+	return false, nil
+}
+
+func TestReadinessExam_TestOutAllowedWithoutPriorLessonsAndEnforcesProTier(t *testing.T) {
+	ctx := context.Background()
+	eRepo := exercise.NewMockRepository()
+	eRepo.ReadinessExamExercises["lvl-n5"] = []exercise.Exercise{
+		{ID: "q-read", SkillPillar: "reading", CorrectAnswer: "A"},
+		{ID: "q-listen", SkillPillar: "listening", CorrectAnswer: "B"},
+		{ID: "q-write", SkillPillar: "writing", CorrectAnswer: "C"},
+		{ID: "q-speak", SkillPillar: "speaking", CorrectAnswer: "D"},
+	}
+	eRepo.ReadinessExamExercises["lvl-n4"] = []exercise.Exercise{
+		{ID: "q-n4", SkillPillar: "reading", CorrectAnswer: "X"},
+	}
+	eRepo.ReadinessExamExercises["lvl-n2"] = []exercise.Exercise{
+		{ID: "q-n2", SkillPillar: "reading", CorrectAnswer: "Y"},
+	}
+
+	langRepo := language.NewMockRepository()
+	lvlN5 := &language.ProficiencyLevel{ID: "lvl-n5", LanguageID: "lang-ja", Code: "N5", OrderIndex: 1, PassingScorePercent: 60}
+	lvlN4 := &language.ProficiencyLevel{ID: "lvl-n4", LanguageID: "lang-ja", Code: "N4", OrderIndex: 2, PassingScorePercent: 60}
+	lvlN2 := &language.ProficiencyLevel{ID: "lvl-n2", LanguageID: "lang-ja", Code: "N2", OrderIndex: 4, PassingScorePercent: 60}
+	langRepo.Levels["lvl-n5"] = lvlN5
+	langRepo.Levels["lvl-n4"] = lvlN4
+	langRepo.Levels["lvl-n2"] = lvlN2
+
+	langRepo.Enrollments["enr-free"] = &language.UserLanguageEnrollment{
+		ID:             "enr-free",
+		UserID:         "user-free",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN5.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN5,
+	}
+	langRepo.Enrollments["enr-free-n2"] = &language.UserLanguageEnrollment{
+		ID:             "enr-free-n2",
+		UserID:         "user-free-n2",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN2.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN2,
+	}
+	langRepo.Enrollments["enr-pro-n2"] = &language.UserLanguageEnrollment{
+		ID:             "enr-pro-n2",
+		UserID:         "user-pro-n2",
+		LanguageID:     "lang-ja",
+		CurrentLevelID: &lvlN2.ID,
+		IsActive:       true,
+		CurrentLevel:   lvlN2,
+	}
+
+	uRepo := user.NewMockRepository()
+	uRepo.Users["user-free"] = &user.User{UserAccount: user.UserAccount{ID: "user-free", SubscriptionTier: "free"}}
+	uRepo.Users["user-free-n2"] = &user.User{UserAccount: user.UserAccount{ID: "user-free-n2", SubscriptionTier: "free"}}
+	uRepo.Users["user-pro-n2"] = &user.User{UserAccount: user.UserAccount{ID: "user-pro-n2", SubscriptionTier: "pro"}}
+
+	uc := exercise.NewUsecaseFull(
+		eRepo,
+		exercise.NewMockSRSRepository(),
+		exercise.NewMockReadinessExamRepository(),
+		langRepo,
+		uRepo,
+		&mockIncompleteCurriculumChecker{},
+		nil,
+	)
+
+	// 1. Unauthenticated user is blocked
+	if _, err := uc.GetExamQuestions(ctx, "", "lvl-n5"); !errors.Is(err, apperror.ErrUnauthorized) {
+		t.Fatalf("expected ErrUnauthorized for guest exam questions, got %v", err)
+	}
+
+	// 2. Enrolled user at N5 with 0% lessons completed CAN start & submit N5 Readiness Exam and advance to N4
+	qs, err := uc.GetExamQuestions(ctx, "user-free", "lvl-n5")
+	if err != nil || len(qs) != 4 {
+		t.Fatalf("expected test-out N5 exam to be accessible without completing lessons, got len=%d err=%v", len(qs), err)
+	}
+	res, err := uc.SubmitExam(ctx, "user-free", &exercise.SubmitReadinessExamRequest{
+		LevelID: "lvl-n5",
+		Answers: []exercise.SubmitExerciseAnswerRequest{
+			{ExerciseID: "q-read", UserAnswer: "A"},
+			{ExerciseID: "q-listen", UserAnswer: "B"},
+			{ExerciseID: "q-write", UserAnswer: "C"},
+			{ExerciseID: "q-speak", UserAnswer: "D"},
+		},
+	})
+	if err != nil {
+		t.Fatalf("expected test-out SubmitExam to succeed, got %v", err)
+	}
+	if !res.Attempt.IsPassed || res.Attempt.ScorePercent != 100 {
+		t.Fatalf("expected passed exam with 100%% score, got passed=%v score=%d", res.Attempt.IsPassed, res.Attempt.ScorePercent)
+	}
+	if langRepo.Enrollments["enr-free"].CurrentLevelID == nil || *langRepo.Enrollments["enr-free"].CurrentLevelID != "lvl-n4" {
+		t.Fatalf("expected enrollment current_level_id to advance to lvl-n4, got %v", langRepo.Enrollments["enr-free"].CurrentLevelID)
+	}
+	if res.Attempt.ReadingScore != 100 || res.Attempt.ListeningScore != 100 || res.Attempt.WritingScore != 100 || res.Attempt.SpeakingScore != 100 {
+		t.Fatalf("expected all 4 pillars graded at 100%%, got R=%d L=%d W=%d S=%d",
+			res.Attempt.ReadingScore, res.Attempt.ListeningScore, res.Attempt.WritingScore, res.Attempt.SpeakingScore)
+	}
+
+	// 3. Free-tier user attempting Pro-tier N2 exam must receive PRO_REQUIRED_FOR_LEVEL
+	if _, err := uc.GetExamQuestions(ctx, "user-free-n2", "lvl-n2"); err == nil {
+		t.Fatalf("expected PRO_REQUIRED_FOR_LEVEL error for free user on N2 exam, got nil")
+	} else {
+		var domErr *apperror.DomainError
+		if !errors.As(err, &domErr) || domErr.Code != "PRO_REQUIRED_FOR_LEVEL" {
+			t.Fatalf("expected PRO_REQUIRED_FOR_LEVEL domain error, got %v", err)
+		}
+	}
+
+	// 4. Pro-tier user at N2 with 0% lessons completed CAN access N2 Readiness Exam
+	proQs, err := uc.GetExamQuestions(ctx, "user-pro-n2", "lvl-n2")
+	if err != nil || len(proQs) != 1 {
+		t.Fatalf("expected Pro user to access N2 test-out exam, got len=%d err=%v", len(proQs), err)
+	}
+}
+

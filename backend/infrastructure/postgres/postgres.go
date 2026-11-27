@@ -16,18 +16,14 @@ type PostgresDB struct {
 	Pool *pgxpool.Pool
 }
 
-func NewPostgresDB(ctx context.Context, cfg *config.Config) (*PostgresDB, error) {
-	if cfg == nil {
-		return nil, fmt.Errorf("postgres config cannot be nil")
-	}
-
+func NewPostgresDB(ctx context.Context, cfg config.DatabaseConfig) (*PostgresDB, error) {
 	query := url.Values{}
-	query.Set("sslmode", cfg.DBSSLMode)
+	query.Set("sslmode", cfg.SSLMode)
 	connURI := (&url.URL{
 		Scheme:   "postgres",
-		User:     url.UserPassword(cfg.DBUser, cfg.DBPassword),
-		Host:     net.JoinHostPort(cfg.DBHost, cfg.DBPort),
-		Path:     "/" + cfg.DBName,
+		User:     url.UserPassword(cfg.User, cfg.Password),
+		Host:     net.JoinHostPort(cfg.Host, cfg.Port),
+		Path:     "/" + cfg.Name,
 		RawQuery: query.Encode(),
 	}).String()
 

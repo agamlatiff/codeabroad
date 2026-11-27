@@ -1078,7 +1078,13 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 			updated_at = NOW()
 	`
 
-	updatedCount := 0
+	type normalizedKanaPractice struct {
+		character string
+		isCorrect bool
+	}
+
+	validItems := make([]normalizedKanaPractice, 0, len(sortedResults))
+	upsertBatch := &pgx.Batch{}
 	for _, res := range sortedResults {
 		ch := strings.TrimSpace(res.Character)
 		if ch == "" {
@@ -1092,15 +1098,48 @@ func (r *PostgresRepository) RecordKanaPractice(ctx context.Context, userID stri
 			initScore = 50
 			scoreDelta = 35
 		}
-		tag, execErr := tx.Exec(ctx, upsertSQL, userID, ch, incCorrect, initScore, false, scoreDelta)
-		if execErr != nil {
-			return 0, 0, fmt.Errorf("failed to upsert kana progress for %q: %w", ch, execErr)
-		}
-		if tag.RowsAffected() > 0 {
-			updatedCount++
-			if _, syncErr := tx.Exec(ctx, flashcardSyncSQL, userID, ch, res.IsCorrect); syncErr != nil {
-				return 0, 0, fmt.Errorf("failed to sync flashcard progress for %q: %w", ch, syncErr)
+		validItems = append(validItems, normalizedKanaPractice{
+			character: ch,
+			isCorrect: res.IsCorrect,
+		})
+		upsertBatch.Queue(upsertSQL, userID, ch, incCorrect, initScore, false, scoreDelta)
+	}
+
+	updatedCount := 0
+	var updatedItems []normalizedKanaPractice
+	if len(validItems) > 0 {
+		updatedItems = make([]normalizedKanaPractice, 0, len(validItems))
+		upsertResults := tx.SendBatch(ctx, upsertBatch)
+		for _, item := range validItems {
+			tag, execErr := upsertResults.Exec()
+			if execErr != nil {
+				_ = upsertResults.Close()
+				return 0, 0, fmt.Errorf("failed to upsert kana progress for %q: %w", item.character, execErr)
 			}
+			if tag.RowsAffected() > 0 {
+				updatedCount++
+				updatedItems = append(updatedItems, item)
+			}
+		}
+		if closeErr := upsertResults.Close(); closeErr != nil {
+			return 0, 0, fmt.Errorf("failed to close kana upsert batch: %w", closeErr)
+		}
+	}
+
+	if len(updatedItems) > 0 {
+		syncBatch := &pgx.Batch{}
+		for _, item := range updatedItems {
+			syncBatch.Queue(flashcardSyncSQL, userID, item.character, item.isCorrect)
+		}
+		syncResults := tx.SendBatch(ctx, syncBatch)
+		for _, item := range updatedItems {
+			if _, syncErr := syncResults.Exec(); syncErr != nil {
+				_ = syncResults.Close()
+				return 0, 0, fmt.Errorf("failed to sync flashcard progress for %q: %w", item.character, syncErr)
+			}
+		}
+		if closeErr := syncResults.Close(); closeErr != nil {
+			return 0, 0, fmt.Errorf("failed to close flashcard sync batch: %w", closeErr)
 		}
 	}
 

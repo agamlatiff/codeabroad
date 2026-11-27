@@ -28,24 +28,32 @@ func NewUsecase(
 	sessionRepo SessionRepository,
 	cfg *config.Config,
 ) Usecase {
-	var googleVerifier GoogleOAuthVerifier
+	var (
+		jwtCfg         config.JWTConfig
+		googleVerifier GoogleOAuthVerifier
+	)
 	if cfg != nil {
-		googleVerifier = NewGoogleOAuthVerifierWithOrigins(cfg.GoogleClientID, cfg.GoogleClientSecret, cfg.CORSAllowedOrigins)
+		jwtCfg = cfg.JWT
+		googleVerifier = NewGoogleOAuthVerifierWithOrigins(
+			cfg.OAuth.GoogleClientID,
+			cfg.OAuth.GoogleClientSecret,
+			cfg.HTTP.CORSAllowedOrigins,
+		)
 	}
-	return NewUsecaseWithGoogle(userRepo, sessionRepo, cfg, googleVerifier)
+	return NewUsecaseWithGoogle(userRepo, sessionRepo, jwtCfg, googleVerifier)
 }
 
 // NewUsecaseWithGoogle creates an Auth Usecase instance with an explicit Google OAuth verifier (useful for testing).
 func NewUsecaseWithGoogle(
 	userRepo user.Repository,
 	sessionRepo SessionRepository,
-	cfg *config.Config,
+	jwtCfg config.JWTConfig,
 	googleVerifier GoogleOAuthVerifier,
 ) Usecase {
 	return &usecase{
 		userRepo:       userRepo,
 		sessionRepo:    sessionRepo,
-		helper:         NewHelper(cfg),
+		helper:         NewHelper(jwtCfg),
 		googleVerifier: googleVerifier,
 	}
 }

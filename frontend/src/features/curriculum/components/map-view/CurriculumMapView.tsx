@@ -21,6 +21,14 @@ export interface CurriculumMapViewProps {
   onOpenGuestUnlock?: (reason: GuestLoginPromptReason) => void
 }
 
+interface UnitSummary {
+  doneCount: number
+  totalCount: number
+  isAllCompleted: boolean
+  hasActivePart: boolean
+  isUnlocked: boolean
+}
+
 const computeInitialVisibleCount = (totalUnits: number, activeUnitIndex: number): number =>
   Math.max(5, Math.min(totalUnits, activeUnitIndex >= 0 ? activeUnitIndex + 2 : 5))
 
@@ -46,21 +54,70 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
     activeModalNode,
     handleNodeClick,
     handleCloseModal,
-  } = useCurriculumMapView({ curriculum })
+  } = useCurriculumMapView({ curriculum, isGuest })
 
-  const activeUnit = useMemo(() => {
-    const withActiveNode = units.find((u) => u.parts.some((p) => p.status === 'active'))
-    if (withActiveNode) return withActiveNode
-    const unlockedUnits = units.filter((u) =>
-      u.parts.some((p) => p.status !== 'locked')
-    )
-    return unlockedUnits[unlockedUnits.length - 1] ?? units[0] ?? null
+  const { unitSummaryById, unitIndexByNumber, activeUnit, activeUnitIndex } = useMemo(() => {
+    const summaryMap = new Map<string, UnitSummary>()
+    const indexByNumberMap = new Map<number, number>()
+    let firstActiveIndex = -1
+    let lastUnlockedIndex = -1
+
+    for (let i = 0; i < units.length; i++) {
+      const unit = units[i]
+      if (!indexByNumberMap.has(unit.unitNumber)) {
+        indexByNumberMap.set(unit.unitNumber, i)
+      }
+
+      let doneCount = 0
+      let hasActivePart = false
+      let isUnlocked = false
+
+      for (const part of unit.parts) {
+        if (part.status === 'completed') {
+          doneCount += 1
+        } else if (part.status === 'active') {
+          hasActivePart = true
+        }
+        if (part.status !== 'locked') {
+          isUnlocked = true
+        }
+      }
+
+      const totalCount = unit.parts.length
+      const isAllCompleted = totalCount > 0 && doneCount === totalCount
+
+      summaryMap.set(unit.id, {
+        doneCount,
+        totalCount,
+        isAllCompleted,
+        hasActivePart,
+        isUnlocked,
+      })
+
+      if (firstActiveIndex === -1 && hasActivePart) {
+        firstActiveIndex = i
+      }
+      if (isUnlocked) {
+        lastUnlockedIndex = i
+      }
+    }
+
+    const resolvedActiveIndex =
+      firstActiveIndex >= 0
+        ? firstActiveIndex
+        : lastUnlockedIndex >= 0
+          ? lastUnlockedIndex
+          : units.length > 0
+            ? 0
+            : -1
+
+    return {
+      unitSummaryById: summaryMap,
+      unitIndexByNumber: indexByNumberMap,
+      activeUnit: resolvedActiveIndex >= 0 ? units[resolvedActiveIndex] : null,
+      activeUnitIndex: resolvedActiveIndex,
+    }
   }, [units])
-
-  const activeUnitIndex = useMemo(() => {
-    if (!activeUnit) return -1
-    return units.findIndex((u) => u.id === activeUnit.id)
-  }, [units, activeUnit])
 
   // Render-time reset whenever curriculum language/level/unit count changes (React 19 safe, no setState in useEffect)
   const batchResetKey = `${curriculum?.language?.code ?? ''}:${curriculum?.level?.code ?? ''}:${units.length}`
@@ -119,7 +176,7 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
 
   const scrollToUnit = (unitNumber: number) => {
     if (typeof document === 'undefined') return
-    const targetIndex = units.findIndex((u) => u.unitNumber === unitNumber)
+    const targetIndex = unitIndexByNumber.get(unitNumber) ?? -1
     if (targetIndex >= effectiveVisibleCount) {
       setVisibleCount(targetIndex + 1)
       window.requestAnimationFrame(() => {
@@ -218,10 +275,12 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
                 Lompat ke Unit (1–{units.length})...
               </option>
               {units.map((u) => {
-                const doneCount = u.parts.filter((p) => p.status === 'completed').length
+                const summary = unitSummaryById.get(u.id)
+                const doneCount = summary?.doneCount ?? 0
+                const totalCount = summary?.totalCount ?? u.parts.length
                 return (
                   <option key={u.id} value={u.unitNumber}>
-                    Unit {u.unitNumber}: {u.title} ({doneCount}/{u.parts.length})
+                    Unit {u.unitNumber}: {u.title} ({doneCount}/{totalCount})
                   </option>
                 )
               })}
@@ -341,10 +400,12 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
               </div>
               <div className="space-y-0.5">
                 {units.map((u) => {
-                  const doneCount = u.parts.filter((p) => p.status === 'completed').length
-                  const isAllCompleted = u.parts.length > 0 && doneCount === u.parts.length
-                  const hasActivePart = u.parts.some((p) => p.status === 'active')
-                  const isUnlocked = u.parts.some((p) => p.status !== 'locked')
+                  const summary = unitSummaryById.get(u.id)
+                  const doneCount = summary?.doneCount ?? 0
+                  const totalCount = summary?.totalCount ?? u.parts.length
+                  const isAllCompleted = summary?.isAllCompleted ?? false
+                  const hasActivePart = summary?.hasActivePart ?? false
+                  const isUnlocked = summary?.isUnlocked ?? false
 
                   const statusDotClass = isAllCompleted
                     ? 'bg-emerald-500'
@@ -381,7 +442,7 @@ export const CurriculumMapView: FC<CurriculumMapViewProps> = ({
                         </span>
                       </div>
                       <span className="text-[11px] font-bold text-slate-400 shrink-0 tabular-nums">
-                        {doneCount}/{u.parts.length}
+                        {doneCount}/{totalCount}
                       </span>
                     </button>
                   )

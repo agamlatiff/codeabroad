@@ -13,6 +13,7 @@ import (
 	"merantalk/backend/internal/app/exercise"
 	"merantalk/backend/internal/app/gamification"
 	"merantalk/backend/internal/app/language"
+	"merantalk/backend/internal/app/studyitem"
 	"merantalk/backend/internal/app/user"
 	"merantalk/backend/internal/shared/apperror"
 	"golang.org/x/sync/singleflight"
@@ -30,6 +31,7 @@ type usecase struct {
 	userRepo         user.Repository
 	gamificationRepo gamification.Repository
 	cacheRepo        CurriculumCacheRepository
+	studyItemSvc     studyitem.Service
 	helper           *Helper
 	sfGroup          singleflight.Group
 }
@@ -50,6 +52,7 @@ func NewUsecaseWithCache(
 		userRepo:         userRepo,
 		gamificationRepo: gamificationRepo,
 		cacheRepo:        cacheRepo,
+		studyItemSvc:     newStudyItemService(curriculumRepo),
 		helper:           NewHelper(),
 	}
 }
@@ -612,7 +615,7 @@ func (u *usecase) GetLessonDetail(ctx context.Context, userID string, lessonID s
 		lesson.GrammarPoints = []GrammarPoint{}
 	}
 
-	lesson.StudyItems = buildLessonStudyItemsAndHints(lesson.Slug, exercises, lesson.Exercises, lesson.GrammarPoints)
+	lesson.StudyItems = buildLessonStudyItemsWithService(ctx, u.studyItemSvc, lesson.Slug, exercises, lesson.Exercises, lesson.GrammarPoints)
 
 	return lesson, nil
 }

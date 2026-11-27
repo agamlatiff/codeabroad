@@ -483,6 +483,15 @@ func (u *usecase) applySRSReview(
 	return updatedReview, nil
 }
 
+func isProRequiredExamLevel(levelCode string) bool {
+	switch strings.ToUpper(strings.TrimSpace(levelCode)) {
+	case "N2", "N1", "B2", "C1", "C2", "HSK4", "HSK5", "HSK6", "TOPIK4", "TOPIK5", "TOPIK6":
+		return true
+	default:
+		return false
+	}
+}
+
 func (u *usecase) verifyLevelExamAccess(ctx context.Context, userID string, levelID string) (*language.ProficiencyLevel, *language.UserLanguageEnrollment, error) {
 	levelID = strings.TrimSpace(levelID)
 	if levelID == "" {
@@ -506,16 +515,20 @@ func (u *usecase) verifyLevelExamAccess(ctx context.Context, userID string, leve
 	if enrollment == nil || enrollment.CurrentLevel == nil || lvl.OrderIndex > enrollment.CurrentLevel.OrderIndex {
 		return nil, nil, apperror.ErrForbidden
 	}
-	if lvlChecker, ok := u.accessChecker.(LevelCompletionChecker); ok {
-		completed, chkErr := lvlChecker.IsLevelCurriculumCompleted(ctx, userID, levelID)
-		if chkErr != nil {
-			return nil, nil, fmt.Errorf("failed to verify level curriculum completion: %w", chkErr)
+
+	// Enforce Free vs. Pro tier gating while allowing test-out exam attempts
+	// for any accessible proficiency level without requiring 100% prior lesson completion.
+	if isProRequiredExamLevel(lvl.Code) && u.userRepo != nil {
+		usr, uErr := u.userRepo.GetByID(ctx, userID)
+		if uErr != nil {
+			return nil, nil, fmt.Errorf("failed to verify user subscription tier: %w", uErr)
 		}
-		if !completed {
+		if usr == nil || !usr.IsPro() {
+			normalizedCode := strings.ToUpper(strings.TrimSpace(lvl.Code))
 			return nil, nil, apperror.NewForbiddenError(
-				"LEVEL_CURRICULUM_INCOMPLETE",
-				"complete all curriculum lessons in this level before taking the readiness exam",
-				nil,
+				"PRO_REQUIRED_FOR_LEVEL",
+				fmt.Sprintf("Upgrade ke Merantalk Pro untuk mengikuti ujian kesiapan level %s.", normalizedCode),
+				map[string]any{"required_tier": "pro", "level_code": normalizedCode},
 			)
 		}
 	}

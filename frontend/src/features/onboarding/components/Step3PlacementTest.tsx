@@ -41,14 +41,27 @@ const getOptionLabel = (opt: string | PlacementQuestionOption): string => {
 const hydrateTokenIndicesFromAnswer = (tokens: string[], savedAnswer: string): number[] => {
   const trimmed = savedAnswer.trim()
   if (!trimmed || tokens.length === 0) return []
+  const tokenIndicesByValue = new Map<string, number[]>()
+  for (let i = 0; i < tokens.length; i++) {
+    const token = tokens[i]
+    const bucket = tokenIndicesByValue.get(token)
+    if (bucket) {
+      bucket.push(i)
+    } else {
+      tokenIndicesByValue.set(token, [i])
+    }
+  }
+
+  const readOffsetByToken = new Map<string, number>()
   const parts = trimmed.split(/\s+/)
-  const used = new Set<number>()
   const indices: number[] = []
   for (const part of parts) {
-    const idx = tokens.findIndex((t, i) => !used.has(i) && t === part)
-    if (idx >= 0) {
-      used.add(idx)
-      indices.push(idx)
+    const bucket = tokenIndicesByValue.get(part)
+    if (!bucket) continue
+    const offset = readOffsetByToken.get(part) ?? 0
+    if (offset < bucket.length) {
+      indices.push(bucket[offset])
+      readOffsetByToken.set(part, offset + 1)
     }
   }
   return indices
@@ -209,6 +222,18 @@ export const Step3PlacementTest = ({
     [currentQuestionId, rawTokens]
   )
 
+  const currentAnswer = currentQuestion ? (answers[currentQuestion.id] ?? '') : ''
+  const savedSelectedTokens = currentQuestion
+    ? selectedTokensByQuestion[currentQuestion.id]
+    : undefined
+
+  const selectedIndices = useMemo(
+    () => savedSelectedTokens ?? hydrateTokenIndicesFromAnswer(tokens, currentAnswer),
+    [savedSelectedTokens, tokens, currentAnswer]
+  )
+
+  const selectedIndexSet = useMemo(() => new Set(selectedIndices), [selectedIndices])
+
   if (isLoading) {
     return (
       <div
@@ -290,11 +315,7 @@ export const Step3PlacementTest = ({
     )
   }
 
-  const currentAnswer = answers[currentQuestion.id] ?? ''
   const isSentenceBuilder = currentQuestion.exercise_type === 'sentence_builder' && tokens.length > 0
-  const selectedIndices =
-    selectedTokensByQuestion[currentQuestion.id] ??
-    hydrateTokenIndicesFromAnswer(tokens, currentAnswer)
   const answeredCount = questions.filter((q) => Boolean((answers[q.id] ?? '').trim())).length
   const progressPercent = Math.round(((safeIndex + 1) / questions.length) * 100)
 
@@ -453,7 +474,7 @@ export const Step3PlacementTest = ({
           </div>
           <div className="min-w-0 flex flex-wrap gap-2">
             {tokens.map((token, idx) => {
-              const used = selectedIndices.includes(idx)
+              const used = selectedIndexSet.has(idx)
               return (
                 <button
                   key={`token-${idx}-${token}`}

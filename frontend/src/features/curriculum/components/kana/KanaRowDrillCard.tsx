@@ -29,18 +29,30 @@ const buildDeterministicOptions = (
   allScriptChars: KanaCharacterItem[],
   seedOffset: number
 ): KanaCharacterItem[] => {
-  const pool = [...rowChars.filter((c) => c.character !== target.character)]
+  const pool: KanaCharacterItem[] = []
+  const seenPool = new Set<string>([target.character])
+
+  for (const ch of rowChars) {
+    if (ch.character !== target.character) {
+      pool.push(ch)
+      seenPool.add(ch.character)
+    }
+  }
+
   for (const ch of allScriptChars) {
     if (pool.length >= 12) break
-    if (ch.character !== target.character && !pool.some((p) => p.character === ch.character)) {
+    if (!seenPool.has(ch.character)) {
+      seenPool.add(ch.character)
       pool.push(ch)
     }
   }
 
   const distractors: KanaCharacterItem[] = []
+  const seenDistractors = new Set<string>()
   for (let i = 0; i < pool.length && distractors.length < 3; i++) {
     const picked = pool[(i + seedOffset) % pool.length]
-    if (!distractors.some((d) => d.character === picked.character)) {
+    if (!seenDistractors.has(picked.character)) {
+      seenDistractors.add(picked.character)
       distractors.push(picked)
     }
   }

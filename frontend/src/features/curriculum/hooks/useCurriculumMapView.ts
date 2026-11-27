@@ -10,18 +10,22 @@ import { transformCurriculumToMapUnits } from "@/features/curriculum/utils/curri
 
 export interface UseCurriculumMapViewProps {
   curriculum?: CurriculumResponse | null
+  isGuest?: boolean
 }
 
 /**
  * Headless controller hook for the 3D Serpentine Map View (CurriculumMapView).
  * Strictly driven by backend CurriculumResponse without local storage overrides.
  */
-export const useCurriculumMapView = ({ curriculum = null }: UseCurriculumMapViewProps) => {
+export const useCurriculumMapView = ({
+  curriculum = null,
+  isGuest = false,
+}: UseCurriculumMapViewProps) => {
   const [activeModalNode, setActiveModalNode] = useState<PathMapNode | null>(null)
 
   const units: CurriculumUnitData[] = useMemo(
-    () => transformCurriculumToMapUnits(curriculum),
-    [curriculum]
+    () => transformCurriculumToMapUnits(curriculum, { isGuest }),
+    [curriculum, isGuest]
   )
 
   const handleNodeClick = useCallback((node: PathMapNode) => {

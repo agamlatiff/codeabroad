@@ -27,12 +27,12 @@ var usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9_-]{3,30}$`)
 
 // Helper encapsulates cryptographic, token generation, and login streak rules (DDD)
 type Helper struct {
-	cfg *config.Config
+	jwtCfg config.JWTConfig
 }
 
 // NewHelper creates a new Auth Helper instance
-func NewHelper(cfg *config.Config) *Helper {
-	return &Helper{cfg: cfg}
+func NewHelper(cfg config.JWTConfig) *Helper {
+	return &Helper{jwtCfg: cfg}
 }
 
 // NormalizeRegisterInput trims whitespace and normalizes email & username to lowercase
@@ -141,10 +141,10 @@ func (h *Helper) ResolveSessionTTL(rememberMe bool) time.Duration {
 
 // DefaultRefreshTTL returns the configured default refresh token TTL
 func (h *Helper) DefaultRefreshTTL() time.Duration {
-	if h == nil || h.cfg == nil || h.cfg.JWTRefreshExpirationDays < 1 {
+	if h == nil || h.jwtCfg.RefreshExpirationDays < 1 {
 		return 30 * 24 * time.Hour
 	}
-	return time.Duration(h.cfg.JWTRefreshExpirationDays) * 24 * time.Hour
+	return time.Duration(h.jwtCfg.RefreshExpirationDays) * 24 * time.Hour
 }
 
 // DefaultLocation returns the primary application timezone (WIB / UTC+7)
@@ -280,7 +280,7 @@ func (h *Helper) BuildNewOAuthUser(email, name, username string, avatarURL *stri
 
 // GenerateTokenPair produces a signed access token and dynamic duration refresh token bound to a sessionID
 func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDuration time.Duration, rememberMe bool) (string, string, error) {
-	if h == nil || h.cfg == nil {
+	if h == nil || strings.TrimSpace(h.jwtCfg.Secret) == "" {
 		return "", "", fmt.Errorf("auth helper config is not initialized")
 	}
 	if u == nil {
@@ -296,7 +296,7 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 		TokenType: TokenTypeAccess,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ID:        h.GenerateSessionID(),
-			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(h.cfg.JWTAccessExpirationMinutes) * time.Minute)),
+			ExpiresAt: jwt.NewNumericDate(now.Add(time.Duration(h.jwtCfg.AccessExpirationMinutes) * time.Minute)),
 			IssuedAt:  jwt.NewNumericDate(now),
 			NotBefore: jwt.NewNumericDate(now),
 			Subject:   u.ID,
@@ -304,7 +304,7 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 	}
 
 	accessTokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, accessClaims)
-	accessToken, err := accessTokenObj.SignedString([]byte(h.cfg.JWTSecret))
+	accessToken, err := accessTokenObj.SignedString([]byte(h.jwtCfg.Secret))
 	if err != nil {
 		return "", "", fmt.Errorf("failed to sign access token: %w", err)
 	}
@@ -326,7 +326,7 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 	}
 
 	refreshTokenObj := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	refreshToken, err := refreshTokenObj.SignedString([]byte(h.cfg.JWTSecret))
+	refreshToken, err := refreshTokenObj.SignedString([]byte(h.jwtCfg.Secret))
 	if err != nil {
 		return "", "", fmt.Errorf("failed to sign refresh token: %w", err)
 	}
@@ -336,14 +336,14 @@ func (h *Helper) GenerateTokenPair(u *user.User, sessionID string, refreshDurati
 
 // ParseRefreshToken parses and validates a JWT refresh token and returns its claims
 func (h *Helper) ParseRefreshToken(refreshToken string) (*JWTClaims, error) {
-	if h == nil || h.cfg == nil {
+	if h == nil || strings.TrimSpace(h.jwtCfg.Secret) == "" {
 		return nil, ErrTokenExpired
 	}
 	token, err := jwt.ParseWithClaims(refreshToken, &JWTClaims{}, func(token *jwt.Token) (interface{}, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 		}
-		return []byte(h.cfg.JWTSecret), nil
+		return []byte(h.jwtCfg.Secret), nil
 	})
 
 	if err != nil || !token.Valid {

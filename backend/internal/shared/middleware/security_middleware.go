@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -19,8 +20,8 @@ const DefaultMaxBodyBytes int64 = 1 << 20 // 1 MB
 func CORSMiddleware(allowedOrigins []string) gin.HandlerFunc {
 	sanitized := make([]string, 0, len(allowedOrigins))
 	for _, o := range allowedOrigins {
-		if o != "" && o != "*" {
-			sanitized = append(sanitized, o)
+		if normalized := strings.TrimRight(strings.TrimSpace(o), "/"); normalized != "" && normalized != "*" {
+			sanitized = append(sanitized, normalized)
 		}
 	}
 	if len(sanitized) == 0 {

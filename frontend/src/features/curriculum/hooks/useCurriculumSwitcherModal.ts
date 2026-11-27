@@ -12,6 +12,7 @@ import {
   mapEnrollmentsToTrackOptions,
   mapGuestLanguagesToTrackOptions,
 } from '@/features/curriculum/utils/curriculumMapper'
+import { useActiveLanguageId } from '@/features/exercise/hooks/useActiveSpeechLocale'
 
 export interface UseCurriculumSwitcherModalOptions {
   enabled?: boolean
@@ -29,6 +30,7 @@ export const useCurriculumSwitcherModal = ({
   onClose,
 }: UseCurriculumSwitcherModalOptions) => {
   const userId = useAuthStore((s) => s.user?.id)
+  const activeLanguageId = useActiveLanguageId()
 
   const { data: enrollments = [], isLoading: isEnrollmentsLoading } = useQuery({
     queryKey: getLanguageEnrollmentsQueryKey(userId),
@@ -48,8 +50,8 @@ export const useCurriculumSwitcherModal = ({
     () =>
       userId
         ? mapEnrollmentsToTrackOptions(enrollments, languages)
-        : mapGuestLanguagesToTrackOptions(languages),
-    [enrollments, languages, userId]
+        : mapGuestLanguagesToTrackOptions(languages, activeLanguageId ?? ''),
+    [activeLanguageId, enrollments, languages, userId]
   )
 
   const enrolledOptions = useMemo(

@@ -107,12 +107,17 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
     [baseExercisesCount, introDeck]
   )
 
+  const dismissedStudyBatchSet = useMemo(
+    () => new Set(dismissedStudyBatches),
+    [dismissedStudyBatches]
+  )
+
   const activeStudyBatch = useMemo(() => {
     if (isCheckpoint || isRetryRound) return null
     if (!studyBatches.has(currentIndex)) return null
-    if (dismissedStudyBatches.includes(currentIndex)) return null
+    if (dismissedStudyBatchSet.has(currentIndex)) return null
     return studyBatches.get(currentIndex) ?? null
-  }, [currentIndex, dismissedStudyBatches, isCheckpoint, isRetryRound, studyBatches])
+  }, [currentIndex, dismissedStudyBatchSet, isCheckpoint, isRetryRound, studyBatches])
 
   const hasAutoPlayableQuestionAudio = Boolean(
     parsedContent?.audioUrl || parsedContent?.audioText || parsedContent?.displayText
@@ -266,9 +271,12 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
   }
 
   const totalTimelineSteps = exercises.length + studyBatches.size
-  const completedBatchCount = Array.from(studyBatches.keys()).filter((idx) =>
-    dismissedStudyBatches.includes(idx)
-  ).length
+  let completedBatchCount = 0
+  for (const idx of studyBatches.keys()) {
+    if (dismissedStudyBatchSet.has(idx)) {
+      completedBatchCount += 1
+    }
+  }
   const completedTimelineSteps =
     currentIndex + completedBatchCount + (submittedResult !== null ? 1 : 0)
   const unifiedProgressPercent =
@@ -281,7 +289,7 @@ const LearnWorkspaceContent = ({ lessonId }: { lessonId?: string }) => {
       ? Array.from({ length: exercises.length }, (_, idx) => {
           const items: TimelineStepSegment[] = []
           if (studyBatches.has(idx)) {
-            const isDismissed = dismissedStudyBatches.includes(idx)
+            const isDismissed = dismissedStudyBatchSet.has(idx)
             const isActiveBatch = Boolean(activeStudyBatch && currentIndex === idx)
             items.push({
               kind: 'study',

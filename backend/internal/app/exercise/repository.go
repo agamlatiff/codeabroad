@@ -150,18 +150,6 @@ func syncObjectOptionAcceptableAnswers(ex *Exercise) {
 	}
 }
 
-func findRubricValueFold(rubric map[string]any, key string) (any, bool) {
-	if val, ok := rubric[key]; ok {
-		return val, true
-	}
-	for k, v := range rubric {
-		if strings.EqualFold(strings.TrimSpace(k), key) {
-			return v, true
-		}
-	}
-	return nil, false
-}
-
 func syncObjectOptionDiagnosticRubric(ex *Exercise) {
 	if ex == nil || len(ex.Content) == 0 || len(ex.DiagnosticRubric) == 0 {
 		return
@@ -170,17 +158,34 @@ func syncObjectOptionDiagnosticRubric(ex *Exercise) {
 	if !ok {
 		return
 	}
+	lowerRubric := make(map[string]any, len(ex.DiagnosticRubric)*2)
+	for k, v := range ex.DiagnosticRubric {
+		if lk := strings.ToLower(strings.TrimSpace(k)); lk != "" {
+			lowerRubric[lk] = v
+		}
+	}
 	for _, o := range rawOpts {
 		id, text, ok := parseObjectOptionPair(o)
 		if !ok {
 			continue
 		}
-		idVal, hasID := findRubricValueFold(ex.DiagnosticRubric, id)
-		textVal, hasText := findRubricValueFold(ex.DiagnosticRubric, text)
+		lowerID := strings.ToLower(id)
+		lowerText := strings.ToLower(text)
+
+		idVal, hasID := ex.DiagnosticRubric[id]
+		if !hasID {
+			idVal, hasID = lowerRubric[lowerID]
+		}
+		textVal, hasText := ex.DiagnosticRubric[text]
+		if !hasText {
+			textVal, hasText = lowerRubric[lowerText]
+		}
 		if hasID && !hasText {
 			ex.DiagnosticRubric[text] = idVal
+			lowerRubric[lowerText] = idVal
 		} else if hasText && !hasID {
 			ex.DiagnosticRubric[id] = textVal
+			lowerRubric[lowerID] = textVal
 		}
 	}
 }
