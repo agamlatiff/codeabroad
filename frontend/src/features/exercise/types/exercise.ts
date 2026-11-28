@@ -2,6 +2,7 @@ import type {
   CompleteLessonResponse,
   CurriculumBadgeDefinition,
   CurriculumExercise,
+  KanaScriptType,
   LessonDetailResponse,
   ProficiencyLevel,
 } from '@/features/curriculum/types/curriculum'
@@ -11,6 +12,8 @@ export type ExerciseType =
   | 'fill_blank'
   | 'listening_choice'
   | 'speaking_repeat'
+  | 'writing_trace'
+  | 'free_typing'
   | string
 
 export type SkillPillar = 'reading' | 'listening' | 'speaking' | 'writing' | string
@@ -39,6 +42,10 @@ export interface ParsedExerciseContent {
   furigana: ExerciseFuriganaItem[]
   choiceOptions: ExerciseChoiceOption[]
   hint?: string
+  targetCharacter?: string
+  script?: KanaScriptType
+  writingMnemonic?: string
+  writingMeaning?: string
 }
 
 export interface SubmitExerciseAnswerRequest {

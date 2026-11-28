@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { CheckCircle, Crown, LockSimple, Sparkle, UserPlus, WarningCircle, X } from '@phosphor-icons/react'
+import { Certificate, CheckCircle, Crown, LockSimple, Sparkle, UserPlus, WarningCircle, X } from '@phosphor-icons/react'
 import { AppLeftSidebar } from "@/shared/components/layout/left-sidebar/AppLeftSidebar"
 import { AppTopBar } from "@/shared/components/layout/top-bar/AppTopBar"
 import { AppRightSidebar } from "@/shared/components/layout/right-sidebar/AppRightSidebar"
@@ -326,6 +326,35 @@ export const CurriculumPage = () => {
               </div>
             </section>
           )}
+
+          {/* ── READINESS EXAM TEST-OUT SHORTCUT BAR ── */}
+          {!status.isGuest &&
+            activeLanguage?.code &&
+            curriculum.selectedLevelCode &&
+            curriculum.levelAccess.allowed && (
+              <div className="bg-gradient-to-r from-amber-50/90 via-white to-blue-50/60 border-2 border-amber-200/90 rounded-2xl px-4 py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-[0_3px_0_0_#FDE68A]">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 border border-amber-300/80 text-amber-700 flex items-center justify-center shrink-0">
+                    <Certificate weight="fill" className="w-5 h-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-brand font-black text-xs sm:text-sm text-slate-900 leading-tight">
+                      Sudah siap uji kemampuan level {curriculum.selectedLevelCode}?
+                    </p>
+                    <p className="text-[11px] sm:text-xs font-medium text-slate-600">
+                      Langsung ikut ujian kesiapan untuk lompat level tanpa perlu scroll ke unit terakhir.
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  to={`/exam/${encodeURIComponent(activeLanguage.code.trim().toLowerCase())}/${encodeURIComponent(curriculum.selectedLevelCode.trim().toLowerCase())}`}
+                  className={`${BUTTON_3D_TOKENS.base} ${BUTTON_3D_TOKENS.variants.amber} ${BUTTON_3D_TOKENS.sizes.sm} text-xs shrink-0`}
+                >
+                  <Certificate weight="bold" className="w-4 h-4 shrink-0" />
+                  <span>Tantang Ujian Kesiapan {curriculum.selectedLevelCode}</span>
+                </Link>
+              </div>
+            )}
 
           {/* ── PETA BELAJAR OR TIER GATE ── */}
           {!curriculum.levelAccess.allowed && curriculum.levelAccess.reason !== 'ok' ? (

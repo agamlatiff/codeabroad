@@ -1,9 +1,10 @@
-import type { FC, MouseEvent } from 'react'
+import { useState, type FC, type MouseEvent } from 'react'
 import { MotionConfig, motion } from 'motion/react'
 import { SpeakerHigh, ArrowsClockwise } from '@phosphor-icons/react'
 import type { FlashcardCard } from '@/features/flashcard/types/flashcard'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
+import { isIpaText } from '@/shared/utils/phonetics'
 
 const SLOW_SPEECH_RATE = 0.58
 
@@ -25,7 +26,10 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
   speechLocale = 'ja-JP',
   onToggleFlip,
 }) => {
+  const [shownIpaCardId, setShownIpaCardId] = useState<string | null>(null)
   const isCharacterCard = card.part_of_speech.toLowerCase().includes('huruf')
+  const readingIsIpa = isIpaText(card.reading)
+  const isIpaVisible = shownIpaCardId === card.id
 
   const handleFlip = () => {
     if (disabled) return
@@ -184,9 +188,31 @@ export const FlashcardFlipCard: FC<FlashcardFlipCardProps> = ({
               <p className={`${isCharacterCard ? 'text-2xl font-black text-slate-700' : 'text-sm font-bold text-slate-500'}`}>
                 {card.front_text}
               </p>
-              <p className="text-sm sm:text-base font-mono font-bold text-blue-600 px-3 py-1 rounded-xl bg-blue-50/80 border border-blue-100">
-                {card.reading}
-              </p>
+              {card.reading &&
+                (readingIsIpa ? (
+                  <div className="flex flex-col items-center gap-1.5 pointer-events-auto">
+                    {isIpaVisible && (
+                      <p className="text-sm sm:text-base font-mono font-bold text-blue-600 px-3 py-1 rounded-xl bg-blue-50/80 border border-blue-100">
+                        {card.reading}
+                      </p>
+                    )}
+                    <button
+                      type="button"
+                      tabIndex={isFlipped ? 0 : -1}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShownIpaCardId((prev) => (prev === card.id ? null : card.id))
+                      }}
+                      className="inline-flex items-center px-3 py-1 rounded-xl border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 text-xs font-brand font-bold text-slate-600 hover:text-blue-700 transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#2563EB]"
+                    >
+                      {isIpaVisible ? 'Sembunyikan Panduan Baca' : 'Panduan Baca'}
+                    </button>
+                  </div>
+                ) : (
+                  <p className="text-sm sm:text-base font-mono font-bold text-blue-600 px-3 py-1 rounded-xl bg-blue-50/80 border border-blue-100">
+                    {card.reading}
+                  </p>
+                ))}
               <h3 className="text-2xl sm:text-3xl font-brand font-black text-slate-900 leading-snug">
                 {card.back_meaning}
               </h3>

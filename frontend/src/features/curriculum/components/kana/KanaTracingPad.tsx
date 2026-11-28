@@ -12,7 +12,11 @@ export interface KanaTracingPadProps {
   script?: KanaScriptType
   isMastered?: boolean
   isSaving?: boolean
+  disabled?: boolean
+  actionLabel?: string
+  requireStrokeToConfirm?: boolean
   onMarkPracticed?: () => void
+  onClearCanvas?: () => void
 }
 
 /**
@@ -24,7 +28,11 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
   script,
   isMastered = false,
   isSaving = false,
+  disabled = false,
+  actionLabel,
+  requireStrokeToConfirm = false,
   onMarkPracticed,
+  onClearCanvas,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const isDrawingRef = useRef(false)
@@ -45,6 +53,7 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
   }
 
   const handlePointerDown = (e: PointerEvent<HTMLCanvasElement>) => {
+    if (disabled) return
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     const pt = getCanvasPoint(e)
@@ -65,7 +74,7 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
   }
 
   const handlePointerMove = (e: PointerEvent<HTMLCanvasElement>) => {
-    if (!isDrawingRef.current) return
+    if (disabled || !isDrawingRef.current) return
     const ctx = canvasRef.current?.getContext('2d')
     const pt = getCanvasPoint(e)
     if (!ctx || !pt) return
@@ -81,11 +90,13 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
   }
 
   const handleClear = () => {
+    if (disabled) return
     const canvas = canvasRef.current
     const ctx = canvas?.getContext('2d')
     if (!canvas || !ctx) return
     ctx.clearRect(0, 0, canvas.width, canvas.height)
     setHasDrawn(false)
+    onClearCanvas?.()
   }
 
   const isYoonPair = Array.from(character.trim()).length >= 2
@@ -120,8 +131,9 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
           </button>
           <button
             type="button"
+            disabled={disabled}
             onClick={handleClear}
-            className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-900 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+            className="inline-flex items-center gap-1 text-[11px] font-bold text-slate-500 hover:text-slate-900 px-2 py-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-default"
           >
             <Eraser weight="bold" className="w-3.5 h-3.5" />
             Hapus
@@ -191,16 +203,20 @@ export const KanaTracingPad: FC<KanaTracingPadProps> = ({
           variant={isMastered ? 'emerald' : 'blue'}
           size="sm"
           fullWidth
-          disabled={isSaving}
+          disabled={disabled || isSaving || (requireStrokeToConfirm && !hasDrawn)}
           icon={<Check weight="bold" className="w-4 h-4" />}
           onClick={onMarkPracticed}
           className="text-xs"
         >
           {isSaving
             ? 'Menyimpan...'
-            : hasDrawn
-              ? 'Simpan Latihan Tulis'
-              : 'Tandai Sudah Dilatih'}
+            : actionLabel
+              ? hasDrawn
+                ? actionLabel
+                : 'Tulis huruf di kanvas dulu...'
+              : hasDrawn
+                ? 'Simpan Latihan Tulis'
+                : 'Tandai Sudah Dilatih'}
         </Button3D>
       )}
     </div>

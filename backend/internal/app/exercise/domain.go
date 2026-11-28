@@ -72,6 +72,8 @@ const (
 	ExerciseTypeListeningChoice  = "listening_choice"
 	ExerciseTypeSpeakingRepeat   = "speaking_repeat"
 	ExerciseTypeDialogueRoleplay = "dialogue_roleplay"
+	ExerciseTypeWritingTrace     = "writing_trace"
+	ExerciseTypeFreeTyping       = "free_typing"
 )
 
 // Exercise represents an interactive pedagogical question (exercises table)

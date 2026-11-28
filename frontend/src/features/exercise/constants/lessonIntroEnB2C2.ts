@@ -2,10 +2,10 @@ import type { LessonIntroDeck } from './lessonIntroCards'
 
 export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   // ===========================================================================
-  // CEFR B2 — UNIT 1 (GP-EN-B2-001)
+  // Level B2 — UNIT 1 (GP-EN-B2-001)
   // ===========================================================================
   'en-us-b2-u1-kosakata': {
-    headline: 'Phrasal Verbs & Kolokasi Eksekusi Proyek',
+    headline: 'Ungkapan Kerja Sehari-hari & Pasangan Kata Alami',
     subtitle: 'Pelajari ungkapan kerja idiomatis penutur asli Amerika yang sering muncul pada rapat lintas zona waktu dan evaluasi kuartalan.',
     items: [
       {
@@ -39,10 +39,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-001',
-      title: 'Separable vs. Three-Word Phrasal Verbs',
+      title: 'Gabungan Kata Kerja: Bisa Dipisah vs. Tiga Kata',
       formula: 'Separable: V + Pronoun + Particle | Three-Word: V + Particle + Prep + Object',
-      formulaReading: 'iron them out / follow through on the roadmap',
-      explanation: 'Phrasal verb dua kata transitif wajib dipisahkan jika objeknya berupa kata ganti (iron it out, BUKAN iron out it). Sebaliknya, phrasal verb tiga kata (follow through on, zero in on) tidak boleh dipisahkan dari objeknya.',
+      formulaReading: 'iron them out / follow through on the plan',
+      explanation: 'Gabungan kata kerja dua kata wajib dipisahkan jika objeknya berupa kata ganti (iron it out, BUKAN iron out it). Sebaliknya, gabungan kata kerja tiga kata (follow through on, zero in on) tidak boleh dipisahkan dari objeknya.',
       examples: [
         {
           jp: 'We need to iron them out before the client demo tomorrow.',
@@ -59,8 +59,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jangan tertukar \'push back\' (mengundur jadwal jadi lebih lambat) dengan \'bring forward / move up\' (memajukan jadwal jadi lebih awal).',
   },
   'en-us-b2-u1-tata-bahasa': {
-    headline: 'Aturan Kata Ganti pada Separable vs. Inseparable Phrasal Verbs',
-    subtitle: 'Hindari kesalahan klasik pembelajar Indonesia saat menempatkan kata ganti (it, them) di tengah atau di akhir phrasal verb.',
+    headline: 'Aturan Kata Ganti pada Gabungan Kata Kerja: Yang Bisa Dipisah vs. Tidak Bisa Dipisah',
+    subtitle: 'Hindari kesalahan klasik pembelajar Indonesia saat menempatkan kata ganti (it, them) di tengah atau di akhir gabungan kata kerja.',
     items: [
       {
         symbol: 'turn it down',
@@ -73,21 +73,21 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'look into the discrepancy',
         reading: '/lʊk ˈɪntuː ðə dɪˈskrɛpənsi/',
         meaning: 'Menyelidiki selisih / ketidaksesuaian data',
-        mnemonic: '\'Look into\' bersifat inseparable (tak terpisahkan): baik nomina maupun kata ganti tetap di belakang \'into\'.',
+        mnemonic: '\'Look into\' bersifat inseparable (tak terpisahkan): baik kata benda maupun kata ganti tetap di belakang \'into\'.',
         speakText: 'look into the discrepancy',
       },
       {
         symbol: 'zero in on',
         reading: '/ˈzɪroʊ ɪn ɑːn/',
         meaning: 'Memusatkan perhatian penuh pada satu akar masalah',
-        mnemonic: 'Tiga kata kerja berpartikel ganda (verb + particle + preposition) selalu mengunci objek di paling belakang.',
+        mnemonic: 'Tiga kata kerja berpartikel ganda (verb + particle + kata depan) selalu mengunci objek di paling belakang.',
         speakText: 'zero in on',
       },
       {
         symbol: 'phase them out',
         reading: '/feɪz ðɛm aʊt/',
         meaning: 'Menghentikan penggunaannya secara bertahap',
-        mnemonic: 'Saat merujuk pada sistem lama (\'legacy servers\' -> \'them\'), letakkan \'them\' tepat sebelum \'out\'.',
+        mnemonic: 'Saat merujuk pada sistem lama (\'old systems\' -> \'them\'), letakkan \'them\' tepat sebelum \'out\'.',
         speakText: 'phase them out',
       },
     ],
@@ -96,7 +96,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Pronoun Placement in Multi-Word Verbs',
       formula: '✔ V + it/them + Particle (turn it down) | ✔ V + Prep + it/them (look into it)',
       formulaReading: 'phase them out / look into it / zero in on the root cause',
-      explanation: 'Dalam bahasa Inggris Amerika standar (termasuk TOEFL Editing/Writing), phrasal verb transitif berpartikel (seperti phase out, turn down, bring up) mengharuskan objek pronomina (it, them, us) berada DI TENGAH. Namun prepositional verb (look into, rely on, come across) tidak pernah dipisah.',
+      explanation: 'Dalam bahasa Inggris Amerika standar (termasuk penulisan bahasa Inggris standar), gabungan kata kerja dua kata (seperti phase out, turn down, bring up) mengharuskan kata ganti objek (it, them, us) berada DI TENGAH. Namun kata kerja + kata depan (look into, rely on, come across) tidak pernah dipisah.',
       examples: [
         {
           jp: 'The offer lacked equity, so she turned it down politely.',
@@ -110,11 +110,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Tes cepat: jika kata keduanya adalah preposisi murni (\'into\', \'across\', \'on\' pada \'rely on\'), jangan pernah pisahkan kata ganti ke tengah!',
+    contrastiveTip: 'Tes cepat: jika kata keduanya adalah kata depan murni (\'into\', \'across\', \'on\' pada \'rely on\'), jangan pernah pisahkan kata ganti ke tengah!',
   },
   'en-us-b2-u1-diskusi-toefl': {
-    headline: 'Pragmatik Diskusi Kampus & Rapat Kerja Amerika',
-    subtitle: 'Kenali ungkapan idiomatis yang sering keluar pada TOEFL iBT Campus Conversations dan rapat lintas fungsi.',
+    headline: 'Ungkapan Nyata di Kampus & Rapat Kerja Amerika',
+    subtitle: 'Kenali ungkapan idiomatis yang sering keluar pada percakapan kampus Amerika dan rapat lintas fungsi.',
     items: [
       {
         symbol: 'get everyone on the same page',
@@ -141,21 +141,21 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'rule out a hypothesis',
         reading: '/ruːl aʊt ə haɪˈpɑːθəsɪs/',
         meaning: 'Mengesampingkan / mencoret suatu hipotesis karena bukti tidak mendukung',
-        mnemonic: 'Frasa kunci di TOEFL Listening saat profesor menjelaskan mengapa satu teori tidak mungkin benar.',
+        mnemonic: 'Frasa kunci di latihan mendengarkan percakapan & kuliah saat profesor menjelaskan mengapa satu teori tidak mungkin benar.',
         speakText: 'rule out a hypothesis',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B2-001',
-      title: 'Academic vs. Conversational Register Pairing',
+      title: 'Memilih Gaya Bahasa Resmi vs Santai',
       formula: 'Spoken Campus/Exec: pan out / rule out / factor in ↔ Written Essay: succeed / exclude / incorporate',
       formulaReading: 'Did the experiment pan out? → The experiment yielded positive results.',
-      explanation: 'Dalam TOEFL Listening (percakapan kantor dekan & diskusi kelas), penutur asli memakai phrasal verb seperti \'pan out\', \'rule out\', dan \'factor in\'. Memahami padanan formalnya membantu Anda menjawab soal parafrasa pilihan ganda dengan cepat.',
+      explanation: 'Dalam latihan mendengarkan percakapan & kuliah (percakapan kantor dekan & diskusi kelas), penutur asli memakai gabungan kata kerja seperti \'pan out\', \'rule out\', dan \'factor in\'. Memahami padanan formalnya membantu Anda menjawab soal parafrasa pilihan ganda dengan cepat.',
       examples: [
         {
-          jp: 'We forgot to factor in currency fluctuations when projecting Q4 revenue.',
+          jp: 'We forgot to factor in currency changes when estimating year-end revenue.',
           reading: '/wi fərˈɡɑːt tə ˈfæktər ɪn ˈkɜːrənsi ˌflʌktʃuˈeɪʃənz wɛn prəˈdʒɛktɪŋ/',
-          id: 'Kami lupa memperhitungkan fluktuasi mata uang saat memproyeksikan pendapatan Q4.',
+          id: 'Kami lupa memperhitungkan perubahan mata uang saat memperkirakan pendapatan akhir tahun.',
         },
         {
           jp: 'Initial lab tests allowed the researchers to rule out bacterial contamination.',
@@ -164,10 +164,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Pada soal TOEFL Listening, pilihan jawaban yang benar hampir selalu memparafrasakan phrasal verb audio ke kata kerja akademik tunggal (mis. \'rule out\' -> \'eliminate\').',
+    contrastiveTip: 'Pada soal latihan mendengarkan percakapan & kuliah, pilihan jawaban yang benar hampir selalu memparafrasakan ungkapan kata kerja dalam audio ke kata kerja akademik tunggal (mis. \'rule out\' -> \'eliminate\').',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 2 (GP-EN-B2-002)
+  // Level B2 — UNIT 2 (GP-EN-B2-002)
   // ===========================================================================
   'en-us-b2-u2-kosakata': {
     headline: 'Kosakata Wawancara Behavioral berstandar Global Tech',
@@ -191,7 +191,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'cut turnaround time by 40%',
         reading: '/kʌt ˈtɜːrnəˌraʊnd taɪm baɪ ˈfɔːrti pərˈsɛnt/',
         meaning: 'Memangkas waktu penyelesaian proses sebesar 40%',
-        mnemonic: 'Gunakan preposisi \'by\' untuk selisih persentase penurunan/kenaikan, dan \'to\' untuk angka akhir!',
+        mnemonic: 'Gunakan kata depan \'by\' untuk selisih persentase penurunan/kenaikan, dan \'to\' untuk angka akhir!',
         speakText: 'cut turnaround time by 40%',
       },
       {
@@ -210,9 +210,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       explanation: 'Pada bagian Result (R) metode STAR, rekruter Amerika menilai dampak kuantitatif. Gunakan \'by\' untuk menyatakan besaran perubahan (selisih), sedangkan \'to\' untuk menyatakan titik capaian akhir.',
       examples: [
         {
-          jp: 'Automating QA checks cut release turnaround time by 40 percent.',
+          jp: 'Automating quality checks cut delivery turnaround time by 40 percent.',
           reading: '/ˈɔːtəˌmeɪtɪŋ ˌkjuːˈeɪ tʃɛks kʌt rɪˈliːs ˈtɜːrnəˌraʊnd taɪm baɪ ˈfɔːrti pərˈsɛnt/',
-          id: 'Otomatisasi pemeriksaan QA memangkas waktu penyelesaian rilis sebesar 40 persen.',
+          id: 'Otomatisasi pemeriksaan kualitas memangkas waktu penyelesaian kerja sebesar 40 persen.',
         },
         {
           jp: 'My redesign raised trial-to-paid conversion from 4% to 9%.',
@@ -242,11 +242,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         speakText: 'was preparing (Past Continuous)',
       },
       {
-        symbol: 'spearheaded & deployed (Simple Past)',
+        symbol: 'spearheaded & launched (Simple Past)',
         reading: '/ˈspɪrˌhɛdɪd ænd dɪˈplɔɪd/',
         meaning: 'Memelopori dan meluncurkan (aksi konkret Anda)',
         mnemonic: 'Seluruh langkah pada bagian Action dan Result wajib memakai Simple Past tegas dengan subjek \'I\' (bukan \'we\' terus-menerus).',
-        speakText: 'spearheaded & deployed (Simple Past)',
+        speakText: 'spearheaded and launched',
       },
       {
         symbol: 'had never documented (Past Perfect)',
@@ -260,11 +260,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       code: 'GP-EN-B2-002',
       title: 'Narrative Past Framing (Past Perfect vs. Past Continuous vs. Simple Past)',
       formula: 'Situation: had + V3 / had been + V-ing + when + Simple Past | Action & Result: I + V2',
-      formulaReading: 'Churn had been rising for months when I took over and redesigned onboarding.',
+      formulaReading: 'Complaints had been rising for months when I took over and improved our welcome process.',
       explanation: 'Penutur Indonesia sering memakai Simple Past saja atau bahkan Present Tense saat bercerita pengalaman lampau. Di wawancara Amerika, gunakan Past Perfect (Continuous) untuk masalah pendahulu (Situation), lalu Simple Past tegas untuk aksi Anda (Action).',
       examples: [
         {
-          jp: 'Customer churn had been climbing for two quarters before I audited the onboarding flow.',
+          jp: 'Customer cancellations had been climbing for six months before I reviewed the welcome process.',
           reading: '/ˈkʌstəmər tʃɜːrn hæd bɪn ˈklaɪmɪŋ fɔːr tuː ˈkwɔːrtərz bɪˈfɔːr aɪ ˈɔːdɪtɪd/',
           id: 'Tingkat berhentinya pelanggan telah terus naik selama dua kuartal sebelum saya mengaudit alur orientasi.',
         },
@@ -278,8 +278,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jebakan wawancara: jangan larut memakai \'we\' di bagian Action (\'We did X\'). Rekruter ingin tahu kontribusi spesifik \'I\' di dalam tim tersebut!',
   },
   'en-us-b2-u2-diskusi-toefl': {
-    headline: 'Menjawab Pertanyaan Kegagalan, Konflik & TOEFL Independent Speaking',
-    subtitle: 'Baik wawancara global maupun TOEFL Speaking Task 1 menuntut argumen personal yang jujur, ringkas, dan ditutup dengan pelajaran konkret.',
+    headline: 'Menjawab Pertanyaan Kegagalan, Konflik & Berbicara Opini Mandiri',
+    subtitle: 'Baik wawancara global maupun latihan menjawab opini secara lisan menuntut argumen personal yang jujur, ringkas, dan ditutup dengan pelajaran konkret.',
     items: [
       {
         symbol: 'own up to a mistake',
@@ -306,16 +306,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'key takeaway',
         reading: '/kiː ˈteɪkəˌweɪ/',
         meaning: 'Pelajaran / poin kesimpulan terpenting yang dipetik',
-        mnemonic: 'Penutup emas untuk wawancara behavioral maupun kesimpulan 10 detik terakhir TOEFL Speaking!',
+        mnemonic: 'Penutup emas untuk wawancara behavioral maupun kesimpulan 10 detik terakhir presentasi & berbicara bahasa Inggris!',
         speakText: 'key takeaway',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B2-002',
-      title: 'Reflective Framing & Cleft Emphasis (\'What I learned was...\')',
-      formula: 'Wh-Cleft: What + S + V + was (that) + Clause | Reflective: In hindsight, I should have + V3',
+      title: 'Menyoroti Pelajaran Utama (\'What I learned was...\')',
+      formula: 'Pola Penegas: What + S + V + was (that) + Kalimat | Reflective: In hindsight, I should have + V3',
       formulaReading: 'What that experience taught me was that early feedback prevents costly rework.',
-      explanation: 'Kalimat Wh-Cleft (\'What I realized was...\', \'What made the difference was...\') menyorot pelajaran utama secara dramatis dan membantu penguji TOEFL maupun pewawancara menangkap poin inti Anda seketika.',
+      explanation: 'Pola penegas (\'What I realized was...\', \'What made the difference was...\') menyorot pelajaran utama secara dramatis dan membantu pembaca & penguji maupun pewawancara menangkap poin inti Anda seketika.',
       examples: [
         {
           jp: 'What that setback taught me was to validate assumptions early.',
@@ -332,10 +332,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Saat ditanya \'What is your biggest failure?\', jangan pernah menjawab kelemahan palsu (\'I work too hard\'). Ceritakan kegagalan nyata berskala wajar + cara Anda course-correct!',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 3 (GP-EN-B2-003)
+  // Level B2 — UNIT 3 (GP-EN-B2-003)
   // ===========================================================================
   'en-us-b2-u3-kosakata': {
-    headline: 'Penanda Struktur Kuliah (Lecture Signposts) di TOEFL iBT',
+    headline: 'Penanda Struktur Kuliah (Lecture Signposts) di ujian bahasa Inggris internasional',
     subtitle: 'Profesor di kampus Amerika tidak berbicara seperti buku teks kaku; mereka memberi sinyal transisi lisan sebelum menyampaikan ide utama ujian.',
     items: [
       {
@@ -349,7 +349,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'digress for a moment',
         reading: '/daɪˈɡrɛs fɔːr ə ˈmoʊmənt/',
         meaning: 'Menyimpang sejenak dari topik utama kuliah',
-        mnemonic: 'Sinyal emas soal \'Function Question\' TOEFL: saat dosen berkata \'Let me digress\' atau \'Off the top of my head\', perhatikan tujuan contohnya!',
+        mnemonic: 'Sinyal emas soal \'Function Question\' ujian bahasa Inggris: saat dosen berkata \'Let me digress\' atau \'Off the top of my head\', perhatikan tujuan contohnya!',
         speakText: 'digress for a moment',
       },
       {
@@ -372,7 +372,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Causal & Evidential Verbs in Academic Lectures',
       formula: 'Theory + hinges on / stems from / accounts for + Noun Phrase',
       formulaReading: 'Survival in arid zones hinges on nocturnal water retention.',
-      explanation: 'Dalam kuliah biologi, geologi, dan psikologi TOEFL, hubungan sebab-akibat jarang memakai \'because\' semata. Dosen menggunakan verba relasional seperti \'hinge on\' (bergantung pada), \'stem from\' (berakar dari), dan \'account for\' (menjelaskan porsi/penyebab).',
+      explanation: 'Dalam kuliah sains dan psikologi, hubungan sebab-akibat jarang memakai \'because\' semata. Dosen menggunakan kata kerja sebab-akibat seperti \'hinge on\' (bergantung pada), \'stem from\' (berakar dari), dan \'account for\' (menjelaskan porsi/penyebab).',
       examples: [
         {
           jp: 'Coral reef resilience hinges on symbiotic algae within their tissues.',
@@ -390,20 +390,20 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-b2-u3-tata-bahasa': {
     headline: 'Embedded Questions & Pertanyaan Retoris dalam Wacana Sains',
-    subtitle: 'Kuasai tata urutan subjek-verba pada klausa tanya tak langsung serta fungsi pertanyaan retoris pembuka argumen ilmiah.',
+    subtitle: 'Kuasai tata urutan subjek-kata kerja pada bagian kalimat tanya tak langsung serta fungsi pertanyaan retoris pembuka argumen ilmiah.',
     items: [
       {
-        symbol: 'how organisms adapt (Embedded Clause)',
+        symbol: 'how organisms adapt',
         reading: '/haʊ ˈɔːrɡəˌnɪzəmz əˈdæpt/',
         meaning: 'Bagaimana organisme beradaptasi (BUKAN \'how do organisms adapt\')',
-        mnemonic: 'Begitu kalimat tanya masuk ke dalam kalimat pernyataan, hilangkan \'do/does/did\' dan kembalikan ke urutan Subjek + Verba!',
-        speakText: 'how organisms adapt (Embedded Clause)',
+        mnemonic: 'Begitu kalimat tanya masuk ke dalam kalimat pernyataan, hilangkan \'do/does/did\' dan kembalikan ke urutan Subjek + Kata Kerja!',
+        speakText: 'how organisms adapt',
       },
       {
         symbol: 'whether the pattern holds',
         reading: '/ˈwɛðər ðə ˈpætərn hoʊldz/',
         meaning: 'Apakah pola tersebut tetap berlaku',
-        mnemonic: 'Dalam penulisan akademik dan TOEFL, \'whether\' (terutama \'whether or not\') jauh lebih disukai daripada \'if\' sesudah preposisi/verba riset.',
+        mnemonic: 'Dalam penulisan akademik dan tes bahasa Inggris, \'whether\' (terutama \'whether or not\') jauh lebih disukai daripada \'if\' sesudah kata depan/kata kerja riset.',
         speakText: 'whether the pattern holds',
       },
       {
@@ -423,10 +423,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-003',
-      title: 'Embedded Questions & Prepositional Relative Clauses',
-      formula: 'Main Clause + wh-word / whether + Subject + Verb (NO do/did inversion!)',
+      title: 'Pertanyaan di Tengah Kalimat & Kata Hubung \'to which / in which\'',
+      formula: 'Kalimat Utama + wh-word / whether + Subject + Verb (urutan lurus, TANPA do/did!)',
       formulaReading: 'Researchers examined to what extent sleep deprivation impairs memory.',
-      explanation: 'Kesalahan paling sering di TOEFL Writing adalah menginversi kata kerja bantu di dalam embedded clause (*\'Scientists asked why did the glacier melt\'* -> SALAH). Yang benar: \'Scientists investigated why the glacier melted\' dan \'Researchers measured the extent to which urbanization alters rainfall.\'',
+      explanation: 'Kesalahan paling sering di penulisan esai bahasa Inggris adalah membalik posisi kata bantu ke depan di dalam pertanyaan di dalam kalimat (*\'Scientists asked why did the glacier melt\'* -> SALAH). Yang benar: \'Scientists investigated why the glacier melted\' dan \'Researchers measured the extent to which urbanization alters rainfall.\'',
       examples: [
         {
           jp: 'Astronomers still debate how supermassive black holes formed so early.',
@@ -440,17 +440,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Ingat rumus emas: sesudah preposisi (\'of whether\', \'about how\', \'to which\'), jangan pernah gunakan \'if\' untuk arti \'apakah\' — wajib gunakan \'whether\'!',
+    contrastiveTip: 'Ingat rumus emas: sesudah kata depan (\'of whether\', \'about how\', \'to which\'), jangan pernah gunakan \'if\' untuk arti \'apakah\' — wajib gunakan \'whether\'!',
   },
   'en-us-b2-u3-diskusi-toefl': {
-    headline: 'Kerangka Merangkum Kuliah Akademik (TOEFL Speaking Task 4)',
+    headline: 'Kerangka Merangkum Kuliah Akademik (latihan merangkum kuliah secara lisan)',
     subtitle: 'Latih transisi lisan bernilai tinggi untuk merangkum definisi konsep beserta dua contoh eksperimen profesor dalam 60 detik.',
     items: [
       {
         symbol: 'The professor illustrates this with...',
         reading: '/ðə prəˈfɛsər ˈɪləˌstreɪts ðɪs wɪð/',
         meaning: 'Profesor mengilustrasikan konsep ini menggunakan...',
-        mnemonic: 'Pembuka transisi wajib dari definisi umum ke contoh hewan/eksperimen pertama pada TOEFL Speaking Task 4.',
+        mnemonic: 'Pembuka transisi wajib dari definisi umum ke contoh hewan/eksperimen pertama pada latihan merangkum kuliah secara lisan.',
         speakText: 'The professor illustrates this with...',
       },
       {
@@ -478,9 +478,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-B2-003',
       title: 'Academic Summary Reporting & \'thereby + V-ing\'',
-      formula: 'Main Clause + , thereby + V-ing (Result) | The lecture sheds light on how + S + V',
+      formula: 'Kalimat Utama + , thereby + V-ing (Result) | The lecture sheds light on how + S + V',
       formulaReading: 'Desert foxes have oversized ears, thereby dissipating excess body heat.',
-      explanation: 'Pada TOEFL Speaking Task 3 & 4, waktu bicara hanya 60 detik. Menggabungkan aksi dan hasil memakai \', thereby + V-ing\' jauh lebih padat dan bernilai skor tata bahasa lebih tinggi daripada dua kalimat pendek yang terputus-putus.',
+      explanation: 'Pada latihan merangkum bacaan & kuliah secara lisan, waktu bicara hanya 60 detik. Menggabungkan aksi dan hasil memakai \', thereby + V-ing\' jauh lebih padat dan bernilai skor tata bahasa lebih tinggi daripada dua kalimat pendek yang terputus-putus.',
       examples: [
         {
           jp: 'Mangrove roots trap coastal sediment, thereby stabilizing vulnerable shorelines.',
@@ -494,10 +494,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Pada TOEFL Speaking Task 4, jangan pernah memasukkan opini pribadi (\'I think desert animals are cool\'). Laporkan murni fakta dan contoh profesor menggunakan Present Tense ilmiah!',
+    contrastiveTip: 'Pada latihan merangkum kuliah secara lisan, jangan pernah memasukkan opini pribadi (\'I think desert animals are cool\'). Laporkan murni fakta dan contoh profesor menggunakan Present Tense ilmiah!',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 4 (GP-EN-B2-004)
+  // Level B2 — UNIT 4 (GP-EN-B2-004)
   // ===========================================================================
   'en-us-b2-u4-kosakata': {
     headline: 'Menantang Ide Tanpa Menyerang Pribadi (Constructive Pushback)',
@@ -521,7 +521,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'a valid point, albeit...',
         reading: '/ə ˈvælɪd pɔɪnt ɔːlˈbiːɪt/',
         meaning: 'Poin yang masuk akal, meskipun...',
-        mnemonic: '\'Albeit\' (/ɔːlˈbiːɪt/) adalah konjungsi ringkas berkelas B2–C1 yang diikuti adjektiva atau frasa pendek.',
+        mnemonic: '\'Albeit\' (/ɔːlˈbiːɪt/) adalah kata hubung ringkas berkelas B2–C1 yang diikuti kata sifat atau frasa pendek.',
         speakText: 'a valid point, albeit...',
       },
       {
@@ -537,7 +537,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Concessive Framing (\'While / Granted..., main argument\')',
       formula: 'While I see the merit in [X], [counter-claim]. | Granted, [fact]; however, [limitation].',
       formulaReading: 'While I see the merit in launching early, stability must come first.',
-      explanation: 'Baik dalam rapat lintas divisi maupun tugas baru TOEFL Writing for an Academic Discussion, argumen bernilai tinggi selalu mengakui sudut pandang rekan diskusi terlebih dahulu (\'While Alex raises a valid point regarding X, this view overlooks Y\').',
+      explanation: 'Baik dalam rapat lintas divisi maupun tugas baru diskusi tertulis di kelas atau forum, argumen bernilai tinggi selalu mengakui sudut pandang rekan diskusi terlebih dahulu (\'While Alex raises a valid point regarding X, this view overlooks Y\').',
       examples: [
         {
           jp: 'While I see the merit in cutting ad spend, doing so abruptly could stall growth.',
@@ -554,7 +554,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Hindari berkata langsung \'I disagree with you\' atau \'Your idea is wrong\' di rapat Amerika; gunakan \'I see where you\'re coming from, though have we considered...?\'',
   },
   'en-us-b2-u4-tata-bahasa': {
-    headline: 'Modal Hedging & Negative Questions untuk Persuasi Rapat',
+    headline: 'Bahasa Halus & Pertanyaan Pengajak untuk Persuasi Rapat',
     subtitle: 'Gunakan modal lampau pelembut (would, might, could) dan pertanyaan negatif sopan (\'Wouldn\'t it be wiser to...?\') untuk mengarahkan keputusan rapat.',
     items: [
       {
@@ -599,7 +599,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
           id: 'Bukankah akan lebih bijaksana menguji coba fitur tersebut di satu kota terlebih dahulu?',
         },
         {
-          jp: 'Even if we were to hire five contractors today, onboarding would take weeks.',
+          jp: 'Even if we were to hire five helpers today, training would take weeks.',
           reading: '/ˈiːvən ɪf wi wɜːr tə ˈhaɪər faɪv ˈkɑːntræktərz təˈdeɪ ˈɔːnˌbɔːrdɪŋ wʊd teɪk wiːks/',
           id: 'Bahkan seandainya pun kita merekrut lima kontraktor hari ini, proses orientasi tetap akan memakan berminggu-minggu.',
         },
@@ -608,8 +608,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Pahami kode budaya AS: \'We might want to double-check line 42\' bukanlah opsi sukarela, melainkan koreksi sopan yang wajib segera ditindaklanjuti!',
   },
   'en-us-b2-u4-diskusi-toefl': {
-    headline: 'Menyumbang Sudut Pandang Baru di Seminar & TOEFL Writing Task 2',
-    subtitle: 'Pada TOEFL Academic Discussion (10 menit), skor 5.0 diraih dengan menanggapi opini teman sekelas lalu menambahkan dimensi argumen yang belum dibahas.',
+    headline: 'Menyumbang Sudut Pandang Baru di Seminar & Menulis Opini di Forum Diskusi',
+    subtitle: 'Pada diskusi kelas & forum akademik (10 menit), skor 5.0 diraih dengan menanggapi opini teman sekelas lalu menambahkan dimensi argumen yang belum dibahas.',
     items: [
       {
         symbol: 'build on someone\'s point',
@@ -645,7 +645,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Synthesizing Positions (\'Building on X, ...\' & Balanced Thesis)',
       formula: 'Building on [Name]\'s point about [A], we must also consider [B].',
       formulaReading: 'Building on Liam\'s point about privacy, regulators must strike a balance between safety and innovation.',
-      explanation: 'Penguji TOEFL menilai apakah tulisan/ucapan Anda benar-benar berinteraksi dalam diskusi akademik, bukan monolog terpisah. Gunakan frasa partisip pembuka \'Building on [Name]\'s observation...\' atau \'Echoing [Name]\'s concern...\' untuk kohesi instan.',
+      explanation: 'Pembaca & penguji menilai apakah tulisan/ucapan Anda benar-benar berinteraksi dalam diskusi akademik, bukan monolog terpisah. Gunakan frasa partisip pembuka \'Building on [Name]\'s observation...\' atau \'Echoing [Name]\'s concern...\' untuk alur yang langsung nyambung.',
       examples: [
         {
           jp: 'Building on Maya\'s point about urban transit, congestion pricing funds cleaner buses.',
@@ -659,13 +659,13 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jangan hanya menyalin ulang argumen mahasiswa di soal TOEFL Academic Discussion; wajib tambahkan satu alasan baru atau contoh nyata milik Anda sendiri!',
+    contrastiveTip: 'Jangan hanya menyalin ulang argumen mahasiswa di soal diskusi kelas & forum akademik; wajib tambahkan satu alasan baru atau contoh nyata milik Anda sendiri!',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 5 (GP-EN-B2-005)
+  // Level B2 — UNIT 5 (GP-EN-B2-005)
   // ===========================================================================
   'en-us-b2-u5-kosakata': {
-    headline: 'Kosakata Inti Arsitektur Sistem & Pull Request Global',
+    headline: 'Kosakata Inti Kerja Tim & Memberi Masukan Kerja Secara Profesional',
     subtitle: 'Kuasai istilah rekayasa produk yang dipakai insinyur dan manajer produk di Silicon Valley saat membahas reliabilitas, utang teknis, dan desain sistem.',
     items: [
       {
@@ -679,14 +679,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'incur technical debt',
         reading: '/ɪnˈkɜːr ˈtɛknɪkəl dɛt/',
         meaning: 'Menimbulkan / menumpuk utang teknis akibat jalan pintas kode',
-        mnemonic: 'Kolokasi baku untuk \'debt\' (utang) atau \'cost\' adalah verba formal \'incur\' (bukan \'make debt\')!',
+        mnemonic: 'Pasangan kata alami baku untuk \'debt\' (utang) atau \'cost\' adalah kata kerja resmi \'incur\' (bukan \'make debt\')!',
         speakText: 'incur technical debt',
       },
       {
         symbol: 'nitpick (nit:)',
         reading: '/ˈnɪtˌpɪk/',
         meaning: 'Komentar koreksi gaya/detail kecil yang tidak menghalangi persetujuan PR',
-        mnemonic: 'Dalam budaya Code Review AS, mengawali komentar dengan \'Nit:\' memberi tahu rekan bahwa poin itu opsional/minor, bukan blocker.',
+        mnemonic: 'Saat memberi ulasan kerja di AS, mengawali catatan dengan \'Nit:\' memberi tahu rekan bahwa saran itu kecil/opsional, bukan hambatan utama.',
         speakText: 'nitpick (nit:)',
       },
       {
@@ -700,9 +700,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-B2-005',
       title: 'Impersonal & Causative Feedback in Code Reviews',
-      formula: 'Impersonal: Extracting this helper would make testing easier. | Causative: have the pipeline run X',
+      formula: 'Netral: Simplifying this step would make review easier. | Menyuruh sistem/orang: have the team/system run X',
       formulaReading: 'Caching tokens here avoids hitting the auth service on every request.',
-      explanation: 'Umpan balik Code Review terbaik fokus pada KODE, bukan menyerang penulisnya (\'You wrote messy logic\' -> buruk; \'Extracting this into a pure function makes unit testing cleaner\' -> standar senior US tech). Selain itu, gunakan kausatif aktif \'have/make + Object + V1\' untuk alur otomatisasi.',
+      explanation: 'Masukan kerja terbaik selalu fokus pada HASIL KERJA, bukan menyerang orangnya (\'You made a messy draft\' -> kurang sopan; \'Simplifying this section makes the report much clearer\' -> profesional & sopan). Selain itu, gunakan pola aktif \'have/make + Objek + V1\' untuk meminta bantuan atau mengatur tugas otomatis.',
       examples: [
         {
           jp: 'Hardcoding credentials here incurs security risks and blocks rotation.',
@@ -710,13 +710,13 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
           id: 'Menanam kredensial secara statis di sini menimbulkan risiko keamanan dan menghambat rotasi kunci.',
         },
         {
-          jp: 'Let\'s have the CI pipeline run integration tests before merging.',
+          jp: 'Let\'s have the assistant run a final check before publishing.',
           reading: '/lɛts hæv ðə ˌsiːˈaɪ ˈpaɪpˌlaɪn rʌn ˌɪntəˈɡreɪʃən tɛsts bɪˈfɔːr ˈmɜːrdʒɪŋ/',
-          id: 'Mari atur agar pipeline CI menjalankan uji integrasi sebelum penggabungan kode.',
+          id: 'Mari minta asisten menjalankan pemeriksaan akhir sebelum dipublikasikan.',
         },
       ],
     },
-    contrastiveTip: 'Ingat kolokasi formal: \'incur technical debt / incur latency overhead\' dan \'pay down technical debt\' (melunasi/mengurangi utang teknis).',
+    contrastiveTip: 'Ingat pasangan kata alami formal: \'incur technical debt / incur latency overhead\' dan \'pay down technical debt\' (melunasi/mengurangi utang teknis).',
   },
   'en-us-b2-u5-tata-bahasa': {
     headline: 'Struktur Kausatif (Have/Get) & Pasif Objektif pada Dokumen RFC',
@@ -733,7 +733,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'get the payload compressed (Passive Causative)',
         reading: '/ɡɛt ðə ˈpeɪˌloʊd kəmˈprɛst/',
         meaning: 'Membuat muatan data dikompresi (get/have + objek sasaran + V3)',
-        mnemonic: 'Jika objek sesudah \'have/get\' adalah SASARAN yang dikenai tindakan, wajib gunakan Past Participle (V3)!',
+        mnemonic: 'Jika objek sesudah \'have/get\' adalah SASARAN yang dikenai tindakan, wajib gunakan bentuk V3!',
         speakText: 'get the payload compressed (Passive Causative)',
       },
       {
@@ -773,8 +773,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jebakan umum: jangan tulis \'have the worker to process\' (salah karena ada \'to\'). Gunakan \'have the worker process\' ATAU \'get the worker to process\'!',
   },
   'en-us-b2-u5-diskusi-toefl': {
-    headline: 'Komunikasi Asinkron Lintas Zona Waktu & Kuliah Ilmu Komputer TOEFL',
-    subtitle: 'Kuasai ungkapan serah-terima kerja lintas benua sekaligus kosakata algoritma/komputasi yang sering muncul di bacaan dan kuliah TOEFL iBT.',
+    headline: 'Komunikasi Asinkron Lintas Zona Waktu & Kuliah Teknologi',
+    subtitle: 'Kuasai ungkapan serah-terima kerja lintas benua sekaligus kosakata algoritma/komputasi yang sering muncul di bacaan dan kuliah ujian bahasa Inggris internasional.',
     items: [
       {
         symbol: 'hand off cleanly',
@@ -794,7 +794,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'diminishing returns',
         reading: '/dɪˈmɪnɪʃɪŋ rɪˈtɜːrnz/',
         meaning: 'Hasil tambahan yang makin mengecil meskipun usaha/biaya terus ditambah',
-        mnemonic: 'Konsep favorit lintas kuliah ekonomi DAN ilmu komputer TOEFL (mis. menambah core CPU melampaui batas paralelisasi).',
+        mnemonic: 'Konsep favorit lintas kuliah ekonomi dan teknologi (mis. menambah core CPU melampaui batas paralelisasi).',
         speakText: 'diminishing returns',
       },
       {
@@ -807,15 +807,15 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-005',
-      title: 'Proportional Scaling Clauses (\'The more..., the more/less...\')',
+      title: 'Pola \'Semakin..., Semakin...\' (The more..., the more/less...)',
       formula: 'The + Comparative + S + V, the + Comparative + S + V',
       formulaReading: 'The deeper the neural network grows, the higher the computational overhead becomes.',
-      explanation: 'Konstruksi komparatif ganda (\'The more X..., the less Y...\') sangat sering diujikan pada TOEFL Reading/Writing dan dipakai menjelaskan skalabilitas sistem maupun hukum *diminishing returns*.',
+      explanation: 'Konstruksi komparatif ganda (\'The more X..., the less Y...\') sangat sering diujikan pada latihan membaca & menulis dan dipakai menjelaskan skalabilitas sistem maupun hukum *diminishing returns*.',
       examples: [
         {
-          jp: 'The clearer your pull request description is, the faster reviewers can unblock you.',
+          jp: 'The clearer your project summary is, the faster reviewers can help you.',
           reading: '/ðə ˈklɪrər jʊr pʊl rɪˈkwɛst dɪˈskrɪpʃən ɪz ðə ˈfæstər rɪˈvjuːərz kæn ʌnˈblɑːk juː/',
-          id: 'Semakin jelas deskripsi pull request Anda, semakin cepat peninjau dapat menyingkirkan hambatan Anda.',
+          id: 'Semakin jelas ringkasan proyek Anda, semakin cepat peninjau dapat membantu Anda.',
         },
         {
           jp: 'Beyond eight worker threads, lock contention yields diminishing returns.',
@@ -824,14 +824,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan kata sandang \'The\' wajib muncul di KEDUA belah klausa: \'The larger the payload, the slower the rendering\' (bukan \'Larger payload, slower rendering\').',
+    contrastiveTip: 'Perhatikan kata sandang \'The\' wajib muncul di KEDUA belah bagian kalimat: \'The larger the payload, the slower the rendering\' (bukan \'Larger payload, slower rendering\').',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 6 (GP-EN-B2-006)
+  // Level B2 — UNIT 6 (GP-EN-B2-006)
   // ===========================================================================
   'en-us-b2-u6-kosakata': {
     headline: 'Kosakata Evaluasi Proyek & Analisis Akar Masalah',
-    subtitle: 'Pelajari istilah profesional Amerika untuk meninjau keberhasilan maupun kegagalan proyek secara objektif tanpa saling menyalahkan (*blameless post-mortem*).',
+    subtitle: 'Pelajari istilah profesional Amerika untuk meninjau keberhasilan maupun kegagalan proyek secara objektif tanpa saling menyalahkan (evaluasi objektif tanpa saling menyalahkan).',
     items: [
       {
         symbol: 'foresight',
@@ -851,7 +851,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'avert a crisis',
         reading: '/əˈvɜːrt ə ˈkraɪsɪs/',
         meaning: 'Mencegah / mengelakkan krisis tepat sebelum meledak',
-        mnemonic: 'Kolokasi formal B2–C1: kita tidak sekadar \'stop a crisis\', melainkan \'avert a crisis / disaster\'.',
+        mnemonic: 'Pasangan kata alami formal B2–C1: kita tidak sekadar \'stop a crisis\', melainkan \'avert a crisis / disaster\'.',
         speakText: 'avert a crisis',
       },
       {
@@ -864,10 +864,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-006',
-      title: 'Third Conditional for Blameless Post-Mortems',
+      title: 'Pengandaian Masa Lalu (If + had V3, would have V3) for Evaluasi Pengalaman Secara Objektif',
       formula: 'If + S + had + V3, S + would / could / might + have + V3',
       formulaReading: 'If we had drafted a contingency plan, we would have averted the outage.',
-      explanation: 'Third Conditional mengandaikan masa lalu yang sudah tidak bisa diubah demi memetik pelajaran organisasi. Gunakan \'would have + V3\' untuk hasil pasti yang dibayangkan, dan \'could/might have + V3\' untuk peluang yang mungkin tercapai.',
+      explanation: 'Pengandaian Masa Lalu (If + had V3, would have V3) mengandaikan masa lalu yang sudah tidak bisa diubah demi memetik pelajaran organisasi. Gunakan \'would have + V3\' untuk hasil pasti yang dibayangkan, dan \'could/might have + V3\' untuk peluang yang mungkin tercapai.',
       examples: [
         {
           jp: 'If our vendor had flagged the chip shortage earlier, we could have switched suppliers.',
@@ -881,23 +881,23 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Hindari kesalahan paling fatal di klausa If: JANGAN pernah taruh \'would have\' di dalam klausa If (*\'If we would have known\'* -> SALAH di TOEFL!). Wajib \'If we had known\'.',
+    contrastiveTip: 'Hindari kesalahan paling fatal di bagian \'If\': JANGAN pernah taruh \'would have\' di dalam bagian \'If\' (*\'If we would have known\'* -> SALAH dalam bahasa Inggris resmi!). Wajib \'If we had known\'.',
   },
   'en-us-b2-u6-tata-bahasa': {
-    headline: 'Mixed Conditionals (Sebab Lampau → Akibat Sekarang) & \'But for\'',
+    headline: 'Pengandaian Campuran (Masa Lalu & Sekarang) (Sebab Lampau → Akibat Sekarang) & \'But for\'',
     subtitle: 'Bedakan dengan tajam kapan memakai \'would have V3\' (hasil di masa lalu) vs. \'would V1\' (kondisi nyata saat ini akibat keputusan masa lalu).',
     items: [
       {
         symbol: 'If we had invested..., we would be profitable today',
         reading: '/ɪf wi hæd ɪnˈvɛstɪd wi wʊd bi ˈprɑːfɪtəbəl təˈdeɪ/',
         meaning: 'Sebab di masa lalu (had V3) → Dampak yang terasa HARI INI (would + V1)',
-        mnemonic: 'Perhatikan penanda waktu \'today / right now / currently\' di klausa kedua: itulah sinyal wajib Mixed Conditional!',
+        mnemonic: 'Perhatikan penanda waktu \'today / right now / currently\' di bagian kalimat kedua: itulah sinyal wajib Pengandaian Campuran (Masa Lalu & Sekarang)!',
         speakText: 'If we had invested..., we would be profitable today',
       },
       {
         symbol: 'If she weren\'t fluent..., she wouldn\'t have won',
         reading: '/ɪf ʃi wɜːrnt ˈfluːənt ʃi ˈwʊdənt həv wʌn/',
-        meaning: 'Kondisi permanen/umum (Past Subjunctive) → Hasil spesifik di masa lalu (would have V3)',
+        meaning: 'Kondisi permanen/umum (bentuk lampau pengandaian (V2/were)) → Hasil spesifik di masa lalu (would have V3)',
         mnemonic: 'Kemahiran bahasanya berlaku umum hingga kini (\'weren\'t fluent\'), yang memengaruhi seleksi beasiswa bulan lalu.',
         speakText: 'If she weren\'t fluent..., she wouldn\'t have won',
       },
@@ -905,23 +905,23 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'But for the emergency grant',
         reading: '/bʌt fɔːr ði ɪˈmɜːrdʒənsi ɡrænt/',
         meaning: 'Seandainya bukan karena hibah darurat tersebut',
-        mnemonic: 'Padanan formal berkelas tinggi untuk \'If it hadn\'t been for...\' diikuti langsung oleh Frasa Nomina!',
+        mnemonic: 'Padanan formal berkelas tinggi untuk \'If it hadn\'t been for...\' diikuti langsung oleh Frasa Kata Benda!',
         speakText: 'But for the emergency grant',
       },
       {
         symbol: 'Otherwise, we would now face...',
         reading: '/ˈʌðərˌwaɪz wi wʊd naʊ feɪs/',
         meaning: 'Jika tidak demikian (tadi), kita sekarang pasti menghadapi...',
-        mnemonic: '\'Otherwise\' menggantikan seluruh klausa pengandaian negatif dari kalimat sebelumnya secara efisien.',
+        mnemonic: '\'Otherwise\' menggantikan seluruh bagian pengandaian negatif dari kalimat sebelumnya secara efisien.',
         speakText: 'Otherwise, we would now face...',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B2-006',
-      title: 'Mixed Conditionals & Prepositional \'But for\'',
+      title: 'Pengandaian Campuran (Masa Lalu & Sekarang) & Kata Depan \'But for\'',
       formula: 'Past→Present: If + S + had + V3, S + would + V1 (now) | Present→Past: If + S + V2/were, S + would have + V3',
       formulaReading: 'But for early seed funding, our lab would not exist today.',
-      explanation: 'Kunci menaklukkan soal Mixed Conditional di TOEFL & GMAT adalah memeriksa keterangan waktu di tiap klausa. Jika klausa If lampau (\'last year\') tetapi klausa utama memiliki \'today / now\', gunakan \'would + V1\' (BUKAN \'would have V3\').',
+      explanation: 'Kunci menaklukkan soal Pengandaian Campuran (Masa Lalu & Sekarang) di ujian bahasa Inggris tingkat lanjut adalah memeriksa keterangan waktu di tiap bagian kalimat. Jika bagian \'If\' lampau (\'last year\') tetapi bagian utama kalimat memiliki \'today / now\', gunakan \'would + V1\' (BUKAN \'would have V3\').',
       examples: [
         {
           jp: 'If we had automated compliance checks last year, we wouldn\'t be scrambling right now.',
@@ -938,8 +938,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Cek kilat ujian: lihat kata terakhir kalimat! Ada \'yesterday/in 2022\'? Pakai \'would have V3\'. Ada \'today/now/currently\'? Pakai \'would V1 / would be V-ing\'!',
   },
   'en-us-b2-u6-diskusi-toefl': {
-    headline: 'Penalaran Kontrafaktual dalam Kuliah Sejarah, Ekologi & Ekonomi TOEFL',
-    subtitle: 'Profesor TOEFL sering memakai skenario \'What would have happened without X?\' untuk menekankan betapa krusialnya peran suatu inovasi atau spesies kunci.',
+    headline: 'Penalaran Kontrafaktual dalam Kuliah Sejarah, Lingkungan & Ekonomi',
+    subtitle: 'Dosen di kelas sering memakai skenario \'What would have happened without X?\' untuk menekankan betapa krusialnya peran suatu inovasi atau spesies kunci.',
     items: [
       {
         symbol: 'pivotal turning point',
@@ -952,7 +952,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'keystone species',
         reading: '/ˈkiːˌstoʊn ˈspiːʃiːz/',
         meaning: 'Spesies kunci penjaga keseimbangan seluruh ekosistem',
-        mnemonic: 'Topik abadi TOEFL Biology (seperti berang-berang laut pemakan bulu babi penjaga hutan kelp).',
+        mnemonic: 'Topik abadi kuliah biologi (seperti berang-berang laut pemakan bulu babi penjaga hutan kelp).',
         speakText: 'keystone species',
       },
       {
@@ -975,7 +975,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Counterfactual Synthesis in Academic Speaking & Essays',
       formula: 'Without [Key Factor], [System] would have + V3 / would take a different trajectory.',
       formulaReading: 'Without sea otters, urchin populations would have decimated coastal kelp forests.',
-      explanation: 'Saat menjawab soal TOEFL Integrated atau menulis esai beasiswa tentang kontribusi riset Anda, penalaran kontrafaktual (\'Without X, Y would remain unsolved\') menonjolkan urgensi topik secara tajam.',
+      explanation: 'Saat menjawab soal rangkuman bacaan & kuliah atau menulis esai beasiswa tentang kontribusi riset Anda, penalaran kontrafaktual (\'Without X, Y would remain unsolved\') menonjolkan urgensi topik secara tajam.',
       examples: [
         {
           jp: 'Without standardized shipping containers, global trade would have grown far more slowly.',
@@ -989,14 +989,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan subjek implisit \'Removing X would trigger...\' — gerund di awal kalimat berfungsi sebagai klausa pengandaian ringkas (\'If we removed X, it would trigger...\').',
+    contrastiveTip: 'Perhatikan subjek implisit \'Removing X would trigger...\' — kata kerja -ing (V-ing) di awal kalimat berfungsi sebagai bagian pengandaian ringkas (\'If we removed X, it would trigger...\').',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 7 (GP-EN-B2-007)
+  // Level B2 — UNIT 7 (GP-EN-B2-007)
   // ===========================================================================
   'en-us-b2-u7-kosakata': {
     headline: 'Memadatkan Prosa Eksekutif & Akademik (Concise Reporting)',
-    subtitle: 'Laporan direksi dan jurnal ilmiah membenci pengulangan kata sambung \'because / after / which was\'. Klausa partisip memangkas kalimat bertele-tele menjadi tajam.',
+    subtitle: 'Laporan direksi dan jurnal ilmiah membenci pengulangan kata sambung \'because / after / which was\'. Frasa V-ing/V3 memangkas kalimat bertele-tele menjadi tajam.',
     items: [
       {
         symbol: 'streamline operations',
@@ -1008,31 +1008,31 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       {
         symbol: 'spearheaded by',
         reading: '/ˈspɪrˌhɛdɪd baɪ/',
-        meaning: 'Dipelopori / dipimpin oleh (Past Participle pembuka kalimat)',
+        meaning: 'Dipelopori / dipimpin oleh (Bentuk V3 pembuka kalimat)',
         mnemonic: 'Pangkas \'The project, which was spearheaded by Rina, succeeded\' menjadi \'Spearheaded by Rina, the project succeeded\'!',
         speakText: 'spearheaded by',
       },
       {
         symbol: 'stemming from',
         reading: '/ˈstɛmɪŋ frʌm/',
-        meaning: 'Yang berakar / bersumber dari (Present Participle aktif)',
+        meaning: 'Yang berakar / bersumber dari (Bentuk V-ing aktif)',
         mnemonic: 'Stem = batang tanaman tempat cabang tumbuh. Menggantikan \'which stems from\' secara ringkas.',
         speakText: 'stemming from',
       },
       {
         symbol: 'having secured approval',
         reading: '/ˈhævɪŋ sɪˈkjʊrd əˈpruːvəl/',
-        meaning: 'Setelah berhasil mengantongi persetujuan resmi (Perfect Participle)',
+        meaning: 'Setelah berhasil mengantongi persetujuan resmi (Bentuk Having + V3)',
         mnemonic: '\'Having + V3\' menegaskan bahwa tahap A benar-benar rampung terlebih dahulu sebelum aksi utama dimulai.',
         speakText: 'having secured approval',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B2-007',
-      title: 'Present, Past & Perfect Participle Clauses',
+      title: 'Memadatkan Kalimat dengan V-ing, V3 & Having + V3',
       formula: 'Active: V-ing..., S + V | Passive: V3 + by..., S + V | Prior Action: Having + V3..., S + V',
       formulaReading: 'Having secured regulatory approval, the fintech launched across Java.',
-      explanation: 'Tiga bentuk klausa partisip menggantikan anak kalimat panjang: (1) V-ing untuk aksi aktif simultan/sebab, (2) V3 (Past Participle) untuk makna pasif (\'Designed for low bandwidth, the app...\'), dan (3) Having + V3 untuk aksi yang selesai lebih dulu.',
+      explanation: 'Tiga bentuk frasa V-ing/V3 menggantikan anak kalimat panjang: (1) V-ing untuk aksi aktif simultan/sebab, (2) bentuk V3 untuk makna pasif (\'Designed for slow internet, the app...\'), dan (3) Having + V3 untuk aksi yang selesai lebih dulu.',
       examples: [
         {
           jp: 'Designed for rural clinics, the portable ultrasound runs on solar power.',
@@ -1046,25 +1046,25 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Bedakan V-ing vs V3 di awal kalimat dengan melihat SUBJEK klausa utamanya: jika subjek melakukan aksi → V-ing; jika subjek dikenai aksi → V3!',
+    contrastiveTip: 'Bedakan V-ing vs V3 di awal kalimat dengan melihat SUBJEK bagian utama kalimatnya: jika subjek melakukan aksi → V-ing; jika subjek dikenai aksi → V3!',
   },
   'en-us-b2-u7-tata-bahasa': {
-    headline: 'Aturan Subjek Identik: Mengeliminasi Dangling Modifiers',
-    subtitle: 'Jebakan tata bahasa nomor satu pada esai pascasarjana, GMAT, dan TOEFL Writing adalah klausa partisip pembuka yang subjeknya tidak cocok dengan subjek klausa utama!',
+    headline: 'Aturan Subjek Identik: Mengeliminasi Subjek Tidak Nyambungs',
+    subtitle: 'Jebakan tata bahasa nomor satu pada esai pascasarjana, GMAT, dan penulisan esai bahasa Inggris adalah pembuka kalimat V-ing/V3 yang subjeknya tidak cocok dengan subjek bagian utama kalimat!',
     items: [
       {
         symbol: 'Walking into the lab, the samples... (SALAH!)',
         reading: '/ˈwɔːkɪŋ ˈɪntuː ðə læb/',
-        meaning: 'Contoh Dangling Modifier: seolah-olah \'sampel\' yang berjalan kaki masuk ke lab!',
+        meaning: 'Contoh Subjek Tidak Nyambung: seolah-olah \'sampel\' yang berjalan kaki masuk ke lab!',
         mnemonic: 'Subjek tepat sesudah koma WAJIB pelaku dari aksi partisip di depan koma (\'Walking into the lab, the researcher noticed...\').',
         speakText: 'Walking into the lab, the samples... (SALAH!)',
       },
       {
-        symbol: 'Once deployed, the patch... (Reduced Adverbial)',
+        symbol: 'Once approved, the plan...',
         reading: '/wʌns dɪˈplɔɪd ðə pætʃ/',
         meaning: 'Begitu dirilis, tambalan kode tersebut... (Subjek \'the patch\' cocok karena ia yang dirilis)',
-        mnemonic: 'Konjungsi waktu/syarat (\'Once / When / While / If / Unless\') + V3/V-ing sangat ampuh memadatkan prosa ilmiah.',
-        speakText: 'Once deployed, the patch... (Reduced Adverbial)',
+        mnemonic: 'Kata hubung waktu/syarat (\'Once / When / While / If / Unless\') + V3/V-ing sangat ampuh memadatkan prosa ilmiah.',
+        speakText: 'Once approved, the plan moved forward.',
       },
       {
         symbol: 'Viewed from space, the delta...',
@@ -1083,10 +1083,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-007',
-      title: 'Subject-Modifier Alignment & Reduced Adverbial Clauses',
-      formula: 'Participle Phrase, + [Matching Subject] + Verb | Once/When/Unless + V3, + [Passive Subject] + V',
+      title: 'Mencocokkan Pelaku di Awal Kalimat & Meringkas Anak Kalimat',
+      formula: 'Frasa V-ing/V3, + [Matching Subject] + Verb | Once/When/Unless + V3, + [Passive Subject] + V',
       formulaReading: '✔ Having reviewed the data, the committee approved the grant. (✖ ...the grant was approved.)',
-      explanation: 'Aturan besi tata bahasa standar Amerika: subjek gramatikal tepat setelah koma adalah pemilik klausa partisip di depannya. Jika pembukanya \'Having reviewed the data,\', kata sesudah koma HARUS \'the committee / the researchers\' (yang meninjau), TIDAK BOLEH \'the grant / the conclusion\'!',
+      explanation: 'Aturan besi tata bahasa standar Amerika: subjek gramatikal tepat setelah koma adalah pemilik frasa V-ing/V3 di depannya. Jika pembukanya \'Having reviewed the data,\', kata sesudah koma HARUS \'the committee / the researchers\' (yang meninjau), TIDAK BOLEH \'the grant / the conclusion\'!',
       examples: [
         {
           jp: 'Having reviewed three hundred applications, the fellowship panel selected twelve scholars.',
@@ -1100,11 +1100,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Trik koreksi cepat saat menulis esai: setiap kali Anda menaruh koma sesudah klausa \'V-ing / Having V3 / V3\', tanyakan \'SIAPA yang melakukan/mengalami ini?\' — tulis pelaku itu tepat setelah koma!',
+    contrastiveTip: 'Trik koreksi cepat saat menulis esai: setiap kali Anda menaruh koma sesudah bagian kalimat \'V-ing / Having V3 / V3\', tanyakan \'SIAPA yang melakukan/mengalami ini?\' — tulis pelaku itu tepat setelah koma!',
   },
   'en-us-b2-u7-diskusi-toefl': {
     headline: 'Mendeskripsikan Tren Data, Lonjakan & Anomali secara Ringkas',
-    subtitle: 'Latih kosakata laporan eksekutif dan kuliah ekonomi/demografi untuk menggambarkan kurva tren disertai klausa partisip penjelas angka.',
+    subtitle: 'Latih kosakata laporan eksekutif dan kuliah ekonomi/demografi untuk menggambarkan kurva tren disertai frasa V-ing/V3 penjelas angka.',
     items: [
       {
         symbol: 'plateau at',
@@ -1137,10 +1137,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-007',
-      title: 'Trailing Participle Clauses for Quantitative Data',
-      formula: 'Main Trend Clause + , peaking at [X] / accounting for [Y]% / outpacing [Z]',
+      title: 'Menambahkan Rincian Angka dengan V-ing di Akhir Kalimat',
+      formula: 'Kalimat Tren Utama + , peaking at [X] / accounting for [Y]% / outpacing [Z]',
       formulaReading: 'Solar capacity surged threefold, outpacing coal additions for the first time.',
-      explanation: 'Dalam laporan riset maupun presentasi direksi, klausa partisip di AKHIR kalimat (trailing V-ing clause) merangkum detail statistik secara mulus tanpa mengulang \'and it peaked at... and it accounted for...\'.',
+      explanation: 'Dalam laporan riset maupun presentasi direksi, frasa V-ing/V3 di AKHIR kalimat (tambahan V-ing di akhir kalimat) merangkum detail statistik secara mulus tanpa mengulang \'and it peaked at... and it accounted for...\'.',
       examples: [
         {
           jp: 'Mobile wallet transactions doubled in 2025, accounting for sixty percent of retail volume.',
@@ -1157,7 +1157,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan pelafalan Amerika untuk \'plateau\': /plæˈtoʊ/ (tekanan di akhir), berbeda dari ejaan Prancis atau pelafalan Inggris!',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 8 (GP-EN-B2-008)
+  // Level B2 — UNIT 8 (GP-EN-B2-008)
   // ===========================================================================
   'en-us-b2-u8-kosakata': {
     headline: 'Istilah Kunci Negosiasi Kompensasi Global & Kontrak Bisnis',
@@ -1194,7 +1194,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-008',
-      title: 'Conditional Bargaining (\'Provided that / On condition that / As long as\')',
+      title: 'Menawar Syarat dengan Halus (\'Provided that / On condition that / As long as\')',
       formula: 'We can accommodate [X], provided that / as long as / on condition that [Y].',
       formulaReading: 'We can expedite delivery, provided that the scope remains locked.',
       explanation: 'Prinsip emas negosiasi Harvard: jangan pernah memberikan konsesi secara cuma-cuma (\'Sure, we\'ll add that feature\'). Selalu ikat konsesi Anda dengan syarat timbal balik memakai \'provided (that)\', \'on condition that\', atau \'as long as\' + Present Simple!',
@@ -1215,12 +1215,12 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-b2-u8-tata-bahasa': {
     headline: 'Presisi Logika Syarat: \'Unless\' vs. \'Provided that\' vs. \'In the event of\'',
-    subtitle: 'Satu kata sambung syarat yang meleset pada kontrak atau soal TOEFL Reading dapat membalikkan arti hukum 180 derajat!',
+    subtitle: 'Satu kata sambung syarat yang meleset pada kontrak atau soal bacaan artikel panjang dapat membalikkan arti hukum 180 derajat!',
     items: [
       {
         symbol: 'in the event of / in case of',
         reading: '/ɪn ði ɪˈvɛnt ʌv/',
-        meaning: 'Apabila terjadi (peristiwa darurat/wanprestasi) — diikuti Frasa Nomina',
+        meaning: 'Apabila terjadi (peristiwa darurat/wanprestasi) — diikuti Frasa Kata Benda',
         mnemonic: 'Berbeda dari \'if\' biasa, \'in the event of a breach\' dipakai di kontrak formal untuk skenario kontingensi.',
         speakText: 'in the event of / in case of',
       },
@@ -1248,7 +1248,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B2-008',
-      title: 'Contractual Conditionals (\'Unless\', \'In the event that/of\', \'Subject to\')',
+      title: 'Kalimat Syarat dalam Perjanjian (\'Unless\', \'In the event that/of\', \'Subject to\')',
       formula: 'Unless + Positive Verb | In the event of + Noun / In the event that + S + V | Subject to + Noun',
       formulaReading: 'Subscriptions renew automatically unless canceled thirty days prior.',
       explanation: 'Bedakan secara ketat: \'in case / in the event of\' menyatakan persiapan SEBELUM risiko terjadi atau klausul jika insiden muncul, sedangkan \'provided that\' menyatakan syarat agar hak diberikan. Selain itu, \'unless\' sudah mengandung arti \'if ... not\' sehingga kata kerjanya wajib positif.',
@@ -1269,7 +1269,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-b2-u8-diskusi-toefl': {
     headline: 'Advokasi Diri di Kampus AS: Tenggat Riset, Asistensi & Pendanaan',
-    subtitle: 'Mahasiswa pascasarjana di AS sering bernegosiasi soal pendanaan konferensi, perpanjangan tenggat lab, atau penyesuaian beasiswa—topik inti TOEFL Campus Conversations!',
+    subtitle: 'Mahasiswa pascasarjana di AS sering bernegosiasi soal pendanaan konferensi, perpanjangan tenggat lab, atau penyesuaian beasiswa—topik inti ujian bahasa Inggris Campus Conversations!',
     items: [
       {
         symbol: 'wiggle room',
@@ -1322,10 +1322,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan kata kerja \'I was wondering if...\' BUKAN pertanyaan langsung, sehingga diakhiri tanda titik (.) dan urutan kata normal (\'if there might be\', bukan \'if might there be?\')!',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 9 (GP-EN-B2-009)
+  // Level B2 — UNIT 9 (GP-EN-B2-009)
   // ===========================================================================
   'en-us-b2-u9-kosakata': {
-    headline: 'Kosakata Inti Soal Inferensi & Bukti pada TOEFL Reading',
+    headline: 'Kosakata Inti Soal Inferensi & Bukti pada bacaan artikel panjang',
     subtitle: 'Pahami perbedaan tajam antara apa yang tersirat oleh penulis (\'imply\') dan apa yang disimpulkan pembaca (\'infer\'), serta jebakan klaim ekstrem!',
     items: [
       {
@@ -1353,16 +1353,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'mutually exclusive',
         reading: '/ˈmjuːtʃuəli ɪkˈskluːsɪv/',
         meaning: 'Saling meniadakan (jika A terjadi, B mustahil terjadi bersamaan)',
-        mnemonic: 'Sering muncul di TOEFL Reading: \'These two evolutionary pressures are not mutually exclusive\' (keduanya BISA berjalan beriringan!).',
+        mnemonic: 'Sering muncul di bacaan artikel panjang: \'These two evolutionary pressures are not mutually exclusive\' (keduanya BISA berjalan beriringan!).',
         speakText: 'mutually exclusive',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B2-009',
-      title: 'Logical Inference vs. Extreme Trap Modifiers in TOEFL',
+      title: 'Logical Inference vs. Kata Mutlak yang Menjebak in Reading Passages',
       formula: 'Valid Inference: hedged logical necessity | Extreme Traps: solely / entirely / never / impossible',
       formulaReading: 'Not until 1950 did archival records appear → Records prior to 1950 were unavailable.',
-      explanation: 'Pada TOEFL Reading Inference Questions (\'What can be inferred from paragraph 3?\'), jawaban benar TIDAK pernah melompat jauh dari bukti teks. Pilihan jawaban yang memakai kata mutlak seperti \'solely\', \'completely eliminated\', atau \'impossible\' hampir selalu jebakan salah!',
+      explanation: 'Pada soal membaca pemahaman tersirat (\'What can be inferred from paragraph 3?\'), jawaban benar TIDAK pernah melompat jauh dari bukti teks. Pilihan jawaban yang memakai kata mutlak seperti \'solely\', \'completely eliminated\', atau \'impossible\' hampir selalu jebakan salah!',
       examples: [
         {
           jp: 'Fossil pollen substantiates the claim that grasslands predated human arrival.',
@@ -1379,8 +1379,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Hati-hati kata \'predate\' (/priːˈdeɪt/): artinya \'sudah ada LEBIH DULU sebelum X\' (pre + date), bukan berburu mangsa (predator)!',
   },
   'en-us-b2-u9-tata-bahasa': {
-    headline: 'Membedah Kalimat Panjang TOEFL: Appositives & \'whereby / in which\'',
-    subtitle: 'Kalimat TOEFL Reading rata-rata sepanjang 30–45 kata! Kuasai kerangka aposisi berjeda tanda pisah dan kata sambung \'whereby\' untuk menangkap tulang punggung ide.',
+    headline: 'Membedah Kalimat Panjang ujian bahasa Inggris: Appositives & \'whereby / in which\'',
+    subtitle: 'Kalimat bacaan artikel panjang rata-rata sepanjang 30–45 kata! Kuasai kerangka aposisi berjeda tanda pisah dan kata sambung \'whereby\' untuk menangkap tulang punggung ide.',
     items: [
       {
         symbol: 'whereby',
@@ -1390,11 +1390,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         speakText: 'whereby',
       },
       {
-        symbol: 'Noun, — appositive phrase — , Verb',
+        symbol: 'Subjek, — keterangan tambahan — , Kata Kerja',
         reading: '/əˈpɑːzətɪv/',
-        meaning: 'Keterangan sisipan diapit koma atau tanda pisah yang menjelaskan nomina di depannya',
-        mnemonic: 'Trik membaca cepat TOEFL: lompati sementara sisipan di antara dua tanda pisah (—...—) untuk menemukan Subjek + Kata Kerja utama!',
-        speakText: 'Noun, — appositive phrase — , Verb',
+        meaning: 'Keterangan sisipan diapit koma atau tanda pisah yang menjelaskan kata benda di depannya',
+        mnemonic: 'Trik membaca cepat ujian bahasa Inggris: lompati sementara sisipan di antara dua tanda pisah (—...—) untuk menemukan Subjek + Kata Kerja utama!',
+        speakText: 'The city, a major trading hub, grew rapidly.',
       },
       {
         symbol: 'chief among them',
@@ -1407,16 +1407,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'distill complex prose',
         reading: '/dɪˈstɪl ˈkɑːmplɛks proʊz/',
         meaning: 'Menyaring kalimat rumit menjadi inti gagasan esensial',
-        mnemonic: 'Keterampilan utama soal \'Sentence Simplification\' di TOEFL Reading: pertahankan hubungan sebab/kontras inti, buang hiasan minor!',
+        mnemonic: 'Keterampilan utama soal \'Sentence Simplification\' di bacaan artikel panjang: pertahankan hubungan sebab/kontras inti, buang hiasan minor!',
         speakText: 'distill complex prose',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B2-009',
-      title: 'Mechanism Clauses (\'whereby\') & Core-Relation Paraphrasing',
-      formula: 'System / Process + whereby + S + V | Subject, [Appositive], + Main Verb',
+      title: 'Menjelaskan Cara Kerja dengan \'whereby\' & Core-Relation Paraphrasing',
+      formula: 'System / Process + whereby + S + V | Subject, [Sisipan Penjelas], + Main Verb',
       formulaReading: 'Osmosis is the mechanism whereby solvent molecules cross a semipermeable membrane.',
-      explanation: 'Soal penyederhanaan kalimat (Sentence Simplification) di TOEFL Reading menguji apakah Anda bisa mengenali klausa utama di balik aposisi panjang serta menjaga relasi logis (\'whereby\' = mekanisme, \'despite\' = kontras) tanpa membalik sebab-akibat.',
+      explanation: 'Soal penyederhanaan kalimat (Sentence Simplification) di bacaan artikel panjang menguji apakah Anda bisa mengenali bagian utama kalimat di balik aposisi panjang serta menjaga relasi logis (\'whereby\' = mekanisme, \'despite\' = kontras) tanpa membalik sebab-akibat.',
       examples: [
         {
           jp: 'Peer review is the process whereby independent scholars vet research quality.',
@@ -1433,8 +1433,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan ejaan dan pelafalan Amerika \'process\': /ˈprɑːsɛs/ (vokal /ɑː/ seperti \'father\', bukan /ˈproʊsɛs/ ala Kanada/Inggris).',
   },
   'en-us-b2-u9-diskusi-toefl': {
-    headline: 'Menaklukkan Soal 2 Poin Terakhir TOEFL Reading: Prose Summary',
-    subtitle: 'Soal pamungkas setiap bacaan TOEFL bernilai 2 poin: Anda harus memilih 3 ide payung utama dan membuang 3 detail sempit atau pernyataan keliru!',
+    headline: 'Menaklukkan Soal 2 Poin Terakhir bacaan artikel panjang: Prose Summary',
+    subtitle: 'Soal pamungkas setiap bacaan panjang bernilai 2 poin: Anda harus memilih 3 ide payung utama dan membuang 3 detail sempit atau pernyataan keliru!',
     items: [
       {
         symbol: 'overarching thesis',
@@ -1447,14 +1447,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'minor supporting detail',
         reading: '/ˈmaɪnər səˈpɔːrtɪŋ dɪˈteɪl/',
         meaning: 'Rincian contoh/angka spesifik yang benar secara fakta tetapi terlalu sempit untuk ringkasan',
-        mnemonic: 'Jebakan paling licik di soal Prose Summary TOEFL: kalimatnya 100% BENAR ada di paragraf 4, tapi hanya contoh kecil sehingga BUKAN jawaban!',
+        mnemonic: 'Jebakan paling licik di soal Ringkasan Bacaan Panjang: kalimatnya 100% BENAR ada di paragraf 4, tapi hanya contoh kecil sehingga BUKAN jawaban!',
         speakText: 'minor supporting detail',
       },
       {
         symbol: 'underscore the significance',
         reading: '/ˌʌndərˈskɔːr ðə sɪɡˈnɪfɪkəns/',
         meaning: 'Menggarisbawahi / menegaskan betapa pentingnya suatu temuan',
-        mnemonic: 'Underscore = garis bawah penegas. Verba favorit untuk merangkum tujuan penulis.',
+        mnemonic: 'Underscore = garis bawah penegas. Kata kerja favorit untuk merangkum tujuan penulis.',
         speakText: 'underscore the significance',
       },
       {
@@ -1470,7 +1470,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Macro-Idea Synthesis vs. Granular Detail Filtering',
       formula: 'Taken together, [Evidence A] and [Evidence B] underscore that + [Overarching Thesis].',
       formulaReading: 'Taken together, fossil and genetic data underscore that domestication occurred twice.',
-      explanation: 'Untuk membedakan jawaban benar di Prose Summary TOEFL, tanyakan: \'Apakah pernyataan ini merangkum satu bagian/paragraf utuh, atau hanya satu contoh tanggal/nama tempat?\' Hanya pernyataan tingkat paragraf yang layak masuk 3 pilihan utama.',
+      explanation: 'Untuk membedakan jawaban benar di Ringkasan Bacaan Panjang, tanyakan: \'Apakah pernyataan ini merangkum satu bagian/paragraf utuh, atau hanya satu contoh tanggal/nama tempat?\' Hanya pernyataan tingkat paragraf yang layak masuk 3 pilihan utama.',
       examples: [
         {
           jp: 'Taken together, these archival letters underscore the role of women in early astronomy.',
@@ -1484,20 +1484,20 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Di US English, kata \'detail\' boleh ditekan di suku kata kedua /dɪˈteɪl/ maupun pertama /ˈdiːteɪl/—keduanya terdengar di audio resmi ETS TOEFL!',
+    contrastiveTip: 'Di US English, kata \'detail\' boleh ditekan di suku kata kedua /dɪˈteɪl/ maupun pertama /ˈdiːteɪl/—keduanya terdengar di rekaman penutur asli Amerika!',
   },
   // ===========================================================================
-  // CEFR B2 — UNIT 10 (GP-EN-B2-010)
+  // Level B2 — UNIT 10 (GP-EN-B2-010)
   // ===========================================================================
   'en-us-b2-u10-kosakata': {
-    headline: 'Verba Pelaporan Bantahan untuk TOEFL Integrated Writing Task 1',
-    subtitle: 'Dalam TOEFL Integrated Writing (20 menit), profesor hampir selalu mematahkan 3 argumen bacaan satu per satu. Variasikan verba bantahan Anda agar tidak mengulang \'disagrees\' 3 kali!',
+    headline: 'Kata Kerja untuk Membantah Pendapat untuk Tugas Menulis Rangkuman Bacaan & Kuliah',
+    subtitle: 'Dalam Esai Rangkuman Bacaan & Kuliah (20 menit), profesor hampir selalu mematahkan 3 argumen bacaan satu per satu. Variasikan kata kerja bantahan Anda agar tidak mengulang \'disagrees\' 3 kali!',
     items: [
       {
         symbol: 'cast doubt on',
         reading: '/kæst daʊt ɑːn/',
         meaning: 'Meragukan / menggoyahkan keabsahan argumen bacaan dengan bukti tandingan',
-        mnemonic: 'Ungkapan nomor satu di rubrik resmi ETS TOEFL Integrated Writing!',
+        mnemonic: 'Ungkapan nomor satu di standar esai rangkuman kuliah bahasa Inggris!',
         speakText: 'cast doubt on',
       },
       {
@@ -1527,7 +1527,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Point-by-Point Contrast Attribution (Reading vs. Lecture)',
       formula: 'Whereas the reading posits that [Claim], the lecturer casts doubt on this by pointing out that [Counter-evidence].',
       formulaReading: 'The reading claims X; however, the professor refutes this assertion, noting that Y.',
-      explanation: 'Esai TOEFL Integrated wajib 100% objektif (TANPA opini pribadi \'I agree with the professor\'!). Setiap paragraf isi menyandingkan satu klaim bacaan (\'The author contends/posits that...\') lalu langsung mematahkannya dengan bukti spesifik audio (\'Conversely, the lecturer calls this into question by explaining...\').',
+      explanation: 'Esai rangkuman bacaan & kuliah wajib 100% objektif (TANPA opini pribadi \'I agree with the professor\'!). Setiap paragraf isi menyandingkan satu klaim bacaan (\'The author contends/posits that...\') lalu langsung mematahkannya dengan bukti spesifik audio (\'Conversely, the lecturer calls this into question by explaining...\').',
       examples: [
         {
           jp: 'The lecturer casts doubt on the reading\'s cost estimate, noting hidden maintenance fees.',
@@ -1541,17 +1541,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Aturan mutlak TOEFL Integrated Writing: JANGAN tulis kesimpulan opini pribadi! Cukup rangkum kontras bacaan vs. kuliah menggunakan Present Tense pelaporan.',
+    contrastiveTip: 'Aturan mutlak Esai Rangkuman Bacaan & Kuliah: JANGAN tulis kesimpulan opini pribadi! Cukup rangkum kontras bacaan vs. kuliah menggunakan Present Tense pelaporan.',
   },
   'en-us-b2-u10-tata-bahasa': {
     headline: 'Arsitektur Sintesis: \'Contrary to...\', \'The fact that...\', & \'Far from V-ing\'',
-    subtitle: 'Naikkan skor Grammatical Range esai TOEFL Anda dari level menengah ke mahir menggunakan pembuka kontras padat di awal kalimat.',
+    subtitle: 'Naikkan skor Grammatical Range esai bahasa Inggris Anda dari level menengah ke mahir menggunakan pembuka kontras padat di awal kalimat.',
     items: [
       {
         symbol: 'Contrary to the author\'s claim,',
         reading: '/ˈkɑːntrɛri tə ði ˈɔːθərz kleɪm/',
         meaning: 'Berlawanan dengan klaim penulis bacaan,',
-        mnemonic: 'Di US English, \'contrary\' dilafalkan /ˈkɑːntrɛri/ (empat suku kata jelas -trɛri). Wajib diikuti preposisi \'to\'!',
+        mnemonic: 'Di US English, \'contrary\' dilafalkan /ˈkɑːntrɛri/ (empat suku kata jelas -trɛri). Wajib diikuti kata depan \'to\'!',
         speakText: 'Contrary to the author\'s claim,',
       },
       {
@@ -1565,7 +1565,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'The fact that [S + V] suggests...',
         reading: '/ðə fækt ðæt ... səɡˈdʒɛsts/',
         meaning: 'Kenyataan bahwa [fakta audio] menunjukkan...',
-        mnemonic: 'Mengubah klausa fakta eksperimen menjadi subjek kalimat utuh (\'That / The fact that X occurred demonstrates Y\').',
+        mnemonic: 'Mengubah bagian kalimat fakta eksperimen menjadi subjek kalimat utuh (\'That / The fact that X occurred demonstrates Y\').',
         speakText: 'The fact that [S + V] suggests...',
       },
       {
@@ -1581,7 +1581,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Advanced Contrastive Openers (\'Far from + V-ing\' & \'Contrary to + NP\')',
       formula: 'Contrary to [NP], S + V | Far from + V-ing [Expected Good], [Subject] actually + V [Negative Reality]',
       formulaReading: 'Far from protecting native birds, the imported predators devastated ground nests.',
-      explanation: 'Penguji manusia dan AI pada TOEFL Writing memberikan poin tinggi untuk variasi pembuka kalimat. Mengganti \'However, the professor says it makes the problem worse\' dengan \'Far from alleviating traffic, widening the bridge actually worsened congestion\' mendongkrak skor secara instan.',
+      explanation: 'Penguji manusia dan AI pada penulisan esai bahasa Inggris memberikan poin tinggi untuk variasi pembuka kalimat. Mengganti \'However, the professor says it makes the problem worse\' dengan \'Far from alleviating traffic, widening the bridge actually worsened congestion\' mendongkrak skor secara instan.',
       examples: [
         {
           jp: 'Contrary to the passage\'s prediction, hospital readmissions rose by twelve percent.',
@@ -1595,10 +1595,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Ingat: \'Contrary to\' adalah frasa preposisi sehingga diikuti Kata Benda (\'Contrary to the reading\'s view\'), BUKAN klausa S+V langsung (*\'Contrary to the author thinks\'* -> SALAH)!',
+    contrastiveTip: 'Ingat: \'Contrary to\' adalah frasa kata depan sehingga diikuti Kata Benda (\'Contrary to the reading\'s view\'), BUKAN bagian kalimat S+V langsung (*\'Contrary to the author thinks\'* -> SALAH)!',
   },
   'en-us-b2-u10-diskusi-toefl': {
-    headline: 'Menyempurnakan Penyampaian Lisan & Tertulis Tugas Terpadu TOEFL',
+    headline: 'Menyempurnakan Penyampaian Lisan & Tertulis Tugas Terpadu ujian bahasa Inggris',
     subtitle: 'Gabungkan penanda urutan kohesif, atribusi sumber yang jernih, dan parafrasa padat agar respons 60 detik maupun esai 225 kata mengalir mulus.',
     items: [
       {
@@ -1612,14 +1612,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'attribute [X] to [Y]',
         reading: '/əˈtrɪbjuːt ... tuː/',
         meaning: 'Mengaitkan / menisbahkan bahwa [akibat X] disebabkan oleh [faktor Y]',
-        mnemonic: 'Tekanan verba di suku kata KEDUA (/əˈtrɪbjuːt/), sedangkan kata benda \'attribute\' di suku kata PERTAMA (/ˈætrɪbjuːt/)!',
+        mnemonic: 'Tekanan kata kerja di suku kata KEDUA (/əˈtrɪbjuːt/), sedangkan kata benda \'attribute\' di suku kata PERTAMA (/ˈætrɪbjuːt/)!',
         speakText: 'attribute [X] to [Y]',
       },
       {
         symbol: 'unintended consequence',
         reading: '/ˌʌnɪnˈtɛndɪd ˈkɑːnsəˌkwɛns/',
         meaning: 'Dampak sampingan tak terduga yang tidak diinginkan pembuat kebijakan',
-        mnemonic: 'Tema abadi 80% soal ekologi dan kebijakan publik di TOEFL Integrated Tasks!',
+        mnemonic: 'Tema abadi 80% soal ekologi dan kebijakan publik di tugas rangkuman bacaan & kuliah!',
         speakText: 'unintended consequence',
       },
       {
@@ -1635,7 +1635,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Topical Transitions & Causal Attribution (\'attribute A to B\')',
       formula: 'With respect to [Aspect], the author attributes [Effect] to [Cause A]; however, the lecturer attributes it to [Cause B].',
       formulaReading: 'The lecturer argues that this hypothesis fails to stand up to empirical scrutiny.',
-      explanation: 'Memasangkan \'With respect to [Sub-topic],\' dengan verba \'attribute [Phenomenon] to [Cause]\' memungkinkan Anda membandingkan dua penjelasan kausal (bacaan vs. dosen) hanya dalam dua kalimat jernih dan padat.',
+      explanation: 'Memasangkan \'With respect to [Sub-topic],\' dengan kata kerja \'attribute [Phenomenon] to [Cause]\' memungkinkan Anda membandingkan dua penjelasan kausal (bacaan vs. dosen) hanya dalam dua kalimat jernih dan padat.',
       examples: [
         {
           jp: 'With respect to financing, the lecturer points out several unintended consequences.',
@@ -1649,20 +1649,20 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Hati-hati preposisi: \'attribute [Akibat] TO [Penyebab]\' — jangan terbalik meletakkan penyebab sebelum akibat!',
+    contrastiveTip: 'Hati-hati kata depan: \'attribute [Akibat] TO [Penyebab]\' — jangan terbalik meletakkan penyebab sebelum akibat!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 1 (GP-EN-C1-001)
+  // Level C1 — UNIT 1 (GP-EN-C1-001)
   // ===========================================================================
   'en-us-c1-u1-kosakata': {
-    headline: 'Adverbia Negatif & Pembatas Pemicu Inversi C1',
+    headline: 'Kata Negatif & Pembatas di Awal Kalimat yang Membalik Urutan Subjek & Kata Bantu',
     subtitle: 'Menempatkan keterangan negatif atau pembatas ketat di awal kalimat otomatis membalik urutan Subjek dan Kata Kerja Bantu seperti kalimat tanya.',
     items: [
       {
         symbol: 'Not only did..., but ... also',
         reading: '/nɑːt ˈoʊnli dɪd ... bʌt ... ˈɔːlsoʊ/',
         meaning: 'Tidak hanya melakukan A, tetapi juga melakukan B',
-        mnemonic: 'Senjata nomor satu untuk meraih skor tertinggi Grammatical Range pada TOEFL Writing & esai LPDP!',
+        mnemonic: 'Senjata nomor satu untuk meraih skor tertinggi Grammatical Range pada penulisan esai bahasa Inggris & esai LPDP!',
         speakText: 'Not only did..., but ... also',
       },
       {
@@ -1689,10 +1689,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C1-001',
-      title: 'Negative & Restrictive Adverbial Inversion',
-      formula: 'Negative Adverbial + Auxiliary (do/does/did/have/should) + Subject + Main Verb',
+      title: 'Pembalikan Urutan Kalimat Setelah Kata Negatif/Pembatas',
+      formula: 'Kata Negatif di Awal + Kata Bantu (do/does/did/have/should) + Subject + Main Verb',
       formulaReading: 'Not only did the vaccine cut transmission, but it also lowered hospitalization.',
-      explanation: 'Jika kalimat diawali kata bermakna negatif atau hampir nol (Not only, Never, Seldom, Rarely, Little, Under no circumstances, On no account), kita WAJIB melakukan inversi \'Auxiliary + Subject + Verb\'. Jika kalimat aslinya tidak punya modal/have, pinjam \'do / does / did\' lalu kembalikan verba ke V1!',
+      explanation: 'Jika kalimat diawali kata bermakna negatif atau hampir nol (Not only, Never, Seldom, Rarely, Little, Under no circumstances, On no account), kita WAJIB melakukan pembalikan urutan \'Kata Bantu + Subjek + Kata Kerja\'. Jika kalimat aslinya tidak punya modal/have, pinjam \'do / does / did\' lalu kembalikan kata kerja ke V1!',
       examples: [
         {
           jp: 'Not only did the reform curb inflation, but it also spurred rural investment.',
@@ -1709,14 +1709,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Awas jebakan ganda: sesudah memakai \'did\' pada \'Not only did the sensor...\', kata kerjanya kembali ke V1 murni (\'detect\', BUKAN \'detected\')!',
   },
   'en-us-c1-u1-tata-bahasa': {
-    headline: 'Jebakan Inversi Tunda: \'Not until\', \'Only when\', & \'No sooner ... than\'',
-    subtitle: 'Kuasai perbedaan paling krusial di level C1: pada \'Not until / Only after / Only when\', inversi baru terjadi di KLAUSA UTAMA kedua, BUKAN di klausa pertama!',
+    headline: 'Jebakan Pembalikan Urutan di Bagian Kedua: \'Not until\', \'Only when\', & \'No sooner ... than\'',
+    subtitle: 'Kuasai perbedaan paling krusial di level C1: pada \'Not until / Only after / Only when\', pembalikan urutan baru terjadi di BAGIAN UTAMA KALIMAT kedua, BUKAN di bagian kalimat pertama!',
     items: [
       {
         symbol: 'Not until [S + V] did [Main S + V1]',
         reading: '/nɑːt ʌnˈtɪl ... dɪd .../',
         meaning: 'Baru setelah [kejadian A berlangsung], barulah [kejadian B terjadi]',
-        mnemonic: 'Jebakan maut ujian: JANGAN inversi klausa sesudah \'until\'! Simpan peluru inversi \'did\' untuk klausa utama sesudah keterangan waktunya selesai!',
+        mnemonic: 'Jebakan maut ujian: JANGAN pembalikan urutan bagian kalimat sesudah \'until\'! Simpan pembalikan urutan \'did\' untuk bagian utama kalimat sesudah keterangan waktunya selesai!',
         speakText: 'Not until [S + V] did [Main S + V1]',
       },
       {
@@ -1737,16 +1737,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'Only by [V-ing] can [S + V1]',
         reading: '/ˈoʊnli baɪ ... kæn .../',
         meaning: 'Hanya dengan cara [melakukan X], barulah [subjek] dapat...',
-        mnemonic: 'Kalimat tesis rekomendasi kebijakan yang sangat meyakinkan di paragraf penutup esai TOEFL & LPDP.',
+        mnemonic: 'Kalimat tesis rekomendasi kebijakan yang sangat meyakinkan di paragraf penutup esai esai beasiswa & bahasa Inggris.',
         speakText: 'Only by [V-ing] can [S + V1]',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-001',
-      title: 'Delayed Inversion (\'Not until / Only after / Only by\') & \'No sooner... than\'',
-      formula: 'Only after / Not until + [Subordinate Clause (Normal S+V)] + Aux + Main Subject + Verb',
+      title: 'Pembalikan Urutan di Bagian Kedua (\'Not until / Only after / Only by\') & \'No sooner... than\'',
+      formula: 'Only after / Not until + [Anak Kalimat Biasa (S + V)] + Aux + Main Subject + Verb',
       formulaReading: 'Not until the ice melted did archaeologists discover the ancient trail.',
-      explanation: 'Mengapa disebut Delayed Inversion? Karena \'Not until the ice melted\' hanyalah anak kalimat keterangan waktu di depan; subjek-verbanya (\'the ice melted\') TETAP NORMAL. Begitu masuk ke induk kalimat (\'did archaeologists discover\'), barulah inversi terjadi!',
+      explanation: 'Mengapa disebut Pembalikan Urutan di Bagian Kedua? Karena \'Not until the ice melted\' hanyalah anak kalimat keterangan waktu di depan; subjek-kata kerjanya (\'the ice melted\') TETAP NORMAL. Begitu masuk ke induk kalimat (\'did archaeologists discover\'), barulah pembalikan urutan terjadi!',
       examples: [
         {
           jp: 'Not until electron microscopy matured did virologists visualize bacteriophages.',
@@ -1764,13 +1764,13 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c1-u1-diskusi-toefl': {
     headline: 'Fronting & Penekanan Retoris dalam Presentasi Akademik',
-    subtitle: 'Selain inversi negatif, penutur mahir menonjolkan kontras menggunakan \'So [adj] was X that...\' dan \'Such was [NP] that...\' dalam kuliah maupun pidato.',
+    subtitle: 'Selain pembalikan urutan setelah kata negatif, penutur mahir menonjolkan kontras menggunakan \'So [adj] was X that...\' dan \'Such was [NP] that...\' dalam kuliah maupun pidato.',
     items: [
       {
         symbol: 'So compelling was the evidence that...',
         reading: '/soʊ kəmˈpɛlɪŋ wʌz ði ˈɛvədəns ðæt/',
         meaning: 'Begitu kuat dan meyakinkannya bukti tersebut sehingga...',
-        mnemonic: 'Mengedepankan adjektiva \'So compelling\' menciptakan klimaks retoris sebelum menyebutkan dampaknya.',
+        mnemonic: 'Mengedepankan kata sifat \'So compelling\' menciptakan klimaks retoris sebelum menyebutkan dampaknya.',
         speakText: 'So compelling was the evidence that...',
       },
       {
@@ -1791,16 +1791,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'At the heart of the debate lies...',
         reading: '/æt ðə hɑːrt ʌv ðə dɪˈbeɪt laɪz/',
         meaning: 'Di jantung / inti perdebatan tersebut terletak...',
-        mnemonic: 'Inversi tempat (locative inversion): Frasa Tempat + Kata Kerja Intransitif (lies/stands) + Subjek panjang di akhir!',
+        mnemonic: 'Pembalikan urutan tempat: Frasa Tempat + Kata Kerja Tanpa Objek (lies/stands) + Subjek panjang di akhir!',
         speakText: 'At the heart of the debate lies...',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-001',
-      title: '\'So/Such\' Emphatic Inversion, \'Nor\' Continuation & Locative Inversion',
-      formula: 'So + Adj + be + S + that... | Nor + Aux + S + V | Place Phrase + Intransitive V + Subject',
+      title: '\'So/Such\' Emphatic Pembalikan urutan, \'Nor\' Continuation & pembalikan urutan keterangan tempat',
+      formula: 'So + Adj + be + S + that... | Nor + Aux + S + V | Place Phrase + Kata Kerja Tanpa Objek + Subject',
       formulaReading: 'At the heart of the controversy lies an unresolved ethical dilemma.',
-      explanation: 'Tiga pola elitis C1–C2: (1) \'So severe was the drought that...\', (2) \'Nor + Aux + S + V\' untuk menyambung klausa negatif kedua, dan (3) Inversi lokatif \'At the center of X stands/lies Y\' (tanpa kata bantu \'do\'!) untuk memperkenalkan topik utama secara anggun.',
+      explanation: 'Tiga pola elitis C1–C2: (1) \'So severe was the drought that...\', (2) \'Nor + Aux + S + V\' untuk menyambung bagian kalimat negatif kedua, dan (3) Pembalikan urutan tempat \'At the center of X stands/lies Y\' (tanpa kata bantu \'do\'!) untuk memperkenalkan topik utama secara anggun.',
       examples: [
         {
           jp: 'So rapid was mobile banking adoption that rural branches pivoted to advisory roles.',
@@ -1814,14 +1814,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan pada Locative Inversion (\'At the heart of X lies Y\'), kata kerja \'lies/stands\' langsung mendahului subjek TANPA \'does\'—dan wajib selaras tunggal/jamak dengan Y di belakangnya!',
+    contrastiveTip: 'Perhatikan pada pembalikan urutan keterangan tempat (\'At the heart of X lies Y\'), kata kerja \'lies/stands\' langsung mendahului subjek TANPA \'does\'—dan wajib selaras tunggal/jamak dengan Y di belakangnya!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 2 (GP-EN-C1-002)
+  // Level C1 — UNIT 2 (GP-EN-C1-002)
   // ===========================================================================
   'en-us-c1-u2-kosakata': {
-    headline: 'Mandative Subjunctive: Ciri Khas Formal American English',
-    subtitle: 'Berbeda dari percakapan santai Britania yang sering menyisipkan \'should\', bahasa Inggris formal Amerika mewajibkan kata kerja dasar murni (bare infinitive) sesudah verba/adjektiva tuntutan!',
+    headline: 'Pola Anjuran & Tuntutan Resmi (Selalu Pakai Kata Kerja Dasar V1)',
+    subtitle: 'Berbeda dari percakapan santai Britania yang sering menyisipkan \'should\', bahasa Inggris formal Amerika mewajibkan kata kerja dasar murni (V1 murni tanpa \'to\') sesudah kata kerja/sifat tuntutan!',
     items: [
       {
         symbol: 'It is imperative that [S + V1]',
@@ -1834,14 +1834,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'stipulate that [S + be + V3]',
         reading: '/ˈstɪpjəˌleɪt ðæt/',
         meaning: 'Mensyaratkan secara tegas di dalam pasal kontrak/aturan bahwa...',
-        mnemonic: 'Untuk kalimat pasif subjunctive, gunakan \'be\' murni (BUKAN is/are/was): \'stipulates that all bids be sealed\'!',
+        mnemonic: 'Untuk kalimat bentuk pasif anjuran resmi, gunakan \'be\' murni (BUKAN is/are/was): \'stipulates that all bids be sealed\'!',
         speakText: 'stipulate that [S + be + V3]',
       },
       {
         symbol: 'mandate that [S + not + V1]',
         reading: '/ˈmændeɪt ðæt/',
         meaning: 'Mewajibkan lewat regulasi resmi agar [subjek TIDAK melakukan...]',
-        mnemonic: 'Bentuk negatif subjunctive super ringkas: langsung \'not + V1\' TANPA \'does not / do not\' (\'that a judge not hold shares\')!',
+        mnemonic: 'Bentuk bentuk negatif anjuran resmi super ringkas: langsung \'not + V1\' TANPA \'does not / do not\' (\'that a judge not hold shares\')!',
         speakText: 'mandate that [S + not + V1]',
       },
       {
@@ -1854,13 +1854,13 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C1-002',
-      title: 'American Mandative Subjunctive (Active, Negative & Passive)',
+      title: 'Pola Anjuran Resmi Amerika (V1 Murni: Aktif, Negatif & Pasif)',
       formula: 'recommend / stipulate / imperative + that + S + [V1 | not V1 | be V3]',
       formulaReading: 'The audit committee recommended that the CFO disclose all off-balance-sheet liabilities.',
-      explanation: 'Dalam standar penulisan akademik dan hukum Amerika Serikat, klausa \'that\' sesudah verba tuntutan/saran (recommend, insist, propose, mandate, stipulate, demand) atau adjektiva urgensi (imperative, essential, vital, crucial, paramount) selalu menggunakan BARE INFINITIVE untuk semua subjek dan semua kala waktu (bahkan jika verba utamanya lampau: \'insisted that he resign\')!',
+      explanation: 'Dalam standar penulisan akademik dan hukum Amerika Serikat, bagian kalimat \'that\' sesudah kata kerja anjuran/tuntutan (recommend, insist, propose, mandate, stipulate, demand) atau kata sifat urgensi (imperative, essential, vital, crucial, paramount) selalu menggunakan KATA KERJA DASAR MURNI (V1) untuk semua subjek dan semua kala waktu (bahkan jika kata kerja utamanya lampau: \'insisted that he resign\')!',
       examples: [
         {
-          jp: 'Federal guidelines mandate that every clinical trial register its protocol upfront.',
+          jp: 'Federal guidelines mandate that every clinical trial submit its protocol upfront.',
           reading: '/ˈfɛdərəl ˈɡaɪdˌlaɪnz ˈmændeɪt ðæt ˈɛvri ˈklɪnɪkəl ˈtraɪəl ˈrɛdʒɪstər ɪts ˈproʊtəˌkɔːl/',
           id: 'Pedoman federal mewajibkan setiap uji klinis mendaftarkan protokolnya di muka.',
         },
@@ -1871,16 +1871,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Tiga ranjau Subjunctive yang paling sering menjebak peserta ujian: (1) tanpa akhiran -s untuk he/she/it, (2) tetap V1 walau verba depannya lampau (\'proposed that it be\'), dan (3) negatifnya \'not V1\' tanpa \'doesn\'t\'!',
+    contrastiveTip: 'Tiga ranjau pola anjuran V1 murni yang paling sering menjebak peserta ujian: (1) tanpa akhiran -s untuk he/she/it, (2) tetap V1 walau kata kerja depannya lampau (\'proposed that it be\'), dan (3) negatifnya \'not V1\' tanpa \'doesn\'t\'!',
   },
   'en-us-c1-u2-tata-bahasa': {
     headline: 'Membedakan Makna Ganda: \'Suggest / Insist\' (Fakta vs. Tuntutan) & \'Lest\'',
-    subtitle: 'Hati-hati! Kata \'suggest\' dan \'insist\' punya DUA arti berbeda: jika menyatakan tuntutan → Subjunctive; jika menyatakan fakta bukti/klaim → Indikatif biasa!',
+    subtitle: 'Hati-hati! Kata \'suggest\' dan \'insist\' punya DUA arti berbeda: jika menyatakan tuntutan → pola anjuran V1 murni; jika menyatakan fakta bukti/klaim → Indikatif biasa!',
     items: [
       {
         symbol: 'suggests that X is (Bukti) vs. suggest that X be (Usul)',
         reading: '/səɡˈdʒɛsts ðæt/',
-        meaning: 'Data menunjukkan fakta (indikatif \'is/was\') vs. Komite mengusulkan tindakan (subjunctive \'be\')',
+        meaning: 'Data menunjukkan fakta (indikatif \'is/was\') vs. Komite mengusulkan tindakan (pola V1 murni \'be\')',
         mnemonic: 'Cek maknanya! \'Fossil data suggests that the lake WAS deep\' (bukan usulan agar danau menjadi dalam, melainkan bukti fakta!).',
         speakText: 'suggests that X is (Bukti) vs. suggest that X be (Usul)',
       },
@@ -1888,21 +1888,21 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'insisted that he was innocent (Klaim Fakta)',
         reading: '/ɪnˈsɪstɪd ðæt hi wʌz ˈɪnəsənt/',
         meaning: 'Bersikeras menyatakan fakta bahwa ia tidak bersalah (Indikatif)',
-        mnemonic: 'Bandingkan dengan \'insisted that he resign\' (menuntut agar ia mundur → Subjunctive)!',
+        mnemonic: 'Bandingkan dengan \'insisted that he resign\' (menuntut agar ia mundur → pola anjuran V1 murni)!',
         speakText: 'insisted that he was innocent (Klaim Fakta)',
       },
       {
         symbol: 'lest [S + V1 / should V1]',
         reading: '/lɛst/',
         meaning: 'Agar jangan sampai / dikhawatirkan akan...',
-        mnemonic: 'Konjungsi formal C1–C2 yang memicu Subjunctive positif (\'Diversify suppliers lest a single port strike halt production\').',
+        mnemonic: 'Kata hubung formal C1–C2 yang memicu pola anjuran V1 murni (\'Diversify suppliers lest a single port strike halt production\').',
         speakText: 'lest [S + V1 / should V1]',
       },
       {
         symbol: 'It is high time [S + V2]',
         reading: '/ɪt ɪz haɪ taɪm/',
         meaning: 'Sudah saatnya (bahkan agak terlambat) bagi subjek untuk segera bertindak!',
-        mnemonic: 'Berbeda dari \'imperative that + V1\', frasa \'It is (high) time + S\' memakai PAST SUBJUNCTIVE (V2), mis. \'It is high time we modernized the grid\'!',
+        mnemonic: 'Berbeda dari \'imperative that + V1\', frasa \'It is (high) time + S\' memakai bentuk lampau pengandaian (V2), mis. \'It is high time we modernized the grid\'!',
         speakText: 'It is high time [S + V2]',
       },
     ],
@@ -1911,7 +1911,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Dual-Meaning Verbs (\'suggest/insist\'), \'Lest\', & \'It is high time + V2\'',
       formula: 'Evidence suggests that S + V(tensed) | Proposal suggests that S + V1 | lest + S + V1 | It\'s high time + S + V2',
       formulaReading: 'Telemetry suggests that the valve leaked, so engineers suggested that it be replaced.',
-      explanation: 'Kalimat contoh di atas merangkum kecerdasan gramatikal C1 dalam satu tarikan napas: \'suggests\' pertama berarti mengindikasikan fakta (\'leaked\' indikatif), sedangkan \'suggested\' kedua berarti mengusulkan tindakan (\'be replaced\' subjunctive)!',
+      explanation: 'Kalimat contoh di atas merangkum kecerdasan gramatikal C1 dalam satu tarikan napas: \'suggests\' pertama berarti mengindikasikan fakta (\'leaked\' indikatif), sedangkan \'suggested\' kedua berarti mengusulkan tindakan (\'be replaced\' pola V1 murni)!',
       examples: [
         {
           jp: 'Isotope data suggests that the aquifer recharges slowly, so hydrologists urged that pumping be capped.',
@@ -1929,7 +1929,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c1-u2-diskusi-toefl': {
     headline: 'Bahasa Rekomendasi Kebijakan Publik & Eksekutif (Policy Briefs)',
-    subtitle: 'Latih kosakata tata kelola dan struktur proposal yang dipakai di esai beasiswa kebijakan publik (Fulbright/LPDP), konsultansi manajemen, dan TOEFL Writing.',
+    subtitle: 'Latih kosakata tata kelola dan struktur proposal yang dipakai di esai beasiswa kebijakan publik (Fulbright/LPDP), konsultansi manajemen, dan penulisan esai bahasa Inggris.',
     items: [
       {
         symbol: 'actionable recommendation',
@@ -1962,10 +1962,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C1-002',
-      title: 'Nominal Mandative Clauses (\'The proposal that S + V1\')',
+      title: 'Anjuran Resmi Setelah Kata Benda (\'The proposal that S + V1\')',
       formula: 'The recommendation / requirement / condition + that + S + [V1 / be V3] + Main Verb',
       formulaReading: 'The stipulation that grant recipients return home strengthens national capacity.',
-      explanation: 'Mandative Subjunctive juga berlaku sesudah KATA BENDA turunan seperti \'the recommendation that...\', \'the proposal that...\', dan \'on the condition that...\'. Pola ini sangat elegan sebagai subjek kalimat utama dalam esai kebijakan LPDP & Fulbright!',
+      explanation: 'Pola anjuran resmi (V1 murni) juga berlaku sesudah KATA BENDA turunan seperti \'the recommendation that...\', \'the proposal that...\', dan \'on the condition that...\'. Pola ini sangat elegan sebagai subjek kalimat utama dalam esai kebijakan LPDP & Fulbright!',
       examples: [
         {
           jp: 'The proposal that carbon revenues be rebated to low-income households gained wide support.',
@@ -1979,14 +1979,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan kata benda \'proposal / recommendation that...\' menggunakan Subjunctive (\'that taxes BE cut\'), sedangkan \'the fact / belief that...\' menggunakan Indikatif (\'that taxes ARE high\').',
+    contrastiveTip: 'Perhatikan kata benda \'proposal / recommendation that...\' menggunakan pola anjuran V1 murni (\'that taxes BE cut\'), sedangkan \'the fact / belief that...\' menggunakan Indikatif (\'that taxes ARE high\').',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 3 (GP-EN-C1-003)
+  // Level C1 — UNIT 3 (GP-EN-C1-003)
   // ===========================================================================
   'en-us-c1-u3-kosakata': {
-    headline: 'Seni Epistemic Hedging: Mengapa Ilmuwan Jarang Berkata \'100% Pasti\'',
-    subtitle: 'Dalam jurnal internasional dan esai TOEFL 110+, klaim kasar tanpa kualifikasi (\'Remote work destroys culture\') dianggap naif. Hedging justru menunjukkan ketajaman intelektual!',
+    headline: 'Cara Berbicara Hati-Hati & Tidak Terlalu Mutlak: Mengapa Ilmuwan Jarang Berkata \'100% Pasti\'',
+    subtitle: 'Dalam jurnal internasional dan esai esai bahasa Inggris tingkat mahir, klaim kasar tanpa kualifikasi (\'Remote work destroys culture\') dianggap naif. Bahasa yang hati-hati justru menunjukkan ketajaman intelektual!',
     items: [
       {
         symbol: 'arguably',
@@ -2013,16 +2013,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'confounding variable',
         reading: '/kənˈfaʊndɪŋ ˈvɛriəbəl/',
         meaning: 'Variabel perancu tersembunyi yang memalsukan hubungan sebab-akibat',
-        mnemonic: 'Inti kritik metodologi di kuliah sains & psikologi TOEFL: es krim naik dan tenggelam naik karena faktor perancu musim panas!',
+        mnemonic: 'Inti kritik metodologi di kuliah sains & psikologi: es krim naik dan tenggelam naik karena faktor perancu musim panas!',
         speakText: 'confounding variable',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-003',
-      title: 'Layered Academic Hedging (Lexical Verbs, Adverbs & Modals)',
+      title: 'Tiga Cara Menyampaikan Pendapat Secara Hati-Hati & Terukur',
       formula: 'Evidence + appears / tends to + V1 | Subject + may well + V1 | arguably / ostensibly + Adj/Phrase',
       formulaReading: 'Early exposure to bilingualism appears to enhance executive control in aging adults.',
-      explanation: 'Tiga lapis hedging akademik: (1) Verba epistemik (\'appear to\', \'tend to\', \'seem to indicate\'), (2) Adverbia kualifikasi (\'arguably\', \'plausibly\', \'largely\', \'ostensibly\'), dan (3) Modalitas terukur (\'may well\' = kemungkinan besar, \'could potentially\'). Hindari generalisasi absolut (\'all\', \'always\', \'proves beyond doubt\').',
+      explanation: 'Tiga lapis bahasa hati-hati & terukur: (1) Kata kerja kehati-hatian (\'appear to\', \'tend to\', \'seem to indicate\'), (2) Kata keterangan penghalus (\'arguably\', \'plausibly\', \'largely\', \'ostensibly\'), dan (3) Kata bantu kemungkinan (\'may well\' = kemungkinan besar, \'could potentially\'). Hindari pernyataan terlalu mutlak (\'all\', \'always\', \'proves beyond doubt\').',
       examples: [
         {
           jp: 'Chronic sleep debt appears to accelerate metabolic insulin resistance.',
@@ -2067,7 +2067,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'by and large',
         reading: '/baɪ ænd lɑːrdʒ/',
         meaning: 'Secara garis besar / pada umumnya (dengan mengakui adanya sedikit pengecualian)',
-        mnemonic: 'Idiom hedging elegan pengganti \'mostly\' dalam diskusi kebijakan dan kuliah.',
+        mnemonic: 'Ungkapan hati-hati yang luwes pengganti \'mostly\' dalam diskusi kebijakan dan kuliah.',
         speakText: 'by and large',
       },
     ],
@@ -2093,14 +2093,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan ejaan satu kata di American English: \'insofar as\' (tiga bagian digabung menjadi satu kata \'insofar\' diikuti \'as\')!',
   },
   'en-us-c1-u3-diskusi-toefl': {
-    headline: 'TOEFL Attitude & Stance Questions: Membaca Nada Skeptis Profesor',
-    subtitle: 'Di TOEFL Listening tingkat tinggi, soal \'What is the professor\'s attitude toward X?\' menguji apakah Anda menangkap kata hedging bernada skeptis seperti \'so-called\', \'at best\', atau \'remains to be seen\'.',
+    headline: 'Membaca Sikap & Nada Bicara Pembicara: Membaca Nada Skeptis Profesor',
+    subtitle: 'Di latihan mendengarkan percakapan & kuliah tingkat tinggi, soal \'What is the professor\'s attitude toward X?\' menguji apakah Anda menangkap kata halus bernada ragu seperti \'so-called\', \'at best\', atau \'remains to be seen\'.',
     items: [
       {
         symbol: 'remains to be seen',
         reading: '/rɪˈmeɪnz tə bi siːn/',
         meaning: 'Masih belum pasti dan baru bisa dibuktikan seiring berjalannya waktu',
-        mnemonic: 'Sinyal pasti di TOEFL Listening bahwa profesor BERSIKAP SKEPTIS / BELUM YAKIN apakah teknologi/teori baru itu akan berhasil!',
+        mnemonic: 'Sinyal pasti di latihan mendengarkan percakapan & kuliah bahwa profesor BERSIKAP SKEPTIS / BELUM YAKIN apakah teknologi/teori baru itu akan berhasil!',
         speakText: 'remains to be seen',
       },
       {
@@ -2121,7 +2121,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'premature to conclude',
         reading: '/ˌpriːməˈtʃʊr tə kənˈkluːd/',
         meaning: 'Terlalu dini / terburu-buru untuk menyimpulkan saat ini',
-        mnemonic: 'Jawaban favorit pilihan ganda TOEFL ketika eksperimen masih kekurangan replikasi!',
+        mnemonic: 'Jawaban favorit pilihan ganda ujian bahasa Inggris ketika eksperimen masih kekurangan replikasi!',
         speakText: 'premature to conclude',
       },
     ],
@@ -2130,7 +2130,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Stance Framing (\'It remains to be seen whether...\' & Evaluative \'at best\')',
       formula: 'It remains to be seen whether + S + will V1 | It would be premature to conclude that + S + V',
       formulaReading: 'Whether room-temperature superconductors scale commercially remains to be seen.',
-      explanation: 'Kenali spektrum sikap akademik: antusias hati-hati (\'promising, albeit preliminary\') vs. skeptis terukur (\'speculative at best\', \'premature to conclude\', \'remains to be seen\'). Pada TOEFL, sikap profesor hampir tidak pernah \'marah/membenci total\', melainkan \'skeptical / cautiously optimistic / unconvinced\'!',
+      explanation: 'Kenali spektrum sikap akademik: antusias hati-hati (\'promising, albeit preliminary\') vs. skeptis terukur (\'speculative at best\', \'premature to conclude\', \'remains to be seen\'). Pada ujian bahasa Inggris, sikap profesor hampir tidak pernah \'marah/membenci total\', melainkan \'skeptical / cautiously optimistic / unconvinced\'!',
       examples: [
         {
           jp: 'It remains to be seen whether autonomous taxis can handle monsoon visibility.',
@@ -2144,10 +2144,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Tips emas soal Attitude TOEFL: coret pilihan ekstrem emosional seperti \'hostile\', \'indifferent\', atau \'completely convinced\'—pilih nuansa ilmiah seperti \'skeptical because evidence is incomplete\'!',
+    contrastiveTip: 'Tips emas soal menebak sikap pembicara: coret pilihan ekstrem emosional seperti \'hostile\', \'indifferent\', atau \'completely convinced\'—pilih nuansa ilmiah seperti \'skeptical because evidence is incomplete\'!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 4 (GP-EN-C1-004)
+  // Level C1 — UNIT 4 (GP-EN-C1-004)
   // ===========================================================================
   'en-us-c1-u4-kosakata': {
     headline: 'Diksi Inti Statement of Purpose (SoP) LPDP & Fulbright',
@@ -2204,8 +2204,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan pelafalan kata sifat/benda \'graduate\' (/ˈɡrædʒuət/ schwa di akhir) vs. kata kerja \'to graduate\' (/ˈɡrædʒuˌeɪt/ diftong eɪ di akhir)!',
   },
   'en-us-c1-u4-tata-bahasa': {
-    headline: 'It-Clefts & Inferential \'It is precisely because...\' dalam Esai Personal',
-    subtitle: 'Gunakan struktur pembelah fokus (It-Cleft) secara selektif untuk menyorot momen penentu karier tanpa terdengar narsistik atau monoton.',
+    headline: 'Pola Penegas \'It was ... that ...\' & Inferential \'It is precisely because...\' dalam Esai Personal',
+    subtitle: 'Gunakan pola penegas \'It was ... that ...\' secara selektif untuk menyorot momen penentu karier tanpa terdengar narsistik atau monoton.',
     items: [
       {
         symbol: 'It was during [X] that I first...',
@@ -2225,7 +2225,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'Not until I led [X] did I appreciate...',
         reading: '/nɑːt ʌnˈtɪl aɪ lɛd ... dɪd aɪ əˈpriːʃiˌeɪt/',
         meaning: 'Baru setelah saya memimpin [X], saya benar-benar memahami...',
-        mnemonic: 'Memadukan refleksi pertumbuhan kepemimpinan dengan inversi C1 dari Unit 1!',
+        mnemonic: 'Memadukan refleksi pertumbuhan kepemimpinan dengan pembalikan urutan C1 dari Unit 1!',
         speakText: 'Not until I led [X] did I appreciate...',
       },
       {
@@ -2238,10 +2238,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C1-004',
-      title: 'It-Clefts (\'It was X that...\') & \'What sets X apart is...\'',
-      formula: 'It + be + [Focused Element] + that/who + Remainder Clause | What sets [X] apart is [NP / that S+V]',
+      title: 'Pola Penegas \'It was ... that ...\' (\'It was X that...\') & \'What sets X apart is...\'',
+      formula: 'It + be + [Focused Element] + that/who + Sisa Kalimat | What sets [X] apart is [NP / that S+V]',
       formulaReading: 'It was while debugging hospital scheduling software that I saw how algorithms shape triage.',
-      explanation: 'Perhatikan kata hubung pasangan It-Cleft: meskipun elemen fokusnya berupa waktu atau tempat (\'during the 2022 flood\', \'in rural NTT\'), standar formal memakai \'THAT\' (bukan \'when/where\'): \'It was during my deployment in Kupang THAT I witnessed...\'.',
+      explanation: 'Perhatikan kata hubung pasangan pola penegas \'It was ... that ...\': meskipun elemen fokusnya berupa waktu atau tempat (\'during the 2022 flood\', \'in rural NTT\'), standar formal memakai \'THAT\' (bukan \'when/where\'): \'It was during my assignment in Kupang THAT I witnessed...\'.',
       examples: [
         {
           jp: 'It was during our microgrid pilot in Sumba that storage bottlenecks became evident.',
@@ -2255,7 +2255,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jangan memakai It-Cleft lebih dari satu atau dua kali per esai 800 kata — gunakan hanya pada puncak transisi paragraf agar efek sorotannya tetap maksimal!',
+    contrastiveTip: 'Jangan memakai pola penegas \'It was ... that ...\' lebih dari satu atau dua kali per esai 800 kata — gunakan hanya pada puncak transisi paragraf agar efek sorotannya tetap maksimal!',
   },
   'en-us-c1-u4-diskusi-toefl': {
     headline: 'Menjawab Wawancara Panel LPDP, Chevening & Fulbright secara Tajam',
@@ -2269,11 +2269,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         speakText: 'tangible multiplier effect',
       },
       {
-        symbol: 'scalable blueprint',
+        symbol: 'flexible model',
         reading: '/ˈskeɪləbəl ˈbluːˌprɪnt/',
         meaning: 'Cetak biru percontohan yang dapat direplikasi ke skala provinsi/nasional',
-        mnemonic: 'Mulailah dari proyek percontohan realistis di satu daerah, lalu jadikan scalable blueprint!',
-        speakText: 'scalable blueprint',
+        mnemonic: 'Mulailah dari proyek percontohan realistis di satu daerah, lalu jadikan model fleksibel yang bisa ditiru di tempat lain!',
+        speakText: 'flexible model',
       },
       {
         symbol: 'institutionalize best practices',
@@ -2283,17 +2283,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         speakText: 'institutionalize best practices',
       },
       {
-        symbol: 'align incentives across stakeholders',
+        symbol: 'align goals across partners',
         reading: '/əˈlaɪn ɪnˈsɛntɪvz əˈkrɔːs ˈsteɪkˌhoʊldərz/',
         meaning: 'Menyelaraskan kepentingan/insentif seluruh pemangku kepentingan agar mau bekerja sama',
         mnemonic: 'Menunjukkan kematangan kepemimpinan sistemik di atas rata-rata pelamar.',
-        speakText: 'align incentives across stakeholders',
+        speakText: 'align goals across partners',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-004',
-      title: 'Horizon Framing (Short-Term Deliverable vs. Long-Term Systemic Impact)',
-      formula: 'In the immediate term, I plan to [Concrete Pilot]; over the longer horizon, this will serve as a scalable blueprint to [Systemic Goal].',
+      title: 'Menyusun Rencana Jangka Pendek & Dampak Jangka Panjang',
+      formula: 'In the immediate term, I plan to [Proyek Awal]; over the longer horizon, this will serve as a flexible model to [Tujuan Besar].',
       formulaReading: 'Rather than proposing top-down mandates, I aim to align incentives across local clinics.',
       explanation: 'Ketika ditanya rencana kontribusi pascastudi, hindari janji muluk tanpa pijakan (\'Saya akan menghapus kemiskinan Indonesia\'). Bagi jawaban ke dua cakrawala: langkah konkret Tahun ke-1–2 (\'In the immediate term...\') dan perluasan sistemik Tahun ke-5 (\'Over a five-year horizon...\').',
       examples: [
@@ -2312,11 +2312,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan ejaan Amerika \'institutionalize\' (dengan -ize) dan pelafalannya /ˌɪnstəˈtuːʃənəˌlaɪz/!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 5 (GP-EN-C1-005)
+  // Level C1 — UNIT 5 (GP-EN-C1-005)
   // ===========================================================================
   'en-us-c1-u5-kosakata': {
     headline: 'Melampaui Hitam-Putih: Kosakata Sintesis Riset Tingkat C1',
-    subtitle: 'Pada riset pascasarjana dan soal TOEFL tersulit, sumber kedua sering kali mengakui sebagian kebenaran sumber pertama sembari mempersempit syarat berlakunya (*qualifying*).',
+    subtitle: 'Pada riset pascasarjana dan bacaan akademik tingkat tinggi, sumber kedua sering kali mengakui sebagian kebenaran sumber pertama sembari mempersempit syarat berlakunya (*qualifying*).',
     items: [
       {
         symbol: 'reconcile conflicting findings',
@@ -2329,7 +2329,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'qualify an assertion',
         reading: '/ˈkwɑːləˌfaɪ ən əˈsɜːrʃən/',
         meaning: 'Memberikan batasan syarat pada suatu klaim agar tidak terlalu digeneralisasi',
-        mnemonic: 'Awas arti kata akademik penting di TOEFL: \'qualify a statement\' = MEMBATASI/MEMPERHALUS klaim, BUKAN lulus seleksi!',
+        mnemonic: 'Awas arti kata akademik penting dalam bahasa Inggris resmi: \'qualify a statement\' = MEMBATASI/MEMPERHALUS klaim, BUKAN lulus seleksi!',
         speakText: 'qualify an assertion',
       },
       {
@@ -2352,7 +2352,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Nuanced Qualification (\'While conceding that..., the lecturer qualifies this by...\')',
       formula: 'While conceding that [Partial Truth], [Author B] qualifies this assertion, demonstrating that [Boundary Condition].',
       formulaReading: 'The professor reconciles these conflicting datasets by distinguishing acute stress from chronic stress.',
-      explanation: 'Di TOEFL Reading & Integrated C1, kata kerja \'qualify\' sering muncul di pilihan jawaban (\'The author mentions X in order to qualify an earlier claim\'). Memahami nuansa \'concede + qualify\' membuat esai Anda jauh lebih matang daripada sekadar menulis \'The professor disagrees\'.',
+      explanation: 'Di bacaan & esai tingkat lanjut, kata kerja \'qualify\' sering muncul di pilihan jawaban (\'The author mentions X in order to qualify an earlier claim\'). Memahami nuansa \'concede + qualify\' membuat esai Anda jauh lebih matang daripada sekadar menulis \'The professor disagrees\'.',
       examples: [
         {
           jp: 'While conceding that tariffs protect infant mills, the economist qualifies their long-term efficacy.',
@@ -2366,17 +2366,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jebakan kosakata nomor satu di TOEFL C1: \'to qualify a claim\' berarti menambahkan syarat/batasan (\'Yes, ONLY under condition X\'), bukan memvalidasi mutlak!',
+    contrastiveTip: 'Jebakan kosakata nomor satu di bahasa Inggris tingkat lanjut: \'to qualify a claim\' berarti menambahkan syarat/batasan (\'Yes, ONLY under condition X\'), bukan memvalidasi mutlak!',
   },
   'en-us-c1-u5-tata-bahasa': {
     headline: 'Konstruksi Kontras Tingkat C1: \'Whereas / Much as / Not so much A as B\'',
-    subtitle: 'Pertajam kalimat pembanding teori Anda dengan struktur diferensiasi halus \'not so much [A] as [B]\' dan klausa konsesi \'Much as [S + V]\'.',
+    subtitle: 'Pertajam kalimat pembanding teori Anda dengan struktur diferensiasi halus \'not so much [A] as [B]\' dan bagian kalimat konsesi \'Much as [S + V]\'.',
     items: [
       {
         symbol: 'not so much [A] as [B]',
         reading: '/nɑːt soʊ mʌtʃ ... æz .../',
         meaning: 'Bukanlah terutama [A], melainkan lebih tepat disebut [B]',
-        mnemonic: 'Koreksi konseptual super tajam di TOEFL Reading & Writing: \'The crisis was not so much a lack of grain as a failure of rail distribution\'!',
+        mnemonic: 'Koreksi konseptual super tajam di latihan membaca & menulis: \'The crisis was not so much a lack of grain as a failure of rail distribution\'!',
         speakText: 'not so much [A] as [B]',
       },
       {
@@ -2390,7 +2390,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'inasmuch as',
         reading: '/ˌɪnəzˈmʌtʃ æz/',
         meaning: 'Mengingat kenyataan bahwa / sejauh bahwa (penjelas alasan formal)',
-        mnemonic: 'Sering muncul di teks filsafat, hukum, dan jurnal akademik TOEFL untuk memperjelas dasar alasan.',
+        mnemonic: 'Sering muncul di teks filsafat, hukum, dan artikel akademik untuk memperjelas dasar alasan.',
         speakText: 'inasmuch as',
       },
       {
@@ -2404,9 +2404,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-C1-005',
       title: 'Reframing Contrasts (\'not so much A as B\') & Concessive \'Much as\'',
-      formula: 'Subject + be + not so much [Misconception A] as [Precise Reality B] | Much as + S + V, Main Clause',
+      formula: 'Subject + be + not so much [Misconception A] as [Precise Reality B] | Much as + S + V, Kalimat Utama',
       formulaReading: 'The Mayan collapse was not so much a sudden conquest as a protracted ecological shift.',
-      explanation: 'Struktur \'not so much X as Y\' tidak membuang X secara kasar, melainkan membingkai ulang (*reframe*) hakikat masalah ke definisi Y yang jauh lebih akurat—teknik favorit penulis jurnal ilmiah dan soal parafrasa TOEFL 110+!',
+      explanation: 'Struktur \'not so much X as Y\' tidak membuang X secara kasar, melainkan membingkai ulang (*reframe*) hakikat masalah ke definisi Y yang jauh lebih akurat—teknik favorit penulis jurnal ilmiah dan soal parafrasa esai bahasa Inggris tingkat mahir!',
       examples: [
         {
           jp: 'Employee attrition stems not so much from compensation as from opaque career paths.',
@@ -2420,7 +2420,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jaga paralelisme mutlak pada \'not so much [A] as [B]\': jika [A] memakai preposisi \'from X\', maka [B] wajib memakai preposisi \'from Y\'!',
+    contrastiveTip: 'Jaga paralelisme mutlak pada \'not so much [A] as [B]\': jika [A] memakai kata depan \'from X\', maka [B] wajib memakai kata depan \'from Y\'!',
   },
   'en-us-c1-u5-diskusi-toefl': {
     headline: 'Menyintesis Beragam Perspektif dalam Seminar Pascasarjana & Esai Riset',
@@ -2444,7 +2444,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'nuanced middle ground',
         reading: '/ˈnuːɑːnst ˈmɪdəl ɡraʊnd/',
         meaning: 'Posisi jalan tengah yang kaya nuansa dan tidak terjebak dikotomi ekstrem',
-        mnemonic: 'Ciri khas pemikir C1–C2 pada TOEFL Academic Discussion dan wawancara beasiswa!',
+        mnemonic: 'Ciri khas pemikir C1–C2 pada diskusi kelas & forum akademik dan wawancara beasiswa!',
         speakText: 'nuanced middle ground',
       },
       {
@@ -2477,10 +2477,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Cek ejaan wajib: \'complementary\' (e = complete/melengkapi) vs. \'complimentary\' (i = praise/gratis, mis. complimentary breakfast)!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 6 (GP-EN-C1-006)
+  // Level C1 — UNIT 6 (GP-EN-C1-006)
   // ===========================================================================
   'en-us-c1-u6-kosakata': {
-    headline: 'Teknik Bridging & Komunikasi Krisis Tingkat C-Suite',
+    headline: 'Teknik Bridging & Komunikasi Krisis Tingkat Pimpinan',
     subtitle: 'Saat menghadapi pertanyaan mendadak dari investor, jurnalis, atau penguji sidang, pemimpin C1 tidak panik atau menghindar kasar—mereka melakukan *acknowledge and bridge*.',
     items: [
       {
@@ -2514,8 +2514,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C1-006',
-      title: 'Emphatic Auxiliary \'do/does/did\' in Executive Q&A',
-      formula: 'Concession Clause + , S + do / does / did + V1 (Emphatic Affirmation)',
+      title: 'Menekankan Pernyataan dengan \'do/does/did\' saat Tanya Jawab',
+      formula: 'Kalimat Pengakuan + , S + do / does / did + V1 (Emphatic Affirmation)',
       formulaReading: 'While we cannot share client names, we do publish third-party SOC 2 audits.',
       explanation: 'Dalam sesi Q&A kritis, menyisipkan \'do / does / did\' pada kalimat positif (\'What we DO know is...\', \'We DID isolate the cluster within four minutes\') menciptakan kontras meyakinkan terhadap hal yang belum bisa diungkapkan.',
       examples: [
@@ -2525,7 +2525,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
           id: 'Meskipun forensik akar masalah masih berjalan, kami benar-benar telah mengisolasi server terdampak dalam hitungan menit.',
         },
         {
-          jp: 'I cannot comment on unannounced M&A, though I can speak to our organic R&D roadmap.',
+          jp: 'I cannot comment on unannounced deals, though I can speak to our long-term research plan.',
           reading: '/aɪ ˈkænɑːt ˈkɑːmɛnt ɑːn ˌʌnəˈnaʊnst ˌɛmændˈeɪ ðoʊ aɪ kæn spiːk tuː ˈaʊər ɔːrˈɡænɪk/',
           id: 'Saya tidak dapat mengomentari merger yang belum diumumkan, namun saya dapat menjelaskan peta jalan riset internal kami.',
         },
@@ -2541,37 +2541,37 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'make it feasible to [V1]',
         reading: '/meɪk ɪt ˈfiːzəbəl tuː/',
         meaning: 'Membuat [tindakan] menjadi layak dijalankan (WAJIB ada \'it\'!)',
-        mnemonic: 'Rumus besi C1: make / find / deem / consider + IT + Adjective/Noun + to V1 / that-clause!',
+        mnemonic: 'Rumus besi C1: make / find / deem / consider + IT + Adjective/Noun + to V1 / kalimat \'that...\'!',
         speakText: 'make it feasible to [V1]',
       },
       {
         symbol: 'deem it prudent to',
         reading: '/diːm ɪt ˈpruːdənt tuː/',
         meaning: 'Memandang / menilai bijaksana untuk melakukan sesuatu',
-        mnemonic: 'Verba formal tingkat direksi dan hukum pengganti \'think it is smart to\'.',
+        mnemonic: 'Kata kerja resmi tingkat direksi dan hukum pengganti \'think it is smart to\'.',
         speakText: 'deem it prudent to',
       },
       {
-        symbol: 'owe it to [stakeholders] to [V1]',
+        symbol: 'owe it to [everyone involved] to [V1]',
         reading: '/oʊ ɪt tuː ... tuː .../',
         meaning: 'Memiliki kewajiban moral kepada [pihak] untuk [melakukan sesuatu]',
         mnemonic: 'Retorika kepemimpinan penuh integritas pada pidato eksekutif dan esai beasiswa.',
-        speakText: 'owe it to [stakeholders] to [V1]',
+        speakText: 'We owe it to everyone involved to be transparent.',
       },
       {
         symbol: 'take it for granted that...',
         reading: '/teɪk ɪt fɔːr ˈɡræntɪd ðæt/',
         meaning: 'Menganggap remeh / mengasumsikan begitu saja bahwa...',
-        mnemonic: 'Jika diikuti klausa \'that...\', wajib sisipkan \'it\' sesudah \'take\': \'take IT for granted that...\'!',
+        mnemonic: 'Jika diikuti bagian kalimat \'that...\', wajib sisipkan \'it\' sesudah \'take\': \'take IT for granted that...\'!',
         speakText: 'take it for granted that...',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-006',
-      title: 'Object Extraposition (\'make/find/deem + it + Complement + Infinitive/Clause\')',
+      title: 'Wajib Sisipkan \'it\' pada Pola \'make/find/deem + it + Kata Sifat + to V1\'',
       formula: 'Verb (make/find/deem/consider) + IT + Adj/NP + [to V1 | that S + V]',
       formulaReading: 'Modular batteries make it economically viable to electrify island ferries.',
-      explanation: 'Kesalahan paling sering bahkan di kalangan penulis mahir Indonesia adalah melupakan \'it\' di antara verba kausatif/opini dan komplemen sifat (*\'High latency makes difficult to collaborate\'* -> SALAH!). Karena infinitif tidak boleh duduk langsung sebelum adjektiva objek, wajib pasang penyangga \'it\': \'makes IT difficult to collaborate\'!',
+      explanation: 'Kesalahan paling sering bahkan di kalangan penulis mahir Indonesia adalah melupakan \'it\' di antara kata kerja pendapat/penyebab dan komplemen sifat (*\'High latency makes difficult to collaborate\'* -> SALAH!). Karena bentuk \'to + V1\' tidak boleh duduk langsung sebelum kata sifat objek, wajib pasang penyangga \'it\': \'makes IT difficult to collaborate\'!',
       examples: [
         {
           jp: 'Edge caching makes it possible to stream surgical video over 4G networks.',
@@ -2588,7 +2588,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Cek selalu setiap kali menulis \'make / find + kata sifat + to V1\': sudahkah ada kata \'IT\' di tengahnya? (\'find IT challenging to...\', \'made IT clear that...\')!',
   },
   'en-us-c1-u6-diskusi-toefl': {
-    headline: 'Menjawab Pertanyaan Kritis pada Sidang Tesis, Konferensi & Debat TOEFL',
+    headline: 'Menjawab Pertanyaan Kritis pada Sidang Tesis, Konferensi & Debat ujian bahasa Inggris',
     subtitle: 'Saat penguji menembakkan celah metodologi di konferensi internasional, gunakan frasa akademik C1 untuk memvalidasi pertanyaan, memperjelas batasan, dan mengaitkannya ke riset lanjutan.',
     items: [
       {
@@ -2609,7 +2609,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'warrant further investigation',
         reading: '/ˈwɔːrənt ˈfɜːrðər ɪnˌvɛstəˈɡeɪʃən/',
         meaning: 'Layak / patut diteliti lebih mendalam pada studi berikutnya',
-        mnemonic: 'Verba \'warrant\' (= membenarkan/menuntut secara layak) jauh lebih akademis daripada \'needs more research\'.',
+        mnemonic: 'Kata kerja \'warrant\' (= layak mendapat/memerlukan) jauh lebih rapi daripada \'needs more research\'.',
         speakText: 'warrant further investigation',
       },
       {
@@ -2642,11 +2642,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jangan tertukar dua kata mirip: \'precedence\' (/ˈprɛsədəns/ = prioritas lebih tinggi) vs. \'precedent\' (/ˈprɛsədənt/ = contoh keputusan/yurisprudensi terdahulu)!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 7 (GP-EN-C1-007)
+  // Level C1 — UNIT 7 (GP-EN-C1-007)
   // ===========================================================================
   'en-us-c1-u7-kosakata': {
     headline: 'Grammatical Metaphor: Rahasia Kepadatan Bahasa Jurnal Ilmiah',
-    subtitle: 'Percakapan sehari-hari berpusat pada kata kerja (\'Because cities grew fast, rivers became polluted\'), sedangkan tulisan C1 memadatkannya menjadi hubungan antar-frasa nomina (\'Rapid urban sprawl accelerated river contamination\')!',
+    subtitle: 'Percakapan sehari-hari berpusat pada kata kerja (\'Because cities grew fast, rivers became polluted\'), sedangkan tulisan C1 memadatkannya menjadi hubungan antar-frasa kata benda (\'Rapid urban sprawl accelerated river contamination\')!',
     items: [
       {
         symbol: 'proliferation (from proliferate)',
@@ -2666,23 +2666,23 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'disparity (from disparate)',
         reading: '/dɪˈspærəti/',
         meaning: 'Kesenjangan / ketimpangan mencolok antara dua kelompok',
-        mnemonic: 'Kolokasi akademik utama: \'stark disparities in maternal mortality across provinces\'.',
+        mnemonic: 'Pasangan kata alami akademik utama: \'stark disparities in maternal mortality across provinces\'.',
         speakText: 'disparity (from disparate)',
       },
       {
         symbol: 'adherence to (from adhere to)',
         reading: '/ədˈhɪrəns tuː/',
         meaning: 'Kepatuhan / ketaatan konsisten terhadap protokol atau pedoman',
-        mnemonic: 'Tetap mewarisi preposisi kata kerja asalnya: \'adhere TO\' → \'strict adherence TO clinical protocols\'!',
+        mnemonic: 'Tetap mewarisi kata depan kata kerja asalnya: \'adhere TO\' → \'strict adherence TO clinical protocols\'!',
         speakText: 'adherence to (from adhere to)',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-007',
-      title: 'Academic Nominalization (Clause-to-Noun-Phrase Compression)',
+      title: 'Mengubah Aksi Menjadi Kata Benda (Meringkas Kalimat Menjadi Frasa Benda)',
       formula: 'Spoken: Because [S + V + Adv], [S2 + V2] → Academic: [Adj + Nominalized N1 + of S] + [Causal Verb] + [Nominalized N2]',
       formulaReading: 'Strict adherence to cold-chain protocols prevented vaccine degradation.',
-      explanation: 'Nominalisasi memungkinkan penulis akademik menaruh seluruh proses kejadian sebagai SUBJEK kalimat, lalu menghubungkannya dengan kata kerja kausal tunggal seperti \'precipitated\', \'curbed\', \'exacerbated\', atau \'hinged on\'. Pastikan preposisi bawaannya tepat (\'adherence to\', \'disparity between\', \'proliferation of\')!',
+      explanation: 'Mengubah aksi jadi kata benda memungkinkan penulis akademik menaruh seluruh proses kejadian sebagai SUBJEK kalimat, lalu menghubungkannya dengan kata kerja kausal tunggal seperti \'precipitated\', \'curbed\', \'exacerbated\', atau \'hinged on\'. Pastikan kata depan bawaannya tepat (\'adherence to\', \'disparity between\', \'proliferation of\')!',
       examples: [
         {
           jp: 'The rapid proliferation of rooftop solar strained legacy distribution transformers.',
@@ -2696,11 +2696,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Aturan emas gaya tulis AS (Williams\' Style): gunakan nominalisasi untuk merangkum konsep yang jelas, tapi JANGAN membunuh kata kerja utama menjadi \'make an analysis of\' (cukup \'analyze\')!',
+    contrastiveTip: 'Aturan emas gaya tulis AS (Williams\' Style): gunakan pengubahan aksi jadi kata benda untuk merangkum konsep yang jelas, tapi JANGAN membunuh kata kerja utama menjadi \'make an analysis of\' (cukup \'analyze\')!',
   },
   'en-us-c1-u7-tata-bahasa': {
-    headline: 'Menghindari Pronomina \'This\' Telanjang: Teknik \'This + Summary Noun\'',
-    subtitle: 'Aturan emas penulisan akademik AS (APA Style & TOEFL Writing 5.0): jangan pernah memulai kalimat dengan kata \'This\' sendirian (\'This caused inflation\') — ikuti \'This/These\' dengan kata benda perangkum!',
+    headline: 'Jangan Pakai \'This\' Sendirian: Tambahkan Kata Benda Perangkum!',
+    subtitle: 'Aturan emas penulisan akademik AS (APA Style & penulisan esai bahasa Inggris tingkat lanjut): jangan pernah memulai kalimat dengan kata \'This\' sendirian (\'This caused inflation\') — ikuti \'This/These\' dengan kata benda perangkum!',
     items: [
       {
         symbol: 'This discrepancy (Summary Noun)',
@@ -2727,16 +2727,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'This shift in emphasis',
         reading: '/ðɪs ʃɪft ɪn ˈɛmfəsɪs/',
         meaning: 'Pergeseran titik fokus ini',
-        mnemonic: 'Sangat membantu menjawab soal \'Insert a Sentence\' di TOEFL Reading karena menjadi petunjuk rujukan balik (*anaphoric anchor*)!',
+        mnemonic: 'Sangat membantu menjawab soal \'Insert a Sentence\' di bacaan artikel panjang karena menjadi petunjuk rujukan balik (*anaphoric anchor*)!',
         speakText: 'This shift in emphasis',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-007',
-      title: 'Anaphoric \'This/These/Such + Summary Noun\' Cohesion',
+      title: 'Menyambung Kalimat dengan \'This/These/Such + Kata Benda Perangkum\'',
       formula: 'Sentence 1: [Complex Event/Process]. → Sentence 2: This/Such + [Abstract Summary Noun] + Verb...',
       formulaReading: 'Districts adopted incompatible data formats. Such fragmentation hindered epidemic tracking.',
-      explanation: 'Mengapa \'This\' tanpa kata benda disebut *unattended \'this\'* oleh profesor Amerika? Karena pembaca terpaksa menebak bagian mana dari kalimat sebelumnya yang dimaksud \'This\'. Menambahkan kata benda perangkum (\'This bottleneck\', \'These competing demands\', \'Such volatility\') sekaligus menjadi kunci pemecah soal *Sentence Insertion* di TOEFL Reading!',
+      explanation: 'Mengapa \'This\' tanpa kata benda disebut *unattended \'this\'* oleh profesor Amerika? Karena pembaca terpaksa menebak bagian mana dari kalimat sebelumnya yang dimaksud \'This\'. Menambahkan kata benda perangkum (\'This bottleneck\', \'These competing demands\', \'Such volatility\') sekaligus menjadi kunci pemecah soal *Sentence Insertion* di bacaan artikel panjang!',
       examples: [
         {
           jp: 'Shipping costs rose while export orders shrank. These twin pressures squeezed small mills.',
@@ -2750,11 +2750,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Trik cepat soal TOEFL Reading \'Insert Text\': cari \'This / These / Such + Kata Benda\' di kalimat kotak hitam—kalimat itu WAJIB diletakkan tepat sesudah kalimat yang menjelaskan konsep kata benda tersebut!',
+    contrastiveTip: 'Trik cepat soal bacaan artikel panjang \'Insert Text\': cari \'This / These / Such + Kata Benda\' di kalimat kotak hitam—kalimat itu WAJIB diletakkan tepat sesudah kalimat yang menjelaskan konsep kata benda tersebut!',
   },
   'en-us-c1-u7-diskusi-toefl': {
-    headline: 'De-nominalisasi Lisan: Agar Presentasi Tidak Terdengar Seperti Robot Buku Teks',
-    subtitle: 'Kemahiran C1 bekerja dua arah: menulis padat dengan nominalisasi di esai, namun MENGURAI kembali frasa padat menjadi verba hidup saat berbicara di wawancara atau TOEFL Speaking!',
+    headline: 'Ubah Kalimat Kaku Jadi Bicara Luwes: Agar Presentasi Tidak Terdengar Seperti Robot Buku Teks',
+    subtitle: 'Kemahiran C1 bekerja dua arah: menulis padat dengan pengubahan aksi jadi kata benda di esai, namun MENGURAI kembali frasa padat menjadi kata kerja aktif saat berbicara di wawancara atau presentasi & berbicara bahasa Inggris!',
     items: [
       {
         symbol: 'boil down to',
@@ -2781,16 +2781,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'strip away the jargon',
         reading: '/strɪp əˈweɪ ðə ˈdʒɑːrɡən/',
         meaning: 'Menanggalkan istilah teknis rumit agar inti mekanismenya terlihat jernih',
-        mnemonic: 'Keterampilan utama TOEFL Speaking Task 3 & 4: mengubah definisi bacaan yang penuh jargon menjadi penjelasan verba aktif!',
+        mnemonic: 'Keterampilan utama latihan merangkum bacaan & kuliah secara lisan: mengubah definisi bacaan yang penuh jargon menjadi penjelasan kata kerja aktif!',
         speakText: 'strip away the jargon',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-007',
-      title: 'Register Shifting (Written Nominalization ↔ Spoken Active Verbs)',
+      title: 'Menyesuaikan Gaya Bahasa: Tulisan Padat ↔ Bicara Luwes',
       formula: 'Written Text: [Thermoregulatory vasoconstriction] → Spoken Paraphrase: Put simply, blood vessels narrow to retain heat.',
       formulaReading: 'What this technical white paper boils down to is how fast batteries charge in winter.',
-      explanation: 'Pada TOEFL Speaking Task 3, kotak bacaan sengaja ditulis dengan nominalisasi berat (\'asymmetrical information asymmetry in secondary markets\'). Jika Anda membacakannya mentah-mentah, skor bicara Anda turun. Ubah menjadi kalimat aktif jernih: \'Put simply, sellers know far more about product defects than buyers do\'!',
+      explanation: 'Pada latihan merangkum bacaan secara lisan, kotak bacaan sengaja ditulis dengan pengubahan aksi jadi kata benda berat (\'asymmetrical information asymmetry in secondary markets\'). Jika Anda membacakannya mentah-mentah, skor bicara Anda turun. Ubah menjadi kalimat aktif jernih: \'Put simply, sellers know far more about product defects than buyers do\'!',
       examples: [
         {
           jp: 'Put simply, dynamic pricing adjusts transit fares whenever rush-hour demand spikes.',
@@ -2798,16 +2798,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
           id: 'Dengan bahasa sederhana, penetapan tarif dinamis menyesuaikan ongkos angkutan setiap kali permintaan jam sibuk melonjak.',
         },
         {
-          jp: 'Strip away the legal jargon, and the clause boils down to shared liability.',
+          jp: 'Strip away the legal jargon, and the rule boils down to shared responsibility.',
           reading: '/strɪp əˈweɪ ðə ˈliːɡəl ˈdʒɑːrɡən ænd ðə klɔːz bɔɪlz daʊn tə ʃɛrd ˌlaɪəˈbɪləti/',
           id: 'Tanggalkan jargon hukumnya, maka pasal tersebut pada intinya bermuara pada pembagian tanggung jawab.',
         },
       ],
     },
-    contrastiveTip: 'Ingat rumus kesesuaian laras bahasa (*register appropriateness*): tulisan akademik = padat nomina; presentasi lisan & wawancara = bertenaga verba aktif!',
+    contrastiveTip: 'Ingat rumus kesesuaian gaya bahasa: tulisan akademik = padat kata benda; presentasi lisan & wawancara = bertenaga kata kerja aktif!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 8 (GP-EN-C1-008)
+  // Level C1 — UNIT 8 (GP-EN-C1-008)
   // ===========================================================================
   'en-us-c1-u8-kosakata': {
     headline: 'Membaca & Menyampaikan Umpan Balik Halus di Lingkungan Eksekutif AS',
@@ -2824,7 +2824,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'room for refinement',
         reading: '/ruːm fɔːr rɪˈfaɪnmənt/',
         meaning: 'Ruang untuk penyempurnaan lebih lanjut (cara halus mengatakan draf belum siap rilis!)',
-        mnemonic: 'Jika VP Amerika berkata \'Strong start, though there\'s room for refinement in section two\', artinya bagian dua wajib ditulis ulang!',
+        mnemonic: 'Jika atasan di Amerika berkata \'Strong start, though there\'s room for refinement in section two\', artinya bagian dua wajib ditulis ulang!',
         speakText: 'room for refinement',
       },
       {
@@ -2861,18 +2861,18 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Penerjemah pragmatik kantor AS: \'That\'s an ambitious timeline\' = jadwal itu nyaris mustahil, tolong pangkas lingkupnya atau mundurkan tanggalnya!',
+    contrastiveTip: 'Arti tersirat di kantor AS: \'That\'s an ambitious timeline\' = jadwal itu nyaris mustahil, tolong pangkas lingkupnya atau mundurkan tanggalnya!',
   },
   'en-us-c1-u8-tata-bahasa': {
     headline: 'Tata Bahasa Diplomasi Tingkat Tinggi: \'Would rather + Past\' & \'Much less\'',
     subtitle: 'Kuasai struktur preferensi sopan dengan subjek berbeda (\'I would rather the team focused on...\') serta penguat kontras negatif \'much less / still less\'.',
     items: [
       {
-        symbol: 'I\'d rather we waited (Past Subjunctive)',
+        symbol: 'I\'d rather we waited',
         reading: '/aɪd ˈræðər wi ˈweɪtɪd/',
         meaning: 'Saya lebih memilih agar kita menunggu dulu (preferensi untuk SEKARANG/MASA DEPAN!)',
         mnemonic: 'Awas aturan emas: jika sesudah \'would rather\' muncul SUBJEK BARU (\'we\', \'you\', \'the vendor\'), kata kerjanya WAJIB Past Simple (V2)!',
-        speakText: 'I\'d rather we waited (Past Subjunctive)',
+        speakText: 'I\'d rather we waited until tomorrow.',
       },
       {
         symbol: 'I\'d rather not rush (Same Subject)',
@@ -2901,7 +2901,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Different-Subject \'Would rather + V2/had V3\' & \'Much less\'',
       formula: 'Present/Future Preference: S1 + would rather + S2 + V2 (past form) | Past Regret: ... S2 + had V3',
       formulaReading: 'The board would rather management prioritized profitability over raw user growth.',
-      explanation: 'Soal jebakan klasik TOEFL/GMAT dan percakapan eksekutif: \'I would rather you DIDN\'T share this slide yet\' merujuk pada SAAT INI/BESOK (bukan kemarin!). Jika ingin menyatakan penyesalan atas hal yang telanjur terjadi kemarin, gunakan Past Perfect: \'I\'d rather you HAD consulted legal yesterday\'.',
+      explanation: 'Soal jebakan klasik ujian bahasa Inggris tingkat lanjut dan percakapan eksekutif: \'I would rather you DIDN\'T share this slide yet\' merujuk pada SAAT INI/BESOK (bukan kemarin!). Jika ingin menyatakan penyesalan atas hal yang telanjur terjadi kemarin, gunakan Past Perfect: \'I\'d rather you HAD consulted legal yesterday\'.',
       examples: [
         {
           jp: 'Our security lead would rather contractors accessed staging via bastion hosts.',
@@ -2939,7 +2939,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'give someone the benefit of the doubt',
         reading: '/ɡɪv ˈsʌmwʌn ðə ˈbɛnəfɪt ʌv ðə daʊt/',
         meaning: 'Berprasangka baik bahwa rekan punya niat positif/alasan wajar saat terjadi miskomunikasi',
-        mnemonic: 'Kunci utama tim jarak jauh lintas negara ketika nada teks Slack terasa singkat!',
+        mnemonic: 'Kunci utama tim jarak jauh lintas negara ketika nada pesan chat kerja terasa singkat!',
         speakText: 'give someone the benefit of the doubt',
       },
       {
@@ -2955,7 +2955,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Reframing Conflict into Shared Goals (\'Rather than framing this as A vs. B...\')',
       formula: 'Rather than framing this as [Conflict], let\'s examine how [Shared Goal] can be achieved.',
       formulaReading: 'Assuming positive intent helps distributed teams give colleagues the benefit of the doubt.',
-      explanation: 'Saat menjawab soal kepemimpinan di wawancara kerja senior maupun TOEFL Speaking, tunjukkan kemampuan de-eskalasi dengan membingkai ulang dikotomi semu (\'Speed vs. Quality\') menjadi pertanyaan kolaboratif (\'How can we ship core value safely?\').',
+      explanation: 'Saat menjawab soal kepemimpinan di wawancara kerja senior maupun presentasi & berbicara bahasa Inggris, tunjukkan kemampuan de-eskalasi dengan membingkai ulang dikotomi semu (\'Speed vs. Quality\') menjadi pertanyaan kolaboratif (\'How can we ship core value safely?\').',
       examples: [
         {
           jp: 'Rather than framing this as speed versus security, let\'s automate compliance checks.',
@@ -2972,7 +2972,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan kata sifat \'terse\' (/tɜːrs/ = sangat singkat dan padat hingga kadang terkesan ketus di chat teks) — kosakata C1 favorit!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 9 (GP-EN-C1-009)
+  // Level C1 — UNIT 9 (GP-EN-C1-009)
   // ===========================================================================
   'en-us-c1-u9-kosakata': {
     headline: 'Membuka Kalimat dengan Predikat Terdepan (*Predicate Fronting*)',
@@ -3009,8 +3009,8 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C1-009',
-      title: 'Fronting & Subject-Verb Inversion (\'Crucial to this is...\')',
-      formula: '[Adjective / Participle / Place Phrase] + be / intransitive V + [Deferred Subject]',
+      title: 'Mengedepankan Fokus & Membalik Urutan Subjek (\'Crucial to this is...\')',
+      formula: '[Kata Sifat / V-ing / Keterangan Tempat] + be / kata kerja tanpa objek + [Deferred Subject]',
       formulaReading: 'Crucial to this effort is (+ Singular N) • Equally vital are (+ Plural N)',
       explanation: 'Saat predikat kata sifat, partisip, atau keterangan tempat dikedepankan untuk menjaga alur informasi lama-ke-baru (*given-to-new information flow*), posisi kata kerja dan subjek dibalik. Pastikan keselarasan tunggal/jamak mengikuti subjek yang muncul di BELAKANG kata kerja!',
       examples: [
@@ -3026,16 +3026,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jebakan nomor satu TOEFL & GMAT: melihat kata jamak tepat sebelum \'is/are\' padahal itu objek preposisi! (\'Central to these reforms IS a new tax code\' — subjeknya \'a new tax code\', tunggal!).',
+    contrastiveTip: 'Jebakan nomor satu ujian bahasa Inggris tingkat lanjut: melihat kata jamak tepat sebelum \'is/are\' padahal itu objek kata depan! (\'Central to these reforms IS a new tax code\' — subjeknya \'a new tax code\', tunggal!).',
   },
   'en-us-c1-u9-tata-bahasa': {
     headline: 'Keseimbangan Struktur Mutlak (*Strict Parallelism*) & Demonstratif Pembanding',
-    subtitle: 'Kalimat panjang pada TOEFL Writing dan publikasi jurnal runtuh jika unsur yang disejajarkan berbeda kelas katanya atau membandingkan apel dengan pohon apel.',
+    subtitle: 'Kalimat panjang pada penulisan esai bahasa Inggris dan publikasi jurnal runtuh jika unsur yang disejajarkan berbeda kelas katanya atau membandingkan apel dengan pohon apel.',
     items: [
       {
         symbol: 'not only in X, but also in Y',
         reading: '/nɑːt ˈoʊnli ɪn ... bʌt ˈɔːlsoʊ ɪn/',
-        meaning: 'Tidak hanya dalam X, tetapi juga dalam Y (preposisi wajib sejajar!)',
+        meaning: 'Tidak hanya dalam X, tetapi juga dalam Y (kata depan wajib sejajar!)',
         mnemonic: 'Jika \'not only\' mendahului \'in\', maka \'but also\' WAJIB mendahului \'in\' juga!',
         speakText: 'not only in X, but also in Y',
       },
@@ -3050,7 +3050,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'whether by V-ing or by V-ing',
         reading: '/ˈwɛðər baɪ ... ɔːr baɪ/',
         meaning: 'Baik dengan cara ... maupun dengan cara ... (korelatif simetris)',
-        mnemonic: 'Pasangan \'whether\' adalah \'or\' (bukan \'and\'), dengan bentuk gerund yang kembar.',
+        mnemonic: 'Pasangan \'whether\' adalah \'or\' (bukan \'and\'), dengan bentuk V-ing yang kembar.',
         speakText: 'whether by V-ing or by V-ing',
       },
       {
@@ -3066,7 +3066,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Correlative Parallelism & Comparative Demonstratives (\'that of / those of\')',
       formula: 'both [Prep + NP] and [Prep + NP] • [Property] of A is higher than that of B (singular) / those of B (plural)',
       formulaReading: 'The thermal efficiency of silicon carbide exceeds that of conventional silicon.',
-      explanation: 'Dua kaidah emas tata bahasa C1: (1) Apa pun bentuk gramatikal sesudah bagian pertama konjungsi berpasangan (*both...and, either...or, not only...but also*), bentuk identik wajib muncul sesudah bagian kedua; (2) Saat membandingkan atribut suatu benda, gunakan \'that of\' (atribut tunggal) atau \'those of\' (atribut jamak) agar perbandingan logis.',
+      explanation: 'Dua kaidah emas tata bahasa C1: (1) Apa pun bentuk gramatikal sesudah bagian pertama kata hubung berpasangan (*both...and, either...or, not only...but also*), bentuk identik wajib muncul sesudah bagian kedua; (2) Saat membandingkan atribut suatu benda, gunakan \'that of\' (atribut tunggal) atau \'those of\' (atribut jamak) agar perbandingan logis.',
       examples: [
         {
           jp: 'Success depends not on how much data we collect, but on how cleanly we label it.',
@@ -3084,7 +3084,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c1-u9-diskusi-toefl': {
     headline: 'Menyeimbangkan Dua Dimensi Argumen secara Elegan',
-    subtitle: 'Gunakan konstruksi penyeimbang C1 untuk menunjukkan pemikiran sistemik dalam TOEFL Academic Discussion dan wawancara LPDP/Fulbright.',
+    subtitle: 'Gunakan konstruksi penyeimbang C1 untuk menunjukkan pemikiran sistemik dalam diskusi kelas & forum akademik dan wawancara LPDP/Fulbright.',
     items: [
       {
         symbol: 'as much a matter of X as of Y',
@@ -3120,7 +3120,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Balanced Diagnostic Framing (\'as much X as Y\' / \'between A and B\')',
       formula: '[Issue] is as much a matter of [NP A] as of [NP B] • strike a balance between [V-ing A] and [V-ing B]',
       formulaReading: 'Cybersecurity is as much a matter of human habits as of encryption.',
-      explanation: 'Dalam rubrik TOEFL Writing (skor 5/5), penguji mencari bukti *syntactic variety and maturity*. Membingkai argumen dengan struktur keseimbangan simetris membuktikan bahwa Anda mampu mengelola dua ide abstrak sekaligus tanpa kalimat terpecah.',
+      explanation: 'Dalam rubrik penulisan esai bahasa Inggris (skor 5/5), penguji mencari bukti variasi struktur kalimat yang matang. Membingkai argumen dengan struktur keseimbangan simetris membuktikan bahwa Anda mampu mengelola dua ide abstrak sekaligus tanpa kalimat terpecah.',
       examples: [
         {
           jp: 'Broadband adoption is as much a matter of affordability as of tower coverage.',
@@ -3137,23 +3137,23 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Hati-hati interferensi Bahasa Indonesia \'antara A sampai/dengan B\': dalam bahasa Inggris standar, \'between\' SELALU berpasangan dengan \'and\' (\'between A and B\'), sedangkan \'from\' berpasangan dengan \'to\'!',
   },
   // ===========================================================================
-  // CEFR C1 — UNIT 10 (GP-EN-C1-010)
+  // Level C1 — UNIT 10 (GP-EN-C1-010)
   // ===========================================================================
   'en-us-c1-u10-kosakata': {
-    headline: 'Kohesi Ringkas Tanpa Mengulang Kata (*Substitution Devices*)',
+    headline: 'Menyambung Ide Tanpa Mengulang Kata yang Sama',
     subtitle: 'Penutur C1 menghindari menyalin ulang frasa kerja panjang di kalimat kedua; mereka menggantinya secara presisi dengan perangkat substitusi formal.',
     items: [
       {
         symbol: 'do so / doing so',
         reading: '/duː soʊ ... ˈduːɪŋ soʊ/',
         meaning: 'Melakukan tindakan tersebut (menggantikan seluruh predikat kata kerja aksi + objek sebelumnya)',
-        mnemonic: 'Jauh lebih formal dan jernih daripada \'do it\' dalam esai TOEFL, RFC teknis, dan kontrak.',
+        mnemonic: 'Jauh lebih formal dan jernih daripada \'do it\' dalam esai bahasa Inggris, dokumen teknis, dan kontrak.',
         speakText: 'do so / doing so',
       },
       {
         symbol: 'if so, ... / if not, ...',
         reading: '/ɪf soʊ ... ɪf nɑːt/',
-        meaning: 'Jika demikian, ... / jika tidak demikian, ... (menggantikan seluruh klausa syarat)',
+        meaning: 'Jika demikian, ... / jika tidak demikian, ... (menggantikan seluruh bagian kalimat syarat)',
         mnemonic: 'Memangkas 8–12 kata pengulangan menjadi dua kata transisi yang sangat tajam!',
         speakText: 'if so, ... / if not, ...',
       },
@@ -3175,12 +3175,12 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-C1-010',
       title: 'Verbal & Clausal Substitution (\'do so / doing so / if not\')',
-      formula: '[Clause 1: Action Verb + Obj]. Those who do so... / Doing so + V • [Question/Condition]? If so, X; if not, Y.',
+      formula: '[Kalimat 1: Action Verb + Obj]. Those who do so... / Doing so + V • [Question/Condition]? If so, X; if not, Y.',
       formulaReading: 'Firms may defer tax payments; those choosing to do so must file Form 89.',
-      explanation: 'Substitusi \'do so\' (beserta bentuk waktu \'did so / done so / doing so\') merujuk kembali pada kata kerja DINAMIS beserta pelengkapnya. Jangan gunakan \'do so\' untuk menggantikan kata kerja keadaan (*stative verbs* seperti *know, own, resemble*)!',
+      explanation: 'Substitusi \'do so\' (beserta bentuk waktu \'did so / done so / doing so\') merujuk kembali pada kata kerja DINAMIS beserta pelengkapnya. Jangan gunakan \'do so\' untuk menggantikan kata kerja keadaan (kata kerja keadaan seperti *know, own, resemble*)!',
       examples: [
         {
-          jp: 'Engineers wanted to deprecate the v1 endpoint, and in Q4 they finally did so.',
+          jp: 'The team wanted to retire the old system, and by year-end they finally did so.',
           reading: '/ˌɛndʒəˈnɪrz ˈwɑːntɪd tə ˈdɛprəˌkeɪt ðə viː wʌn ˈɛndˌpɔɪnt ænd ɪn kjuː fɔːr ðeɪ ˈfaɪnəli dɪd soʊ/',
           id: 'Para insinyur ingin memensiunkan titik akhir v1, dan pada kuartal keempat mereka akhirnya melakukannya.',
         },
@@ -3194,44 +3194,44 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Bedakan \'doing so\' (melakukan aksi di kalimat sebelumnya) vs. \'to do so\' (untuk melakukan aksi tersebut): \'We compressed payloads; doing so cut egress bills by 40%\'.',
   },
   'en-us-c1-u10-tata-bahasa': {
-    headline: 'Seni Memangkas Kata Tanpa Kehilangan Makna (*Grammatical Ellipsis*)',
-    subtitle: 'Pahami kapan kalimat bahasa Inggris mengizinkan penghilangan kata kerja sesudah kata bantu, \'to\' tereduksi, dan klausa opini \'so / not\'.',
+    headline: 'Seni Memangkas Kata Berulang Tanpa Kehilangan Makna',
+    subtitle: 'Pahami kapan kalimat bahasa Inggris mengizinkan penghilangan kata kerja sesudah kata bantu, \'to\' tereduksi, dan bagian kalimat opini \'so / not\'.',
     items: [
       {
         symbol: 'I believe so / I suspect not',
         reading: '/aɪ bɪˈliːv soʊ ... aɪ səˈspɛkt nɑːt/',
-        meaning: 'Saya kira demikian / saya duga tidak demikian (substitusi klausa opini)',
-        mnemonic: 'Verba seperti \'believe, think, suppose, expect\' memakai \'don\'t think so\' ATAU sangat formal \'I believe not / suspect not\'; \'hope\' & \'guess\' SELALU memakai \'I hope not / I guess not\'!',
+        meaning: 'Saya kira demikian / saya duga tidak demikian (substitusi bagian kalimat opini)',
+        mnemonic: 'Kata kerja seperti \'believe, think, suppose, expect\' memakai \'don\'t think so\' ATAU sangat formal \'I believe not / suspect not\'; \'hope\' & \'guess\' SELALU memakai \'I hope not / I guess not\'!',
         speakText: 'I believe so / I suspect not',
       },
       {
         symbol: 'can—and indeed must—[V1]',
         reading: '/kæn ænd ɪnˈdiːd mʌst/',
-        meaning: 'Bisa—dan memang wajib—[melakukan sesuatu] (elipsis verba bersisipan)',
+        meaning: 'Bisa—dan memang wajib—[melakukan sesuatu] (pemangkasan kata kerja berulang)',
         mnemonic: 'Karena kedua modal (\'can\' dan \'must\') sama-sama diikuti V1 murni, kata kerja utamanya cukup disebut SATU kali di akhir!',
         speakText: 'can—and indeed must—[V1]',
       },
       {
-        symbol: 'opt not to [ellipsis]',
+        symbol: 'opt not to',
         reading: '/ɑːpt nɑːt tuː/',
-        meaning: 'Memilih untuk tidak melakukannya (*reduced infinitive* berakhir pada \'to\')',
+        meaning: 'Memilih untuk tidak melakukannya (bentuk ringkas berakhir pada \'to\')',
         mnemonic: 'Menyisakan partikel \'to\' di akhir (\'wanted to migrate, but decided not to\') terdengar jauh lebih alami daripada mengulang seluruh kalimat.',
-        speakText: 'opt not to [ellipsis]',
+        speakText: 'Many guests opted not to stay late.',
       },
       {
         symbol: 'if any / if ever',
         reading: '/ɪf ˈɛni ... ɪf ˈɛvər/',
         meaning: 'Kalaupun ada (sangat sedikit) / kalaupun pernah terjadi (sangat jarang)',
-        mnemonic: 'Klausa konsesi elipsis yang sangat padat: \'Few, if any, startups survive without product-market fit\'.',
+        mnemonic: 'Bagian kalimat ringkas tanpa kata berulang yang sangat padat: \'Few, if any, startups survive without product-market fit\'.',
         speakText: 'if any / if ever',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-010',
-      title: 'Auxiliary Compatibility in Ellipsis & \'If any / If ever\'',
+      title: 'Memangkas Kata Kerja yang Sama dengan Kata Bantu & \'If any / If ever\'',
       formula: 'Compatible Aux: can and must + V1 • Incompatible Aux: has [V3], and will continue to, [V1] -> WAJIB sebut V3 dulu!',
       formulaReading: 'Few, if any, clinical trials achieve 100% retention.',
-      explanation: 'Waspadai jebakan elipsis kata bantu berbeda tuntutan! Anda BOLEH menulis \'Cities can, and should, electrify buses\' (keduanya diikuti V1 \'electrify\'). Namun Anda DILARANG menulis *\'Our lab has, and always will, publish open code\'* karena \'has\' menuntut V3 (\'published\') sedangkan \'will\' menuntut V1 (\'publish\')—yang benar: \'Our lab has published, and always will publish, open code\'!',
+      explanation: 'Waspadai jebakan pemangkasan kata kerja setelah kata bantu berbeda tuntutan! Anda BOLEH menulis \'Cities can, and should, electrify buses\' (keduanya diikuti V1 \'electrify\'). Namun Anda DILARANG menulis *\'Our lab has, and always will, publish open code\'* karena \'has\' menuntut V3 (\'published\') sedangkan \'will\' menuntut V1 (\'publish\')—yang benar: \'Our lab has published, and always will publish, open code\'!',
       examples: [
         {
           jp: 'Few, if any, archival manuscripts survive tropical humidity without climate control.',
@@ -3249,7 +3249,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c1-u10-diskusi-toefl': {
     headline: 'Merangkai Argumen Lisan & Esai Tanpa Kalimat Bertele-tele',
-    subtitle: 'Gunakan penanda kohesi tingkat lanjut untuk memadatkan paragraf penutup esai TOEFL, wawancara LPDP/Fulbright, dan tinjauan pustaka.',
+    subtitle: 'Gunakan kata penyambung ide tingkat lanjut untuk memadatkan paragraf penutup esai bahasa Inggris, wawancara LPDP/Fulbright, dan tinjauan pustaka.',
     items: [
       {
         symbol: 'in doing so,',
@@ -3276,16 +3276,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'by the same logic,',
         reading: '/baɪ ðə seɪm ˈlɑːdʒɪk/',
         meaning: 'Dengan penalaran yang sama, (memperluas prinsip ke kasus sejajar)',
-        mnemonic: 'Menjaga kohesi argumen deduktif tanpa mengulang premis dari awal.',
+        mnemonic: 'Menjaga alur argumen yang runtut tanpa mengulang premis dari awal.',
         speakText: 'by the same logic,',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C1-010',
-      title: 'Discourse Anaphora (\'To that end,\' / \'In doing so,\' / \'and vice versa\')',
+      title: 'Kata Penyambung Rujukan Ide (\'To that end,\' / \'In doing so,\' / \'and vice versa\')',
       formula: '[Goal Statement]. To that end, S + V. • [Action Statement]. In doing so, S + V.',
       formulaReading: 'Soil microbes nourish roots, and vice versa.',
-      explanation: 'Kohesi tingkat C1 tidak dicapai dengan menumpuk *Moreover, Furthermore, In addition* di setiap kalimat, melainkan dengan penunjuk anaforis (*anaphoric reference*) seperti \'To that end\', \'In doing so\', dan \'Such measures\' yang menjahit makna antarkalimat secara organik.',
+      explanation: 'Alur tulisan yang mulus tidak dicapai dengan menumpuk *Moreover, Furthermore, In addition* di setiap kalimat, melainkan dengan penunjuk anaforis (*anaphoric reference*) seperti \'To that end\', \'In doing so\', dan \'Such measures\' yang menjahit makna antarkalimat secara organik.',
       examples: [
         {
           jp: 'Our ministry aims to halve maternal mortality by 2030; to that end, we are equipping rural midwives with portable ultrasound.',
@@ -3299,10 +3299,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan huruf \'l\' bisu pada verba \'halve\' (/hæv/, memangkas jadi separuh) dan kata benda \'half\' (/hæf/)!',
+    contrastiveTip: 'Perhatikan huruf \'l\' bisu pada kata kerja \'halve\' (/hæv/, memangkas jadi separuh) dan kata benda \'half\' (/hæf/)!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 1 (GP-EN-C2-001)
+  // Level C2 — UNIT 1 (GP-EN-C2-001)
   // ===========================================================================
   'en-us-c2-u1-kosakata': {
     headline: 'Pengandaian Kontingensi Resmi dengan \'Should + Subject + V1\'',
@@ -3333,14 +3333,14 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'preemptively',
         reading: '/priˈɛmptɪvli/',
         meaning: 'Secara mendahului / melakukan pencegahan sebelum ancaman sempat terjadi',
-        mnemonic: 'Adverbia strategis C2 untuk tindakan antisipatif sebelum krisis pecah.',
+        mnemonic: 'Kata keterangan strategis untuk tindakan antisipatif sebelum krisis pecah.',
         speakText: 'preemptively',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C2-001',
-      title: 'Inverted Type-1 Conditional (\'Should + Subject + Base Verb\')',
-      formula: 'Should + [Subject] + (not) + [Base Verb V1], [Main Clause: will / imperative / modal]',
+      title: 'Pengandaian Resmi Tanpa \'If\' (Pakai \'Should\') (\'Should + Subject + Base Verb\')',
+      formula: 'Should + [Subject] + (not) + [Base Verb V1], [Kalimat Utama: will / perintah / modal]',
       formulaReading: 'Should latency exceed 200ms, the gateway routes traffic to Tokyo.',
       explanation: 'Menghapus \'if\' dan memindahkan \'Should\' ke awal kalimat mengubah syarat biasa menjadi protokol kontingensi profesional (\'apabila sewaktu-waktu terjadi\'). Ingat dua pantangan mutlak: (1) kata kerja utama tetap V1 murni tanpa \'-s\' (*\'Should the server fails\'* -> SALAH), dan (2) bentuk negatif TIDAK BOLEH disingkat (*\'Shouldn\'t you agree\'* -> SALAH; tulis \'Should you not agree\')!',
       examples: [
@@ -3356,11 +3356,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jangan terjebak menambahkan \'-s\' pada subjek tunggal sesudah inversi \'Should\': tulis \'Should the minister resign\' (BUKAN *\'resigns\'*) karena \'Should\' adalah modal verb!',
+    contrastiveTip: 'Jangan terjebak menambahkan \'-s\' pada subjek tunggal sesudah pembalikan urutan \'Should\': tulis \'Should the minister resign\' (BUKAN *\'resigns\'*) karena \'Should\' adalah modal verb!',
   },
   'en-us-c2-u1-tata-bahasa': {
     headline: 'Pengandaian Elit Tipe 2 (\'Were + S + to V1\') & Tipe 3 (\'Had + S + V3\')',
-    subtitle: 'Tinggalkan \'If we had known\' dan \'If it failed\' saat menulis paragraf evaluasi tingkat C2—gunakan inversi murni yang padat dan berkelas editorial.',
+    subtitle: 'Tinggalkan \'If we had known\' dan \'If it failed\' saat menulis paragraf evaluasi tingkat C2—gunakan kalimat pengandaian ringkas tanpa \'if\' yang padat dan berkelas editorial.',
     items: [
       {
         symbol: 'Were the dam to breach,',
@@ -3413,7 +3413,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Hafalkan kontras waktu kembar ini: \'Were it not for X, S would V1\' (situasi SEKARANG) vs. \'Had it not been for X, S would have V3\' (kejadian MASA LALU)!',
   },
   'en-us-c2-u1-diskusi-toefl': {
-    headline: 'Membingkai Skenario Makro dalam Sidang Tesis, Debat Kebijakan & TOEFL 120',
+    headline: 'Membingkai Skenario Makro dalam Sidang Tesis, Debat Kebijakan & Esai Tingkat Mahir',
     subtitle: 'Padukan pengandaian terbalik dengan kosakata ekonomi-politik C2 untuk menjawab pertanyaan spekulatif *\'What would happen if...?\'* dengan wibawa penuh.',
     items: [
       {
@@ -3434,7 +3434,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'spillover effect',
         reading: '/ˈspɪlˌoʊvər ɪˈfɛkt/',
         meaning: 'Dampak limpahan (positif maupun negatif) yang meluber ke wilayah atau sektor lain',
-        mnemonic: 'Sangat sering keluar di TOEFL Reading & Listening ekonomi serta ekologi!',
+        mnemonic: 'Sangat sering keluar di latihan membaca & mendengarkan ekonomi serta ekologi!',
         speakText: 'spillover effect',
       },
       {
@@ -3447,10 +3447,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-001',
-      title: 'Mixed Inverted Conditionals & Discourse Chaining (\'Were that to transpire,\')',
+      title: 'Pengandaian Resmi Campuran & Penyambung Alur (\'Were that to transpire,\')',
       formula: 'Past Action -> Present State: Had + S + V3 [then], S + would be [today] • Chained Hypothesis: Were that to transpire, ...',
       formulaReading: 'Had the treaty been ratified in 1997, global emissions trajectories would look markedly different today.',
-      explanation: 'Menggabungkan *Inverted Conditional* dengan *Mixed Time Reference* (\'Had we invested then, our grid would be resilient today\') adalah puncak penguasaan tata bahasa waktu dan modalitas bahasa Inggris.',
+      explanation: 'Menggabungkan Pengandaian Resmi Tanpa \'If\' dengan *Mixed Time Reference* (\'Had we invested then, our grid would be resilient today\') adalah puncak penguasaan tata bahasa waktu dan modalitas bahasa Inggris.',
       examples: [
         {
           jp: 'Had urban planners preserved tram corridors in the 1960s, commuter congestion would be far milder today.',
@@ -3467,7 +3467,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Selalu periksa penanda waktu ujung kalimat (\'today / now\' vs. \'in 2020 / last night\') sebelum menentukan apakah induk kalimatnya memakai \'would V1\' atau \'would have V3\'!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 2 (GP-EN-C2-002)
+  // Level C2 — UNIT 2 (GP-EN-C2-002)
   // ===========================================================================
   'en-us-c2-u2-kosakata': {
     headline: 'Instruksi Otoritatif & Agenda Resmi dengan \'am / is / are + to V1\'',
@@ -3507,7 +3507,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Authoritative Mandates & Scheduled Protocol (\'be + to V1 / to be V3\')',
       formula: 'Mandate/Schedule: [Subject] + am/is/are + (not) + to V1 • Passive Prohibition: [Subject] + is/are not + to be V3',
       formulaReading: 'All visitors are to wear dosimeters. • Embargoed data is not to be shared prior to 9 a.m. EST.',
-      explanation: 'Konstruksi \'be + to-infinitive\' mengemban dua fungsi formal utama di masa kini: (1) menyatakan jadwal kenegaraan/korporat yang telah dikunci (\'The summit is to convene in Geneva\'), dan (2) menyampaikan perintah atau larangan aturan yang tidak membuka ruang tawar-menawar (\'No raw patient identifiers are to leave this enclave\').',
+      explanation: 'Konstruksi \'be + to-bentuk \'to + V1\'\' mengemban dua fungsi formal utama di masa kini: (1) menyatakan jadwal kenegaraan/korporat yang telah dikunci (\'The summit is to convene in Geneva\'), dan (2) menyampaikan perintah atau larangan aturan yang tidak membuka ruang tawar-menawar (\'No raw patient identifiers are to leave this enclave\').',
       examples: [
         {
           jp: 'Under the consent decree, all third-party brokers are to purge biometric records within thirty days.',
@@ -3525,20 +3525,20 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c2-u2-tata-bahasa': {
     headline: 'Prasyarat Tujuan (\'If we are to...\') & Masa Depan dari Sudut Lampau (\'was to V1\')',
-    subtitle: 'Dua nuansa C2 yang sangat sering diujikan di TOEFL Reading sejarah dan esai kebijakan: menyatakan syarat mutlak demi mencapai visi, serta menarasikan takdir sejarah.',
+    subtitle: 'Dua nuansa C2 yang sangat sering diujikan di bacaan artikel panjang sejarah dan esai kebijakan: menyatakan syarat mutlak demi mencapai visi, serta menarasikan takdir sejarah.',
     items: [
       {
         symbol: 'If [S] is to [achieve Goal],',
         reading: '/ɪf ... ɪz tuː/',
         meaning: 'Jika [Subjek] memang ingin berhasil mencapai [Tujuan besar], maka...',
-        mnemonic: 'Setara \'In order for S to achieve Goal\': menuntut kata bantu kuat (\'must / need to\') di klausa utama!',
+        mnemonic: 'Setara \'In order for S to achieve Goal\': menuntut kata bantu kuat (\'must / need to\') di bagian utama kalimat!',
         speakText: 'If [S] is to [achieve Goal],',
       },
       {
         symbol: 'was soon to become',
         reading: '/wʌz suːn tə bɪˈkʌm/',
         meaning: 'Kelak tak lama kemudian akan menjadi... (*future-in-the-past* yang benar-benar terjadi)',
-        mnemonic: 'Favorit mutlak penulis biografi dan teks sejarah TOEFL Reading!',
+        mnemonic: 'Favorit mutlak penulis biografi dan teks sejarah bacaan artikel panjang!',
         speakText: 'was soon to become',
       },
       {
@@ -3552,7 +3552,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'was to have [V3]',
         reading: '/wʌz tə həv/',
         meaning: 'Tadinya dijadwalkan akan [melakukan sesuatu], TETAPI batal terlaksana!',
-        mnemonic: 'Perhatikan infinitif perfek \'was to HAVE opened\': menandakan rencana resmi masa lalu yang GAGAL terjadi!',
+        mnemonic: 'Perhatikan bentuk \'to have + V3\' \'was to HAVE opened\': menandakan rencana resmi masa lalu yang GAGAL terjadi!',
         speakText: 'was to have [V3]',
       },
     ],
@@ -3575,7 +3575,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Rumus cepat TOEFL Reading: lihat \'was/were to + V1\' -> kelak terjadi dalam sejarah; lihat \'was/were to + HAVE V3\' -> rencana resmi yang batal/gagal terjadi!',
+    contrastiveTip: 'Rumus cepat bacaan artikel panjang: lihat \'was/were to + V1\' -> kelak terjadi dalam sejarah; lihat \'was/were to + HAVE V3\' -> rencana resmi yang batal/gagal terjadi!',
   },
   'en-us-c2-u2-diskusi-toefl': {
     headline: 'Kosakata Transisi Sejarah & Visi Kepemimpinan C2',
@@ -3585,7 +3585,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'usher in [a new era]',
         reading: '/ˈʌʃər ɪn/',
         meaning: 'Mengantarkan masuk / membuka gerbang bagi dimulainya suatu babak baru',
-        mnemonic: 'Verba sejarah dan inovasi yang jauh lebih hidup daripada \'start a new era\'.',
+        mnemonic: 'Kata kerja sejarah dan inovasi yang jauh lebih hidup daripada \'start a new era\'.',
         speakText: 'usher in [a new era]',
       },
       {
@@ -3599,7 +3599,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'embark upon',
         reading: '/ɪmˈbɑːrk əˈpɑːn/',
         meaning: 'Memulai suatu perjalanan, reformasi, atau proyek berskala besar dan menantang',
-        mnemonic: 'Jangan pakai untuk hal sepele (*\'embark upon eating lunch\'* -> salah register); gunakan untuk riset/transformasi besar!',
+        mnemonic: 'Jangan pakai untuk hal sepele (*\'embark upon eating lunch\'* -> terlalu berlebihan untuk situasi santai); gunakan untuk riset/transformasi besar!',
         speakText: 'embark upon',
       },
       {
@@ -3615,7 +3615,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Inverting \'Were + S + to V1\' with Purpose \'If + S + be + to V1\'',
       formula: 'Vision Framing: If we are to usher in [Goal], we must embark upon [Action] today.',
       formulaReading: 'That obscure 1947 lab demo was to usher in the solid-state revolution.',
-      explanation: 'Mengombinasikan kosakata titik balik (\'watershed moment\', \'usher in\', \'come to fruition\') dengan struktur \'be + to-infinitive\' memberikan bobot retoris tingkat pidato kunci (*keynote address*) dan esai beasiswa paling kompetitif.',
+      explanation: 'Mengombinasikan kosakata titik balik (\'watershed moment\', \'usher in\', \'come to fruition\') dengan struktur \'be + to-bentuk \'to + V1\'\' memberikan bobot retoris tingkat pidato kunci (*keynote address*) dan esai beasiswa paling kompetitif.',
       examples: [
         {
           jp: 'Bell Labs\' 1947 point-contact transistor was to usher in the information age.',
@@ -3632,17 +3632,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Lafalkan \'fruition\' dengan tiga suku kata jelas: /fruˈɪʃən/ (fru-ISH-uhn)!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 3 (GP-EN-C2-003)
+  // Level C2 — UNIT 3 (GP-EN-C2-003)
   // ===========================================================================
   'en-us-c2-u3-kosakata': {
     headline: 'Ungkapan Absolut Idiomatis dalam Ekonomi, Sains & Rapat Eksekutif',
-    subtitle: 'Berbeda dari klausa partisip biasa, konstruksi absolut membawa SUBJEKNYA SENDIRI di depan partisip sehingga sah berdiri mendampingi induk kalimat bersubjek berbeda!',
+    subtitle: 'Berbeda dari frasa V-ing/V3 biasa, konstruksi absolut membawa SUBJEKNYA SENDIRI di depan partisip sehingga sah berdiri mendampingi induk kalimat bersubjek berbeda!',
     items: [
       {
         symbol: 'Other things being equal,',
         reading: '/ˈʌðər θɪŋz ˈbiːɪŋ ˈiːkwəl/',
         meaning: 'Dengan asumsi seluruh variabel lain tetap sama (*ceteris paribus*)',
-        mnemonic: 'Ungkapan nomor satu di kuliah ekonomi, fisika, dan epidemiologi TOEFL!',
+        mnemonic: 'Ungkapan nomor satu di kuliah ekonomi, sains, dan kesehatan!',
         speakText: 'Other things being equal,',
       },
       {
@@ -3670,9 +3670,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-C2-003',
       title: 'Fixed & Semi-Fixed Absolute Phrases (\'Other things being equal,\')',
-      formula: '[Independent Noun] + [V-ing / V3], [Main Clause with Different Subject]',
-      formulaReading: 'Time permitting, we will review Q4 projections. • All else being equal, higher rates cool borrowing.',
-      explanation: 'Pada level B2 Anda belajar bahwa *\'Walking into the lab, the microscope fell\'* salah (*dangling participle*) karena mikroskop tidak punya kaki. Pada level C2, jika dua klausa memang memiliki subjek berbeda namun Anda ingin memadatkannya tanpa kata sambung \'because/if/after\', sertakan saja subjek pertamanya secara eksplisit: \'Weather permitting, the vessel will depart\' (= If weather permits, the vessel will depart)!',
+      formula: '[Independent Noun] + [V-ing / V3], [Kalimat Utama (Subjek Berbeda)]',
+      formulaReading: 'Time permitting, we will review year-end plans. • All else being equal, higher rates slow borrowing.',
+      explanation: 'Pada level B2 Anda belajar bahwa *\'Walking into the lab, the microscope fell\'* salah (subjek yang tidak nyambung) karena mikroskop tidak punya kaki. Pada level C2, jika dua bagian kalimat memang memiliki subjek berbeda namun Anda ingin memadatkannya tanpa kata sambung \'because/if/after\', sertakan saja subjek pertamanya secara eksplisit: \'Weather permitting, the vessel will depart\' (= If weather permits, the vessel will depart)!',
       examples: [
         {
           jp: 'Other things being equal, shorter supply chains exhibit lower carbon intensity.',
@@ -3686,11 +3686,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jangan sisipkan \'is/are\' di dalam klausa absolut! Tulis \'Other things BEING equal,\' (BUKAN *\'Other things are equal, shorter chains...\'* yang memicu kesalahan *comma splice*)!',
+    contrastiveTip: 'Jangan sisipkan \'is/are\' di dalam kalimat latar ringkas! Tulis \'Other things BEING equal,\' (BUKAN *\'Other things are equal, shorter chains...\'* yang memicu kesalahan *comma splice*)!',
   },
   'en-us-c2-u3-tata-bahasa': {
-    headline: 'Merakit Klausa Absolut Kausal & Deskriptif (\'The audit completed,\' / \'With reserves dwindling,\')',
-    subtitle: 'Kuasai senjata rahasia penulis *The New Yorker*, *Nature*, dan skor penuh TOEFL Writing: memadatkan klausa \'Because/Once X happened, Y happened\' menjadi klausa absolut.',
+    headline: 'Meringkas Sebab & Situasi Tanpa Kata Hubung (\'The audit completed,\' / \'With reserves dwindling,\')',
+    subtitle: 'Kuasai senjata rahasia penulis *The New Yorker*, *Nature*, dan skor penuh penulisan esai bahasa Inggris: memadatkan bagian kalimat \'Because/Once X happened, Y happened\' menjadi kalimat latar ringkas.',
     items: [
       {
         symbol: 'The audit completed, [S + V]',
@@ -3703,21 +3703,21 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'Its battery depleted, [the probe...]',
         reading: '/ɪts ˈbætəri dɪˈpliːtɪd/',
         meaning: 'Karena baterainya telah terkuras habis, [wahana antariksa itu...]',
-        mnemonic: 'Sangat padat untuk teks sains TOEFL: menggantikan \'Because its battery had been depleted,\'.',
+        mnemonic: 'Sangat padat untuk artikel sains: menggantikan \'Because its battery had been depleted,\'.',
         speakText: 'Its battery depleted, [the probe...]',
       },
       {
         symbol: 'With [NP] + V-ing / V3,',
         reading: '/wɪð .../',
         meaning: 'Mengingat / seiring dengan [Subjek] yang sedang V-ing / telah di-V3,',
-        mnemonic: 'Menambahkan \'With\' di depan klausa absolut membuatnya terdengar luwes baik di tulisan maupun bicara!',
+        mnemonic: 'Menambahkan \'With\' di depan kalimat latar ringkas membuatnya terdengar luwes baik di tulisan maupun bicara!',
         speakText: 'With [NP] + V-ing / V3,',
       },
       {
         symbol: 'Her tenure having expired,',
         reading: '/hɜːr ˈtɛnjər ˈhævɪŋ ɪkˈspaɪərd/',
-        meaning: 'Setelah masa jabatannya berakhir, (partisip perfek aktif untuk kata kerja intransitif)',
-        mnemonic: '\'Expire\' adalah intransitif (bukan pasif), sehingga bentuk lampau selesainya adalah \'having expired\'!',
+        meaning: 'Setelah masa jabatannya berakhir, (partisip perfek aktif untuk kata kerja tanpa objek)',
+        mnemonic: '\'Expire\' adalah tanpa objek (bukan pasif), sehingga bentuk lampau selesainya adalah \'having expired\'!',
         speakText: 'Her tenure having expired,',
       },
     ],
@@ -3726,7 +3726,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Productive Nominative Absolutes & \'With\'-Augmented Absolutes',
       formula: '(With) + [Subject 1] + [V-ing (active) | V3 (passive) | having V3 | Adj/Prep Phrase], [Subject 2] + [Finite Verb]',
       formulaReading: 'The quorum achieved, the chair called the vote. • With reservoirs shrinking, cities rationed water.',
-      explanation: 'Tiga langkah merakit klausa absolut bebas cacat: (1) Tulis subjek klausa latar (\'The treaty\' / \'With exports\'); (2) Pilih V-ing jika subjek itu melakukan aksi aktif (\'shrinking / surging\'), ATAU V3 jika subjek itu dikenai aksi pasif (\'ratified / depleted\'); (3) Tutup dengan koma dan pastikan induk kalimat memiliki KATA KERJA UTAMA (finit) yang utuh!',
+      explanation: 'Tiga langkah merakit kalimat latar ringkas bebas cacat: (1) Tulis subjek bagian kalimat latar (\'The treaty\' / \'With exports\'); (2) Pilih V-ing jika subjek itu melakukan aksi aktif (\'shrinking / surging\'), ATAU V3 jika subjek itu dikenai aksi pasif (\'ratified / depleted\'); (3) Tutup dengan koma dan pastikan induk kalimat memiliki KATA KERJA UTAMA (finit) yang utuh!',
       examples: [
         {
           jp: 'The merger cleared by antitrust regulators, both boards scheduled integration workshops.',
@@ -3740,7 +3740,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Waspadai soal jebakan struktur TOEFL/GMAT: *\'The treaty was ratified, delegates celebrated\'* adalah SALAH (*comma splice*: dua kalimat utuh cuma dipisah koma)! Buang \'was\' -> \'The treaty ratified, delegates celebrated\' (BENAR, klausa absolut)!',
+    contrastiveTip: 'Waspadai soal jebakan struktur ujian bahasa Inggris tingkat lanjut: *\'The treaty was ratified, delegates celebrated\'* adalah SALAH (*comma splice*: dua kalimat utuh cuma dipisah koma)! Buang \'was\' -> \'The treaty ratified, delegates celebrated\' (BENAR, kalimat latar ringkas)!',
   },
   'en-us-c2-u3-diskusi-toefl': {
     headline: 'Kosakata Perubahan Lanskap, Ekologi & Ekonomi Makro C2',
@@ -3750,7 +3750,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'recede',
         reading: '/rɪˈsiːd/',
         meaning: 'Surut / mundur menjauh perlahan (gletser, banjir, ancaman resesi)',
-        mnemonic: 'Intransitif murni: \'Glaciers receded\' (jangan pernah *\'were receded\'*!).',
+        mnemonic: 'Kata kerja tanpa objek: \'Glaciers receded\' (jangan pernah *\'were receded\'*!).',
         speakText: 'recede',
       },
       {
@@ -3764,7 +3764,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'set the stage for',
         reading: '/sɛt ðə steɪdʒ fɔːr/',
         meaning: 'Menyiapkan panggung / menciptakan kondisi pendahulu yang memungkinkan terjadinya...',
-        mnemonic: 'Sangat kuat merangkum urutan kausalitas sejarah dan biologi evolusioner di TOEFL.',
+        mnemonic: 'Sangat kuat merangkum urutan kausalitas sejarah dan biologi evolusioner dalam bahasa Inggris resmi.',
         speakText: 'set the stage for',
       },
       {
@@ -3778,9 +3778,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-C2-003',
       title: 'Sentence-Final Descriptive Absolutes (\'..., each + V-ing / V3\')',
-      formula: '[Main Clause], [Sub-part Noun / each] + [V-ing / V3 / Prep Phrase]',
+      formula: '[Kalimat Utama], [Sub-part Noun / each] + [V-ing / V3 / Prep Phrase]',
       formulaReading: 'The archipelago comprises 17,000 islands, each harboring distinct coastal microclimates.',
-      explanation: 'Klausa absolut tidak hanya diletakkan di AWAL kalimat untuk sebab/waktu, tetapi juga sangat elegan diletakkan di AKHIR kalimat untuk memerinci bagian-bagian tanpa memulai kalimat baru yang patah-patah (\'..., with [X] accounting for 60% and [Y] supplying the rest\').',
+      explanation: 'Bagian kalimat absolut tidak hanya diletakkan di AWAL kalimat untuk sebab/waktu, tetapi juga sangat elegan diletakkan di AKHIR kalimat untuk memerinci bagian-bagian tanpa memulai kalimat baru yang patah-patah (\'..., with [X] accounting for 60% and [Y] supplying the rest\').',
       examples: [
         {
           jp: 'Ice sheets retreated northward, leaving fertile glacial lakes in their wake.',
@@ -3794,10 +3794,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Pola \', each + V-ing / V3\' di ujung kalimat adalah cara paling bersih menjelaskan rincian data grafik atau arsitektur sistem di TOEFL Writing!',
+    contrastiveTip: 'Pola \', each + V-ing / V3\' di ujung kalimat adalah cara paling bersih menjelaskan rincian data grafik atau arsitektur sistem di penulisan esai bahasa Inggris!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 4 (GP-EN-C2-004)
+  // Level C2 — UNIT 4 (GP-EN-C2-004)
   // ===========================================================================
   'en-us-c2-u4-kosakata': {
     headline: 'Mengakui Keunggulan Sebelum Mengajukan Kritik Tajam (*Emphatic Concession*)',
@@ -3821,7 +3821,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'for all its [merits / hype],',
         reading: '/fɔːr ɔːl ɪts/',
         meaning: 'Terlepas dari segala [keunggulan / kehebohannya], (jangan terkecoh menerjemahkan \'untuk semua\'!)',
-        mnemonic: 'JEBAKAN TOEFL READING KLASIK: \'For all his wealth, he lived simply\' artinya \'MESKIPUN sangat kaya\', BUKAN \'karena kekayaannya\'!',
+        mnemonic: 'JEBAKAN ujian bahasa Inggris READING KLASIK: \'For all his wealth, he lived simply\' artinya \'MESKIPUN sangat kaya\', BUKAN \'karena kekayaannya\'!',
         speakText: 'for all its [merits / hype],',
       },
       {
@@ -3834,10 +3834,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-004',
-      title: 'Emphatic Concession (\'Much as + S + V\' & \'For all + Possessive + Noun\')',
-      formula: 'Much as + [S + V of liking/admiring], [Main Clause] • For all + [its/their + Noun], [Main Clause]',
+      title: 'Emphatic Concession (\'Much as + S + V\' & \'For all + Kata Kepemilikan + Benda\')',
+      formula: 'Much as + [S + V of liking/admiring], [Kalimat Utama] • For all + [its/their + Noun], [Kalimat Utama]',
       formulaReading: 'Much as we welcome automation, human oversight remains vital. • For all its elegance, the proof omits edge cases.',
-      explanation: 'Waspadai makna idiomatis \'For all [NP]\' dalam artikel *The Atlantic*, *Foreign Affairs*, dan TOEFL Reading: preposisi \'for all\' di awal kalimat berfungsi 100% sebagai KONSESI (\'terlepas dari / kendati memiliki banyak X\'), setara dengan \'Despite all its X\'!',
+      explanation: 'Waspadai makna idiomatis \'For all [NP]\' dalam artikel *The Atlantic*, *Foreign Affairs*, dan bacaan artikel panjang: kata depan \'for all\' di awal kalimat berfungsi 100% sebagai KONSESI (\'terlepas dari / kendati memiliki banyak X\'), setara dengan \'Despite all its X\'!',
       examples: [
         {
           jp: 'Much as clinicians admire the model\'s sensitivity, false alarms still fatigue night-shift nurses.',
@@ -3855,7 +3855,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c2-u4-tata-bahasa': {
     headline: 'Mengedepankan Predikat Konsesif (\'Compelling though the data is,\')',
-    subtitle: 'Kuasai aturan sintaksis presisi ketika mengangkat kata sifat, adverbia, atau kata benda predikatif ke depan \'as\' atau \'though\'.',
+    subtitle: 'Kuasai aturan susunan kata yang tepat ketika mengangkat kata sifat, kata keterangan, atau kata benda predikatif ke depan \'as\' atau \'though\'.',
     items: [
       {
         symbol: 'Compelling though the theory is,',
@@ -3868,7 +3868,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'Swiftly as the team acted,',
         reading: '/ˈswɪftli æz ðə tiːm ˈæktɪd/',
         meaning: 'Secepat apa pun tim tersebut telah bertindak,',
-        mnemonic: 'Adverbia cara (\'Swiftly\') dikedepankan mendahului \'as + Subject + Action Verb\'.',
+        mnemonic: 'Kata keterangan cara (\'Swiftly\') dikedepankan mendahului \'as + Subject + Action Verb\'.',
         speakText: 'Swiftly as the team acted,',
       },
       {
@@ -3891,7 +3891,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Concessive Fronting Rules (\'Adj + as/though + S + V\' vs \'Although\')',
       formula: 'VALID: [Adj/Adv/Zero-Article Noun] + as / though + [S + V] • INVALID: *[Adj] + although + [S + V]!',
       formulaReading: 'Formidable though the hurdle seemed, engineers cleared it. • Skeptic as he was, the evidence convinced him.',
-      explanation: 'Tiga pantangan tata bahasa C2 pada inversi konsesif: (1) Kata \'although\' TIDAK BISA menggantikan \'as/though\' setelah kata sifat yang dikedepankan (*\'Brilliant although it is\'* -> SALAH TOTAL!); (2) Urutan setelah \'as/though\' adalah S + V normal (\'though the model is\'), bukan V + S; (3) Jika kata benda tunggal dikedepankan, hapus \'a/an\' (\'Master strategist though she was\').',
+      explanation: 'Tiga pantangan tata bahasa C2 pada pola \'meskipun\' terbalik: (1) Kata \'although\' TIDAK BISA menggantikan \'as/though\' setelah kata sifat yang dikedepankan (*\'Brilliant although it is\'* -> SALAH TOTAL!); (2) Urutan setelah \'as/though\' adalah S + V normal (\'though the model is\'), bukan V + S; (3) Jika kata benda tunggal dikedepankan, hapus \'a/an\' (\'Master strategist though she was\').',
       examples: [
         {
           jp: 'Ingenious as the passive cooling tower is, peak humidity reduces its efficiency.',
@@ -3905,11 +3905,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Ingat jebakan ujian klasik: \'Brilliant THOUGH / AS the plan is\' = BENAR; *\'Brilliant ALTHOUGH the plan is\'* = SALAH! \'Although\' wajib berada paling depan klausa!',
+    contrastiveTip: 'Ingat jebakan ujian klasik: \'Brilliant THOUGH / AS the plan is\' = BENAR; *\'Brilliant ALTHOUGH the plan is\'* = SALAH! \'Although\' wajib berada paling depan bagian kalimat!',
   },
   'en-us-c2-u4-diskusi-toefl': {
     headline: 'Menolak Klaim Berlebihan Tanpa Terdengar Sinis (*Nuanced Critique*)',
-    subtitle: 'Gunakan ungkapan batas kritis C2 agar tinjauan pustaka, esai TOEFL, dan jawaban sidang Anda terdengar tajam, dewasa, dan seimbang.',
+    subtitle: 'Gunakan ungkapan batas kritis C2 agar tinjauan pustaka, esai bahasa Inggris, dan jawaban sidang Anda terdengar tajam, dewasa, dan seimbang.',
     items: [
       {
         symbol: 'stop short of + V-ing',
@@ -3922,7 +3922,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'no panacea (for)',
         reading: '/noʊ ˌpænəˈsiːə/',
         meaning: 'Bukan obat mujarab penyembuh segala masalah (menolak solusi tunggal yang disederhanakan)',
-        mnemonic: 'Kosakata emas TOEFL Writing untuk menyanggah klaim bahwa satu teknologi bisa menyelesaikan segalanya!',
+        mnemonic: 'Kosakata emas penulisan esai bahasa Inggris untuk menyanggah klaim bahwa satu teknologi bisa menyelesaikan segalanya!',
         speakText: 'no panacea (for)',
       },
       {
@@ -3945,7 +3945,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Synthesizing Emphatic Concession with Measured Critique',
       formula: '[Adj] + though [Tech/Policy] is, it remains no panacea for [Systemic Issue]—and is still a far cry from [Ideal].',
       formulaReading: 'Promising as solid-state batteries are, lab cells remain a far cry from mass-market packs.',
-      explanation: 'Paragraf evaluasi C2 yang utuh bekerja dalam dua gerak: gerak pertama memberi pengakuan maksimal menggunakan *concessive inversion* (\'Transformative though AI diagnostics may prove,\'), dan gerak kedua menarik garis batas realistis (\'algorithms alone are no panacea for understaffed clinics\').',
+      explanation: 'Paragraf evaluasi C2 yang utuh bekerja dalam dua gerak: gerak pertama memberi pengakuan maksimal menggunakan pola \'meskipun\' dengan kata sifat di depan (\'Transformative though AI diagnostics may prove,\'), dan gerak kedua menarik garis batas realistis (\'algorithms alone are no panacea for understaffed clinics\').',
       examples: [
         {
           jp: 'Revolutionary though CRISPR therapies are, billion-dollar price tags remain a far cry from equitable care.',
@@ -3962,17 +3962,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Lafalkan \'panacea\' empat suku kata jelas: /ˌpænəˈsiːə/ (pan-uh-SEE-uh)!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 5 (GP-EN-C2-005)
+  // Level C2 — UNIT 5 (GP-EN-C2-005)
   // ===========================================================================
   'en-us-c2-u5-kosakata': {
     headline: 'Menandai Klaim Pihak Lain Tanpa Ikut Menjamin Kebenarannya (*Evidential Distancing*)',
-    subtitle: 'Dalam jurnalisme investigasi AS, opini hukum, dan soal *Author\'s Attitude* di TOEFL Reading, satu kata seperti \'purports\' atau \'ostensibly\' langsung menyingkap sikap skeptis penulis!',
+    subtitle: 'Dalam jurnalisme investigasi AS, opini hukum, dan soal *Author\'s Attitude* di bacaan artikel panjang, satu kata seperti \'purports\' atau \'ostensibly\' langsung menyingkap sikap skeptis penulis!',
     items: [
       {
         symbol: 'purport to + V1',
         reading: '/pərˈpɔːrt tuː/',
         meaning: 'Mengklaim / mengaku seolah-olah mampu melakukan sesuatu (menyiratkan keraguan kuat penulis!)',
-        mnemonic: 'Jika soal TOEFL bertanya \'Why does the author use the word purports?\', jawabannya SELALU: untuk menunjukkan keraguan bahwa klaim itu belum tentu benar!',
+        mnemonic: 'Jika latihan bahasa Inggris bertanya \'Why does the author use the word purports?\', jawabannya SELALU: untuk menunjukkan keraguan bahwa klaim itu belum tentu benar!',
         speakText: 'purport to + V1',
       },
       {
@@ -3986,7 +3986,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'putative',
         reading: '/ˈpjuːtətɪv/',
         meaning: 'Yang selama ini diduga / dianggap umum demikian (meski bukti pastinya belum konklusif)',
-        mnemonic: 'Sangat populer di artikel biologi/arkeologi TOEFL: \'the putative ancestor of modern birds\'.',
+        mnemonic: 'Sangat populer di artikel sains & sejarah: \'the putative ancestor of modern birds\'.',
         speakText: 'putative',
       },
       {
@@ -4002,7 +4002,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Lexical Evidentiality & Authorial Skepticism (\'purport to\' / \'ostensibly\')',
       formula: '[Subject] + purports to + V1 (skeptical claim) • Ostensibly + [Surface Claim], [Actual Reality]',
       formulaReading: 'The supplement purports to reverse cellular aging, yet double-blind trials show no effect.',
-      explanation: 'Soal *Rhetorical Purpose & Attitude* tersulit di TOEFL iBT menguji apakah Anda peka terhadap penanda jarak bukti (*evidential markers*). Kata \'demonstrate / establish\' menandakan penulis SETUJU bukti kuat; kata \'suggest / indicate\' bersifat netral; sedangkan \'purport to / ostensibly / putative / so-called\' menandakan penulis SKEPTIS terhadap klaim tersebut!',
+      explanation: 'Soal *Rhetorical Purpose & Attitude* tersulit di ujian bahasa Inggris internasional menguji apakah Anda peka terhadap penanda jarak bukti (*evidential markers*). Kata \'demonstrate / establish\' menandakan penulis SETUJU bukti kuat; kata \'suggest / indicate\' bersifat netral; sedangkan \'purport to / ostensibly / putative / so-called\' menandakan penulis SKEPTIS terhadap klaim tersebut!',
       examples: [
         {
           jp: 'The browser extension purports to anonymize traffic while quietly harvesting browsing histories.',
@@ -4016,11 +4016,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan tekanan verba \'purport\' jatuh pada suku kata KEDUA (/pərˈpɔːrt/), dan selalu diikuti \'to + V1\'!',
+    contrastiveTip: 'Perhatikan tekanan kata kerja \'purport\' jatuh pada suku kata KEDUA (/pərˈpɔːrt/), dan selalu diikuti \'to + V1\'!',
   },
   'en-us-c2-u5-tata-bahasa': {
-    headline: 'Membedakan Waktu Kejadian dengan Infinitif Pasif Pelaporan (\'is alleged to have V3\')',
-    subtitle: 'Dalam berita hukum AS dan arkeologi TOEFL, kata kerja pelaporan tetap Present (\'is believed / is alleged\'), sedangkan waktu terjadinya klaim dikodekan secara presisi di dalam bentuk infinitif sesudahnya!',
+    headline: 'Menyebutkan Dugaan/Laporan Masa Lalu & Sekarang (\'is alleged to have V3\')',
+    subtitle: 'Dalam berita hukum AS dan artikel sejarah, kata kerja pelaporan tetap Present (\'is believed / is alleged\'), sedangkan waktu terjadinya klaim dikodekan secara presisi di dalam bentuk \'to + V1\' sesudahnya!',
     items: [
       {
         symbol: 'is alleged to have [V3]',
@@ -4033,21 +4033,21 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'is thought to have been [V3]',
         reading: '/ɪz θɔːt tə həv bɪn/',
         meaning: 'Diperkirakan para ahli TELAH di-[pasif] pada masa lampau',
-        mnemonic: 'Infinitif perfek PASIF: \'The fresco is thought to have been painted in 1460\'!',
+        mnemonic: 'Bentuk \'to have been + V3\' (pasif lampau): \'The fresco is thought to have been painted in 1460\'!',
         speakText: 'is thought to have been [V3]',
       },
       {
         symbol: 'is rumored to be [V-ing]',
         reading: '/ɪz ˈruːmərd tə bi/',
         meaning: 'Dikabarkan SEDANG melakukan [proses yang berlangsung detik/minggu ini]',
-        mnemonic: 'Infinitif progresif mengunci makna kejadian yang sedang berjalan saat berita diturunkan.',
+        mnemonic: 'Bentuk \'to be + V-ing\' (sedang berlangsung) mengunci makna kejadian yang sedang berjalan saat berita diturunkan.',
         speakText: 'is rumored to be [V-ing]',
       },
       {
         symbol: 'appears to have [V3]',
         reading: '/əˈpɪrz tə həv/',
         meaning: 'Tampaknya (berdasarkan bukti fisik sekarang) telah mengalami/melakukan [kejadian lampau]',
-        mnemonic: 'Sangat objektif untuk laporan postmortem teknis dan analisis forensik ilmiah!',
+        mnemonic: 'Sangat objektif untuk laporan evaluasi masalah teknis dan analisis forensik ilmiah!',
         speakText: 'appears to have [V3]',
       },
     ],
@@ -4056,7 +4056,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Evidential Passive Matrix (Simple, Progressive, Perfect & Passive-Perfect Infinitives)',
       formula: '[S] + is said/thought/alleged + { to V1 (umum) | to be V-ing (sedang) | to have V3 (lampau aktif) | to have been V3 (lampau pasif) }',
       formulaReading: 'The manuscript is believed to have been forged in the 1890s.',
-      explanation: 'Kuasai matriks empat kuadran infinitif sesudah \'is believed / alleged / reported / estimated\': (1) Keadaan kini/rutin -> \'to hold reserves\'; (2) Sedang berlangsung sekarang -> \'to be negotiating a merger\'; (3) Aksi lampau oleh subjek -> \'to have siphoned funds\'; (4) Aksi lampau yang dialami subjek secara pasif -> \'to have been forged\'!',
+      explanation: 'Kuasai empat pola waktu dengan \'to\' sesudah \'is believed / alleged / reported / estimated\': (1) Keadaan kini/rutin -> \'to hold reserves\'; (2) Sedang berlangsung sekarang -> \'to be negotiating a merger\'; (3) Aksi lampau oleh subjek -> \'to have siphoned funds\'; (4) Aksi lampau yang dialami subjek secara pasif -> \'to have been forged\'!',
       examples: [
         {
           jp: 'The threat group is alleged to have exfiltrated source code via a compromised VPN appliance.',
@@ -4070,11 +4070,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Cek aktif vs. pasif di ujung infinitif perfek: \'monks copied the scroll\' -> \'the scroll is believed TO HAVE BEEN COPIED\' (jangan lupa \'been\' jika subjeknya benda mati yang dikenai tindakan!).',
+    contrastiveTip: 'Cek aktif vs. pasif di ujung bentuk \'to have + V3\': \'monks copied the scroll\' -> \'the scroll is believed TO HAVE BEEN COPIED\' (jangan lupa \'been\' jika subjeknya benda mati yang dikenai tindakan!).',
   },
   'en-us-c2-u5-diskusi-toefl': {
     headline: 'Mengkritik Kualitas Bukti secara Ilmiah dalam Tinjauan Sejawat (*Peer Review*)',
-    subtitle: 'Gunakan kosakata penilaian bukti tingkat C2 saat mengevaluasi kelemahan studi di esai TOEFL, tesis, dan komite investasi.',
+    subtitle: 'Gunakan kosakata penilaian bukti tingkat C2 saat mengevaluasi kelemahan studi di esai bahasa Inggris, tesis, dan komite investasi.',
     items: [
       {
         symbol: 'a paucity of [evidence / data]',
@@ -4110,7 +4110,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Methodological Critique Framing (\'Given the paucity of..., claims warrant caution\')',
       formula: 'Given the paucity of [Independent Data], [Putative Claims] remain anecdotal at best and warrant caution.',
       formulaReading: 'Given a paucity of baseline cores, claims of sudden collapse warrant caution.',
-      explanation: 'Menggabungkan nomina \'a paucity of [X]\', adjektiva \'uncorroborated / anecdotal at best\', dan predikat \'warrant caution\' memungkinkan Anda meruntuhkan argumen lemah tanpa satu pun kata emosional atau kasar.',
+      explanation: 'Menggabungkan kata benda \'a paucity of [X]\', kata sifat \'uncorroborated / anecdotal at best\', dan predikat \'warrant caution\' memungkinkan Anda meruntuhkan argumen lemah tanpa satu pun kata emosional atau kasar.',
       examples: [
         {
           jp: 'Given a paucity of multi-year follow-up data, claims of permanent remission warrant caution.',
@@ -4127,10 +4127,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Perhatikan artikel pada \'a paucity of\': sama seperti \'a lack of\', kata \'paucity\' hampir selalu didahului artikel \'a\' (\'a paucity of reliable records\')!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 6 (GP-EN-C2-006)
+  // Level C2 — UNIT 6 (GP-EN-C2-006)
   // ===========================================================================
   'en-us-c2-u6-kosakata': {
-    headline: 'Empat Ungkapan Subjunctive Klasik yang Hidup di Puncak Eksekutif',
+    headline: 'Empat Ungkapan Klasik Resmi yang Hidup di Puncak Eksekutif',
     subtitle: 'Bahasa Inggris modern menyimpan sejumlah ungkapan baku dengan \'be\' atau V1 tanpa \'-s\' yang memberi wibawa luar biasa dalam transisi debat dan penulisan opini.',
     items: [
       {
@@ -4144,7 +4144,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'Suffice it to say (that)...',
         reading: '/səˈfaɪs ɪt tə seɪ/',
         meaning: 'Cukuplah dikatakan bahwa... (tanpa perlu membeberkan detail sensitif/panjang lebar)',
-        mnemonic: 'Perhatikan lafal verba \'suffice\' berakhiran /s/ tajam (/səˈfaɪs/), dan bentuknya \'Suffice\' tanpa \'-s\'!',
+        mnemonic: 'Perhatikan lafal kata kerja \'suffice\' berakhiran /s/ tajam (/səˈfaɪs/), dan bentuknya \'Suffice\' tanpa \'-s\'!',
         speakText: 'Suffice it to say (that)...',
       },
       {
@@ -4164,15 +4164,15 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-006',
-      title: 'Fixed Formulaic Subjunctives (\'Be that as it may\' / \'Suffice it to say\')',
-      formula: 'Be that as it may, [Main Clause] • Suffice it to say (that) + [S + V] • Far be it from [Obj] to + V1',
+      title: 'Fixed Formulaic pola anjuran V1 murnis (\'Be that as it may\' / \'Suffice it to say\')',
+      formula: 'Be that as it may, [Kalimat Utama] • Suffice it to say (that) + [S + V] • Far be it from [Obj] to + V1',
       formulaReading: 'Be that as it may, our deadline stands. • Suffice it to say, the audit uncovered gaps.',
-      explanation: 'Ungkapan *formulaic subjunctive* bersifat beku (*frozen idioms*): jangan pernah mengubah \'Be\' menjadi \'Is\', atau \'Suffice\' menjadi *\'Suffices\'*! Mengubah satu huruf saja langsung merusak kealamian ungkapan di telinga penutur asli.',
+      explanation: 'Ungkapan ungkapan baku klasik bersifat beku (*frozen idioms*): jangan pernah mengubah \'Be\' menjadi \'Is\', atau \'Suffice\' menjadi *\'Suffices\'*! Mengubah satu huruf saja langsung merusak kealamian ungkapan di telinga penutur asli.',
       examples: [
         {
-          jp: 'Vendor delays hurt Q2; be that as it may, we must ship the security patch tonight.',
+          jp: 'Supplier delays hurt spring sales; be that as it may, we must finish the safety update tonight.',
           reading: '/ˈvɛndər dɪˈleɪz hɜːrt kjuː tuː biː ðæt æz ɪt meɪ wi mʌst ʃɪp ðə sɪˈkjʊrəti pætʃ təˈnaɪt/',
-          id: 'Keterlambatan vendor memang merugikan Q2; biarpun demikian, kita wajib merilis tambalan keamanan malam ini.',
+          id: 'Keterlambatan pemasok memang merugikan penjualan; biarpun demikian, kita wajib menyelesaikan pembaruan keamanan malam ini.',
         },
         {
           jp: 'NDA rules bar specifics, so suffice it to say that due diligence ended abruptly.',
@@ -4181,11 +4181,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Jangan menulis *\'It suffices to say\'* jika Anda mengincar keanggunan inversi klasik C2 \'Suffice it to say (that)...\'!',
+    contrastiveTip: 'Jangan menulis *\'It suffices to say\'* jika Anda mengincar keanggunan ungkapan klasik berkelas \'Suffice it to say (that)...\'!',
   },
   'en-us-c2-u6-tata-bahasa': {
     headline: 'Konsesi Alternatif Produktif (\'Be it urban or rural\') & Ketegasan Sikap (\'So be it\')',
-    subtitle: 'Tidak seperti idiom beku lainnya, struktur \'Be it [A] or [B]\' bersifat PRODUKTIF: Anda dapat mengisinya dengan kata benda, kata sifat, atau frasa preposisi apa pun di esai TOEFL!',
+    subtitle: 'Tidak seperti idiom beku lainnya, struktur \'Be it [A] or [B]\' bersifat PRODUKTIF: Anda dapat mengisinya dengan kata benda, kata sifat, atau frasa kata depan apa pun di esai bahasa Inggris!',
     items: [
       {
         symbol: 'be it [X] or [Y]',
@@ -4205,7 +4205,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'Heaven forbid (that) S + V1',
         reading: '/ˈhɛvən fərˈbɪd/',
         meaning: 'Jangan sampai terjadi bahwa... (harapan kuat mencegah skenario buruk)',
-        mnemonic: 'Diikuti subjunctive V1 murni: \'Heaven forbid that a dam fail during peak monsoon\'.',
+        mnemonic: 'Diikuti pola V1 murni V1 murni: \'Heaven forbid that a dam fail during peak monsoon\'.',
         speakText: 'Heaven forbid (that) S + V1',
       },
       {
@@ -4218,13 +4218,13 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-006',
-      title: 'Productive Disjunctive Subjunctive (\'be it A or B\' / \'be they A or B\')',
+      title: 'Pola \'Be it A or B\' (Baik A Maupun B) (\'be it A or B\' / \'be they A or B\')',
       formula: '[Main Statement], be it + [Singular NP / Adj / Prep Phrase A] or [B] • ..., be they + [Plural NP A] or [B]',
       formulaReading: 'Every dataset carries bias, be it clinical, financial, or linguistic.',
-      explanation: 'Struktur \'be it X or Y\' memangkas klausa \'whether it happens to be X or Y\' menjadi sisipan apositif yang tajam dan berirama. Jika kata benda induknya jamak (\'All hospitals, be they public or private,...\'), sesuaikan pronominanya menjadi \'be they\'!',
+      explanation: 'Struktur \'be it X or Y\' memangkas bagian kalimat \'whether it happens to be X or Y\' menjadi sisipan penjelas yang tajam dan berirama. Jika kata benda induknya jamak (\'All hospitals, be they public or private,...\'), sesuaikan kata gantinya menjadi \'be they\'!',
       examples: [
         {
-          jp: 'No critical service—be it payments, identity, or messaging—may deploy without canary checks.',
+          jp: 'No essential service—be it payments, login, or messaging—may launch without safety checks.',
           reading: '/noʊ ˈkrɪtɪkəl ˈsɜːrvɪs biː ɪt ˈpeɪmənts aɪˈdɛntəti ɔːr ˈmɛsɪdʒɪŋ meɪ dɪˈplɔɪ wɪˈðaʊt kəˈnɛri tʃɛks/',
           id: 'Tidak satu pun layanan kritis—baik pembayaran, identitas, maupun perpesanan—boleh dirilis tanpa pemeriksaan kenari.',
         },
@@ -4238,7 +4238,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Cek keselarasan jumlah: \'Every applicant, BE HE OR SHE domestic or international\' / \'Every institution, BE IT large or small\' vs. \'All institutions, BE THEY large or small\'!',
   },
   'en-us-c2-u6-diskusi-toefl': {
-    headline: 'Menyatakan Keberatan Resmi & Catatan Risalah Rapat Tingkat C-Suite',
+    headline: 'Menyatakan Keberatan Resmi & Catatan Risalah Rapat Tingkat Pimpinan',
     subtitle: 'Lengkapi khazanah pidato formal Anda dengan ungkapan keberatan terukur dan transisi risalah resmi.',
     items: [
       {
@@ -4272,10 +4272,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-006',
-      title: 'Formal Boardroom & Hearing Register (\'take exception to\' / \'in no uncertain terms\')',
+      title: 'Gaya Bahasa Resmi saat Rapat & Sidang (\'take exception to\' / \'in no uncertain terms\')',
       formula: 'I must take exception to [Characterization]; let the record reflect that [Factual Clarification].',
       formulaReading: 'Regulators told the exchange in no uncertain terms to segregate client funds.',
-      explanation: 'Dalam simulasi sidang tesis, arbitrase bisnis, atau wawancara eksekutif C2, ketenangan saat menghadapi tuduhan keliru ditunjukkan lewat register presisi: gunakan \'take exception to + Noun Phrase\' diikuti fakta jernih.',
+      explanation: 'Dalam simulasi sidang tesis, arbitrase bisnis, atau wawancara eksekutif C2, ketenangan saat menghadapi tuduhan keliru ditunjukkan lewat gaya bahasa yang tenang dan terukur: gunakan \'take exception to + Noun Phrase\' diikuti fakta jernih.',
       examples: [
         {
           jp: 'Our scientists took strong exception to the editorial\'s claim that safety data had been withheld.',
@@ -4289,19 +4289,19 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan kata benda \'record\' bertekanan di suku kata PERTAMA (/ˈrɛkərd/), sedangkan verba \'record\' di suku kata KEDUA (/rɪˈkɔːrd/)!',
+    contrastiveTip: 'Perhatikan kata benda \'record\' bertekanan di suku kata PERTAMA (/ˈrɛkərd/), sedangkan kata kerja \'record\' di suku kata KEDUA (/rɪˈkɔːrd/)!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 7 (GP-EN-C2-007)
+  // Level C2 — UNIT 7 (GP-EN-C2-007)
   // ===========================================================================
   'en-us-c2-u7-kosakata': {
     headline: 'Membuka dengan Aposisi Ringkas & Menutup Tanpa Jebakan \', which\'',
-    subtitle: 'Penulis esai C1 sering terjebak menulis \'...prices rose, which hurt exports\' (rujukan \', which\' kabur pada seluruh klausa!). Penulis C2 menggantinya dengan *summative modifier* yang tajam!',
+    subtitle: 'Penulis esai C1 sering terjebak menulis \'...prices rose, which hurt exports\' (rujukan \', which\' kabur pada seluruh bagian kalimat!). Penulis C2 menggantinya dengan kata benda perangkum di akhir kalimat yang tajam!',
     items: [
       {
         symbol: '—a shift that...',
         reading: '/ə ʃɪft ðæt/',
-        meaning: '—sebuah pergeseran yang... (merangkum seluruh klausa di depannya menjadi satu kata benda tajam!)',
+        meaning: '—sebuah pergeseran yang... (merangkum seluruh bagian kalimat di depannya menjadi satu kata benda tajam!)',
         mnemonic: 'Ganti \', which caused Y\' yang lembek dengan \'—a shift / bottleneck / miscalculation that triggered Y\'!',
         speakText: '—a shift that...',
       },
@@ -4323,16 +4323,16 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'precipitate',
         reading: '/prɪˈsɪpəˌteɪt/',
         meaning: 'Memicu terjadinya suatu krisis atau perubahan besar secara tiba-tiba / lebih cepat',
-        mnemonic: 'Verba kausalitas favorit TOEFL Reading (/prɪˈsɪpəˌteɪt/) di dalam *summative modifier* (\'—a default that precipitated panic\').',
+        mnemonic: 'Kata kerja sebab-akibat favorit bacaan artikel panjang (/prɪˈsɪpəˌteɪt/) di dalam kata benda perangkum di akhir kalimat (\'—a default that precipitated panic\').',
         speakText: 'precipitate',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C2-007',
       title: 'Introductory Appositives & Summative Modifiers (Replacing Broad \'which\')',
-      formula: 'Intro Appositive: [A/An + Noun Phrase], [Matching Subject] + V • Summative: [Independent Clause]—[a/an + Summary Noun + that + V]',
+      formula: 'Pembuka Penjelas: [A/An + Noun Phrase], [Matching Subject] + V • Summative: [Kalimat Utama]—[a/an + Summary Noun + that + V]',
       formulaReading: 'A linchpin of global trade, the Suez Canal carries 12% of cargo. • Yields spiked—a shock that froze IPOs.',
-      explanation: 'Dua teknik tanda baca dan struktur tingkat *The Economist*: (1) Jika kalimat dibuka dengan frasa benda aposisi (\'An architect of modern monetary theory,\'), kata tepat sesudah koma WAJIB tokoh/benda yang sama persis! (2) Di akhir kalimat utuh, gunakan tanda pisah (*em-dash* `—`) atau koma diikuti `[Summary Noun] + that/which...` untuk memberi nama sekaligus menilai kejadian di klausa utama!',
+      explanation: 'Dua teknik tanda baca dan struktur tingkat *The Economist*: (1) Jika kalimat dibuka dengan frasa penjelas di awal (\'An architect of modern monetary theory,\'), kata tepat sesudah koma WAJIB tokoh/benda yang sama persis! (2) Di akhir kalimat utuh, gunakan tanda pisah (*em-dash* `—`) atau koma diikuti `[Summary Noun] + that/which...` untuk memberi nama sekaligus menilai kejadian di bagian utama kalimat!',
       examples: [
         {
           jp: 'A hallmark of fault-tolerant design, graceful degradation keeps core payments online.',
@@ -4349,13 +4349,13 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Dalam standar penulisan akademik AS ketat (APA/Chicago/GMAT), hindari `, which` untuk merujuk ke seluruh kejadian kalimat (\'He missed the flight, which ruined the pitch\'); ubah menjadi \'He missed the flight—a delay that ruined the pitch\'!',
   },
   'en-us-c2-u7-tata-bahasa': {
-    headline: 'Mengulang Kata Kunci untuk Memperpanjang Napas Kalimat (*Resumptive Modifiers*)',
+    headline: 'Mengulang Kata Kunci untuk Memperpanjang Napas Kalimat (*Mengulang Kata Kunci untuk Menjelaskan*)',
     subtitle: 'Bagaimana cara menulis kalimat 35 kata yang tetap sejernih kristal? Tangkap kembali kata benda, kata sifat, atau kata kerja penting menjelang akhir kalimat, lalu kembangkan!',
     items: [
       {
         symbol: '..., [Noun] that...',
         reading: '/... ðæt/',
-        meaning: 'Pengulangan kata benda kunci (*resumptive noun*) untuk menambahkan klausa penjelas mendalam tanpa tersesat',
+        meaning: 'Pengulangan kata benda kunci (*resumptive noun*) untuk menambahkan bagian penjelas \'yang\' mendalam tanpa tersesat',
         mnemonic: 'Contoh: \'We face a trust deficit, a deficit that no PR campaign alone can close\'.',
         speakText: '..., [Noun] that...',
       },
@@ -4369,24 +4369,24 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       {
         symbol: '..., a threshold beyond which...',
         reading: '/ə ˈθrɛʃˌhoʊld bɪˈjɑːnd wɪtʃ/',
-        meaning: '..., sebuah ambang batas yang apabila dilampaui maka... (*summative + preposition + which*)',
-        mnemonic: 'Menggabungkan aposisi rangkuman dengan klausa relatif berpreposisi C1/C2!',
+        meaning: '..., sebuah ambang batas yang apabila dilampaui maka... (*summative + kata depan + which*)',
+        mnemonic: 'Menggabungkan kata benda perangkum dengan kalimat penjelas pakai kata depan + which C1/C2!',
         speakText: '..., a threshold beyond which...',
       },
       {
         symbol: 'cascade',
         reading: '/kæˈskeɪd/',
-        meaning: 'Runtutan berjenjang seperti air terjun bertingkat (nomina/verba kegagalan atau efek sistemik)',
+        meaning: 'Runtutan berjenjang seperti air terjun bertingkat (kata benda/kerja kegagalan atau efek sistemik)',
         mnemonic: '\'A cascade of liquidations\' / \'failures cascaded across regions\'.',
         speakText: 'cascade',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C2-007',
-      title: 'Resumptive Modifiers (Echoing Key Nouns, Adjectives, or Participles)',
-      formula: '[Main Clause ending near Key Word X], [Key Word X] + [that / Prep + which / infinitive expansion]',
+      title: 'Mengulang Kata Kunci untuk Penjelasan Mendalam',
+      formula: '[Kalimat Utama berakhir di Kata Kunci X], [Key Word X] + [that / Prep + which / penjelasan \'to + V1\']',
       formulaReading: 'Central banks guard credibility, credibility that takes decades to earn and minutes to lose.',
-      explanation: 'Berbeda dari repetisi tak sengaja yang membosankan, *resumptive modifier* sengaja menggemakan satu kata kunci tepat sesudah koma atau tanda pisah untuk menjadi landasan pacu ide lanjutan. Ini menghilangkan 100% ambiguitas rujukan kata ganti relatif pada kalimat kompleks!',
+      explanation: 'Berbeda dari repetisi tak sengaja yang membosankan, teknik mengulang kata kunci sengaja menggemakan satu kata kunci tepat sesudah koma atau tanda pisah untuk menjadi landasan pacu ide lanjutan. Ini menghilangkan 100% ambiguitas rujukan kata ganti relatif pada kalimat kompleks!',
       examples: [
         {
           jp: 'Tropical peatlands store vast carbon reserves, reserves that centuries of drainage now threaten to release.',
@@ -4404,7 +4404,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
   },
   'en-us-c2-u7-diskusi-toefl': {
     headline: 'Menghindari Kalimat Patah-Patah (*Choppy Prose*) sekaligus Menghindari *Run-On*',
-    subtitle: 'Gabungkan aposisi, tanda pisah, dan kosakata struktur sistemik untuk menghasilkan paragraf esai TOEFL 120 yang matang.',
+    subtitle: 'Gabungkan aposisi, tanda pisah, dan kosakata struktur sistemik untuk menghasilkan paragraf esai Esai Tingkat Mahir yang matang.',
     items: [
       {
         symbol: 'at the crossroads of',
@@ -4424,7 +4424,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'byproduct of',
         reading: '/ˈbaɪˌprɑːdʌkt ʌv/',
         meaning: 'Hasil sampingan (sering kali tak disengaja) dari suatu proses utama',
-        mnemonic: 'Sangat berguna di dalam aposisi rangkuman: \'—an unintended byproduct of cheap credit\'.',
+        mnemonic: 'Sangat berguna di dalam kata benda perangkum: \'—an unintended byproduct of cheap credit\'.',
         speakText: 'byproduct of',
       },
       {
@@ -4437,9 +4437,9 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-007',
-      title: 'Editorial Sentence Architecture (Intro Appositive + Core Clause + Summative Dash)',
-      formula: '[Intro Appositive], [Subject + Active Verb + Object]—[a/an + Evaluative Noun + that + Consequence].',
-      formulaReading: 'Situated at the crossroads of biology and CS, bioinformatics decodes genomes—a synergy that transforms oncology.',
+      title: 'Editorial Sentence Architecture (Pembuka Penjelas + Kalimat Inti + Summative Dash)',
+      formula: '[Pembuka Penjelas], [Subject + Active Verb + Object]—[a/an + Evaluative Noun + that + Consequence].',
+      formulaReading: 'Situated at the crossroads of biology and data science, modern research decodes genes—a partnership that transforms medicine.',
       explanation: 'Cetak biru tiga lapis ini (*Intro Frame -> Crisp Core -> Summative Tail*) memungkinkan Anda memasukkan tiga gagasan utuh ke dalam satu kalimat yang sangat mudah dibaca tanpa satu pun kata sambung mekanis yang kaku.',
       examples: [
         {
@@ -4457,7 +4457,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Cek pelafalan wajib: \'sword\' = /sɔːrd/ (berima dengan \'cord/board\', TANPA bunyi /w/ sama sekali)!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 8 (GP-EN-C2-008)
+  // Level C2 — UNIT 8 (GP-EN-C2-008)
   // ===========================================================================
   'en-us-c2-u8-kosakata': {
     headline: 'Membatasi Sejauh Mana Suatu Klaim Berlaku (*Scope Delimitation*)',
@@ -4473,7 +4473,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       {
         symbol: 'notwithstanding',
         reading: '/ˌnɑːtwɪðˈstændɪŋ/',
-        meaning: 'Terlepas dari / kendati adanya... (preposisi super-formal yang bisa di DEPAN atau di BELAKANG kata bendanya!)',
+        meaning: 'Terlepas dari / kendati adanya... (kata depan super-formal yang bisa di DEPAN atau di BELAKANG kata bendanya!)',
         mnemonic: 'Bisa \'Notwithstanding fierce opposition,\' ATAU \'Fierce opposition notwithstanding,\'—keduanya 100% sah dan sangat elegan!',
         speakText: 'notwithstanding',
       },
@@ -4494,10 +4494,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-008',
-      title: 'Precision Scope & Bidirectional Prepositions (\'Insofar as\' & \'Notwithstanding\')',
-      formula: 'Scope Clause: [Claim] + insofar as + [S + V] • Concession Prep: Notwithstanding [NP], / [NP] notwithstanding,',
+      title: 'Precision Scope & Bidirectional Kata Depan (\'Insofar as\' & \'Notwithstanding\')',
+      formula: 'Batasan Cakupan: [Claim] + insofar as + [S + V] • Concession Prep: Notwithstanding [NP], / [NP] notwithstanding,',
       formulaReading: 'GDP measures welfare only insofar as market prices capture value. • Short-term volatility notwithstanding, fundamentals remain sound.',
-      explanation: 'Hati-hati membedakan kelas katanya! \'Insofar as\' dan \'inasmuch as\' adalah KONJUNGSI sehingga wajib diikuti klausa lengkap `Subject + Verb`. Sebaliknya, \'notwithstanding\' dan \'vis-à-vis\' adalah PREPOSISI sehingga diikuti `Noun Phrase` (TANPA kata \'of\'—jangan pernah menulis *\'notwithstanding of\'*!).',
+      explanation: 'Hati-hati membedakan kelas katanya! \'Insofar as\' dan \'inasmuch as\' adalah KATA HUBUNG sehingga wajib diikuti bagian kalimat lengkap `Subject + Verb`. Sebaliknya, \'notwithstanding\' dan \'vis-à-vis\' adalah KATA DEPAN sehingga diikuti `Noun Phrase` (TANPA kata \'of\'—jangan pernah menulis *\'notwithstanding of\'*!).',
       examples: [
         {
           jp: 'Carbon credits work only insofar as baseline forest threats are verified independently.',
@@ -4505,17 +4505,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
           id: 'Kredit karbon efektif hanya sejauh ancaman dasar terhadap hutan diverifikasi secara independen.',
         },
         {
-          jp: 'Supply bottlenecks notwithstanding, quarterly deliveries topped guidance by eight percent.',
+          jp: 'Supply bottlenecks notwithstanding, seasonal deliveries topped estimates by eight percent.',
           reading: '/səˈplaɪ ˈbɑːtəlˌnɛks ˌnɑːtwɪðˈstændɪŋ ˈkwɔːrtərli dɪˈlɪvəriz tɑːpt ˈɡaɪdəns baɪ eɪt pərˈsɛnt/',
           id: 'Terlepas dari kemacetan pasokan, pengiriman kuartalan melampaui proyeksi sebesar delapan persen.',
         },
       ],
     },
-    contrastiveTip: 'Ingat: sama seperti \'despite\', kata \'notwithstanding\' TIDAK PERNAH diikuti preposisi \'of\' (*\'notwithstanding of the delay\'* -> SALAH)!',
+    contrastiveTip: 'Ingat: sama seperti \'despite\', kata \'notwithstanding\' TIDAK PERNAH diikuti kata depan \'of\' (*\'notwithstanding of the delay\'* -> SALAH)!',
   },
   'en-us-c2-u8-tata-bahasa': {
     headline: 'Membedakan Kausalitas Formal (\'Inasmuch as\') & Derajat Korelasi (\'To the extent that\')',
-    subtitle: 'Pahami nuansa halus di antara konjungsi-konjungsi tingkat tinggi yang sering muncul di soal parafrasa (*Sentence Simplification*) TOEFL Reading!',
+    subtitle: 'Pahami nuansa halus di antara kata-kata hubung tingkat tinggi yang sering muncul di soal parafrasa (*Sentence Simplification*) bacaan artikel panjang!',
     items: [
       {
         symbol: 'inasmuch as (+ S + V)',
@@ -4534,24 +4534,24 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       {
         symbol: 'save for / save that',
         reading: '/seɪv fɔːr ... seɪv ðæt/',
-        meaning: 'Kecuali untuk (+ Noun) / kecuali bahwa (+ Clause) — pengecualian formal sastra/hukum',
-        mnemonic: 'Hati-hati di TOEFL Reading: \'save for two coastal enclaves\' berarti \'EXCEPT for two enclaves\', BUKAN \'menabung/menyelamatkan\'!',
+        meaning: 'Kecuali untuk (+ Noun) / kecuali bahwa (+ Kalimat Utuh) — pengecualian formal sastra/hukum',
+        mnemonic: 'Hati-hati di bacaan artikel panjang: \'save for two coastal enclaves\' berarti \'EXCEPT for two enclaves\', BUKAN \'menabung/menyelamatkan\'!',
         speakText: 'save for / save that',
       },
       {
         symbol: 'absent (+ Noun Phrase)',
         reading: '/ˈæbsənt/',
-        meaning: 'Tanpa adanya / jika tidak terdapat... (preposisi legal-eksekutif Amerika!)',
-        mnemonic: 'Penggunaan khas US Supreme Court & C-Suite: \'Absent congressional action, the tax credit expires\' (= Without congressional action)!',
+        meaning: 'Tanpa adanya / jika tidak terdapat... (kata depan legal-eksekutif Amerika!)',
+        mnemonic: 'Penggunaan khas US Supreme Court & pimpinan perusahaan: \'Absent congressional action, the tax credit expires\' (= Without congressional action)!',
         speakText: 'absent (+ Noun Phrase)',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-C2-008',
-      title: 'Legal-Academic Prepositions (\'Absent + NP\' / \'Save for + NP\') & \'Inasmuch as\'',
-      formula: 'Absent + [NP], [Consequence] (= Without NP) • Save for + [NP] (= Except for NP) • Inasmuch as + [Clause]',
+      title: 'Legal-Academic Kata Depan (\'Absent + NP\' / \'Save for + NP\') & \'Inasmuch as\'',
+      formula: 'Absent + [NP], [Consequence] (= Without NP) • Save for + [NP] (= Except for NP) • Inasmuch as + [Kalimat Utuh]',
       formulaReading: 'Absent cold-chain storage, mRNA doses degrade rapidly. • The grid held firm, save for two substations.',
-      explanation: 'Dua kata pendek yang mengecoh 90% pembaca non-C2 di teks Amerika: (1) Kata sifat \'absent\' yang diletakkan di DEPAN kata benda berubah fungsi menjadi PREPOSISI bermakna \'tanpa adanya\' (\'Absent clear evidence, we must acquit\'); (2) Kata \'save (for)\' bermakna \'kecuali\' (\'All ports reopened, save for Galveston\').',
+      explanation: 'Dua kata pendek yang mengecoh 90% pembaca non-C2 di teks Amerika: (1) Kata sifat \'absent\' yang diletakkan di DEPAN kata benda berubah fungsi menjadi KATA DEPAN bermakna \'tanpa adanya\' (\'Absent clear evidence, we must acquit\'); (2) Kata \'save (for)\' bermakna \'kecuali\' (\'All ports reopened, save for Galveston\').',
       examples: [
         {
           jp: 'Absent binding methane verification, voluntary oil-patch pledges accomplish little.',
@@ -4565,17 +4565,17 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Uji cepat pemahaman C2: \'Absent a warrant, officers cannot search the server\' -> \'Absent\' di sini = \'Without\' (preposisi), BUKAN kata sifat \'tidak hadir\'!',
+    contrastiveTip: 'Uji cepat pemahaman C2: \'Absent a warrant, officers cannot search the server\' -> \'Absent\' di sini = \'Without\' (kata depan), BUKAN kata sifat \'tidak hadir\'!',
   },
   'en-us-c2-u8-diskusi-toefl': {
     headline: 'Membedakan Realitas Lapangan vs. Aturan Tertulis (*De Facto, De Jure, Per Se*)',
-    subtitle: ' Empat istilah klasik serapan hukum-ekonomi yang telah menyatu sepenuhnya ke dalam bahasa Inggris akademik C2 dan TOEFL iBT.',
+    subtitle: ' Empat istilah klasik serapan hukum-ekonomi yang telah menyatu sepenuhnya ke dalam bahasa Inggris akademik C2 dan ujian bahasa Inggris internasional.',
     items: [
       {
         symbol: 'de facto vs. de jure',
         reading: '/deɪ ˈfæktoʊ ... deɪ ˈdʒʊri/',
         meaning: 'Secara kenyataan praktik di lapangan (*de facto*) vs. secara ketetapan hukum resmi (*de jure*)',
-        mnemonic: 'Kontras favorit di kuliah sejarah hak sipil, standar teknologi, dan hubungan internasional TOEFL!',
+        mnemonic: 'Kontras favorit di kuliah sejarah, teknologi, dan hubungan internasional!',
         speakText: 'de facto vs. de jure',
       },
       {
@@ -4596,7 +4596,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'on balance,',
         reading: '/ɑːn ˈbæləns/',
         meaning: 'Setelah menimbang sisi positif dan negatif di atas neraca secara keseluruhan,',
-        mnemonic: 'Pembuka simpulan akhir paling elegan di paragraf penutup TOEFL Writing!',
+        mnemonic: 'Pembuka simpulan akhir paling elegan di paragraf penutup penulisan esai bahasa Inggris!',
         speakText: 'on balance,',
       },
     ],
@@ -4622,11 +4622,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jangan gunakan \'per se\' sembarangan sebagai pengganti kata \'exactly\'! Gunakan \'per se\' HANYA untuk arti \'by or in itself / secara hakiki terlepas dari faktor luar\'.',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 9 (GP-EN-C2-009)
+  // Level C2 — UNIT 9 (GP-EN-C2-009)
   // ===========================================================================
   'en-us-c2-u9-kosakata': {
     headline: 'Idiom Tiga Kata yang Membuat Bahasa Inggris Lisan Anda Terdengar 100% Asli AS',
-    subtitle: 'Paradoks pembelajar C2: mampu menulis kata Latin panjang, namun kaku di rapat Amerika karena belum luwes memakai *three-word phrasal-prepositional verbs*!',
+    subtitle: 'Paradoks pembelajar C2: mampu menulis kata Latin panjang, namun kaku di rapat Amerika karena belum luwes memakai gabungan tiga kata kerja yang dipakai sehari-hari!',
     items: [
       {
         symbol: 'come down to / boil down to',
@@ -4639,7 +4639,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'live up to [the hype / promise]',
         reading: '/lɪv ʌp tuː/',
         meaning: 'Terbukti memenuhi standar tinggi atau ekspektasi besar yang dijanjikan',
-        mnemonic: 'Sangat sering muncul di TOEFL Listening & ulasan riset: \'failed to live up to early clinical promise\'.',
+        mnemonic: 'Sangat sering muncul di latihan mendengarkan percakapan & kuliah & ulasan riset: \'failed to live up to early clinical promise\'.',
         speakText: 'live up to [the hype / promise]',
       },
       {
@@ -4659,27 +4659,27 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-009',
-      title: 'Three-Word Phrasal-Prepositional Verbs (Strict Inseparability)',
-      formula: '[Verb + Particle + Preposition] + [Noun / Pronoun / V-ing Gerund] (TIDAK BOLEH dipisah objek!)',
+      title: 'Gabungan Tiga Kata Kerja (Selalu Utuh & Tidak Dipisah)',
+      formula: '[Verb + Particle + Kata Depan] + [Noun / Pronoun / V-ing] (TIDAK BOLEH dipisah objek!)',
       formulaReading: 'We did away with paper forms -> We did away with THEM (BUKAN *did them away with*!).',
-      explanation: 'Berbeda dari phrasal verb dua kata (*iron it out*), SELURUH kata kerja tiga kata (*Verb + Adverb Particle + Preposition*) bersifat 100% TAK TERPISAHKAN (*inseparable*)! Kata ganti objek (\'it / them\') WAJIB diletakkan paling belakang sesudah preposisi, dan kata kerja sesudahnya wajib berbentuk `V-ing`!',
+      explanation: 'Berbeda dari gabungan kata kerja dua kata (*iron it out*), SELURUH kata kerja tiga kata (*Verb + Adverb Particle + Kata Depan*) bersifat 100% TAK TERPISAHKAN (*inseparable*)! Kata ganti objek (\'it / them\') WAJIB diletakkan paling belakang sesudah kata depan, dan kata kerja sesudahnya wajib berbentuk `V-ing`!',
       examples: [
         {
-          jp: 'Ultimately, enterprise SaaS retention comes down to solving daily workflow pain.',
+          jp: 'Ultimately, long-term customer loyalty comes down to solving daily problems.',
           reading: '/ˈʌltəmətli ˈɛntərˌpraɪz sæs rɪˈtɛnʃən kʌmz daʊn tə ˈsɑːlvɪŋ ˈdeɪli ˈwɜːrkˌfloʊ peɪn/',
-          id: 'Pada akhirnya, retensi SaaS korporat mengerucut pada penyelesaian kendala alur kerja harian.',
+          id: 'Pada akhirnya, kesetiaan pelanggan jangka panjang mengerucut pada penyelesaian masalah sehari-hari.',
         },
         {
-          jp: 'Legacy stamp duties slowed onboarding, so the ministry did away with them entirely.',
+          jp: 'Outdated paper fees slowed registration, so the ministry did away with them entirely.',
           reading: '/ˈlɛɡəsi stæmp ˈduːtiz sloʊd ˈɑːnˌbɔːrdɪŋ soʊ ðə ˈmɪnɪstri dɪd əˈweɪ wɪð ðɛm ɪnˈtaɪərli/',
           id: 'Bea meterai fisik lawas memperlambat orientasi, sehingga kementerian menghapuskannya sama sekali.',
         },
       ],
     },
-    contrastiveTip: 'Hati-hati jebakan \'to\' pada \'come down TO\' dan \'live up TO\': kata \'to\' di sini adalah PREPOSISI murni, sehingga wajib diikuti `V-ing` (\'comes down to EXECUTING well\', BUKAN *\'to execute\'*)!',
+    contrastiveTip: 'Hati-hati jebakan \'to\' pada \'come down TO\' dan \'live up TO\': kata \'to\' di sini adalah KATA DEPAN murni, sehingga wajib diikuti `V-ing` (\'comes down to EXECUTING well\', BUKAN *\'to execute\'*)!',
   },
   'en-us-c2-u9-tata-bahasa': {
-    headline: 'Objek Gerund sesudah Preposisi Akhir & Bentuk Pasif Idiom Tiga Kata',
+    headline: 'Wajib Pakai V-ing Setelah Kata Depan di Akhir & Bentuk Pasif Idiom Tiga Kata',
     subtitle: 'Pelajari empat idiom tiga kata berikutnya beserta cara membentuk kalimat pasif yang sah tanpa memotong partikelnya!',
     items: [
       {
@@ -4713,10 +4713,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-009',
-      title: 'Prepositional Gerund Complements & Passive Three-Word Verbs',
+      title: 'Bentuk V-ing Setelah Kata Depan & Bentuk Pasif Gabungan Tiga Kata',
       formula: 'Active: S + [V + Part + Prep] + V-ing • Passive: [Obj] + be + [V3 + Part + Prep] (all 3 words stay adjacent!)',
       formulaReading: 'Legacy fax workflows should have been done away with years ago.',
-      explanation: 'Saat mengubah *phrasal-prepositional verb* ke bentuk pasif dalam tulisan formal maupun bicara, JANGAN membuang preposisi terakhirnya! Tulis \'Outdated tariffs were done away with\' (lengkap tiga kata: `done + away + with`). Selain itu, pastikan setiap kata kerja yang mengikuti `face up to` atau `fall back on` berbentuk `V-ing`.',
+      explanation: 'Saat mengubah gabungan tiga kata kerja ke bentuk pasif dalam tulisan formal maupun bicara, JANGAN membuang kata depan terakhirnya! Tulis \'Outdated tariffs were done away with\' (lengkap tiga kata: `done + away + with`). Selain itu, pastikan setiap kata kerja yang mengikuti `face up to` atau `fall back on` berbentuk `V-ing`.',
       examples: [
         {
           jp: 'Municipalities must face up to relocating infrastructure away from subsiding coastlines.',
@@ -4730,7 +4730,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Ingat: \'face up TO + V-ing\' (sama seperti \'look forward TO + V-ing\' dan \'be committed TO + V-ing\')—kata \'to\' adalah preposisi, bukan penanda infinitif!',
+    contrastiveTip: 'Ingat: \'face up TO + V-ing\' (sama seperti \'look forward TO + V-ing\' dan \'be committed TO + V-ing\')—kata \'to\' adalah kata depan, bukan penanda \'to + V1\'!',
   },
   'en-us-c2-u9-diskusi-toefl': {
     headline: 'Idiom Tiga Kata Akuntabilitas & Penyelesaian Tugas di Budaya Kerja Amerika',
@@ -4740,7 +4740,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'own up to (+ NP / V-ing)',
         reading: '/oʊn ʌp tuː/',
         meaning: 'Mengakui kesalahan atau kelalaian secara ksatria dan terbuka tanpa mencari kambing hitam',
-        mnemonic: 'Inti dari *blameless postmortem* dan integritas akademik: \'owned up to miscalibrating the sensor\'.',
+        mnemonic: 'Inti dari evaluasi jujur tanpa saling menyalahkan dan integritas akademik: \'owned up to miscalibrating the sensor\'.',
         speakText: 'own up to (+ NP / V-ing)',
       },
       {
@@ -4770,7 +4770,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Executive Ownership Idioms (\'follow through on\' / \'own up to V-ing\')',
       formula: 'own up to + [NP / V-ing] • follow through on + [pledges/reforms] • get around to + [V-ing]',
       formulaReading: 'Great leaders own up to missteps early and follow through on corrective pledges.',
-      explanation: 'Dalam TOEFL Listening (baik percakapan administrasi kampus maupun kuliah manajemen) serta wawancara perilaku perusahaan AS, idiom tiga kata membawa muatan sikap (*stance*) yang jauh lebih bernuansa daripada verba satu kata.',
+      explanation: 'Dalam latihan mendengarkan percakapan & kuliah (baik percakapan administrasi kampus maupun kuliah manajemen) serta wawancara perilaku perusahaan AS, idiom tiga kata membawa muatan sikap (*stance*) yang jauh lebih bernuansa daripada kata kerja satu kata.',
       examples: [
         {
           jp: 'Rather than deflecting blame, the lab director owned up to mislabeling the control batch.',
@@ -4784,10 +4784,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Perhatikan gerund wajib pada \'get around TO + V-ing\' (\'finally got around to READING the thesis\', BUKAN *\'to read\'*)!',
+    contrastiveTip: 'Perhatikan V-ing wajib pada \'get around TO + V-ing\' (\'finally got around to READING the thesis\', BUKAN *\'to read\'*)!',
   },
   // ===========================================================================
-  // CEFR C2 — UNIT 10 (GP-EN-C2-010)
+  // Level C2 — UNIT 10 (GP-EN-C2-010)
   // ===========================================================================
   'en-us-c2-u10-kosakata': {
     headline: 'Seni Membingkai Ulang Persoalan dengan Antitesis Tajam (*Rhetorical Antithesis*)',
@@ -4811,7 +4811,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'What matters is not [A], but [B]',
         reading: '/wʌt ˈmætərz ɪz nɑːt ... bʌt/',
         meaning: 'Hal yang sesungguhnya menentukan bukanlah [A], melainkan [B]',
-        mnemonic: 'Wh-Cleft antitesis untuk mengunci pesan utama presentasi eksekutif dan wawancara beasiswa.',
+        mnemonic: 'Pola penegas kontras \'What ... is ...\' untuk mengunci pesan utama presentasi eksekutif dan wawancara beasiswa.',
         speakText: 'What matters is not [A], but [B]',
       },
       {
@@ -4827,7 +4827,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       title: 'Proportional Antithesis (\'less about X than about Y\') & Paradoxical \'at once\'',
       formula: '[Issue] is less about [Surface Factor] than about [Deep Driver] • [Subject] is at once [Trait A] and [Trait B]',
       formulaReading: 'Digital transformation is less about cloud tools than about decision incentives.',
-      explanation: 'Dua penanda kemahiran retoris tertinggi C2: (1) Gunakan \'less [Prep + X] than [Prep + Y]\' untuk membingkai ulang perdebatan secara bernuansa tanpa terdengar hitam-putih; (2) Pahami idiom sastra-akademik \'at once X and Y\' (= *both X and Y simultaneously*) yang sangat sering diujikan di soal kosakata konteks TOEFL Reading!',
+      explanation: 'Dua penanda kemahiran retoris tertinggi C2: (1) Gunakan \'less [Prep + X] than [Prep + Y]\' untuk membingkai ulang perdebatan secara bernuansa tanpa terdengar hitam-putih; (2) Pahami idiom sastra-akademik \'at once X and Y\' (= *both X and Y simultaneously*) yang sangat sering diujikan di soal kosakata konteks bacaan artikel panjang!',
       examples: [
         {
           jp: 'Grid modernization is less about inventing new cables than about reforming permitting incentives.',
@@ -4858,7 +4858,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         symbol: 'not because [A], but because [B]',
         reading: '/nɑːt bɪˈkɔːz ... bʌt bɪˈkɔːz/',
         meaning: 'Bukan karena [alasan dangkal A], melainkan karena [alasan prinsipil B]',
-        mnemonic: 'Klausa antitesis kausal paling klasik dalam pidato publik Amerika (ingat pidato Bulan JFK!).',
+        mnemonic: 'Bagian kalimat antitesis kausal paling klasik dalam pidato publik Amerika (ingat pidato Bulan JFK!).',
         speakText: 'not because [A], but because [B]',
       },
       {
@@ -4871,7 +4871,7 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
       {
         symbol: 'anaphora (deliberate repetition)',
         reading: '/əˈnæfərə/',
-        meaning: 'Pengulangan frasa pembuka yang disengaja pada klausa berurutan untuk membangun gelombang emosi/logika',
+        meaning: 'Pengulangan frasa pembuka yang disengaja pada bagian kalimat berurutan untuk membangun gelombang emosi/logika',
         mnemonic: '\'To invest in water is to invest in health; to neglect it is to mortgage our future\'.',
         speakText: 'anaphora (deliberate repetition)',
       },
@@ -4895,11 +4895,11 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
         },
       ],
     },
-    contrastiveTip: 'Saat menyunting kalimat terakhir esai TOEFL atau SoP beasiswa, bacalah dalam hati: pastikan anggota ketiga dari daftar `A, B, and C` adalah yang paling kaya dan panjang suku katanya!',
+    contrastiveTip: 'Saat menyunting kalimat terakhir esai bahasa Inggris atau SoP beasiswa, bacalah dalam hati: pastikan anggota ketiga dari daftar `A, B, and C` adalah yang paling kaya dan panjang suku katanya!',
   },
   'en-us-c2-u10-diskusi-toefl': {
     headline: 'Menutup Pidato Kunci, Wawancara Beasiswa & Esai dengan Kesan Mendalam',
-    subtitle: 'Empat kolokasi visi kepemimpinan yang memadukan seluruh struktur B2–C2 menjadi penutup yang matang, inspiratif, dan bebas klise murahan.',
+    subtitle: 'Empat pasangan kata alami visi kepemimpinan yang memadukan seluruh struktur B2–C2 menjadi penutup yang matang, inspiratif, dan bebas klise murahan.',
     items: [
       {
         symbol: 'rise to the occasion',
@@ -4932,10 +4932,10 @@ export const LESSON_INTRO_DECKS_EN_B2_C2: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-C2-010',
-      title: 'Master Synthesis: Combining C2 Inversion, Framing & Antithesis',
+      title: 'Master Synthesis: Combining Pembalikan Urutan Mahir, Framing & Antithesis',
       formula: 'If [Generation/Institution] is to rise to the occasion, we must chart a course defined not by [Fear], but by [Vision].',
       formulaReading: 'Bridging the divide between lab and clinic leaves an indelible mark on public health.',
-      explanation: 'Anda kini memegang seluruh perangkat sintaksis tertinggi bahasa Inggris Amerika: *Inverted Conditionals*, *Be + To-Infinitive*, *Nominative Absolutes*, *Concessive Inversion*, *Evidential Passives*, *Formulaic Subjunctive*, *Summative/Resumptive Modifiers*, *Precision Framing*, *Three-Word Verbs*, dan *Rhetorical Antithesis*. Gunakan secara selektif—satu atau dua struktur puncak per paragraf membuat tulisan Anda bersinar alami!',
+      explanation: 'Anda kini memegang seluruh pola kalimat tertinggi bahasa Inggris Amerika: Pengandaian Resmi Tanpa \'If\', Pola Resmi \'is/are to + V1\', *Nominative Absolutes*, Pola \'Meskipun\' dengan Kata Sifat di Depan, *Evidential Passives*, *Formulaic pola anjuran V1 murni*, Sisipan Perangkum & Pengulang Kata Kunci, *Precision Framing*, *Three-Word Verbs*, dan *Rhetorical Antithesis*. Gunakan secara selektif—satu atau dua struktur puncak per paragraf membuat tulisan Anda bersinar alami!',
       examples: [
         {
           jp: 'If our generation is to rise to the climate occasion, we must bridge the divide between frontier science and municipal finance.',

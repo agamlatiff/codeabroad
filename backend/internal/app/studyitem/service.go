@@ -500,6 +500,25 @@ func buildContextualHint(
 		}
 		return "Putar audio Normal satu kali, lalu tirukan pelafalannya dengan suara jelas."
 
+	case exercise.ExerciseTypeWritingTrace:
+		return "Ikuti urutan goresan dengan rapi untuk huruf ini."
+
+	case exercise.ExerciseTypeFreeTyping:
+		trans := contentString(content, "target_translation")
+		if trans == "" {
+			trans = contentString(content, "translation")
+		}
+		if trans != "" {
+			if len(grammarPoints) > 0 && strings.TrimSpace(grammarPoints[0].Formula) != "" {
+				return fmt.Sprintf("Ketik padanan bahasa Jepang untuk %q dengan pola %s (boleh menggunakan Kanji, Hiragana, atau Romaji).", trans, strings.TrimSpace(grammarPoints[0].Formula))
+			}
+			return fmt.Sprintf("Ketik padanan bahasa Jepang untuk %q (boleh menggunakan Kanji, Hiragana, atau Romaji).", trans)
+		}
+		if len(grammarPoints) > 0 && strings.TrimSpace(grammarPoints[0].Formula) != "" {
+			return fmt.Sprintf("Ketik jawaban bahasa Jepang mengikuti pola %s (Kanji, Hiragana, atau Romaji).", strings.TrimSpace(grammarPoints[0].Formula))
+		}
+		return "Ketik jawaban dalam bahasa Jepang (Kanji, Hiragana, atau Romaji) sesuai konteks soal."
+
 	default:
 		return "Gunakan tombol Intip Materi jika perlu mengingat kembali bacaan atau artinya."
 	}
@@ -761,6 +780,130 @@ func extractStudyItemForExercise(
 			Meaning:            meaning,
 			Mnemonic:           mnemonic,
 			SpeakText:          symbol,
+			FirstExerciseIndex: idx,
+		}, resolvedReading, true
+
+	case exercise.ExerciseTypeWritingTrace:
+		symbol := contentString(content, "target_character")
+		if symbol == "" {
+			symbol = strings.TrimSpace(rawEx.CorrectAnswer)
+		}
+		if symbol == "" {
+			return Item{}, romaji, false
+		}
+		info, isKana := kanaCatalog[symbol]
+		resolvedReading := romaji
+		if resolvedReading == "" {
+			resolvedReading = reading
+		}
+		if resolvedReading == "" && isKana {
+			resolvedReading = info.Romaji
+		}
+		if resolvedReading == "" {
+			resolvedReading = exercise.KanaToRomaji(symbol)
+		}
+		if resolvedReading == "" {
+			resolvedReading = "Latihan goresan"
+		}
+		meaning := contentString(content, "meaning")
+		if meaning == "" {
+			meaning = contentString(content, "translation")
+		}
+		if meaning == "" {
+			meaning = strings.TrimSpace(rawEx.Prompt)
+		}
+		mnemonic := contentString(content, "mnemonic")
+		if mnemonic == "" && isKana {
+			mnemonic = info.Mnemonic
+		}
+		if mnemonic == "" {
+			mnemonic = "Perhatikan arah dan urutan goresan saat berlatih menulis huruf ini."
+		}
+		speakText := contentString(content, "audio_text")
+		if speakText == "" {
+			speakText = symbol
+		}
+		return Item{
+			Symbol:             symbol,
+			Reading:            resolvedReading,
+			Meaning:            meaning,
+			Mnemonic:           mnemonic,
+			SpeakText:          speakText,
+			FirstExerciseIndex: idx,
+		}, resolvedReading, true
+
+	case exercise.ExerciseTypeFreeTyping:
+		symbol := strings.TrimSpace(rawEx.CorrectAnswer)
+		if symbol == "" {
+			symbol = contentString(content, "audio_text")
+		}
+		if symbol == "" {
+			symbol = contentString(content, "display_text")
+		}
+		if symbol == "" {
+			symbol = contentString(content, "phrase")
+		}
+		if symbol == "" {
+			return Item{}, romaji, false
+		}
+		resolvedReading := romaji
+		if resolvedReading == "" {
+			resolvedReading = reading
+		}
+		if resolvedReading == "" {
+			resolvedReading = exercise.KanaToRomaji(symbol)
+		}
+		if resolvedReading == "" {
+			var fallbackRomaji string
+			for _, acc := range rawEx.AcceptableAnswers {
+				trimmedAcc := strings.TrimSpace(acc)
+				if trimmedAcc == "" || trimmedAcc == symbol {
+					continue
+				}
+				if containsJapaneseRune(trimmedAcc) {
+					if rom := exercise.KanaToRomaji(trimmedAcc); rom != "" {
+						resolvedReading = rom
+						break
+					}
+					if resolvedReading == "" {
+						resolvedReading = trimmedAcc
+					}
+				} else if fallbackRomaji == "" {
+					fallbackRomaji = trimmedAcc
+				}
+			}
+			if resolvedReading == "" && fallbackRomaji != "" {
+				resolvedReading = fallbackRomaji
+			}
+		}
+		if resolvedReading == "" {
+			resolvedReading = "Latihan mengetik"
+		}
+		meaning := contentString(content, "target_translation")
+		if meaning == "" {
+			meaning = contentString(content, "translation")
+		}
+		if meaning == "" {
+			meaning = strings.TrimSpace(rawEx.Prompt)
+		}
+		mnemonic := contentString(content, "mnemonic")
+		if mnemonic == "" {
+			if len(grammarPoints) > 0 && strings.TrimSpace(grammarPoints[0].Formula) != "" {
+				mnemonic = fmt.Sprintf("Ketik kalimat mengikuti pola %s.", strings.TrimSpace(grammarPoints[0].Formula))
+			} else {
+				mnemonic = "Latih mengetik frasa ini menggunakan Kanji, Hiragana, atau Romaji hingga lancar."
+			}
+		}
+		speakText := contentString(content, "audio_text")
+		if speakText == "" {
+			speakText = symbol
+		}
+		return Item{
+			Symbol:             symbol,
+			Reading:            resolvedReading,
+			Meaning:            meaning,
+			Mnemonic:           mnemonic,
+			SpeakText:          speakText,
 			FirstExerciseIndex: idx,
 		}, resolvedReading, true
 

@@ -25,6 +25,7 @@ import { KodiCharacter } from '@/shared/components/ui/KodiCharacter'
 import { audioService } from '@/shared/services/audioService'
 import { useAudioStore } from '@/shared/store/audioStore'
 import { triggerHaptic } from '@/shared/utils/haptics'
+import { isIpaText } from '@/shared/utils/phonetics'
 
 const SLOW_SPEECH_RATE = 0.58
 
@@ -66,11 +67,45 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
   onStartQuiz,
 }) => {
   const [playingKey, setPlayingKey] = useState<string | null>(null)
+  const [revealedIpaKeys, setRevealedIpaKeys] = useState<Record<string, boolean>>({})
   const [activeSlide, setActiveSlide] = useState<IntroSlideId>(
     deck.items.length > 0 ? 'vocab' : 'grammar'
   )
   const manualInteractedRef = useRef(false)
   const speechLocale = useActiveSpeechLocale()
+
+  const toggleIpaKey = (key: string) => {
+    setRevealedIpaKeys((prev) => ({ ...prev, [key]: !prev[key] }))
+  }
+
+  const renderReadingChip = (reading: string, key: string) => {
+    if (!reading.trim()) return null
+    if (!isIpaText(reading)) {
+      return (
+        <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-brand font-black text-blue-700">
+          {reading}
+        </span>
+      )
+    }
+
+    const isOpen = Boolean(revealedIpaKeys[key])
+    return (
+      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+        {isOpen && (
+          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-mono font-bold text-blue-700">
+            {reading}
+          </span>
+        )}
+        <button
+          type="button"
+          onClick={() => toggleIpaKey(key)}
+          className="inline-flex items-center px-2.5 py-0.5 rounded-lg border border-slate-200 bg-slate-50 hover:bg-blue-50 hover:border-blue-200 text-[11px] font-brand font-bold text-slate-600 hover:text-blue-700 transition-colors cursor-pointer"
+        >
+          {isOpen ? 'Sembunyikan' : 'Panduan Baca'}
+        </button>
+      </div>
+    )
+  }
 
   const handlePlay = (key: string, text: string, rate?: number) => {
     manualInteractedRef.current = true
@@ -216,9 +251,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                           <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight break-words">
                             {item.symbol}
                           </span>
-                          <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-brand font-black text-blue-700">
-                            {item.reading}
-                          </span>
+                          {renderReadingChip(item.reading, `batch-${batchNumber}-ipa-${idx}`)}
                           <p className="text-xs font-bold text-slate-700 pt-0.5">
                             {item.meaning}
                           </p>
@@ -290,11 +323,29 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                   <p className="text-sm sm:text-base font-black tracking-wide">
                     {batch.grammarSummary.formula}
                   </p>
-                  {batch.grammarSummary.formulaReading && (
-                    <p className="text-xs font-semibold text-slate-300">
-                      Cara baca: {batch.grammarSummary.formulaReading}
-                    </p>
-                  )}
+                  {batch.grammarSummary.formulaReading &&
+                    (isIpaText(batch.grammarSummary.formulaReading) ? (
+                      <div className="pt-1 flex flex-wrap items-center gap-2">
+                        {revealedIpaKeys[`batch-${batchNumber}-formula-ipa`] && (
+                          <p className="text-xs font-mono font-semibold text-slate-300">
+                            {batch.grammarSummary.formulaReading}
+                          </p>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => toggleIpaKey(`batch-${batchNumber}-formula-ipa`)}
+                          className="text-[11px] font-brand font-bold text-blue-300 hover:text-blue-200 underline underline-offset-2 cursor-pointer"
+                        >
+                          {revealedIpaKeys[`batch-${batchNumber}-formula-ipa`]
+                            ? 'Sembunyikan Panduan Baca'
+                            : 'Panduan Baca'}
+                        </button>
+                      </div>
+                    ) : (
+                      <p className="text-xs font-semibold text-slate-300">
+                        Cara baca: {batch.grammarSummary.formulaReading}
+                      </p>
+                    ))}
                 </div>
 
                 <p className="text-xs font-medium text-slate-600 leading-relaxed">
@@ -475,9 +526,7 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                             <span className="text-2xl sm:text-3xl font-black text-slate-900 block leading-tight break-words">
                               {item.symbol}
                             </span>
-                            <span className="inline-block px-2.5 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-brand font-black text-blue-700">
-                              {item.reading}
-                            </span>
+                            {renderReadingChip(item.reading, `legacy-ipa-${idx}`)}
                             <p className="text-xs font-bold text-slate-700 pt-0.5">
                               {item.meaning}
                             </p>
@@ -570,11 +619,29 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                     <p className="text-base sm:text-lg font-black tracking-wide">
                       {deck.grammarSummary.formula}
                     </p>
-                    {deck.grammarSummary.formulaReading && (
-                      <p className="text-xs font-semibold text-slate-300">
-                        Cara baca: {deck.grammarSummary.formulaReading}
-                      </p>
-                    )}
+                    {deck.grammarSummary.formulaReading &&
+                      (isIpaText(deck.grammarSummary.formulaReading) ? (
+                        <div className="pt-1 flex flex-wrap items-center gap-2">
+                          {revealedIpaKeys['legacy-formula-ipa'] && (
+                            <p className="text-xs font-mono font-semibold text-slate-300">
+                              {deck.grammarSummary.formulaReading}
+                            </p>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => toggleIpaKey('legacy-formula-ipa')}
+                            className="text-[11px] font-brand font-bold text-blue-300 hover:text-blue-200 underline underline-offset-2 cursor-pointer"
+                          >
+                            {revealedIpaKeys['legacy-formula-ipa']
+                              ? 'Sembunyikan Panduan Baca'
+                              : 'Panduan Baca'}
+                          </button>
+                        </div>
+                      ) : (
+                        <p className="text-xs font-semibold text-slate-300">
+                          Cara baca: {deck.grammarSummary.formulaReading}
+                        </p>
+                      ))}
                   </div>
 
                   {deck.grammarSummary.examples && deck.grammarSummary.examples.length > 0 && (
@@ -594,7 +661,26 @@ export const LessonIntroView: FC<LessonIntroViewProps> = ({
                                 <p className="text-sm sm:text-base font-black text-slate-900">
                                   {ex.jp}
                                 </p>
-                                <p className="text-xs font-bold text-blue-700">{ex.reading}</p>
+                                {isIpaText(ex.reading) ? (
+                                  <div className="flex flex-wrap items-center gap-1.5 py-0.5">
+                                    {revealedIpaKeys[`gp-ex-ipa-${idx}`] && (
+                                      <p className="text-xs font-mono font-bold text-blue-700">
+                                        {ex.reading}
+                                      </p>
+                                    )}
+                                    <button
+                                      type="button"
+                                      onClick={() => toggleIpaKey(`gp-ex-ipa-${idx}`)}
+                                      className="text-[11px] font-brand font-bold text-slate-500 hover:text-blue-700 underline underline-offset-2 cursor-pointer"
+                                    >
+                                      {revealedIpaKeys[`gp-ex-ipa-${idx}`]
+                                        ? 'Sembunyikan'
+                                        : 'Panduan Baca'}
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <p className="text-xs font-bold text-blue-700">{ex.reading}</p>
+                                )}
                                 <p className="text-xs font-medium text-slate-600">{ex.id}</p>
                               </div>
                               <button

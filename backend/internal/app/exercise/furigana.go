@@ -734,6 +734,15 @@ func BuildFallbackSRSContextualHint(rawEx Exercise) string {
 		}
 		return "Putar audio Normal satu kali, lalu tirukan pelafalannya dengan suara jelas."
 
+	case ExerciseTypeWritingTrace:
+		return "Ikuti urutan goresan dengan rapi untuk huruf ini."
+
+	case ExerciseTypeFreeTyping:
+		if trans := contentStringFromMap(content, "target_translation"); trans != "" {
+			return fmt.Sprintf("Ketik padanan bahasa Jepang untuk %q (boleh menggunakan Kanji, Hiragana, atau Romaji).", trans)
+		}
+		return "Ketik jawaban dalam bahasa Jepang (Kanji, Hiragana, atau Romaji) sesuai konteks soal."
+
 	default:
 		return "Perhatikan pola kalimat dan kosakata kunci sebelum menjawab."
 	}

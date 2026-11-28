@@ -728,6 +728,7 @@ func normalizeRomajiPhonetics(raw string) string {
 	cleaned = strings.ToLower(cleaned)
 	cleaned = comparablePunctuationReplacer.Replace(cleaned)
 	cleaned = strings.ReplaceAll(cleaned, "-", " ")
+	cleaned = strings.ReplaceAll(cleaned, "'", "")
 
 	fields := strings.Fields(cleaned)
 	for i, f := range fields {
@@ -769,26 +770,48 @@ func normalizeSpeechCandidate(raw string) []string {
 	return variants
 }
 
-// EvaluateExerciseAnswer evaluates a user answer using standard grading plus speech-friendly
-// romaji, hyphen, Katakana->Hiragana, and Chrome STT Kanji normalization for speaking_repeat exercises.
+// EvaluateExerciseAnswer evaluates a user answer using standard grading plus:
+// - strict trimmed exact matching for writing_trace exercises, and
+// - tolerant Japanese normalization (case/punctuation/Katakana->Hiragana/Kanji speech folding + romaji phonetics)
+//   for speaking_repeat and free_typing exercises.
 func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 	if ex == nil {
 		return false
 	}
-	if h.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, userAnswer) {
-		return true
-	}
-	if ex.ExerciseType != ExerciseTypeSpeakingRepeat {
+	if ex.ExerciseType == ExerciseTypeWritingTrace {
+		trimmedUser := strings.TrimSpace(userAnswer)
+		if trimmedUser == "" {
+			return false
+		}
+		if trimmedUser == strings.TrimSpace(ex.CorrectAnswer) {
+			return true
+		}
+		for _, acc := range ex.AcceptableAnswers {
+			if trimmedAcc := strings.TrimSpace(acc); trimmedAcc != "" && trimmedUser == trimmedAcc {
+				return true
+			}
+		}
 		return false
 	}
 
-	candidates := make([]string, 0, 14)
+	if h.EvaluateAnswer(ex.CorrectAnswer, ex.AcceptableAnswers, userAnswer) {
+		return true
+	}
+	if ex.ExerciseType != ExerciseTypeSpeakingRepeat && ex.ExerciseType != ExerciseTypeFreeTyping {
+		return false
+	}
+
+	candidates := make([]string, 0, 16)
 	candidates = append(candidates, normalizeSpeechCandidate(ex.CorrectAnswer)...)
 	for _, acc := range ex.AcceptableAnswers {
 		candidates = append(candidates, normalizeSpeechCandidate(acc)...)
 	}
 	if ex.Content != nil {
-		for _, key := range []string{"display_text", "audio_text", "phrase", "romaji"} {
+		contentKeys := []string{"display_text", "audio_text", "phrase", "romaji"}
+		if ex.ExerciseType == ExerciseTypeFreeTyping {
+			contentKeys = append(contentKeys, "reading")
+		}
+		for _, key := range contentKeys {
 			if s, ok := ex.Content[key].(string); ok {
 				candidates = append(candidates, normalizeSpeechCandidate(s)...)
 			}
@@ -809,6 +832,17 @@ func (h *Helper) EvaluateExerciseAnswer(ex *Exercise, userAnswer string) bool {
 			joined := strings.Join(breakdownSlice, " ")
 			candidates = append(candidates, joined, strings.ReplaceAll(joined, "-", ""))
 			candidates = append(candidates, strings.ReplaceAll(strings.Join(breakdownSlice, ""), "-", ""))
+		}
+	}
+
+	// Include spaced KanaToRomaji variants for free_typing candidates so Hiragana/mapped-Kanji answers
+	// match spaced romaji cleanly even when acceptable_answers omits a romaji variant.
+	if ex.ExerciseType == ExerciseTypeFreeTyping {
+		baseCount := len(candidates)
+		for i := 0; i < baseCount; i++ {
+			if rom := KanaToRomaji(candidates[i]); rom != "" {
+				candidates = append(candidates, rom)
+			}
 		}
 	}
 

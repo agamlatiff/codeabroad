@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent } from 'react'
+import { KanaTracingPad } from '@/features/curriculum/components/kana/KanaTracingPad'
 import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
+import { useActiveLanguageCode } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import type {
   ParsedExerciseContent,
   SubmitExerciseAnswerResponse,
@@ -9,11 +11,15 @@ import {
   matchesChoiceOption,
 } from '@/features/exercise/utils/exerciseHelpers'
 import { Button3D } from '@/shared/components/ui/Button3D'
+import { supportsKanaBoard } from '@/shared/constants/languageCatalog'
+import { isIpaText } from '@/shared/utils/phonetics'
 import {
   ArrowCounterClockwise,
   BookOpen,
+  CheckCircle,
   Lightbulb,
   Microphone,
+  PencilSimple,
   SpeakerHigh,
   Stop,
 } from '@phosphor-icons/react'
@@ -49,14 +55,40 @@ interface ExercisePromptRendererProps {
 const isImeComposing = (event: { isComposing?: boolean; keyCode?: number }) =>
   Boolean(event.isComposing || event.keyCode === 229)
 
-const formatPromptText = (prompt: string): string =>
-  prompt.replaceAll('[blank]', ' ______ ')
+const BLANK_TOKEN_REGEX = /\[blank\]|_{3,}|(?<!\S)_{2,}(?!\S)/g
+
+const normalizePromptComparison = (text: string): string =>
+  text
+    .replace(BLANK_TOKEN_REGEX, '[blank]')
+    .replace(/^["'“”「」『』\s]+|["'“”「」『』\s]+$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+
+const formatPromptText = (prompt: string, sentenceTemplate?: string): string => {
+  let cleaned = prompt.trim()
+  if (sentenceTemplate && cleaned.includes(':')) {
+    const colonIdx = cleaned.indexOf(':')
+    const instructionPart = cleaned.slice(0, colonIdx).trim()
+    const trailingPart = cleaned.slice(colonIdx + 1).trim()
+    const normalizedTemplate = normalizePromptComparison(sentenceTemplate)
+    if (
+      instructionPart.length > 0 &&
+      normalizedTemplate.length > 0 &&
+      normalizePromptComparison(trailingPart) === normalizedTemplate
+    ) {
+      cleaned = instructionPart
+    }
+  }
+  return cleaned.replace(BLANK_TOKEN_REGEX, ' ______ ')
+}
 
 const formatSentenceTemplateWithBlank = (
   template: string,
   previewValue: string
 ): string => {
-  const segments = template.split('[blank]')
+  const normalized = template.replace(BLANK_TOKEN_REGEX, '[blank]')
+  const segments = normalized.split('[blank]')
   if (segments.length <= 1) return template
   const blankCount = segments.length - 1
   if (!previewValue) {
@@ -76,6 +108,12 @@ const formatSentenceTemplateWithBlank = (
     }
   }
   return segments.join(` 「${previewValue}」 `)
+}
+
+const SCRIPT_BADGE_LABELS: Record<string, string> = {
+  hiragana: 'Hiragana',
+  katakana: 'Katakana',
+  kanji: 'Kanji',
 }
 
 const getChoiceOptionClasses = (
@@ -148,9 +186,13 @@ export const ExercisePromptRenderer = ({
   onToggleHint,
   onEnterKey,
 }: ExercisePromptRendererProps) => {
+  const activeLanguageCode = useActiveLanguageCode()
+  const isJapanese = supportsKanaBoard(activeLanguageCode)
   const [manualTypingExerciseId, setManualTypingExerciseId] = useState<string | null>(null)
   const [romajiShownExerciseId, setRomajiShownExerciseId] = useState<string | null>(null)
+  const [ipaGuideExerciseId, setIpaGuideExerciseId] = useState<string | null>(null)
   const [hiddenFuriganaExerciseId, setHiddenFuriganaExerciseId] = useState<string | null>(null)
+  const [traceResetNonce, setTraceResetNonce] = useState(0)
   const selectedTokenIndexSet = useMemo(
     () => new Set(selectedTokenIndices),
     [selectedTokenIndices]
@@ -165,9 +207,27 @@ export const ExercisePromptRenderer = ({
   const showManualTyping =
     !speechRecognitionSupported || manualTypingExerciseId === exercise.id
   const showSentenceRomaji = romajiShownExerciseId === exercise.id
+  const showIpaGuide = ipaGuideExerciseId === exercise.id
   const showFurigana = hiddenFuriganaExerciseId !== exercise.id
   const effectiveHint = isCheckpoint ? undefined : parsedContent.hint || fallbackHint
   const hideListeningTranscript = exerciseType === 'listening_choice' && !isLocked
+  const hideSpeakingCheckpointAnswers = isCheckpoint && exerciseType === 'speaking_repeat'
+  const hideFreeTypingTranscript = exerciseType === 'free_typing' && !isLocked
+  const hideAudioTranscript =
+    hideListeningTranscript || hideSpeakingCheckpointAnswers || hideFreeTypingTranscript
+  const romajiIsIpa = isIpaText(parsedContent.romaji)
+  const breakdownIsIpa = parsedContent.phoneticBreakdown.some((item) => isIpaText(item))
+  const hasCollapsibleIpa =
+    !hideAudioTranscript && !isCheckpoint && (romajiIsIpa || breakdownIsIpa)
+  const traceCharacter = parsedContent.targetCharacter || parsedContent.displayText || ''
+  const traceMeaning =
+    parsedContent.writingMeaning ||
+    parsedContent.translation ||
+    parsedContent.targetTranslation
+  const freeTypingTarget =
+    parsedContent.targetTranslation ||
+    parsedContent.translation ||
+    parsedContent.writingMeaning
   const normalizedDisplayText = parsedContent.displayText?.replace(/\s+/g, ' ').trim() ?? ''
   const normalizedAudioText = parsedContent.audioText?.replace(/\s+/g, ' ').trim() ?? ''
   const isAudioUnavailableError =
@@ -261,6 +321,8 @@ export const ExercisePromptRenderer = ({
         !isTextInput &&
         current.exerciseType !== 'sentence_builder' &&
         current.exerciseType !== 'speaking_repeat' &&
+        current.exerciseType !== 'writing_trace' &&
+        current.exerciseType !== 'free_typing' &&
         current.choiceOptions.length > 0
       ) {
         const num = Number.parseInt(event.key, 10)
@@ -302,7 +364,7 @@ export const ExercisePromptRenderer = ({
         </div>
 
         <h1 className="text-xl sm:text-2xl font-brand font-extrabold text-slate-900 leading-snug whitespace-pre-line">
-          {formatPromptText(exercise.prompt)}
+          {formatPromptText(exercise.prompt, parsedContent.sentenceTemplate)}
         </h1>
 
         {showHint && effectiveHint && (
@@ -380,37 +442,79 @@ export const ExercisePromptRenderer = ({
               0.6x Pelan
             </button>
 
-            {parsedContent.romaji && !hideListeningTranscript && (
+            {parsedContent.romaji && !hideAudioTranscript && !romajiIsIpa && (
               <p className="text-sm font-mono text-blue-800 bg-white/80 px-3 py-2 rounded-xl border border-blue-100">
                 {parsedContent.romaji}
               </p>
             )}
+
+            {hasCollapsibleIpa && (
+              <button
+                type="button"
+                onClick={() =>
+                  setIpaGuideExerciseId((prev) =>
+                    prev === exercise.id ? null : exercise.id
+                  )
+                }
+                className="min-h-[38px] px-3 py-1.5 rounded-xl bg-white hover:bg-blue-100 border border-blue-200 text-xs font-brand font-bold text-blue-700 transition-colors cursor-pointer"
+              >
+                {showIpaGuide ? 'Sembunyikan Panduan Baca' : 'Lihat Panduan Baca'}
+              </button>
+            )}
           </div>
 
-          {parsedContent.displayText && !hideListeningTranscript && (
-            <p className="text-2xl font-extrabold text-slate-900 tracking-wide">
-              {parsedContent.displayText}
-            </p>
-          )}
+          {parsedContent.displayText &&
+            !hideAudioTranscript &&
+            exerciseType !== 'writing_trace' && (
+              <p className="text-2xl font-extrabold text-slate-900 tracking-wide">
+                {parsedContent.displayText}
+              </p>
+            )}
 
-          {showSeparateAudioText && !hideListeningTranscript && (
-            <p className="text-base font-bold text-slate-800">
-              {parsedContent.audioText}
-            </p>
-          )}
+          {showSeparateAudioText &&
+            !hideAudioTranscript &&
+            exerciseType !== 'writing_trace' && (
+              <p className="text-base font-bold text-slate-800">
+                {parsedContent.audioText}
+              </p>
+            )}
 
-          {parsedContent.phoneticBreakdown.length > 0 && !hideListeningTranscript && (
-            <div className="flex flex-wrap gap-1.5">
-              {parsedContent.phoneticBreakdown.map((syllable, idx) => (
-                <span
-                  key={`${syllable}-${idx}`}
-                  className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-xs font-mono font-bold text-blue-700"
-                >
-                  {syllable}
-                </span>
-              ))}
+          {hasCollapsibleIpa && showIpaGuide && (
+            <div className="space-y-2 pt-0.5">
+              {parsedContent.romaji && romajiIsIpa && (
+                <p className="inline-block text-sm font-mono text-blue-800 bg-white/90 px-3 py-1.5 rounded-xl border border-blue-200">
+                  {parsedContent.romaji}
+                </p>
+              )}
+              {parsedContent.phoneticBreakdown.length > 0 && breakdownIsIpa && (
+                <div className="flex flex-wrap gap-1.5">
+                  {parsedContent.phoneticBreakdown.map((syllable, idx) => (
+                    <span
+                      key={`${syllable}-${idx}`}
+                      className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-xs font-mono font-bold text-blue-700"
+                    >
+                      {syllable}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
           )}
+
+          {parsedContent.phoneticBreakdown.length > 0 &&
+            !hideAudioTranscript &&
+            !breakdownIsIpa && (
+              <div className="flex flex-wrap gap-1.5">
+                {parsedContent.phoneticBreakdown.map((syllable, idx) => (
+                  <span
+                    key={`${syllable}-${idx}`}
+                    className="px-2.5 py-1 rounded-lg bg-white border border-blue-200 text-xs font-mono font-bold text-blue-700"
+                  >
+                    {syllable}
+                  </span>
+                ))}
+              </div>
+            )}
 
           {audioPlaybackError && (
             <p className="text-xs font-semibold text-amber-700">
@@ -491,10 +595,10 @@ export const ExercisePromptRenderer = ({
                   }
                   className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl border border-blue-200 bg-blue-50/70 hover:bg-blue-100 text-[11px] font-brand font-extrabold text-blue-700 transition-colors cursor-pointer"
                 >
-                  {parsedContent.romaji.startsWith('/')
+                  {romajiIsIpa
                     ? showSentenceRomaji
-                      ? 'Sembunyikan IPA'
-                      : 'Tampilkan Pelafalan (IPA)'
+                      ? 'Sembunyikan Panduan Baca'
+                      : 'Lihat Panduan Baca'
                     : showSentenceRomaji
                       ? 'Sembunyikan Romaji'
                       : 'Tampilkan Bacaan (Romaji)'}
@@ -505,7 +609,7 @@ export const ExercisePromptRenderer = ({
 
           {showSentenceRomaji && !isCheckpoint && parsedContent.romaji && (
             <div className="px-3.5 py-2 rounded-xl bg-blue-50 border border-blue-200 text-xs font-mono font-bold text-blue-800">
-              {parsedContent.romaji.startsWith('/') ? 'Pelafalan' : 'Cara baca'}: {parsedContent.romaji}
+              {romajiIsIpa ? 'Panduan baca' : 'Cara baca'}: {parsedContent.romaji}
             </div>
           )}
 
@@ -594,7 +698,9 @@ export const ExercisePromptRenderer = ({
               </Button3D>
             ) : (
               <div className="w-full rounded-xl border border-amber-200 bg-amber-50 px-3.5 py-2.5 text-xs font-bold text-amber-800">
-                Browser ini belum mendukung mikrofon otomatis — ketik bacaan atau hiragana di bawah agar tetap bisa lanjut.
+                {isJapanese
+                  ? 'Browser ini belum mendukung mikrofon otomatis — ketik bacaan atau hiragana di bawah agar tetap bisa lanjut.'
+                  : 'Browser ini belum mendukung mikrofon otomatis — ketik kalimat yang kamu dengar di bawah agar tetap bisa lanjut.'}
               </div>
             )}
 
@@ -610,7 +716,9 @@ export const ExercisePromptRenderer = ({
               >
                 {showManualTyping
                   ? 'Gunakan Mikrofon'
-                  : 'Tidak bisa bicara sekarang? Ketik bacaannya'}
+                  : isJapanese
+                    ? 'Tidak bisa bicara sekarang? Ketik bacaannya'
+                    : 'Tidak bisa bicara sekarang? Ketik kalimatnya'}
               </button>
             )}
           </div>
@@ -621,7 +729,9 @@ export const ExercisePromptRenderer = ({
                 htmlFor={`speaking-manual-${exercise.id}`}
                 className="block text-xs font-extrabold uppercase tracking-wider text-slate-500"
               >
-                Ketik Bacaan (Romaji atau Hiragana)
+                {isJapanese
+                  ? 'Ketik Bacaan (Romaji atau Hiragana)'
+                  : 'Ketik Kalimat dalam Bahasa Inggris'}
               </label>
               <input
                 id={`speaking-manual-${exercise.id}`}
@@ -630,7 +740,11 @@ export const ExercisePromptRenderer = ({
                 disabled={isLocked}
                 onChange={(e) => onSetTextInput(e.target.value)}
                 onKeyDown={handleInputKeyDown}
-                placeholder={`Contoh: ${parsedContent.romaji || parsedContent.displayText || 'kao'}`}
+                placeholder={
+                  isJapanese
+                    ? 'Ketik bacaan yang kamu dengar...'
+                    : 'Ketik kalimat yang kamu dengar...'
+                }
                 className="w-full px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none font-bold text-slate-900 placeholder:text-slate-400 transition-colors"
               />
             </div>
@@ -658,7 +772,9 @@ export const ExercisePromptRenderer = ({
                     ? textInput
                     : isRecordingSpeech
                       ? 'Mendengarkan suaramu...'
-                      : 'Tekan "Rekam Suara" lalu ucapkan kata di atas...'}
+                      : hideSpeakingCheckpointAnswers
+                        ? 'Tekan "Rekam Suara" lalu ucapkan kalimat yang kamu dengar...'
+                        : 'Tekan "Rekam Suara" lalu ucapkan kata di atas...'}
                 </span>
                 {textInput.trim().length > 0 && !isLocked && (
                   <button
@@ -675,9 +791,134 @@ export const ExercisePromptRenderer = ({
         </div>
       )}
 
+      {/* MODE 2B: WRITING TRACE (Interactive Kana / Kanji Canvas) */}
+      {exerciseType === 'writing_trace' && traceCharacter && (
+        <div className="p-5 rounded-2xl bg-white border-2 border-slate-200 shadow-sm space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-14 h-14 rounded-2xl bg-blue-50 border-2 border-blue-200 flex items-center justify-center text-3xl font-black text-slate-900 shrink-0">
+                {traceCharacter}
+              </div>
+              <div className="min-w-0 space-y-0.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  {parsedContent.script && (
+                    <span className="px-2 py-0.5 rounded-full bg-indigo-50 border border-indigo-200 text-[10px] font-brand font-black uppercase tracking-wider text-indigo-700">
+                      {SCRIPT_BADGE_LABELS[parsedContent.script] ?? parsedContent.script}
+                    </span>
+                  )}
+                  {parsedContent.romaji && !romajiIsIpa && (
+                    <span className="px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-xs font-mono font-bold text-blue-700">
+                      {parsedContent.romaji}
+                    </span>
+                  )}
+                </div>
+                {traceMeaning && (
+                  <p className="text-sm font-bold text-slate-800">
+                    Arti: {traceMeaning}
+                  </p>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {!isCheckpoint && parsedContent.writingMnemonic && (
+            <div className="rounded-xl bg-amber-50/80 border border-amber-200 px-3.5 py-2.5 flex items-start gap-2">
+              <Lightbulb
+                weight="fill"
+                className="w-4 h-4 text-amber-500 shrink-0 mt-0.5"
+              />
+              <p className="text-xs font-medium text-amber-950 leading-relaxed">
+                {parsedContent.writingMnemonic}
+              </p>
+            </div>
+          )}
+
+          <KanaTracingPad
+            key={`${exercise.id}:${traceCharacter}:${traceResetNonce}`}
+            character={traceCharacter}
+            script={parsedContent.script}
+            disabled={isLocked}
+            isMastered={textInput.trim().length > 0}
+            requireStrokeToConfirm
+            actionLabel="Selesai Menulis"
+            onMarkPracticed={() => onSetTextInput(traceCharacter)}
+            onClearCanvas={() => onSetTextInput('')}
+          />
+
+          {textInput.trim().length > 0 && (
+            <div className="rounded-xl bg-emerald-50 border-2 border-emerald-200 px-4 py-3 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex items-center gap-2 text-emerald-800">
+                <CheckCircle weight="fill" className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span className="text-xs sm:text-sm font-brand font-extrabold">
+                  Goresan selesai! Klik Periksa Jawaban.
+                </span>
+              </div>
+              {!isLocked && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSetTextInput('')
+                    setTraceResetNonce((prev) => prev + 1)
+                  }}
+                  className="inline-flex items-center gap-1 text-xs font-brand font-bold text-emerald-700 hover:text-emerald-900 px-2.5 py-1 rounded-lg hover:bg-emerald-100 transition-colors cursor-pointer"
+                >
+                  <ArrowCounterClockwise weight="bold" className="w-3.5 h-3.5" />
+                  Tulis Ulang
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* MODE 2C: FREE TYPING (Active Recall Writing Input) */}
+      {exerciseType === 'free_typing' && (
+        <div className="p-5 rounded-2xl bg-white border-2 border-slate-200 shadow-sm space-y-4">
+          {freeTypingTarget && (
+            <div className="rounded-xl bg-slate-50 border border-slate-200 px-4 py-3 space-y-0.5">
+              <span className="text-[11px] font-brand font-extrabold uppercase tracking-wider text-slate-500">
+                Target Terjemahan
+              </span>
+              <p className="text-base sm:text-lg font-extrabold text-slate-900">
+                “{freeTypingTarget}”
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-1.5">
+            <label
+              htmlFor={`free-typing-${exercise.id}`}
+              className="flex items-center gap-1.5 text-xs font-extrabold uppercase tracking-wider text-slate-600"
+            >
+              <PencilSimple weight="bold" className="w-4 h-4 text-blue-600" />
+              {isJapanese
+                ? 'Ketik jawaban dalam Hiragana, Kanji, atau Romaji'
+                : 'Ketik jawaban dalam Bahasa Inggris'}
+            </label>
+            <input
+              id={`free-typing-${exercise.id}`}
+              type="text"
+              disabled={isLocked}
+              value={textInput}
+              onChange={(e) => onSetTextInput(e.target.value)}
+              onKeyDown={handleInputKeyDown}
+              placeholder="Ketik jawabanmu di sini..."
+              className="w-full min-h-[48px] px-4 py-3 rounded-xl bg-slate-50 border-2 border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none font-bold text-slate-900 placeholder:text-slate-400 transition-colors"
+            />
+            {isJapanese && (
+              <p className="text-xs font-medium text-slate-500">
+                Kamu bebas memakai keyboard Hiragana/Kanji atau langsung mengetik Romaji.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* MODE 3: CHOICE OPTIONS (fill_blank, listening_choice, multiple_choice, etc.) */}
       {exerciseType !== 'sentence_builder' &&
         exerciseType !== 'speaking_repeat' &&
+        exerciseType !== 'writing_trace' &&
+        exerciseType !== 'free_typing' &&
         parsedContent.choiceOptions.length > 0 && (
           <div className="grid grid-cols-1 gap-3">
             {parsedContent.choiceOptions.map((opt, idx) => {
@@ -722,6 +963,8 @@ export const ExercisePromptRenderer = ({
       {/* MODE 4: FREE TEXT FALLBACK (when an exercise has neither tokens nor choice options) */}
       {exerciseType !== 'sentence_builder' &&
         exerciseType !== 'speaking_repeat' &&
+        exerciseType !== 'writing_trace' &&
+        exerciseType !== 'free_typing' &&
         parsedContent.choiceOptions.length === 0 && (
           <div className="space-y-2">
             <label

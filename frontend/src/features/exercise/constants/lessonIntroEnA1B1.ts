@@ -70,7 +70,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         reading: '/juː / wiː / ðeɪ ɑːr/',
         meaning: 'Kamu / Kami / Mereka adalah...',
         mnemonic: 'Subjek jamak dan \'you\' selalu memakai \'are\'. Singkatannya: You\'re, We\'re, They\'re.',
-        speakText: 'We\'re software engineers.',
+        speakText: 'We\'re university students.',
       },
       {
         symbol: 'He / She / It is',
@@ -90,7 +90,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-A1-001',
       title: 'Present Simple \'To Be\' (Kalimat Nominal & Identitas)',
-      formula: 'Subject + am / is / are + Noun / Adjective / Prepositional Phrase',
+      formula: 'Subject + am / is / are + Noun / Adjective / Keterangan Tempat/Waktu',
       formulaReading: 'I\'m • You\'re / We\'re / They\'re • He\'s / She\'s / It\'s',
       explanation: 'Bahasa Inggris mewajibkan kata kerja di setiap kalimat. Ketika tidak ada kata kerja aksi (seperti makan/bekerja), gunakan \'am\' (untuk I), \'is\' (untuk he/she/it), atau \'are\' (untuk you/we/they) untuk menyebutkan nama, asal, profesi, atau sifat.',
       examples: [
@@ -181,7 +181,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-002',
-      title: 'Preposisi Waktu: at, on, in',
+      title: 'Kata Depan Waktu: at, on, in',
       formula: 'at [clock time / noon] • on [days / dates] • in [morning / months]',
       formulaReading: 'at 8:30 a.m. • on Monday • in the morning',
       explanation: 'Gunakan \'at\' untuk jam spesifik (\'at 9:00 a.m.\', \'at noon\', \'at night\'), \'on\' untuk nama hari dan tanggal (\'on weekdays\', \'on Friday\'), serta \'in\' untuk bagian hari atau bulan (\'in the morning\', \'in September\').',
@@ -549,7 +549,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-004',
-      title: 'Preposisi Kustomisasi Menu: with / without / on the side',
+      title: 'Kata Depan saat Memesan Makanan: with / without / on the side',
       formula: 'Menu Item + with [extra] / without [ingredient] / with [sauce] on the side',
       formulaReading: 'without onions • with oat milk • dressing on the side',
       explanation: 'Rangkaikan permintaan khusus langsung setelah nama makanan memakai \'with\' (dengan), \'without\' (tanpa), atau \'instead of\' (sebagai pengganti), lalu tutup dengan \'please\'.',
@@ -595,7 +595,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-005',
-      title: 'Preposisi Lokasi Kota AS: on, at, across from, next to',
+      title: 'Kata Depan Lokasi di Kota: on, at, across from, next to',
       formula: 'on [Street/Avenue] • at [Exact Address/Corner] • across from (di seberang) • next to (di sebelah)',
       formulaReading: 'on Fifth Avenue • at the corner of Main and Oak • across from the bank',
       explanation: 'Gunakan \'on\' untuk nama jalan tanpa nomor (\'on Broadway\'), \'at\' untuk titik spesifik atau nomor gedung (\'at 250 Main Street\', \'at Gate C4\'), dan \'across from\' (khas AS, setara \'opposite\') untuk menyatakan \'di seberang\'.',
@@ -733,7 +733,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-006',
-      title: 'Artikel Profesi (a / an) & Preposisi Tempat Kerja (at, in, for)',
+      title: 'Artikel Profesi (a / an) & Kata Depan Tempat Kerja (at, in, for)',
       formula: 'Subject + am/is/are + a/an + Job Title • work at/for [Company] • work in [City/Field]',
       formulaReading: 'an hour /ən ˈaʊər/ (h bisu -> bunyi vokal!) vs a university /ə ˌjuːnɪˈvɜːrsəti/ (bunyi /j/ konsonan!)',
       explanation: 'Pemilihan \'a\' vs \'an\' ditentukan oleh BUNYI awal kata, bukan huruf tulisannya! Karena \'university\' diawali bunyi konsonan /juː/, kita memakai \'a university\'; sebaliknya \'hour\' dan \'MBA\' diawali bunyi vokal (/aʊ/ dan /em/), sehingga memakai \'an hour\' dan \'an MBA\'.',
@@ -779,7 +779,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-006',
-      title: 'Possessive \'s, Possessive Adjectives & \'Whose\'',
+      title: 'Menyatakan Kepemilikan (\'s, my/your/his/her & \'Whose\')',
       formula: '[Owner]\'s + Noun • Whose + Noun + is/are + this/these?',
       formulaReading: 'Whose /huːz/ (kepemilikan) vs Who\'s /huːz/ (Who is)',
       explanation: 'Gunakan apostrof + s (\'s) untuk pemilik manusia/organisasi (\'Sarah\'s desk\', \'the company\'s mission\'). Untuk menanyakan pemilik suatu barang di meja rapat atau kelas, gunakan \'Whose + kata benda + is this?\'.',
@@ -798,7 +798,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'What team are you on?',
         reading: '/wʌt tiːm ɑːr juː ɑːn/',
         meaning: 'Kamu berada di tim / divisi apa?',
-        mnemonic: 'Perhatikan preposisi khas AS: kita berada \'ON a team\' (bukan \'in a team\')!',
+        mnemonic: 'Perhatikan kata depan khas AS: kita berada \'ON a team\' (bukan \'in a team\')!',
         speakText: 'I\'m on the mobile engineering team.',
       },
       {
@@ -825,9 +825,9 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-006',
-      title: 'Preposisi Dunia Kerja AS: on a team, based in, work on',
+      title: 'Kata Depan Dunia Kerja: on a team, based in, work on',
       formula: 'be on the [X] team • be based in [City] • work on [a project]',
-      formulaReading: 'I\'m on the QA team • I\'m based in Surabaya • I\'m working on the payment app',
+      formulaReading: 'I\'m on the design team • I\'m based in Surabaya • I\'m working on the new project',
       explanation: 'Dalam American English, seseorang bergabung \'on a team\' atau \'on a committee\', berdomisili kerja \'based in [kota]\', dan mengerjakan proyek \'work on [nama proyek]\'.',
       examples: [
         { jp: 'I\'m on the data team, and I\'m based in Jakarta.', reading: '/aɪm ɑːn ðə ˈdeɪtə tiːm, ænd aɪm beɪst ɪn dʒəˈkɑːrtə/', id: 'Saya di tim data, dan saya berbasis di Jakarta.' },
@@ -858,7 +858,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'speak fluently',
         reading: '/spiːk ˈfluːəntli/',
         meaning: 'Berbicara dengan lancar',
-        mnemonic: 'Kolokasi tepat untuk menceritakan kemampuan bahasa asing saat wawancara atau perkenalan.',
+        mnemonic: 'Pasangan kata alami tepat untuk menceritakan kemampuan bahasa asing saat wawancara atau perkenalan.',
         speakText: 'She speaks English fluently.',
       },
       {
@@ -922,7 +922,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       formulaReading: 'Borrow (meminjam barang orang) ≠ Lend (meminjamkan barang kita)',
       explanation: 'Gunakan \'Can you + V1\' saat meminta lawan bicara melakukan sesuatu untukmu, dan \'Can I + V1\' saat kamu sendiri yang meminta izin melakukan sesuatu. Untuk mengiyakan dengan ramah, katakan \'Sure!\', \'Of course!\', atau \'Go right ahead!\' (jarang dijawab kaku dengan \'Yes, you can\').',
       examples: [
-        { jp: 'Can you send me the Zoom link on Slack, please?', reading: '/kæn juː send miː ðə zuːm lɪŋk ɑːn slæk, pliːz/', id: 'Bisakah kamu mengirimkan tautan Zoom-nya lewat Slack?' },
+        { jp: 'Can you send me the meeting link in our team chat, please?', reading: '/kæn juː send miː ðə ˈmiːtɪŋ lɪŋk ɪn ˈaʊər tiːm tʃæt, pliːz/', id: 'Bisakah kamu mengirimkan tautan rapatnya lewat chat tim?' },
         { jp: 'Can I open the window? It\'s a bit warm in here.', reading: '/kæn aɪ ˈoʊpən ðə ˈwɪndoʊ? ɪts ə bɪt wɔːrm ɪn hɪr/', id: 'Bolehkah saya membuka jendelanya? Agak hangat di dalam sini.' },
       ],
     },
@@ -996,7 +996,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'waiting for...',
         reading: '/ˈweɪtɪŋ fɔːr/',
         meaning: 'Sedang menunggu [seseorang/kendaraan]',
-        mnemonic: 'Jangan lupa preposisi \'for\' setelah \'waiting\'! (\'waiting for the bus\', bukan \'waiting the bus\').',
+        mnemonic: 'Jangan lupa kata depan \'for\' setelah \'waiting\'! (\'waiting for the bus\', bukan \'waiting the bus\').',
         speakText: 'We\'re waiting for the Uber.',
       },
       {
@@ -1021,7 +1021,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Kesalahan klasik penutur Indonesia: \'I waiting the bus\' (dua salah sekaligus!). Yang benar: pakai \'am\' DAN pakai \'for\' -> \'I\'m waiting for the bus\'!',
   },
   'en-a1-u8-pola-kalimat': {
-    headline: 'Kapan Pakai \'I work\' vs \'I am working\'? (+ Jebakan Stative Verbs!)',
+    headline: 'Kapan Pakai \'I work\' vs \'I am working\'? (+ Kata Kerja yang Tidak Pakai \'-ing\'!)',
     subtitle: 'Bandingkan kebiasaan tetap dengan situasi khusus hari ini—dan kenali kata kerja keadaan (know, need, want, understand) yang DILARANG memakai -ing!',
     items: [
       {
@@ -1055,16 +1055,16 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A1-008',
-      title: 'Kontras Present Simple vs Present Continuous & Stative Verbs',
-      formula: 'Habit: V1 / V1-s • Action Now: am/is/are + V-ing • Stative (know/need/want/like): SELALU V1!',
+      title: 'Kontras Present Simple vs Present Continuous & Kata Kerja Keadaan',
+      formula: 'Kebiasaan: V1 / V1-s • Sedang Terjadi: am/is/are + V-ing • Kata Kerja Keadaan (know/need/want/like): SELALU V1!',
       formulaReading: 'SALAH: I am knowing / I am needing • BENAR: I know / I need',
-      explanation: 'Kata kerja aksi fisik/proses (eat, code, read, rain, talk) bebas memakai \'-ing\' saat sedang berlangsung. Namun, kata kerja kondisi pikiran, kepemilikan, dan kebutuhan (\'stative verbs\': know, understand, need, want, like, have = punya) tetap memakai Present Simple walau terjadi detik ini!',
+      explanation: 'Kata kerja aksi fisik/proses (eat, code, read, rain, talk) bebas memakai \'-ing\' saat sedang berlangsung. Namun, kata kerja kondisi pikiran, kepemilikan, dan kebutuhan (seperti know, understand, need, want, like, have = punya) tetap memakai Present Simple walau terjadi detik ini!',
       examples: [
         { jp: 'I usually work in the office, but today I\'m working from home.', reading: '/aɪ ˈjuːʒuəli wɜːrk ɪn ðə ˈɔːfɪs, bʌt təˈdeɪ aɪm ˈwɜːrkɪŋ frʌm hoʊm/', id: 'Saya biasanya bekerja di kantor, tetapi hari ini saya sedang bekerja dari rumah.' },
         { jp: 'Do you need any help with those suitcases right now?', reading: '/də juː niːd ˈeni help wɪð ðoʊz ˈsuːtkeɪsɪz raɪt naʊ/', id: 'Apakah Anda sedang membutuhkan bantuan dengan koper-koper itu sekarang?' },
       ],
     },
-    contrastiveTip: 'Ingat slogan iklan cepat saji boleh saja melanggar tata bahasa demi gaya, tapi dalam kampus, kantor, dan TOEFL: JANGAN PERNAH memakai \'is/am/are + knowing, needing, wanting, understanding\'!',
+    contrastiveTip: 'Ingat slogan iklan cepat saji boleh saja melanggar tata bahasa demi gaya, tapi dalam kampus, kantor, dan tes bahasa Inggris: JANGAN PERNAH memakai \'is/am/are + knowing, needing, wanting, understanding\'!',
   },
   'en-a1-u8-menyimak-bicara': {
     headline: 'Memberi Kabar Cepat Lewat Telepon & Chat Kerja',
@@ -1156,7 +1156,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         { jp: 'Bring an umbrella—it\'s raining hard outside.', reading: '/brɪŋ ən ʌmˈbrelə—ɪts ˈreɪnɪŋ hɑːrd ˈaʊtsaɪd/', id: 'Bawalah payung—di luar sedang hujan deras.' },
       ],
     },
-    contrastiveTip: 'Perhatikan pertanyaan \'What\'s the weather like?\'—kata \'like\' di sini adalah preposisi yang berarti \'seperti apa kondisi...\', BUKAN kata kerja \'menyukai\'! Jawabannya langsung deskripsi cuaca: \'It\'s sunny and warm.\'',
+    contrastiveTip: 'Perhatikan pertanyaan \'What\'s the weather like?\'—kata \'like\' di sini adalah kata depan yang berarti \'seperti apa kondisi...\', BUKAN kata kerja \'menyukai\'! Jawabannya langsung deskripsi cuaca: \'It\'s sunny and warm.\'',
   },
   'en-a1-u9-pola-kalimat': {
     headline: 'Cara Akrab Mengajak Teman di Akhir Pekan',
@@ -1173,7 +1173,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'How about + Verb-ing / Noun?',
         reading: '/haʊ əˈbaʊt/',
         meaning: 'Bagaimana kalau kita...? (+ Verb-ing!)',
-        mnemonic: 'Karena \'about\' adalah preposisi, kata kerja sesudahnya WAJIB ditambah -ing: \'How about grabbing brunch?\'',
+        mnemonic: 'Karena \'about\' adalah kata depan, kata kerja sesudahnya WAJIB ditambah -ing: \'How about grabbing brunch?\'',
         speakText: 'How about watching a movie?',
       },
       {
@@ -1196,7 +1196,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Making Suggestions: Let\'s + V1 vs How about + V-ing',
       formula: 'Let\'s + V1 • Why don\'t we + V1? • How about / What about + Verb-ing?',
       formulaReading: 'go hiking (BENAR) vs go to hike (KURANG ALAMI)',
-      explanation: 'Kunci tata bahasa ajakan terletak pada kata yang mendahuluinya: setelah \'Let\'s\' dan \'Why don\'t we\', gunakan V1 murni (\'Let\'s meet at ten\'). Sebaliknya, setelah preposisi \'about\' (\'How about\' / \'What about\'), wajib gunakan Verb-ing atau kata benda (\'How about meeting at ten?\').',
+      explanation: 'Kunci tata bahasa ajakan terletak pada kata yang mendahuluinya: setelah \'Let\'s\' dan \'Why don\'t we\', gunakan V1 murni (\'Let\'s meet at ten\'). Sebaliknya, setelah kata depan \'about\' (\'How about\' / \'What about\'), wajib gunakan Verb-ing atau kata benda (\'How about meeting at ten?\').',
       examples: [
         { jp: 'It\'s sunny this Saturday—let\'s go hiking at the state park!', reading: '/ɪts ˈsʌni ðɪs ˈsætərdeɪ—lets ɡoʊ ˈhaɪkɪŋ æt ðə steɪt pɑːrk/', id: 'Sabtu ini cuacanya cerah—ayo pergi mendaki di taman negara bagian!' },
         { jp: 'How about grabbing brunch on Sunday morning?', reading: '/haʊ əˈbaʊt ˈɡræbɪŋ brʌntʃ ɑːn ˈsʌndeɪ ˈmɔːrnɪŋ/', id: 'Bagaimana kalau kita makan brunch pada Minggu pagi?' },
@@ -1288,7 +1288,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Menyatakan Tenggat Waktu: due on [Day] / due at [Time] / by [Deadline]',
       formula: 'be due on [Friday] • submit [X] by [5:00 p.m.] (= paling lambat jam 5!)',
       formulaReading: 'Bedakan \'at 5:00 p.m.\' (tepat jam 5) vs \'by 5:00 p.m.\' (sebelum/paling lambat jam 5)!',
-      explanation: 'Preposisi \'by\' untuk tenggat waktu berarti \'tidak boleh lewat dari waktu tersebut\' (\'Please submit the form by noon\' = jam 10 atau 11 pagi boleh, jam 12.05 terlambat!). Kata sifat \'due\' dipakai setelah To Be: \'The slide deck is due tomorrow.\'',
+      explanation: 'Kata depan \'by\' untuk tenggat waktu berarti \'tidak boleh lewat dari waktu tersebut\' (\'Please submit the form by noon\' = jam 10 atau 11 pagi boleh, jam 12.05 terlambat!). Kata sifat \'due\' dipakai setelah To Be: \'The slide deck is due tomorrow.\'',
       examples: [
         { jp: 'Our group project is due on Wednesday by midnight.', reading: '/ˈaʊər ɡruːp ˈprɑːdʒekt ɪz duː ɑːn ˈwenzdeɪ baɪ ˈmɪdnaɪt/', id: 'Proyek kelompok kita dikumpulkan paling lambat hari Rabu tengah malam.' },
         { jp: 'Please send your availability by 3:00 p.m. today.', reading: '/pliːz send jʊr əˌveɪləˈbɪləti baɪ θriː piːˈem təˈdeɪ/', id: 'Mohon kirimkan ketersediaan waktu Anda paling lambat pukul 3 sore hari ini.' },
@@ -1298,7 +1298,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
   },
   'en-a1-u10-pola-kalimat': {
     headline: 'Kata Ganti Objek (me, him, her, it, us, them) dalam Komunikasi Kerja',
-    subtitle: 'Subjek (I, he, she, we, they) melakukan aksi di depan kata kerja; setelah kata kerja atau preposisi (to, for, with), bentuknya berubah menjadi kata ganti objek!',
+    subtitle: 'Subjek (I, he, she, we, they) melakukan aksi di depan kata kerja; setelah kata kerja atau kata depan (to, for, with), bentuknya berubah menjadi kata ganti objek!',
     items: [
       {
         symbol: 'send me / email her',
@@ -1311,7 +1311,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'with us / for them',
         reading: '/wɪð ʌs / fɔːr ðem/',
         meaning: 'Bersama kami / Untuk mereka',
-        mnemonic: 'Setelah preposisi apa pun (with, for, to, from, about), WAJIB pakai kata ganti objek!',
+        mnemonic: 'Setelah kata depan apa pun (with, for, to, from, about), WAJIB pakai kata ganti objek!',
         speakText: 'Would you like to join us?',
       },
       {
@@ -1333,14 +1333,14 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       code: 'GP-EN-A1-010',
       title: 'Subject vs Object Pronouns',
       formula: 'I -> me • he -> him • she -> her • it -> it • we -> us • they -> them',
-      formulaReading: 'Verb / Preposition + Object Pronoun (between you and me!)',
-      explanation: 'Perhatikan jumlah benda yang dirujuk! Jika sebelumnya menyebut benda tunggal (\'the document\'), gunakan \'it\'; jika menyebut benda jamak (\'the documents\' atau \'the notes\'), gunakan \'them\'. Selain itu, setelah preposisi seperti \'between\' atau \'for\', selalu gunakan \'me\' (\'for Maya and me\', bukan \'for Maya and I\').',
+      formulaReading: 'Verb / Kata Depan + Object Pronoun (between you and me!)',
+      explanation: 'Perhatikan jumlah benda yang dirujuk! Jika sebelumnya menyebut benda tunggal (\'the document\'), gunakan \'it\'; jika menyebut benda jamak (\'the documents\' atau \'the notes\'), gunakan \'them\'. Selain itu, setelah kata depan seperti \'between\' atau \'for\', selalu gunakan \'me\' (\'for Maya and me\', bukan \'for Maya and I\').',
       examples: [
         { jp: 'Mr. Kim is in a meeting, so I\'ll leave a message for him.', reading: '/ˈmɪstər kɪm ɪz ɪn ə ˈmiːtɪŋ, soʊ aɪl liːv ə ˈmesɪdʒ fɔːr hɪm/', id: 'Pak Kim sedang rapat, jadi saya akan meninggalkan pesan untuk beliau.' },
         { jp: 'The new guidelines are ready—I\'ll share them with the team.', reading: '/ðə nuː ˈɡaɪdlaɪnz ɑːr ˈredi—aɪl ʃer ðem wɪð ðə tiːm/', id: 'Panduan barunya sudah siap—saya akan membagikannya kepada tim.' },
       ],
     },
-    contrastiveTip: 'Jangan lupa objek setelah kata kerja transitif Bahasa Inggris! Dalam Bahasa Indonesia kita biasa berkata \'Kuenya enak, saya suka.\' Dalam Bahasa Inggris tidak boleh berhenti di \'I like\'—wajib tutup dengan objeknya: \'I like it!\'',
+    contrastiveTip: 'Jangan lupa objek setelah kata kerja yang butuh objek Bahasa Inggris! Dalam Bahasa Indonesia kita biasa berkata \'Kuenya enak, saya suka.\' Dalam Bahasa Inggris tidak boleh berhenti di \'I like\'—wajib tutup dengan objeknya: \'I like it!\'',
   },
   'en-a1-u10-menyimak-bicara': {
     headline: 'Struktur Email Singkat yang Sopan ke Profesor & Manajer',
@@ -1515,7 +1515,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-001',
-      title: 'Preposisi Waktu Cerita: During + Noun vs For + Duration vs Ago',
+      title: 'Kata Depan Waktu: During + Noun vs For + Duration vs Ago',
       formula: 'during + [the summer / my internship] • for + [six months] • [six months] ago',
       formulaReading: 'BENAR: during the meeting • SALAH: during three hours (-> pakai \'for three hours\'!)',
       explanation: 'Gunakan \'during\' untuk menjawab \'KAPAN / di tengah peristiwa apa\' (\'during my senior year\'), dan gunakan \'for\' untuk menjawab \'BERAPA LAMA durasi angkanya\' (\'for four years\').',
@@ -1541,15 +1541,15 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'apply for [a job / scholarship]',
         reading: '/əˈplaɪ fɔːr/',
         meaning: 'Melamar [pekerjaan / beasiswa]',
-        mnemonic: 'Perhatikan perbedaan preposisi: \'apply FOR a role/scholarship\' vs \'apply TO a university/company\'!',
+        mnemonic: 'Perhatikan perbedaan kata depan: \'apply FOR a role/scholarship\' vs \'apply TO a university/company\'!',
         speakText: 'She\'s going to apply for a grant.',
       },
       {
-        symbol: 'take the TOEFL',
-        reading: '/teɪk ðə ˈtoʊfəl/',
-        meaning: 'Mengikuti ujian TOEFL',
+        symbol: 'take the English exam',
+        reading: '/teɪk ði ˈɪŋɡlɪʃ ɪɡˈzæm/',
+        meaning: 'Mengikuti ujian bahasa Inggris',
         mnemonic: 'Dalam bahasa Inggris kita \'TAKE an exam/test\' (BUKAN \'follow an exam\' seperti terjemahan \'mengikuti ujian\'!).',
-        speakText: 'I\'m going to take the TOEFL in June.',
+        speakText: 'I\'m going to take the English exam in June.',
       },
       {
         symbol: 'switch careers / get promoted',
@@ -1566,7 +1566,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       formulaReading: 'Dalam percakapan lisan AS, \'going to\' sering terdengar /ˈɡʌnə/ (\'gonna\'), namun SELALU tulis \'going to\' di tulisan resmi!',
       explanation: 'Ketika kamu sudah merencanakan sesuatu jauh-jauh hari (misalnya mendaftar S2 tahun depan, mengambil kursus sertifikasi, atau pindah kota), gunakan \'am/is/are going to + V1\'. Jangan lupa To Be di depannya!',
       examples: [
-        { jp: 'I\'m going to take the TOEFL iBT in August.', reading: '/aɪm ˈɡoʊɪŋ tə teɪk ðə ˈtoʊfəl ˌaɪbiːˈtiː ɪn ˈɔːɡəst/', id: 'Saya berencana mengikuti ujian TOEFL iBT pada bulan Agustus.' },
+        { jp: 'I\'m going to take the English exam in August.', reading: '/aɪm ˈɡoʊɪŋ tə teɪk ði ˈɪŋɡlɪʃ ɪɡˈzæm ɪn ˈɔːɡəst/', id: 'Saya berencana mengikuti ujian bahasa Inggris pada bulan Agustus.' },
         { jp: 'Putri is going to apply to three universities in California.', reading: '/ˈpuːtri ɪz ˈɡoʊɪŋ tə əˈplaɪ tə θriː ˌjuːnɪˈvɜːrsətiz ɪn ˌkælɪˈfɔːrnjə/', id: 'Putri berencana mendaftar ke tiga universitas di California.' },
       ],
     },
@@ -1653,7 +1653,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-002',
-      title: 'Infinitive of Purpose (to + V1) vs Preposition (for + Noun)',
+      title: 'Menyatakan Tujuan: \'to + V1\' vs \'for + Kata Benda\'',
       formula: 'Action + to + Base Verb (V1) [Tujuan Aksi] • Action + for + Noun [Manfaat Benda]',
       formulaReading: 'BENAR: I moved here to study • SALAH: I moved here for study',
       explanation: 'Aturan emas penerjemahan kata \'untuk\': lihat kata tepat di belakangnya! Kalau kata kerja (belajar, melamar, menabung), pakai \'TO + V1\' (\'to study\', \'to apply\', \'to save\'). Kalau kata benda (konferensi, wawancara, masa depan), pakai \'FOR + Noun\' (\'for a conference\', \'for my interview\').',
@@ -1791,7 +1791,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-003',
-      title: 'Describing Household Issues: Something is + V-ing / Past Participle Adjective',
+      title: 'Describing Household Issues: Something is + V-ing / Kata Sifat Bentuk V3',
       formula: 'The [faucet/heater] is + leaking / making a strange noise • The [sink/heater] is + clogged / broken',
       formulaReading: 'take turns + Verb-ing = bergantian melakukan tugas (\'We take turns taking out the trash\')',
       explanation: 'Untuk hidup harmonis dengan teman satu apartemen, gunakan frasa kolaboratif \'take turns + Verb-ing\' (bergiliran melakukan sesuatu). Untuk melaporkan kerusakan ke kantor pengelola (\'leasing office\'), sebutkan lokasi ruangan + kondisi spesifik bendanya.',
@@ -1862,14 +1862,14 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'because + [Sebab]',
         reading: '/bɪˈkɔːz/',
-        meaning: 'Karena... (+ klausa penyebab)',
+        meaning: 'Karena... (+ bagian kalimat penyebab)',
         mnemonic: 'Menjelaskan alasan: \'I\'m returning it because they sent the wrong color.\'',
         speakText: 'I called support because my order was missing.',
       },
       {
         symbol: '..., so + [Akibat]',
         reading: '/soʊ/',
-        meaning: '..., jadi / sehingga... (+ klausa hasil/tindakan)',
+        meaning: '..., jadi / sehingga... (+ bagian hasil/tindakan)',
         mnemonic: 'Menjelaskan dampak atau langkah yang diambil.',
         speakText: 'The zipper broke, so I asked for a replacement.',
       },
@@ -1884,9 +1884,9 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-A2-004',
       title: 'Menghubungkan Sebab, Waktu & Akibat (When / Because / So)',
-      formula: 'When + Clause 1, Clause 2 • Result + because + Reason • Reason, + so + Result',
+      formula: 'When + Kalimat 1, Kalimat 2 • Result + because + Reason • Reason, + so + Result',
       formulaReading: 'LARANGAN KERAS Bahasa Inggris: JANGAN gabungkan \'Because ..., so ...\' dalam satu kalimat!',
-      explanation: 'Dalam Bahasa Indonesia lisan kita sering mendengar \'Karena ukurannya kekecilan, jadi saya tukar.\' Dalam tata bahasa Inggris standar & TOEFL, memakai \'Because\' DAN \'so\' sekaligus dalam satu kalimat adalah KESALAHAN TATA BAHASA! Pilih salah satu saja: \'Because it was too small, I exchanged it\' ATAU \'It was too small, so I exchanged it.\'',
+      explanation: 'Dalam Bahasa Indonesia lisan kita sering mendengar \'Karena ukurannya kekecilan, jadi saya tukar.\' Dalam tata bahasa Inggris standar & penulisan resmi, memakai \'Because\' DAN \'so\' sekaligus dalam satu kalimat adalah KESALAHAN TATA BAHASA! Pilih salah satu saja: \'Because it was too small, I exchanged it\' ATAU \'It was too small, so I exchanged it.\'',
       examples: [
         { jp: 'When I tried on the coat at home, I noticed a tear in the pocket.', reading: '/wen aɪ traɪd ɑːn ðə koʊt æt hoʊm, aɪ ˈnoʊtɪst ə ter ɪn ðə ˈpɑːkɪt/', id: 'Ketika saya mencoba mantel itu di rumah, saya melihat ada robekan di sakunya.' },
         { jp: 'They shipped the wrong cable, so customer support sent a replacement.', reading: '/ðeɪ ʃɪpt ðə rɔːŋ ˈkeɪbəl, soʊ ˈkʌstəmər səˈpɔːrt sent ə rɪˈpleɪsmənt/', id: 'Mereka mengirimkan kabel yang salah, jadi layanan pelanggan mengirimkan barang pengganti.' },
@@ -1902,7 +1902,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'fitting room / try this on',
         reading: '/ˈfɪtɪŋ ruːm / traɪ ðɪs ɑːn/',
         meaning: 'Kamar pas / Mencoba memakai pakaian ini',
-        mnemonic: 'Perhatikan posisi kata ganti objek pada phrasal verb: \'try IT on\' (di tengah, bukan \'try on it\'!).',
+        mnemonic: 'Perhatikan posisi kata ganti objek pada gabungan kata kerja: \'try IT on\' (di tengah, bukan \'try on it\'!).',
         speakText: 'Where are the fitting rooms?',
       },
       {
@@ -1929,16 +1929,16 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-004',
-      title: 'Separable Phrasal Verbs dalam Belanja (try it on, pick it up, drop it off)',
+      title: 'Gabungan Kata Kerja Sehari-hari saat Belanja (try it on, pick it up, drop it off)',
       formula: 'try on + the jacket / try the jacket on • TETAPI dengan pronoun WAJIB di tengah: try IT on!',
       formulaReading: 'BENAR: Can I try them on? • SALAH: Can I try on them?',
-      explanation: 'Untuk phrasal verb terpisah seperti \'try on\' (mencoba pakaian), \'pick up\' (mengambil pesanan), dan \'drop off\' (menyerahkan paket retur), jika objeknya berupa kata ganti (\'it\' atau \'them\'), kata ganti tersebut WAJIB diselipkan di TENGAH antara kata kerja dan partikelnya!',
+      explanation: 'Untuk gabungan kata kerja yang bisa dipisah seperti \'try on\' (mencoba pakaian), \'pick up\' (mengambil pesanan), dan \'drop off\' (menyerahkan paket retur), jika objeknya berupa kata ganti (\'it\' atau \'them\'), kata ganti tersebut WAJIB diselipkan di TENGAH antara kata kerja dan partikelnya!',
       examples: [
         { jp: 'These jeans look great—where can I try them on?', reading: '/ðiːz dʒiːnz lʊk ɡreɪt—wer kæn aɪ traɪ ðem ɑːn/', id: 'Celana jin ini terlihat bagus—di mana saya bisa mencobanya?' },
         { jp: 'I ordered online, and I\'m here to pick it up.', reading: '/aɪ ˈɔːrdərd ˈɑːnlaɪn, ænd aɪm hɪr tə pɪk ɪt ʌp/', id: 'Saya memesan secara daring, dan saya ke sini untuk mengambilnya.' },
       ],
     },
-    contrastiveTip: 'Ingat aturan emas phrasal verb: \'try it on\', \'turn it off\', \'pick them up\', \'fill it out\' (mengisi formulir di AS disebut \'fill out a form\'!).',
+    contrastiveTip: 'Ingat aturan emas gabungan kata kerja: \'try it on\', \'turn it off\', \'pick them up\', \'fill it out\' (mengisi formulir di AS disebut \'fill out a form\'!).',
   },
   'en-a2-u5-kosakata': {
     headline: 'Berobat di Amerika: Campus Clinic, Urgent Care & Pharmacy',
@@ -2001,7 +2001,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'You shouldn\'t skip meals.',
         reading: '/juː ˈʃʊdənt skɪp miːlz/',
         meaning: 'Sebaiknya kamu jangan melewatkan waktu makan.',
-        mnemonic: '\'Skip meals / skip breakfast\' adalah kolokasi alami untuk \'terlambat/tidak makan\'.',
+        mnemonic: '\'Skip meals / skip breakfast\' adalah pasangan kata alami alami untuk \'terlambat/tidak makan\'.',
         speakText: 'You shouldn\'t stare at screens all night.',
       },
       {
@@ -2030,7 +2030,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         { jp: 'I don\'t think you should drink coffee on an empty stomach.', reading: '/aɪ doʊnt θɪŋk juː ʃʊd drɪŋk ˈkɔːfi ɑːn ən ˈempti ˈstʌmək/', id: 'Menurut saya sebaiknya kamu jangan minum kopi saat perut kosong.' },
       ],
     },
-    contrastiveTip: 'Ingat kolokasi minum obat dalam Bahasa Inggris: kita TIDAK \'drink medicine\' (kecuali sirup cair kadang bisa, tapi tidak lazim)—selalu katakan \'TAKE medicine / take two tablets\'!',
+    contrastiveTip: 'Ingat pasangan kata alami minum obat dalam Bahasa Inggris: kita TIDAK \'drink medicine\' (kecuali sirup cair kadang bisa, tapi tidak lazim)—selalu katakan \'TAKE medicine / take two tablets\'!',
   },
   'en-a2-u5-menyimak-bicara': {
     headline: 'Menebus Resep di Apotek & Mengirim Kabar Izin Sakit',
@@ -2080,7 +2080,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
   },
   'en-a2-u6-kosakata': {
     headline: 'Menceritakan Pengalaman Hidup Tanpa Menyebut Kapan Terjadinya',
-    subtitle: 'Dalam Bahasa Indonesia kita cukup memakai kata \'pernah\' atau \'belum pernah\'. Dalam Bahasa Inggris, pengalaman sepanjang hidup sampai detik ini menggunakan Present Perfect: have/has + Past Participle (V3)!',
+    subtitle: 'Dalam Bahasa Indonesia kita cukup memakai kata \'pernah\' atau \'belum pernah\'. Dalam Bahasa Inggris, pengalaman sepanjang hidup sampai detik ini menggunakan Present Perfect: have/has + bentuk V3!',
     items: [
       {
         symbol: 'Have you ever + V3...?',
@@ -2113,7 +2113,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-006',
-      title: 'Present Perfect untuk Pengalaman Hidup (Have / Has + Past Participle)',
+      title: 'Present Perfect untuk Pengalaman Hidup (Have / Has + Bentuk V3)',
       formula: 'I/You/We/They + have (\'ve) + V3 • He/She/It + has (\'s) + V3',
       formulaReading: 'I\'ve (/aɪv/) • She\'s (/ʃiːz/) • been (/bɪn/ di US English)',
       explanation: 'Gunakan Present Perfect saat fokusmu adalah APAKAH sesuatu pernah terjadi dalam hidup seseorang, bukan KAPAN tepatnya itu terjadi. Ingat perbedaan krusial: \'Raka has been to Boston\' (Raka pernah ke Boston dan sekarang sudah pulang) vs \'Raka has gone to Boston\' (Raka berangkat ke Boston dan sekarang masih di sana!).',
@@ -2168,7 +2168,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         { jp: 'Has the admission committee announced the results yet?', reading: '/hæz ði ədˈmɪʃən kəˈmɪti əˈnaʊnst ðə rɪˈzʌlts jet/', id: 'Apakah komite admisi sudah mengumumkan hasilnya?' },
       ],
     },
-    contrastiveTip: 'Catatan gaya American English sehari-hari: dalam obrolan lisan di AS, orang Amerika juga sering memakai \'just/already/yet\' dengan Past Simple (\'Did you eat yet?\'), NAMUN dalam penulisan email profesional dan ujian TOEFL, utamakan Present Perfect (\'Have you eaten yet?\')!',
+    contrastiveTip: 'Catatan gaya American English sehari-hari: dalam obrolan lisan di AS, orang Amerika juga sering memakai \'just/already/yet\' dengan Past Simple (\'Did you eat yet?\'), NAMUN dalam penulisan email profesional dan ujian bahasa Inggris, utamakan Present Perfect (\'Have you eaten yet?\')!',
   },
   'en-a2-u6-menyimak-bicara': {
     headline: 'Menjelaskan Sudah Berapa Lama: Jangan Pakai Present Simple!',
@@ -2349,7 +2349,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       explanation: 'Trik kelancaran tingkat penutur asli: saat memberi saran negatif dengan \'think\', orang Amerika hampir selalu menarik kata \'not\' ke kata kerja \'think\': katakan \'I don\'t think you should skip sleep\' (terdengar sangat halus dan diplomatis) alih-alih \'I think you shouldn\'t skip sleep\'!',
       examples: [
         { jp: 'You should proofread your cover letter before submitting it.', reading: '/juː ʃʊd ˈpruːfriːd jʊr ˈkʌvər ˈletər bɪˈfɔːr səbˈmɪtɪŋ ɪt/', id: 'Sebaiknya kamu memeriksa ulang ejaan surat lamaranmu sebelum mengirimkannya.' },
-        { jp: 'I don\'t think we should deploy to production on Friday afternoon.', reading: '/aɪ doʊnt θɪŋk wiː ʃʊd dɪˈplɔɪ tə prəˈdʌkʃən ɑːn ˈfraɪdeɪ ˌæftərˈnuːn/', id: 'Menurut saya sebaiknya kita tidak merilis pembaruan ke server utama pada Jumat sore.' },
+        { jp: 'I don\'t think we should launch the update on Friday afternoon.', reading: '/aɪ doʊnt θɪŋk wiː ʃʊd lɔːntʃ ði ˈʌpdeɪt ɑːn ˈfraɪdeɪ ˌæftərˈnuːn/', id: 'Menurut saya sebaiknya kita tidak meluncurkan pembaruan pada Jumat sore.' },
       ],
     },
     contrastiveTip: 'Setelah \'should\', gunakan kata kerja dasar V1 murni tanpa \'to\' dan tanpa \'-s\' untuk semua subjek (\'She should apply\', BUKAN \'She should applies\' atau \'She should to apply\')!',
@@ -2435,16 +2435,16 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-008',
-      title: 'Extra-Polite Requests: Would You Mind + Gerund (-ing) & Logika Responsnya',
+      title: 'Permintaan Super Sopan: Would You Mind + V-ing & Logika Responsnya',
       formula: 'Meminta Orang Lain: Would you mind + V-ing? • Meminta Izin: Would you mind if I + Past Verb?',
       formulaReading: 'Pertanyaan: \'Apakah Anda KEBERATAN?\' -> Setuju/Mengizinkan = \'No, not at all!\' (Tidak keberatan!)',
-      explanation: 'Jebakan klasik nomor 1 di TOEFL Listening: A bertanya \'Would you mind closing the door?\' dan B menjawab \'Not at all!\' — artinya B BERSEDIA menutup pintu! Mengapa? Karena \'mind\' berarti \'merasa keberatan/terganggu\'. Jika kamu menjawab \'Yes\', secara harfiah itu berarti \'Ya, saya keberatan!\'',
+      explanation: 'Jebakan klasik nomor 1 di latihan mendengarkan percakapan & kuliah: A bertanya \'Would you mind closing the door?\' dan B menjawab \'Not at all!\' — artinya B BERSEDIA menutup pintu! Mengapa? Karena \'mind\' berarti \'merasa keberatan/terganggu\'. Jika kamu menjawab \'Yes\', secara harfiah itu berarti \'Ya, saya keberatan!\'',
       examples: [
         { jp: 'Would you mind pushing our meeting back by thirty minutes?', reading: '/ˈwʊdʒuː maɪnd ˈpʊʃɪŋ ˈaʊər ˈmiːtɪŋ bæk baɪ ˈθɜːrti ˈmɪnɪts/', id: 'Apakah Anda keberatan memundurkan rapat kita selama tiga puluh menit?' },
         { jp: 'Would you mind if I borrowed your HDMI adapter? — No, go right ahead!', reading: '/ˈwʊdʒuː maɪnd ɪf aɪ ˈbɑːroʊd jʊr ˌeɪtʃdiːemˈaɪ əˈdæptər? noʊ, ɡoʊ raɪt əˈhed/', id: 'Apakah kamu keberatan kalau saya meminjam adaptor HDMI-mu? — Tidak sama sekali, silakan pakai!' },
       ],
     },
-    contrastiveTip: 'Phrasal verb jadwal kantor AS yang wajib tahu: \'push a meeting back\' = memundurkan jam rapat lebih siang/sore, sedangkan \'move a meeting up\' = memajukan jam rapat lebih awal!',
+    contrastiveTip: 'Ungkapan jadwal kantor AS yang wajib tahu: \'push a meeting back\' = memundurkan jam rapat lebih siang/sore, sedangkan \'move a meeting up\' = memajukan jam rapat lebih awal!',
   },
   'en-a2-u8-menyimak-bicara': {
     headline: 'Proaktif Menawarkan Bantuan di Kantor & Kampus AS',
@@ -2493,7 +2493,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Idiom khas Amerika \'I\'m all set!\' (/aɪm ɔːl set/) sangat serbaguna—dipakai di kantor, kasir toko, maupun restoran untuk mengatakan \'Saya sudah cukup / sudah beres semua, terima kasih!\'',
   },
   'en-a2-u9-kosakata': {
-    headline: 'Saat Dua Kata Kerja Bertemu: Kelompok Wajib \'-ing\' (Gerund)!',
+    headline: 'Saat Dua Kata Kerja Bertemu: Kelompok Wajib \'-ing\' (V-ing)!',
     subtitle: 'Dalam Bahasa Indonesia kita bebas merangkai \'selesai makan\' atau \'menikmati belajar\'. Dalam Bahasa Inggris, kata kerja pertama menentukan \'seragam\' kata kerja kedua—dan kelompok pertama ini WAJIB memakai V-ing!',
     items: [
       {
@@ -2513,7 +2513,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'suggest / recommend + V-ing',
         reading: '/səɡˈdʒest / ˌrekəˈmend/',
-        meaning: 'Menyarankan melakukan sesuatu (favorit soal jebakan TOEFL!)',
+        meaning: 'Menyarankan melakukan sesuatu (sering mengecoh pembelajar!)',
         mnemonic: 'Hati-hati: \'suggest\' TIDAK BISA diikuti \'to V1\' (\'He suggested taking the subway\', BUKAN \'suggested to take\')!',
         speakText: 'She suggested meeting at noon.',
       },
@@ -2530,7 +2530,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Verbs Followed by Gerunds (Verb + V-ing)',
       formula: 'Subject + [enjoy / finish / avoid / keep / mind / suggest / practice] + Verb-ing',
       formulaReading: 'suggest (/səɡˈdʒest/ di US English, bunyi \'g\' terdengar!) + V-ing',
-      explanation: 'Mengapa disebut Gerund? Karena akhiran \'-ing\' di sini BUKAN berarti \'sedang\' (bukan Continuous Tense!), melainkan mengubah kata kerja menjadi KATA BENDA aktivitas. Saat kamu bilang \'I enjoy swimming\', \'swimming\' berposisi sebagai benda (kegiatan berenang) yang kamu sukai!',
+      explanation: 'Ingat: akhiran \'-ing\' di sini BUKAN berarti \'sedang\' (bukan Continuous Tense!), melainkan mengubah kata kerja menjadi KATA BENDA aktivitas. Saat kamu bilang \'I enjoy swimming\', \'swimming\' berposisi sebagai benda (kegiatan berenang) yang kamu sukai!',
       examples: [
         { jp: 'I really enjoy collaborating with designers from different countries.', reading: '/aɪ ˈriːəli ɪnˈdʒɔɪ kəˈlæbəreɪtɪŋ wɪð dɪˈzaɪnərz frʌm ˈdɪfərənt ˈkʌntriz/', id: 'Saya sangat menikmati berkolaborasi dengan desainer dari berbagai negara.' },
         { jp: 'Our team lead suggested testing the mobile checkout flow again.', reading: '/ˈaʊər tiːm liːd səɡˈdʒestɪd ˈtestɪŋ ðə ˈmoʊbəl ˈtʃekaʊt floʊ əˈɡen/', id: 'Ketua tim kami menyarankan untuk menguji ulang alur pembayaran seluler.' },
@@ -2539,8 +2539,8 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Waspadai jebakan nomor satu pelajar Indonesia: \'He suggested me to buy a Mac\' -> SALAH GANDA! Kata kerja \'suggest\' tidak boleh diikuti \'orang + to V1\'. Katakan dengan bersih: \'He suggested buying a Mac\' atau \'He suggested that I buy a Mac\'!',
   },
   'en-a2-u9-pola-kalimat': {
-    headline: 'Kelompok \'To + V1\' vs Aturan Mutlak \'Preposisi + V-ing\'!',
-    subtitle: 'Kata kerja berorientasi niat masa depan memakai \'to + V1\'. Sebaliknya, setiap kata kerja yang jatuh tepat SETELAH preposisi (in, at, for, about, without, before) WAJIB menjadi V-ing!',
+    headline: 'Kelompok \'To + V1\' vs Aturan Mutlak \'Kata Depan + V-ing\'!',
+    subtitle: 'Kata kerja berorientasi niat masa depan memakai \'to + V1\'. Sebaliknya, setiap kata kerja yang jatuh tepat SETELAH kata depan (in, at, for, about, without, before) WAJIB menjadi V-ing!',
     items: [
       {
         symbol: 'decide / offer / promise + to V1',
@@ -2560,23 +2560,23 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'interested in / good at + V-ing',
         reading: '/ˈɪntrəstɪd ɪn / ɡʊd æt/',
         meaning: 'Tertarik dalam / Mahir dalam melakukan sesuatu',
-        mnemonic: 'Karena \'in\' dan \'at\' adalah preposisi, kata kerja sesudahnya wajib V-ing!',
+        mnemonic: 'Karena \'in\' dan \'at\' adalah kata depan, kata kerja sesudahnya wajib V-ing!',
         speakText: 'Are you interested in joining our study group?',
       },
       {
         symbol: 'look forward to + V-ing!',
         reading: '/lʊk ˈfɔːrwərd tə/',
-        meaning: 'Sangat menantikan... (JEBAKAN TERBESAR EMAIL & TOEFL!)',
-        mnemonic: 'Kata \'to\' pada \'look forward to\' adalah PREPOSISI (\'menuju ke\'), BUKAN pasangan infinitive—jadi WAJIB diikuti V-ing!',
+        meaning: 'Sangat menantikan... (JEBAKAN TERBESAR EMAIL & penulisan resmi!)',
+        mnemonic: 'Kata \'to\' pada \'look forward to\' adalah KATA DEPAN (\'menuju ke\'), BUKAN pasangan kata kerja \'to + V1\'—jadi WAJIB diikuti V-ing!',
         speakText: 'I look forward to hearing from you.',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-A2-009',
-      title: 'Verbs + To-Infinitive vs Prepositions + Gerund (termasuk \'Look Forward To + V-ing\')',
-      formula: 'Keputusan/Niat: [decide / offer / promise / manage / afford] + to V1 • Setelah Preposisi: [in / at / of / for / without / look forward to] + V-ing',
+      title: 'Kata Kerja + \'to V1\' vs Kata Depan + \'V-ing\' (termasuk \'Look Forward To + V-ing\')',
+      formula: 'Keputusan/Niat: [decide / offer / promise / manage / afford] + to V1 • Setelah Kata depan: [in / at / of / for / without / look forward to] + V-ing',
       formulaReading: 'I look forward to hearing from you! (BUKAN \'to hear\'!)',
-      explanation: 'Hafalkan satu hukum besi Bahasa Inggris yang tanpa pengecualian: setelah PREPOSISI apa pun (in, on, at, for, of, about, by, without), kata kerja selalu berubah menjadi Gerund (-ing), misal \'Thank you for helping me\' dan \'without checking\'. Khusus \'look forward to\', kata \'to\'-nya adalah preposisi sehingga wajib \'look forward to meeting you\'!',
+      explanation: 'Hafalkan satu hukum besi Bahasa Inggris yang tanpa pengecualian: setelah KATA DEPAN apa pun (in, on, at, for, of, about, by, without), kata kerja selalu berubah menjadi kata kerja berakhiran -ing (V-ing), misal \'Thank you for helping me\' dan \'without checking\'. Khusus \'look forward to\', kata \'to\'-nya adalah kata depan sehingga wajib \'look forward to meeting you\'!',
       examples: [
         { jp: 'Our team managed to reduce app crash rates by forty percent.', reading: '/ˈaʊər tiːm ˈmænɪdʒd tə rɪˈduːs æp kræʃ reɪts baɪ ˈfɔːrti pərˈsent/', id: 'Tim kami berhasil menekan tingkat aplikasi tumbang sebesar empat puluh persen.' },
         { jp: 'Thank you for taking the time to interview me today—I look forward to hearing from you.', reading: '/θæŋk juː fɔːr ˈteɪkɪŋ ðə taɪm tə ˈɪntərvjuː miː təˈdeɪ—aɪ lʊk ˈfɔːrwərd tə ˈhɪrɪŋ frʌm juː/', id: 'Terima kasih telah meluangkan waktu mewawancarai saya hari ini—saya menantikan kabar dari Anda.' },
@@ -2591,7 +2591,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'Living abroad teaches...',
         reading: '/ˈlɪvɪŋ əˈbrɔːd ˈtiːtʃɪz/',
-        meaning: 'Tinggal di luar negeri mengajarkan... (Subjek Gerund = TUNGGAL!)',
+        meaning: 'Tinggal di luar negeri mengajarkan... (Subjek berupa aktivitas V-ing = TUNGGAL!)',
         mnemonic: 'Meskipun diikuti kata jamak (\'Finding good roommates IS hard\'), subjek intinya adalah aktivitas \'Finding\' -> pakai \'IS\'!',
         speakText: 'Learning a new language takes patience.',
       },
@@ -2599,7 +2599,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'Working remotely allows...',
         reading: '/ˈwɜːrkɪŋ rɪˈmoʊtli əˈlaʊz/',
         meaning: 'Bekerja jarak jauh memungkinkan...',
-        mnemonic: 'Pembuka esai opini TOEFL Writing yang sangat rapi dan akademik.',
+        mnemonic: 'Pembuka esai opini penulisan esai bahasa Inggris yang sangat rapi dan akademik.',
         speakText: 'Working remotely saves commuting time.',
       },
       {
@@ -2613,13 +2613,13 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'instead of + V-ing',
         reading: '/ɪnˈsted ʌv/',
         meaning: 'Alih-alih / Daripada melakukan...',
-        mnemonic: 'Karena diakhiri preposisi \'of\', wajib disambung V-ing!',
+        mnemonic: 'Karena diakhiri kata depan \'of\', wajib disambung V-ing!',
         speakText: 'Let\'s walk instead of waiting for the bus.',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-A2-009',
-      title: 'Gerund Phrase as Singular Subject & Method Prepositions (by / instead of + V-ing)',
+      title: 'Aktivitas V-ing sebagai Subjek Tunggal & Cara (by / instead of + V-ing)',
       formula: '[Verb-ing + Object] (Subjek Aktivitas Tunggal) + Singular Verb (is / was / takes / helps)',
       formulaReading: 'Finding affordable apartments IS tough! (Subjek = \'Finding\', BUKAN \'apartments\'!)',
       explanation: 'Jebakan klasik ujian grammar: pada kalimat \'Building strong professional networks ___ essential\', banyak peserta terkecoh kata jamak \'networks\' lalu memilih \'are\'. Padahal subjek utamanya adalah kegiatan \'Building\' (membangun = satu aktivitas tunggal), sehingga kata kerjanya WAJIB tunggal: \'is\'!',
@@ -2649,7 +2649,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         speakText: 'Wait here until your name is called.',
       },
       {
-        symbol: 'before / after + Clause / V-ing',
+        symbol: 'before / after + Kalimat / V-ing',
         reading: '/bɪˈfɔːr / ˈæftər/',
         meaning: 'Sebelum / Setelah...',
         mnemonic: 'Bisa diikuti kalimat utuh (\'before you submit it\') atau diringkas dengan V-ing (\'before submitting it\')!',
@@ -2665,10 +2665,10 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-A2-010',
-      title: 'Time Conjunctions & Tanda Baca Koma pada Klausa Waktu',
-      formula: '[Time Clause], [Main Clause]. • [Main Clause] [Time Clause] (tanpa koma!).',
+      title: 'Kata Hubung Waktu & Tanda Baca Koma pada Kalimat Keterangan Waktu',
+      formula: '[Bagian Waktu], [Kalimat Utama]. • [Kalimat Utama] [Bagian Waktu] (tanpa koma!).',
       formulaReading: 'until (1 huruf L!) vs till (2 huruf L, bentuk kasual)',
-      explanation: 'Aturan tanda baca penulisan akademik & bisnis AS: jika klausa waktu (When/Before/After/Once...) diletakkan di AWAL kalimat, pisahkan dengan KOMA sebelum klausa utama (\'Before you leave, lock the door.\'). Jika diletakkan di TENGAH/BELAKANG, tidak perlu koma (\'Lock the door before you leave.\')!',
+      explanation: 'Aturan tanda baca penulisan akademik & bisnis AS: jika bagian keterangan waktu (When/Before/After/Once...) diletakkan di AWAL kalimat, pisahkan dengan KOMA sebelum bagian utama kalimat (\'Before you leave, lock the door.\'). Jika diletakkan di TENGAH/BELAKANG, tidak perlu koma (\'Lock the door before you leave.\')!',
       examples: [
         { jp: 'Please mute your microphone after you join the webinar.', reading: '/pliːz mjuːt jʊr ˈmaɪkrəfoʊn ˈæftər juː dʒɔɪn ðə ˈwebɪnɑːr/', id: 'Harap bisukan mikrofon Anda setelah bergabung ke webinar.' },
         { jp: 'Let\'s stay in the terminal until the rain stops.', reading: '/lets steɪ ɪn ðə ˈtɜːrmɪnəl ənˈtɪl ðə reɪn stɑːps/', id: 'Mari tetap di dalam terminal sampai hujannya reda.' },
@@ -2677,8 +2677,8 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jangan tertukar \'until\' (durasi bertahan sampai titik berhenti: \'I worked until 6 p.m.\') dengan \'by\' (batas waktu tenggat maksimal: \'Submit the form by 6 p.m.\' = paling lambat jam 6 sore)!',
   },
   'en-a2-u10-pola-kalimat': {
-    headline: 'Hukum Besi Grammar Inggris: DILARANG Pakai \'Will\' di Dalam Klausa Waktu!',
-    subtitle: 'Dalam Bahasa Indonesia masuk akal berpikir \'Ketika dia AKAN tiba besok...\'. Dalam Bahasa Inggris, klausa setelah when / before / after / as soon as / until HARAM memakai \'will\'—wajib pakai Present Simple!',
+    headline: 'Hukum Besi Grammar Inggris: DILARANG Pakai \'Will\' di Dalam Kalimat Keterangan Waktu!',
+    subtitle: 'Dalam Bahasa Indonesia masuk akal berpikir \'Ketika dia AKAN tiba besok...\'. Dalam Bahasa Inggris, bagian kalimat setelah when / before / after / as soon as / until HARAM memakai \'will\'—wajib pakai Present Simple!',
     items: [
       {
         symbol: 'When + Present Simple, ... will + V1',
@@ -2705,22 +2705,22 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'won\'t ... until + Present Simple',
         reading: '/woʊnt ... ənˈtɪl/',
         meaning: 'Tidak akan ... sampai [kejadian terjadi]',
-        mnemonic: 'Pasangan kalimat sangat kuat untuk prosedur persetujuan: \'We won\'t ship until QA signs off.\'',
+        mnemonic: 'Pasangan kalimat sangat kuat untuk prosedur persetujuan: \'We won\'t launch until the quality team approves.\'',
         speakText: 'We won\'t sign the contract until our lawyer reviews it.',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-A2-010',
-      title: 'Future Time Clauses: Present Simple Inside the Time Clause!',
+      title: 'Kalimat Waktu Masa Depan: Wajib Pakai V1 (Bukan \'Will\')!',
       formula: '[When / Before / After / As soon as / Until / Once + Subject + PRESENT SIMPLE], [Subject + WILL / BE GOING TO + V1]',
       formulaReading: 'SALAH: When I will get home • BENAR: When I get home, I\'ll email you!',
-      explanation: 'Mengapa tidak boleh ada dua \'will\'? Dalam Bahasa Inggris, satu penanda masa depan (\'will\' atau \'be going to\') di KLAUSA UTAMA sudah otomatis memproyeksikan seluruh kalimat ke masa depan! Klausa waktunya cukup memakai Present Simple (jangan lupa akhiran \'-s\' jika subjeknya tunggal he/she/it: \'as soon as it arrives\'!).',
+      explanation: 'Mengapa tidak boleh ada dua \'will\'? Dalam Bahasa Inggris, satu penanda masa depan (\'will\' atau \'be going to\') di BAGIAN UTAMA KALIMAT sudah otomatis memproyeksikan seluruh kalimat ke masa depan! Bagian kalimat waktunya cukup memakai Present Simple (jangan lupa akhiran \'-s\' jika subjeknya tunggal he/she/it: \'as soon as it arrives\'!).',
       examples: [
         { jp: 'As soon as the registrar approves my transfer credits, I\'ll enroll in the advanced seminar.', reading: '/æz suːn æz ðə ˈredʒɪstrɑːr əˈpruːvz maɪ ˈtrænsfɜːr ˈkredɪts, aɪl ɪnˈroʊl ɪn ði ədˈvænst ˈsemɪnɑːr/', id: 'Begitu bagian registrasi menyetujui transfer SKS saya, saya akan mendaftar ke seminar lanjutan itu.' },
         { jp: 'We won\'t publish the article until the editor checks all the sources.', reading: '/wiː woʊnt ˈpʌblɪʃ ði ˈɑːrtɪkəl ənˈtɪl ði ˈedɪtər tʃeks ɔːl ðə ˈsɔːrsɪz/', id: 'Kami tidak akan menerbitkan artikel tersebut sampai editor memeriksa semua sumbernya.' },
       ],
     },
-    contrastiveTip: 'Jebakan ganda yang sering keluar di TOEFL: selain mengganti \'will\' menjadi Present Simple, perhatikan subjek orang ketiga tunggal! Jangan menulis \'when the manager arrive\' -> wajib pakai \'-s\': \'when the manager ARRIVES\'!',
+    contrastiveTip: 'Jebakan ganda yang sering keluar dalam bahasa Inggris resmi: selain mengganti \'will\' menjadi Present Simple, perhatikan subjek orang ketiga tunggal! Jangan menulis \'when the manager arrive\' -> wajib pakai \'-s\': \'when the manager ARRIVES\'!',
   },
   'en-a2-u10-menyimak-bicara': {
     headline: 'Membedakan \'While\', \'When\', dan \'During\' Tanpa Tertukar Lagi!',
@@ -2743,7 +2743,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'during + Noun Phrase (TANPA Kata Kerja!)',
         reading: '/ˈdʊrɪŋ/',
-        meaning: 'Selama + KATA BENDA acara/periode (bukan klausa subjek+predikat!)',
+        meaning: 'Selama + KATA BENDA acara/periode (bukan bagian kalimat subjek+predikat!)',
         mnemonic: 'BENAR: \'during the flight / during the summer\' — SALAH: \'during I was flying\'!',
         speakText: 'No phones are allowed during the exam.',
       },
@@ -2751,13 +2751,13 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'meanwhile',
         reading: '/ˈmiːnwaɪl/',
         meaning: 'Sementara itu (penghubung kalimat baru untuk aksi paralel tim)',
-        mnemonic: 'Sangat berguna di rapat kerja: \'Backend is fixing the API. Meanwhile, QA is preparing test cases.\'',
+        mnemonic: 'Sangat berguna di rapat kerja: \'One team is fixing the website. Meanwhile, another team is checking the details.\'',
         speakText: 'Meanwhile, our design team updated the icons.',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-A2-010',
-      title: 'Kontras Tiga Serangkai: While (+ Clause -ing) vs When (+ Clause) vs During (+ Noun)',
+      title: 'Kontras Tiga Serangkai: While (+ Kalimat -ing) vs When (+ Kalimat Utuh) vs During (+ Noun)',
       formula: 'while + [S + be + V-ing] • when + [S + Verb] • during + [Noun Phrase saja!]',
       formulaReading: 'during (/ˈdʊrɪŋ/ di US) + Noun ≠ while (/waɪl/) + Subject + Verb!',
       explanation: 'Cara tercepat membedakan \'during\' vs \'while\' dalam 2 detik: lihat apa yang ada di belakangnya! Jika hanya KATA BENDA nama kegiatan (\'the meeting\', \'my internship\', \'winter break\'), wajib pilih \'DURING\'. Jika ada SUBJEK + KATA KERJA (\'I was interning\', \'we were eating\') atau langsung V-ing (\'while studying\'), wajib pilih \'WHILE\'!',
@@ -2769,7 +2769,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Jangan tertukar \'during\' dengan \'for\'! Gunakan \'DURING\' untuk menjawab KAPAN (\'during the summer\'), dan gunakan \'FOR\' untuk menjawab BERAPA LAMA dengan angka durasi (\'for two months\', BUKAN \'during two months\')!',
   },
   'en-b1-u1-kosakata': {
-    headline: 'Kunci Utama TOEFL & Kerja Global: Apakah Jendela Waktunya Masih Terbuka?',
+    headline: 'Kunci Utama Studi & Kerja Global: Apakah Jendela Waktunya Masih Terbuka?',
     subtitle: 'Dalam Bahasa Indonesia, kata \'sudah\' dipakai baik untuk \'Kemarin saya sudah kirim\' maupun \'Minggu ini saya sudah kirim tiga laporan\'. Dalam Bahasa Inggris, keduanya WAJIB memakai tense berbeda!',
     items: [
       {
@@ -2783,7 +2783,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'over the past five years',
         reading: '/ˈoʊvər ðə pæst faɪv jɪrz/',
         meaning: 'Selama lima tahun terakhir hingga kini (-> Present Perfect!)',
-        mnemonic: 'Sangat sering muncul di abstrak jurnal TOEFL: rentang 5 tahun yang berujung di hari ini!',
+        mnemonic: 'Sangat sering muncul di artikel riset & berita: rentang 5 tahun yang berujung di hari ini!',
         speakText: 'Solar costs have dropped over the past decade.',
       },
       {
@@ -2849,7 +2849,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-001',
-      title: 'Discourse Shift: Present Perfect (Breaking News) -> Past Simple (Specific Details)',
+      title: 'Perpindahan Waktu Cerita: Present Perfect (Breaking News) -> Past Simple (Specific Details)',
       formula: 'A: I\'ve [V3]! (Berita Baru) -> B: Really? When/How did you [V1]? -> A: I [V2] yesterday.',
       formulaReading: 'LARANGAN KERAS: \'When have you arrived?\' -> WAJIB: \'When did you arrive?\'!',
       explanation: 'Mengapa \'When have you arrived?\' selalu salah dalam Bahasa Inggris? Karena kata tanya \'When\' menuntut jawaban titik waktu lampau yang spesifik (\'two hours ago\', \'yesterday\'), sehingga secara logika berbenturan dengan Present Perfect! Gunakan \'When did you...?\' untuk menanyakan kapan, dan \'How long have you...?\' untuk menanyakan durasi!',
@@ -2898,7 +2898,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Semantic Nuance: Past Duration (Ended) vs Present Perfect Duration (Still Active)',
       formula: 'Past Simple + for [durasi] = Sudah Berakhir • Present Perfect + for [durasi] = Masih Berlanjut Sekarang',
       formulaReading: 'He taught at MIT for ten years (sekarang pensiun/pindah) vs He has taught at MIT for ten years (masih dosen MIT!)',
-      explanation: 'Dalam TOEFL Reading dan Listening, soal inferensi sering menguji ketajaman ini tanpa menjelaskannya secara eksplisit! Jika pembicara berkata \'My sister was a journalist in Chicago for six years\', kita langsung dapat menyimpulkan bahwa saudara perempuannya SEKARANG bukan lagi jurnalis di Chicago!',
+      explanation: 'Dalam latihan membaca dan mendengarkan, soal inferensi sering menguji ketajaman ini tanpa menjelaskannya secara eksplisit! Jika pembicara berkata \'My sister was a journalist in Chicago for six years\', kita langsung dapat menyimpulkan bahwa saudara perempuannya SEKARANG bukan lagi jurnalis di Chicago!',
       examples: [
         { jp: 'Before joining our startup, Kevin worked at an investment bank for three years.', reading: '/bɪˈfɔːr ˈdʒɔɪnɪŋ ˈaʊər ˈstɑːrtʌp, ˈkevɪn wɜːrkt æt ən ɪnˈvestmənt bæŋk fɔːr θriː jɪrz/', id: 'Sebelum bergabung dengan startup kami, Kevin bekerja di bank investasi selama tiga tahun.' },
         { jp: 'Professor Davis has chaired the economics department since 2021.', reading: '/prəˈfesər ˈdeɪvɪs hæz tʃerd ði ˌekəˈnɑːmɪks dɪˈpɑːrtmənt sɪns ˌtwenti twenti ˈwʌn/', id: 'Profesor Davis telah memimpin jurusan ekonomi sejak tahun 2021 (dan masih menjabat).' },
@@ -2922,7 +2922,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         reading: '/ɔːl ˈmɔːrnɪŋ / ɔːl deɪ/',
         meaning: 'Sepanjang pagi / Seharian penuh',
         mnemonic: 'Penanda waktu favorit Present Perfect Continuous untuk menunjukkan kerja keras berkesinambungan.',
-        speakText: 'I\'ve been debugging this API all afternoon.',
+        speakText: 'I\'ve been fixing this report all afternoon.',
       },
       {
         symbol: 'for the past two hours',
@@ -2954,7 +2954,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
   },
   'en-b1-u2-pola-kalimat': {
     headline: 'Kapan Pakai \'Have Been Writing\' vs \'Have Written\'? Ini Rumus Tajamnya!',
-    subtitle: 'Sering bingung memilih antara Present Perfect Continuous dan Present Perfect Simple? Lihat apakah kalimatmu menyoroti DURASI PROSES atau JUMLAH HASIL TUNTAS (plus cek Stative Verb)!',
+    subtitle: 'Sering bingung memilih antara Present Perfect Continuous dan Present Perfect Simple? Lihat apakah kalimatmu menyoroti DURASI PROSES atau JUMLAH HASIL TUNTAS (plus cek Kata Kerja Keadaan)!',
     items: [
       {
         symbol: 'Proses/Durasi -> have been + V-ing',
@@ -2971,7 +2971,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         speakText: 'I\'ve sent twelve follow-up emails today.',
       },
       {
-        symbol: 'Stative Verbs -> WAJIB have/has + V3!',
+        symbol: 'Kata Kerja Keadaan -> WAJIB have/has + V3!',
         reading: '/ˈsteɪtɪv vɜːrbz/',
         meaning: 'Kata kerja keadaan (know, belong, own, have, be) HARAM memakai \'been + -ing\'!',
         mnemonic: 'BENAR: \'We\'ve known him for years\' — SALAH: \'We\'ve been knowing him\'!',
@@ -2987,13 +2987,13 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-002',
-      title: 'Activity Process (Have Been + -ing) vs Completed Quantity & Stative Verbs (Have + V3)',
-      formula: 'How long / all day -> have/has been + V-ing • How many / X times / Stative Verbs -> have/has + V3',
-      formulaReading: 'LARANGAN TOEFL: \'I have been writing THREE essays today\' -> WAJIB: \'I have written THREE essays today\'!',
+      title: 'Activity Process (Have Been + -ing) vs Completed Quantity & Kata Kerja Keadaan (Have + V3)',
+      formula: 'How long / all day -> have/has been + V-ing • How many / X times / Kata Kerja Keadaan -> have/has + V3',
+      formulaReading: 'LARANGAN ujian bahasa Inggris: \'I have been writing THREE essays today\' -> WAJIB: \'I have written THREE essays today\'!',
       explanation: 'Dua pengunci otomatis yang sering diujikan di soal tata bahasa menengah-atas: (1) Jika ada hitungan kuantitas hasil (\'three chapters\', \'six cups of coffee\', \'twice\'), gunakan Present Perfect Simple (\'have written\', \'have had\') karena tiap unitnya sudah selesai. (2) Jika kata kerjanya non-aksi seperti \'know\', \'believe\', \'own\', atau \'have\' (= memiliki), dilarang keras memakai \'-ing\'!',
       examples: [
         { jp: 'Nadia has been coding since 8 a.m., and she has fixed four critical bugs so far.', reading: '/ˈnɑːdiə hæz bɪn ˈkoʊdɪŋ sɪns eɪt ˌeɪˈem, ænd ʃiː hæz fɪkst fɔːr ˈkrɪtɪkəl bʌɡz soʊ fɑːr/', id: 'Nadia terus memprogram sejak pukul 8 pagi (proses), dan sejauh ini dia sudah memperbaiki empat bug kritis (kuantitas hasil).' },
-        { jp: 'How long have you owned this electric car?', reading: '/haʊ lɔːŋ hæv juː oʊnd ðɪs ɪˈlektrɪk kɑːr/', id: 'Sudah berapa lama Anda memiliki mobil listrik ini? (\'own\' = stative verb!).' },
+        { jp: 'How long have you owned this electric car?', reading: '/haʊ lɔːŋ hæv juː oʊnd ðɪs ɪˈlektrɪk kɑːr/', id: 'Sudah berapa lama Anda memiliki mobil listrik ini? (\'own\' = kata kerja keadaan!).' },
       ],
     },
     contrastiveTip: 'Perhatikan lafal US kata \'process\': di Amerika dibaca /ˈprɑːses/ (vokal \'a\' terbuka seperti \'father\'), bukan /ˈproʊses/ seperti di Inggris/Kanada!',
@@ -3042,18 +3042,18 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         { jp: 'Have you been baking? The whole apartment smells like cinnamon!', reading: '/hæv juː bɪn ˈbeɪkɪŋ? ðə hoʊl əˈpɑːrtmənt smelz laɪk ˈsɪnəmən/', id: 'Kamu habis memanggang kue ya? Seluruh apartemen harum kayu manis!' },
       ],
     },
-    contrastiveTip: 'Di Amerika Serikat, jalur pejalan kaki di tepi jalan raya disebut \'sidewalk\' (bukan \'pavement\' seperti di Inggris)! Kosakata ini sangat sering keluar di bagian percakapan kampus TOEFL Listening.',
+    contrastiveTip: 'Di Amerika Serikat, jalur pejalan kaki di tepi jalan raya disebut \'sidewalk\' (bukan \'pavement\' seperti di Inggris)! Kosakata ini sangat sering keluar di bagian percakapan kampus latihan mendengarkan percakapan & kuliah.',
   },
   'en-b1-u3-kosakata': {
     headline: 'Merencanakan Skenario Nyata & Kontingensi Proyek (If, Unless, In Case)',
-    subtitle: 'Saat bernegosiasi jadwal proyek atau merencanakan kuliah, kita memetakan sebab-akibat masa depan yang SANGAT MUNGKIN terjadi menggunakan First Conditional!',
+    subtitle: 'Saat bernegosiasi jadwal proyek atau merencanakan kuliah, kita memetakan sebab-akibat masa depan yang SANGAT MUNGKIN terjadi menggunakan Pengandaian Nyata (If + V1, will)!',
     items: [
       {
         symbol: 'If + Present Simple, ... will + V1',
         reading: '/ɪf ... wɪl/',
         meaning: 'Jika [syarat nyata terpenuhi], ... akan ... (TANPA \'will\' setelah \'if\'!)',
-        mnemonic: 'Sama seperti klausa \'when\', dilarang menaruh \'will\' di dalam klausa \'if\': \'If it rains, we\'ll move indoors.\'',
-        speakText: 'If we hit our Q3 target, we\'ll expand the team.',
+        mnemonic: 'Sama seperti bagian kalimat \'when\', dilarang menaruh \'will\' di dalam bagian kalimat \'if\': \'If it rains, we\'ll move indoors.\'',
+        speakText: 'If we hit our sales target, we\'ll expand the team.',
       },
       {
         symbol: 'unless (= if ... not)',
@@ -3079,20 +3079,20 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-003',
-      title: 'First Conditional & Contingency Connectors (If / Unless / As Long As / In Case)',
-      formula: '[If / Unless / As long as / In case + S + Present Simple], [S + will / can / may / Imperative + V1]',
+      title: 'Kalimat Pengandaian Nyata & Kata Hubung Syarat (If / Unless / As Long As / In Case)',
+      formula: '[If / Unless / As long as / In case + S + Present Simple], [S + will / can / may / Kalimat Perintah + V1]',
       formulaReading: 'UNLESS we hurry (= IF we don\'t hurry) • IN CASE (= untuk jaga-jaga kalau)',
-      explanation: 'Waspadai dua jebakan besar TOEFL & IELTS: (1) Setelah \'unless\', JANGAN pakai kata kerja negatif lagi (\'unless you don\'t hurry\' -> SALAH; yang benar \'unless you hurry\'). (2) Jangan samakan \'if\' dengan \'in case\'! \'I\'ll buy an umbrella IF it rains\' = tunggu hujan dulu baru beli. \'I\'ll pack an umbrella IN CASE it rains\' = masukkan payung ke tas sekarang untuk berjaga-jaga!',
+      explanation: 'Waspadai dua jebakan besar ujian bahasa Inggris internasional: (1) Setelah \'unless\', JANGAN pakai kata kerja negatif lagi (\'unless you don\'t hurry\' -> SALAH; yang benar \'unless you hurry\'). (2) Jangan samakan \'if\' dengan \'in case\'! \'I\'ll buy an umbrella IF it rains\' = tunggu hujan dulu baru beli. \'I\'ll pack an umbrella IN CASE it rains\' = masukkan payung ke tas sekarang untuk berjaga-jaga!',
       examples: [
         { jp: 'If the supplier ships the parts today, we\'ll finish assembly by Friday.', reading: '/ɪf ðə səˈplaɪər ʃɪps ðə pɑːrts təˈdeɪ, wiːl ˈfɪnɪʃ əˈsembli baɪ ˈfraɪdeɪ/', id: 'Jika pemasok mengirimkan suku cadangnya hari ini, kita akan menyelesaikan perakitan sebelum Jumat.' },
         { jp: 'The system won\'t save your changes unless you click \'Confirm.\'', reading: '/ðə ˈsɪstəm woʊnt seɪv jʊr ˈtʃeɪndʒɪz ənˈles juː klɪk kənˈfɜːrm/', id: 'Sistem tidak akan menyimpan perubahan Anda kecuali jika Anda mengeklik \'Confirm\'.' },
       ],
     },
-    contrastiveTip: 'Klausa hasil pada First Conditional tidak melulu harus \'will\'! Kamu juga bisa memakai modal \'can\', \'may\', \'should\', atau kalimat perintah (\'If you run into any errors, ping me on Slack!\').',
+    contrastiveTip: 'Bagian kalimat hasil pada Pengandaian Nyata (If + V1, will) tidak melulu harus \'will\'! Kamu juga bisa memakai modal \'can\', \'may\', \'should\', atau kalimat perintah (\'If you run into any errors, send me a quick message!\').',
   },
   'en-b1-u3-pola-kalimat': {
     headline: 'Berandai-andai tentang Situasi yang Berbeda dari Kenyataan Sekarang!',
-    subtitle: 'Ini titik paling membingungkan bagi pelajar Indonesia: Second Conditional memakai bentuk PAST SIMPLE, tetapi artinya BUKAN MASA LALU—melainkan berandai-andai tentang SEKARANG atau MASA DEPAN!',
+    subtitle: 'Ini titik paling membingungkan bagi pelajar Indonesia: Pengandaian Khayalan (If + V2, would) memakai bentuk PAST SIMPLE, tetapi artinya BUKAN MASA LALU—melainkan berandai-andai tentang SEKARANG atau MASA DEPAN!',
     items: [
       {
         symbol: 'If + Past Simple (V2), ... would + V1',
@@ -3102,17 +3102,17 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         speakText: 'If I lived closer to campus, I\'d bike every day.',
       },
       {
-        symbol: 'If I were / If she were (Subjunctive!)',
+        symbol: 'If I were / If she were',
         reading: '/ɪf aɪ wɜːr/',
         meaning: 'Seandainya saya / dia adalah... (PAKAI \'WERE\' UNTUK SEMUA SUBJEK!)',
-        mnemonic: 'Dalam bahasa Inggris formal, bisnis, dan TOEFL, gunakan \'were\' (bukan \'was\') untuk I / he / she / it!',
+        mnemonic: 'Dalam bahasa Inggris formal, bisnis, dan tes bahasa Inggris, gunakan \'were\' (bukan \'was\') untuk I / he / she / it!',
         speakText: 'If I were in your shoes, I\'d negotiate the salary.',
       },
       {
         symbol: 'could + V1 (= would be able to)',
         reading: '/kʊd/',
-        meaning: 'Bisa / Akan mampu (di klausa hasil Second Conditional)',
-        mnemonic: 'Contoh: \'If the API were faster, the dashboard could load in one second.\'',
+        meaning: 'Bisa / Akan mampu (di bagian hasil Pengandaian Khayalan (If + V2, would))',
+        mnemonic: 'Contoh: \'If the internet were faster, the page could load in one second.\'',
         speakText: 'If we automated this step, we could save five hours a week.',
       },
       {
@@ -3120,25 +3120,25 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         reading: '/wʌt ˈwʊdʒuː duː ɪf/',
         meaning: 'Apa yang akan Anda lakukan seandainya...?',
         mnemonic: 'Format pertanyaan favorit wawancara perilaku (behavioral interview) di perusahaan AS!',
-        speakText: 'What would you do if a key stakeholder disagreed?',
+        speakText: 'What would you do if a key partner disagreed?',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B1-003',
-      title: 'Second Conditional: Unreal / Hypothetical Present & Future (If + Past, Would + V1)',
+      title: 'Pengandaian Khayalan (If + V2, would): Unreal / Hypothetical Present & Future (If + Past, Would + V1)',
       formula: '[If + Subject + Past Simple / were], [Subject + would (\'d) / could / might + Base Verb (V1)]',
-      formulaReading: 'If I WERE you (BUKAN was!) • DILARANG menaruh \'would\' di dalam klausa \'If\'!',
+      formulaReading: 'If I WERE you (BUKAN was!) • DILARANG menaruh \'would\' di dalam bagian kalimat \'If\'!',
       explanation: 'Mengapa Bahasa Inggris memakai Past Simple (\'had\', \'knew\', \'were\') untuk situasi SEKARANG? Karena Bahasa Inggris meminjam \'jarak waktu lampau\' sebagai simbol \'jarak dari kenyataan\'! Jadi \'If I knew her number, I would call her now\' berarti: detik ini saya TIDAK tahu nomornya!',
       examples: [
-        { jp: 'If our team had one more frontend engineer, we would ship the redesign twice as fast.', reading: '/ɪf ˈaʊər tiːm hæd wʌn mɔːr ˈfrʌntend ˌendʒɪˈnɪr, wiː wʊd ʃɪp ðə ˌriːdɪˈzaɪn twaɪs æz fæst/', id: 'Seandainya tim kita punya satu lagi insinyur frontend (faktanya belum punya), kita akan merilis desain ulang itu dua kali lebih cepat.' },
+        { jp: 'If our team had one more designer, we would finish the project twice as fast.', reading: '/ɪf ˈaʊər tiːm hæd wʌn mɔːr dɪˈzaɪnər, wiː wʊd ˈfɪnɪʃ ðə ˈprɑːdʒekt twaɪs æz fæst/', id: 'Seandainya tim kita punya satu lagi desainer (faktanya belum punya), kita akan menyelesaikan proyek itu dua kali lebih cepat.' },
         { jp: 'If I were you, I\'d apply for the fellowship anyway.', reading: '/ɪf aɪ wɜːr juː, aɪd əˈplaɪ fɔːr ðə ˈfeloʊʃɪp ˈeniweɪ/', id: 'Seandainya saya jadi kamu, saya tetap akan melamar beasiswa fellowship tersebut.' },
       ],
     },
-    contrastiveTip: 'Jebakan kembar dengan First Conditional: JANGAN PERNAH menaruh dua \'would\' dalam satu kalimat (\'If I would have time, I would go\' -> SALAH!). Di dalam klausa \'If\', selalu gunakan Past Simple murni (\'If I had time, I would go\')!',
+    contrastiveTip: 'Jebakan kembar dengan Pengandaian Nyata (If + V1, will): JANGAN PERNAH menaruh dua \'would\' dalam satu kalimat (\'If I would have time, I would go\' -> SALAH!). Di dalam bagian kalimat \'If\', selalu gunakan Past Simple murni (\'If I had time, I would go\')!',
   },
   'en-b1-u3-menyimak-bicara': {
     headline: 'Satu Kalimat Menunjukkan Seberapa Optimis Pembicaranya!',
-    subtitle: 'Tahukah kamu bahwa memilih First vs Second Conditional untuk masa depan menunjukkan SEBERAPA BESAR peluang hal itu terjadi menurut pembicara?',
+    subtitle: 'Tahukah kamu bahwa memilih Pengandaian Nyata vs Pengandaian Khayalan untuk masa depan menunjukkan SEBERAPA BESAR peluang hal itu terjadi menurut pembicara?',
     items: [
       {
         symbol: 'First: If I get the scholarship, I\'ll...',
@@ -3157,7 +3157,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'Would it be okay if I + Past...?',
         reading: '/wʊd ɪt biː oʊˈkeɪ ɪf aɪ/',
-        meaning: 'Apakah tidak apa-apa seandainya saya...? (Second Conditional untuk kesopanan ekstra!)',
+        meaning: 'Apakah tidak apa-apa seandainya saya...? (Pengandaian Khayalan (If + V2, would) untuk kesopanan ekstra!)',
         mnemonic: 'Menggunakan bentuk hipotesis membuat permintaan izin terdengar jauh lebih rendah hati.',
         speakText: 'Would it be okay if we rescheduled for Tuesday?',
       },
@@ -3165,7 +3165,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'Otherwise, ... would / will ...',
         reading: '/ˈʌðərwaɪz/',
         meaning: 'Jika tidak begitu / Kalau tidak, ... akan ...',
-        mnemonic: 'Kata transisi ringkas pengganti klausa \'If not...\'.',
+        mnemonic: 'Kata transisi ringkas pengganti bagian kalimat \'If not...\'.',
         speakText: 'Leave early; otherwise, you\'ll hit rush-hour traffic.',
       },
     ],
@@ -3174,7 +3174,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Speaker Stance: Real Possibility (1st) vs Hypothetical / Polite Tentativeness (2nd)',
       formula: 'Optimis/Nyata: If + V1, will + V1 • Imajiner/Kecil Peluang/Sopan Halus: If + V2, would + V1',
       formulaReading: 'If we lower the price (usulan konkret rapat) vs If we lowered the price (simulasi \'bagaimana seandainya\')',
-      explanation: 'Di rapat bisnis Amerika, para manajer sering memakai Second Conditional (\'What if we offered a student discount? How much would that cost?\') BUKAN karena mustahil, melainkan untuk mengajak tim \'bermain simulasi ide\' (brainstorming) secara tentatif tanpa terdengar sudah mengetok palu keputusan!',
+      explanation: 'Di rapat bisnis Amerika, para manajer sering memakai Pengandaian Khayalan (If + V2, would) (\'What if we offered a student discount? How much would that cost?\') BUKAN karena mustahil, melainkan untuk mengajak tim \'bermain simulasi ide\' (brainstorming) secara tentatif tanpa terdengar sudah mengetok palu keputusan!',
       examples: [
         { jp: 'What if we partnered with local universities? That could boost campus adoption.', reading: '/wʌt ɪf wiː ˈpɑːrtnərd wɪð ˈloʊkəl ˌjuːnɪˈvɜːrsətiz? ðæt kʊd buːst ˈkæmpəs əˈdɑːpʃən/', id: 'Bagaimana seandainya kita bermitra dengan universitas lokal? Itu bisa mendongkrak adopsi di kampus.' },
         { jp: 'Please back up your thesis to the cloud; otherwise, you might lose weeks of work.', reading: '/pliːz bæk ʌp jʊr ˈθiːsɪs tə ðə klaʊd; ˈʌðərwaɪz, juː maɪt luːz wiːks ʌv wɜːrk/', id: 'Harap cadangkan tesis Anda ke cloud; kalau tidak, Anda bisa kehilangan pekerjaan berminggu-minggu.' },
@@ -3184,7 +3184,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
   },
   'en-b1-u4-kosakata': {
     headline: 'Dari \'di-\' Bahasa Indonesia ke \'Be + V3\' Bahasa Inggris!',
-    subtitle: 'Dalam Bahasa Indonesia, awalan \'di-\' (\'dikirim\', \'dibangun\') sangat mudah ditambahkan. Dalam Bahasa Inggris, kalimat pasif WAJIB memiliki DUA komponen: kata bantu \'Be\' (sesuai waktu & jumlah) + Past Participle (V3)!',
+    subtitle: 'Dalam Bahasa Indonesia, awalan \'di-\' (\'dikirim\', \'dibangun\') sangat mudah ditambahkan. Dalam Bahasa Inggris, kalimat pasif WAJIB memiliki DUA komponen: kata bantu \'Be\' (sesuai waktu & jumlah) + bentuk V3!',
     items: [
       {
         symbol: 'is / are + V3 (Present Passive)',
@@ -3217,7 +3217,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-004',
-      title: 'Present, Past & Continuous Passive Voice (Be + Past Participle)',
+      title: 'Present, Past & Continuous Passive Voice (Be + Bentuk V3)',
       formula: 'Present: am/is/are + V3 • Past: was/were + V3 • Continuous: am/is/are/was/were + being + V3',
       formulaReading: 'SALAH: \'The package sent yesterday\' -> BENAR: \'The package WAS sent yesterday\'!',
       explanation: 'Kesalahan paling sering penutur Indonesia saat menulis laporan adalah lupa menaruh \'was/were\' karena V2 dan V3 kata kerja beraturan tampak kembar (\'update -> updated\'). Kalimat \'The server updated yesterday\' berarti servernya meng-update dirinya sendiri; jika di-update oleh teknisi, wajib: \'The server WAS updated yesterday\'!',
@@ -3226,7 +3226,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         { jp: 'The main auditorium is being renovated this semester.', reading: '/ðə meɪn ˌɔːdɪˈtɔːriəm ɪz ˈbiːɪŋ ˈrenəveɪtɪd ðɪs sɪˈmestər/', id: 'Auditorium utama sedang direnovasi semester ini.' },
       ],
     },
-    contrastiveTip: 'Hati-hati kata kerja INTRANSITIF yang TIDAK PERNAH BISA DIPASIFKAN dalam bahasa Inggris & TOEFL: \'happen\', \'occur\', \'appear\', \'arrive\', \'collapse\'! Jangan pernah menulis \'The error was happened\'—selalu aktif: \'The error happened / occurred\'!',
+    contrastiveTip: 'Hati-hati kata kerja tanpa objek yang TIDAK PERNAH BISA DIPASIFKAN dalam bahasa Inggris & penulisan resmi: \'happen\', \'occur\', \'appear\', \'arrive\', \'collapse\'! Jangan pernah menulis \'The error was happened\'—selalu aktif: \'The error happened / occurred\'!',
   },
   'en-b1-u4-pola-kalimat': {
     headline: 'Melaporkan Status Terkini & Aturan Resmi: \'Has Been + V3\' & \'Must Be + V3\'',
@@ -3275,8 +3275,8 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Ejaan standar Amerika (en-US): kata kerja berakhiran \'-el\' seperti \'label\', \'cancel\', dan \'travel\' hanya memakai SATU huruf \'l\' saat ditambah \'-ed/-ing\': \'labeled\', \'canceled\', \'traveled\' (berbeda dari ejaan Inggris \'labelled/cancelled\')!',
   },
   'en-b1-u4-menyimak-bicara': {
-    headline: 'Menjelaskan Alur Proses Tahap demi Tahap ala TOEFL Integrated Task!',
-    subtitle: 'Baik saat menjelaskan arsitektur sistem di wawancara maupun merangkum proses daur ulang/biologi di TOEFL, gabungkan penanda urutan dengan Passive Voice!',
+    headline: 'Menjelaskan Alur Proses Tahap demi Tahap ala tugas rangkuman bacaan & kuliah!',
+    subtitle: 'Baik saat menjelaskan arsitektur sistem di wawancara maupun merangkum proses daur ulang/biologi dalam bahasa Inggris resmi, gabungkan penanda urutan dengan Passive Voice!',
     items: [
       {
         symbol: 'First, [data/material] is collected...',
@@ -3289,14 +3289,14 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'Next, it is filtered / analyzed...',
         reading: '/nekst, ɪt ɪz ˈfɪltərd/',
         meaning: 'Selanjutnya, bahan/data tersebut disaring / dianalisis...',
-        mnemonic: 'Menjaga kohesi antarkalimat menggunakan kata ganti \'it\' atau \'they\' + Passive.',
+        mnemonic: 'Menjaga alur antarkalimat menggunakan kata ganti \'it\' atau \'they\' + Passive.',
         speakText: 'Next, the water is filtered through carbon layers.',
       },
       {
         symbol: 'Once [X] has been verified, ...',
         reading: '/wʌns ... hæz bɪn ˈverɪfaɪd/',
         meaning: 'Begitu [X] selesai diverifikasi, ...',
-        mnemonic: 'Menggabungkan klausa waktu \'Once\' (A2 Unit 10) dengan Present Perfect Passive!',
+        mnemonic: 'Menggabungkan bagian keterangan waktu \'Once\' (A2 Unit 10) dengan Present Perfect Passive!',
         speakText: 'Once the identity has been verified, access is granted.',
       },
       {
@@ -3328,20 +3328,20 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'who / that (+ Verb)',
         reading: '/huː / ðæt/',
         meaning: 'Yang... (khusus menjelaskan MANUSIA!)',
-        mnemonic: 'Dalam Defining Clause (tanpa koma), \'who\' dan \'that\' sama-sama benar untuk orang, tapi di esai TOEFL utamakan \'who\'!',
+        mnemonic: 'Dalam bagian penjelas inti (tanpa koma), \'who\' dan \'that\' sama-sama benar untuk orang, tapi di esai bahasa Inggris utamakan \'who\'!',
         speakText: 'Engineers who write clean docs help everyone.',
       },
       {
         symbol: 'which / that (+ Verb)',
         reading: '/wɪtʃ / ðæt/',
         meaning: 'Yang... (khusus menjelaskan BENDA, KONSEP, atau ORGANISASI!)',
-        mnemonic: 'Di American English modern, \'that\' sangat disukai untuk klausa penjelas wajib tanpa koma (\'the laptop that I bought\').',
+        mnemonic: 'Di American English modern, \'that\' sangat disukai untuk bagian penjelas \'yang\' wajib tanpa koma (\'the laptop that I bought\').',
         speakText: 'We built a tool that automates invoicing.',
       },
       {
         symbol: 'Jangan ulangi kata ganti! (No Double Pronoun)',
         reading: '/noʊ ˈdʌbəl/',
-        meaning: 'DILARANG mengulang \'he/it\' di dalam klausa penjelas!',
+        meaning: 'DILARANG mengulang \'he/it\' di dalam bagian penjelas \'yang\'!',
         mnemonic: 'SALAH: \'The candidtate who he called...\' -> BENAR: \'The candidate who called...\'',
         speakText: 'Here is the dataset that shows the trend.',
       },
@@ -3355,10 +3355,10 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-005',
-      title: 'Subject Defining Relative Clauses (Who / Which / That + Verb)',
+      title: 'Kata Penghubung \'Yang\' sebagai Subjek (Who / Which / That + Verb)',
       formula: '[Person] + who / that + Verb • [Thing / Idea] + that / which + Verb',
       formulaReading: 'A system that PROCESSES (tunggal!) vs Systems that PROCESS (jamak!)',
-      explanation: 'Jebakan nomor satu di soal Error Recognition TOEFL: perhatikan kata kerja tepat setelah \'who/which/that\'! Karena kata \'that\' tidak berubah bentuk, kamu harus menengok kata benda tepat di depannya: \'Anyone who WANTS to join\' (\'Anyone\' tunggal -> \'wants\'), sedangkan \'People who WANT to join\' (\'People\' jamak -> \'want\')!',
+      explanation: 'Jebakan nomor satu di soal pemeriksaan kesalahan kalimat: perhatikan kata kerja tepat setelah \'who/which/that\'! Karena kata \'that\' tidak berubah bentuk, kamu harus menengok kata benda tepat di depannya: \'Anyone who WANTS to join\' (\'Anyone\' tunggal -> \'wants\'), sedangkan \'People who WANT to join\' (\'People\' jamak -> \'want\')!',
       examples: [
         { jp: 'We\'re looking for a product designer who understands enterprise workflows.', reading: '/wɪr ˈlʊkɪŋ fɔːr ə ˈprɑːdʌkt dɪˈzaɪnər huː ˌʌndərˈstændz ˈentərpraɪz ˈwɜːrkfloʊz/', id: 'Kami sedang mencari desainer produk yang memahami alur kerja korporat.' },
         { jp: 'Algorithms that detect credit card fraud run in milliseconds.', reading: '/ˈælɡərɪðəmz ðæt dɪˈtekt ˈkredɪt kɑːrd frɔːd rʌn ɪn ˈmɪlɪsekəndz/', id: 'Algoritma yang mendeteksi penipuan kartu kredit berjalan dalam hitungan milidetik.' },
@@ -3368,7 +3368,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
   },
   'en-b1-u5-pola-kalimat': {
     headline: 'Rahasia Kalimat Ringkas Penutur Asli: Kapan Kata \'That/Who\' Boleh Dihilangkan?',
-    subtitle: 'Pernah membaca kalimat \'The laptop I bought yesterday is fast\' dan bertanya-tanya ke mana perginya kata \'yang\' (\'that\')? Pelajari aturan elipsis objek dan kepemilikan \'whose\'!',
+    subtitle: 'Pernah membaca kalimat \'The laptop I bought yesterday is fast\' dan bertanya-tanya ke mana perginya kata \'yang\' (\'that\')? Pelajari aturan menghilangkan kata \'yang\' (that/which) dan kepemilikan \'whose\'!',
     items: [
       {
         symbol: '(that / who / which) + S + Verb',
@@ -3394,26 +3394,26 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'Jangan ulang objek di ujung!',
         reading: '/noʊ ˈɑːbdʒekt ˈproʊnaʊn/',
-        meaning: 'DILARANG menulis \'it/him/them\' lagi di ujung klausa penjelas!',
+        meaning: 'DILARANG menulis \'it/him/them\' lagi di ujung bagian penjelas \'yang\'!',
         mnemonic: 'SALAH: \'The report that I sent IT\' -> BENAR: \'The report (that) I sent\'!',
-        speakText: 'Did you get the Slack message I sent?',
+        speakText: 'Did you get the chat message I sent?',
       },
     ],
     grammarSummary: {
       code: 'GP-EN-B1-005',
-      title: 'Object Relative Clauses (Optional Pronoun) & Possessive \'Whose + Noun\'',
+      title: 'Menghilangkan Kata \'Yang\' pada Objek & Kepemilikan \'Whose + Kata Benda\'',
       formula: 'Objek: [Noun] + (that/who/which) + Subject + Verb • Kepemilikan: [Noun] + whose + [Owned Noun] + Verb',
       formulaReading: 'whose (/huːz/ = kepemilikan: whose portfolio) ≠ who\'s (/huːz/ = who is / who has)!',
       explanation: 'Trik super cepat membedakan kapan \'that\' boleh dihapus: lihat kata tepat sesudahnya! Kalau bertemu KATA GANTI/NAMA SUBJEK (\'the dataset [that] WE analyzed\'), \'that\' boleh dihapus dan justru terdengar lebih luwes di telinga Amerika! Kalau bertemu KATA KERJA (\'the dataset THAT SHOWS...\'), wajib dipertahankan!',
       examples: [
         { jp: 'The internship I applied for in Austin offers housing support.', reading: '/ði ˈɪntɜːrnʃɪp aɪ əˈplaɪd fɔːr ɪn ˈɔːstɪn ˈɔːfərz ˈhaʊzɪŋ səˈpɔːrt/', id: 'Program magang yang saya lamar di Austin menawarkan tunjangan tempat tinggal.' },
-        { jp: 'Students whose native language isn\'t English must submit TOEFL scores.', reading: '/ˈstuːdənts huːz ˈneɪtɪv ˈlæŋɡwɪdʒ ˈɪzənt ˈɪŋɡlɪʃ mʌst səbˈmɪt ˈtoʊfəl skɔːrz/', id: 'Mahasiswa yang bahasa ibunya bukan Bahasa Inggris wajib menyerahkan skor TOEFL.' },
+        { jp: 'Students whose native language isn\'t English must submit English test scores.', reading: '/ˈstuːdənts huːz ˈneɪtɪv ˈlæŋɡwɪdʒ ˈɪzənt ˈɪŋɡlɪʃ mʌst səbˈmɪt ˈɪŋɡlɪʃ test skɔːrz/', id: 'Mahasiswa yang bahasa ibunya bukan Bahasa Inggris wajib menyerahkan nilai tes bahasa Inggris.' },
       ],
     },
-    contrastiveTip: 'Fakta menarik TOEFL: kata \'whose\' BISA dipakai untuk benda mati/perusahaan juga! Contoh: \'a startup whose revenue doubled last year\' (perusahaan rintisan yang pendapatannya berlipat ganda tahun lalu) 100% benar secara akademik!',
+    contrastiveTip: 'Fakta menarik ujian bahasa Inggris: kata \'whose\' BISA dipakai untuk benda mati/perusahaan juga! Contoh: \'a startup whose revenue doubled last year\' (perusahaan rintisan yang pendapatannya berlipat ganda tahun lalu) 100% benar secara akademik!',
   },
   'en-b1-u5-menyimak-bicara': {
-    headline: 'Jebakan Favorit TOEFL: Nama Tempat Belum Tentu Memakai \'Where\'!',
+    headline: 'Jebakan yang Sering Mengecoh: Nama Tempat Belum Tentu Memakai \'Where\'!',
     subtitle: 'Banyak peserta tes langsung memilih \'where\' begitu melihat nama kota/gedung di depannya. HATI-HATI! Lihat apakah di belakangnya tempat itu menjadi LOKASI kejadian (\'di mana\') atau SUBJEK/OBJEK (\'yang\')!',
     items: [
       {
@@ -3450,13 +3450,13 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Relative Adverbs vs Pronouns for Places: Where (= in/at which) vs That/Which',
       formula: 'Lokasi Aksi: [Place] + where + Subject + Verb (tanpa \'in/at/there\') • Subjek Benda: [Place] + that/which + Verb!',
       formulaReading: 'the café WHERE we work (kita kerja DI kafe itu) ≠ the café THAT opens at 6 a.m. (kafe YANG buka jam 6)!',
-      explanation: 'Uji kilat 3 detik untuk soal tempat di TOEFL: coba cek kata tepat setelah titik-titik! Jika langsung diikuti KATA KERJA (\'a building ___ stands downtown\'), TIDAK MUNGKIN memakai \'where\'—wajib pakai \'that / which\'! Jika diikuti SUBJEK + KATA KERJA utuh tanpa preposisi gantung (\'the lab ___ Dr. Kim works\'), barulah pakai \'where\'!',
+      explanation: 'Uji kilat 3 detik untuk soal tempat dalam bahasa Inggris resmi: coba cek kata tepat setelah titik-titik! Jika langsung diikuti KATA KERJA (\'a building ___ stands downtown\'), TIDAK MUNGKIN memakai \'where\'—wajib pakai \'that / which\'! Jika diikuti SUBJEK + KATA KERJA utuh tanpa kata depan gantung (\'the lab ___ Dr. Kim works\'), barulah pakai \'where\'!',
       examples: [
         { jp: 'Austin is a tech hub that attracts thousands of engineers every year.', reading: '/ˈɔːstɪn ɪz ə tek hʌb ðæt əˈtrækts ˈθaʊzəndz ʌv ˌendʒɪˈnɪrz ˈevri jɪr/', id: 'Austin adalah pusat teknologi YANG menarik ribuan insinyur setiap tahun (Subjek -> pakai \'that\'!).' },
         { jp: 'Austin is the city where our startup held its annual retreat.', reading: '/ˈɔːstɪn ɪz ðə ˈsɪti wer ˈaʊər ˈstɑːrtʌp held ɪts ˈænjuəl rɪˈtriːt/', id: 'Austin adalah kota DI MANA startup kami mengadakan retret tahunannya (Lokasi -> pakai \'where\'!).' },
       ],
     },
-    contrastiveTip: 'Jika kamu sudah memakai \'where\', JANGAN tambahkan kata \'there\' atau \'in\' lagi di ujung klausa (\'the dorm where I live in\' -> SALAH; cukup \'the dorm where I live\' atau \'the dorm that I live in\')!',
+    contrastiveTip: 'Jika kamu sudah memakai \'where\', JANGAN tambahkan kata \'there\' atau \'in\' lagi di ujung bagian kalimat (\'the dorm where I live in\' -> SALAH; cukup \'the dorm where I live\' atau \'the dorm that I live in\')!',
   },
   'en-b1-u6-kosakata': {
     headline: 'Menceritakan \'Dulu Biasa...\' yang Sekarang Sudah Tidak Lagi!',
@@ -3498,7 +3498,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       formulaReading: 'used to (/ˈjuːst tə/ = DULU) ≠ usually (/ˈjuːʒuəli/ = BIASANYA SEKARANG)!',
       explanation: 'Jebakan fatal nomor satu pelajar Indonesia: mengira \'used to\' adalah bentuk masa kini untuk \'biasanya\'! JANGAN PERNAH berkata \'Every morning now, I used to drink tea\'—itu salah besar! Untuk kebiasaan SEKARANG gunakan \'usually\' + Present Simple (\'I usually drink tea\'). \'Used to + V1\' 100% hanya untuk masa lalu yang sudah kontras dengan sekarang!',
       examples: [
-        { jp: 'Our team used to deploy manually, but now everything runs via CI/CD.', reading: '/ˈaʊər tiːm ˈjuːst tə dɪˈplɔɪ ˈmænjuəli, bʌt naʊ ˈevriθɪŋ rʌnz ˈvaɪə ˌsiːaɪˌsiːˈdiː/', id: 'Dulu tim kami merilis kode secara manual, tetapi sekarang semuanya berjalan lewat CI/CD.' },
+        { jp: 'Our team used to check orders manually, but now everything runs automatically.', reading: '/ˈaʊər tiːm ˈjuːst tə tʃek ˈɔːrdərz ˈmænjuəli, bʌt naʊ ˈevriθɪŋ rʌnz ˌɔːtəˈmætɪkli/', id: 'Dulu tim kami mengecek pesanan secara manual, tetapi sekarang semuanya berjalan otomatis.' },
         { jp: 'I didn\'t use to like black coffee, and now I drink two cups a day!', reading: '/aɪ ˈdɪdənt ˈjuːs tə laɪk blæk ˈkɔːfi, ænd naʊ aɪ drɪŋk tuː kʌps ə deɪ/', id: 'Dulu saya tidak suka kopi hitam, dan sekarang saya minum dua cangkir sehari!' },
       ],
     },
@@ -3506,7 +3506,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
   },
   'en-b1-u6-pola-kalimat': {
     headline: 'JEBAKAN GRAMMAR B1 PALING TERKENAL: \'Be Used To\' WAJIB Diikuti V-ing!',
-    subtitle: 'Mengapa \'I used to wake up early\' memakai V1, tetapi \'I am used to WAKING up early\' WAJIB memakai V-ing? Karena kata \'used\' yang didahului \'be/get\' adalah KATA SIFAT (\'terbiasa dengan\'), dan \'to\'-nya adalah PREPOSISI!',
+    subtitle: 'Mengapa \'I used to wake up early\' memakai V1, tetapi \'I am used to WAKING up early\' WAJIB memakai V-ing? Karena kata \'used\' yang didahului \'be/get\' adalah KATA SIFAT (\'terbiasa dengan\'), dan \'to\'-nya adalah KATA DEPAN!',
     items: [
       {
         symbol: 'be used to + Noun / V-ing',
@@ -3533,7 +3533,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'Kontras 3 Rumus Sekaligus!',
         reading: '/kənˈtræst/',
         meaning: 'used to V1 (dulu) vs be used to V-ing (terbiasa) vs get used to V-ing (beradaptasi)',
-        mnemonic: 'Tiga rumus ini hampir pasti diujikan di soal grammar B1–B2 dan TOEFL!',
+        mnemonic: 'Tiga rumus ini hampir pasti diujikan di soal grammar B1–B2 dan tes bahasa Inggris!',
         speakText: 'He used to drive, so he isn\'t used to taking the subway.',
       },
     ],
@@ -3542,7 +3542,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Adaptation Structures: Be Used To & Get Used To + [Noun / Verb-ing]',
       formula: 'Dulu: S + used to + V1 • Sudah Terbiasa: S + am/is/are + used to + V-ing/Noun • Proses Adaptasi: S + get + used to + V-ing/Noun',
       formulaReading: 'SALAH: I\'m used to eat spicy food -> BENAR: I\'m used to EATING spicy food!',
-      explanation: 'Kunci emas yang membebaskanmu dari hafalan buta: coba letakkan kata benda biasa setelah \'be used to\', misalnya \'I am used to spicy food\' (\'Saya terbiasa dengan makanan pedas\'). Karena posisi setelah \'to\' adalah posisi KATA BENDA, maka setiap kata kerja yang masuk ke posisi itu wajib diubah menjadi kata benda berakhiran \'-ing\' (Gerund): \'I am used to EATING spicy food\'!',
+      explanation: 'Kunci emas yang membebaskanmu dari hafalan buta: coba letakkan kata benda biasa setelah \'be used to\', misalnya \'I am used to spicy food\' (\'Saya terbiasa dengan makanan pedas\'). Karena posisi setelah \'to\' adalah posisi KATA BENDA, maka setiap kata kerja yang masuk ke posisi itu wajib diubah menjadi kata benda berakhiran \'-ing\' (V-ing): \'I am used to EATING spicy food\'!',
       examples: [
         { jp: 'Growing up in Bandung, I wasn\'t used to wearing heavy winter boots.', reading: '/ˈɡroʊɪŋ ʌp ɪn ˈbɑːndʊŋ, aɪ ˈwʌzənt ˈjuːst tə ˈwerɪŋ ˈhevi ˈwɪntər buːts/', id: 'Tumbuh besar di Bandung, dulu saya belum terbiasa memakai sepatu bot musim dingin yang berat.' },
         { jp: 'Don\'t worry—you\'ll get used to collaborating across time zones pretty quickly!', reading: '/doʊnt ˈwɜːri—juːl ɡet ˈjuːst tə kəˈlæbəreɪtɪŋ əˈkrɔːs taɪm zoʊnz ˈprɪti ˈkwɪkli/', id: 'Jangan khawatir—kamu akan cepat terbiasa berkolaborasi lintas zona waktu!' },
@@ -3559,7 +3559,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         reading: '/seɪlz tæks/',
         meaning: 'Pajak penjualan baru ditambahkan di kasir (tidak tercantum di label rak!)',
         mnemonic: 'Jika label harga menulis $10.00, di kasir totalnya menjadi sekitar $10.80 tergantung negara bagian!',
-        speakText: 'I had to get used to sales tax at the register.',
+        speakText: 'I had to get used to sales tax at the checkout.',
       },
       {
         symbol: 'tipping culture (15%–20%)',
@@ -3663,7 +3663,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'may be (2 kata) vs maybe (1 kata)!',
         reading: '/meɪ biː / ˈmeɪbiː/',
-        meaning: 'Modal + Verb (di tengah kalimat) vs Adverbia \'Barangkali\' (di awal kalimat)!',
+        meaning: 'Kata Bantu + Kata Kerja (di tengah kalimat) vs Kata Keterangan \'Barangkali\' (di awal kalimat)!',
         mnemonic: 'BENAR: \'She MAY BE busy\' = \'MAYBE she is busy\' — SALAH: \'She maybe busy\'!',
         speakText: 'Maybe the server is overloaded. / It may be overloaded.',
       },
@@ -3682,11 +3682,11 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       formulaReading: 'Maybe + S + is... (1 kata di depan) = S + may be... (2 kata sebagai kata kerja!)',
       explanation: 'Dua jebakan penulisan paling sering di esai B1–B2: (1) Menulis \'The data maybe incomplete\' TANPA kata kerja! Kata gandeng \'maybe\' adalah kata keterangan (\'barangkali\'), bukan kata kerja. Jika ditaruh setelah subjek tanpa \'is/are\', wajib pisah dua kata: \'The data MAY BE incomplete\'! (2) Jangan menyingkat \'mayn\'t\' (tidak ada di bahasa Inggris modern)—tulis utuh \'may not\' atau \'might not\'!',
       examples: [
-        { jp: 'The API timeout could be caused by an unindexed database column.', reading: '/ði ˌeɪpiːˈaɪ ˈtaʊmaʊt kʊd biː kɔːzd baɪ ən ʌnˈɪndekst ˈdeɪtəbeɪs ˈkɑːləm/', id: 'Waktu habis API itu mungkin disebabkan oleh kolom basis data yang belum diindeks.' },
-        { jp: 'Leo might not join standup today because he has a dentist appointment.', reading: '/ˈliːoʊ maɪt nɑːt dʒɔɪn ˈstændʌp təˈdeɪ bɪˈkɔːz hiː hæz ə ˈdentɪst əˈpɔɪntmənt/', id: 'Leo mungkin tidak ikut rapat standup hari ini karena dia ada janji dokter gigi.' },
+        { jp: 'The website delay could be caused by heavy evening traffic.', reading: '/ðə ˈwebsaɪt dɪˈleɪ kʊd biː kɔːzd baɪ ˈhevi ˈiːvnɪŋ ˈtræfɪk/', id: 'Keterlambatan situs web itu mungkin disebabkan oleh tingginya pengunjung malam hari.' },
+        { jp: 'Leo might not join our morning meeting today because he has a dentist appointment.', reading: '/ˈliːoʊ maɪt nɑːt dʒɔɪn ˈaʊər ˈmɔːrnɪŋ ˈmiːtɪŋ təˈdeɪ bɪˈkɔːz hiː hæz ə ˈdentɪst əˈpɔɪntmənt/', id: 'Leo mungkin tidak ikut rapat pagi hari ini karena dia ada janji dokter gigi.' },
       ],
     },
-    contrastiveTip: 'Tips gaya sains TOEFL: ilmuwan dan akademisi sangat jarang membuat klaim mutlak 100%; mereka hampir selalu memakai \'hedging language\' dengan \'may / might / could suggest that...\' agar argumen ilmiahnya akurat dan hati-hati!',
+    contrastiveTip: 'Tips gaya sains ujian bahasa Inggris: ilmuwan dan akademisi sangat jarang membuat klaim mutlak 100%; mereka hampir selalu memakai \'bahasa yang hati-hati language\' dengan \'may / might / could suggest that...\' agar argumen ilmiahnya akurat dan hati-hati!',
   },
   'en-b1-u7-menyimak-bicara': {
     headline: 'Mengatur Nada Keyakinan dari 0% hingga 95% seperti Profesional AS!',
@@ -3710,7 +3710,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: '40%–50% Dugaan Terbuka: might / could',
         reading: '/maɪt / kʊd/',
         meaning: 'Salah satu dari beberapa kemungkinan penyebab',
-        mnemonic: '\'We could be hitting an API rate limit, or the token might be expired.\'',
+        mnemonic: '\'The file might be too large, or the internet connection could be slow.\'',
         speakText: 'It might just be a caching issue.',
       },
       {
@@ -3739,14 +3739,14 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     subtitle: 'Saat merangkum hasil pembicaraan kemarin (\'Kemarin klien bilang anggarannya sudah disetujui\'), Bahasa Inggris menggeser tense-nya mundur satu langkah (backshift) dan membedakan ketat pemakaian \'said\' vs \'told\'!',
     items: [
       {
-        symbol: 'said (that) + Clause [TANPA Objek Orang!]',
+        symbol: 'said (that) + Kalimat [TANPA Objek Orang!]',
         reading: '/sed/',
         meaning: 'Berkata bahwa... (JANGAN tulis \'She said me\'!)',
         mnemonic: 'Perhatikan pelafalan \'said\' adalah vokal pendek /sed/ (berima dengan \'bed\', BUKAN /seɪd/)!',
         speakText: 'He said the server was ready.',
       },
       {
-        symbol: 'told + [Someone] (that) + Clause!',
+        symbol: 'told + [Someone] (that) + Kalimat!',
         reading: '/toʊld/',
         meaning: 'Memberi tahu [seseorang] bahwa... (WAJIB ada objek pendengar!)',
         mnemonic: 'BENAR: \'She told ME / told THE TEAM...\' — SALAH: \'She told that...\'!',
@@ -3770,7 +3770,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     grammarSummary: {
       code: 'GP-EN-B1-008',
       title: 'Reported Statements: Say vs Tell & Tense Backshifting',
-      formula: 'S + said (that) + [Backshifted Clause] • S + told + [Object Person] + (that) + [Backshifted Clause]',
+      formula: 'S + said (that) + [Kalimat Laporan] • S + told + [Object Person] + (that) + [Kalimat Laporan]',
       formulaReading: 'SALAH: \'He said me...\' & \'He told that...\' -> BENAR: \'He said (that)...\' / \'He told me (that)...\'!',
       explanation: 'Rumus hafalan 5 detik \'Say vs Tell\': \'Tell\' butuh TELINGA pendengar tepat di belakangnya (\'told me\', \'told the client\', \'told everyone\')! Jika tidak menyebut kepada siapa, selalu gunakan \'said\'! Saat kata kerja pelapornya lampau (\'said/told\'), geser kata kerja di dalamnya mundur ke bentuk lampau (\'is -> was\', \'are -> were\', \'will -> would\', \'can -> could\') agar selaras garis waktunya.',
       examples: [
@@ -3879,7 +3879,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       {
         symbol: 'Could you tell me where [S + V]?',
         reading: '/ˈkʊdʒuː tel miː wer/',
-        meaning: 'Bisakah Anda memberi tahu saya di mana...? (TANPA INVERSI KEDUA!)',
+        meaning: 'Bisakah Anda memberi tahu saya di mana...? (urutan lurus, JANGAN dibalik lagi!)',
         mnemonic: 'BENAR: \'Could you tell me where the elevator IS?\' — SALAH: \'...where IS the elevator?\'!',
         speakText: 'Could you tell me where the registrar\'s office is?',
       },
@@ -3910,7 +3910,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
       title: 'Indirect Wh- Questions: Polite Opener + Wh- Word + [Subject + Verb]?',
       formula: 'Could you tell me / Do you know + [where / when / what / why / how] + Subject + Verb?',
       formulaReading: 'LANGSUNG: \'Where IS the lab?\' -> TIDAK LANGSUNG: \'Could you tell me where [the lab] [IS]?\'',
-      explanation: 'Mengapa kita DILARANG membalik \'where is the lab\' di dalam \'Could you tell me...\'? Karena \'Could you...\' di bagian depan SUDAH bertugas menjadi mesin kalimat tanya! Dalam Bahasa Inggris, satu kalimat hanya boleh punya SATU pembalikan tanya (inversi). Bagian kedua adalah klausa benda (noun clause) yang wajib berbaris rapi: Subjek + Kata Kerja!',
+      explanation: 'Mengapa kita DILARANG membalik \'where is the lab\' di dalam \'Could you tell me...\'? Karena \'Could you...\' di bagian depan SUDAH bertugas menjadi mesin kalimat tanya! Dalam Bahasa Inggris, satu kalimat hanya boleh punya SATU pembalikan kalimat tanya. Bagian kedua adalah bagian kalimat penjelas yang wajib berbaris rapi: Subjek + Kata Kerja!',
       examples: [
         { jp: 'Excuse me, could you tell me how much a monthly metro pass costs?', reading: '/ɪkˈskjuːz miː, ˈkʊdʒuː tel miː haʊ mʌtʃ ə ˈmʌnθli ˈmetroʊ pæs kɔːsts/', id: 'Permisi, bisakah Anda memberi tahu saya berapa harga kartu bulanan metro?' },
         { jp: 'Do you know when Professor Chen\'s office hours start?', reading: '/də juː noʊ wen prəˈfesər tʃenz ˈɔːfɪs ˈaʊərz stɑːrt/', id: 'Apakah kamu tahu kapan jam konsultasi Profesor Chen dimulai?' },
@@ -3965,8 +3965,8 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Mengapa orang Amerika berkata \'I WAS wondering\' padahal mereka menanyakannya SEKARANG? Sama seperti \'Could\' dan \'Would\', bentuk lampau dipakai untuk menciptakan jarak psikologis yang sopan (\'Kalau Anda sibuk pun tidak masalah\')!',
   },
   'en-b1-u9-menyimak-bicara': {
-    headline: 'Bukan Cuma untuk Bertanya: Gunakan Pola Tanpa Inversi Ini di Pernyataan Rapat!',
-    subtitle: 'Pola \'Wh- + Subject + Verb\' sebenarnya bernama Noun Clause—dan dipakai setiap menit dalam rapat bisnis maupun kuliah TOEFL untuk menjelaskan ketidakpastian atau fokus diskusi!',
+    headline: 'Bukan Cuma untuk Bertanya: Gunakan Pola Urutan Lurus (Subjek + Kata Kerja) Ini di Pernyataan Rapat!',
+    subtitle: 'Pola \'Wh- + Subject + Verb\' sebenarnya bernama kalimat penjelas di tengah kalimat—dan dipakai setiap menit dalam rapat bisnis maupun kuliah ujian bahasa Inggris untuk menjelaskan ketidakpastian atau fokus diskusi!',
     items: [
       {
         symbol: 'I\'m not sure where / why [S + V].',
@@ -3979,15 +3979,15 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'Let\'s figure out how [S + V] / how to V1',
         reading: '/ˈfɪɡjər aʊt/',
         meaning: 'Mari kita cari jalan keluar bagaimana...',
-        mnemonic: '\'Figure out\' adalah phrasal verb favorit orang Amerika untuk \'memecahkan/memahami sesuatu\'!',
+        mnemonic: '\'Figure out\' adalah gabungan kata kerja favorit orang Amerika untuk \'memecahkan/memahami sesuatu\'!',
         speakText: 'Let\'s figure out how we can cut latency.',
       },
       {
         symbol: 'It depends on how / what / whether [S + V]',
         reading: '/ɪt dɪˈpendz ɑːn/',
         meaning: 'Itu bergantung pada bagaimana / apa / apakah...',
-        mnemonic: 'Ingat: \'depend\' selalu berpasangan dengan preposisi \'ON\' (BUKAN \'depend of\' atau tanpa \'on\')!',
-        speakText: 'The timeline depends on how complex the API is.',
+        mnemonic: 'Ingat: \'depend\' selalu berpasangan dengan kata depan \'ON\' (BUKAN \'depend of\' atau tanpa \'on\')!',
+        speakText: 'The timeline depends on how complex the project is.',
       },
       {
         symbol: 'What [S + V] + is ...',
@@ -3999,25 +3999,25 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-009',
-      title: 'Embedded Noun Clauses in Professional Discourse (Figure Out / Depend On / What-Cleft)',
+      title: 'Pertanyaan di Tengah Kalimat untuk Diskusi Kerja (Figure Out / Depend On / Pola Penegas What)',
       formula: '[I\'m not sure / Let\'s figure out / It depends on] + [wh- / whether] + Subject + Verb',
       formulaReading: 'SALAH: \'It depends on how much DOES it cost\' -> BENAR: \'It depends on how much IT COSTS\'!',
-      explanation: 'Perhatikan betapa luasnya manfaat aturan Tanpa Inversi ini: setiap kali kata tanya (what, where, how, why, how much, how long) berada di TENGAH kalimat pernyataan setelah \'I don\'t know\', \'Let\'s see\', \'It depends on\', atau \'That explains\', kamu SELALU menyusunnya lurus Subjek + Kata Kerja!',
+      explanation: 'Perhatikan betapa luasnya manfaat aturan urutan lurus ini: setiap kali kata tanya (what, where, how, why, how much, how long) berada di TENGAH kalimat pernyataan setelah \'I don\'t know\', \'Let\'s see\', \'It depends on\', atau \'That explains\', kamu SELALU menyusunnya lurus Subjek + Kata Kerja!',
       examples: [
-        { jp: 'Our Q4 budget depends on how many enterprise clients renew next month.', reading: '/ˈaʊər ˈkjuː fɔːr ˈbʌdʒɪt dɪˈpendz ɑːn haʊ ˈmeni ˈentərpraɪz ˈklaɪənts rɪˈnuː nekst mʌnθ/', id: 'Anggaran Kuartal 4 kita bergantung pada seberapa banyak klien korporat yang memperpanjang langganan bulan depan.' },
+        { jp: 'Our year-end budget depends on how many clients renew next month.', reading: '/ˈaʊər jɪr end ˈbʌdʒɪt dɪˈpendz ɑːn haʊ ˈmeni ˈklaɪənts rɪˈnuː nekst mʌnθ/', id: 'Anggaran akhir tahun kita bergantung pada seberapa banyak klien yang memperpanjang langganan bulan depan.' },
         { jp: 'What impressed the committee most was the clarity of her research design.', reading: '/wʌt ɪmˈprest ðə kəˈmɪti moʊst wʌz ðə ˈklærəti ʌv hɜːr ˈriːsɜːrtʃ dɪˈzaɪn/', id: 'Hal yang paling mengesankan komite adalah kejernihan rancangan penelitiannya.' },
       ],
     },
-    contrastiveTip: 'Hati-hati saat menulis cepat: dalam Bahasa Indonesia kita bisa berkata \'Tergantung cuaca\', tapi dalam Bahasa Inggris JANGAN menulis \'It depends the weather\'—preposisi \'on\' WAJIB hadir (\'It depends ON the weather\' — kecuali jika hanya menjawab dua kata pendek \'It depends!\')!',
+    contrastiveTip: 'Hati-hati saat menulis cepat: dalam Bahasa Indonesia kita bisa berkata \'Tergantung cuaca\', tapi dalam Bahasa Inggris JANGAN menulis \'It depends the weather\'—kata depan \'on\' WAJIB hadir (\'It depends ON the weather\' — kecuali jika hanya menjawab dua kata pendek \'It depends!\')!',
   },
   'en-b1-u10-kosakata': {
-    headline: 'Soal Wajib di Setiap Tes TOEFL: \'Although\' vs \'Despite / In Spite Of\'!',
+    headline: 'Soal Wajib di Setiap Ujian Bahasa Inggris: \'Although\' vs \'Despite / In Spite Of\'!',
     subtitle: 'Dalam Bahasa Indonesia, semuanya diterjemahkan sama persis: \'meskipun / walaupun\'. Dalam Bahasa Inggris, salah memilih antara \'although\' dan \'despite\' langsung membuat kalimat tidak gramatikal!',
     items: [
       {
         symbol: 'although / even though + [S + Verb]',
         reading: '/ɔːlˈðoʊ / ˈiːvən ðoʊ/',
-        meaning: 'Meskipun... (+ KLAUSA LENGKAP Subjek + Kata Kerja!)',
+        meaning: 'Meskipun... (+ KALIMAT LENGKAP Subjek + Kata Kerja!)',
         mnemonic: '\'Even though\' lebih kuat penekanannya daripada \'although\': \'Even though it snowed, the train ran on time.\'',
         speakText: 'Although the budget was tight, we delivered on time.',
       },
@@ -4032,7 +4032,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: 'despite the fact that + [S + Verb]',
         reading: '/dɪˈspaɪt ðə fækt ðæt/',
         meaning: 'Trik jembatan sulap agar \'despite\' BISA diikuti Subjek + Kata Kerja!',
-        mnemonic: 'Karena \'the fact\' adalah kata benda, kamu bebas menyambungnya dengan klausa utuh!',
+        mnemonic: 'Karena \'the fact\' adalah kata benda, kamu bebas menyambungnya dengan bagian kalimat utuh!',
         speakText: 'She aced the talk despite the fact that she had a cold.',
       },
       {
@@ -4045,7 +4045,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-010',
-      title: 'Concessive Contrast: Clause Conjunctions (Although) vs Prepositions (Despite / In Spite Of)',
+      title: 'Concessive Contrast: Kata Hubung Kalimat (Although) vs Kata Depan (Despite / In Spite Of)',
       formula: '[Although / Even though / Though] + Subject + Verb • [Despite / In spite of] + Noun Phrase / Verb-ing',
       formulaReading: 'LARANGAN GANDA: \'despite of\' (SALAH!) & \'Although ..., but ...\' (SALAH!)',
       explanation: 'Dua jebakan terbesar pembelajar Indonesia: (1) Dalam Bahasa Indonesia kita terbiasa berkata \'Walaupun mahal, TAPI bagus\'. Dalam Bahasa Inggris, memilih \'Although\' ATAU \'but\' harus salah satu saja—tidak pernah keduanya sekaligus! (2) Cek kata di belakang titik-titik: ada Subjek + Kata Kerja (\'the traffic WAS heavy\') -> pilih \'Although / Even though\'. Hanya Frasa Benda (\'the heavy traffic\') -> pilih \'Despite / In spite of\'!',
@@ -4057,20 +4057,20 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Tips percakapan lisan AS: penutur Amerika sangat suka menaruh kata \'though\' di PALING AKHIR kalimat sebagai pengganti santai kata \'however\'! Contoh: \'The hotel was pricey. The view was amazing, though!\' (\'Tapi pemandangannya luar biasa sih!\').',
   },
   'en-b1-u10-pola-kalimat': {
-    headline: 'Menjelaskan Alasan secara Akademik: Klausa (Because/Since) vs Frasa Benda (Due To)!',
-    subtitle: 'Persis seperti kontras \'although vs despite\', kata penghubung SEBAB juga terbagi dua kubu tegas: kubu Klausa (S + Verb) dan kubu Frasa Benda (Noun / V-ing)!',
+    headline: 'Menjelaskan Alasan secara Akademik: Kalimat Utuh (Because/Since) vs Frasa Benda (Due To)!',
+    subtitle: 'Persis seperti kontras \'although vs despite\', kata penghubung SEBAB juga terbagi dua kubu tegas: kubu Kalimat Utuh (S + Verb) dan kubu Frasa Benda (Noun / V-ing)!',
     items: [
       {
         symbol: 'because / since / as + [S + Verb]',
         reading: '/bɪˈkɔːz / sɪns / æz/',
-        meaning: 'Karena... (+ KLAUSA LENGKAP Subjek + Kata Kerja!)',
+        meaning: 'Karena... (+ KALIMAT LENGKAP Subjek + Kata Kerja!)',
         mnemonic: 'Di awal kalimat formal, \'Since\' atau \'As\' (= karena) sangat disukai: \'Since Monday is a holiday, the bank is closed.\'',
         speakText: 'Since everyone is here, let\'s get started.',
       },
       {
         symbol: 'because of / due to + [Noun / V-ing]',
         reading: '/bɪˈkɔːz ʌv / duː tə/',
-        meaning: 'Dikarenakan oleh... (+ FRASA KATA BENDA — tanpa kata kerja klausa!)',
+        meaning: 'Dikarenakan oleh... (+ FRASA KATA BENDA — tanpa kata kerja bagian kalimat!)',
         mnemonic: 'Contoh: \'Flights were delayed DUE TO dense fog\' (= \'BECAUSE the fog WAS dense\')!',
         speakText: 'The match was postponed due to heavy rain.',
       },
@@ -4091,10 +4091,10 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-010',
-      title: 'Cause & Effect Structures: Clauses (Because/Since) vs Prepositional Phrases (Due To / Because Of)',
-      formula: 'Klausa: [Because / Since / As] + S + Verb • Frasa Benda: [Because of / Due to / Thanks to] + Noun Phrase',
+      title: 'Sebab-Akibat: Diikuti Kalimat (Because/Since) vs Kata Benda (Due To / Because Of)',
+      formula: 'Diikuti Kalimat: [Because / Since / As] + S + Verb • Frasa Benda: [Because of / Due to / Thanks to] + Noun Phrase',
       formulaReading: 'BECAUSE the server crashed (S + V) = DUE TO a server crash (Noun Phrase)!',
-      explanation: 'Perhatikan kata \'since\' punya DUA arti penting di Bahasa Inggris: (1) \'sejak\' waktu dengan Present Perfect (\'I\'ve lived here since May\'), dan (2) \'KARENA\' alasan yang sudah diketahui bersama dengan tense apa pun (\'Since you\'re majoring in CS, you might enjoy this talk\')! Di soal Reading TOEFL, selalu kenali makna kedua ini!',
+      explanation: 'Perhatikan kata \'since\' punya DUA arti penting di Bahasa Inggris: (1) \'sejak\' waktu dengan Present Perfect (\'I\'ve lived here since May\'), dan (2) \'KARENA\' alasan yang sudah diketahui bersama dengan tense apa pun (\'Since you\'re majoring in CS, you might enjoy this talk\')! Di soal Reading ujian bahasa Inggris, selalu kenali makna kedua ini!',
       examples: [
         { jp: 'All campus shuttles were rerouted due to road construction on Main Street.', reading: '/ɔːl ˈkæmpəs ˈʃʌtəlz wɜːr ˌriːˈraʊtɪd duː tə roʊd kənˈstrʌkʃən ɑːn meɪn striːt/', id: 'Seluruh bus kampus dialihkan rutenya dikarenakan perbaikan jalan di Main Street.' },
         { jp: 'Thanks to early user testing, our team caught three usability issues before launch.', reading: '/θæŋks tə ˈɜːrli ˈjuːzər ˈtestɪŋ, ˈaʊər tiːm kɔːt θriː ˌjuːzəˈbɪləti ˈɪʃuːz bɪˈfɔːr lɔːntʃ/', id: 'Berkat pengujian pengguna sejak dini, tim kami menemukan tiga masalah kemudahan pakai sebelum peluncuran.' },
@@ -4103,7 +4103,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     contrastiveTip: 'Hindari menulis \'Because ..., so ...\' dalam satu kalimat (\'Because I was tired, so I slept early\' -> SALAH!). Sama seperti \'Although... but...\', pilih SATU saja: \'Because I was tired, I slept early\' ATAU \'I was tired, so I slept early\'!',
   },
   'en-b1-u10-menyimak-bicara': {
-    headline: 'Menjahit Argumen Setara TOEFL Writing & Presentasi Eksekutif!',
+    headline: 'Menjahit Argumen Setara penulisan esai bahasa Inggris & Presentasi Eksekutif!',
     subtitle: 'Di puncak level B1 menuju B2, bedakan penghubung DALAM SATU KALIMAT (although, whereas) dengan kata transisi PEMBUKA KALIMAT BARU (However, Therefore, Moreover)!',
     items: [
       {
@@ -4117,7 +4117,7 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
         symbol: '; however, / . However,',
         reading: '/haʊˈevər/',
         meaning: 'Namun demikian, (WAJIB diawali titik atau titik koma \';\', LALU diikuti koma!)',
-        mnemonic: 'JANGAN menyambung dua kalimat hanya dengan koma sebelum \'however\' (comma splice error di TOEFL Writing)!',
+        mnemonic: 'JANGAN menyambung dua kalimat hanya dengan koma sebelum \'however\' (comma splice error di penulisan esai bahasa Inggris)!',
         speakText: 'The method is accurate; however, it requires large datasets.',
       },
       {
@@ -4137,15 +4137,15 @@ export const LESSON_INTRO_DECKS_EN_A1_B1: Record<string, LessonIntroDeck> = {
     ],
     grammarSummary: {
       code: 'GP-EN-B1-010',
-      title: 'Academic Discourse Transitions & Comma-Splice Prevention (Whereas / However / Moreover)',
-      formula: '1 Kalimat: [Clause A], whereas [Clause B]. • 2 Kalimat Mandiri: [Clause A]; [however / therefore / moreover], [Clause B].',
+      title: 'Kata Transisi Esai & Comma-Splice Prevention (Whereas / However / Moreover)',
+      formula: '1 Kalimat: [Kalimat A], whereas [Kalimat B]. • 2 Kalimat Mandiri: [Kalimat A]; [however / therefore / moreover], [Kalimat B].',
       formulaReading: 'ATURAN TANDA BACA EMAS: Titik (.) atau Titik Koma (;) SEBELUM \'however/therefore\', dan Koma (,) SESUDAHNYA!',
-      explanation: 'Perhatikan perbedaan tata letak tanda baca antara \'although\' vs \'however\': \'Although\' mengikat dua klausa menjadi satu kalimat (\'Although it\'s costly, it\'s durable\'). Sedangkan \'However\' adalah kata keterangan mandiri (conjunctive adverb) yang TIDAK BISA mengikat dua kalimat hanya dengan koma—wajib dipisah titik atau titik koma: \'It\'s costly; however, it\'s durable.\'!',
+      explanation: 'Perhatikan perbedaan tata letak tanda baca antara \'although\' vs \'however\': \'Although\' mengikat dua bagian kalimat menjadi satu kalimat (\'Although it\'s costly, it\'s durable\'). Sedangkan \'However\' adalah kata keterangan mandiri (conjunctive adverb) yang TIDAK BISA mengikat dua kalimat hanya dengan koma—wajib dipisah titik atau titik koma: \'It\'s costly; however, it\'s durable.\'!',
       examples: [
         { jp: 'Quantitative surveys measure broad trends, whereas in-depth interviews uncover user motivations.', reading: '/ˈkwɑːntɪteɪtɪv ˈsɜːrveɪz ˈmeʒər brɔːd trendz, werˈæz ˈɪn depθ ˈɪntərvjuːz ʌnˈkʌvər ˈjuːzər ˌmoʊtɪˈveɪʃənz/', id: 'Survei kuantitatif mengukur tren luas, sedangkan wawancara mendalam mengungkap motivasi pengguna.' },
         { jp: 'Public transit reduces urban emissions; moreover, it lowers household transportation costs.', reading: '/ˈpʌblɪk ˈtrænzɪt rɪˈduːsɪz ˈɜːrbən ɪˈmɪʃənz; mɔːrˈoʊvər, ɪt ˈloʊərz ˈhaʊshoʊld ˌtrænspərˈteɪʃən kɔːsts/', id: 'Transportasi umum menekan emisi perkotaan; terlebih lagi, hal itu menurunkan biaya transportasi rumah tangga.' },
       ],
     },
-    contrastiveTip: 'Selamat! Menguasai \'whereas\', \'; however,\', dan \'; moreover,\' akan langsung mendongkrak skor koherensi (Coherence & Cohesion) tulisan bahasa Inggrismu dari gaya kalimat patah-patah ke standar akademik universitas AS!',
+    contrastiveTip: 'Selamat! Menguasai \'whereas\', \'; however,\', dan \'; moreover,\' akan langsung mendongkrak kerapian alur (alur tulisan) tulisan bahasa Inggrismu dari gaya kalimat patah-patah ke standar akademik universitas AS!',
   },
 }

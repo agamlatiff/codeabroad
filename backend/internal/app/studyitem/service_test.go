@@ -409,3 +409,76 @@ func TestBuildLessonStudyItemsAndHints_GrammarExampleFallbackAndCheckpoints(t *t
 		t.Fatalf("expected nil hint for checkpoint slug, got %q", *sanitized[0].Hint)
 	}
 }
+
+func TestBuildLessonStudyItemsAndHints_WritingTraceAndFreeTyping(t *testing.T) {
+	svc := NewService(nil)
+
+	raw := []exercise.Exercise{
+		{
+			ID:                "ex-wt-a",
+			ExerciseType:      exercise.ExerciseTypeWritingTrace,
+			Prompt:            "Ikuti garis panduan untuk menulis huruf Hiragana あ.",
+			CorrectAnswer:     "あ",
+			AcceptableAnswers: []string{"あ"},
+			Content: map[string]any{
+				"target_character": "あ",
+				"script":           "hiragana",
+				"romaji":           "a",
+				"meaning":          "Huruf a (contoh: あさ = pagi)",
+				"mnemonic":         "Bentuk lengkung melingkar seperti huruf 'a'.",
+				"audio_text":       "あ",
+			},
+		},
+		{
+			ID:            "ex-ft-tabemasu",
+			ExerciseType:  exercise.ExerciseTypeFreeTyping,
+			Prompt:        "Ketik dalam bahasa Jepang: Saya makan nasi setiap pagi.",
+			CorrectAnswer: "毎朝ご飯を食べます。",
+			AcceptableAnswers: []string{
+				"まいあさごはんをたべます",
+				"maiasa gohan o tabemasu",
+			},
+			Content: map[string]any{
+				"target_translation": "Saya makan nasi setiap pagi.",
+				"audio_text":         "毎朝ご飯を食べます。",
+			},
+		},
+	}
+
+	sanitized := exercise.SanitizeExercises(raw)
+	items := svc.BuildLessonStudyItemsAndHints(context.Background(), "n5-u1-writing-practice", raw, sanitized, nil)
+
+	if len(items) != 2 {
+		t.Fatalf("expected 2 study items for writing_trace + free_typing, got %d: %+v", len(items), items)
+	}
+
+	// Verify writing_trace study item extraction
+	wt := items[0]
+	if wt.Symbol != "あ" || wt.Reading != "a" || wt.Meaning != "Huruf a (contoh: あさ = pagi)" || wt.Mnemonic != "Bentuk lengkung melingkar seperti huruf 'a'." || wt.SpeakText != "あ" {
+		t.Errorf("unexpected writing_trace study item: %+v", wt)
+	}
+	if sanitized[0].Hint == nil || !strings.Contains(*sanitized[0].Hint, "goresan") {
+		t.Errorf("expected writing_trace spoiler-free stroke hint, got %v", sanitized[0].Hint)
+	}
+
+	// Verify free_typing study item extraction & spoiler-free hint
+	ft := items[1]
+	if ft.Symbol != "毎朝ご飯を食べます。" || ft.Meaning != "Saya makan nasi setiap pagi." || ft.SpeakText != "毎朝ご飯を食べます。" {
+		t.Errorf("unexpected free_typing study item: %+v", ft)
+	}
+	if ft.Reading == "" || ft.Reading == "Latihan mengetik" {
+		t.Errorf("expected resolved reading for free_typing item, got %q", ft.Reading)
+	}
+	if sanitized[1].Hint == nil {
+		t.Fatalf("expected non-nil hint for free_typing exercise")
+	}
+	ftHint := *sanitized[1].Hint
+	for _, spoiler := range []string{"毎朝", "食べます", "たべます", "tabemasu"} {
+		if strings.Contains(strings.ToLower(ftHint), strings.ToLower(spoiler)) {
+			t.Errorf("free_typing hint leaked answer %q: %q", spoiler, ftHint)
+		}
+	}
+	if !strings.Contains(ftHint, "Saya makan nasi setiap pagi.") {
+		t.Errorf("expected free_typing hint to reference target_translation, got %q", ftHint)
+	}
+}

@@ -5,6 +5,7 @@ import type { LessonIntroItem } from '@/features/exercise/constants/lessonIntroC
 import { useActiveSpeechLocale } from '@/features/exercise/hooks/useActiveSpeechLocale'
 import { audioService } from '@/shared/services/audioService'
 import { triggerHaptic } from '@/shared/utils/haptics'
+import { isIpaText } from '@/shared/utils/phonetics'
 import { Lightbulb, SpeakerHigh, Translate, X } from '@phosphor-icons/react'
 
 const SLOW_SPEECH_RATE = 0.58
@@ -27,6 +28,7 @@ export const LessonStudyCardsDrawer = ({
   onClose,
 }: LessonStudyCardsDrawerProps) => {
   const [playingKey, setPlayingKey] = useState<string | null>(null)
+  const [revealedIpaKeys, setRevealedIpaKeys] = useState<Record<string, boolean>>({})
   const speechLocale = useActiveSpeechLocale()
   const onCloseRef = useRef(onClose)
 
@@ -120,9 +122,33 @@ export const LessonStudyCardsDrawer = ({
                       <span className="text-2xl font-black text-slate-900 block leading-tight break-words">
                         {item.symbol}
                       </span>
-                      <span className="inline-block px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-brand font-black text-blue-700">
-                        {item.reading}
-                      </span>
+                      {isIpaText(item.reading) ? (
+                        <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                          {revealedIpaKeys[`drawer-ipa-${idx}`] && (
+                            <span className="inline-block px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-mono font-bold text-blue-700">
+                              {item.reading}
+                            </span>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setRevealedIpaKeys((prev) => ({
+                                ...prev,
+                                [`drawer-ipa-${idx}`]: !prev[`drawer-ipa-${idx}`],
+                              }))
+                            }
+                            className="inline-flex items-center px-2 py-0.5 rounded-lg border border-slate-200 bg-white hover:bg-blue-50 hover:border-blue-200 text-[11px] font-brand font-bold text-slate-600 hover:text-blue-700 transition-colors cursor-pointer"
+                          >
+                            {revealedIpaKeys[`drawer-ipa-${idx}`]
+                              ? 'Sembunyikan'
+                              : 'Panduan Baca'}
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="inline-block px-2 py-0.5 rounded-lg bg-blue-50 border border-blue-200 text-[11px] font-brand font-black text-blue-700">
+                          {item.reading}
+                        </span>
+                      )}
                       <p className="text-xs font-bold text-slate-700">{item.meaning}</p>
                     </div>
 

@@ -1,4 +1,7 @@
-import type { CurriculumExercise } from '@/features/curriculum/types/curriculum'
+import type {
+  CurriculumExercise,
+  KanaScriptType,
+} from '@/features/curriculum/types/curriculum'
 import type {
   ExerciseChoiceOption,
   ExerciseFuriganaItem,
@@ -12,6 +15,14 @@ const isRecord = (value: unknown): value is Record<string, unknown> =>
 const readString = (record: Record<string, unknown>, key: string): string | undefined => {
   const val = record[key]
   return typeof val === 'string' && val.trim() !== '' ? val : undefined
+}
+
+const readKanaScript = (record: Record<string, unknown>, key: string): KanaScriptType | undefined => {
+  const val = readString(record, key)?.trim().toLowerCase()
+  if (val === 'hiragana' || val === 'katakana' || val === 'kanji') {
+    return val
+  }
+  return undefined
 }
 
 const readStringArray = (record: Record<string, unknown>, key: string): string[] => {
@@ -128,6 +139,10 @@ export const parseExerciseContent = (exercise: CurriculumExercise): ParsedExerci
       `${exercise.id}:options`
     ),
     hint: exercise.hint ?? readString(raw, 'hint'),
+    targetCharacter: readString(raw, 'target_character'),
+    script: readKanaScript(raw, 'script'),
+    writingMnemonic: readString(raw, 'mnemonic'),
+    writingMeaning: readString(raw, 'meaning'),
   }
 }
 
@@ -150,7 +165,11 @@ export const formatUserAnswerForSubmission = (
     return input.selectedTokens.join(' ').trim()
   }
 
-  if (exerciseType === 'speaking_repeat') {
+  if (
+    exerciseType === 'speaking_repeat' ||
+    exerciseType === 'writing_trace' ||
+    exerciseType === 'free_typing'
+  ) {
     return input.textInput.trim()
   }
 
